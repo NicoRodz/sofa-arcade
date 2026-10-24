@@ -15,3 +15,8 @@ export * from './generate';
 export * from './validator';
 export * from './metric';
 export * from './modules';
+export * from './lobby';
+export * from './session';
+export * from './bot';
+export { hangingOnRope } from './sim/rope';
+export { awardsOf, awards, type Awards } from './sim/rules';

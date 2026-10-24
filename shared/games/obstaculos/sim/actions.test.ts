@@ -165,6 +165,25 @@ describe('mano amiga (plan §5)', () => {
     expect(pl(w, 1).body.y).toBeCloseTo(pl(w, 0).body.y, 0);
     expect(pl(w, 1).body.x).toBeLessThan(pl(w, 0).body.x); // behind the catcher, on the block
   });
+  it('a teammate caught from BELOW the ledge is lifted up first and then across: it does not cut through the corner of the block and die crushed (level 1)', () => {
+    // wall of 4 tiles (top on row 8) with its LEFT face at column 20; the catcher stands on its edge facing the void, the jumper rises beside the wall
+    const rows = hall().map((r, y) => (y >= 8 && y <= 11 ? r.slice(0, 20) + '#'.repeat(20) + r.slice(40) : r));
+    const w = world(level(rows), { mode: 'free' });
+    teleport(w, 0, 21, 7); teleport(w, 1, 19, GROUND);
+    const c = pl(w, 0).body;
+    c.x = 20 * TILE - 6; c.facing = -1; // hanging 6 px over the edge, facing the void
+    run(w, 3);
+    run(w, 1, B(0));
+    expect(pl(w, 0).planted).toBe(true);
+    const t0 = w.tick;
+    const ev = run(w, 140, (s, t) => (s === 1 && t === t0 + 2 ? inp({ jump: true }) : undefined)); // the jump from the floor ends in the sensor
+    expect(of(ev, 'obst.handCatch')).toEqual([{ player: 0, target: 1 }]);
+    expect(of(ev, 'obst.death')).toEqual([]);
+    expect(pl(w, 1).stats.deaths).toBe(0);
+    expect(pl(w, 1).mode).toBe('active');
+    expect(pl(w, 1).body.grounded).toBe(true);
+    expect(pl(w, 1).body.y + 46).toBeCloseTo(8 * TILE, 0); // standing on the ledge
+  });
   it('without planting there is no catch: the teammate just falls', () => {
     const w = cliff();
     teleport(w, 0, 15, 7); teleport(w, 1, 17, 3);

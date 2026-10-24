@@ -9,7 +9,7 @@ import type { ParsedLevel } from '../parse';
 import { dropAll } from './actions';
 import { bodyRect, cellRect, overlaps } from './collide';
 import { freezeHazard, hazardKills } from './entities';
-import { emit, isActive, type LevelResult, type ObstEvent, type PlayerState, type World } from './state';
+import { emit, isActive, type LevelResult, type ObstEvent, type PlayerState, type PlayerStats, type World } from './state';
 import { boxHitsSolid, boxTouches, tileAt } from './tiles';
 import { CRUMB_KEEP, CRUSH_STEPS, GOAL_PAD_X, GOAL_PAD_Y, REUNION_TILES, RESPAWN_DELAY_SEC, SPAWN_SPREAD, STAR_STREAK_SEC, VOID_MARGIN } from './tuning';
 
@@ -273,17 +273,17 @@ export function advanceRun(run: RunState, w: World): ObstEvent[] {
 
 // Awards of plan §8 from the per-player stats of one level: the slot that wins each one, or null when nobody earned it.
 export interface Awards { ancla: number | null; taxi: number | null; coleccionista: number | null; kamikaze: number | null; pegamento: number | null }
-export function awards(w: World): Awards {
-  const top = (score: (p: PlayerState) => number, lowest = false): number | null => {
-    let best: PlayerState | null = null;
-    for (const p of w.players) {
-      if (!p.connected) continue;
-      if (!best || (lowest ? score(p) < score(best) : score(p) > score(best))) best = p;
+export function awardsOf(list: readonly { slot: number; stats: PlayerStats }[]): Awards {
+  const top = (score: (s: PlayerStats) => number, lowest = false): number | null => {
+    let best: { slot: number; stats: PlayerStats } | null = null;
+    for (const p of list) {
+      if (!best || (lowest ? score(p.stats) < score(best.stats) : score(p.stats) > score(best.stats))) best = p;
     }
-    return best && (lowest || score(best) > 0) ? best.slot : null;
+    return best && (lowest || score(best.stats) > 0) ? best.slot : null;
   };
   return {
-    ancla: top((p) => p.stats.anchoredSteps), taxi: top((p) => p.stats.throws + p.stats.catches), coleccionista: top((p) => p.stats.stars),
-    kamikaze: top((p) => p.stats.deaths), pegamento: w.players.filter((p) => p.connected).length > 1 ? top((p) => p.stats.offCameraSteps, true) : null,
+    ancla: top((s) => s.anchoredSteps), taxi: top((s) => s.throws + s.catches), coleccionista: top((s) => s.stars),
+    kamikaze: top((s) => s.deaths), pegamento: list.length > 1 ? top((s) => s.offCameraSteps, true) : null,
   };
 }
+export const awards = (w: World): Awards => awardsOf(w.players.filter((p) => p.connected));

@@ -193,9 +193,10 @@ export function handCatchStep(w: World, handZoneTiles: number): void {
     let tx = c.body.x - dir * PLAYER_W * 0.9;
     if (boxHitsSolid(w.grid, tx, c.body.y, PLAYER_W, PLAYER_H)) tx = c.body.x;
     const ty = c.body.y;
-    const e = u * u * (3 - 2 * u); // smoothstep
-    t.body.x = l.fx + (tx - l.fx) * e;
-    t.body.y = l.fy + (ty - l.fy) * e;
+    // Up first, then across: from below the ledge a straight diagonal would cut through the corner of the block and crush the lifted player.
+    const smooth = (k: number) => { const c = Math.max(0, Math.min(1, k)); return c * c * (3 - 2 * c); };
+    t.body.y = l.fy + (ty - l.fy) * smooth(u / 0.6);
+    t.body.x = l.fx + (tx - l.fx) * smooth((u - 0.6) / 0.4);
     t.body.vx = 0; t.body.vy = 0;
     if (u >= 1) { t.lift = null; t.body.air = NONE; }
   }

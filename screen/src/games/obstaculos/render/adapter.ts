@@ -1,0 +1,121 @@
+// SimWorldView: the real world of F2a (inside an ObstSession) seen through the WorldView the renderer draws (view.ts). The renderer never imports
+// the simulation: this file maps it once per render frame. FakeWorld (stub.ts) stays for the harness and the renderer's own tests.
+import {
+  CRUMBLE_FALL_SEC, DIFFICULTY_PARAMS, DT, TILE, hangingOnRope, previewB, type BPreview, type Body, type ObstSession, type PlayerState, type World,
+} from '@party/shared/obstaculos';
+import type { Difficulty } from '@party/shared/difficulty';
+import type { GameMode, ParsedLevel, TileGrid } from '@party/shared/obstaculos';
+import { entitiesFromLevel } from './stub';
+import type { EntityView, HandAction, HazardView, HudView, PlayerView, RopeView, WorldView } from './view';
+
+const HINT: Record<BPreview['action'], HandAction> = { anchor: 'anchor', lift: 'lift', grab: 'grab', plant: 'plant', unplant: 'release', release: 'release', throw: 'throw', none: 'none' };
+
+export class SimWorldView implements WorldView {
+  readonly level: ParsedLevel;
+  readonly grid: TileGrid;
+  readonly mode: GameMode;
+  readonly difficulty: Difficulty;
+  alpha = 0;
+  players: PlayerView[] = [];
+  ropes: RopeView[] = [];
+  entities: EntityView[] = [];
+  hazard: HazardView | null = null;
+  hud: HudView;
+  private statics: EntityView[];
+  private byId = new Map<string, EntityView>();
+  private bubbleSince = new Map<number, number>();
+
+  // Built for ONE world: a new level makes a new SimWorldView (the scene notices the change and rebuilds the picture).
+  constructor(private session: ObstSession, readonly world: World = session.world, private names: (slot: number) => string = (s) => `J${s + 1}`) {
+    this.level = world.level;
+    this.grid = world.grid;
+    this.mode = world.mode;
+    this.difficulty = world.difficulty;
+    this.statics = entitiesFromLevel(world.level);
+    for (const e of this.statics) this.byId.set(e.id, e);
+    this.hud = { timeSec: 0, lives: world.lives, livesMax: DIFFICULTY_PARAMS[world.difficulty].lives, starsTaken: 0, levelIndex: session.levelIndex, levelCount: session.levelCount };
+    this.sync();
+  }
+
+  // Call once per render frame, after session.advance().
+  sync(): void {
+    const w = this.world;
+    this.alpha = this.session.alpha;
+    this.syncPlayers(w);
+    this.syncRopes(w);
+    this.syncEntities(w);
+    const hz = w.ent.hazard;
+    this.hazard = hz ? { kind: hz.kind, pos: hz.pos, frozen: hz.frozen > 0 } : null;
+    const h = this.hud;
+    h.timeSec = w.result ? w.result.timeSec : w.tick * DT;
+    h.lives = w.lives; h.starsTaken = w.ent.stars.reduce((n, s) => n + (s.taken ? 1 : 0), 0);
+    h.levelIndex = this.session.levelIndex; h.levelCount = this.session.levelCount;
+  }
+
+  private syncPlayers(w: World): void {
+    const bodies: (Body | undefined)[] = [];
+    for (const p of w.players) bodies[p.slot] = p.body;
+    const cordada = new Map<number, number>();
+    for (const r of w.ropes) for (const m of r.members) cordada.set(m, r.id);
+    const out: PlayerView[] = [];
+    for (const p of w.players) {
+      const b = p.body, prev = this.session.prev[p.slot] ?? { x: b.x, y: b.y };
+      const bubble = p.mode === 'bubble' && p.bubble ? this.bubbleOf(p) : null;
+      if (!bubble) this.bubbleSince.delete(p.slot);
+      const active = p.connected && p.mode === 'active';
+      const anchored = p.holding?.kind === 'ring';
+      const hint = active ? HINT[previewB(w, p.slot).action] : 'none';
+      out.push({
+        id: p.slot, slot: p.slot, name: this.names(p.slot), connected: p.connected,
+        x: b.x, y: b.y, prevX: prev.x, prevY: prev.y, vx: b.vx, vy: b.vy, facing: b.facing, grounded: b.grounded,
+        dead: p.mode === 'dead', bubble, invulnSec: p.invuln * DT, planted: p.planted,
+        hanging: active && !b.grounded && (anchored || hangingOnRope(w.ropes, p.slot, bodies)),
+        anchored, holding: !p.holding || anchored ? 'none' : p.holding.kind === 'ring' ? 'none' : p.holding.kind,
+        carriedBy: p.carriedBy, thrown: p.thrown > 0, inGoal: p.inGoal, cordada: cordada.get(p.slot) ?? -1,
+        // 'plant' is quiet: only for an idle grounded player (the view draws it faint), never while moving
+        hint: hint === 'plant' && (!b.grounded || Math.abs(b.vx) > 12) ? 'none' : hint,
+      });
+    }
+    this.players = out;
+  }
+
+  private bubbleOf(p: PlayerState): PlayerView['bubble'] {
+    if (p.bubble?.arrived) { this.bubbleSince.delete(p.slot); return { phase: 'pop', t: p.timer * DT }; }
+    const since = this.bubbleSince.get(p.slot) ?? this.world.tick;
+    this.bubbleSince.set(p.slot, since);
+    return { phase: 'fly', t: (this.world.tick - since) * DT };
+  }
+
+  private syncRopes(w: World): void {
+    this.ropes = w.ropes.map((r) => ({ id: r.id, cordada: r.id, links: r.links.map((l) => ({ a: l.a, b: l.b, tension: l.tension, active: l.active })) }));
+  }
+
+  private syncEntities(w: World): void {
+    const e = w.ent, by = this.byId;
+    const set = (id: string, f: (v: EntityView) => void) => { const v = by.get(id); if (v) f(v); };
+    e.stars.forEach((s, i) => set(`star${i}`, (v) => { v.on = s.taken; }));
+    e.checkpoints.forEach((c, i) => set(`cp${i}`, (v) => { v.on = c.activated; }));
+    set('goal0', (v) => { const conn = w.players.filter((p) => p.connected); v.on = conn.length > 0 && conn.every((p) => p.inGoal); });
+    e.rings.forEach((_r, i) => set(`ring${i}`, (v) => { const h = w.players.find((p) => p.holding?.kind === 'ring' && p.holding.id === i); v.on = !!h; v.holder = h ? h.slot : -1; }));
+    const lights = e.boxes.filter((b) => !b.heavy);
+    lights.forEach((b, i) => set(`box${i}`, (v) => { v.x = b.x; v.y = b.y; v.holder = b.holders[0] ?? -1; }));
+    e.boxes.filter((b) => b.heavy).forEach((b, i) => set(`hbox${i}`, (v) => { v.x = b.x; v.y = b.y; v.holder = b.holders[0] ?? -1; v.on = b.holders.length >= 2; }));
+    e.keys.forEach((k, i) => set(`key${i}`, (v) => { v.x = k.x - TILE / 2; v.y = k.y - TILE / 2; v.on = k.used || k.heldBy >= 0; v.holder = k.heldBy; }));
+    for (const a of e.activators) set(`obj${a.letter}`, (v) => { v.on = a.pressed || a.latched; v.value = a.required > 0 ? Math.min(1, a.load / a.required) : 0 });
+    for (const o of e.objectives) set(`obj${o.letter}`, (v) => { v.on = o.open; v.x = o.rect.x + o.ox; v.y = o.rect.y + o.oy; });
+    // crumbling tiles: only the ones that are shaking or gone get a sprite
+    const live: EntityView[] = [];
+    for (const v of this.statics) live.push(v);
+    for (const c of e.crumbles) {
+      if (c.state === 0) continue;
+      const fall = Math.round(CRUMBLE_FALL_SEC / DT);
+      const id = `cr${c.x}_${c.y}`;
+      let v = by.get(id);
+      if (!v) { v = { id, kind: 'crumble', x: c.x * TILE, y: c.y * TILE, w: TILE, h: TILE, tag: '', on: false, value: 0, label: '', holder: -1 }; by.set(id, v); }
+      if (c.state === 1) { v.on = false; v.value = Math.min(1, c.t / fall); v.y = c.y * TILE; }
+      else { const k = Math.min(1, c.t / 15); v.on = true; v.value = k; v.y = c.y * TILE + k * 70; }
+      live.push(v);
+    }
+    this.entities = live;
+  }
+}
