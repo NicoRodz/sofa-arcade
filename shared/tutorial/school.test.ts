@@ -61,9 +61,20 @@ describe('the hands and the wire', () => {
     expect(n).toBeGreaterThanOrEqual(4);
     expect(n).toBeLessThanOrEqual(7);
   });
-  it('a change reaches the phone at most every 50 ms (walking along a counter flaps the buttons)', () => {
-    const r = runSchool(chefs(1), { limitMs: 30_000 });
-    expect(hintMsgs(r.sent, 1).length).toBeLessThan(30_000 / 50);
+  it('a message that flaps every frame (the lit button flips while the board fills and empties) reaches the phone at most every 50 ms', () => {
+    const sent: ClientMsg[] = [];
+    const s = createSchool({ bus: new Emitter<GameEvents>(), send: (m) => sent.push(m) });
+    s.step(TICK_MS, chefs(1), () => idle);
+    s.progressOf(1)!.step = 1; // (reach the knife step without cooking: the test only watches the wire)
+    const p = s.game.players.get(1)!;
+    const board = s.game.stations.find((x) => x.kind === 'board' && x.ty === 0)!;
+    Object.assign(p, { x: board.tx + 0.5, y: 1.5, fx: 0, fy: -1 });
+    sent.length = 0;
+    for (let i = 0; i < 60; i++) { board.item = i % 2 ? 'raw1' : null; s.step(TICK_MS, chefs(1), () => idle); }
+    const btns = schoolMsgs(sent, 1).map((m) => m.btn);
+    expect(new Set(btns).size, 'it really did flip').toBe(2);
+    expect(schoolMsgs(sent, 1).length, 'one second of flapping').toBeLessThanOrEqual(1000 / 50 + 2);
+    expect(schoolMsgs(sent, 1).length).toBeGreaterThan(5);
   });
   it('when the school ends every phone gets the game\'s own button labels back', () => {
     const sent: ClientMsg[] = [];
