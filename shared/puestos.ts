@@ -72,8 +72,8 @@ export function puestoStations(g: Grid, stations: readonly { kind: string; crate
 export const mapSpawns = (m: MapDef, g: Grid = parseMap(m.rows)): Pos[] => spawnPoints(g, 8, m.spawns);
 
 // Every chef must be able to reach the stations of their puesto, for every team size the map recommends.
-export function puestoProblems(m: MapDef): string[] {
-  const g = parseMap(m.rows);
+export function puestoProblems(m: MapDef, versus = false): string[] {
+  const g = parseMap(m.rows, versus);
   const f = { cheese: m.rows.some((r) => r.includes('3')), sink: m.rows.some((r) => r.includes('L')) };
   const { comp } = floorComponents(g);
   const spawns = mapSpawns(m, g);

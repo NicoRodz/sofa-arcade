@@ -116,7 +116,6 @@ export interface Sabotage {
   sigma: SigmaName;
   teams: SabTeam[];
   catapults: Pos[]; // per team: the tile of its catapult (station)
-  nextFloorId: number;
 }
 
 // --- Event contract (all versus only: they always carry the team) ------------------------------------------------------------------

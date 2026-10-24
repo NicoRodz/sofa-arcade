@@ -7,9 +7,10 @@ export const MAP_W = 16;
 export const MAP_H = 9;
 
 // # wall, . floor, S spawn (floor), ~ water, C counter, 1/2 ingredient crates, K board (stretch/cut),
-// O oven, P tray pile, E delivery counter, X trash, 3 cheese crate (Margarita), U dirty-plate return, L sink.
+// O oven, P tray pile, E delivery counter, X trash, 3 cheese crate (Margarita), U dirty-plate return, L sink,
+// Y catapult (VERSUS maps only, the sabotage launcher: parseMap refuses it unless the caller says the map is a versus one).
 // Design legend (15-mapas.md) -> this code: T->C, M->1, R->2, Q->3, C (table)->K, H->O; the rest is the same.
-export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash' | 'dirty' | 'sink';
+export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash' | 'dirty' | 'sink' | 'catapult';
 export type Tile =
   | { kind: 'wall' }
   | { kind: 'floor'; spawn: boolean }
@@ -30,24 +31,26 @@ const STATIONS: Record<string, { station: StationKind; crate: number }> = {
   U: { station: 'dirty', crate: 0 },
   L: { station: 'sink', crate: 0 },
 };
-export const STATION_CHAR: Record<string, string> = { crate0: '1', crate1: '2', crate2: '3', board: 'K', pot: 'O', plates: 'P', window: 'E', counter: 'C', trash: 'X', dirty: 'U', sink: 'L' };
+const VERSUS_ONLY: Record<string, { station: StationKind; crate: number }> = { Y: { station: 'catapult', crate: 0 } };
+export const STATION_CHAR: Record<string, string> = { crate0: '1', crate1: '2', crate2: '3', board: 'K', pot: 'O', plates: 'P', window: 'E', counter: 'C', trash: 'X', dirty: 'U', sink: 'L', catapult: 'Y' };
 
-export function parseTile(c: string): Tile | null {
+/** `versus`: the tile letters that only exist in versus maps (Y, the catapult) are accepted. A coop map refuses them. */
+export function parseTile(c: string, versus = false): Tile | null {
   if (c === '#') return { kind: 'wall' };
   if (c === '.') return { kind: 'floor', spawn: false };
   if (c === 'S') return { kind: 'floor', spawn: true };
   if (c === '~') return { kind: 'water' };
-  const s = STATIONS[c];
+  const s = STATIONS[c] ?? (versus ? VERSUS_ONLY[c] : undefined);
   return s ? { kind: 'station', ...s } : null;
 }
 
-export function parseMap(rows: readonly string[]): Grid {
+export function parseMap(rows: readonly string[], versus = false): Grid {
   if (rows.length !== MAP_H) throw new Error(`map needs ${MAP_H} rows, got ${rows.length}`);
   return rows.map((row, y) => {
     if (row.length !== MAP_W) throw new Error(`row ${y} needs ${MAP_W} columns, got ${row.length}`);
     return [...row].map((c, x) => {
-      const t = parseTile(c);
-      if (!t) throw new Error(`unknown tile '${c}' at (${x}, ${y})`);
+      const t = parseTile(c, versus);
+      if (!t) throw new Error(`unknown tile '${c}' at (${x}, ${y})${c in VERSUS_ONLY ? ': only a versus map has it' : ''}`);
       return t;
     });
   });

@@ -1,11 +1,12 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
 import { Emitter, type GameEvents } from './events';
-import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type Pos, type StationKind } from './maps';
+import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type Pos, type SigmaName, type StationKind } from './maps';
 import { DEFAULT_DIFFICULTY, DIRTY_MS, WASH_MS, params as difficultyParams, teamSize, type Difficulty, type Params, type Tuning } from './difficulty';
 import { mulberry32, type Rng } from './rng';
 import { holdsPlace, matchStatus, rankTeams, teamMultipliers, type PauseChoice, type RosterEntry, type TeamId, type TeamResult } from './teams';
 import { PANTRY_EVERY_MS, PANTRY_MAX, VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS, kitchenRegions, stationOwner, teamStarts, type Kitchens } from './versus';
-import { SLIP, SLIP_DASH_EXTRA, SLIP_MIN_SPEED, SLIP_PUSH, SLIP_TRIGGER, type FloorItem, type Sabotage, type Slip } from './sabotage-config';
+import { SLIP, SLIP_DASH_EXTRA, SLIP_MIN_SPEED, SLIP_PUSH, SLIP_TRIGGER, type FloorItem, type Sabotage, type SabotageMode, type Slip } from './sabotage-config';
+import { createSabotage, isAiming, sabotageAimPress, sabotageBinned, sabotageCancelAim, sabotageLoad, sabotageTakeBag, sabotageTick } from './sabotage';
 import { addFloorItem, removeFloorItem } from './floor';
 
 export const TICK_HZ = 60;
@@ -213,8 +214,8 @@ function settleVip(g: Game) {
 
 export interface TeamSeat { playerIds: readonly number[] } // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
 
-export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean } = {}): Game {
-  const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows);
+export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName } = {}): Game {
+  const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
   if (seats && !seats.length) throw new RangeError('a round needs at least one team');
@@ -257,6 +258,7 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
     for (let i = 0; i < p.plates && piles.length; i++) piles[i % piles.length]!.count++;
   }
   for (const t of teams) for (let i = 0; i < p.initialOrders; i++) spawnOrder(g, t);
+  if (opts.sabotage && opts.sabotage !== 'off') g.sab = createSabotage(g, opts.sabotage, opts.sigma); // null when the map cannot host it: the round plays without
   return g;
 }
 
@@ -444,6 +446,15 @@ function slipStep(g: Game, p: Player, c: Controls, dtMs: number) {
   }
 }
 
+// The chef that loaded the catapult stands there (anchored: no walking, no dash) until it throws with B; A does nothing.
+function aimStep(g: Game, p: Player, c: Controls, dtMs: number) {
+  p.dashCd = Math.max(0, p.dashCd - dtMs);
+  const bEdge = (c.b && !p.bHeld) || (c.bTaps ?? 0) > 0;
+  p.bHeld = c.b;
+  Object.assign(p, { vx: 0, vy: 0, kx: 0, ky: 0, dashMs: 0, buffA: 0, buffB: 0 });
+  if (bEdge) sabotageAimPress(g, p);
+}
+
 // End of the tick (hazards only): rubbish that ran out disappears, and a chef that ENTERED a rubbish tile slips.
 function hazardsTick(g: Game) {
   for (const f of [...g.floor]) if (g.time >= f.expiresAt) {
@@ -548,9 +559,14 @@ function interact(g: Game, p: Player, s: Station) {
       break;
     }
     case 'trash':
+      if (g.sab && !p.item) { sabotageTakeBag(g, p); break; } // sabotage: empty hands take the bag that is waiting
       if (g.finitePlates && (p.item === 'plate' || p.item === 'dirty')) break; // plates are not rubbish: they would be lost for good
       if (g.finitePlates && (p.item === 'dish' || p.item === 'dishQ')) g.teams[p.team]!.dirtyDue.push(g.time + DIRTY_MS); // the plate under the pizza comes back
+      if (g.sab && p.item) sabotageBinned(g, p, p.item); // what is binned feeds the team's catapult
       p.item = null;
+      break;
+    case 'catapult':
+      if (g.sab) sabotageLoad(g, p, s);
       break;
     case 'window':
       if ((p.item === 'dish' || p.item === 'dishQ') && g.teams[p.team]!.orders.length) {
@@ -637,6 +653,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     if (p.ghost) continue;
     const c = controls.get(p.id) ?? idleControls;
     if (g.hazards && p.slip) { slipStep(g, p, c, dtMs); continue; } // sliding: the stick and the buttons do nothing
+    if (g.sab && isAiming(g, p)) { aimStep(g, p, c, dtMs); continue; } // loaded the catapult: anchored there until B (or 3 s)
     const tune = g.params.tune;
     const target = targetStation(g, p);
     p.dashCd = Math.max(0, p.dashCd - dtMs);
@@ -707,6 +724,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
 
   separate(g, controls, dtMs);
   if (g.hazards) hazardsTick(g);
+  if (g.sab) sabotageTick(g);
   settleVip(g);
 
   for (const s of g.stations) {
@@ -800,6 +818,7 @@ export function dropPlayer(g: Game, id: number): boolean {
   e.droppedAt = g.time;
   Object.assign(p, { ghost: true, cutting: false, chopAt: -1, vx: 0, vy: 0, kx: 0, ky: 0, dashMs: 0, buffA: 0, buffB: 0, crossing: false });
   if (p.slip) p.slip = null; // hazards only: the slide ends where it was
+  if (g.sab) sabotageCancelAim(g, p); // the bag it had loaded goes back to its team's bin
   for (const k of [...g.crowd.keys()]) if (k.split(':').includes(String(id))) g.crowd.delete(k);
   if (p.item) {
     const free = g.stations.filter((s) => s.kind === 'counter' && !s.item && (s.owner === null || s.owner === p.team));

@@ -11,6 +11,7 @@ import type { Rng } from './rng';
 import type { MatchStart } from './protocol';
 import { balanceTeams, joinSmallestTeam, leaveTeams, makeTeams, modeAvailability, validateTeamSetup, type TeamInfo, type TeamSetup } from './teams';
 import { kitchenRegions } from './versus';
+import { sabotageOf } from './sabotage-config';
 import { VERSUS_AUTO, VERSUS_MAPS, VERSUS_RANDOM, versusMap, type VersusChoice } from './versusMaps';
 
 // --- Map choice ---------------------------------------------------------------------------------------------------------------------
@@ -120,7 +121,7 @@ export function resolveVersusMap(choice: string, seed: number, difficulty: Diffi
 
 /** "izquierda" / "derecha" or "arriba" / "abajo" for each kitchen of a map, from where its floor really is (team 0 = the region met first). */
 export function kitchenSides(rows: readonly string[], spawns: readonly Pos[], teamCount = 2): string[] {
-  const grid = parseMap(rows);
+  const grid = parseMap(rows, true);
   const { comp, regions } = kitchenRegions(grid, teamCount, spawns);
   const centre = regions.map((r) => {
     let sx = 0, sy = 0, n = 0;
@@ -160,6 +161,7 @@ export function createVersusGame(o: VersusStart): Game {
   const game = createGame({
     mapId: o.map.id, difficulty: o.difficulty, rows: o.map.rows, spawns: o.map.spawns, seed: o.seed, countdownMs: o.countdownMs, bus: o.bus,
     teams: o.teams.map((t) => ({ playerIds: t.playerIds })), handicap: o.modeOptions.handicap !== false, shared: o.map.shared,
+    sabotage: sabotageOf(o.modeOptions), sigma: o.map.sigma, // the sim switches it off by itself on a map with no catapult
   });
   for (const t of o.teams) t.playerIds.forEach((id, rank) => addPlayer(game, id, o.slotOf(id), rank));
   return game;

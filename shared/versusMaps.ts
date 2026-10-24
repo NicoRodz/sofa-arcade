@@ -4,6 +4,8 @@
 // Legend, reconciled with the real one (maps.ts): the design's M T Q C H letters are 1 2 3 K O here (M dough, T tomato, Q cheese,
 // C board, H oven); its '=' counter is C, 'B' trash is X, 'a'/'b' starts are S. The design's '|' barrier tile does not exist: two
 // columns (or one row) of plain walls '#' do the same job, and the isolation is checked by validateVersus, not by a tile type.
+// Sabotage: each kitchen has a catapult 'Y' (the launcher of the rubbish bags, see sabotage.ts) in place of a counter next to the barrier, twins
+// under sigma. It is a legend letter only versus maps have: parseMap(rows, true). The design's 'P' for it was taken (P is the tray pile here).
 // Design's 'L' (sink) is dropped from V1 and V3: a sink also needs the dirty-plate return U and turns washing on for the whole
 // map, and coop only does that from 5 players (teams here are 1 to 4 chefs). Those tiles became counters.
 import { FIXED_MAPS, MAP_H, MAP_W, parseMap, spawnPoints, type HalfName, type MapDef, type Pos, type SigmaName, type VersusMapDef } from './maps';
@@ -29,7 +31,7 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
       'P.S..S.##.S..S.P',
       'C.S..S.##.S..S.C',
       'X......##......X',
-      '#CCECC####CCECC#',
+      '#CCECY####YCECC#',
     ],
   },
   {
@@ -46,7 +48,7 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
       'P.S..S.##.S..S.P',
       'C.S..S.##.S..S.C',
       'X......##......X',
-      '#CCECC####CCECC#',
+      '#CCECY####YCECC#',
     ],
   },
   {
@@ -57,9 +59,9 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
       '#123COOCKKCPCCX#',
       'C..............E',
       'C..S...S...S...C',
-      '#CCCCCCCCCCCCCC#',
+      '#CCCCCCCCCCCYCC#',
       '################',
-      '#CCCCCCCCCCCCCC#',
+      '#CCYCCCCCCCCCCC#',
       'C...S...S...S..C',
       'E..............C',
       '#XCCPCKKCOOC321#',
@@ -75,7 +77,7 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
       'C.....C##C.....C',
       'E.....C##C.....E',
       'C.OO..C##C..OO.C',
-      'C.....C##C.....C',
+      'C.....Y##Y.....C',
       'C.....P##P.....C',
       'K.S.S.C##C.S.S.K',
       'K.S.S.C##C.S.S.K',
@@ -90,11 +92,11 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
     rows: [
       '################',
       '#123CK####CCCCC#',
-      'K.....O##C.....C',
+      'K.....O##Y.....C',
       'C.....O##E.....X',
       'C.S.S.P##P.S.S.C',
       'X.....E##O.....C',
-      'C.....C##O.....K',
+      'C.....Y##O.....K',
       '#CCCCC####KC321#',
       '################',
     ],
