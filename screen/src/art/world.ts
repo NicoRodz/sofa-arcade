@@ -34,7 +34,7 @@ export class World {
   private burn: BurnView | null = null; // the oven that burns: warning bubble, flames, extinguisher (only when the round has it)
 
   constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, private puestos: () => Map<number, PuestoView>, bus: Emitter<GameEvents>, mapId: string, seed: number, private view?: RoundView) {
-    this.bg = buildBackground(scene, game.grid, mapId, seed);
+    this.bg = buildBackground(scene, game.grid, mapId, seed, game.rec?.topping);
     if (game.versus && view?.teams) this.tintKitchens(view);
     this.fx = new Fx(scene);
     this.stations = new StationViews(scene, game, this.fx);
@@ -232,7 +232,7 @@ export class World {
           const p = this.stations.pos(cur.chopAt);
           if (g.stations[cur.chopAt]?.kind === 'sink') this.fx.bubbles(p.x, p.y);
           else if (kind === 'stretch') this.fx.flourPuff(p.x, p.y);
-          else this.fx.chop(p.x, p.y, { raw0: 0, raw1: 1, raw2: 2 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2'] ?? 1);
+          else this.fx.chop(p.x, p.y, { raw0: 0, raw1: 1, raw2: 2, raw3: 1, raw4: 0 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2' | 'raw3' | 'raw4'] ?? 1);
         };
         const team = g.versus ? this.view?.teams?.[gp.team] : undefined;
         if (team) chef.setTeam(hexNum(team.color));
@@ -242,7 +242,7 @@ export class World {
       let action: 'none' | 'chop' | 'stretch' = 'none';
       if (gp.cutting && gp.chopAt >= 0 && !gp.dousing) { // (a chef putting a fire out holds the extinguisher: BurnView draws it, the knife stays put)
         const at = g.stations[gp.chopAt];
-        action = at?.kind === 'sink' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough
+        action = at?.kind === 'sink' || at?.kind === 'pot' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough, and folding the calzone kneads it
         chop.set(gp.chopAt, action);
       }
       const f = this.feet(gp);
