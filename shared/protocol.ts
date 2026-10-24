@@ -3,6 +3,7 @@ import { DEFAULT_GAME, DEFAULT_MODE, GAMES, gameInfo, isGameId, isModeId, resolv
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
 import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
 import { MAX_TEAMS, teamOf, type TeamInfo } from './teams';
+import { isVersusChoice, type VersusChoice } from './versusMaps';
 
 export { ROUND_MS } from './difficulty';
 export { MAX_TEAMS, type TeamInfo } from './teams';
@@ -55,7 +56,7 @@ export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' &
 export const SEED_MAX = 2 ** 32;
 export const isSeed = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) < SEED_MAX;
 // modeId + teams + teamsLocked: the lobby's mode and its teams (null until assigned; the screen owns them, the relay derives each phone's team from them).
-export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice; seed: number; modeId: ModeId; teams: TeamInfo[] | null; teamsLocked: boolean; modeOptions: ModeOptions }
+export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice | VersusChoice; seed: number; modeId: ModeId; teams: TeamInfo[] | null; teamsLocked: boolean; modeOptions: ModeOptions }
 // What a screen may send: a v1 screen leaves the team fields out and the parser fills the defaults (cooperative, no teams).
 type ConfigFromScreen = Omit<LobbyConfig, 'modeId' | 'teams' | 'teamsLocked' | 'modeOptions'> & Partial<Pick<LobbyConfig, 'modeId' | 'teams' | 'teamsLocked' | 'modeOptions'>>;
 export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY, map: DEFAULT_MAP, seed: 1, modeId: DEFAULT_MODE, teams: null, teamsLocked: false, modeOptions: {} };
@@ -203,7 +204,7 @@ export function parseClientMessage(raw: string): ClientMsg | null {
     case 'buzz':
       return num(m.playerId) && isBuzzKind(m.kind) ? { t: 'buzz', playerId: m.playerId, kind: m.kind } : null;
     case 'config':
-      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map) || !isSeed(m.seed)) return null;
+      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !(isMapChoice(m.map) || isVersusChoice(m.map)) || !isSeed(m.seed)) return null; // versus lobbies hold a versus map choice (V1.., vs-auto, vs-random)
       {
         const modeId = m.modeId === undefined ? DEFAULT_MODE : m.modeId; // a v1 screen sends none: cooperative
         const game = GAMES.find((g) => g.id === m.game)!;
