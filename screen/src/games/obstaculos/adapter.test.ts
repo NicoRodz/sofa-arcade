@@ -63,7 +63,8 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
     expect(p.x).toBe(s.world.players[0]!.body.x);
     expect(p.prevX).toBeLessThanOrEqual(p.x);
     expect(p.prevX).toBeGreaterThanOrEqual(x0 - 8);
-    expect(p.x - p.prevX).toBeLessThan(8); // one step of running is 5.5 px: the interpolation spans one step, not the whole frame history
+    expect(p.x - p.prevX).toBeGreaterThan(4); // one step of running is 5.5 px: prev is the position of the step before, not the current one
+    expect(p.x - p.prevX).toBeLessThan(8); // ...and only one step back, not the whole frame history
     expect(v.alpha).toBe(s.alpha);
   });
   it('shows lives, stars, time and where in the expedition we are', () => {
