@@ -18,7 +18,7 @@ const twinsOf = (m: Mechanic): Mechanic[] => EQUIVALENT.filter((g) => (g as read
 // Felt but not needed: no debut check, and nothing to prove. The rest of SIM_ONLY is `unverified`: only the sim bot of A2 can show its use.
 export const PASSIVE: readonly Mechanic[] = ['move', 'coyote', 'belt', 'crumble', 'lava'];
 
-export const modesOf = (l: CampaignLevel): GameMode[] => (l.mode === 'E' ? ['chain'] : l.mode === 'L' ? ['free'] : ['chain', 'free']);
+export const levelModes = (l: CampaignLevel): GameMode[] => (l.mode === 'E' ? ['chain'] : l.mode === 'L' ? ['free'] : ['chain', 'free']);
 // N=2 in the level's world: its coyote/buffer, hand zone and rope (physicsForCampaign, params.ropeLen). `diff` only matters outside a world.
 export const campaignEnv = (world: WorldId, mode: GameMode, allow?: ReadonlySet<Mechanic>): Env => ({ n: 2, mode, diff: 'hard', world, ...(allow ? { allow } : {}) });
 
@@ -72,7 +72,7 @@ export function learnLevel(levels: readonly CampaignLevel[], i: number): Learnin
 
   // 1. the bot with everything taught so far reaches the goal, the stars and the checkpoints, in every mode of the level
   const reports: ValidationReport[] = [];
-  for (const mode of modesOf(l)) {
+  for (const mode of levelModes(l)) {
     const r = validateState(def, campaignEnv(l.world, mode, known));
     reports.push(r);
     if (!r.ok) errors.push(`${l.id} ${mode}: not solvable with what is taught so far (${[...known].join(', ')}): ${r.errors.join('; ')}`);
@@ -85,7 +85,7 @@ export function learnLevel(levels: readonly CampaignLevel[], i: number): Learnin
   }
   // the lobby's Hard plays this level with the NEXT world's numbers (worldForDifficulty): it must stay solvable
   const hardWorld = worldForDifficulty(l.world, 'hard');
-  for (const mode of modesOf(l)) {
+  for (const mode of levelModes(l)) {
     const h = validateState(def, campaignEnv(hardWorld, mode, known));
     if (!h.ok) errors.push(`${l.id} ${mode}: not solvable with the lobby's Hard numbers (${hardWorld}): ${h.errors.join('; ')}`);
   }
@@ -110,7 +110,7 @@ export function learnLevel(levels: readonly CampaignLevel[], i: number): Learnin
     const without = new Set([...known].filter((m) => m !== x && !twins.includes(m)));
     const withX = new Set([...known].filter((m) => !twins.includes(m)));
     let fails = true, used = Infinity;
-    for (const mode of modesOf(l)) {
+    for (const mode of levelModes(l)) {
       const a = validateState(def, campaignEnv(l.world, mode, without));
       if (a.ok) { fails = false; errors.push(`${l.id} ${mode}: the bot without ${x}${twins.length ? ` and ${twins.join(', ')}` : ''} still finishes: ${x} is not needed here`); }
       const b = validateState(def, campaignEnv(l.world, mode, withX));

@@ -23,3 +23,5 @@ export { awardsOf, awards, type Awards } from './sim/rules';
 export { progressField as levelProgressField } from './sim/rules';
 export * from './sim/campaign';
 export { cameraHints, throwArc, type CameraHints } from './sim/campaignrules';
+export * from './mechanics';
+export * from './campaign';
