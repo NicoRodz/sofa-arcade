@@ -58,8 +58,11 @@ export const FLOORS: Record<string, [string, string]> = {
   '14': ['#E9DCE8', '#CDB6CB'],
   '15': ['#D9D5CC', '#B7B1A4'],
 };
+// Versus maps (V1.., the derived `<id>-vs`, the generated `vs-gen`) share one warm neutral floor: each kitchen is washed with its team's colour on top.
+export const VERSUS_FLOOR: [string, string] = ['#F4EBDB', '#E3D6BD'];
+export const isVersusMapId = (id: string) => /^V\d+$|-vs$|^vs-gen$/.test(id);
 export const floorPair = (mapId: string, seed = 0): [string, string] =>
-  FLOORS[mapId] ?? FLOORS[String(1 + (Math.abs(seed) % 5))]!;
+  isVersusMapId(mapId) ? VERSUS_FLOOR : FLOORS[mapId] ?? FLOORS[String(1 + (Math.abs(seed) % 5))]!;
 
 // Timer colour for tickets and bars: basil, warn under 50%, danger under 25%.
 export const timerColor = (left: number) => (left > 0.5 ? C.basil : left > 0.25 ? C.warn : C.danger);

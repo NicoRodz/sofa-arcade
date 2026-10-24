@@ -34,6 +34,8 @@ export interface GameEvents {
   vipNew: { recipe: Recipe }; // the golden order appeared in every queue
   vipWon: { team: number; player: number; tie: boolean }; // first delivery of the VIP (tie: another team delivered it in the same tick, both win)
   vipLost: { team: number }; // the rival won: this team's VIP order is a normal order now
+  comeback: { team: number }; // NOT from the sim: the host raises it when the team that was behind takes the lead (versusReport.nextLead; never while the scoreboard is hidden)
+  pantryRefill: { stock: number }; // the shared pantry (V2) got a unit back (the takes are plain itemPicked)
   teamK: { team: number; k: number }; // the handicap multiplier of a team changed (a chef dropped for good)
   playerDropped: { player: number; team: number }; // the chef is a ghost for GHOST_MS; what it carried went to the nearest free counter
   playerBack: { player: number; team: number }; // it reconnected in time: same team, same chef
