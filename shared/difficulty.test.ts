@@ -1,19 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { DIFFICULTIES, params, pressure, starThresholds, stars } from './difficulty';
+import { DIFFICULTIES, maxOrders, orderEveryMs, params, starThresholds, stars } from './difficulty';
 
-describe('pressure f(N)', () => {
-  it('is 1.0 / 1.4 / 1.8 / 2.0 for 2 / 4 / 6 / 8 players', () => {
-    expect([2, 4, 6, 7, 8].map(pressure)).toEqual([1, 1.4, 1.8, 2, 2].map((v) => expect.closeTo(v, 9)));
+describe('order flow by team size', () => {
+  it('Normal interval is 40 s / (0.6 + 0.2 N): 40, 28.6, 22.2 and 18.2 s for 2, 4, 6 and 8 players', () => {
+    expect([2, 4, 6, 8].map((n) => orderEveryMs('normal', n))).toEqual([40_000, 40_000 / 1.4, 40_000 / 1.8, 40_000 / 2.2].map((v) => expect.closeTo(v, 6)));
+  });
+  it('Easy stretches the interval x1.25 and Hard shrinks it x0.8', () => {
+    expect(orderEveryMs('easy', 2)).toBe(50_000);
+    expect(orderEveryMs('hard', 2)).toBe(32_000);
+  });
+  it('queue is 2 + ceil(N/2): 3, 4, 4, 5, 5, 6, 6 for 2..8', () => {
+    expect([2, 3, 4, 5, 6, 7, 8].map(maxOrders)).toEqual([3, 4, 4, 5, 5, 6, 6]);
+  });
+  it('initial orders, cheese share and plates follow the design bands', () => {
+    expect([2, 3, 4, 5, 6, 7, 8].map((n) => params('normal', n).initialOrders)).toEqual([1, 2, 2, 2, 2, 3, 3]);
+    expect([2, 4, 6, 8].map((n) => params('normal', n).cheesePct)).toEqual([30, 40, 50, 60]);
+    expect([2, 4, 6, 8].map((n) => params('normal', n).plates)).toEqual([3, 4, 5, 6]);
   });
 });
 
 describe('params', () => {
-  it('matches the base table with 2 players', () => {
+  it('keeps the base table for patience, cutting, cooking, tip and penalty', () => {
     const [e, n, h] = DIFFICULTIES.map((d) => params(d, 2));
     expect([e!.orderTtlMs, n!.orderTtlMs, h!.orderTtlMs]).toEqual([90_000, 70_000, 55_000]);
-    expect([e!.orderEveryMs, n!.orderEveryMs, h!.orderEveryMs]).toEqual([30_000, 22_000, 16_000]);
-    expect([e!.maxOrders, n!.maxOrders, h!.maxOrders]).toEqual([3, 4, 5]);
-    expect([e!.initialOrders, n!.initialOrders, h!.initialOrders]).toEqual([1, 1, 2]);
     expect([e!.cutMs, n!.cutMs, h!.cutMs]).toEqual([1500, 2000, 2500]);
     expect([e!.cookMs, n!.cookMs, h!.cookMs]).toEqual([6000, 8000, 10_000]);
     expect([e!.tipMax, n!.tipMax, h!.tipMax]).toEqual([10, 8, 6]);
@@ -21,15 +30,7 @@ describe('params', () => {
     expect([e!.roundMs, e!.reward]).toEqual([180_000, 20]);
   });
 
-  it('scales the interval by f(N) and the queue by floor((N-2)/2) with 4 and 8 players', () => {
-    expect(params('normal', 4).orderEveryMs).toBeCloseTo(22_000 / 1.4, 6);
-    expect(params('normal', 4).maxOrders).toBe(5);
-    expect(params('hard', 8).orderEveryMs).toBe(8000);
-    expect(params('hard', 8).maxOrders).toBe(8);
-    expect(params('easy', 3).maxOrders).toBe(3);
-  });
-
-  it('does not scale patience, cutting, cooking or penalty', () => {
+  it('does not scale patience, cutting, cooking or penalty with the team', () => {
     for (const d of DIFFICULTIES) {
       const a = params(d, 2), b = params(d, 8);
       expect([b.orderTtlMs, b.cutMs, b.cookMs, b.penalty]).toEqual([a.orderTtlMs, a.cutMs, a.cookMs, a.penalty]);
@@ -44,9 +45,9 @@ describe('params', () => {
 
 describe('stars', () => {
   it('thresholds follow k * 25 * (180 / interval)', () => {
-    expect(starThresholds('normal', 2)).toEqual([82, 133, 174]); // 25 * 180/22 = 204.5
-    expect(stars('normal', 2, 81)).toBe(0);
-    expect(stars('normal', 2, 82)).toBe(1);
-    expect(stars('normal', 2, 200)).toBe(3);
+    expect(starThresholds('normal', 2)).toEqual([45, 73, 96]); // 25 * 180/40 = 112.5
+    expect(stars('normal', 2, 44)).toBe(0);
+    expect(stars('normal', 2, 45)).toBe(1);
+    expect(stars('normal', 2, 100)).toBe(3);
   });
 });

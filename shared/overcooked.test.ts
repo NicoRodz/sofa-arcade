@@ -247,7 +247,7 @@ describe('orders and score', () => {
     expect(g.score).toBe(30);
     run(g, 1000);
     expect(g.score).toBe(30 + P.penalty);
-    expect(g.orders.length).toBe(3); // spawned at 0, 22, 44 and 66 s; the first expired
+    expect(g.orders.length).toBe(1); // spawned at 0 and 40 s; the first expired
   });
 
   it('the score never drops below zero, and easy has no penalty', () => {
@@ -267,14 +267,14 @@ describe('orders and score', () => {
     expect(g.orders.length).toBe(1);
     run(g, P.orderEveryMs);
     expect(g.orders.length).toBe(2);
-    expect(setup('hard').orders.length).toBe(2);
+    expect(createGame({ difficulty: 'hard', n: 4 }).orders.length).toBe(2); // initial orders follow the team size, not the difficulty
   });
 
   it('the order queue is capped at the difficulty maximum', () => {
     const g = setup('easy');
     run(g, params('easy', 2).orderEveryMs * 5);
     expect(g.orders.length).toBeLessThanOrEqual(3);
-    expect(createGame({ difficulty: 'normal', n: 6 }).params.maxOrders).toBe(6);
+    expect(createGame({ difficulty: 'normal', n: 6 }).params.maxOrders).toBe(5);
   });
 });
 
