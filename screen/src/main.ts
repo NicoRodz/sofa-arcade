@@ -5,6 +5,7 @@ import {
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/difficulty';
 import { GAMES } from '@party/shared/games';
+import { howToHtml } from '@party/shared/render';
 import { generate, resolveMap } from '@party/shared/generate';
 import { FIXED_MAPS, MAP_IDS, fixedMap, isMapChoice, type MapChoice } from '@party/shared/maps';
 import { initAudio } from './audio';
@@ -13,6 +14,7 @@ import { chefCanvas } from './art/chef';
 import { chefOf } from './art/tokens';
 import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
 import { iris } from './art/iris';
+import { HOWTO_MS, howToOnKey, isExpired, progress, secondsLeft, type HowToState } from './howto';
 import { MainScene, type Host } from './scene';
 import { C, H, W } from './art/tokens';
 import { percentile } from '@party/shared/stats';
@@ -106,11 +108,45 @@ const setConfig = (patch: Partial<LobbyConfig>) => {
   sendMsg({ t: 'config', ...config });
   renderUi();
 };
+// Starting a round: iris closes, the "how to play" card shows for ~10 s (Enter skips), iris again, then the countdown.
 function startRound() {
-  if (phase !== 'lobby' || starting || !canStart([...players.values()].map((p) => p.info))) return;
+  if (phase !== 'lobby' || starting || howTo || !canStart([...players.values()].map((p) => p.info))) return;
   starting = true;
-  iris(() => { dispatch('start'); gateUntil = performance.now() + 700; }, () => { starting = false; });
+  iris(() => openHowTo('start'), () => { starting = false; });
 }
+function beginRound() {
+  if (starting) return;
+  starting = true;
+  iris(() => { closeHowTo(); dispatch('start'); gateUntil = performance.now() + 700; }, () => { starting = false; });
+}
+
+let howTo: HowToState | null = null;
+function openHowTo(mode: HowToState['mode']) {
+  const g = GAMES.find((x) => x.id === config.game) ?? GAMES[0];
+  howTo = { mode, startedAt: performance.now() };
+  $('howtogame').textContent = g.name;
+  $('howtobody').innerHTML = howToHtml(g.howTo);
+  $('howtobar').style.visibility = mode === 'start' ? 'visible' : 'hidden';
+  $('howto').classList.remove('off');
+  tickHowTo();
+}
+function closeHowTo() {
+  howTo = null;
+  $('howto').classList.add('off');
+}
+function tickHowTo() {
+  if (!howTo) return;
+  const now = performance.now();
+  if (howTo.mode === 'start') {
+    if (isExpired(howTo, now)) { beginRound(); return; }
+    ($('howtofill') as HTMLElement).style.width = `${(progress(howTo.startedAt, now) * 100).toFixed(1)}%`;
+    $('howtohint').innerHTML = `Empieza en <b>${secondsLeft(howTo.startedAt, now)}</b> · Enter para saltar`;
+  } else {
+    ($('howtofill') as HTMLElement).style.width = '0';
+    $('howtohint').innerHTML = '<b>H</b> o <b>Enter</b> para cerrar';
+  }
+}
+setInterval(tickHowTo, 100);
 const dispatch = (ev: Parameters<typeof nextPhase>[1]) => {
   if (ev === 'start' && !canStart([...players.values()].map((p) => p.info))) return;
   setPhase(nextPhase(phase, ev));
@@ -362,9 +398,16 @@ $('maps').addEventListener('click', (e) => {
 $('again-seed').addEventListener('click', () => setConfig({ seed: (config.seed + 1) % 2 ** 32 }));
 $('start').addEventListener('click', () => startRound());
 $('again').addEventListener('click', () => dispatch('again'));
+$('howtobtn').addEventListener('click', () => { if (!howTo && !starting && phase === 'lobby') openHowTo('preview'); });
+$('howto').addEventListener('click', () => { if (howTo?.mode === 'preview') closeHowTo(); });
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); }
-  else if (e.key === 'Enter' && phase === 'lobby') startRound();
+  if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); return; }
+  const act = starting ? 'none' : howToOnKey(howTo, phase, e.key);
+  if (act === 'open-preview') { openHowTo('preview'); return; }
+  if (act === 'close') { closeHowTo(); return; }
+  if (act === 'skip') { beginRound(); return; }
+  if (howTo) return; // the card swallows Enter
+  if (e.key === 'Enter' && phase === 'lobby') startRound();
   else if (e.key === 'Enter' && phase === 'results') dispatch('again');
 });
 setInterval(() => {

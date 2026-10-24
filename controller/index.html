@@ -42,6 +42,21 @@
   .act.down { transform: translateY(1.2vmin); box-shadow: 0 .5vmin 0 rgba(43,27,23,.4); filter: brightness(1.12); }
   .brand { font: 800 44px var(--font); letter-spacing: 1px; margin: 0; color: var(--c); -webkit-text-stroke: 9px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(43,27,23,.35); }
   #game { font-size: 24px; color: var(--cheese); }
+  #howto { z-index: 5; background: var(--cocoa); justify-content: flex-start; gap: 6px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+  body[data-view][data-howto=open] #howto { display: flex; }
+  #howto h2 { margin: 0; font: 800 26px/1 var(--font); color: var(--c); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; }
+  #howto .gname { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,244,224,.6); }
+  #howto .steps { list-style: none; margin: 4px 0 0; padding: 0; width: 100%; max-width: 760px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; flex: 1; min-height: 0; }
+  #howto .steps li { display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 14px; border: 3px solid var(--ink); border-radius: 14px; background: var(--cream); color: var(--ink); position: relative; text-align: left; }
+  #howto .steps .n { position: absolute; left: -8px; top: -8px; width: 26px; height: 26px; border-radius: 50%; background: var(--tomato); border: 3px solid var(--ink); color: var(--cream); font: 800 15px/20px var(--font); text-align: center; }
+  #howto .steps .ic { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; color: var(--tomato2); background: #F6E8CB; }
+  #howto .steps .ico { width: 30px; height: 30px; }
+  #howto .steps .tx { font: 800 clamp(14px, 4.4vmin, 19px)/1.15 var(--font); }
+  #howto .note { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--cheese); }
+  #howto .note .ic { width: 22px; height: 22px; }
+  #howto .note .ico { width: 100%; height: 100%; fill: var(--cheese); }
+  #howtoclose { margin-top: 2px; font-size: 18px; padding: 8px 24px; }
+  #howtoopen { margin-top: 6px; font-size: 16px; padding: 6px 16px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
   #zoomfix { display: none; position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 30; font-size: 17px; padding: 10px 18px; background: var(--cream); color: var(--ink); text-shadow: none; }
   body.zoomed #zoomfix { display: block; }
   #hud { position: absolute; top: 6px; left: 10px; font-size: 14px; color: var(--c); opacity: .9; pointer-events: none; }
@@ -60,8 +75,9 @@
   <div id="btnB" class="act"></div>
   <div id="hud"></div>
 </div>
-<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div></div>
+<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><button id="howtoopen" type="button">Cómo se juega</button></div>
 <div id="results" class="overlay"><div>Fin de la ronda</div><div id="rank" class="big"></div><div id="myscore"></div></div>
+<div id="howto" class="overlay"><h2>Cómo se juega</h2><div id="howtogame" class="gname"></div><div id="howtobody" style="display:contents"></div><button id="howtoclose" type="button">Entendido</button></div>
 <div id="rotate" class="overlay"><div class="big">&#8635;</div><div>Gira tu teléfono</div></div>
 <button id="zoomfix" type="button">Pantalla ampliada. Toca para restablecer</button>
 <script type="module" src="/src/main.ts"></script>

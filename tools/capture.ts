@@ -224,7 +224,20 @@ async function main() {
       await cdp.eval(`document.getElementById('name').value = 'Nico'; document.getElementById('join').requestSubmit()`);
       await sleep(1200);
       await cdp.shot('phone-lobby');
-      if (process.env.PHONE_DISMISS) { await cdp.eval(process.env.PHONE_DISMISS); await sleep(300); await cdp.shot('phone-lobby-closed'); }
+      console.log('how-to card open after joining:', await cdp.eval(`document.body.dataset.howto`));
+      const tap = async (x: number, y: number) => {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+        await sleep(60);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await sleep(400);
+      };
+      await tap(422, 195);
+      console.log('after one tap:', await cdp.eval(`document.body.dataset.howto`));
+      await cdp.shot('phone-lobby-closed');
+      const ob = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('howtoopen').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+      await tap(ob.x, ob.y);
+      console.log('after tapping "Cómo se juega":', await cdp.eval(`document.body.dataset.howto`));
+      await tap(422, 195);
       fake.send(JSON.stringify({ t: 'phase', phase: 'playing' }));
       await sleep(800);
       await cdp.shot('phone-play');
@@ -256,6 +269,29 @@ async function main() {
       await sleep(300);
       console.log('banner after scale back to 1:', await cdp.eval(`document.body.classList.contains('zoomed')`));
       fake.close();
+    }
+    if (what === 'howto') {
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const phase = () => cdp.eval<string>('window.__pg.snapshot().phase');
+      await open('HOWT'); await join('HOWT', 4, fixedMap('1')!.rows);
+      await sleep(800); await cdp.shot('howto-lobby');
+      await key('h'); await sleep(700); await cdp.shot('howto-preview');
+      await key('Enter'); await sleep(300);
+      console.log('after Enter on preview: card hidden =', await cdp.eval(`document.getElementById('howto').classList.contains('off')`), 'phase =', await phase());
+      await click('[data-diff="easy"]'); await click('#start');
+      await sleep(1400); await cdp.shot('howto-card');
+      await sleep(3000); await cdp.shot('howto-card-t4');
+      const t0 = Date.now(); await key('Enter');
+      await sleep(1300); await cdp.shot('howto-after-skip');
+      console.log('after skip: phase =', await phase(), 'ms since Enter', Date.now() - t0);
+      await sleep(3000); await cdp.shot('howto-countdown');
+    }
+    if (what === 'howto-timeout') {
+      await open('HOWX'); await join('HOWX', 2, fixedMap('1')!.rows);
+      await click('#start'); const t0 = Date.now();
+      let ph = 'lobby';
+      while (Date.now() - t0 < 20_000 && ph !== 'playing') { await sleep(100); ph = await cdp.eval<string>('window.__pg.snapshot().phase'); }
+      console.log('howto-timeout: reached playing after', Date.now() - t0, 'ms (expect ~11 s: iris half + card 10 s + iris half)');
     }
     if (what === 'lobby' || what === 'all') {
       await open('LOBY');

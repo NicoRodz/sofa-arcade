@@ -48,7 +48,7 @@
   .btn:active { transform: scale(0.98) translateY(4px); box-shadow: 0 4px 0 rgba(43,27,23,.35); }
   .btn:disabled { filter: grayscale(.8) brightness(.8); opacity: .6; cursor: not-allowed; transform: none; }
   #start { position: absolute; left: 80px; top: 872px; width: 520px; height: 96px; font-size: 44px; }
-  #starthint { position: absolute; left: 80px; top: 984px; width: 520px; text-align: center; font: 600 22px var(--font); color: rgba(255,244,224,.7); }
+  #starthint { position: absolute; left: 80px; top: 976px; width: 520px; text-align: center; font: 600 22px var(--font); color: rgba(255,244,224,.7); }
 
   #chips { position: absolute; left: 650px; top: 200px; width: 1190px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
   .chip { height: 112px; border: 4px solid var(--c, var(--muted)); border-radius: 16px; background: var(--cream); box-shadow: 0 6px 0 rgba(43,27,23,.25); position: relative; display: flex; align-items: center; padding-left: 12px; gap: 14px; overflow: hidden; }
@@ -108,6 +108,25 @@
   @keyframes crownbob { to { transform: translateX(-50%) translateY(-6px) rotate(4deg); } }
   #again { margin-top: 26px; }
 
+  #howto { position: fixed; inset: 0; z-index: 40; background: rgba(28,16,12,.78); backdrop-filter: blur(5px); }
+  #howtoInner { position: absolute; inset: 0; margin: auto; width: 1480px; height: max-content; padding: 26px 48px 30px; animation: slideup .5s cubic-bezier(.2,1.2,.3,1) both; }
+  #howto h2 { margin: 0; text-align: center; font: 800 68px/1 var(--font); color: var(--tomato); -webkit-text-stroke: 14px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 rgba(43,27,23,.3); }
+  #howto .gname { text-align: center; font: 800 30px var(--font); letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin: 14px 0 18px; }
+  #howto .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+  #howto .steps li { display: flex; align-items: center; gap: 20px; min-height: 160px; padding: 16px 22px; border: 4px solid var(--ink); border-radius: 18px; background: #F6E8CB; position: relative; box-shadow: 0 6px 0 rgba(43,27,23,.2); }
+  #howto .steps .n { position: absolute; left: -16px; top: -16px; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); border: 4px solid var(--ink); color: var(--cream); font: 800 32px/44px var(--font); text-align: center; text-shadow: 0 2px 0 rgba(43,27,23,.4); }
+  #howto .steps .ic { flex: none; width: 112px; height: 112px; border-radius: 50%; background: var(--cream); border: 4px solid var(--ink); display: flex; align-items: center; justify-content: center; color: var(--tomato2); }
+  #howto .steps .ic .ico { width: 70px; height: 70px; }
+  #howto .steps .tx { font: 800 40px/1.12 var(--font); color: var(--ink); }
+  #howto .note { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 22px; font: 800 36px var(--font); color: var(--basil2); }
+  #howto .note .ic { width: 48px; height: 48px; color: var(--cheese2); }
+  #howto .note .ico { width: 100%; height: 100%; fill: var(--cheese); }
+  #howtobar { height: 18px; margin-top: 24px; border: 3px solid var(--ink); border-radius: 12px; background: #E5D4B0; overflow: hidden; }
+  #howtofill { height: 100%; width: 0; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+  #howtohint { text-align: center; font: 800 30px var(--font); color: var(--muted); margin-top: 12px; }
+  #howtohint b { color: var(--ink); }
+  #howtobtn { margin-top: 10px; height: 44px; font-size: 22px; padding: 0 18px; }
+
   #hudhint { display: none; }
   #iris { position: fixed; left: 50%; top: 50%; width: 260vmax; height: 260vmax; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 60; border: 26px solid var(--crust); outline: 6px solid var(--ink); box-shadow: 0 0 0 150vmax var(--cocoa), inset 0 0 0 14px #D7362A; display: none; }
 
@@ -146,7 +165,7 @@
       <div id="hints"><div id="diffinfo" class="hint"></div><div id="mapinfo" class="hint"></div></div>
     </div>
     <button id="start" class="btn" disabled>¡A cocinar!</button>
-    <div id="starthint">Enter para empezar</div>
+    <div id="starthint">Enter para empezar<br><button id="howtobtn" class="pill">H · Cómo se juega</button></div>
   </section>
 </div>
   <section id="results" class="off">
@@ -159,6 +178,15 @@
       <button id="again" class="btn">Volver al lobby</button>
     </div></div>
   </section>
+<section id="howto" class="off">
+  <div class="stage"><div id="howtoInner" class="panel">
+    <h2>Cómo se juega</h2>
+    <div class="gname" id="howtogame"></div>
+    <div id="howtobody"></div>
+    <div id="howtobar"><div id="howtofill"></div></div>
+    <div id="howtohint"></div>
+  </div></div>
+</section>
 <div id="iris"></div>
 <div id="debug" class="off">
   <div id="warn"></div>
