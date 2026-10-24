@@ -11,6 +11,7 @@ export const ICONS = {
   plate: '<circle cx="24" cy="24" r="18"/><circle cx="24" cy="24" r="10"/>',
   cheese: '<path d="M5 36L43 20V36Z"/><path d="M5 36L43 20"/><circle cx="19" cy="31" r="2.4"/><circle cx="31" cy="28" r="1.8"/>',
   wash: '<path d="M6 24H42V29a11 11 0 0 1-11 11H17A11 11 0 0 1 6 29Z"/><path d="M15 12c-3 4-3 7 0 7s3-3 0-7ZM27 6c-3 4-3 7 0 7s3-3 0-7Z"/>',
+  jump: '<path d="M24 40V10M12 22L24 10L36 22"/><path d="M13 43H35"/>',
   star: '<path d="M24 5L29.5 17.5L43 19L33 28.5L36 42L24 35L12 42L15 28.5L5 19L18.5 17.5Z"/>',
 } as const;
 

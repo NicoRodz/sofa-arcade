@@ -32,12 +32,36 @@ export const GAMES = [
   },
 ] as const satisfies readonly GameDef[];
 
-export type GameId = (typeof GAMES)[number]['id'];
-export const GAME_IDS: readonly GameId[] = GAMES.map((g) => g.id);
+// Games that exist and are accepted everywhere (config, phones) but the lobby does not list yet.
+// Moving an entry from HIDDEN_GAMES to GAMES is what publishes it (obstaculos: F3).
+export const HIDDEN_GAMES = [
+  {
+    id: 'obstaculos', name: 'Obstáculos en cadena', blurb: 'Una cuadrilla de exploradores cruza cinco paisajes: salten, suban sobre sus compañeros y lleguen TODOS a la meta.', players: '2 a 8 jugadores',
+    controls: {
+      stick: { label: 'Moverse', icon: 'move' },
+      btn1: { label: 'Saltar', icon: 'jump' },
+      btn2: { label: 'Agarrar', icon: 'grab' },
+    },
+    howTo: {
+      steps: [
+        { icon: 'star', text: 'Lleguen TODOS a la meta' },
+        { icon: 'jump', text: 'Súbete sobre un compañero para llegar más alto' },
+        { icon: 'grab', text: 'B agarra; con un compañero, B otra vez lo lanza. Sin nada, te planta' },
+        { icon: 'plate', text: 'Si te quedas fuera de cámara, vuelves en burbuja' },
+      ],
+      note: 'Todos cooperan por el equipo',
+    },
+  },
+] as const satisfies readonly GameDef[];
+
+export const ALL_GAMES: readonly GameDef[] = [...GAMES, ...HIDDEN_GAMES];
+export type GameId = ((typeof GAMES)[number] | (typeof HIDDEN_GAMES)[number])['id'];
+export const GAME_IDS: readonly GameId[] = GAMES.map((g) => g.id); // the listed ones
+export const ALL_GAME_IDS: readonly GameId[] = ALL_GAMES.map((g) => g.id as GameId);
 export const DEFAULT_GAME: GameId = GAMES[0].id;
-export const isGameId = (v: unknown): v is GameId => GAME_IDS.includes(v as GameId);
-export const gameName = (id: GameId): string => GAMES.find((g) => g.id === id)?.name ?? id;
-export const gameInfo = (id: string, games: readonly GameDef[] = GAMES): GameInfo => {
+export const isGameId = (v: unknown): v is GameId => ALL_GAME_IDS.includes(v as GameId);
+export const gameName = (id: GameId): string => ALL_GAMES.find((g) => g.id === id)?.name ?? id;
+export const gameInfo = (id: string, games: readonly GameDef[] = ALL_GAMES): GameInfo => {
   const g: GameDef = games.find((x) => x.id === id) ?? games[0]!;
   return { controls: g.controls, howTo: g.howTo };
 };

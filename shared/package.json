@@ -2,6 +2,6 @@
   "name": "@party/shared",
   "private": true,
   "type": "module",
-  "exports": { ".": "./protocol.ts", "./stats": "./stats.ts", "./game": "./overcooked.ts", "./games": "./games.ts", "./difficulty": "./difficulty.ts", "./maps": "./maps.ts", "./generate": "./generate.ts", "./events": "./events.ts", "./icons": "./icons.ts", "./render": "./render.ts", "./puestos": "./puestos.ts" },
+  "exports": { ".": "./protocol.ts", "./stats": "./stats.ts", "./game": "./overcooked.ts", "./games": "./games.ts", "./difficulty": "./difficulty.ts", "./maps": "./maps.ts", "./generate": "./generate.ts", "./events": "./events.ts", "./icons": "./icons.ts", "./render": "./render.ts", "./puestos": "./puestos.ts", "./obstaculos": "./games/obstaculos/index.ts" },
   "scripts": { "typecheck": "tsc -p ." }
 }
