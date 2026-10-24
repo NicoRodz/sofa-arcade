@@ -9,8 +9,8 @@
 import { MECHANICS, type Mechanic } from '../mechanics';
 import type { Biome, Cell } from '../types';
 import { C_1_1, C_1_2, C_1_3, C_1_4, C_1_5, C_1_6, C_1_7 } from './world1';
-import { WORLD } from './world';
-import type { CampaignLevel, CampaignMode, WorldId } from './types';
+import type { WorldId } from '../sim/campaign';
+import type { CampaignLevel, CampaignMode } from './types';
 
 type Row = [id: string, name: string, introduces: Mechanic[], requires: Mechanic[], mode: CampaignMode, origin: 'new' | 'relocate', extra?: Partial<CampaignLevel>];
 
@@ -66,17 +66,17 @@ const ROWS: Row[] = [
   ['C5', 'Cumbre del Volcán', [], [], 'E', 'new'],
 ];
 
-const worldOf = (id: string): WorldId => (id.startsWith('C') ? 'C' : (Number(id[0]) as WorldId));
-const biomeOf = (w: WorldId, id: string): Biome => (w === 'C' ? (['beach', 'forest', 'glacier', 'mine', 'volcano'] as const)[Number(id[1]) - 1]! : WORLD[w].biome);
+const WORLDS = ['beach', 'forest', 'glacier', 'mine', 'volcano'] as const;
+const worldOf = (id: string): WorldId => (id.startsWith('C') ? 'summit' : WORLDS[Number(id[0]) - 1]!);
+const biomeOf = (w: WorldId, id: string): Biome => (w === 'summit' ? WORLDS[Number(id[1]) - 1]! : w);
 const starsOf = (rows: readonly string[]): Cell[] => rows.flatMap((r, y) => [...r].flatMap((c, x) => (c === '*' ? [{ x, y }] : [])));
 
 export const CAMPAIGN: readonly CampaignLevel[] = ROWS.map(([id, name, introduces, requires, mode, origin, extra], i) => {
   const world = worldOf(id);
   const def = (BUILT as Record<string, (typeof BUILT)[keyof typeof BUILT]>)[id];
-  const w = world === 'C' ? 'C' : world;
   return {
-    id, world, index: world === 'C' ? Number(id[1]) : Number(id[2]), order: i + 1, name, biome: biomeOf(w, id),
-    boss: world !== 'C' && id.endsWith('7'), introduces, requires, mode, origin, status: def ? 'built' : 'planned',
+    id, world, index: world === 'summit' ? Number(id[1]) : Number(id[2]), order: i + 1, name, biome: biomeOf(world, id),
+    boss: world !== 'summit' && id.endsWith('7'), introduces, requires, mode, origin, status: def ? 'built' : 'planned',
     ...(def ? { def } : {}), collectibles: def ? starsOf(def.rows) : [], validatedFor: def ? [2] : [], ...extra,
   } satisfies CampaignLevel;
 });

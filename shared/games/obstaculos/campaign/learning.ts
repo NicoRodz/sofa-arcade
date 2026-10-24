@@ -1,14 +1,14 @@
 // The learning test (plan §8, A1): a bot that only uses the mechanics already taught must finish every level; at the debut of X the bot without X
 // must fail and the one with X must show at least one use (a green with no use is suspicious); D falls in the world's band; every star and checkpoint
 // is reachable; the hints respect the lint. The "bot" is the validator restricted by `env.allow` (validator/graph.ts), so it is the game's own physics.
-import { ROPE_LEN } from '../constants';
 import { isModeled, type Mechanic, type ModeledMechanic } from '../mechanics';
 import { difficultyOf } from '../metric';
 import { validateState, type Uses, type ValidationReport } from '../validator';
 import type { Env } from '../validator';
 import type { GameMode, LevelDef } from '../types';
 import type { CampaignLevel } from './types';
-import { BAND_SLACK, CAMPAIGN_ROPE_MULT, HINT_FREE_FROM, HINT_MAX_PER_LEVEL, HINT_MAX_WORDS, WORLD, inBand } from './world';
+import { worldForDifficulty, type WorldId } from '../sim/campaign';
+import { BAND_SLACK, HINT_FREE_FROM, HINT_MAX_PER_LEVEL, HINT_MAX_WORDS, WORLD_NAME, bandOf, checkpointEverySec, inBand } from './world';
 
 // Mechanics that the validator's graph reaches the same places with: a level cannot prove one necessary against a bot that already has the other.
 // (The throw's reach is the tower's: 5.4 tiles across and 4 up. If S1 gives the throw a niche, drop the pair and 1-5 gets a real debut test.)
@@ -19,7 +19,8 @@ const twinsOf = (m: Mechanic): Mechanic[] => EQUIVALENT.filter((g) => (g as read
 export const PASSIVE: readonly Mechanic[] = ['move', 'coyote', 'belt', 'crumble', 'lava'];
 
 export const modesOf = (l: CampaignLevel): GameMode[] => (l.mode === 'E' ? ['chain'] : l.mode === 'L' ? ['free'] : ['chain', 'free']);
-export const campaignEnv = (mode: GameMode, allow?: ReadonlySet<Mechanic>): Env => ({ n: 2, mode, diff: 'hard', ropeLen: ROPE_LEN * CAMPAIGN_ROPE_MULT, ...(allow ? { allow } : {}) });
+// N=2 in the level's world: its coyote/buffer, hand zone and rope (physicsForCampaign, params.ropeLen). `diff` only matters outside a world.
+export const campaignEnv = (world: WorldId, mode: GameMode, allow?: ReadonlySet<Mechanic>): Env => ({ n: 2, mode, diff: 'hard', world, ...(allow ? { allow } : {}) });
 
 // Everything taught up to and including level i.
 export function knownThrough(levels: readonly CampaignLevel[], i: number): Set<Mechanic> {
@@ -72,22 +73,28 @@ export function learnLevel(levels: readonly CampaignLevel[], i: number): Learnin
   // 1. the bot with everything taught so far reaches the goal, the stars and the checkpoints, in every mode of the level
   const reports: ValidationReport[] = [];
   for (const mode of modesOf(l)) {
-    const r = validateState(def, campaignEnv(mode, known));
+    const r = validateState(def, campaignEnv(l.world, mode, known));
     reports.push(r);
     if (!r.ok) errors.push(`${l.id} ${mode}: not solvable with what is taught so far (${[...known].join(', ')}): ${r.errors.join('; ')}`);
     else {
       if (r.stars.found !== r.stars.total || r.stars.total !== 3) errors.push(`${l.id} ${mode}: stars ${r.stars.found}/${r.stars.total}, want 3/3 reachable`);
-      const want = Math.max(1, Math.floor(r.pathSeconds / WORLD[l.world].checkpointSec));
+      const want = Math.max(1, Math.floor(r.pathSeconds / checkpointEverySec(l.world)));
       if (r.checkpoints.found !== r.checkpoints.total) errors.push(`${l.id} ${mode}: checkpoints ${r.checkpoints.found}/${r.checkpoints.total} reachable`);
-      if (r.checkpoints.total < want) errors.push(`${l.id} ${mode}: ${r.checkpoints.total} checkpoints for a ${r.pathSeconds.toFixed(0)} s route, want at least ${want} (one per ${WORLD[l.world].checkpointSec} s)`);
+      if (r.checkpoints.total < want) errors.push(`${l.id} ${mode}: ${r.checkpoints.total} checkpoints for a ${r.pathSeconds.toFixed(0)} s route, want at least ${want} (one per ${checkpointEverySec(l.world)} s)`);
     }
+  }
+  // the lobby's Hard plays this level with the NEXT world's numbers (worldForDifficulty): it must stay solvable
+  const hardWorld = worldForDifficulty(l.world, 'hard');
+  for (const mode of modesOf(l)) {
+    const h = validateState(def, campaignEnv(hardWorld, mode, known));
+    if (!h.ok) errors.push(`${l.id} ${mode}: not solvable with the lobby's Hard numbers (${hardWorld}): ${h.errors.join('; ')}`);
   }
   const good = reports.filter((r) => r.ok);
   const uses = good.reduce((u, r) => sum(u, r.uses), {} as Uses);
 
   // 2. D in the world's band
   const d = good.length ? good.reduce((s, r) => s + difficultyOf(r, def).D, 0) / good.length : 0;
-  if (good.length && !inBand(l.world, d)) errors.push(`${l.id}: D ${d.toFixed(1)} outside the ${WORLD[l.world].name} band ${WORLD[l.world].band.join('-')} (+-${BAND_SLACK})`);
+  if (good.length && !inBand(l.world, d)) errors.push(`${l.id}: D ${d.toFixed(1)} outside the ${WORLD_NAME[l.world]} band ${bandOf(l.world).join('-')} (+-${BAND_SLACK})`);
 
   // 3. it only uses what it declares (and what is taught): every mechanic of the route is in introduces or requires (a twin counts)
   const declared = new Set<Mechanic>([...l.introduces, ...l.requires, 'jump']);
@@ -104,9 +111,9 @@ export function learnLevel(levels: readonly CampaignLevel[], i: number): Learnin
     const withX = new Set([...known].filter((m) => !twins.includes(m)));
     let fails = true, used = Infinity;
     for (const mode of modesOf(l)) {
-      const a = validateState(def, campaignEnv(mode, without));
+      const a = validateState(def, campaignEnv(l.world, mode, without));
       if (a.ok) { fails = false; errors.push(`${l.id} ${mode}: the bot without ${x}${twins.length ? ` and ${twins.join(', ')}` : ''} still finishes: ${x} is not needed here`); }
-      const b = validateState(def, campaignEnv(mode, withX));
+      const b = validateState(def, campaignEnv(l.world, mode, withX));
       if (!b.ok) errors.push(`${l.id} ${mode}: the bot with ${x} does not finish: ${b.errors.join('; ')}`);
       const u = b.uses[x] ?? 0;
       used = Math.min(used, u);

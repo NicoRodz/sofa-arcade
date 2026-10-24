@@ -4,6 +4,11 @@ import { flatCap, toLevel } from '../generate/assemble';
 import type { EntityParam, LevelDef, Tether } from '../types';
 import { LEVEL_14 } from '../levels';
 import type { Mechanic } from '../mechanics';
+import { ROPE_LEN } from '../constants';
+import { parseLevel } from '../parse';
+import { campaignParams, dparamsForCampaign, physicsForCampaign } from '../sim/campaign';
+import { physicsFor } from '../sim/player';
+import { buildGraph } from './graph';
 import { validateLevel, validateState } from './validate';
 
 // Level = flat cap with S + the canvas + flat cap with G. Standing row 14, floor top row 15.
@@ -181,5 +186,23 @@ describe('allow: an explorer that only knows some mechanics (the learning test\'
     expect(validateState(wallLevel(4), { n: 2, mode: 'free', diff: 'hard' }).ok).toBe(true);
     const u = validateState(wallLevel(4), { n: 2, mode: 'free', diff: 'hard' }).uses;
     expect((u.tower ?? 0) + (u.throw ?? 0)).toBeGreaterThanOrEqual(1); // the pioneer goes up by tower or by throw, whichever is cheaper
+  });
+});
+
+describe('campaign environment: the validator reads S1\'s parameters (sim/campaign.ts), not the legacy difficulty table', () => {
+  it('env.world gives the world\'s coyote/buffer (physicsForCampaign), hand zone and rope (params.ropeLen)', () => {
+    const c = campaignParams(2, 'beach');
+    const g = buildGraph(parseLevel(wallLevel(3)), { n: 2, mode: 'chain', diff: 'hard', world: 'beach' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
+    expect(g.params).toEqual(physicsForCampaign(c));
+    expect(g.dp.handZoneTiles).toBe(dparamsForCampaign(c).handZoneTiles);
+    expect(g.ropeLen).toBeCloseTo(c.ropeLen, 6);
+    const legacy = buildGraph(parseLevel(wallLevel(3)), { n: 2, mode: 'chain', diff: 'hard' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
+    expect(legacy.params).toEqual(physicsFor('hard'));
+    expect(legacy.ropeLen).toBe(ROPE_LEN);
+  });
+  it('the rope of the campaign (201.6 px) lets a tower of 2 beat a 4-tile wall tied; the legacy 168 px does not', () => {
+    expect(validateState(wallLevel(4), { n: 2, mode: 'chain', diff: 'hard', world: 'beach' }).ok).toBe(true);
+    expect(validateState(wallLevel(4), { n: 2, mode: 'chain', diff: 'hard' }).ok).toBe(false);
+    expect(validateState(wallLevel(5), { n: 2, mode: 'chain', diff: 'hard', world: 'beach' }).ok).toBe(false); // 240 px: even 201.6 cannot hold it
   });
 });

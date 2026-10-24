@@ -177,7 +177,7 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
 
   const errors: string[] = [];
   const seconds = pathSeconds(p, path, S.open.size + S.doors.size + rings.size);
-  hazardCheck(p, g, path, seconds, env.diff, errors);
+  hazardCheck(p, g, path, seconds, errors);
   const uses = usesOf(p, g, g2, path, followPath, extra, gadgetUses);
   const cpFound = p.markers.checkpoint.filter((c) => [...fr.reached].some((id) => touches(g2.segs[id]!, c, 1))).length;
   const starsFound = p.markers.star.filter((c) => [...fr.reached].some((id) => touches(g2.segs[id]!, c, 3))).length;
@@ -223,10 +223,10 @@ function pathSeconds(p: ParsedLevel, path: Edge[], gadgets: number): Timeline {
 }
 
 // Moving hazards (plan §9): the path, with a 1.5x human slowdown, must stay ahead of the avalanche front / above the lava.
-function hazardCheck(p: ParsedLevel, g: Graph, path: Edge[], tl: Timeline, diff: Difficulty, errors: string[]): void {
+function hazardCheck(p: ParsedLevel, g: Graph, path: Edge[], tl: Timeline, errors: string[]): void {
   const hz = p.def.hazard;
   if (!hz || hz.kind === 'tide') return;
-  const mult = { easy: 0.7, normal: 1, hard: 1.25 }[diff];
+  const mult = g.dp.hazardSpeed; // the legacy table (0.7 / 1 / 1.25) or the campaign world's
   const v = hz.speed * mult; // tiles per second
   const frozen = 3 * p.markers.checkpoint.length; // each checkpoint freezes the lava 3 s (plan §10, level 14); credited to both
   const goal = p.markers.goal[0];
@@ -239,7 +239,6 @@ function hazardCheck(p: ParsedLevel, g: Graph, path: Edge[], tl: Timeline, diff:
       if (cell.y + 1 >= surface - 1) { errors.push(`risingLava catches the path at (${cell.x},${cell.y}) t=${slow.toFixed(1)}s: lava surface at row ${surface.toFixed(1)}`); return; }
     } else if (cell.x < v * slow - 5) { errors.push(`avalanche catches the path at (${cell.x},${cell.y}) t=${slow.toFixed(1)}s: front at col ${(v * slow - 5).toFixed(1)}`); return; }
   }
-  void g;
 }
 
 export interface LevelVerdict { ok: boolean; reports: ValidationReport[]; errors: string[] }

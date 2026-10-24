@@ -3,7 +3,7 @@
 import type { Mechanic } from '../mechanics';
 import type { Biome, Cell, LevelDef } from '../types';
 
-export type WorldId = 1 | 2 | 3 | 4 | 5 | 'C'; // 1 Playa, 2 Bosque, 3 Glaciar, 4 Mina, 5 Volcan, C Cumbres
+import type { WorldId } from '../sim/campaign'; // 'beach' | 'forest' | 'glacier' | 'mine' | 'volcano' | 'summit' (Cumbres)
 export type CampaignMode = 'E' | 'L' | 'E/L'; // Encadenados, Libres, either
 export type LevelStatus = 'built' | 'planned'; // planned: metadata only, the tilemap comes with its phase (A5, A6, A7)
 

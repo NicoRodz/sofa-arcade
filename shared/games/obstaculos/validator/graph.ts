@@ -1,19 +1,29 @@
 // Terrain for one game state (which objectives are open), standing segments, and the reachability graph between them.
 // Pioneer edges = what the first explorer can do (jumps, towers of k, throws, rope swings); follower edges add the planted
 // partner's hand (plan §5) on top of the plain ones.
-import { DIFFICULTY_PARAMS, JUMP_V0, PLAYER_H, PLAYER_W, ROPE_LEN, TILE, TRAMPOLINE_MULT } from '../constants';
+import { DIFFICULTY_PARAMS, type DifficultyParams, JUMP_V0, PLAYER_H, PLAYER_W, ROPE_LEN, TILE, TRAMPOLINE_MULT } from '../constants';
 import { T, isHazardKind, isSolidKind } from '../legend';
 import type { ParsedLevel, LevelObject } from '../parse';
 import { buildGrid, boxHitsSolid, tileAt, tileOf, type TileGrid } from '../sim/tiles';
 import { physicsFor, type PhysicsParams } from '../sim/player';
+import { campaignParams, dparamsForCampaign, physicsForCampaign, type WorldId } from '../sim/campaign';
 import { THROW_VX, THROW_VY } from '../sim/tuning';
 import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode } from '../types';
 import type { Mechanic } from '../mechanics';
 import { EDGE_MOVE_SCALE, feetOfRow, simPlan, type CatchZone, type Landing, type Plan } from './sim';
 
-// allow: the mechanics the explorer knows (the learning test's bot); undefined = all of them. ropeLen: the rope of the players (default ROPE_LEN).
-export interface Env { n: number; mode: GameMode; diff: Difficulty; allow?: ReadonlySet<Mechanic>; ropeLen?: number }
+// allow: the mechanics the explorer knows (the learning test's bot); undefined = all of them.
+// world: a campaign world (sim/campaign.ts): its coyote/buffer, hand zone and rope replace the legacy `diff` table. ropeLen overrides the rope (px).
+export interface Env { n: number; mode: GameMode; diff: Difficulty; allow?: ReadonlySet<Mechanic>; world?: WorldId; ropeLen?: number }
+// The numbers a validation runs with: the campaign world's (S1's campaignParams, N-dependent) or the legacy difficulty's.
+export function envParams(env: Env): { physics: PhysicsParams; dp: DifficultyParams; ropeLen: number } {
+  if (env.world) {
+    const c = campaignParams(env.n, env.world);
+    return { physics: physicsForCampaign(c), dp: dparamsForCampaign(c), ropeLen: env.ropeLen ?? c.ropeLen };
+  }
+  return { physics: physicsFor(env.diff), dp: DIFFICULTY_PARAMS[env.diff], ropeLen: env.ropeLen ?? ROPE_LEN };
+}
 export const can = (env: Env, m: Mechanic): boolean => !env.allow || env.allow.has(m);
 export interface OpenState { open: Set<string>; doors: Set<number> }
 export type EdgeKind = 'jump' | 'tower' | 'hand' | 'throw' | 'swing' | 'ladder' | 'ride';
@@ -30,6 +40,7 @@ export interface Graph {
   // shifted: platform tiles that exist only at the far end of a mover or balance (reachable by riding, never by a direct jump)
   grid: TileGrid; shifted: Uint8Array; segs: Seg[]; cellSeg: Int32Array; adj: Edge[][]; params: PhysicsParams; env: Env;
   ladders: { x: number; y0: number; y1: number }[];
+  dp: DifficultyParams; ropeLen: number;
 }
 
 export const CHAIN_MAX_DX = 4.5 * TILE; // chain mode: the rope (3.5 tiles) plus a tile of slack keeps a single jump under this, takeoff to landing
@@ -37,7 +48,7 @@ export const CHAIN_MAX_DX = 4.5 * TILE; // chain mode: the rope (3.5 tiles) plus
 // lands the climber at hypot(rise, one body width) from a base that hugs the wall: past ROPE_LEN no tower, hand or throw gets anybody
 // up, whatever the jump envelope says. Only n = 2 is modelled (one link); with more players the cordada chain reaches further (plan B1).
 export const ROPE_RISE_DX = PLAYER_W;
-export const ropeCapsRise = (env: Env, rise: number): boolean => env.mode === 'chain' && env.n === 2 && rise > 0 && Math.hypot(rise, ROPE_RISE_DX) > (env.ropeLen ?? ROPE_LEN);
+export const ropeCapsRise = (env: Env, rise: number): boolean => env.mode === 'chain' && env.n === 2 && rise > 0 && Math.hypot(rise, ROPE_RISE_DX) > envParams(env).ropeLen;
 export const SWING_NEAR = 4.5 * TILE; // the swinger hangs from a ring within this of it (L + 1 tile)
 export const SWING_FAR = 7.5 * TILE; // and lets go anywhere within this: pendulum + rope jump (assumption, F2a calibrates)
 const HAND_FACE_PX = 20;
@@ -238,8 +249,7 @@ export const surfaceTiming = (g: TileGrid, row: number, x0: number, x1: number):
 export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[][], opts: GraphOpts): Graph {
   const { grid, shifted } = buildTerrain(p, env, S, doors);
   const { segs, cellSeg } = buildSegments(grid);
-  const params = physicsFor(env.diff);
-  const dp = DIFFICULTY_PARAMS[env.diff];
+  const { physics: params, dp, ropeLen } = envParams(env);
   const adj: Edge[][] = segs.map(() => []);
   const ladders = findLadders(grid);
   const best = new Map<string, Edge>();
@@ -362,7 +372,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
   }
 
   for (const e of best.values()) adj[e.from]!.push(e);
-  return { grid, shifted, segs, cellSeg, adj, params, env, ladders };
+  return { grid, shifted, segs, cellSeg, adj, params, env, ladders, dp, ropeLen };
 }
 
 const adjOpen = (p: ParsedLevel, ch: string, S: OpenState): boolean => S.open.has(ch) || !Object.values(p.def.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever') && q.opens === ch);

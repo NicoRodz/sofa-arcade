@@ -13,7 +13,7 @@ const st = (id: keyof typeof STATION_LEVELS, name: string, mechanics: Mechanic[]
 
 export const PRACTICE: readonly PracticeStation[] = [
   st('p-move', 'Mover', ['move'], [], '1-1'),
-  st('p-jump', 'Saltar', ['jump'], [], '1-1'),
+  st('p-jump', 'Saltar', ['jump', 'coyote'], [], '1-1'),
   st('p-rope', 'Cuerda', ['rope'], ['jump'], '1-2'),
   st('p-signals', 'Señales', ['signals'], ['jump'], '1-2'),
   st('p-tower', 'Torre y mano', ['tower', 'hand'], ['jump'], '1-3'),
@@ -29,14 +29,14 @@ export function learnStation(s: PracticeStation): StationReport {
   const errors: string[] = [];
   const mode = s.mode === 'L' ? 'free' : 'chain';
   const all = new Set<Mechanic>([...s.mechanics, ...s.requires]);
-  const r = validateState(s.def, campaignEnv(mode, all));
+  const r = validateState(s.def, campaignEnv('beach', mode, all));
   if (!r.ok) errors.push(`${s.id}: not solvable with ${[...all].join(', ')}: ${r.errors.join('; ')}`);
   const verified: Mechanic[] = [], unverified: Mechanic[] = [];
   for (const x of s.mechanics) {
     if (!isModeled(x)) { unverified.push(x); continue; }
     verified.push(x);
     const without = new Set([...all].filter((m) => m !== x));
-    if (validateState(s.def, campaignEnv(mode, without)).ok) errors.push(`${s.id}: finishes without ${x}`);
+    if (validateState(s.def, campaignEnv('beach', mode, without)).ok) errors.push(`${s.id}: finishes without ${x}`);
     if (r.ok && (r.uses[x] ?? 0) < 1) errors.push(`${s.id}: the bot that knows ${x} finishes without using it`);
   }
   if (s.def.hints?.length) errors.push(`${s.id}: a station has no hints (the silhouette teaches)`);
