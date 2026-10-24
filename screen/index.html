@@ -13,10 +13,22 @@
   #debug th:first-child, #debug td:first-child { text-align: left; }
   #debug button { margin-right: 6px; margin-top: 6px; }
   #warn { color: #ff5252; font-weight: bold; }
+  #join { position: fixed; left: 16px; bottom: 16px; background: #000c; padding: 12px; border-radius: 10px; text-align: center; }
+  #join .title { font: bold 16px system-ui, sans-serif; margin-bottom: 8px; }
+  #qr { width: 220px; height: 220px; background: #fff; border-radius: 6px; }
+  #qr svg { width: 100%; height: 100%; display: block; }
+  #joinurl { margin-top: 8px; font-size: 14px; user-select: all; }
+</style>
+<style>
 </style>
 </head>
 <body>
 <div id="game"></div>
+<div id="join">
+  <div class="title">Escanea para unirte</div>
+  <div id="qr"></div>
+  <div id="joinurl"></div>
+</div>
 <div id="debug">
   <div id="warn"></div>
   <div id="summary"></div>

@@ -132,6 +132,14 @@ new Phaser.Game({
   scene: Main,
 });
 
+fetch('/api/info')
+  .then((r) => r.json())
+  .then(({ url, qrSvg }: { url: string; qrSvg: string }) => {
+    document.getElementById('qr')!.innerHTML = qrSvg;
+    document.getElementById('joinurl')!.textContent = url;
+  })
+  .catch(() => { document.getElementById('joinurl')!.textContent = 'no se pudo obtener la URL'; });
+
 const f = (n: number) => (Number.isFinite(n) ? n.toFixed(0) : '-');
 const $ = (id: string) => document.getElementById(id)!;
 setInterval(() => {

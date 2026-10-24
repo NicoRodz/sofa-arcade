@@ -2,7 +2,9 @@ import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import express from 'express';
+import QRCode from 'qrcode';
 import { attachRelay } from './relay.js';
+import { lanIp } from './lan.js';
 
 export type Mode = 'none' | 'dev' | 'static';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -15,6 +17,13 @@ export async function startServer(opts: { port: number; mode: Mode }) {
   const closers: (() => Promise<unknown>)[] = [];
 
   app.get('/', (_req, res) => res.redirect('/screen'));
+
+  app.get('/api/info', async (req, res) => {
+    const port = req.socket.localPort ?? opts.port;
+    const url = `http://${lanIp()}:${port}/c`;
+    const qrSvg = await QRCode.toString(url, { type: 'svg', margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+    res.json({ url, qrSvg });
+  });
 
   if (opts.mode === 'dev') {
     const { createServer: createVite } = await import('vite');
