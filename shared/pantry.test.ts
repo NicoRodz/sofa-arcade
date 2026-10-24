@@ -107,9 +107,13 @@ describe('the pantry only exists where the map declares it', () => {
     expect(r.g.stations.some((s) => s.pantry)).toBe(false);
   });
   it('a coop round ignores a declared pantry', () => {
-    const g = createGame({ rows: fixedMap('1')!.rows, n: 2, shared: [[0, 0]] });
+    const rows = fixedMap('1')!.rows;
+    const y = rows.findIndex((r) => r.includes('3') || r.includes('1')), x = rows[y]!.search(/[13]/); // a real crate tile: declaring it shared must still do nothing in coop
+    expect(rows[y]![x]).toMatch(/[13]/);
+    const g = createGame({ rows, n: 2, shared: [[x, y]] });
     expect(g.pantry).toBeNull();
     expect(g.stations.some((s) => s.pantry)).toBe(false);
+    expect(g.stations.find((s) => s.tx === x && s.ty === y)!.owner).toBe(0);
   });
   it('the lobby\'s start of a V2 round builds the pantry from the map', () => {
     const teams = [{ id: 0, ...VERSUS_STYLES[0]!, playerIds: [1, 2] }, { id: 1, ...VERSUS_STYLES[1]!, playerIds: [3, 4] }];
