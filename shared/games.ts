@@ -59,7 +59,7 @@ export const GAMES = [
     modes: [
       { id: 'coop', label: 'Cooperativo', players: [2, 8], teams: COOP_TEAMS },
       {
-        id: 'versus', label: 'Duelo de cocinas', players: [2, 8], soon: true, // F1 opens it in the lobby; the sim does not run it yet (F2)
+        id: 'versus', label: 'Duelo de cocinas', players: [2, 8], // the lobby only offers it from 4 (even) or an odd count with a valid handicap: see versusAvailability
         teams: { count: [2, 2], maxRatio: 2, handicap: 'score-k', styles: VERSUS_STYLES },
         howTo: {
           steps: [

@@ -3,13 +3,17 @@ import { DEFAULT_GAME, DEFAULT_MODE, GAMES, gameInfo, isGameId, isModeId, resolv
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
 import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
 import { MAX_TEAMS, teamOf, type TeamInfo } from './teams';
+import { isNavKey, type NavKey } from './captain';
+import { isVersusChoice, type VersusChoice } from './versusMaps';
 
 export { ROUND_MS } from './difficulty';
 export { MAX_TEAMS, type TeamInfo } from './teams';
+export { KEYBOARD_QUIET_MS, NAV_KEYS, NAV_TO_KEY, acceptNav, captainOf, isNavKey, navToKey, remoteBlocked, remoteVisible, type NavKey } from './captain';
 
 // 2: teams (modeId, teams and teamsLocked in the lobby config, teamId per player, 'setTeam' and 'you'). A v1 screen or phone never sends
 // those fields and is read as cooperative with no teams assigned.
-export const PROTOCOL_VERSION = 2;
+// 3: the Captain ('captain' to everyone, 'nav' from the Captain's phone to the screens, stamped with 'from'). Additive: an older screen or phone ignores both.
+export const PROTOCOL_VERSION = 3;
 export const WS_PATH = '/ws';
 export const DEFAULT_ROOM = 'main';
 export const INPUT_HZ = 30;
@@ -55,7 +59,7 @@ export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' &
 export const SEED_MAX = 2 ** 32;
 export const isSeed = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) < SEED_MAX;
 // modeId + teams + teamsLocked: the lobby's mode and its teams (null until assigned; the screen owns them, the relay derives each phone's team from them).
-export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice; seed: number; modeId: ModeId; teams: TeamInfo[] | null; teamsLocked: boolean; modeOptions: ModeOptions }
+export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice | VersusChoice; seed: number; modeId: ModeId; teams: TeamInfo[] | null; teamsLocked: boolean; modeOptions: ModeOptions }
 // What a screen may send: a v1 screen leaves the team fields out and the parser fills the defaults (cooperative, no teams).
 type ConfigFromScreen = Omit<LobbyConfig, 'modeId' | 'teams' | 'teamsLocked' | 'modeOptions'> & Partial<Pick<LobbyConfig, 'modeId' | 'teams' | 'teamsLocked' | 'modeOptions'>>;
 export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY, map: DEFAULT_MAP, seed: 1, modeId: DEFAULT_MODE, teams: null, teamsLocked: false, modeOptions: {} };
@@ -81,7 +85,8 @@ export type ClientMsg =
   | ({ t: 'config' } & ConfigFromScreen) // screen only
   | { t: 'puesto'; puestos: PuestoId[] } // phone: "Cambiar" picked another puesto
   | { t: 'setTeam'; teamId: number } // phone: "Cambiar de equipo" (the screen decides: it is the host and owns the lobby)
-  | { t: 'buzz'; playerId: number; kind: BuzzKind }; // screen only: vibrate that phone
+  | { t: 'buzz'; playerId: number; kind: BuzzKind } // screen only: vibrate that phone
+  | { t: 'nav'; key: NavKey }; // phone: a D-pad button (only the Captain's is forwarded; the relay stamps who sent it)
 
 export type ServerMsg =
   | { t: 'joined'; player: PublicPlayer; room: string; v: number }
@@ -98,7 +103,9 @@ export type ServerMsg =
   | { t: 'puesto'; playerId: number; puestos: PuestoId[] }
   | { t: 'setTeam'; playerId: number; teamId: number } // to the screens: this phone asks to change team
   | { t: 'you'; teamId: number; color: string; icon: string; sideLabel?: string } // to one phone: its team (when it has one)
-  | { t: 'buzz'; kind: BuzzKind };
+  | { t: 'buzz'; kind: BuzzKind }
+  | { t: 'captain'; playerId: number | null } // to everyone: who holds the crown now (null: nobody is connected)
+  | { t: 'nav'; from: number; key: NavKey }; // to the screens: the Captain's phone pressed this. `from` is set by the relay from the socket, never taken from the payload
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
@@ -202,8 +209,10 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       return intIn(m.teamId, 0, MAX_TEAMS - 1) ? { t: 'setTeam', teamId: m.teamId } : null;
     case 'buzz':
       return num(m.playerId) && isBuzzKind(m.kind) ? { t: 'buzz', playerId: m.playerId, kind: m.kind } : null;
+    case 'nav':
+      return isNavKey(m.key) ? { t: 'nav', key: m.key } : null; // anything else in the payload (a fake `from`) is dropped here
     case 'config':
-      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map) || !isSeed(m.seed)) return null;
+      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !(isMapChoice(m.map) || isVersusChoice(m.map)) || !isSeed(m.seed)) return null; // versus lobbies hold a versus map choice (V1.., vs-auto, vs-random)
       {
         const modeId = m.modeId === undefined ? DEFAULT_MODE : m.modeId; // a v1 screen sends none: cooperative
         const game = GAMES.find((g) => g.id === m.game)!;

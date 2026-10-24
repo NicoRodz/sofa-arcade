@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone> [outDir]
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,8 +7,9 @@ import path from 'node:path';
 import { WebSocket } from 'ws';
 import { startServer } from '../server/src/server';
 import { fixedMap } from '../shared/maps';
+import { versusMap } from '../shared/versusMaps';
 
-const PORT = Number(process.env.PORT ?? 3200), CDP = Number(process.env.CDP ?? 9333);
+const PORT = Number(process.env.PG_PORT ?? 3200), CDP = Number(process.env.PG_CDP ?? 9333);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const what = process.argv[2] ?? 'all';
 const outDir = path.resolve(process.argv[3] ?? 'docs/screens');
@@ -306,6 +307,77 @@ async function main() {
       await sleep(300);
       console.log('banner after scale back to 1:', await cdp.eval(`document.body.classList.contains('zoomed')`));
       fake.close();
+    }
+    if (what === 'versus-phone') {
+      // the controller in versus: team card + "Cambiar de equipo" in the lobby, the team strip on the pad. A fake screen owns the teams (the real one does the same).
+      const room = 'VSPH';
+      const fake = new WebSocket(`ws://127.0.0.1:${PORT}/ws?role=screen&room=${room}`);
+      await new Promise((r) => fake.once('open', r));
+      const got: string[] = [];
+      fake.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'setTeam') got.push(JSON.stringify(m)); });
+      const team = (id: number, name: string, color: string, icon: string, side: string, playerIds: number[]) => ({ id, name, color, icon, side, playerIds });
+      const cfg = (locked: boolean, a: number[], b: number[]) => ({ t: 'config', game: 'pizzas', difficulty: 'normal', map: 'V1', seed: 1, modeId: 'versus', teamsLocked: locked, modeOptions: { hiddenScore: true, handicap: true },
+        teams: [team(0, 'Picantes', '#F26A1B', '▲', 'izquierda', a), team(1, 'Frescos', '#1E6BD6', '●', 'derecha', b)] });
+      fake.send(JSON.stringify(cfg(false, [1, 2, 3], [4, 5, 6]))); fake.send(JSON.stringify({ t: 'phase', phase: 'lobby' }));
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
+      await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+      await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=${room}` });
+      await sleep(1200);
+      await cdp.eval(`document.getElementById('name').value = 'Nico'; document.getElementById('join').requestSubmit()`);
+      await sleep(1200);
+      await cdp.eval(`document.getElementById('howto').dispatchEvent(new PointerEvent('pointerup'))`); await sleep(300);
+      await cdp.shot('vsphone-lobby');
+      const tap = async (sel: string) => {
+        const r = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.x, y: r.y, id: 1 }] }); await sleep(60);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(400);
+      };
+      await tap('#teamswap');
+      console.log('screen got:', got.join(' '));
+      fake.send(JSON.stringify(cfg(false, [2, 3], [4, 5, 6, 1]))); await sleep(500); // the host applies the move
+      console.log('strip after the move:', await cdp.eval(`document.getElementById('tcname').textContent + ' ' + document.getElementById('tcside').textContent`));
+      await cdp.shot('vsphone-lobby-moved');
+      fake.send(JSON.stringify(cfg(true, [2, 3], [4, 5, 6, 1]))); await sleep(400);
+      console.log('swap disabled when locked:', await cdp.eval(`document.getElementById('teamswap').disabled`), await cdp.eval(`document.getElementById('teamswap').textContent`));
+      await cdp.shot('vsphone-lobby-locked');
+      fake.send(JSON.stringify({ t: 'phase', phase: 'playing' })); await sleep(600);
+      await cdp.shot('vsphone-play');
+      fake.send(JSON.stringify(Object.assign(cfg(true, [1, 2, 3], [4, 5, 6]), { modeId: 'coop', teams: null }))); await sleep(400);
+      console.log('coop again: team strip =', await cdp.eval(`document.body.dataset.team`));
+      fake.close();
+    }
+    if (what === 'versus') {
+      // Versus F1: lobby with 6 players (3 v 3) and 5 (3 v 2, k), a V1 round with 6 bots, the time-up banner and the results
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = versusMap('V1')!.rows;
+      await open('VS06'); await join('VS06', 6, rows);
+      await cdp.shot('vs-lobby-coop-6');
+      await click('[data-mode="versus"]'); await sleep(1000);
+      await cdp.shot('vs-lobby-6');
+      bots.splice(0).forEach((b) => b.close());
+      await open('VS05'); await join('VS05', 5, rows);
+      await click('[data-mode="versus"]'); await sleep(1000);
+      await cdp.shot('vs-lobby-5');
+      bots.splice(0).forEach((b) => b.close());
+      await open('VS02'); await join('VS02', 2, rows);
+      await click('[data-mode="versus"]'); await sleep(600);
+      await cdp.shot('vs-lobby-2-refused');
+      bots.splice(0).forEach((b) => b.close());
+      await open('VS6P'); await join('VS6P', 6, rows);
+      await click('[data-mode="versus"]'); await click('[data-map="V1"]'); await click('[data-diff="easy"]'); await sleep(400);
+      await click('#start'); await sleep(1500); await cdp.shot('vs-howto'); await key('Enter');
+      await sleep(2100); await cdp.shot('vs-6-countdown');
+      bots.forEach((b) => b.startSending());
+      timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+      const both = await waitFor((s) => (s as any).teams?.every((t: any) => t.delivered >= 1), Number(process.env.WAIT_MS ?? 110_000));
+      console.log('both teams delivered:', !!both, JSON.stringify((both as any)?.teams));
+      await cdp.shot('vs-6-play');
+      await cdp.eval('window.__pg.fastForward(12000)'); await sleep(2500); await cdp.shot('vs-6-last-seconds');
+      await sleep(11000); await cdp.shot('vs-6-timeup');
+      await sleep(5000); await cdp.shot('vs-6-results');
+      console.log('final', JSON.stringify(await cdp.eval('JSON.parse(JSON.stringify({ t: window.__pg.snapshot().teams, w: window.__pg.snapshot().winner, ph: window.__pg.snapshot().phase }))')));
+      timers.splice(0).forEach(clearInterval);
+      bots.splice(0).forEach((b) => b.close());
     }
     if (what === 'howto') {
       const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);

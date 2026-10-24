@@ -2,6 +2,12 @@
   "name": "controller",
   "private": true,
   "type": "module",
-  "scripts": { "build": "vite build", "typecheck": "tsc -p ." },
-  "dependencies": { "@party/shared": "*", "nipplejs": "^1.0.4" }
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc -p . && tsc -p test"
+  },
+  "dependencies": {
+    "@party/shared": "*",
+    "nipplejs": "^1.0.4"
+  }
 }

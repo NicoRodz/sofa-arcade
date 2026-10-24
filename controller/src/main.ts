@@ -1,15 +1,16 @@
 import nipplejs from 'nipplejs';
 import { DIFFICULTY_LABEL } from '@party/shared/difficulty';
 import { fixedMap } from '@party/shared/maps';
+import { VERSUS_AUTO, VERSUS_RANDOM, versusMap } from '@party/shared/versusMaps';
 import { gameName, type GameControls, type HowTo } from '@party/shared/games';
-import { controlHtml, howToHtml, iconSvg } from '@party/shared/render';
+import { esc, howToHtml, iconSvg } from '@party/shared/render';
 import { PUESTOS, type PuestoId } from '@party/shared/puestos';
 import { parseObstOptions, setupLabel } from '@party/shared/obstaculos/lobby';
 import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
-  BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
-  type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg,
+  BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
+  type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg, type TeamInfo,
 } from '@party/shared';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -61,6 +62,8 @@ let started = false;
 let halted = false; // server refused us (e.g. room full): stop retrying until the page is shown again
 let phase: Phase = 'menu'; // until the screen says otherwise the phone waits for the game to be picked
 let myId = 0;
+let myName = ''; // as the relay registered it (trimmed)
+let captainId: number | null = null; // who holds the crown (the relay says); the Captain gets the D-pad
 let lastPong = 0;
 const room = new URLSearchParams(location.search).get('room') || DEFAULT_ROOM;
 const view = (v: string) => { document.body.dataset.view = v; };
@@ -72,10 +75,29 @@ store.set('pg.token', token);
 let name = store.get('pg.name') ?? '';
 
 // Labels and icons come from the game registry via the config message: nothing here knows a specific game.
+// The circle (the touch area) carries the icon only; the label goes in a plate underneath, outside the touch area.
+function setControl(circle: HTMLElement, plate: HTMLElement, c: GameControls['stick']) {
+  circle.innerHTML = iconSvg(c.icon);
+  plate.innerHTML = `<div class="pl"><span class="lbl">${esc(c.label)}</span>${c.hold ? '<span class="hold">mantén apretado</span>' : ''}</div>`;
+}
+// A long label shrinks (down to 8px) until it fits its plate instead of spilling over the neighbours.
+function fitLabels() {
+  for (const pl of Array.from(document.querySelectorAll<HTMLElement>('.plq .pl'))) {
+    const spans = Array.from(pl.querySelectorAll<HTMLElement>('.lbl, .hold'));
+    for (const sp of spans) sp.style.fontSize = '';
+    const avail = () => pl.parentElement!.clientWidth + 10 - 16; // plate: control width + 10, minus its side padding
+    for (const sp of spans) {
+      let size = parseFloat(getComputedStyle(sp).fontSize);
+      while (sp.scrollWidth > avail() + 0.5 && size > 8) { size -= 0.5; sp.style.fontSize = `${size}px`; }
+    }
+  }
+}
+window.addEventListener('resize', fitLabels);
 function applyControls(c: GameControls) {
-  $('stickhint').innerHTML = controlHtml(c.stick);
-  $('btnA').innerHTML = controlHtml(c.btn1);
-  $('btnB').innerHTML = controlHtml(c.btn2);
+  setControl($('stickhint'), $('stickLbl'), c.stick);
+  setControl($('btnA'), $('lblA'), c.btn1);
+  setControl($('btnB'), $('lblB'), c.btn2);
+  fitLabels();
 }
 
 // "Cómo se juega": one-view summary, closed with a tap. Opens on join and when the lobby picks a game not shown yet.
@@ -106,9 +128,62 @@ function buzz(kind: BuzzKind) {
   flashTimer = setTimeout(() => document.body.classList.remove('flash'), 120);
 }
 
+// Versus: the team of this phone (the relay sends `you` after every config), shown as a strip with its colour, name, icon and kitchen side,
+// and a button in the lobby to change team. Coop has no teams: nothing shows.
+let teams: TeamInfo[] | null = null;
+let teamsLocked = false;
+let myTeam: number | null = null;
+function showTeam(you: { teamId: number; color: string; icon: string; sideLabel?: string } | null) {
+  myTeam = you?.teamId ?? null;
+  document.body.dataset.team = you ? 'on' : 'off';
+  if (!you) return;
+  const name = teams?.find((t) => t.id === you.teamId)?.name ?? `Equipo ${you.teamId + 1}`;
+  document.documentElement.style.setProperty('--tc', you.color);
+  for (const k of ['', '2']) {
+    $(`tcicon${k}`).textContent = you.icon;
+    $(`tcname${k}`).textContent = name;
+    $(`tcside${k}`).textContent = you.sideLabel ? `· cocina ${you.sideLabel}` : '';
+  }
+}
+function applyTeams(t: TeamInfo[] | null, locked: boolean) {
+  teams = t && t.length > 1 ? t : null;
+  teamsLocked = locked;
+  if (!teams) showTeam(null);
+  ($('teamswap') as HTMLButtonElement).disabled = locked;
+  $('teamswap').textContent = locked ? 'Equipos bloqueados' : 'Cambiar de equipo';
+}
+$('teamswap').addEventListener('pointerup', (e) => {
+  e.preventDefault();
+  if (!teams || myTeam === null || teamsLocked) return;
+  const next = teams[(teams.findIndex((t) => t.id === myTeam) + 1) % teams.length]!; // two teams: the other one
+  tx({ t: 'setTeam', teamId: next.id });
+});
+
 const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
+
+// The Captain's remote: shown on every screen but the round, and only while the socket is joined (a button that cannot send would lie).
+const isCaptain = () => joined && captainId !== null && captainId === myId;
+function renderCaptain() {
+  document.body.dataset.remote = remoteVisible(isCaptain(), joined, phase) ? 'on' : 'off';
+  const crown = isCaptain() ? '👑 ' : '';
+  $('who').textContent = crown + myName;
+  $('who2').textContent = crown + myName;
+}
+for (const b of Array.from(document.querySelectorAll<HTMLElement>('#remote [data-nav]'))) {
+  const up = () => b.classList.remove('down');
+  // pointerdown (not click): the D-pad answers the instant the thumb lands, like the pad's buttons
+  b.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const key = b.dataset.nav;
+    if (!isNavKey(key) || !isCaptain()) return;
+    b.classList.add('down');
+    try { navigator.vibrate?.(8); } catch { /* no vibration API (iOS) */ }
+    tx({ t: 'nav', key }); // no id in it: the relay knows which phone this socket is
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, up);
+}
 
 // Suggested station card: informs, never blocks. "Cambiar" cycles to another puesto and tells the screen.
 let puestoPool: PuestoId[] = [];
@@ -151,6 +226,7 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
     $('myscore').textContent = mine ? 'puntos de equipo' : '';
   }
   view(p);
+  renderCaptain();
 }
 
 function connect() {
@@ -164,18 +240,25 @@ function connect() {
       joined = true;
       myId = m.player.id;
       document.documentElement.style.setProperty('--c', m.player.color);
-      $('who').textContent = m.player.name;
-      $('who2').textContent = m.player.name;
+      myName = m.player.name;
       hud(`${m.player.name} #${m.player.slot + 1}`);
+      renderCaptain();
     } else if (m.t === 'config') {
       $('game').textContent = gameName(m.game);
       applyControls(m.controls);
       renderHowTo(m.game, gameName(m.game), m.howTo);
+      applyTeams(m.teams, m.teamsLocked);
+      const mapName = m.map === 'auto' || m.map === VERSUS_AUTO ? 'Mapa al azar' : m.map === 'random' || m.map === VERSUS_RANDOM ? `Mapa aleatorio ${m.seed}` : (fixedMap(m.map) ?? versusMap(m.map))?.name ?? '';
       $('setup').textContent = m.game === 'obstaculos'
         ? setupLabel(parseObstOptions(m.modeOptions), m.difficulty, m.seed, DIFFICULTY_LABEL)
-        : `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
+        : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}`;
+    } else if (m.t === 'you') {
+      showTeam(m);
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores, m.puestos);
+    } else if (m.t === 'captain') {
+      captainId = m.playerId;
+      renderCaptain();
     } else if (m.t === 'buzz') {
       buzz(m.kind);
     } else if (m.t === 'pong') {
@@ -193,6 +276,7 @@ function connect() {
   sock.onclose = () => {
     if (sock !== ws) return;
     joined = false;
+    renderCaptain();
     if (halted) return;
     hud('reconnecting...');
     setTimeout(connect, 500);

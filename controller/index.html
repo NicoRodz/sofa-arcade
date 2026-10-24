@@ -10,67 +10,127 @@
     --ink: #2B1B17; --cream: #FFF4E0; --cocoa: #3A2A24; --tomato: #E63B2E; --tomato2: #B5281F; --basil: #3FA34D; --basil2: #2A7A36;
     --cheese: #FFD23F; --cheese2: #E8A317; --muted: #8A7461; --c: #E63B2E;
     --font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+    /* Notch, rounded corners, home indicator: nothing you read or press goes under them. */
+    --sl: env(safe-area-inset-left, 0px); --sr: env(safe-area-inset-right, 0px); --st: env(safe-area-inset-top, 0px); --sb: env(safe-area-inset-bottom, 0px);
+    /* The pad (landscape). Sizes follow the short side (vmin) so the same layout holds from 568x320 to 932x430. */
+    --bsz: 34vmin; /* diameter of an action button */
+    --ring: 32vmin; /* diameter of the stick hint */
+    --lbl: max(12px, 4.2vmin); --hold: max(10px, 2.8vmin); /* label sizes (labels live OUTSIDE the touch circles, in a plate underneath) */
+    --plate: calc(1.1 * var(--lbl) + 1.1 * var(--hold) + 6px + 1.5vmin); /* height reserved under a control for its plate */
+    --gutter: max(10px, var(--sl) + 10px);
+    --ar: max(4%, calc(var(--sr) + 10px)); /* right offset of button A */
+    --topA: min(52%, calc(100% - var(--sb) - var(--bsz) - var(--plate) - 1vmin)); /* lifts A only when the home indicator needs the room */
+    --topB: 9%;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--cocoa); color: var(--cream); font: 800 18px var(--font); overscroll-behavior: none; }
   body::before { content: ""; position: fixed; inset: 0; background: repeating-conic-gradient(rgba(255,255,255,.15) 0 25%, transparent 0 50%) 0 0 / 80px 80px; opacity: .1; pointer-events: none; }
-  #join { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 16px; align-items: center; justify-content: center; }
-  #join input { font: 800 20px var(--font); /* keep >= 16px: iOS zooms into smaller inputs on focus */ padding: 12px 16px; width: 70%; max-width: 320px; border-radius: 14px; border: 4px solid var(--ink); background: var(--cream); color: var(--ink); text-align: center; -webkit-user-select: text; user-select: text; }
-  button { font: 800 22px var(--font); color: var(--cream); padding: 12px 28px; border-radius: 16px; border: 4px solid var(--ink); background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); box-shadow: 0 6px 0 rgba(43,27,23,.4); text-shadow: 0 2px 0 rgba(43,27,23,.4); }
+  #join { position: fixed; inset: 0; display: flex; flex-direction: column; gap: clamp(8px, 3vmin, 16px); align-items: center; justify-content: center; padding: max(12px, var(--st)) max(12px, var(--sr)) max(12px, var(--sb)) max(12px, var(--sl)); }
+  #join input { font: 800 20px var(--font); /* keep >= 16px: iOS zooms into smaller inputs on focus */ min-height: 48px; padding: 8px 16px; width: 70%; max-width: 320px; border-radius: 14px; border: 4px solid var(--ink); background: var(--cream); color: var(--ink); text-align: center; -webkit-user-select: text; user-select: text; }
+  button { font: 800 22px var(--font); color: var(--cream); min-height: 48px; padding: 8px 28px; border-radius: 16px; border: 4px solid var(--ink); background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); box-shadow: 0 6px 0 rgba(43,27,23,.4); text-shadow: 0 2px 0 rgba(43,27,23,.4); }
   button:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(43,27,23,.4); }
   #pad { position: fixed; inset: 0; visibility: hidden; }
   body[data-view=playing] #pad { visibility: visible; }
   body[data-view] #join { display: none; }
-  .overlay { position: fixed; inset: 0; display: none; flex-direction: column; gap: 10px; align-items: center; justify-content: center; text-align: center; font-size: 22px; padding: 16px; }
+  .overlay { position: fixed; inset: 0; display: none; flex-direction: column; gap: clamp(4px, 1.6vmin, 10px); align-items: center; justify-content: center; text-align: center; font-size: clamp(16px, 5.6vmin, 22px); padding: max(12px, var(--st)) max(16px, var(--sr)) max(12px, var(--sb)) max(16px, var(--sl)); overflow-wrap: anywhere; }
   body[data-view=lobby] #wait, body[data-view=results] #results, body[data-view=menu] #choosing { display: flex; }
   #rotate { z-index: 10; }
   @media (orientation: portrait) { body[data-view] #rotate { display: flex; } }
-  .big { font-size: 56px; font-weight: 800; }
+  .big { font-size: clamp(36px, 14vmin, 56px); font-weight: 800; line-height: 1.1; }
+
+  /* ---- stick: the whole left half is the touch zone; the dashed ring is only a hint of where the thumb goes */
   #zone { position: absolute; left: 0; top: 0; width: 50%; height: 100%; }
-  #stickhint { position: absolute; left: 11%; top: 50%; width: 32vmin; height: 32vmin; margin-top: -16vmin; border-radius: 50%; border: 4px dashed rgba(255,244,224,.35); color: rgba(255,244,224,.6); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; transition: opacity .15s; }
-  #stickhint .ico { width: 12vmin; height: 12vmin; }
-  #stickhint .lbl { font-size: 4.6vmin; }
-  #stickhint.active { opacity: 0; }
-  .act { position: absolute; width: 34vmin; height: 34vmin; border-radius: 50%; border: 5px solid var(--ink); background: linear-gradient(var(--btn, var(--tomato)) 0 50%, var(--btn2, var(--tomato2)) 50% 100%); color: var(--cream); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6vmin; line-height: 1; text-align: center; padding: 0 1vmin 1vmin; box-shadow: 0 1.8vmin 0 rgba(43,27,23,.4); text-shadow: 0 2px 0 rgba(43,27,23,.45); }
-  .act .ico { width: 12.5vmin; height: 12.5vmin; filter: drop-shadow(0 2px 0 rgba(43,27,23,.45)); }
-  .act .lbl { font-size: 4.8vmin; }
-  .act .hold { font-size: 2.7vmin; opacity: .85; }
-  #btnA { right: 4%; top: 52%; }
-  #btnB { right: 27%; top: 9%; --btn: var(--cheese); --btn2: var(--cheese2); color: var(--ink); text-shadow: 0 2px 0 rgba(255,255,255,.35); }
+  #stickhint { position: absolute; left: max(11%, calc(var(--sl) + 4vmin)); top: 46%; width: var(--ring); height: var(--ring); margin-top: calc(var(--ring) / -2); border-radius: 50%; border: 4px dashed rgba(255,244,224,.35); color: rgba(255,244,224,.6); display: flex; align-items: center; justify-content: center; pointer-events: none; transition: opacity .15s; }
+  #stickhint .ico { width: 42%; height: 42%; }
+  #stickLbl { left: max(11%, calc(var(--sl) + 4vmin)); top: calc(46% + var(--ring) / 2 + 1.5vmin); width: var(--ring); transition: opacity .15s; }
+  #stickLbl .pl { background: rgba(43,27,23,.55); color: rgba(255,244,224,.85); }
+  #stickhint.active, #stickhint.active + #stickLbl { opacity: 0; }
+
+  /* ---- action buttons: the circle is the touch area and carries only the icon; the label sits in a plate underneath */
+  .act { position: absolute; width: var(--bsz); height: var(--bsz); border-radius: 50%; border: 5px solid var(--ink); background: linear-gradient(var(--btn, var(--tomato)) 0 50%, var(--btn2, var(--tomato2)) 50% 100%); color: var(--cream); display: flex; align-items: center; justify-content: center; padding: 0; min-height: 0; box-shadow: 0 1.8vmin 0 rgba(43,27,23,.4); text-shadow: 0 2px 0 rgba(43,27,23,.45); }
+  .act .ico { width: 52%; height: 52%; filter: drop-shadow(0 2px 0 rgba(43,27,23,.45)); }
+  .plq { position: absolute; display: flex; justify-content: center; pointer-events: none; } /* same left/width as its circle; the plate may be a little wider than it */
+  .plq .pl { max-width: calc(100% + 10px); display: flex; flex-direction: column; align-items: center; padding: 3px 8px; border-radius: 10px; background: rgba(43,27,23,.72); color: var(--cream); text-align: center; line-height: 1.1; }
+  .plq .lbl { font-size: var(--lbl); white-space: nowrap; }
+  .plq .hold { font-size: var(--hold); font-weight: 700; opacity: .85; white-space: nowrap; }
+  #btnA { right: var(--ar); top: var(--topA); }
+  #lblA { right: var(--ar); top: calc(var(--topA) + var(--bsz) + 1.5vmin); width: var(--bsz); }
+  #btnB { right: 27%; top: var(--topB); --btn: var(--cheese); --btn2: var(--cheese2); color: var(--ink); text-shadow: 0 2px 0 rgba(255,255,255,.35); }
   #btnB .ico { filter: none; }
+  #lblB { right: 27%; top: calc(var(--topB) + var(--bsz) + 1.5vmin); width: var(--bsz); }
   body[data-view=playing]::before { content: ''; position: fixed; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 0 1.1vmin var(--c); } /* R25: the phone wears the chef's colour */
   body.flash::after { content: ''; position: fixed; inset: 0; z-index: 3; pointer-events: none; background: var(--c); opacity: .4; }
   .act.down { transform: translateY(1.2vmin); box-shadow: 0 .5vmin 0 rgba(43,27,23,.4); filter: brightness(1.12); }
-  .brand { font: 800 44px var(--font); letter-spacing: 1px; margin: 0; color: var(--c); -webkit-text-stroke: 9px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(43,27,23,.35); }
-  #choosing .big { font-size: 40px; }
-  #game { font-size: 24px; color: var(--cheese); }
-  #howto { z-index: 5; background: var(--cocoa); justify-content: flex-start; gap: 6px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
-  body[data-view][data-howto=open] #howto { display: flex; }
-  #howto h2 { margin: 0; font: 800 26px/1 var(--font); color: var(--c); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; }
-  #howto .gname { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,244,224,.6); }
-  #howto .steps { list-style: none; margin: 4px 0 0; padding: 0; width: 100%; max-width: 760px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; flex: 1; min-height: 0; }
-  #howto .steps li { display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 14px; border: 3px solid var(--ink); border-radius: 14px; background: var(--cream); color: var(--ink); position: relative; text-align: left; }
+
+  .brand { font: 800 clamp(30px, 11vmin, 44px) var(--font); letter-spacing: 1px; margin: 0; color: var(--c); -webkit-text-stroke: 9px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(43,27,23,.35); }
+  #rank { color: var(--cheese); text-shadow: 0 3px 0 rgba(43,27,23,.4); }
+  #choosing .big { font-size: clamp(28px, 10vmin, 40px); }
+  #game { font-size: clamp(18px, 6vmin, 24px); color: var(--cheese); }
+
+  /* ---- "Cómo se juega": header / tiles / footer (note + close). The footer row keeps the close button >= 44px high without eating the tiles' room */
+  #howto { z-index: 5; background: var(--cocoa); display: none; padding: max(8px, var(--st)) max(14px, var(--sr)) max(8px, var(--sb)) max(14px, var(--sl)); }
+  body[data-view][data-howto=open] #howto { display: grid; grid-template: "head head" auto "steps steps" minmax(0, 1fr) "note btn" auto / minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; justify-items: center; }
+  #howto .hhead { grid-area: head; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; column-gap: 12px; row-gap: 3px; }
+  #howto h2 { margin: 0; font: 800 clamp(20px, 7.4vmin, 28px)/1.1 var(--font); color: var(--c); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; }
+  #howto .gname { font-size: clamp(11px, 3.4vmin, 13px); letter-spacing: 2px; text-transform: uppercase; color: rgba(255,244,224,.6); }
+  #howto .steps { grid-area: steps; list-style: none; margin: 4px 0 0; padding: 0; width: 100%; height: 100%; max-width: 760px; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(0, 1fr); gap: 10px 14px; min-height: 0; }
+  #howto .steps li { display: flex; align-items: center; gap: 10px; padding: 4px 10px 4px 14px; border: 3px solid var(--ink); border-radius: 14px; background: var(--cream); color: var(--ink); position: relative; text-align: left; min-height: 0; }
   #howto .steps .n { position: absolute; left: -8px; top: -8px; width: 26px; height: 26px; border-radius: 50%; background: var(--tomato); border: 3px solid var(--ink); color: var(--cream); font: 800 15px/20px var(--font); text-align: center; }
-  #howto .steps .ic { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; color: var(--tomato2); background: #F6E8CB; }
-  #howto .steps .ico { width: 30px; height: 30px; }
-  #howto .steps .tx { font: 800 clamp(14px, 4.4vmin, 19px)/1.15 var(--font); }
-  #howto .note { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--cheese); }
-  #howto .note .ic { width: 22px; height: 22px; }
+  #howto .steps .ic { flex: none; width: clamp(34px, 12vmin, 46px); height: clamp(34px, 12vmin, 46px); border-radius: 50%; border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; color: var(--tomato2); background: #F6E8CB; }
+  #howto .steps .ico { width: 65%; height: 65%; }
+  #howto .steps .tx { min-width: 0; font: 800 clamp(12.5px, 4.1vmin, 19px)/1.15 var(--font); }
+  #howto .note { grid-area: note; justify-self: start; display: flex; align-items: center; gap: 8px; font-size: clamp(13px, 4vmin, 16px); line-height: 1.15; color: var(--cheese); text-align: left; }
+  #howto .note .ic { flex: none; width: 22px; height: 22px; }
   #howto .note .ico { width: 100%; height: 100%; fill: var(--cheese); }
-  #howtoclose { margin-top: 2px; font-size: 18px; padding: 8px 24px; }
-  #howtoopen { margin-top: 6px; font-size: 16px; padding: 6px 16px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
-  #zoomfix { display: none; position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 30; font-size: 17px; padding: 10px 18px; background: var(--cream); color: var(--ink); text-shadow: none; }
+  #howtoclose { grid-area: btn; font-size: 18px; padding: 6px 24px; }
+  #howto:not(:has(.note)) #howtoclose { grid-column: 1 / -1; }
+  #howtoopen { margin-top: 6px; font-size: 16px; padding: 6px 18px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+
+  /* zoom banner: on the pad it sits top-left under the HUD (nothing else lives there); on the other screens, bottom centre */
+  #zoomfix { display: none; position: fixed; left: 50%; bottom: max(10px, var(--sb)); transform: translateX(-50%); z-index: 30; font-size: 15px; line-height: 1.15; padding: 6px 14px; width: max-content; max-width: calc(100% - 2 * var(--gutter)); background: var(--cream); color: var(--ink); text-shadow: none; }
   body.zoomed #zoomfix { display: block; }
-  #puesto { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: min(46vw, 400px); display: none; align-items: center; gap: 8px; padding: 6px 8px; border: 3px solid var(--ink); border-radius: 16px; background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 rgba(43,27,23,.35); }
+  body[data-view=playing] #zoomfix { left: var(--gutter); bottom: auto; top: calc(max(6px, var(--st) + 6px) + 22px); transform: none; max-width: calc(73% - var(--bsz) - var(--gutter) - 10px); text-align: left; }
+
+  /* station card: sits in the free strip between the left edge and button A, above the home indicator */
+  #puesto { position: absolute; left: var(--gutter); right: calc(var(--ar) + var(--bsz) + 12px); bottom: max(8px, var(--sb)); margin-inline: auto; width: min(440px, calc(100% - var(--gutter) - var(--ar) - var(--bsz) - 12px)); display: none; align-items: center; gap: 8px; padding: 6px 8px; border: 3px solid var(--ink); border-radius: 16px; background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 rgba(43,27,23,.35); }
   body[data-puesto=on] #puesto { display: flex; }
   #puesto .pi { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--c); background: #F6E8CB; display: flex; align-items: center; justify-content: center; color: var(--tomato2); }
   #puesto .pi .ico { width: 26px; height: 26px; }
-  #puesto .pt { min-width: 0; flex: 1; }
-  #pname { display: block; font: 800 16px/1.05 var(--font); }
-  #phint { display: block; font: 700 12px/1.1 var(--font); color: var(--muted); }
-  #pswap { flex: none; font-size: 13px; padding: 6px 10px; border-width: 3px; border-radius: 10px; box-shadow: 0 3px 0 rgba(43,27,23,.4); }
-  #hud { position: absolute; top: 6px; left: 10px; font-size: 14px; color: var(--c); opacity: .9; pointer-events: none; }
+  #puesto .pt { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+  #pname { display: block; font: 800 16px/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #phint { display: block; font: 700 13px/1.15 var(--font); color: var(--muted); }
+  #pswap { flex: none; min-width: 78px; min-height: 44px; font-size: 15px; padding: 6px 12px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 rgba(43,27,23,.4); }
+  /* ---- Captain's remote: a D-pad on the right of every screen but the round. Touch size follows the short side (44..72px); the
+     overlays keep clear of it (padding-right) so nothing they say sits under a button. */
+  :root { --dp: clamp(44px, 18vmin, 72px); --dpgap: 6px; --rr: max(10px, calc(var(--sr) + 10px)); --rw: calc(var(--rr) + 3 * var(--dp) + 2 * var(--dpgap) + 12px); }
+  /* the how-to card is the tightest screen: the D-pad shrinks to a bit over the minimum and the tile text a notch, so 4 tiles still fit beside it */
+  body[data-remote=on][data-howto=open] { --dp: clamp(44px, 14vmin, 56px); --dpgap: 4px; }
+  body[data-remote=on][data-howto=open] #howto .steps .tx { font-size: clamp(11px, 3.6vmin, 17px); }
+  @media (max-width: 620px) { body[data-remote=on][data-howto=open] #howto .steps { grid-template-columns: 1fr; gap: 8px; } } /* the smallest phones: 4 tiles in one column, 2 lines each */
+  #remote { position: fixed; z-index: 6; right: var(--rr); top: 50%; transform: translateY(-50%); display: none; grid-template: repeat(3, var(--dp)) / repeat(3, var(--dp)); gap: var(--dpgap); }
+  body[data-remote=on] #remote { display: grid; }
+  body[data-remote=on]:not([data-view=playing]) .overlay:not(#rotate) { padding-right: var(--rw); }
+  #remote .rb { width: var(--dp); height: var(--dp); min-height: 0; padding: 0; border-radius: 18px; border-width: 3px; display: flex; align-items: center; justify-content: center; font-size: clamp(13px, 4.6vmin, 18px); line-height: 1; box-shadow: 0 4px 0 rgba(43,27,23,.4); background: linear-gradient(#85685A 0 50%, #6F5245 50% 100%); }
+  #remote .rb:active, #remote .rb.down { transform: translateY(3px); box-shadow: 0 1px 0 rgba(43,27,23,.4); filter: brightness(1.15); }
+  #remote .rb svg { width: 56%; height: 56%; fill: none; stroke: var(--cream); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+  #remote .up { grid-area: 1 / 2; } #remote .left { grid-area: 2 / 1; } #remote .right { grid-area: 2 / 3; } #remote .down { grid-area: 3 / 2; }
+  #remote .up svg { transform: rotate(0deg); } #remote .right svg { transform: rotate(90deg); } #remote .down svg { transform: rotate(180deg); } #remote .left svg { transform: rotate(270deg); }
+  #remote .ok { grid-area: 2 / 2; font-size: clamp(17px, 6vmin, 24px); background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+  #remote .back { grid-area: 1 / 3; font-size: calc(var(--dp) * .23); background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+  #remote .help { grid-area: 1 / 1; color: var(--ink); text-shadow: none; font-size: clamp(20px, 7vmin, 28px); background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); }
+  #remote .crown { grid-area: 3 / 1; display: flex; align-items: center; justify-content: center; font-size: clamp(20px, 7vmin, 30px); line-height: 1; pointer-events: none; }
+  /* versus: the phone knows its team. A strip on the pad (top centre, never over the buttons) and a card in the lobby; the chef colour stays the chef's */
+  #teamchip { position: absolute; top: max(4px, calc(var(--st) + 4px)); left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 6px; max-width: 46%; padding: 1px 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--tc, #888); color: #fff; font: 800 14px/20px var(--font); text-shadow: 0 2px 0 rgba(43,27,23,.45); white-space: nowrap; overflow: hidden; pointer-events: none; z-index: 4; }
+  #teamchip small { font: 700 12px/20px var(--font); opacity: .92; overflow: hidden; text-overflow: ellipsis; }
+  body[data-team=on][data-view=playing] #teamchip { display: flex; }
+  #teamcard { display: none; align-items: center; gap: 10px; padding: 6px 16px; border: 4px solid var(--ink); border-radius: 16px; background: var(--tc, #888); color: #fff; font: 800 clamp(20px, 7vmin, 28px) var(--font); text-shadow: 0 3px 0 rgba(43,27,23,.45); box-shadow: 0 5px 0 rgba(43,27,23,.4); }
+  #teamcard small { font: 700 clamp(13px, 4vmin, 16px) var(--font); opacity: .95; }
+  #teamswap { display: none; font-size: 16px; padding: 4px 16px; min-height: 44px; background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); text-shadow: none; }
+  #teamswap:disabled { filter: grayscale(.8); opacity: .6; }
+  body[data-team=on][data-view=lobby] #teamcard { display: flex; }
+  body[data-team=on][data-view=lobby] #teamswap { display: inline-block; }
+  #hud { position: absolute; top: max(6px, calc(var(--st) + 6px)); left: var(--gutter); max-width: calc(73% - var(--bsz) - var(--gutter) - 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; line-height: 1.2; color: var(--c); opacity: .9; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -81,17 +141,28 @@
 </form>
 <div id="pad">
   <div id="zone"></div>
-  <div id="stickhint"></div>
-  <div id="btnA" class="act"></div>
-  <div id="btnB" class="act"></div>
+  <div id="stickhint"></div><div id="stickLbl" class="plq"></div>
+  <div id="btnA" class="act"></div><div id="lblA" class="plq"></div>
+  <div id="btnB" class="act"></div><div id="lblB" class="plq"></div>
   <div id="hud"></div>
+  <div id="teamchip"><span id="tcicon2"></span><span id="tcname2"></span><small id="tcside2"></small></div>
   <div id="puesto"><span class="pi" id="pico"></span><div class="pt"><b id="pname"></b><span id="phint"></span></div><button id="pswap" type="button">Cambiar</button></div>
 </div>
-<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><button id="howtoopen" type="button">Cómo se juega</button></div>
+<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div id="teamcard"><span id="tcicon"></span><span id="tcname"></span><small id="tcside"></small></div><button id="teamswap" type="button">Cambiar de equipo</button><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><button id="howtoopen" type="button">Cómo se juega</button></div>
 <div id="choosing" class="overlay"><h1 class="brand">Pichiclub</h1><div class="big">Eligiendo juego…</div><div style="opacity:.8">La pantalla decide</div><div id="who2" style="opacity:.7"></div></div>
 <div id="results" class="overlay"><div>Fin de la ronda</div><div id="rank" class="big"></div><div id="myscore"></div></div>
-<div id="howto" class="overlay"><h2>Cómo se juega</h2><div id="howtogame" class="gname"></div><div id="howtobody" style="display:contents"></div><button id="howtoclose" type="button">Entendido</button></div>
+<div id="howto" class="overlay"><div class="hhead"><h2>Cómo se juega</h2><div id="howtogame" class="gname"></div></div><div id="howtobody" style="display:contents"></div><button id="howtoclose" type="button">Entendido</button></div>
 <div id="rotate" class="overlay"><div class="big">&#8635;</div><div>Gira tu teléfono</div></div>
+<div id="remote" role="group" aria-label="Control remoto del Capitán">
+  <button class="rb help" type="button" data-nav="help" aria-label="Cómo se juega">?</button>
+  <button class="rb up" type="button" data-nav="up" aria-label="Arriba"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+  <button class="rb back" type="button" data-nav="back" aria-label="Atrás">Atrás</button>
+  <button class="rb left" type="button" data-nav="left" aria-label="Izquierda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+  <button class="rb ok" type="button" data-nav="ok" aria-label="OK">OK</button>
+  <button class="rb right" type="button" data-nav="right" aria-label="Derecha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+  <span class="crown" aria-hidden="true">👑</span>
+  <button class="rb down" type="button" data-nav="down" aria-label="Abajo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+</div>
 <button id="zoomfix" type="button">Pantalla ampliada. Toca para restablecer</button>
 <script type="module" src="/src/main.ts"></script>
 </body>

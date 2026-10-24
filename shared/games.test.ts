@@ -68,7 +68,7 @@ describe('game registry', () => {
 
 describe('game modes', () => {
   const versus = () => pizzas.modes!.find((m) => m.id === 'versus')!;
-  it('pizzas declares coop (the default, one team) and versus (two teams, k handicap, not selectable yet)', () => {
+  it('pizzas declares coop (the default, one team) and versus (two teams, k handicap, selectable since F1)', () => {
     expect(pizzas.modes!.map((m) => m.id)).toEqual(['coop', 'versus']);
     expect(defaultModeOf(pizzas)).toBe('coop');
     expect(modeOf(pizzas).id).toBe('coop');
@@ -77,16 +77,18 @@ describe('game modes', () => {
     const coop = modeOf(pizzas, 'coop');
     expect(coop.teams).toMatchObject({ count: [1, 1], handicap: 'none' });
     expect(coop.soon).toBeUndefined();
-    expect(versus()).toMatchObject({ players: [2, 8], soon: true, teams: { count: [2, 2], maxRatio: 2, handicap: 'score-k' } });
+    expect(versus()).toMatchObject({ players: [2, 8], teams: { count: [2, 2], maxRatio: 2, handicap: 'score-k' } });
     expect(versus().teams!.styles!.map((s) => s.name)).toEqual(['Picantes', 'Frescos']);
     expect(new Set(versus().teams!.styles!.map((s) => s.icon)).size).toBe(2); // colour is never the only difference
     expect(versus().options!.map((o) => o.id)).toEqual(['hiddenScore', 'handicap']);
   });
-  it('the lobby offers versus only once it is no longer "soon": until then there is no mode selector', () => {
-    expect(selectableModes(pizzas).map((m) => m.id)).toEqual(['coop']);
-    expect(hasModeChoice(pizzas)).toBe(false);
-    const open: GameDef = { ...clone(), modes: pizzas.modes!.map((m) => ({ ...m, soon: undefined })) };
-    expect(hasModeChoice(open)).toBe(true);
+  it('F1 opened versus in the lobby (no longer "soon"): the selector shows; a game whose extra mode is "soon" still has none', () => {
+    expect(versus().soon).toBeUndefined();
+    expect(selectableModes(pizzas).map((m) => m.id)).toEqual(['coop', 'versus']);
+    expect(hasModeChoice(pizzas)).toBe(true);
+    const closed: GameDef = { ...clone(), modes: pizzas.modes!.map((m) => (m.id === 'versus' ? { ...m, soon: true } : m)) };
+    expect(selectableModes(closed).map((m) => m.id)).toEqual(['coop']);
+    expect(hasModeChoice(closed)).toBe(false);
   });
   it('a game that declares no modes gets one cooperative mode from its own fields', () => {
     const plain: GameDef = { ...clone(), modes: undefined, defaultMode: undefined, minPlayers: 3, maxPlayers: 5 };
