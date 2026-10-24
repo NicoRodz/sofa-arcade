@@ -7,9 +7,10 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/dif
 import { GAMES } from '@party/shared/games';
 import { generate, resolveMap } from '@party/shared/generate';
 import { MAP_IDS, fixedMap, type MapChoice } from '@party/shared/maps';
+import { gameBus } from './bus';
 import { percentile } from '@party/shared/stats';
 import {
-  COLS, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
+  COLS, COUNTDOWN_MS, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
   type Controls, type Item, type Station,
 } from '@party/shared/game';
 
@@ -82,7 +83,7 @@ function setPhase(next: Phase) {
   if (phase === 'playing') {
     const map = resolveMap(config.map, config.seed, config.difficulty, players.size, Math.random);
     mapName = map.name;
-    game = createGame({ difficulty: config.difficulty, n: players.size, rows: map.rows });
+    game = createGame({ difficulty: config.difficulty, n: players.size, rows: map.rows, countdownMs: COUNTDOWN_MS, bus: gameBus });
     for (const p of players.values()) { addPlayer(game, p.info.id, p.info.slot); p.pendA = 0; }
   }
   // cooperative: every player carries the team score
@@ -367,7 +368,7 @@ setInterval(() => {
   $('summary').textContent = `total ${pktsRate} pkt/s | screen<->server RTT ${f(screenRtt)} ms | clock offset ${f(sync.offset ?? NaN)} ms`;
   if (phase === 'playing') {
     const left = game.params.roundMs - game.time;
-    $('timer').textContent = String(Math.max(0, Math.ceil(left / 1000)));
+    $('timer').textContent = game.countdown > 0 ? `¡${Math.ceil(game.countdown / 1000)}!` : String(Math.max(0, Math.ceil(left / 1000)));
     renderUi();
   }
   $('warn').textContent = document.hidden ? 'TAB HIDDEN: rendering paused, keep it in the foreground' : '';

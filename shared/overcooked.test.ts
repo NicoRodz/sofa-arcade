@@ -233,7 +233,7 @@ describe('orders and score', () => {
     press(g, 1);
     expect(p.item).toBe('dish');
     expect(g.score).toBe(0);
-    g.orders.push({ id: 99, expiresAt: g.time + 1000 });
+    g.orders.push({ id: 99, expiresAt: g.time + 1000, warned: false });
     p.item = 'plate';
     press(g, 1);
     expect(p.item).toBe('plate');

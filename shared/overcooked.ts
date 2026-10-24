@@ -1,4 +1,5 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
+import { Emitter, type GameEvents } from './events';
 import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type StationKind } from './maps';
 import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficulty, type Params } from './difficulty';
 
@@ -31,14 +32,22 @@ export interface Player {
   fy: number;
   item: Item | null;
   cutting: boolean;
+  chopAt: number; // station index being chopped, -1 if none
 }
-export interface Order { id: number; expiresAt: number }
+export interface Order { id: number; expiresAt: number; warned: boolean }
 export interface Controls { x: number; y: number; a: number; b: boolean } // a = new A presses since last tick
 export const COLS = MAP_W;
 export const ROWS = MAP_H;
 export const MAX_SLOTS = 8;
+export const COUNTDOWN_MS = 3000;
+export const WARNING_MS = 10_000; // an order with less patience left than this raises orderWarning
 
 export interface Game {
+  bus: Emitter<GameEvents>;
+  countdown: number; // ms before the round clock starts
+  started: boolean;
+  counting: boolean;
+  endTick: number;
   grid: Grid;
   spawns: [number, number][];
   difficulty: Difficulty;
@@ -58,10 +67,14 @@ export interface Game {
 export const isSolid = (g: Game, tx: number, ty: number) => !isFloor(g.grid, tx, ty);
 
 const spawnOrder = (g: Game) => {
-  if (g.orders.length < g.params.maxOrders) g.orders.push({ id: g.orderSeq++, expiresAt: g.time + g.params.orderTtlMs });
+  if (g.orders.length < g.params.maxOrders) {
+    const o = { id: g.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false };
+    g.orders.push(o);
+    g.bus.emit('orderNew', { order: o.id });
+  }
 };
 
-export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: readonly string[] } = {}): Game {
+export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: readonly string[]; countdownMs?: number; bus?: Emitter<GameEvents> } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows);
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const p = difficultyParams(difficulty, opts.n ?? 2);
@@ -69,7 +82,7 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
   grid.forEach((row, ty) => row.forEach((t, tx) => {
     if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false });
   }));
-  const g: Game = { grid, spawns: spawnPoints(grid, MAX_SLOTS), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
+  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
   for (let i = 0; i < p.initialOrders; i++) spawnOrder(g);
   return g;
 }
@@ -77,7 +90,7 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
 export function addPlayer(g: Game, id: number, slot: number) {
   if (g.players.has(id)) return;
   const [sx, sy] = g.spawns[slot % g.spawns.length] ?? [1, 1];
-  g.players.set(id, { id, slot, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, item: null, cutting: false });
+  g.players.set(id, { id, slot, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, item: null, cutting: false, chopAt: -1 });
 }
 export const removePlayer = (g: Game, id: number) => { g.players.delete(id); };
 
@@ -137,26 +150,58 @@ function interact(g: Game, p: Player, s: Station) {
       if (p.item === 'dish' && g.orders.length) {
         const o = g.orders.shift()!;
         const { reward, tipMax, orderTtlMs } = g.params;
-        g.score += reward + Math.round((tipMax * Math.max(0, o.expiresAt - g.time)) / orderTtlMs);
+        const tip = Math.round((tipMax * Math.max(0, o.expiresAt - g.time)) / orderTtlMs);
+        g.score += reward + tip;
         g.delivered++;
         p.item = null;
+        g.bus.emit('delivered', { player: p.id, points: reward + tip, tip });
       }
       break;
   }
 }
 
+// Runs one A press and reports what happened as events.
+function act(g: Game, p: Player, s: Station) {
+  const before = { held: p.item, shelf: s.item, inputs: s.inputs.length, done: s.done, delivered: g.delivered };
+  interact(g, p, s);
+  if (g.delivered !== before.delivered) return; // 'delivered' already emitted
+  if (!before.held && p.item) g.bus.emit('itemPicked', { player: p.id, item: p.item, from: s.kind });
+  else if (before.held && !p.item) g.bus.emit('itemDropped', { player: p.id, item: before.held, at: s.kind });
+  else g.bus.emit('interactInvalid', { player: p.id });
+  if (s.kind === 'pot' && before.inputs < 2 && s.inputs.length === 2) g.bus.emit('potStart', { station: g.stations.indexOf(s) });
+}
+
+function countdown(g: Game, dtMs: number) {
+  const prev = Math.ceil(g.countdown / 1000);
+  if (!g.counting) { g.counting = true; g.bus.emit('countdownTick', { n: prev, kind: 'start' }); }
+  g.countdown = Math.max(0, g.countdown - dtMs);
+  const now = Math.ceil(g.countdown / 1000);
+  if (now !== prev) g.bus.emit('countdownTick', { n: now, kind: 'start' });
+}
+
 export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   if (g.over) return;
+  if (g.countdown > 0) { countdown(g, dtMs); return; }
+  if (!g.started) { g.started = true; g.bus.emit('roundStart', {}); }
   const dt = dtMs / 1000;
   g.time += dtMs;
 
   for (const p of g.players.values()) {
     const c = controls.get(p.id) ?? { x: 0, y: 0, a: 0, b: false };
     const target = targetStation(g, p);
+    const wasCutting = p.cutting;
     p.cutting = !!(c.b && target?.kind === 'board' && target.item && cutOf(target.item));
+    const at = target ? g.stations.indexOf(target) : -1;
+    if (wasCutting && (!p.cutting || at !== p.chopAt)) g.bus.emit('chopStop', { player: p.id, station: p.chopAt });
+    if (p.cutting && (!wasCutting || at !== p.chopAt)) g.bus.emit('chopStart', { player: p.id, station: at });
+    p.chopAt = p.cutting ? at : -1;
     if (p.cutting && target) {
       target.progress += dtMs / g.params.cutMs;
-      if (target.progress >= 1) { target.item = cutOf(target.item!); target.progress = 0; }
+      if (target.progress >= 1) {
+        target.item = cutOf(target.item!);
+        target.progress = 0;
+        g.bus.emit('chopDone', { player: p.id, station: at });
+      }
     } else {
       if (c.x || c.y) { p.fx = c.x; p.fy = c.y; }
       const nx = p.x + c.x * SPEED * dt;
@@ -166,14 +211,14 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     }
     for (let i = 0; i < c.a; i++) {
       const s = targetStation(g, p);
-      if (s) interact(g, p, s);
+      if (s) act(g, p, s);
     }
   }
 
   for (const s of g.stations) {
     if (s.kind === 'pot' && !s.done && s.inputs.length === 2) {
       s.progress += dtMs / g.params.cookMs;
-      if (s.progress >= 1) { s.progress = 1; s.done = true; }
+      if (s.progress >= 1) { s.progress = 1; s.done = true; g.bus.emit('potReady', { station: g.stations.indexOf(s) }); }
     }
   }
 
@@ -182,8 +227,12 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     g.nextOrderAt += g.params.orderEveryMs;
   }
   const alive = g.orders.filter((o) => o.expiresAt > g.time);
+  for (const o of g.orders) if (!alive.includes(o)) g.bus.emit('orderExpired', { order: o.id });
   g.score = Math.max(0, g.score + (g.orders.length - alive.length) * g.params.penalty);
   g.orders = alive;
+  for (const o of alive) if (!o.warned && o.expiresAt - g.time < WARNING_MS) { o.warned = true; g.bus.emit('orderWarning', { order: o.id }); }
 
-  if (g.time >= g.params.roundMs) g.over = true;
+  const left = Math.ceil((g.params.roundMs - g.time) / 1000);
+  if (left <= 10 && left > 0 && left < g.endTick) { g.endTick = left; g.bus.emit('countdownTick', { n: left, kind: 'end' }); }
+  if (g.time >= g.params.roundMs) { g.over = true; g.bus.emit('roundEnd', { score: g.score, delivered: g.delivered }); }
 }
