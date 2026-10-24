@@ -40,4 +40,23 @@ describe('phone layout', () => {
     const p = await s.probe();
     for (const sel of ['#stickhint', '#btnA', '#btnB', '#puesto', '#pswap', '#stickLbl .lbl', '#lblA .lbl', '#lblB .lbl']) expect(p.items.some((i) => i.sel === sel), sel).toBe(true);
   }, 60_000);
+
+  it('hit-testing: the circles take their own touches, plates and the hint let them through, the left half is the stick zone', async () => {
+    await s.load(SCENARIOS.find((x) => x.name === 'play-puesto')!);
+    for (const v of VIEWPORTS) for (const ins of v.insets) {
+      await s.setViewport(v, ins);
+      const hit = await s.eval<Record<string, string>>(`(() => {
+        const id = (x, y) => { const e = document.elementFromPoint(x, y); const c = e && e.closest('[id]'); return c ? c.id : String(e && e.tagName); };
+        const mid = (sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; };
+        const above = (sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height - 6]; };
+        const out = {};
+        for (const [k, sel] of [['A', '#btnA'], ['B', '#btnB']]) out[k] = id(...mid(sel));
+        for (const [k, sel] of [['plateA', '#lblA'], ['plateB', '#lblB'], ['plateStick', '#stickLbl'], ['hint', '#stickhint']]) out[k] = id(...mid(sel));
+        out.zone = id(innerWidth * 0.25, innerHeight * 0.12);
+        out.swap = id(...mid('#pswap'));
+        return out;
+      })()`);
+      expect(hit, `${v.name} ${insetsName(ins)}`).toEqual({ A: 'btnA', B: 'btnB', plateA: 'pad', plateB: 'pad', plateStick: 'zone', hint: 'zone', zone: 'zone', swap: 'pswap' });
+    }
+  }, 60_000);
 });
