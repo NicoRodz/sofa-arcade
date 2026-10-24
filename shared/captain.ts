@@ -22,7 +22,7 @@ export function captainOf(players: readonly { id: number; connected: boolean }[]
 
 // The screen's check: only the current Captain's phone moves the menus. `from` is the id the relay bound to the socket
 // (never one that came in a payload), so a phone cannot pose as the Captain.
-export const acceptNav = (captainId: number | null, from: unknown): boolean => captainId !== null && typeof from === 'number' && from === captainId;
+export const acceptNav = (captainId: number | null, from: unknown): boolean => typeof from === 'number' && from === captainId;
 
 // The Mac keyboard keeps the last word: a remote intent that lands right after a key press is dropped, so the two never pile up.
 export const KEYBOARD_QUIET_MS = 300;
