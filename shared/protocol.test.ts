@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ClockSync, applyDeadzone, canStart, newRoomCode, nextPhase, parseClientMessage } from './protocol';
+import { assignPuestos } from './puestos';
 
 describe('protocol', () => {
   it('rejects malformed messages and clamps input', () => {
@@ -86,6 +87,13 @@ describe('puestos on the wire', () => {
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, assign: [{ id: 1, puestos: ['hack'], pool: [] }] } }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, cheese: 'yes' } }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: 7 }))).toBeNull();
+  });
+  it('a real round message fits: every chef of an 8-player table with the full pool of puestos', () => {
+    const f = { cheese: true, sink: true };
+    const pm = assignPuestos([1, 2, 3, 4, 5, 6, 7, 8], f);
+    expect(pm.assign[0]!.pool.length).toBeGreaterThanOrEqual(6);
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: pm }))).toEqual({ t: 'phase', phase: 'playing', puestos: pm });
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: assignPuestos([1, 2], f) }))).not.toBeNull();
   });
   it('"Cambiar" sends the new puesto list', () => {
     expect(parseClientMessage('{"t":"puesto","puestos":["corte"]}')).toEqual({ t: 'puesto', puestos: ['corte'] });

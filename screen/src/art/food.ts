@@ -163,16 +163,23 @@ function cheeseRaw(c: Ctx) {
   c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-20, 7); c.lineTo(20, -7); c.stroke();
 }
 function cheeseCut(c: Ctx) {
-  contactShadow(c, 0, 20, 26, 5);
-  drawOutlined(c, () => { c.beginPath(); c.moveTo(-26, 16); c.quadraticCurveTo(-24, -4, 0, -10); c.quadraticCurveTo(24, -4, 26, 16); c.closePath(); }, vgrad(c, -10, 16, '#FFE98A', '#F1C24A'), { lw: 2.5 });
+  contactShadow(c, 0, 18, 24, 5);
+  // a loose pile of yellow shreds: every strand is an ink-outlined curve, back ones first
   const rnd = rng(41);
-  c.lineWidth = 2.6;
-  for (let i = 0; i < 16; i++) {
-    const x = -20 + rnd() * 40, y = -4 + rnd() * 18, a = rnd() * Math.PI;
-    c.strokeStyle = i % 3 ? '#FFF6C8' : '#D99A1E';
-    c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * 7, y + Math.sin(a) * 4); c.stroke();
+  const strands: [number, number, number, number][] = [];
+  for (let i = 0; i < 26; i++) {
+    const a = Math.PI * (0.05 + 0.9 * rnd()), r = Math.sqrt(rnd());
+    strands.push([Math.cos(a) * 22 * r, 14 - Math.sin(a) * 18 * r, (rnd() - 0.5) * 2.4, rnd()]);
   }
-  shine(c, 0, 4, 20, 0.45, 2.5);
+  strands.sort((p, q) => p[1] - q[1]);
+  c.lineCap = 'round';
+  for (const pass of [0, 1]) for (const [x, y, rot, t] of strands) {
+    c.save(); c.translate(x, y); c.rotate(rot);
+    c.strokeStyle = pass === 0 ? C.ink : t > 0.6 ? '#FFF1A8' : t > 0.25 ? C.cheese : '#F2B33D';
+    c.lineWidth = pass === 0 ? 4.6 : 2.4;
+    c.beginPath(); c.moveTo(-6, 0); c.quadraticCurveTo(0, -3.5 * (t > 0.5 ? 1 : -1), 6, 0); c.stroke();
+    c.restore();
+  }
 }
 
 function box(c: Ctx) {

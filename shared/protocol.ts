@@ -1,7 +1,7 @@
 import { DEFAULT_DIFFICULTY, isDifficulty, type Difficulty } from './difficulty';
 import { DEFAULT_GAME, gameInfo, isGameId, type GameId, type GameInfo } from './games';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
-import { isPuestoId, type PuestoId } from './puestos';
+import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
 
 export { ROUND_MS } from './difficulty';
 
@@ -79,12 +79,12 @@ export type ServerMsg =
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 
-const parsePuestoIds = (v: unknown): PuestoId[] | null => (Array.isArray(v) && v.length <= 4 && v.every(isPuestoId) ? [...v] : null);
+const parsePuestoIds = (v: unknown, max = 4): PuestoId[] | null => (Array.isArray(v) && v.length <= max && v.every(isPuestoId) ? [...v] : null);
 function parsePuestoMsg(v: any): PuestoMsg | null {
   if (!v || typeof v !== 'object' || typeof v.cheese !== 'boolean' || typeof v.sink !== 'boolean' || !Array.isArray(v.assign) || v.assign.length > MAX_PLAYERS) return null;
   const assign: PuestoAssign[] = [];
   for (const a of v.assign) {
-    const puestos = parsePuestoIds(a?.puestos), pool = parsePuestoIds(a?.pool);
+    const puestos = parsePuestoIds(a?.puestos), pool = parsePuestoIds(a?.pool, PUESTO_IDS.length);
     if (!a || !num(a.id) || !puestos || !pool) return null;
     assign.push({ id: a.id, puestos, pool });
   }

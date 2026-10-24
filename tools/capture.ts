@@ -61,8 +61,8 @@ class Cdp {
 interface Snap {
   phase: string; fps: number; time: number; score: number; countdown: number;
   players: { id: number; x: number; y: number; item: string | null; cutting: boolean }[];
-  stations: { kind: string; tx: number; ty: number; crate: number; item: string | null; progress: number; inputs: number[]; done: boolean }[];
-  orders: unknown[];
+  stations: { kind: string; tx: number; ty: number; crate: number; item: string | null; progress: number; inputs: number[]; done: boolean; count: number; clean: number }[];
+  orders: { recipe: string }[];
 }
 
 class Bot {
@@ -122,19 +122,32 @@ class Bot {
     const pots = st.filter((s) => s.kind === 'pot');
     const boards = st.filter((s) => s.kind === 'board');
     const counters = st.filter((s) => s.kind === 'counter');
+    const sinks = st.filter((s) => s.kind === 'sink');
+    const returns = st.filter((s) => s.kind === 'dirty');
+    const finite = sinks.length > 0 && returns.length > 0;
+    const hasCheese = st.some((s) => s.kind === 'crate' && s.crate === 2);
     let cutHere = false;
-    if (me.item && !this.hadItem) this.nextCrate = 1 - this.nextCrate;
+    if (me.item && !this.hadItem) this.nextCrate = (this.nextCrate + 1) % (hasCheese ? 3 : 2);
     this.hadItem = !!me.item;
-    if (me.item === 'raw0' || me.item === 'raw1') target = nearest(boards.filter((b) => !b.item));
-    else if (me.item === 'cut0' || me.item === 'cut1') {
-      target = nearest(pots.filter((p) => !p.done && p.inputs.length < 2 && !p.inputs.includes(cutType(me.item))))
+    const cutT = (it: string | null) => (it === 'cut0' ? 0 : it === 'cut1' ? 1 : it === 'cut2' ? 2 : -1);
+    if (me.item === 'raw0' || me.item === 'raw1' || me.item === 'raw2') target = nearest(boards.filter((b) => !b.item));
+    else if (me.item === 'cut0' || me.item === 'cut1' || me.item === 'cut2') {
+      const t = cutT(me.item);
+      target = nearest(pots.filter((p) => !p.done && p.inputs.length < 3 && !p.inputs.includes(t) && (t < 2 || p.inputs.length >= 1)))
         ?? nearest(counters.filter((c) => !c.item && c.tx >= 6 && c.tx <= 8 && c.ty >= 1 && c.ty <= 7));
     } else if (me.item === 'plate') target = nearest(pots.filter((p) => p.done));
-    else if (me.item === 'dish') target = nearest(st.filter((s) => s.kind === 'window'));
+    else if (me.item === 'dish' || me.item === 'dishQ') target = nearest(st.filter((s) => s.kind === 'window'));
+    else if (me.item === 'dirty') target = nearest(sinks);
     else {
       const crates = st.filter((s) => s.kind === 'crate');
       const canCrate = !!nearest(crates);
-      if (pots.some((p) => p.done)) target = nearest(st.filter((s) => s.kind === 'plates'));
+      const dirtyAt = returns.find((r) => r.count > 0), washing = sinks.find((k) => k.count > 0);
+      if (pots.some((p) => p.done)) {
+        const pile = st.filter((s) => s.kind === 'plates' && (!finite || s.count > 0));
+        target = nearest(pile) ?? nearest(sinks.filter((k) => k.clean > 0));
+        if (!target && washing) { target = washing; cutHere = true; }
+      } else if (washing && (this.slot % 4 === 3 || !canCrate)) { target = washing; cutHere = true; }
+      else if (dirtyAt && this.slot % 4 === 3) target = dirtyAt;
       else {
         const ready = boards.filter((b) => b.item?.startsWith('cut'));
         const raw = boards.filter((b) => b.item?.startsWith('raw'));
@@ -142,7 +155,9 @@ class Bot {
         else if (ready.length) target = nearest(ready);
         else if (raw.length) { target = nearest(raw); cutHere = !!target; }
         else {
-          const wantType = pots.some((p) => p.inputs.includes(0)) ? 1 : pots.some((p) => p.inputs.includes(1)) ? 0 : this.nextCrate;
+          const have = new Set(pots.filter((p) => !p.done).flatMap((p) => p.inputs));
+          const missing = [0, 1, ...(hasCheese ? [2] : [])].filter((k) => !have.has(k));
+          const wantType = missing.length ? missing[this.slot % missing.length]! : this.nextCrate;
           target = nearest(crates.filter((s) => s.crate === wantType)) ?? nearest(crates);
         }
       }
@@ -164,6 +179,7 @@ class Bot {
     this.stable++;
     if (this.stable < 3) return;
     if (cutHere && !me.item) { this.btn = 2; return; }
+    if (target.kind === 'sink' && me.item !== 'dirty' && target.count > 0 && !me.item) { this.btn = 2; return; }
     this.btn = 0;
     if (now - this.lastPress > 500) { this.a++; this.lastPress = now; this.waitUntil = now + 120; }
   }
@@ -238,10 +254,14 @@ async function main() {
       await tap(ob.x, ob.y);
       console.log('after tapping "Cómo se juega":', await cdp.eval(`document.body.dataset.howto`));
       await tap(422, 195);
-      fake.send(JSON.stringify({ t: 'phase', phase: 'playing' }));
+      fake.send(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { cheese: true, sink: true, assign: [{ id: 1, puestos: ['horno', 'reparto'], pool: ['masa', 'corte', 'queso', 'horno', 'reparto', 'lavado', 'apoyo'] }] } }));
       await sleep(800);
       await cdp.shot('phone-play');
       const r = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('btnB').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+      const sw = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('pswap').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+      await tap(sw.x, sw.y);
+      console.log('after Cambiar:', await cdp.eval(`document.getElementById('pname').textContent`));
+      await cdp.shot('phone-play-swap');
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.x, y: r.y, id: 1 }] });
       await sleep(250);
       await cdp.shot('phone-play-hold');
@@ -314,7 +334,7 @@ async function main() {
       bots.forEach((b) => b.startSending());
       timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
       await waitFor((s) => s.countdown <= 0 && s.time > 0, 8000);
-      const good = await waitFor((s) => s.players.some((p) => p.cutting) && s.stations.some((x) => x.kind === 'pot' && (x.inputs.length === 2 || x.done)) && s.orders.length >= 1, Number(process.env.WAIT_MS ?? 90_000));
+      const good = await waitFor((s) => s.players.some((p) => p.cutting) && s.stations.some((x) => x.kind === 'pot' && (x.inputs.length >= 2 || x.done)) && s.orders.length >= 1, Number(process.env.WAIT_MS ?? 90_000));
       console.log(`map ${mapId} scene ready:`, !!good, good ? `score ${good.score}` : '');
       await cdp.shot(`game-map${mapId}${n > 4 ? '-8chefs' : ''}`);
       if (results) {
@@ -342,6 +362,34 @@ async function main() {
         for (let i = 0; i < 6; i++) { await cdp.shot(`solo-chop${i}`, { x: cx - 170, y: cy - 200, width: 340, height: 260, scale: 2 }); await sleep(30); }
       }
       timers.splice(0).forEach(clearInterval);
+    }
+    if (what === 'newmaps') {
+      // lobby with 5 players (filter by N), then three new maps: 2 chefs, 5 chefs (sink + cheese), 8 chefs with bots
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const scenario: [string, number][] = (process.env.SCENARIOS ?? '6:2,10:5,12:8').split(',').map((x) => [x.split(':')[0]!, Number(x.split(':')[1])]);
+      for (const [id, n] of scenario) {
+        const room = `N${id}X`.padEnd(4, 'X').slice(0, 4);
+        await open(room);
+        await join(room, n, fixedMap(id)!.rows);
+        await sleep(800);
+        await cdp.shot(`lobby-n${n}`);
+        await click(`[data-map="${id}"]`); await click('[data-diff="easy"]'); await sleep(300);
+        await cdp.shot(`lobby-n${n}-map${id}`);
+        await click('#start'); await sleep(1500); await key('Enter');
+        await sleep(2100); await cdp.shot(`map${id}-n${n}-countdown`);
+        bots.forEach((b) => b.startSending());
+        timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+        await waitFor((s) => s.countdown <= 0 && s.time > 9000, 20_000);
+        await cdp.shot(`map${id}-n${n}-icons`);
+        const good = await waitFor((s) => s.stations.some((x) => x.kind === 'pot' && x.inputs.length >= 2) && s.players.some((p) => p.cutting), Number(process.env.WAIT_MS ?? 70_000));
+        console.log(`map ${id} n=${n} scene ready:`, !!good);
+        await sleep(1500);
+        await cdp.shot(`map${id}-n${n}-play`);
+        if (process.env.LATE) { await sleep(Number(process.env.LATE)); await cdp.shot(`map${id}-n${n}-late`); }
+        timers.splice(0).forEach(clearInterval);
+        bots.splice(0).forEach((b) => b.close());
+        await sleep(400);
+      }
     }
     if (what === 'maps') {
       for (const id of ['2', '4', '5']) {

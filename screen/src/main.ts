@@ -363,7 +363,7 @@ function renderUi() {
     const tags = `${f.cheese ? '<i class="tag" title="Queso: Margarita">Q</i>' : ''}${f.sink ? '<i class="tag l" title="Lavado de platos">L</i>' : ''}`;
     return `<button class="${cls}" data-map="${map.id}"><span class="t"><b>${map.id}</b>${esc(map.name)}</span><span class="m">${map.nMin}-${map.nMax}<span class="st">${'★'.repeat(map.stars)}</span>${tags}</span>${status.state === 'recommended' ? '' : `<span class="why">${status.reason}</span>`}</button>`;
   });
-  const special = [['auto', 'Aleatorio', 'entre los recomendados'], ['random', 'Mapa generado', 'semilla nueva']]
+  const special = [['auto', 'Aleatorio', 'de los ideales'], ['random', 'Mapa generado', 'semilla nueva']]
     .map(([id, label, sub]) => `<button class="mc special ${id === config.map ? 'sel' : ''}" data-map="${id}"><span class="t">${label}</span><span class="m">${sub}</span></button>`);
   setHtml('maps', [...cards, ...special].join(''));
   $('mapfor').textContent = `· para ${n} ${n === 1 ? 'jugador' : 'jugadores'}`;
