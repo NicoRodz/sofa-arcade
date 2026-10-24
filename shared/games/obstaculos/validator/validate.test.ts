@@ -30,6 +30,13 @@ describe('envelope: jumps come from stepPlayer and must use <= 92 % of it', () =
     expect(r.ok).toBe(true);
     expect(r.path.some((e) => e.kind === 'tower' || e.kind === 'throw')).toBe(true);
   });
+  it('tied with 2 players the 168 px rope caps the tower: a 3-tile step is fine, 4 is not (free: the tower of 2 still does it)', () => {
+    expect(ok(wallLevel(3), 2, 'chain').ok).toBe(true);
+    const tied = ok(wallLevel(4), 2, 'chain');
+    expect(tied.ok).toBe(false);
+    expect(tied.errors.join()).toMatch(/pioneer cannot reach G/);
+    expect(ok(wallLevel(4), 2, 'free').ok).toBe(true);
+  });
   it('5 tiles need 3 players (tower of 2): n = 2 fails, n = 3 passes', () => {
     expect(ok(wallLevel(5), 2).ok).toBe(false);
     expect(ok(wallLevel(5), 3).ok).toBe(true);

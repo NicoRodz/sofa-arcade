@@ -29,6 +29,11 @@ export interface Graph {
 }
 
 export const CHAIN_MAX_DX = 4.5 * TILE; // chain mode: the rope (3.5 tiles) plus a tile of slack keeps a single jump under this, takeoff to landing
+// Tied with 2 players the single rope holds the climber within ROPE_LEN of the partner left below (centre to centre). A step of `rise` px
+// lands the climber at hypot(rise, one body width) from a base that hugs the wall: past ROPE_LEN no tower, hand or throw gets anybody
+// up, whatever the jump envelope says. Only n = 2 is modelled (one link); with more players the cordada chain reaches further (plan B1).
+export const ROPE_RISE_DX = PLAYER_W;
+export const ropeCapsRise = (env: Env, rise: number): boolean => env.mode === 'chain' && env.n === 2 && rise > 0 && Math.hypot(rise, ROPE_RISE_DX) > ROPE_LEN;
 export const SWING_NEAR = 4.5 * TILE; // the swinger hangs from a ring within this of it (L + 1 tile)
 export const SWING_FAR = 7.5 * TILE; // and lets go anywhere within this: pendulum + rope jump (assumption, F2a calibrates)
 const HAND_FACE_PX = 20;
@@ -247,6 +252,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     const dx = Math.abs(l.landX - l.takeoffX);
     if (env.mode === 'chain' && dx > CHAIN_MAX_DX) return null;
     const tgt = segs[to]!;
+    if (ropeCapsRise(env, feetOfRow(from.row) - feetOfRow(tgt.row))) return null;
     const timing = from.tramp === true || tgt.tramp === true || surfaceTiming(grid, from.row, from.x0, from.x1) || surfaceTiming(grid, tgt.row, tgt.x0, tgt.x1) || l.steps > 140;
     return { from: from.id, to, kind, coop, timing, steps: l.steps, takeoffX: l.takeoffX, landX: l.landX, plan, k, rise: feetOfRow(from.row) - feetOfRow(tgt.row), landCell: { x: l.cx, y: l.ty } };
   };
