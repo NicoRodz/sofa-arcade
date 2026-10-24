@@ -20,6 +20,14 @@ import { iris } from './art/iris';
 import { toggleShake } from './art/fx';
 import { HOWTO_MS, howToOnKey, isExpired, progress, secondsLeft, type HowToState } from './howto';
 import { MainScene, type Host } from './scene';
+import {
+  GAME_ID as OBST_ID, LEVELS as OBST_LEVELS, MODE_BLURB, MODE_LABEL, RANDOM_LEVEL, fixedExpedition, levelCompat, parseObstOptions, resolveLevel, toModeOptions,
+  DIFFICULTY_PARAMS as OBST_DIFFICULTY, type Biome, type GameMode, type ObstOptions, type RunSummary,
+} from '@party/shared/obstaculos';
+import { ObstRun } from './games/obstaculos/host';
+import { ObstaclesScene } from './games/obstaculos/render/scene';
+import { initObstAudio, type MusicState } from './games/obstaculos/audio';
+import { snapshot as snapshotObst } from '@party/shared/obstaculos';
 import type { PuestoView } from './art/puestos';
 import { assignPuestos, featuresOf, type PuestoId } from '@party/shared/puestos';
 import { C, H, W } from './art/tokens';
@@ -67,9 +75,17 @@ let debugOverride = false;
 let screenRtt = NaN;
 let totalPkts = 0;
 let pktsRate = 0;
+let activeGame: 'pizzas' | 'obstaculos' = 'pizzas'; // the game of the round that is running (or just ran): config.game can change in the lobby meanwhile
+let obstRun: ObstRun | null = null;
+let obstNotice = '';
 const audio = initAudio(gameBus, () => ({
-  phase, started: game.started, timeLeftMs: phase === 'playing' && game.started ? game.params.roundMs - game.time : null,
+  phase, started: game.started && activeGame === 'pizzas', timeLeftMs: phase === 'playing' && game.started && activeGame === 'pizzas' ? game.params.roundMs - game.time : null,
 }));
+const IDLE_MUSIC: MusicState = { biome: 'beach', playing: false, progress: 0, danger: 0, stragglers: 0, moving: false, checkpointed: false, maxRopeTension: 0, lavaNear: false };
+const obstAudio = initObstAudio(gameBus, () => obstRun?.biome ?? 'beach', () => (obstRun && phase === 'playing' ? obstRun.musicState() : IDLE_MUSIC));
+try { if (localStorage.getItem('pg.muted') === '1') obstAudio.toggleMute(); } catch { /* storage blocked */ }
+const obstOpts = (): ObstOptions => parseObstOptions(config.modeOptions);
+const slotName = (slot: number) => [...players.values()].find((p) => p.info.slot === slot)?.info.name ?? `J${slot + 1}`;
 
 const record = (kind: 'rtt' | 'lag', p: P, v: number) => {
   (kind === 'rtt' ? p.rtt : p.lag).push(v);
@@ -89,6 +105,7 @@ function upsert(info: PublicPlayer, reset = false) {
   }
   p.info = info;
   if (reset) p.ctl = { x: 0, y: 0, b: false };
+  obstRun?.setConnected(info.slot, info.connected);
   renderUi();
 }
 
@@ -97,6 +114,7 @@ function remove(id: number) {
   if (!p) return;
   players.delete(id);
   removePlayer(game, id);
+  obstRun?.setConnected(p.info.slot, false);
   renderUi();
 }
 
@@ -105,7 +123,10 @@ const sendMsg = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.se
 function setPhase(next: Phase) {
   if (next === phase) return;
   phase = next;
-  if (phase === 'playing') {
+  if (phase === 'playing' && config.game === OBST_ID) startObst();
+  else if (phase === 'playing') {
+    activeGame = 'pizzas';
+    showScene('main');
     const n = connectedN();
     const map = resolveMap(config.map, config.seed, config.difficulty, n, Math.random);
     game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
@@ -124,12 +145,41 @@ function setPhase(next: Phase) {
     stats.delivered.clear();
     scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
-  else if (phase === 'lobby') scene.endRound();
-  else if (phase === 'menu') menuSel = Math.max(0, menuCards(connectedCount()).findIndex((c) => c.id === config.game)); // coming back: the game just left stays highlighted
+  else if (phase === 'lobby') { scene.endRound(); endObst(); }
+  else if (phase === 'menu') { endObst(); menuSel = Math.max(0, menuCards(connectedCount()).findIndex((c) => c.id === config.game)); } // coming back: the game just left stays highlighted
   // cooperative: every player carries the team score
-  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: game.score })) : undefined, puestos: phase === 'playing' ? puestoMsg : undefined });
+  const teamScore = activeGame === OBST_ID ? obstRun?.session.run.score ?? 0 : game.score;
+  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: teamScore })) : undefined, puestos: phase === 'playing' && activeGame === 'pizzas' ? puestoMsg : undefined });
   renderUi();
 }
+
+// ---- Obstaculos en cadena: the expedition runs in its own Phaser scene (the real world at 60 Hz, see games/obstaculos/host.ts)
+const biomeColor: Record<Biome, string> = { beach: '#F2D49B', forest: '#4E7D3A', mine: '#B87333', glacier: '#BFE8F5', volcano: '#FF5A1F' };
+function showScene(which: 'main' | 'obst') {
+  const sm = phaser.scene;
+  if (which === 'obst') {
+    if (sm.isActive('main')) sm.sleep('main');
+    if (sm.isSleeping('obstaculos')) sm.wake('obstaculos'); else if (!sm.isActive('obstaculos')) sm.start('obstaculos');
+  } else {
+    if (sm.isActive('obstaculos') || sm.isSleeping('obstaculos')) { obstScene.endLevel(); if (sm.isActive('obstaculos')) sm.sleep('obstaculos'); }
+    if (sm.isSleeping('main')) sm.wake('main');
+  }
+}
+function startObst() {
+  const live = [...players.values()].filter((p) => p.info.connected);
+  const o = obstOpts();
+  const level = resolveLevel(o.level, live.length, o.tether);
+  puestoOf.clear(); puestoMsg = undefined;
+  activeGame = 'obstaculos';
+  obstSummary = null;
+  obstRun = new ObstRun({ mode: o.tether, difficulty: config.difficulty, level, seed: config.seed, slots: live.map((p) => p.info.slot) }, {
+    names: slotName, bus: gameBus, onOver: () => { obstSummary = obstRun?.session.summary() ?? null; dispatch('timeout'); },
+  });
+  showScene('obst');
+}
+function endObst() { obstRun = null; if (activeGame === OBST_ID) { showScene('main'); activeGame = 'pizzas'; } }
+let obstSummary: RunSummary | null = null;
+const obstStepMs: number[] = []; // ms the simulation step took, last 600 frames (perf check)
 const setConfig = (patch: Partial<LobbyConfig>) => {
   config = { ...config, ...patch };
   sendMsg({ t: 'config', ...config });
@@ -190,7 +240,7 @@ function onMessage(m: ServerMsg) {
     case 'player_joined': upsert(m.player, true); break;
     case 'player_left': {
       const p = players.get(m.playerId);
-      if (p) { p.info.connected = false; p.ctl = { x: 0, y: 0, b: false }; renderUi(); }
+      if (p) { p.info.connected = false; p.ctl = { x: 0, y: 0, b: false }; obstRun?.setConnected(p.info.slot, false); renderUi(); }
       break;
     }
     case 'player_removed': remove(m.playerId); break;
@@ -213,6 +263,7 @@ function onMessage(m: ServerMsg) {
       if (!p) return;
       totalPkts++; p.pkts++;
       p.ctl = { x: m.x, y: m.y, b: (m.btn & 2) !== 0 };
+      if (activeGame === 'obstaculos' && phase === 'playing') obstRun?.receive(p.info.slot, { x: m.x, y: m.y, presses: m.presses }); // the last packet of every phone
       const delta = p.tracker.update(m.presses);
       if (delta.some((d) => d > 0)) {
         p.pendA += delta[0] ?? 0;
@@ -246,7 +297,7 @@ const host: Host = {
   players: () => new Map([...players].map(([id, p]) => [id, p.info])),
   puestos: () => puestoOf,
   step(delta) {
-    if (phase !== 'playing' || performance.now() < gateUntil) { acc = 0; return; }
+    if (phase !== 'playing' || activeGame !== 'pizzas' || performance.now() < gateUntil) { acc = 0; return; }
     acc += Math.min(delta, 100);
     while (acc >= TICK_MS) {
       acc -= TICK_MS;
@@ -263,6 +314,16 @@ const host: Host = {
   },
 };
 const scene = new MainScene(host);
+const obstScene = new ObstaclesScene({
+  step(delta) {
+    if (phase !== 'playing' || activeGame !== OBST_ID || !obstRun || performance.now() < gateUntil) return;
+    const t0 = performance.now();
+    obstRun.step(delta);
+    obstStepMs.push(performance.now() - t0); if (obstStepMs.length > 600) obstStepMs.shift();
+  },
+  world: () => (obstRun && activeGame === OBST_ID && (phase === 'playing' || phase === 'results') ? obstRun.world() : null),
+  afterRender: (v) => obstRun?.afterRender(v),
+}, gameBus);
 // Called right after the frame is drawn: closest browser-side proxy for "visible on screen".
 const phaser = new Phaser.Game({
   type: Phaser.AUTO,
@@ -270,7 +331,7 @@ const phaser = new Phaser.Game({
   backgroundColor: C.cocoa,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: W, height: H },
   fps: { target: 60 },
-  scene,
+  scene: [scene, obstScene],
 });
 phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   const off = sync.offset;
@@ -282,6 +343,19 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   }
 });
 (window as unknown as { __pg: unknown }).__pg = {
+  // Obstaculos: state for the bots (a phone cannot see the world) and hooks for the capture tool. Never used by the game itself.
+  obst: () => {
+    if (!obstRun) return null;
+    const ss = obstRun.session, w = ss.world;
+    const full = JSON.parse(JSON.stringify(snapshotObst(w)));
+    delete full.grid;
+    return { ...full, phase, sess: ss.status, level: w.level.def.id, levelIndex: ss.levelIndex, tick: w.tick, countdownMs: ss.countdownMs, over: ss.over, world: w.status };
+  },
+  obstGrid: () => (obstRun ? { w: obstRun.session.world.grid.w, h: obstRun.session.world.grid.h, cells: Array.from(obstRun.session.world.grid.cells), rows: obstRun.session.world.level.def.rows } : null),
+  obstPerf: () => { const a = [...obstStepMs].sort((x, y) => x - y); return { n: a.length, p50: a[Math.floor(a.length * 0.5)] ?? 0, p95: a[Math.floor(a.length * 0.95)] ?? 0, max: a[a.length - 1] ?? 0, fps: phaser.loop.actualFps }; },
+  obstWin: () => { if (!obstRun) return; const w = obstRun.session.world, g = w.level.markers.goal[0]!; for (const p of w.players) if (p.connected) { p.body.x = g.x * 48 + 7; p.body.y = (g.y + 1) * 48 - 46; p.body.vx = 0; p.body.vy = 0; } },
+  obstFail: () => { if (!obstRun) return; for (const p of obstRun.session.world.players) p.body.y = 100_000; },
+  obstSkip: (ms: number) => { if (!obstRun) return; for (let t = 0; t < ms; t += 1000 / 60) obstRun.step(1000 / 60); },
   forceLobby: () => { if (phase === 'menu') setPhase('lobby'); }, // capture tool: skip the menu (and its player range)
   menu: () => ({ sel: menuSel, cards: menuCards(connectedCount()).map((c) => `${c.id}:${c.state}`) }),
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
@@ -380,6 +454,36 @@ function renderMenu() {
     el.querySelector('.tag')!.textContent = c.notice;
   });
 }
+// Obstaculos' lobby: mode (Encadenados / Libres), level or "Aleatorio" with its seed, and what the choice means for this group.
+function renderObstLobby() {
+  const n = connectedCount();
+  const o0 = obstOpts();
+  const fit = resolveLevel(o0.level, n, o0.tether);
+  if (fit !== o0.level && n >= 2) { // someone joined or left (or the mode changed): the level no longer fits, move to the next one that does and say so
+    obstNotice = `${o0.level === RANDOM_LEVEL ? 'Aleatorio' : `El nivel ${o0.level}`} no sirve con ${n} jugadores en ${MODE_LABEL[o0.tether]}: se cambió a ${fit === RANDOM_LEVEL ? 'Aleatorio' : `el nivel ${fit}`}`;
+    config = { ...config, modeOptions: toModeOptions({ ...o0, level: fit }) };
+    sendMsg({ t: 'config', ...config });
+  }
+  const o = obstOpts();
+  setHtml('obstmodes', (['chain', 'free'] as GameMode[]).map((m) => `<button class="pill ${m === o.tether ? 'sel' : ''}" data-tether="${m}" title="${MODE_BLURB[m]}">${MODE_LABEL[m]}</button>`).join(''));
+  const cells = OBST_LEVELS.map((l, i) => {
+    const c = levelCompat(l, n, o.tether);
+    return `<button class="mc ${c.ok ? 'rec' : 'blk'} ${o.level === i + 1 ? 'sel' : ''}" data-level="${i + 1}"><span class="t"><b>${i + 1}</b>${esc(l.name)}</span>`
+      + (c.ok ? `<span class="m"><i class="bio" style="background:${biomeColor[l.biome]}"></i>${l.players.min}-${l.players.max}<span class="st">${'★'.repeat(l.stars)}</span></span>` : `<span class="why">${c.reason}</span>`) + '</button>';
+  });
+  cells.push(`<button class="mc rnd ${o.level === RANDOM_LEVEL ? 'sel' : ''}" data-level="0"><span class="t">Aleatorio</span><span class="m">con semilla</span></button>`);
+  setHtml('obstlevels', cells.join(''));
+  $('obstfor').textContent = `· para ${n} ${n === 1 ? 'jugador' : 'jugadores'}`;
+  $('oseedrow').classList.toggle('off', o.level !== RANDOM_LEVEL);
+  $('oseed').textContent = String(config.seed);
+  const exp = o.level === RANDOM_LEVEL ? [] : fixedExpedition(o.level, Math.max(2, n), o.tether);
+  const info = $('obstinfo');
+  info.textContent = obstNotice || (o.level === RANDOM_LEVEL ? `Tres niveles generados con las semillas ${config.seed}, ${(config.seed + 1) % 2 ** 32} y ${(config.seed + 2) % 2 ** 32}` : `Expedición: ${exp.map((l) => l.name).join(' → ')}`);
+  info.classList.toggle('notice', !!obstNotice);
+  const dp = OBST_DIFFICULTY[config.difficulty];
+  $('obstlives').textContent = `${MODE_LABEL[o.tether]}: ${MODE_BLURB[o.tether].toLowerCase()} · ${Number.isFinite(dp.lives) ? `${dp.lives} vidas de equipo` : 'vidas ilimitadas'} · burbuja a los ${dp.bubbleSec} s fuera de cámara${dp.bubbleCostsLife ? ' (cuesta una vida)' : ''}`;
+  ($('start') as HTMLButtonElement).disabled = n < 2;
+}
 function menuAct(a: MenuAction) {
   const snd = soundFor(a);
   if (snd) audio.ui(NAV_SFX[snd]);
@@ -416,6 +520,10 @@ function renderUi() {
   renderChips();
   if (inMenu) { renderMenu(); return; }
   setHtml('diffs', DIFFICULTIES.map((d) => `<button class="pill ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join(''));
+  const isObst = config.game === OBST_ID;
+  $('pizzaops').classList.toggle('off', isObst); $('obstops').classList.toggle('off', !isObst); $('obstmodewrap').classList.toggle('off', !isObst);
+  $('start').textContent = isObst ? '¡A cruzar!' : '¡A cocinar!';
+  if (isObst) { renderObstLobby(); return; }
   const list = [...players.values()];
   const n = connectedN();
   syncMap(n);
@@ -466,9 +574,61 @@ const stats = { delivered: new Map<number, number>() };
 gameBus.on('delivered', (e) => stats.delivered.set(e.player, (stats.delivered.get(e.player) ?? 0) + 1));
 
 let resultsTimers: ReturnType<typeof setTimeout>[] = [];
+const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+const AWARDS: { key: 'ancla' | 'taxi' | 'coleccionista' | 'kamikaze' | 'pegamento'; label: string; why: string }[] = [
+  { key: 'ancla', label: 'Ancla', why: 'más tiempo agarrado a una argolla' }, { key: 'taxi', label: 'Taxi', why: 'lanzamientos y manos' },
+  { key: 'coleccionista', label: 'Coleccionista', why: 'más estrellas' }, { key: 'kamikaze', label: 'Kamikaze', why: 'más caídas' },
+  { key: 'pegamento', label: 'Pegamento', why: 'menos tiempo fuera de cámara' },
+];
+function renderObstResults() {
+  const sum = obstSummary ?? obstRun?.session.summary();
+  if (!sum) return;
+  $('resultsh').textContent = sum.reason === 'complete' ? '¡Expedición completa!' : 'Expedición terminada';
+  $('pizzares').classList.add('off'); $('obstres').classList.remove('off');
+  const starsEl = $('ostars');
+  starsEl.replaceChildren();
+  for (let i = 0; i < sum.expedition; i++) {
+    const cv = starCanvas();
+    if (i >= sum.cleared) cv.classList.add('off2');
+    starsEl.appendChild(cv);
+    resultsTimers.push(setTimeout(() => cv.classList.add('drop'), 500 + i * 550));
+  }
+  const fin = $('ofinalscore'), t0 = performance.now() + 400, dur = 1300;
+  const step = () => {
+    const k = Math.max(0, Math.min(1, (performance.now() - t0) / dur));
+    fin.textContent = String(Math.round(sum.score * (1 - (1 - k) ** 3)));
+    if (k < 1 && phase === 'results') requestAnimationFrame(step);
+  };
+  step();
+  const medal = { gold: ['gold', 'O'], silver: ['silver', 'P'], bronze: ['bronze', 'B'] } as const;
+  $('olevels').innerHTML = sum.levels.map((l) => {
+    const m = l.medal ? medal[l.medal] : ['none', '✕'];
+    return `<div class="olv${l.cleared ? '' : ' lost'}"><div class="h"><span class="medal ${m[0]}">${m[1]}</span>${esc(l.name)}</div>`
+      + `<div class="sub"><i class="bio" style="background:${biomeColor[l.biome]}"></i>Nivel ${l.index + 1}${l.retry ? ' · reintento ×0,5' : ''}${l.cleared ? '' : ' · sin vidas'}</div>`
+      + `<div class="row"><span>Tiempo</span><span>${clock(l.timeSec)} / par ${clock(l.parSec)}</span></div>`
+      + `<div class="row"><span>Estrellas</span><span>${l.stars}/${l.starsMax} ★</span></div>`
+      + `<div class="row"><span>Vidas</span><span>${Number.isFinite(l.livesLeft) ? `${l.livesLeft}` : '∞'} · caídas ${l.deaths}</span></div>`
+      + `<div class="row"><span>Checkpoints</span><span>${l.checkpoints}/${l.checkpointsMax}</span></div>`
+      + `<div class="pts">${l.cleared ? '+' : ''}${l.score}</div></div>`;
+  }).join('');
+  const aw = $('oawards');
+  aw.replaceChildren();
+  for (const a of AWARDS) {
+    const slot = sum.awards[a.key];
+    if (slot === null) continue;
+    const el = document.createElement('div');
+    el.className = 'award'; el.title = a.why;
+    el.innerHTML = `<div><small>${a.label}</small>${esc(slotName(slot))}</div>`;
+    el.insertBefore(chefCanvas(slot, 'happy', true), el.firstChild);
+    aw.appendChild(el);
+  }
+}
 function renderResults() {
   resultsTimers.forEach(clearTimeout);
   resultsTimers = [];
+  if (activeGame === OBST_ID) { renderObstResults(); return; }
+  $('resultsh').textContent = '¡Fin de la ronda!';
+  $('pizzares').classList.remove('off'); $('obstres').classList.add('off');
   const sum = summarize(game);
   const st = sum.stars;
   const starsEl = $('stars');
@@ -537,12 +697,26 @@ $('maps').addEventListener('click', (e) => {
   setConfig({ map: m });
 });
 $('again-seed').addEventListener('click', () => setConfig({ seed: (config.seed + 1) % 2 ** 32 }));
+$('oseed-new').addEventListener('click', () => { obstNotice = ''; setConfig({ seed: (config.seed + 1) % 2 ** 32 }); });
+const setObst = (patch: Partial<ObstOptions>) => { obstNotice = ''; setConfig({ modeOptions: toModeOptions({ ...obstOpts(), ...patch }) }); };
+$('obstmodes').addEventListener('click', (e) => {
+  const t = (e.target as HTMLElement).closest<HTMLElement>('[data-tether]')?.dataset.tether;
+  if (t === 'chain' || t === 'free') setObst({ tether: t });
+});
+$('obstlevels').addEventListener('click', (e) => {
+  const v = (e.target as HTMLElement).closest<HTMLElement>('[data-level]')?.dataset.level;
+  if (v === undefined) return;
+  const lv = Number(v);
+  if (lv !== RANDOM_LEVEL && !levelCompat(OBST_LEVELS[lv - 1]!, connectedCount(), obstOpts().tether).ok) return;
+  setObst({ level: lv });
+});
 $('start').addEventListener('click', () => startRound());
 $('again').addEventListener('click', () => dispatch('again'));
 $('howtobtn').addEventListener('click', () => { if (!howTo && !starting && phase === 'lobby') openHowTo('preview'); });
 $('howto').addEventListener('click', () => { if (howTo?.mode === 'preview') closeHowTo(); });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); return; }
+  if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) obstAudio.toggleMute(); // the pizza audio listens to the same key
   if ((e.key === 's' || e.key === 'S') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { toggleShake(); return; }
   const act = starting ? 'none' : howToOnKey(howTo, phase, e.key);
   if (act === 'open-preview') { openHowTo('preview'); return; }

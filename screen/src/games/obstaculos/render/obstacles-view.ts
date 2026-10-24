@@ -134,7 +134,7 @@ export class ObstaclesView {
     on('obst.runEnd', (e) => this.hud.banner(e.reason === 'complete' ? '¡EXPEDICIÓN COMPLETA!' : 'EXPEDICIÓN TERMINADA', e.reason === 'complete' ? C.cheese : C.danger, 3500, 84));
   }
 
-  banner(text: string, color: string, ms?: number) { this.hud.banner(text, color, ms); }
+  banner(text: string, color: string, ms?: number, size?: number) { this.hud.banner(text, color, ms, size); }
 
   update(dtMs: number): void {
     const w = this.world, cam = this.scene.cameras.main;

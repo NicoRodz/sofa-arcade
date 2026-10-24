@@ -4,6 +4,7 @@ import { fixedMap } from '@party/shared/maps';
 import { gameName, type GameControls, type HowTo } from '@party/shared/games';
 import { controlHtml, howToHtml, iconSvg } from '@party/shared/render';
 import { PUESTOS, type PuestoId } from '@party/shared/puestos';
+import { parseObstOptions, setupLabel } from '@party/shared/obstaculos/lobby';
 import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
@@ -170,7 +171,9 @@ function connect() {
       $('game').textContent = gameName(m.game);
       applyControls(m.controls);
       renderHowTo(m.game, gameName(m.game), m.howTo);
-      $('setup').textContent = `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
+      $('setup').textContent = m.game === 'obstaculos'
+        ? setupLabel(parseObstOptions(m.modeOptions), m.difficulty, m.seed, DIFFICULTY_LABEL)
+        : `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores, m.puestos);
     } else if (m.t === 'buzz') {

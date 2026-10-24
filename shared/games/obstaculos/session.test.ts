@@ -48,7 +48,7 @@ describe('lobby options and the levels the selector offers', () => {
     expect(compatibleLevels(2, 'free').map((l) => l.id)).not.toContain('l14'); // lava: Encadenados only
     expect(compatibleLevels(4, 'free').map((l) => l.id)).toContain('l08'); // the balance: Libres only
     expect(compatibleLevels(2, 'chain').map((l) => l.id)).not.toContain('l08');
-    expect(levelCompat(LEVELS[7]!, 2, 'free')).toEqual({ ok: false, reason: 'necesita al menos 4 jugadores' });
+    expect(levelCompat(LEVELS[7]!, 2, 'free')).toEqual({ ok: false, reason: 'mín. 4 jug.' });
     expect(levelCompat(LEVELS[8]!, 8, 'free').ok).toBe(false); // level 9: 2-4 players
   });
   it('a choice that stops fitting moves to the next level that does, then to the previous one, then to random', () => {

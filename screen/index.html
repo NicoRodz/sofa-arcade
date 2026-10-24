@@ -158,6 +158,44 @@
   @keyframes crownbob { to { transform: translateX(-50%) translateY(-6px) rotate(4deg); } }
   #again { margin-top: 26px; }
 
+
+  /* Obstaculos en cadena: lobby and results */
+  #obstmodewrap { margin-left: 40px; }
+  #obstlevels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  #obstlevels .mc { height: 96px; }
+  #obstlevels .mc.blk .why { white-space: normal; -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; font-size: 17px; }
+  #obstlevels .mc .t b { font-size: 24px; }
+  #obstlevels .mc.rnd { background: #E6D5AF; justify-content: center; }
+  #obstlevels .mc.rnd.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+  .bio { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); vertical-align: -1px; margin-right: 4px; }
+  #oseedrow { margin-top: 8px; font: 600 22px var(--font); color: var(--muted); }
+  #oseedrow b { color: var(--ink); }
+  #oseed-new { height: 40px; font-size: 20px; padding: 0 16px; margin-left: 10px; }
+  #obsthints { position: absolute; left: 26px; right: 26px; bottom: 10px; }
+  #obsthints .hint { margin: 0; min-height: 30px; }
+  #obsthints .hint.notice { color: var(--tomato2); }
+
+  #ostars { display: flex; justify-content: center; gap: 18px; height: 128px; margin-top: 10px; }
+  #ostars canvas { width: 120px; height: 120px; transform: translateY(-700px) scale(2.2); opacity: 0; }
+  #ostars canvas.drop { animation: stardrop .6s cubic-bezier(.3,1.5,.5,1) forwards; }
+  #ostars canvas.off2 { filter: grayscale(1) brightness(.75); }
+  #obigscore { font: 800 100px/1 var(--font); color: var(--ink); }
+  #obigscore small { display: block; font: 800 22px var(--font); letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
+  #olevels { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 16px; margin: 16px 0 6px; text-align: left; }
+  .olv { border: 4px solid var(--ink); border-radius: 16px; background: #F6E8CB; padding: 10px 16px 12px; box-shadow: 0 5px 0 rgba(43,27,23,.2); }
+  .olv.lost { background: #EBD0CB; }
+  .olv .h { display: flex; align-items: center; gap: 10px; font: 800 26px/1.1 var(--font); }
+  .olv .medal { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--ink); font: 800 20px/30px var(--font); text-align: center; color: var(--ink); }
+  .olv .medal.gold { background: #FFD23F; } .olv .medal.silver { background: #DDE6EC; } .olv .medal.bronze { background: #E0A064; } .olv .medal.none { background: #CBB8A6; }
+  .olv .sub { font: 700 18px var(--font); color: var(--muted); margin: 2px 0 8px; }
+  .olv .row { display: flex; justify-content: space-between; font: 700 22px/1.45 var(--font); }
+  .olv .row span:first-child { color: var(--muted); font-size: 19px; }
+  .olv .pts { margin-top: 6px; font: 800 30px var(--font); color: var(--basil2); text-align: right; }
+  #oawards { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin: 14px 0 2px; }
+  .award { display: flex; align-items: center; gap: 8px; padding: 4px 16px 4px 6px; border: 3px solid var(--ink); border-radius: 40px; background: #F1E3C6; font: 800 22px var(--font); }
+  .award canvas { width: 40px; height: 56px; margin: -8px 0 -6px; }
+  .award small { display: block; font: 700 15px var(--font); color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
   #howto { position: fixed; inset: 0; z-index: 40; background: rgba(28,16,12,.78); backdrop-filter: blur(5px); }
   #howtoInner { position: absolute; inset: 0; margin: auto; width: 1480px; height: max-content; padding: 26px 48px 30px; animation: slideup .5s cubic-bezier(.2,1.2,.3,1) both; }
   #howto h2 { margin: 0; text-align: center; font: 800 68px/1 var(--font); color: var(--tomato); -webkit-text-stroke: 14px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 rgba(43,27,23,.3); }
@@ -213,12 +251,21 @@
       <div id="setup" class="panel">
         <div class="row">
           <div><h3>Dificultad</h3><div id="diffs" class="seg"></div></div>
+          <div id="obstmodewrap" class="off"><h3>Modo</h3><div id="obstmodes" class="seg"></div></div>
         </div>
-        <h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
-        <div id="maps"></div>
-        <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
-        <canvas id="minimap" width="232" height="130"></canvas>
-        <div id="hints"><div id="diffinfo" class="hint"></div><div id="mapinfo" class="hint"></div></div>
+        <div id="pizzaops">
+          <h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
+          <div id="maps"></div>
+          <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
+          <canvas id="minimap" width="232" height="130"></canvas>
+          <div id="hints"><div id="diffinfo" class="hint"></div><div id="mapinfo" class="hint"></div></div>
+        </div>
+        <div id="obstops" class="off">
+          <h3 style="margin-top:12px">Nivel <span id="obstfor" style="letter-spacing:0;text-transform:none"></span></h3>
+          <div id="obstlevels"></div>
+          <div id="oseedrow" class="off">Semilla <b id="oseed"></b> <button id="oseed-new" class="pill">Otra</button></div>
+          <div id="obsthints"><div id="obstinfo" class="hint"></div><div id="obstlives" class="hint"></div></div>
+        </div>
       </div>
       <button id="start" class="btn" disabled>¡A cocinar!</button>
       <div id="starthint">Enter para empezar<br><button id="howtobtn" class="pill">H · Cómo se juega</button><br><small>M sonido · S sacudida de pantalla</small></div>
@@ -227,12 +274,20 @@
 </div>
   <section id="results" class="off">
     <div class="stage"><div id="resultsInner" class="panel">
-      <h2>¡Fin de la ronda!</h2>
-      <div id="stars"></div>
-      <div id="bigscore"><small>Puntaje del equipo</small><span id="finalscore">0</span></div>
-      <div id="starline"></div>
-      <div id="stats"></div>
-      <div id="podium"></div>
+      <h2 id="resultsh">¡Fin de la ronda!</h2>
+      <div id="pizzares">
+        <div id="stars"></div>
+        <div id="bigscore"><small>Puntaje del equipo</small><span id="finalscore">0</span></div>
+        <div id="starline"></div>
+        <div id="stats"></div>
+        <div id="podium"></div>
+      </div>
+      <div id="obstres" class="off">
+        <div id="ostars"></div>
+        <div id="obigscore"><small>Puntaje de la expedición</small><span id="ofinalscore">0</span></div>
+        <div id="olevels"></div>
+        <div id="oawards"></div>
+      </div>
       <button id="again" class="btn">Volver al lobby</button>
     </div></div>
   </section>

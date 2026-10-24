@@ -30,9 +30,9 @@ export const tetherAllows = (def: LevelDef, mode: GameMode): boolean => def.teth
 export type Compat = { ok: true; reason: '' } | { ok: false; reason: string };
 // "The selector hides the incompatible levels" (plan §10): with 2 players 11 remain; with 8 in Encadenados, 12.
 export function levelCompat(def: LevelDef, n: number, mode: GameMode): Compat {
-  if (n < def.players.min) return { ok: false, reason: `necesita al menos ${def.players.min} jugadores` };
-  if (n > def.players.max) return { ok: false, reason: `admite hasta ${def.players.max} jugadores` };
-  if (!tetherAllows(def, mode)) return { ok: false, reason: def.tether === 'chainOnly' ? 'solo en Encadenados' : 'solo en Libres' };
+  if (n < def.players.min) return { ok: false, reason: `mín. ${def.players.min} jug.` };
+  if (n > def.players.max) return { ok: false, reason: `máx. ${def.players.max} jug.` };
+  if (!tetherAllows(def, mode)) return { ok: false, reason: def.tether === 'chainOnly' ? 'solo Encadenados' : 'solo Libres' };
   return { ok: true, reason: '' };
 }
 export const compatibleLevels = (n: number, mode: GameMode): LevelDef[] => LEVELS.filter((l) => levelCompat(l, n, mode).ok);

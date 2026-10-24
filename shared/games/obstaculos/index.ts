@@ -20,3 +20,4 @@ export * from './session';
 export * from './bot';
 export { hangingOnRope } from './sim/rope';
 export { awardsOf, awards, type Awards } from './sim/rules';
+export { progressField as levelProgressField } from './sim/rules';
