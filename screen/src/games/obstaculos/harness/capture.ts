@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
 
-const PORT = 3530, CDP = 9533;
+const PORT = Number(process.env.PORT ?? 3530), CDP = Number(process.env.CDP ?? 9533); // the campaign sessions use PORT=4200 CDP=9710
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const outDir = path.resolve(process.argv[2] ?? 'shots');
 const which = process.argv.slice(3);
@@ -154,6 +154,16 @@ async function main() {
       for (const [lv, name] of [[4, 'l4'], [8, 'l8']] as const) {
         await cdp.eval(start({ level: lv, n: 4, mode: lv === 8 ? 'free' : 'chain', bots: false })); await sleep(300);
         await cdp.eval('window.obst.ff(0.5)'); await sleep(200); await cdp.shot(`ents-${name}`);
+      }
+    }
+    if (run('a5')) { // campaign A5 on the real session: [scenario, seconds into the level to look at, name]
+      const shots: [string, number, string][] = [['balance', 5.2, 'a5-balance'], ['target', 5.8, 'a5-target-open'], ['enemies', 6.5, 'a5-enemies'], ['ice', 7, 'a5-ice'], ['wind', 5.6, 'a5-wind-gust'],
+        ['pickaxe', 3.8, 'a5-pick-take'], ['pickaxe', 7.5, 'a5-pick-climb'], ['pickaxe', 10.5, 'a5-pick-top'], ['throw', 4.9, 'a5-throw-flight']];
+      let cur = '', at = 0;
+      for (const [id, t, name] of shots) {
+        if (id !== cur || t < at) { await cdp.eval(`window.obst.startSim(${JSON.stringify(id)})`); await sleep(500); cur = id; at = 0; }
+        await cdp.eval(`window.obst.ff(${t - at})`); at = t; await sleep(250); await cdp.shot(name);
+        console.log(name, JSON.stringify(await cdp.eval('(() => { const w = window.obst.sim().session.world; return { tick: w.tick, status: w.status, p0: [Math.round(w.players[0].body.x), Math.round(w.players[0].body.y)], p1: [Math.round(w.players[1].body.x), Math.round(w.players[1].body.y)] }; })()')));
       }
     }
     if (run('fps')) {

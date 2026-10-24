@@ -182,8 +182,10 @@ describe('dynamic 6: soft enemies (they shove, never kill; landing on one stuns 
     teleport(w, 0, 3, FLOOR); // out of the way (a head is a platform: the lander must not keep standing on the other player's)
     const x0 = cx(w);
     teleport(w, 1, 20, FLOOR); pl(w, 1).body.x = x0 - 17;
+    const p1x = pl(w, 1).body.x;
     const ev2 = run(w, 60);
     expect(cx(w)).toBe(x0); // not moving while stunned
+    expect(pl(w, 1).body.x).toBe(p1x); // standing inside it, nobody shoves: it is harmless (the cue alone would hide a shove: it has a cooldown)
     expect(of(ev2, 'obst.enemy').filter((e) => e.action === 'push')).toEqual([]);
     run(w, steps(3));
     expect(w.ent.enemies[0]!.stun).toBe(0);
@@ -359,9 +361,10 @@ describe('dynamic 9: pickaxe (a role item: climb ice walls at 1 tile/s, pass it 
     const w = mk();
     flush(w, 1);
     const y0 = pl(w, 1).body.y;
-    run(w, 120, up(1));
+    const ev = run(w, 120, up(1));
     expect(pl(w, 1).body.y).toBe(y0);
     expect(pl(w, 1).camp.pick).toBe(0);
+    expect(of(ev, 'obst.pickaxe')).toEqual([]); // not even a "climb" cue
   });
   it('with it, UP beside the wall clings and climbs 1 tile per second; it rings "climb" once', () => {
     const w = mk();
