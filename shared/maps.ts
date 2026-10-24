@@ -6,8 +6,8 @@ export const MAP_W = 16;
 export const MAP_H = 9;
 
 // # wall, . floor, S spawn (floor), ~ water, C counter, 1/2 ingredient crates, K board (stretch/cut),
-// O oven, P tray pile, E delivery counter, X trash.
-// Design legend (15-mapas.md) -> this code: T->C, M->1, R->2, C (table)->K, H->O; Q->3, U, L arrive with cheese and washing.
+// O oven, P tray pile, E delivery counter, X trash, 3 cheese crate (Margarita).
+// Design legend (15-mapas.md) -> this code: T->C, M->1, R->2, Q->3, C (table)->K, H->O; U and L arrive with washing.
 export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash';
 export type Tile =
   | { kind: 'wall' }
@@ -19,6 +19,7 @@ export type Grid = Tile[][];
 const STATIONS: Record<string, { station: StationKind; crate: number }> = {
   '1': { station: 'crate', crate: 0 },
   '2': { station: 'crate', crate: 1 },
+  '3': { station: 'crate', crate: 2 },
   K: { station: 'board', crate: 0 },
   O: { station: 'pot', crate: 0 },
   P: { station: 'plates', crate: 0 },
@@ -26,7 +27,7 @@ const STATIONS: Record<string, { station: StationKind; crate: number }> = {
   C: { station: 'counter', crate: 0 },
   X: { station: 'trash', crate: 0 },
 };
-export const STATION_CHAR: Record<string, string> = { crate0: '1', crate1: '2', board: 'K', pot: 'O', plates: 'P', window: 'E', counter: 'C', trash: 'X' };
+export const STATION_CHAR: Record<string, string> = { crate0: '1', crate1: '2', crate2: '3', board: 'K', pot: 'O', plates: 'P', window: 'E', counter: 'C', trash: 'X' };
 
 export function parseTile(c: string): Tile | null {
   if (c === '#') return { kind: 'wall' };
@@ -242,6 +243,52 @@ export const FIXED_MAPS: readonly MapDef[] = [
       '#.S....O....S.##',
       '#......P......##',
       '#CCC#######CCC##',
+    ],
+  },
+  {
+    id: '9', name: 'La trattoria', nMin: 3, nMax: 5, minDuro: 1, stars: 2,
+    rows: [
+      '##1#2#3####O#O##',
+      '#..............#',
+      '#.S.....S......#',
+      '#..............P',
+      'X...CKCKCKC.S..#',
+      '#..............E',
+      '#.S.....S......E',
+      '#..............#',
+      '#CCC######CCC#X#',
+    ],
+  },
+  {
+    // Design spawns (2,2) (12,6) (12,2) (2,6) (5,2) (9,6) (9,2) (5,6) put puesto 2 (Corte) far from the tomato and cheese crates:
+    // reordered so spawn i is next to the stations of puesto i (Masa, Corte, Horno, Reparto, Apoyo, Queso, Horno 2, Reparto 2).
+    id: '11', name: 'Tres carriles', nMin: 4, nMax: 8, minDuro: 1, stars: 2,
+    spawns: [[2, 2], [5, 6], [5, 2], [12, 6], [12, 2], [2, 6], [9, 2], [9, 6]],
+    rows: [
+      '##123##KK##CC#X#',
+      '#..............#',
+      '#.S..S...S..S..P',
+      '#..CCOCC.CCOCC.E',
+      'X..............E',
+      '#..CCOCC.CCOCC.E',
+      '#.S..S...S..S..P',
+      '#..............#',
+      '##123##KK##CC#X#',
+    ],
+  },
+  {
+    id: '15', name: 'El sótano', nMin: 3, nMax: 6, minDuro: 1, stars: 3,
+    spawns: [[2, 2], [8, 2], [2, 6], [12, 6], [5, 1], [12, 1]],
+    rows: [
+      '#1#2#3###K#K##X#',
+      '#....S.#....S..#',
+      '#.S.....S......#',
+      'X......#.......C',
+      '###.#C###C#.####',
+      '#......#.......E',
+      'O.S.........S..E',
+      'O......#.......P',
+      '#CCC#X######CC##',
     ],
   },
 ];

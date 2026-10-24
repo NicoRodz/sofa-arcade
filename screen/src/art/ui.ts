@@ -19,7 +19,7 @@ export function starCanvas(): HTMLCanvasElement {
 }
 
 const TILE_COLOR: Record<string, string> = {
-  '#': '#5B4038', '.': '#EFE3CC', S: '#EFE3CC', '~': '#4FA8E0', C: '#C98A4B', [STATION_CHAR.crate0!]: C.dough, [STATION_CHAR.crate1!]: C.tomato,
+  '#': '#5B4038', '.': '#EFE3CC', S: '#EFE3CC', '~': '#4FA8E0', C: '#C98A4B', [STATION_CHAR.crate0!]: C.dough, [STATION_CHAR.crate1!]: C.tomato, [STATION_CHAR.crate2!]: C.cheese,
   [STATION_CHAR.board!]: '#E6B980', [STATION_CHAR.pot!]: C.brick, [STATION_CHAR.plates!]: C.steel, [STATION_CHAR.window!]: C.fire2, [STATION_CHAR.trash!]: C.steel2,
 };
 export function drawMiniMap(cv: HTMLCanvasElement, rows: readonly string[]) {

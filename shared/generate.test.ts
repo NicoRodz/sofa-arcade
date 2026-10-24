@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTIES, params } from './difficulty';
-import { DIRS, MAP_H, MAP_W, MAPS_BY_DIFFICULTY, fixedMap, isFloor, parseMap, spawnPoints } from './maps';
+import { DIRS, MAP_H, MAP_W, MAPS_BY_DIFFICULTY, fixedMap, isFloor, parseMap, recommendedMaps, spawnPoints } from './maps';
 import { MAX_ATTEMPTS, applyArchetype, generate, inBand, placeStations, resolveMap, scatterObstacles, shape, stationCounts } from './generate';
 import { mulberry32 } from './rng';
 import { createGame, addPlayer } from './overcooked';
@@ -182,6 +182,8 @@ describe('resolveMap', () => {
     expect(r.rows).toEqual(generate(77, 'normal', 3).rows);
     expect(r.name).toContain('77');
     expect(resolveMap('3', 77, 'normal', 3, () => 0).rows).toEqual(fixedMap('3')!.rows);
-    expect(resolveMap('auto', 77, 'hard', 3, () => 0.99).rows).toEqual(fixedMap('5')!.rows);
+    const auto = resolveMap('auto', 77, 'hard', 3, () => 0.99);
+    expect(recommendedMaps(3).map((m) => m.id)).toContain(auto.id); // "auto" draws among the maps recommended for N
+    expect(auto.rows).toEqual(fixedMap(auto.id)!.rows);
   });
 });

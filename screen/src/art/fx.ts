@@ -91,6 +91,7 @@ export function makeText(scene: Phaser.Scene, x: number, y: number, text: string
 export class Fx {
   private chopDough: Phaser.GameObjects.Particles.ParticleEmitter;
   private chopTomato: Phaser.GameObjects.Particles.ParticleEmitter;
+  private chopCheese: Phaser.GameObjects.Particles.ParticleEmitter;
   private flour: Phaser.GameObjects.Particles.ParticleEmitter;
   private confetti: Phaser.GameObjects.Particles.ParticleEmitter;
   private stars: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -104,6 +105,7 @@ export class Fx {
     const bit = (tint: number) => ({ lifespan: 400, speed: { min: 80, max: 160 }, angle: { min: -170, max: -10 }, gravityY: 400, scale: { start: 0.9, end: 0.3 }, alpha: { start: 1, end: 0 }, tint });
     this.chopDough = mk('fx_dot', bit(hexNum(C.dough)));
     this.chopTomato = mk('fx_dot', bit(hexNum(C.tomato)));
+    this.chopCheese = mk('fx_dot', bit(hexNum(C.cheese)));
     this.dust = mk('fx_dot', { ...bit(0xffffff), speed: { min: 40, max: 90 }, lifespan: 300 });
     this.flour = mk('fx_flour', { lifespan: 500, speed: { min: 60, max: 100 }, angle: { min: 0, max: 360 }, scale: { start: 1.3, end: 0.4 }, alpha: { start: 0.8, end: 0 } });
     this.confetti = mk('fx_confetti', {
@@ -115,7 +117,7 @@ export class Fx {
     this.sparks = mk('fx_dot', { lifespan: 900, speedY: { min: -60, max: -30 }, speedX: { min: -14, max: 14 }, scale: { start: 0.8, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xff8a1f, 0xffc93c] });
   }
 
-  chop(x: number, y: number, type: number) { (type === 0 ? this.chopDough : this.chopTomato).explode(6, x, y); }
+  chop(x: number, y: number, type: number) { (type === 0 ? this.chopDough : type === 1 ? this.chopTomato : this.chopCheese).explode(6, x, y); }
   dustPoof(x: number, y: number) { this.dust.explode(5, x, y); }
   flourPuff(x: number, y: number) { this.flour.explode(10, x, y); }
   confettiBurst(x: number, y: number) { this.confetti.explode(30, x, y); }

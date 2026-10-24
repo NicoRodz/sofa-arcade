@@ -2,6 +2,7 @@
 import { Emitter, type GameEvents } from './events';
 import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type StationKind } from './maps';
 import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficulty, type Params } from './difficulty';
+import { mulberry32, type Rng } from './rng';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -11,7 +12,10 @@ export const REACH = 0.8; // probe distance from the player centre along the fac
 export const REACH_SLACK = 0.3; // max gap between probe and a station tile
 
 export type { StationKind } from './maps';
-export type Item = 'raw0' | 'raw1' | 'cut0' | 'cut1' | 'plate' | 'dish';
+// raw2/cut2 = cheese (Margarita). dishQ = a pizza that baked with cheese.
+export type Item = 'raw0' | 'raw1' | 'raw2' | 'cut0' | 'cut1' | 'cut2' | 'plate' | 'dish' | 'dishQ';
+export type Recipe = 'marinara' | 'margarita';
+export const RAW_OF: readonly Item[] = ['raw0', 'raw1', 'raw2'];
 
 export interface Station {
   kind: StationKind;
@@ -20,7 +24,7 @@ export interface Station {
   crate: number; // ingredient type, crates only
   item: Item | null; // boards and counters
   progress: number; // 0..1: board cutting or pot cooking
-  inputs: number[]; // pot: ingredient types inside
+  inputs: number[]; // pot: ingredient types inside (0 dough, 1 tomato, 2 cheese)
   done: boolean; // pot: dish ready
 }
 export interface Player {
@@ -35,7 +39,7 @@ export interface Player {
   cutting: boolean;
   chopAt: number; // station index being chopped, -1 if none
 }
-export interface Order { id: number; expiresAt: number; warned: boolean }
+export interface Order { id: number; expiresAt: number; warned: boolean; recipe: Recipe }
 export interface Controls { x: number; y: number; a: number; b: boolean } // a = new A presses since last tick
 export const COLS = MAP_W;
 export const ROWS = MAP_H;
@@ -61,21 +65,24 @@ export interface Game {
   players: Map<number, Player>;
   stations: Station[];
   orders: Order[];
+  rng: Rng; // seeded: which orders are Margarita
+  hasCheese: boolean;
   nextOrderAt: number;
   orderSeq: number;
 }
 
 export const isSolid = (g: Game, tx: number, ty: number) => !isFloor(g.grid, tx, ty);
 
-const spawnOrder = (g: Game) => {
+export const spawnOrder = (g: Game) => {
   if (g.orders.length < g.params.maxOrders) {
-    const o = { id: g.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false };
+    const recipe: Recipe = g.hasCheese && g.rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
+    const o: Order = { id: g.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe };
     g.orders.push(o);
-    g.bus.emit('orderNew', { order: o.id });
+    g.bus.emit('orderNew', { order: o.id, recipe });
   }
 };
 
-export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; countdownMs?: number; bus?: Emitter<GameEvents> } = {}): Game {
+export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents> } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows);
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const p = difficultyParams(difficulty, opts.n ?? 2);
@@ -83,7 +90,7 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
   grid.forEach((row, ty) => row.forEach((t, tx) => {
     if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false });
   }));
-  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
+  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], rng: mulberry32(opts.seed ?? 1), hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), nextOrderAt: p.orderEveryMs, orderSeq: 0 };
   for (let i = 0; i < p.initialOrders; i++) spawnOrder(g);
   return g;
 }
@@ -116,13 +123,15 @@ export function targetStation(g: Game, p: Player): Station | null {
   return best;
 }
 
-const cutOf = (i: Item): Item | null => (i === 'raw0' ? 'cut0' : i === 'raw1' ? 'cut1' : null);
-const cutType = (i: Item | null) => (i === 'cut0' ? 0 : i === 'cut1' ? 1 : -1);
+const cutOf = (i: Item): Item | null => (i === 'raw0' ? 'cut0' : i === 'raw1' ? 'cut1' : i === 'raw2' ? 'cut2' : null);
+const cutType = (i: Item | null) => (i === 'cut0' ? 0 : i === 'cut1' ? 1 : i === 'cut2' ? 2 : -1);
+// A pizza cooks once it has dough and tomato; cheese can still go on until it is done (then it is a Margarita).
+const baked = (s: Station) => s.inputs.includes(0) && s.inputs.includes(1);
 
 function interact(g: Game, p: Player, s: Station) {
   switch (s.kind) {
     case 'crate':
-      if (!p.item) p.item = s.crate === 0 ? 'raw0' : 'raw1';
+      if (!p.item) p.item = RAW_OF[s.crate] ?? 'raw1';
       break;
     case 'plates':
       if (!p.item) p.item = 'plate';
@@ -137,12 +146,12 @@ function interact(g: Game, p: Player, s: Station) {
       break;
     case 'pot': {
       const t = cutType(p.item);
-      if (t >= 0 && !s.done && !s.inputs.includes(t) && s.inputs.length < 2) {
+      if (t >= 0 && !s.done && !s.inputs.includes(t) && s.inputs.length < 3) {
         s.inputs.push(t);
-        s.progress = 0;
+        if (!baked(s)) s.progress = 0;
         p.item = null;
       } else if (p.item === 'plate' && s.done) {
-        p.item = 'dish';
+        p.item = s.inputs.includes(2) ? 'dishQ' : 'dish';
         s.done = false;
         s.inputs = [];
         s.progress = 0;
@@ -153,8 +162,13 @@ function interact(g: Game, p: Player, s: Station) {
       p.item = null;
       break;
     case 'window':
-      if (p.item === 'dish' && g.orders.length) {
-        const o = g.orders.shift()!;
+      if ((p.item === 'dish' || p.item === 'dishQ') && g.orders.length) {
+        // the order that asked for this pizza; a Margarita also satisfies a Marinara order, never the other way round
+        const want: Recipe = p.item === 'dishQ' ? 'margarita' : 'marinara';
+        let at = g.orders.findIndex((o) => o.recipe === want);
+        if (at < 0 && p.item === 'dishQ') at = 0;
+        if (at < 0) break;
+        const o = g.orders.splice(at, 1)[0]!;
         const { reward, tipMax, orderTtlMs } = g.params;
         const tip = Math.round((tipMax * Math.max(0, o.expiresAt - g.time)) / orderTtlMs);
         g.score += reward + tip;
@@ -168,13 +182,13 @@ function interact(g: Game, p: Player, s: Station) {
 
 // Runs one A press and reports what happened as events.
 function act(g: Game, p: Player, s: Station) {
-  const before = { held: p.item, shelf: s.item, inputs: s.inputs.length, done: s.done, delivered: g.delivered };
+  const before = { held: p.item, shelf: s.item, baked: baked(s), done: s.done, delivered: g.delivered };
   interact(g, p, s);
   if (g.delivered !== before.delivered) return; // 'delivered' already emitted
   if (!before.held && p.item) g.bus.emit('itemPicked', { player: p.id, item: p.item, from: s.kind });
   else if (before.held && !p.item) g.bus.emit('itemDropped', { player: p.id, item: before.held, at: s.kind });
   else g.bus.emit('interactInvalid', { player: p.id });
-  if (s.kind === 'pot' && before.inputs < 2 && s.inputs.length === 2) g.bus.emit('potStart', { station: g.stations.indexOf(s) });
+  if (s.kind === 'pot' && !before.baked && baked(s)) g.bus.emit('potStart', { station: g.stations.indexOf(s) });
 }
 
 function countdown(g: Game, dtMs: number) {
@@ -222,7 +236,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   }
 
   for (const s of g.stations) {
-    if (s.kind === 'pot' && !s.done && s.inputs.length === 2) {
+    if (s.kind === 'pot' && !s.done && baked(s)) {
       s.progress += dtMs / g.params.cookMs;
       if (s.progress >= 1) { s.progress = 1; s.done = true; g.bus.emit('potReady', { station: g.stations.indexOf(s) }); }
     }

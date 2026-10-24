@@ -47,17 +47,19 @@ export class Hud {
     this.dim = scene.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.35).setDepth(1900).setVisible(false);
   }
 
-  private makeTicket(id: number): Ticket {
+  private makeTicket(id: number, recipe: 'marinara' | 'margarita'): Ticket {
     const s = this.scene;
     const bg = s.add.image(0, 0, 'ticket_bg').setOrigin(0.5, 0).setScale(1 / R);
     const bar = new Bar(s, 100); bar.root.setPosition(0, 17);
-    const pizza = place(s, foodKey('pizza_done'), -27, 57, 1);
-    const dough = place(s, foodKey('dough_str'), 30, 46, 1).setScale(0.5 / R);
-    const tomato = place(s, foodKey('tomato_cut'), 30, 72, 1).setScale(0.52 / R);
+    const q = recipe === 'margarita'; // Margarita: three ingredient icons, the pizza with cheese
+    const pizza = place(s, foodKey(q ? 'pizza_done_q' : 'pizza_done'), -27, 57, 1);
+    const dough = place(s, foodKey('dough_str'), 30, q ? 35 : 46, 1);
+    const tomato = place(s, foodKey('tomato_cut'), 30, q ? 58 : 72, 1);
+    const cheese = q ? place(s, foodKey('cheese_cut'), 30, 81, 1) : null;
     const num = makeText(s, -48, 74, `#${id + 1}`, { size: 14, color: C.muted, stroke: 0, depth: 0 });
-    pizza.setScale(0.86 / R); dough.setScale(0.5 / R); tomato.setScale(0.52 / R);
+    pizza.setScale(0.86 / R); dough.setScale((q ? 0.42 : 0.5) / R); tomato.setScale((q ? 0.44 : 0.52) / R); cheese?.setScale(0.42 / R);
     bar.root.setVisible(true);
-    const root = s.add.container(W + 200, 6, [bg, bar.root, pizza, dough, tomato, num]).setDepth(2100 + id * 0.001);
+    const root = s.add.container(W + 200, 6, [bg, bar.root, pizza, dough, tomato, ...(cheese ? [cheese] : []), num]).setDepth(2100 + id * 0.001);
     root.setAngle((id % 3) - 1);
     const t: Ticket = { id, root, bar, x: NaN, enter: { v: 0 }, leaving: false };
     s.tweens.add({ targets: t.enter, v: 1, duration: 300, ease: 'back.out' });
@@ -103,7 +105,7 @@ export class Hud {
     const g = this.game;
     // tickets
     const live = g.orders.map((o) => o.id);
-    for (const o of g.orders) if (!this.tickets.has(o.id)) this.tickets.set(o.id, this.makeTicket(o.id));
+    for (const o of g.orders) if (!this.tickets.has(o.id)) this.tickets.set(o.id, this.makeTicket(o.id, o.recipe));
     for (const [id, t] of this.tickets) {
       if (!live.includes(id) && !t.leaving) { this.leave(t, this.expired.has(id) ? 'expire' : 'deliver'); }
       if (t.leaving && !t.root.active) this.tickets.delete(id);

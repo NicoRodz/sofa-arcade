@@ -34,9 +34,9 @@ describe('Emitter', () => {
     const e = new Emitter<GameEvents>();
     const seen: number[] = [];
     const off = e.on('orderNew', (p) => seen.push(p.order));
-    e.emit('orderNew', { order: 1 });
+    e.emit('orderNew', { order: 1, recipe: 'marinara' });
     off();
-    e.emit('orderNew', { order: 2 });
+    e.emit('orderNew', { order: 2, recipe: 'marinara' });
     expect(seen).toEqual([1]);
   });
 });

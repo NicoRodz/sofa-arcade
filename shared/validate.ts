@@ -2,10 +2,13 @@
 import { puestoProblems } from './puestos';
 import { DIRS, MAP_H, MAP_W, floorComponents, isFloor, parseMap, posKey, type Grid, type MapDef, type Pos } from './maps';
 
-export type StationKey = '1' | '2' | 'K' | 'O' | 'P' | 'E';
+export type StationKey = '1' | '2' | '3' | 'K' | 'O' | 'P' | 'E';
 // 1 -> K, 2 -> K, K -> O (once per ingredient), P -> O, O -> E
 export const RECIPE_LEGS: readonly (readonly [StationKey, StationKey])[] = [['1', 'K'], ['K', 'O'], ['2', 'K'], ['K', 'O'], ['P', 'O'], ['O', 'E']];
-export const STATION_KEYS: readonly StationKey[] = ['1', '2', 'K', 'O', 'P', 'E'];
+export const STATION_KEYS: readonly StationKey[] = ['1', '2', 'K', 'O', 'P', 'E']; // every map has these
+// A map with a cheese crate ('3') also needs the cheese route: 3 -> K, then K -> O (already a leg).
+export const keysOf = (g: Grid): StationKey[] => (stationsOf(g, '3').length ? [...STATION_KEYS, '3'] : [...STATION_KEYS]);
+export const legsOf = (g: Grid): (readonly [StationKey, StationKey])[] => (stationsOf(g, '3').length ? [...RECIPE_LEGS, ['3', 'K']] : [...RECIPE_LEGS]);
 
 export function stationsOf(g: Grid, key: StationKey): Pos[] {
   const out: Pos[] = [];
@@ -13,6 +16,7 @@ export function stationsOf(g: Grid, key: StationKey): Pos[] {
     if (t.kind !== 'station') return;
     const hit = key === '1' ? t.station === 'crate' && t.crate === 0
       : key === '2' ? t.station === 'crate' && t.crate === 1
+      : key === '3' ? t.station === 'crate' && t.crate === 2
       : key === 'K' ? t.station === 'board'
       : key === 'O' ? t.station === 'pot'
       : key === 'P' ? t.station === 'plates'
@@ -58,7 +62,7 @@ export function validate(g: Grid): { ok: boolean; errors: string[] } {
   if (!a.spawns.some((n) => n > 0)) errors.push('no spawn');
   const comps = new Map<StationKey, number[]>();
   const used = new Set<number>();
-  for (const key of STATION_KEYS) {
+  for (const key of keysOf(g)) {
     const list = stationsOf(g, key);
     if (!list.length) { errors.push(`missing station ${key}`); comps.set(key, []); continue; }
     const cs: number[] = [];
@@ -70,7 +74,7 @@ export function validate(g: Grid): { ok: boolean; errors: string[] } {
     comps.set(key, cs);
   }
   for (const c of used) if (!a.spawns[c]) errors.push(`floor region ${c} holds recipe stations but no spawn`);
-  for (const [from, to] of RECIPE_LEGS) {
+  for (const [from, to] of legsOf(g)) {
     const zs = new Set((comps.get(to) ?? []).map((c) => a.zone[c]));
     if (!(comps.get(from) ?? []).some((c) => zs.has(a.zone[c]))) errors.push(`no route ${from} -> ${to}`);
   }
@@ -83,7 +87,7 @@ export function minPlayers(g: Grid): number {
   const a = analyze(g);
   const regions: Set<StationKey>[] = Array.from({ length: a.count }, () => new Set());
   const needed = new Set<StationKey>();
-  for (const key of STATION_KEYS) for (const [x, y] of stationsOf(g, key)) {
+  for (const key of keysOf(g)) for (const [x, y] of stationsOf(g, key)) {
     needed.add(key);
     for (const [ax, ay] of accessTiles(g, x, y)) regions[a.comp[ay]![ax]!]!.add(key);
   }

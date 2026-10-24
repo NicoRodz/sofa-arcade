@@ -1,6 +1,6 @@
 // Typed events emitted by the pure game logic. The sound layer (and anything else) subscribes to these;
 // the logic knows nothing about who listens.
-import type { Item, StationKind } from './overcooked';
+import type { Item, Recipe, StationKind } from './overcooked';
 
 export interface GameEvents {
   itemPicked: { player: number; item: Item; from: StationKind };
@@ -11,7 +11,7 @@ export interface GameEvents {
   chopDone: { player: number; station: number };
   potStart: { station: number };
   potReady: { station: number };
-  orderNew: { order: number };
+  orderNew: { order: number; recipe: Recipe };
   orderWarning: { order: number };
   orderExpired: { order: number };
   delivered: { player: number; points: number; tip: number };

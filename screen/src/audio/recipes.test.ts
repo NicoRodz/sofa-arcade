@@ -19,7 +19,7 @@ describe('event -> sound mapping', () => {
     expect(ACTIONS.potReady({ station: 2 })).toEqual([{ kind: 'loopStop', key: 'oven:2' }, { kind: 'play', id: 'ready' }]);
   });
   it('orders and delivery; only a delivery ducks the music', () => {
-    expect(ids(ACTIONS.orderNew({ order: 1 }))).toEqual(['orderNew']);
+    expect(ids(ACTIONS.orderNew({ order: 1, recipe: 'marinara' }))).toEqual(['orderNew']);
     expect(ids(ACTIONS.orderWarning({ order: 1 }))).toEqual(['warn']);
     expect(ids(ACTIONS.orderExpired({ order: 1 }))).toEqual(['expired']);
     expect(ids(ACTIONS.delivered({ player: 1, points: 20, tip: 0 }))).toEqual(['deliver', 'duck']);

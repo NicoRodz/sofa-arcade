@@ -2,15 +2,18 @@
 import Phaser from 'phaser';
 import type { Item } from '@party/shared/game';
 import { C } from './tokens';
-import { blob, circle, contactShadow, drawOutlined, ellipse, makeTex, mix, rng, shade, shine, star, type Ctx } from './gfx';
+import { blob, circle, contactShadow, drawOutlined, ellipse, makeTex, mix, rng, shade, shine, star, vgrad, type Ctx } from './gfx';
 
 export type FoodKind =
-  | 'dough_raw' | 'dough_str' | 'tomato' | 'tomato_cut' | 'pizza_raw' | 'pizza_done' | 'pizza_burnt' | 'tray' | 'dish' | 'box';
+  | 'dough_raw' | 'dough_str' | 'tomato' | 'tomato_cut' | 'cheese_raw' | 'cheese_cut' | 'pizza_raw' | 'pizza_raw_q' | 'pizza_done' | 'pizza_done_q'
+  | 'pizza_burnt' | 'tray' | 'dish' | 'dish_q' | 'box';
 
 export const ITEM_KIND: Record<Item, FoodKind> = {
-  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', plate: 'tray', dish: 'dish',
+  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dish: 'dish', dishQ: 'dish_q',
 };
-export const ingredientColor = (type: number) => (type === 0 ? C.dough : C.tomato);
+export const RAW_KIND: readonly FoodKind[] = ['dough_raw', 'tomato', 'cheese_raw'];
+export const CUT_KIND: readonly FoodKind[] = ['dough_str', 'tomato_cut', 'cheese_cut'];
+export const ingredientColor = (type: number) => (type === 0 ? C.dough : type === 1 ? C.tomato : C.cheese);
 export const foodKey = (k: FoodKind) => `it_${k}`;
 
 function radial(c: Ctx, x: number, y: number, r: number, inner: string, outer: string) {
@@ -64,28 +67,41 @@ function tomatoCut(c: Ctx) {
   slice(c, -10, 6, 12, 0.3); slice(c, 10, 8, 12, -0.4); slice(c, 0, -8, 13, 0.1);
 }
 
-function pizzaRaw(c: Ctx, shadow = true) {
+// Marinara: dough and tomato sauce. With cheese (Margarita) it also gets the cream mozzarella blobs.
+function pizzaRaw(c: Ctx, shadow = true, cheese = false) {
   doughStr(c, shadow);
   c.fillStyle = '#D7362A'; blob(c, 0, 0, 21.5, 12, 1.5, 5); c.fill();
   c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.ellipse(-7, -8, 9, 5, -0.6, 0, Math.PI * 2); c.fill();
   const rnd = rng(29);
-  c.fillStyle = '#FFE58A';
-  for (let i = 0; i < 7; i++) {
-    const a = rnd() * Math.PI * 2, d = rnd() * 14;
-    c.beginPath(); c.ellipse(Math.cos(a) * d, Math.sin(a) * d, 3.4, 2.6, rnd() * 3, 0, Math.PI * 2); c.fill();
+  if (cheese) {
+    for (let i = 0; i < 7; i++) {
+      const a = rnd() * Math.PI * 2, d = rnd() * 14;
+      drawOutlined(c, ellipse(c, Math.cos(a) * d, Math.sin(a) * d, 4.6, 3.6, rnd() * 3), '#FFF3C4', { lw: 1.4 });
+    }
+  } else {
+    c.fillStyle = 'rgba(255,170,150,0.5)';
+    for (let i = 0; i < 5; i++) { const a = rnd() * Math.PI * 2, d = rnd() * 14; c.beginPath(); c.arc(Math.cos(a) * d, Math.sin(a) * d, 1.7, 0, Math.PI * 2); c.fill(); }
   }
 }
 
-function pizzaDone(c: Ctx, shadow = true) {
+// Marinara bakes red with basil; the Margarita adds the molten cheese layer on top.
+function pizzaDone(c: Ctx, shadow = true, cheese = false) {
   drawOutlined(c, () => blob(c, 0, 0, 28, 14, 1, 3), C.crust, { lw: 2.5, shadow: shadow ? [2, 26, 26, 6] : undefined });
   c.fillStyle = mix(C.crust, '#FFFFFF', 0.25); c.beginPath(); c.ellipse(-12, -14, 10, 4, -0.7, 0, Math.PI * 2); c.fill();
   c.fillStyle = C.tomato; blob(c, 0, 0, 23, 12, 1, 8); c.fill();
-  c.fillStyle = radial(c, 0, 0, 21, '#FFE46A', C.cheese); blob(c, 0, 0, 20.5, 11, 1.6, 4); c.fill();
   const rnd = rng(17);
-  c.fillStyle = '#F2B33D';
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI * 2 + rnd(), d = 6 + rnd() * 9;
-    c.beginPath(); c.ellipse(Math.cos(a) * d, Math.sin(a) * d, 3.6, 2.8, rnd() * 3, 0, Math.PI * 2); c.fill();
+  if (cheese) {
+    c.fillStyle = radial(c, 0, 0, 21, '#FFE46A', C.cheese); blob(c, 0, 0, 20.5, 11, 1.6, 4); c.fill();
+    c.fillStyle = '#F2B33D';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + rnd(), d = 6 + rnd() * 9;
+      c.beginPath(); c.ellipse(Math.cos(a) * d, Math.sin(a) * d, 3.6, 2.8, rnd() * 3, 0, Math.PI * 2); c.fill();
+    }
+  } else {
+    c.fillStyle = C.tomato2; c.globalAlpha = 0.5;
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2 + rnd(), d = 5 + rnd() * 12; c.beginPath(); c.ellipse(Math.cos(a) * d, Math.sin(a) * d, 4, 2.6, rnd() * 3, 0, Math.PI * 2); c.fill(); }
+    c.globalAlpha = 1;
+    c.fillStyle = 'rgba(255,255,255,0.22)'; c.beginPath(); c.ellipse(-6, -5, 9, 4, -0.5, 0, Math.PI * 2); c.fill();
   }
   for (const [x, y, rot] of [[-8, -4, 0.6], [7, -9, -0.5], [3, 9, 0.2]] as const) {
     c.save(); c.translate(x, y); c.rotate(rot);
@@ -117,9 +133,35 @@ function tray(c: Ctx) {
   shine(c, 0, 0, 28, 0.6, 3);
 }
 
-function dish(c: Ctx) {
+function dish(c: Ctx, cheese = false) {
   tray(c);
-  c.save(); c.scale(0.82, 0.82); pizzaDone(c, false); c.restore();
+  c.save(); c.scale(0.82, 0.82); pizzaDone(c, false, cheese); c.restore();
+}
+
+// Cheese: a yellow wedge with holes (raw) and a mound of shreds (grated on the board).
+function cheeseRaw(c: Ctx) {
+  contactShadow(c, 2, 20, 26, 5);
+  const front = () => { c.beginPath(); c.moveTo(-26, 14); c.lineTo(26, 14); c.lineTo(26, -4); c.closePath(); };
+  const top = () => { c.beginPath(); c.moveTo(-26, 14); c.lineTo(26, -4); c.lineTo(26, -14); c.lineTo(-26, 4); c.closePath(); };
+  drawOutlined(c, top, '#FFE87A', { lw: 2.5 });
+  drawOutlined(c, front, vgrad(c, -4, 14, '#FFD23F', C.cheese2), { lw: 2.5 });
+  c.fillStyle = '#C98A1B';
+  for (const [x, y, r] of [[8, 9, 2.6], [17, 5, 2], [-6, 11, 2.2]] as const) { c.beginPath(); c.ellipse(x, y, r, r * 0.8, 0, 0, Math.PI * 2); c.fill(); }
+  c.fillStyle = '#E3B22A';
+  for (const [x, y, r] of [[2, -2, 2.4], [14, -8, 2]] as const) { c.beginPath(); c.ellipse(x, y, r, r * 0.7, -0.4, 0, Math.PI * 2); c.fill(); }
+  c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-20, 7); c.lineTo(20, -7); c.stroke();
+}
+function cheeseCut(c: Ctx) {
+  contactShadow(c, 0, 20, 26, 5);
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(-26, 16); c.quadraticCurveTo(-24, -4, 0, -10); c.quadraticCurveTo(24, -4, 26, 16); c.closePath(); }, vgrad(c, -10, 16, '#FFE98A', '#F1C24A'), { lw: 2.5 });
+  const rnd = rng(41);
+  c.lineWidth = 2.6;
+  for (let i = 0; i < 16; i++) {
+    const x = -20 + rnd() * 40, y = -4 + rnd() * 18, a = rnd() * Math.PI;
+    c.strokeStyle = i % 3 ? '#FFF6C8' : '#D99A1E';
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * 7, y + Math.sin(a) * 4); c.stroke();
+  }
+  shine(c, 0, 4, 20, 0.45, 2.5);
 }
 
 function box(c: Ctx) {
@@ -133,8 +175,10 @@ function box(c: Ctx) {
 }
 
 const DRAW: Record<FoodKind, (c: Ctx) => void> = {
-  dough_raw: doughRaw, dough_str: (c) => doughStr(c), tomato, tomato_cut: tomatoCut, pizza_raw: (c) => pizzaRaw(c),
-  pizza_done: (c) => pizzaDone(c), pizza_burnt: (c) => pizzaBurnt(c), tray, dish, box,
+  dough_raw: doughRaw, dough_str: (c) => doughStr(c), tomato, tomato_cut: tomatoCut, cheese_raw: cheeseRaw, cheese_cut: cheeseCut,
+  pizza_raw: (c) => pizzaRaw(c), pizza_raw_q: (c) => pizzaRaw(c, true, true),
+  pizza_done: (c) => pizzaDone(c), pizza_done_q: (c) => pizzaDone(c, true, true), pizza_burnt: (c) => pizzaBurnt(c),
+  tray, dish: (c) => dish(c), dish_q: (c) => dish(c, true), box,
 };
 export const drawFood = (c: Ctx, k: FoodKind) => DRAW[k](c);
 

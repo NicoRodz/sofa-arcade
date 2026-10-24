@@ -3,8 +3,9 @@ import { DIFFICULTIES } from './difficulty';
 import { FIXED_MAPS, MAPS_BY_DIFFICULTY, MAP_H, MAP_W, defaultMap, fixedMap, isFloor, lobbyMaps, lobbyN, mapStatus, parseMap, pickFixedMap, recommendedMaps, replacementMap, spawnPoints } from './maps';
 
 describe('fixed maps', () => {
-  it('are 16x9 grids with known characters only, ids 1..N in order', () => {
-    expect(FIXED_MAPS.map((m) => m.id)).toEqual(FIXED_MAPS.map((_m, i) => String(i + 1)));
+  it('are 16x9 grids with known characters only, ids unique and ascending', () => {
+    const ids = FIXED_MAPS.map((m) => Number(m.id));
+    expect(ids).toEqual([...new Set(ids)].sort((a, b) => a - b));
     for (const m of FIXED_MAPS) {
       expect(m.rows.length, m.name).toBe(MAP_H);
       for (const r of m.rows) expect(r, m.name).toMatch(new RegExp(`^[#.S~C123KOPEXUL]{${MAP_W}}$`));

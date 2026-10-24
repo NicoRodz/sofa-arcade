@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED_MAPS, fixedMap, parseMap } from './maps';
+import { FIXED_MAPS, fixedMap, mapFeatures, parseMap } from './maps';
 import { analyze, minPlayers, validate, validateMap } from './validate';
 
 const rowsOf = (id: string) => [...fixedMap(id)!.rows];
@@ -112,5 +112,38 @@ describe('validateMap: maps 6 to 8', () => {
     // sabotage: no counter or oven left on column 7 and the halves are disconnected
     const split = edit([...m.rows], [[7, 1, '#'], [7, 2, '#'], [7, 3, '#'], [7, 4, '#'], [7, 5, '#'], [7, 6, '#'], [7, 7, '#']]);
     expect(validateMap({ ...m, rows: split }).ok).toBe(false);
+  });
+});
+
+describe('validateMap: cheese maps 9, 11 and 15', () => {
+  it('map 9 La trattoria: valid; without the cheese crate it is a different map; a walled-in cheese crate fails the cheese route', () => {
+    const m = fixedMap('9')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(mapFeatures(m.rows)).toEqual({ cheese: true, sink: false });
+    // sabotage: the cheese crate (6,0) loses its only floor tile
+    const walled = edit([...m.rows], [[6, 1, '#']]);
+    expect(validate(parseMap(walled)).errors.join()).toMatch(/station 3 at \(6, 0\) has no floor/);
+    expect(validateMap({ ...m, nMax: 6 }).errors.join()).toMatch(/5 spawns for up to 6/);
+  });
+  it('map 11 Tres carriles: valid with 8 explicit spawns; losing the four ovens breaks it; a spawn order off the S tiles is caught', () => {
+    const m = fixedMap('11')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(m.spawns).toHaveLength(8);
+    const noOvens = edit([...m.rows], [[5, 3, 'C'], [11, 3, 'C'], [5, 5, 'C'], [11, 5, 'C']]);
+    expect(validateMap({ ...m, rows: noOvens }).errors.join()).toMatch(/missing station O/);
+    expect(validateMap({ ...m, spawns: [[1, 1], ...m.spawns!.slice(1)] }).errors.join()).toMatch(/explicit spawn order/);
+  });
+  it('map 15 El sótano: four rooms joined by doors; closing the doors splits it and the serving pass-throughs rescue only part of the recipe', () => {
+    const m = fixedMap('15')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(analyze(parseMap([...m.rows])).count).toBe(1);
+    // sabotage: close the four doors (7,2) (3,4) (11,4) (7,6)
+    const closed = edit([...m.rows], [[7, 2, '#'], [3, 4, '#'], [11, 4, '#'], [7, 6, '#']]);
+    const r = validateMap({ ...m, rows: closed });
+    expect(r.ok).toBe(false);
+    expect(analyze(parseMap(closed)).count).toBe(4);
+    // sabotage: remove both pass-throughs as well and the rooms cannot trade at all
+    const sealed = edit(closed, [[5, 4, '#'], [9, 4, '#']]);
+    expect(validateMap({ ...m, rows: sealed }).errors.join()).toMatch(/no route/);
   });
 });

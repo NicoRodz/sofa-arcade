@@ -34,6 +34,26 @@ export function playMarinara(g: Game): number {
   return g.score - before;
 }
 
+/** Margarita: cheese goes through a board too and joins dough and tomato in the oven. Needs a Margarita order in the queue. */
+export function playMargarita(g: Game): number {
+  const board = first(g, 'board'), pot = first(g, 'pot');
+  g.orders = [{ id: 900, expiresAt: g.time + 60_000, warned: false, recipe: 'margarita' }];
+  for (const type of [0, 1, 2]) {
+    use(g, first(g, 'crate', type));
+    use(g, board);
+    run(g, g.params.cutMs + 100, hold);
+    use(g, board);
+    use(g, pot);
+  }
+  run(g, g.params.cookMs + 100);
+  use(g, first(g, 'plates'));
+  use(g, pot);
+  expect(g.players.get(1)!.item).toBe('dishQ');
+  const before = g.score;
+  use(g, first(g, 'window'));
+  return g.score - before;
+}
+
 describe('playthrough: one marinara delivered on every fixed map', () => {
   for (const m of FIXED_MAPS) {
     it(`map ${m.id} ${m.name}`, () => {
@@ -41,6 +61,16 @@ describe('playthrough: one marinara delivered on every fixed map', () => {
       addPlayer(g, 1, 0);
       expect(playMarinara(g)).toBeGreaterThanOrEqual(g.params.reward);
       expect(g.delivered).toBe(1);
+    });
+  }
+});
+
+describe('playthrough: one Margarita on every map with a cheese crate', () => {
+  for (const m of FIXED_MAPS.filter((x) => x.rows.some((r) => r.includes('3')))) {
+    it(`map ${m.id} ${m.name}`, () => {
+      const g = createGame({ rows: m.rows, spawns: m.spawns, n: m.nMin });
+      addPlayer(g, 1, 0);
+      expect(playMargarita(g)).toBeGreaterThanOrEqual(g.params.reward);
     });
   }
 });

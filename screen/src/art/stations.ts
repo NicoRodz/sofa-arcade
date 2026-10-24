@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import type { Game, Item, Station } from '@party/shared/game';
 import { C, OX, OY, TILE, U, hexNum, progressColor } from './tokens';
 import { R, texSize } from './gfx';
-import { foodKey, ITEM_KIND, type FoodKind } from './food';
+import { CUT_KIND, foodKey, ITEM_KIND, type FoodKind } from './food';
 import type { Fx } from './fx';
 
 export function place(scene: Phaser.Scene, key: string, x: number, y: number, k = 1): Phaser.GameObjects.Image {
@@ -39,7 +39,7 @@ interface View {
   glow?: Phaser.GameObjects.Image;
   rawPizza?: Phaser.GameObjects.Image;
   donePizza?: Phaser.GameObjects.Image;
-  mini?: Phaser.GameObjects.Image;
+  minis?: Phaser.GameObjects.Image[];
   ring?: Phaser.GameObjects.Graphics;
   bell?: Phaser.GameObjects.Image;
   arrow?: Phaser.GameObjects.Image;
@@ -77,7 +77,7 @@ export class StationViews {
       v.flames = [0, 1, 2].map((i) => place(s, `flame_${i}`, cx + (i - 1) * TILE * 0.17, cy + TILE * (i === 1 ? 0.2 : 0.27), 0.7).setDepth(d - 2.5).setAlpha(0.65));
       v.rawPizza = place(s, foodKey('pizza_raw'), cx, cy + TILE * 0.2, 0.78).setDepth(d - 2).setVisible(false);
       v.donePizza = place(s, foodKey('pizza_done'), cx, cy + TILE * 0.2, 0.78).setDepth(d - 2).setVisible(false);
-      v.mini = place(s, foodKey('dough_str'), cx, cy + TILE * 0.22, 0.62).setDepth(d - 2).setVisible(false);
+      v.minis = [0, 1].map(() => place(s, foodKey('dough_str'), cx, cy + TILE * 0.22, 0.56).setDepth(d - 2).setVisible(false));
       v.ring = s.add.graphics().setDepth(3000);
     }
     return v;
@@ -107,7 +107,7 @@ export class StationViews {
     v.itemImg = undefined;
     if (!item) return;
     const k: FoodKind = ITEM_KIND[item];
-    const big = k === 'tray' || k === 'dish';
+    const big = k === 'tray' || k === 'dish' || k === 'dish_q';
     const img = place(this.scene, key, v.cx, v.cy - TILE * (v.st.kind === 'board' ? 0.02 : 0.04), v.st.kind === 'board' ? 1.1 : big ? 0.95 : 1.05).setDepth(100 + v.cy + 4);
     v.itemImg = img;
     const sx = img.scaleX, sy = img.scaleY;
@@ -136,7 +136,8 @@ export class StationViews {
 
   private updateOven(v: View, dtMs: number) {
     const st = v.st;
-    const cooking = st.inputs.length === 2 && !st.done;
+    const cooking = st.inputs.includes(0) && st.inputs.includes(1) && !st.done; // dough + tomato; cheese may join until it is done
+    const q = st.inputs.includes(2); // Margarita
     const lit = cooking || st.done;
     v.flick -= dtMs;
     if (v.flick <= 0) {
@@ -146,9 +147,16 @@ export class StationViews {
     }
     v.glow!.setAlpha(lit ? 0.55 + Math.sin(this.t / 90) * 0.08 : 0.2);
     // contents
-    const one = st.inputs.length === 1;
-    v.mini!.setVisible(one);
-    if (one) v.mini!.setTexture(foodKey(st.inputs[0] === 0 ? 'dough_str' : 'tomato_cut'));
+    const partial = cooking || st.done ? [] : st.inputs; // loose ingredients waiting for the rest
+    v.minis!.forEach((m, i) => {
+      const t = partial[i];
+      m.setVisible(t !== undefined);
+      if (t === undefined) return;
+      m.setTexture(foodKey(CUT_KIND[t]!)).setX(v.cx + (partial.length === 1 ? 0 : (i ? 1 : -1) * TILE * 0.17));
+    });
+    const rawKey = foodKey(q ? 'pizza_raw_q' : 'pizza_raw'), doneKey = foodKey(q ? 'pizza_done_q' : 'pizza_done');
+    if (v.rawPizza!.texture.key !== rawKey) v.rawPizza!.setTexture(rawKey);
+    if (v.donePizza!.texture.key !== doneKey) v.donePizza!.setTexture(doneKey);
     v.rawPizza!.setVisible(cooking || false);
     v.donePizza!.setVisible(st.done || cooking);
     if (cooking) { v.rawPizza!.setAlpha(1); v.donePizza!.setAlpha(Math.max(0, (st.progress - 0.15) / 0.85)); }
@@ -175,7 +183,7 @@ export class StationViews {
   }
 
   destroy() {
-    for (const v of this.views) { v.itemImg?.destroy(); v.bar?.root.destroy(); v.knife?.destroy(); v.bell?.destroy(); v.arrow?.destroy(); v.ring?.destroy(); v.glow?.destroy(); v.rawPizza?.destroy(); v.donePizza?.destroy(); v.mini?.destroy(); v.flames?.forEach((f) => f.destroy()); }
+    for (const v of this.views) { v.itemImg?.destroy(); v.bar?.root.destroy(); v.knife?.destroy(); v.bell?.destroy(); v.arrow?.destroy(); v.ring?.destroy(); v.glow?.destroy(); v.rawPizza?.destroy(); v.donePizza?.destroy(); v.minis?.forEach((m) => m.destroy()); v.flames?.forEach((f) => f.destroy()); }
     this.views = [];
   }
 }

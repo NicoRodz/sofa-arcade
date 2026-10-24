@@ -85,7 +85,7 @@ export class World {
           if (!cur || cur.chopAt < 0) return;
           const p = this.stations.pos(cur.chopAt);
           if (kind === 'stretch') this.fx.flourPuff(p.x, p.y);
-          else this.fx.chop(p.x, p.y, g.stations[cur.chopAt]?.item === 'raw0' ? 0 : 1);
+          else this.fx.chop(p.x, p.y, { raw0: 0, raw1: 1, raw2: 2 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2'] ?? 1);
         };
         this.chefs.set(gp.id, chef);
       }

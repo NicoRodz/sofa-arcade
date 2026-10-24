@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import type { Grid, Tile } from '@party/shared/maps';
 import { C, H, HUD_H, OX, OY, TILE, U, W, floorPair } from './tokens';
 import { circle, drawOutlined, rng, rr, shade, vgrad, type Ctx } from './gfx';
-import { drawFood, ingredientColor } from './food';
+import { RAW_KIND, drawFood, ingredientColor } from './food';
 
 const BG_R = 1.5;
 type Kind = 'wall' | 'floor' | 'water' | 'bench' | 'oven' | 'out';
@@ -164,9 +164,9 @@ function crate(c: Ctx, x0: number, y0: number, type: number) {
   c.fillStyle = '#4A2E1C'; rr(c, 16, 32, 88, 36, 6); c.fill();
   // contents behind the front panel
   c.save(); rr(c, 8, 0, 104, 76, 0); c.clip();
-  c.save(); c.translate(32, 54); c.scale(0.8, 0.8); drawFood(c, type === 0 ? 'dough_raw' : 'tomato'); c.restore();
-  c.save(); c.translate(88, 54); c.scale(0.8, 0.8); drawFood(c, type === 0 ? 'dough_raw' : 'tomato'); c.restore();
-  c.save(); c.translate(60, 48); c.scale(1.3, 1.3); drawFood(c, type === 0 ? 'dough_raw' : 'tomato'); c.restore();
+  c.save(); c.translate(32, 54); c.scale(0.8, 0.8); drawFood(c, RAW_KIND[type]!); c.restore();
+  c.save(); c.translate(88, 54); c.scale(0.8, 0.8); drawFood(c, RAW_KIND[type]!); c.restore();
+  c.save(); c.translate(60, 48); c.scale(1.3, 1.3); drawFood(c, RAW_KIND[type]!); c.restore();
   c.restore();
   // front panel with slats
   drawOutlined(c, () => rr(c, 8, 62, 104, 50, 8), vgrad(c, 62, 112, '#C98A4B', C.wood2), { lw: 3 });
@@ -175,9 +175,9 @@ function crate(c: Ctx, x0: number, y0: number, type: number) {
   c.fillStyle = 'rgba(255,255,255,0.22)'; c.fillRect(14, 66, 92, 3);
   // label
   drawOutlined(c, () => rr(c, 26, 80, 68, 24, 8), col, { lw: 2.5 });
-  c.fillStyle = type === 0 ? C.ink : C.cream;
+  c.fillStyle = type === 1 ? C.cream : C.ink;
   c.font = `800 15px ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText(type === 0 ? 'MASA' : 'TOMATE', 60, 93);
+  c.fillText(['MASA', 'TOMATE', 'QUESO'][type]!, 60, 93);
   c.fillStyle = 'rgba(255,255,255,0.4)'; c.beginPath(); c.arc(31, 86, 1.8, 0, Math.PI * 2); c.fill();
   c.restore();
 }
