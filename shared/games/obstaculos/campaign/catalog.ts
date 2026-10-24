@@ -3,6 +3,7 @@
 // Everything here is plain data + pure lookups, so the server, the screen and the tests read the same thing.
 import { levelCompat } from '../lobby';
 import { LEVELS } from '../levels';
+import { parseLevel } from '../parse';
 import type { Biome, GameMode, LevelDef } from '../types';
 
 export type LevelKind = 'level' | 'boss' | 'summit' | 'practice';
@@ -53,7 +54,8 @@ export const maxStarsOf = (c: Catalog, worldId: string): number => pathOf(c, wor
 // ---- the 15 existing levels as a catalog (S2's 40-level catalog replaces it behind the same interface)
 // Decisions: the worlds follow the plan's order (Playa, Bosque, Glaciar, Mina, Volcan); only the levels that can be played by 2 enter (11 of the 15:
 // the rest ask for 3-4 players), the last of each world is its boss, the first of each world is Libres (plan: 1-1 is "L") and the rest are Encadenados
-// unless the level itself allows only one of the two; the bot time is the level's par (the existing levels carry no validator time).
+// unless the level itself allows only one of the two; the bot time is the level's par (the existing levels carry no validator time); the collectibles
+// are the stars drawn in the tilemap (LevelDef.stars is the level's difficulty rating, not a count).
 const LEGACY_WORLDS: readonly CatalogWorld[] = [
   { id: '1', name: 'Playa', biome: 'beach' },
   { id: '2', name: 'Bosque', biome: 'forest' },
@@ -70,7 +72,7 @@ export function legacyCatalog(defs: readonly LevelDef[] = LEVELS): Catalog {
       const mode: GameMode = def.tether === 'chainOnly' ? 'chain' : def.tether === 'freeOnly' ? 'free' : i === 0 ? 'free' : 'chain';
       levels.push({
         id: `${w.id}-${i + 1}`, world: w.id, order: i + 1, name: def.name, kind: i === own.length - 1 ? 'boss' : 'level', def, mode,
-        collectibles: def.stars, botMs: def.parSec * 1000,
+        collectibles: parseLevel(def).markers.star.length, botMs: def.parSec * 1000,
         validatedFor: [2, 3, 4, 5, 6, 7, 8].filter((n) => levelCompat(def, n, mode).ok),
       });
     });

@@ -32,6 +32,7 @@ describe('the legacy catalog feeds the interface with the existing levels', () =
     expect(c.levels.every((l) => l.def.players.min <= 2 && l.validatedFor.includes(2))).toBe(true);
     expect(levelById(c, '1-1')?.mode).toBe('free'); // plan: 1-1 is Libres
     expect(levelById(c, '1-2')?.mode).toBe('chain');
+    expect(c.levels.every((l) => l.collectibles >= 1 && l.collectibles <= 5)).toBe(true); // counted from the tilemap, not LevelDef.stars (a difficulty rating)
   });
   it('is rebuilt from any list of levels (S2 swaps the source, not the shape)', () => {
     expect(legacyCatalog(LEVELS.slice(0, 3)).levels.length).toBe(3);

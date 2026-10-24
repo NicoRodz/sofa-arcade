@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEGACY_CATALOG, applyResult, progressOf, type Expedition } from '@party/shared/obstaculos/campaign';
+import { LEGACY_CATALOG, applyResult, fullMask, levelById, progressOf } from '@party/shared/obstaculos/campaign';
 import { LAST_KEY } from './api';
 import { CampaignFlow, joinNames } from './flow';
 import { FakeApi, MemKV } from './testkit';
@@ -95,10 +95,10 @@ describe('what a level asks and what it gives back', () => {
     const { api, flow } = mk();
     await flow.create(['A', 'B']);
     flow.begin('1-1');
-    await flow.levelEnd({ ...clear, collectiblesMask: 1 });
+    await flow.levelEnd({ ...clear, collectiblesMask: fullMask(levelById(LEGACY_CATALOG, '1-1')!.collectibles) });
     const o = flow.outcome!;
     expect(o).toMatchObject({ levelId: '1-1', cleared: true, saved: true, next: { id: '1-2' } });
-    expect(o.after.stars).toEqual([true, true, true]); // the level has 1 collectible: taken; no hearts lost
+    expect(o.after.stars).toEqual([true, true, true]); // every collectible taken, no hearts lost
     expect(api.store.get(flow.exp!.id)!.levels['1-1']!.done).toBe(true);
     expect(flow.continueAt()?.id).toBe('1-2');
   });
@@ -160,7 +160,7 @@ describe('what a level asks and what it gives back', () => {
     const id = flow.exp!.id;
     // someone else (another screen, earlier) already beat 1-1 with 3 stars on the server
     const server = api.store.get(id)!;
-    api.store.set(id, applyResult(server, LEGACY_CATALOG, { levelId: '1-1', cleared: true, timeMs: 5000, collectiblesMask: 1, deaths: 0 }, 9000));
+    api.store.set(id, applyResult(server, LEGACY_CATALOG, { levelId: '1-1', cleared: true, timeMs: 5000, collectiblesMask: fullMask(levelById(LEGACY_CATALOG, '1-1')!.collectibles), deaths: 0 }, 9000));
     flow.begin('1-1'); await flow.levelEnd({ ...clear, deaths: 5, timeMs: 9000 });
     expect(progressOf(flow.exp!, '1-1')).toMatchObject({ stars: [true, true, true], bestTimeMs: 5000 });
   });
