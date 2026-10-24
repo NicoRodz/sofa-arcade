@@ -10,6 +10,8 @@
     "build": "npm run build -w screen -w controller",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
+    "baseline:write": "tsx tools/meta/baseline.ts write",
+    "baseline:check": "tsx tools/meta/baseline.ts check",
     "report": "tsx tools/latency-report/src/index.ts"
   },
   "devDependencies": {

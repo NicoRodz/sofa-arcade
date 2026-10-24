@@ -1,0 +1,12 @@
+{
+ "generatedFrom": "71bc78b",
+ "retriedAloneAfterFailing": [],
+ "vitest": "vitest/5.0.5 darwin-arm64 node-v25.8.1",
+ "totalTests": 1705,
+ "skippedOrTodo": 0,
+ "files": 107,
+ "wallSeconds": 203.9,
+ "loadAvg": 8.03857421875,
+ "cores": 10,
+ "failed": 0
+}
