@@ -64,6 +64,13 @@ describe('throw niche: the campaign throw crosses a pit that no jump or tower cr
     expect(validateState(pit(5, 22), { n: 2, mode: 'chain', diff: 'hard' }).ok).toBe(false);
     expect(validateState(pit(6, 22), beach()).ok).toBe(false);
   });
+  it('a wall is still the hand\'s job for the follower: a 4-tile wall passes with throw + hand, but with the throw alone only the pioneer gets up ("followers cannot reach G")', () => {
+    const wall = def(rect(flat(30), 10, 11, 15, 14, '#'), { tether: 'chainOnly', biome: 'beach' });
+    const noHand = validateState(wall, beach(only('jump', 'throw')));
+    expect(noHand.ok).toBe(false);
+    expect(noHand.errors.join()).toMatch(/followers cannot reach G/);
+    expect(validateState(wall, beach(only('jump', 'throw', 'hand'))).ok).toBe(true);
+  });
   it('free mode: no rope, no niche (a plain jump already carries 5 tiles)', () => {
     const d = { ...pit(5, 22), tether: 'freeOnly' as const };
     const r = validateState(d, { n: 2, mode: 'free', diff: 'hard', world: 'beach', allow: only('jump') });

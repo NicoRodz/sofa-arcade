@@ -31,7 +31,8 @@
 //     pickaxe   S.pick: once a reached segment touches a 'p' marker, 'climb' edges exist from the foot of every ice wall to the standing cell above it, for the pioneer AND the
 //               followers (the climber passes the item down the rope and the partner climbs too, see sim/pickaxe.ts). Not capped by the rope: walls taller than a tower are its niche.
 //     throw     campaign + chain + n=2: throw edges reach dx <= ropeLen x throwSlack with the faster launch, and are also follower edges (pulled across: falls, hangs, hauled up when
-//               the partner walks away) provided no spikes/liquid lie within ropeLen + half a body BELOW the far ledge (pullSafe): dig such pits deep, 6+ tiles under the ledge.
+//               the partner walks away) provided the landing is at most 1 tile above the takeoff (a wall stays the hand's job) and no spikes/liquid lie within ropeLen + half a
+//               body BELOW the far ledge (pullSafe): dig such pits deep, 6+ tiles under the ledge.
 //     ice       only as the friction parameter in the real stepPlayer of every trajectory (physicsOfWorld): slow starts are in; SLIDING after a landing is NOT.
 //   WHAT IT DOES NOT MODEL (S2: verify with the real-sim bots, never with the validator, and keep a margin):
 //     wind      the drift is not in any trajectory. A 1 s airtime moves a body up to 140 px (2.9 tiles; 112 px at N>=3): leave that much landing and no hazard downwind.

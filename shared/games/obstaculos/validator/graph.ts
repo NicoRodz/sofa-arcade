@@ -299,8 +299,8 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
       }
     }
     // Campaign, tied: the throw is not a one-way trip. The thrown one plants on the far side and the thrower is PULLED across (it falls off the near edge, hangs from the rope under
-    // the far ledge, and is hauled up when the partner un-plants and walks away: sim/actions.ts slackRope + the edge assist), so followers get the throw edges too, as long as nothing
-    // lethal lies in the band where it would hang (pullSafe).
+    // the far ledge, and is hauled up when the partner un-plants and walks away: sim/actions.ts slackRope + the edge assist), so followers get the throw edges too, as long as the
+    // landing is at most a tile above the takeoff (a wall stays the hand's job: the learning test of 1-5 depends on it) and nothing lethal lies in the band where it would hang (pullSafe).
     const pull = !!cp && env.mode === 'chain' && env.n === 2;
     if ((opts.pioneer || pull) && env.n >= 2 && can(env, 'throw')) {
       // throw: the thrower lifts a partner and launches him at (420 x throwVxMult, -950) px/s (plan §2)
@@ -308,7 +308,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
         const x = dir === 1 ? (s.x1 + 1) * TILE - PLAYER_W : s.x0 * TILE;
         const plan: Plan = { x, feetY: feetOfRow(s.row) - PLAYER_H, dir, trigger: 'launch', k: 0, air: 'hold', f: 1, vx0: dir * THROW_VX * (cp?.throwVxMult ?? 1) * f, vy0: THROW_VY * f };
         const l = simCached(grid, params, s, plan, bucket);
-        if (l) { const e = toEdge(s, l, 'throw', plan, true); if (e && (opts.pioneer || pullSafe(grid, s, segs[e.to]!, e, ropeLen))) addEdge(e); }
+        if (l) { const e = toEdge(s, l, 'throw', plan, true); if (e && (opts.pioneer || (e.rise <= TILE && pullSafe(grid, s, segs[e.to]!, e, ropeLen)))) addEdge(e); } // followers: gaps only (landing at most a tile above); a wall is the hand's job
       }
     }
   }

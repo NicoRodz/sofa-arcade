@@ -56,7 +56,8 @@ export function findTarget(w: World, p: PlayerState): BPreview['target'] {
 // For the HUD icon above the head: what B will do right now.
 export function previewB(w: World, p: PlayerState): BPreview {
   if (p.carriedBy >= 0 || p.lift) return { action: 'none', target: null };
-  if (!p.holding && findTarget(w, p)?.kind !== 'ring') { const q = passTarget(w, p); if (q) return { action: 'pass', target: { kind: 'player', id: q.slot } }; } // campaign pickaxe: B hands it over
+  const handOver = p.holding ? null : passTarget(w, p); // campaign pickaxe: B hands it over (a ring in reach still wins)
+  if (handOver && findTarget(w, p)?.kind !== 'ring') return { action: 'pass', target: { kind: 'player', id: handOver.slot } };
   if (p.planted) return { action: 'unplant', target: null };
   if (p.holding) return { action: p.holding.kind === 'player' ? 'throw' : 'release', target: p.holding };
   const t = findTarget(w, p);
@@ -87,7 +88,8 @@ export function dropAll(w: World, p: PlayerState): void {
 export function applyB(w: World, p: PlayerState): void {
   if (!isActive(p) || p.carriedBy >= 0 || p.lift) return;
   const b = p.body;
-  if (!p.holding && findTarget(w, p)?.kind !== 'ring') { const q = passTarget(w, p); if (q) { passPickaxe(w, p, q); return; } } // campaign pickaxe (sim/pickaxe.ts)
+  const handOver = p.holding ? null : passTarget(w, p); // campaign pickaxe (sim/pickaxe.ts): B hands it over (a ring in reach still wins)
+  if (handOver && findTarget(w, p)?.kind !== 'ring') { passPickaxe(w, p, handOver); return; }
   if (p.planted) { p.planted = false; return; }
   if (p.camp.pick !== 0) { p.camp.pick = 0; return; } // B on the wall with nobody to pass to: let go
   if (p.holding) {
