@@ -8,7 +8,7 @@ import type { GameMode, ParsedLevel, TileGrid } from '@party/shared/obstaculos';
 import { entitiesFromLevel } from './stub';
 import type { EntityView, HandAction, HazardView, HudView, PlayerView, RopeView, WorldView } from './view';
 
-const HINT: Record<BPreview['action'], HandAction> = { anchor: 'anchor', lift: 'lift', grab: 'grab', plant: 'plant', unplant: 'release', release: 'release', throw: 'throw', none: 'none' };
+const HINT: Record<BPreview['action'], HandAction> = { anchor: 'anchor', lift: 'lift', grab: 'grab', plant: 'plant', unplant: 'release', release: 'release', throw: 'throw', pass: 'grab', none: 'none' };
 
 export class SimWorldView implements WorldView {
   readonly level: ParsedLevel;
@@ -24,6 +24,7 @@ export class SimWorldView implements WorldView {
   look: WorldView['look'] = null;
   bubbleSec: number;
   camp: WorldView['camp'] = null;
+  wind: WorldView['wind'] = null;
   private statics: EntityView[];
   private byId = new Map<string, EntityView>();
   private bubbleSince = new Map<number, number>();
@@ -57,6 +58,8 @@ export class SimWorldView implements WorldView {
     this.look = cameraHints(w);
     this.bubbleSec = w.dparams.bubbleSec;
     this.camp = w.camp ? { countdown: w.countdown ? Math.ceil(w.countdown.steps / 60) : null, refills: w.refills } : null;
+    const wd = w.level.def.wind;
+    this.wind = w.wind && wd ? { phase: w.wind.phase, dir: w.wind.dir, zone: wd.zone ? { x: wd.zone.x * TILE, y: wd.zone.y * TILE, w: wd.zone.w * TILE, h: wd.zone.h * TILE } : null } : null;
   }
 
   private syncPlayers(w: World): void {
@@ -108,7 +111,8 @@ export class SimWorldView implements WorldView {
     lights.forEach((b, i) => set(`box${i}`, (v) => { v.x = b.x; v.y = b.y; v.holder = b.holders[0] ?? -1; }));
     e.boxes.filter((b) => b.heavy).forEach((b, i) => set(`hbox${i}`, (v) => { v.x = b.x; v.y = b.y; v.holder = b.holders[0] ?? -1; v.on = b.holders.length >= 2; }));
     e.keys.forEach((k, i) => set(`key${i}`, (v) => { v.x = k.x - TILE / 2; v.y = k.y - TILE / 2; v.on = k.used || k.heldBy >= 0; v.holder = k.heldBy; }));
-    for (const a of e.activators) set(`obj${a.letter}`, (v) => { v.on = a.pressed || a.latched; v.value = a.required > 0 ? Math.min(1, a.load / a.required) : 0 });
+    for (const a of e.activators) set(`obj${a.letter}`, (v) => { v.on = a.pressed || a.latched; v.value = a.kind === 'target' ? Math.min(1, (a.timer * DT) / (w.camp?.targetSec ?? 4)) : a.required > 0 ? Math.min(1, a.load / a.required) : 0; });
+    e.pickaxes.forEach((k, i) => set(`pick${i}`, (v) => { v.x = k.x - TILE / 2; v.y = k.y - TILE / 2; v.on = k.heldBy >= 0; v.holder = k.heldBy; }));
     for (const o of e.objectives) set(`obj${o.letter}`, (v) => { v.on = o.open; v.x = o.rect.x + o.ox; v.y = o.rect.y + o.oy; });
     // crumbling tiles: only the ones that are shaking or gone get a sprite
     const live: EntityView[] = [];
@@ -123,6 +127,13 @@ export class SimWorldView implements WorldView {
       else { const k = Math.min(1, c.t / 15); v.on = true; v.value = k; v.y = c.y * TILE + k * 70; }
       live.push(v);
     }
+    e.enemies.forEach((en, i) => { // campaign soft enemies: no static twin, they are made as they are first seen
+      const id = `enemy${i}`;
+      let v = by.get(id);
+      if (!v) { v = { id, kind: 'enemy', x: en.x, y: en.y, w: en.w, h: en.h, tag: '', on: false, value: 0, label: '', holder: -1 }; by.set(id, v); }
+      v.x = en.x; v.y = en.y; v.w = en.w; v.h = en.h; v.on = en.stun > 0; v.value = en.dir > 0 ? 1 : 0;
+      live.push(v);
+    });
     this.entities = live;
   }
 }

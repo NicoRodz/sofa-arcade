@@ -62,6 +62,9 @@
   .chip.empty .av canvas { display: none; }
   .chip.empty .nm { color: rgba(255,244,224,.55); font-size: 24px; }
   .chip.empty .num { background: transparent; border: 3px dashed rgba(255,244,224,.28); color: rgba(255,244,224,.4); text-shadow: none; }
+  .chip.helper .sub { color: #0B7FA6; }
+  .chip .av canvas.hbadge { position: absolute; left: auto; right: -6px; top: auto; bottom: 0; width: 34px; height: 34px; animation: none; transform: none; }
+  .tlist .chip .av canvas.hbadge { width: 26px; height: 26px; right: -4px; }
   .chip.gone { filter: grayscale(.8); opacity: .6; }
   .chip.pop { animation: chippop .45s cubic-bezier(.2,1.6,.4,1); }
   @keyframes chippop { from { transform: scale(.85) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }

@@ -6,7 +6,7 @@ import {
 } from '../constants';
 import { T, isOneWayKind, isSolidKind } from '../legend';
 import type { Difficulty } from '../../../difficulty';
-import { boxHitsSolid, tileAt, tileOf, type TileGrid } from './tiles';
+import { boxHitsSolid, onIce, tileAt, tileOf, type TileGrid } from './tiles';
 
 const EPS = 1e-6;
 const LAND_EPS = 0.01; // a body resting exactly on a surface still counts as touching it
@@ -35,7 +35,7 @@ export interface Platform { id: number; x: number; y: number; w: number; h: numb
 
 export interface StepInput { move: number; down: boolean; jump: boolean } // move in [-1, 1], already quantized; jump = A pressed since the last step
 
-export interface PhysicsParams { coyote: number; buffer: number; stickyEdges: boolean }
+export interface PhysicsParams { coyote: number; buffer: number; stickyEdges: boolean; iceFriction?: number } // iceFriction: campaign only (sim/campaign.ts physicsOfWorld); absent = ice tiles grip like ground
 export const physicsFor = (d: Difficulty, p90LatencyMs = 0): PhysicsParams => ({
   coyote: adaptiveCoyote(d, p90LatencyMs), buffer: DIFFICULTY_PARAMS[d].bufferFrames, stickyEdges: DIFFICULTY_PARAMS[d].stickyEdges,
 });
@@ -120,6 +120,7 @@ export function stepPlayer(b: Body, input: StepInput, ctx: StepCtx): StepEvents 
   const accelerating = target !== 0 && (b.vx === 0 || Math.sign(b.vx) === Math.sign(target)) && Math.abs(target) > Math.abs(b.vx);
   let rate = RUN_SPEED / (accelerating ? ACCEL_SEC : DECEL_SEC);
   if (!wasGrounded) rate *= accelerating ? AIR_ACCEL_MULT : AIR_DECEL_MULT;
+  else if (params.iceFriction !== undefined && b.supportId === -1 && onIce(grid, b)) rate *= params.iceFriction; // slippery: slow to start, slow to stop
   b.vx = approach(b.vx, target, rate * DT);
   if (input.move !== 0) b.facing = input.move > 0 ? 1 : -1;
 

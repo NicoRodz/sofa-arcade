@@ -273,6 +273,28 @@ export function drawDoor(c: Ctx, k: CellCtx) {
   shape(c, px + 1.5, py + 1.5, TILE - 3, TILE - 3, [4, 4, 4, 4]); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
 }
 
+// Ice ('I', campaign dynamics 7 and 9): pale blue block, bright lip where it faces the sky, a few white glints. Same outline rules as the terrain.
+export function drawIce(c: Ctx, k: CellCtx) {
+  const { x: cx, y: cy, px, py } = k;
+  const mask = terrainMask(k.g, cx, cy);
+  const r = 9;
+  const radii: [number, number, number, number] = [
+    !(mask & N_) && !(mask & W_) ? r : 0, !(mask & N_) && !(mask & E_) ? r : 0, !(mask & S_) && !(mask & E_) ? r : 0, !(mask & S_) && !(mask & W_) ? r : 0,
+  ];
+  const ov = 0.5;
+  const fx = px - (mask & W_ ? ov : 0), fy = py - (mask & N_ ? ov : 0);
+  const fw = TILE + (mask & W_ ? ov : 0) + (mask & E_ ? ov : 0), fh = TILE + (mask & N_ ? ov : 0) + (mask & S_ ? ov : 0);
+  shape(c, fx, fy, fw, fh, radii);
+  const g = c.createLinearGradient(0, py, 0, py + TILE); g.addColorStop(0, '#E6F8FF'); g.addColorStop(1, '#8FDDF7');
+  c.fillStyle = g; c.fill();
+  c.save(); shape(c, fx, fy, fw, fh, radii); c.clip();
+  if (!(mask & N_)) { c.fillStyle = 'rgba(255,255,255,0.75)'; c.fillRect(px, py, TILE, 7); }
+  c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 3; c.lineCap = 'round';
+  for (let i = 0; i < 2; i++) { const gx = px + 8 + cellRand(cx, cy, 10 + i + k.seed) * (TILE - 24), gy = py + 12 + cellRand(cx, cy, 20 + i + k.seed) * (TILE - 26); c.beginPath(); c.moveTo(gx, gy + 9); c.lineTo(gx + 9, gy); c.stroke(); }
+  c.restore();
+  outlineOpen(c, px, py, mask, r);
+}
+
 export function drawCell(c: Ctx, g: TileGrid, x: number, y: number, px: number, py: number, biome: Biome, seed: number) {
   const kind = tileAt(g, x, y);
   if (kind === T.Empty || kind === T.Liquid || kind === T.Object) return;
@@ -287,5 +309,6 @@ export function drawCell(c: Ctx, g: TileGrid, x: number, y: number, px: number, 
     case T.BeltR: drawBelt(c, k, 1); break;
     case T.Trampoline: drawTrampoline(c, k); break;
     case T.Door: drawDoor(c, k); break;
+    case T.Ice: drawIce(c, k); break;
   }
 }

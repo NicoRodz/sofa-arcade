@@ -20,6 +20,9 @@ describe('params(N): the numbers of the layer, N=2 frozen', () => {
       n: 2, world: 'forest', ropeMult: 1.2, ropeLen: ROPE_LEN * 1.2, anchorHolds: 1, slideTilesPerSec: 0.5, edgeAssist: true, edgeReachPx: 24,
       superJumpWindowMs: 150, superJumpMult: 1.3, forgiveMult: 1.3, hearts: 6, hazardMult: 0.8, rescueSec: 2, checkpointEverySec: 25, band: [0.15, 0.35],
       restartAtStart: false, bubbleMashMax: 4, bubbleMashGain: 0.5, signalShowSec: 2, signalHoldSec: 0.4, camPadTiles: 3, camLookAtGoal: true,
+      // A5 (dynamics 4-9 and the throw niche): new keys, none of the ones above changed
+      balanceTilesPerSec: 2, targetSec: 4, enemyStunSec: 3, enemyExtra: 0, enemyTilesPerSec: 1.5, enemyPushPxPerSec: 360, iceFriction: 0.15,
+      windPxPerSec: 140, windWarnSec: 1, pickTilesPerSec: 1, throwVxMult: 1.3, throwSlack: 1.5, throwSlackSec: 1.2,
     });
   });
   it('the world table of plan §3 (hearts, forgiveness, auto-rescue, hazards, checkpoint spacing, bands)', () => {
@@ -38,7 +41,8 @@ describe('params(N): the numbers of the layer, N=2 frozen', () => {
     expect(b.hearts).toBe(8); // +floor((6-2)/2)
     expect(b.anchorHolds).toBe(2);
     expect(b.superJumpWindowMs).toBe(150 + 4 * 30);
-    expect({ ...b, n: 2, hearts: 6, anchorHolds: 1, superJumpWindowMs: 150 }).toEqual(a);
+    expect([b.targetSec, b.enemyExtra, b.windPxPerSec]).toEqual([4 + 2, 2, 140 * 0.8]); // A5: target +1 s and enemies +1 every 2 players, wind x0.8
+    expect({ ...b, n: 2, hearts: 6, anchorHolds: 1, superJumpWindowMs: 150, targetSec: 4, enemyExtra: 0, windPxPerSec: 140 }).toEqual(a);
     expect(campaignParams(3, 'beach').hearts).toBe(Infinity);
     expect(campaignParams(1, 'forest').n).toBe(2); // clamped
   });
@@ -397,7 +401,7 @@ describe('throw arc (plan §5.1)', () => {
     const end = arc[arc.length - 1]!;
     expect(Math.min(...arc.map((p) => p.y))).toBeLessThan(arc[0]!.y - 2 * TILE); // it goes up
     run(w, 1, B(0)); // throw
-    run(w, 120);
+    for (let n = 0; n < 150 && (n < 3 || pl(w, 1).thrown > 0); n++) run(w, 1); // until it touches down (the slide after the landing is not part of the arc: with the A5 launch, x1.3, it is longer)
     const b = pl(w, 1).body;
     expect(Math.abs(b.x + 17 - end.x)).toBeLessThan(16);
     expect(Math.abs(b.y + 23 - end.y)).toBeLessThan(20);

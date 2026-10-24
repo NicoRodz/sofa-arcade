@@ -247,7 +247,7 @@ export class World {
       }
       const f = this.feet(gp);
       chef.update(dtMs, {
-        x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected && !gp.ghost, ghost: gp.crossing,
+        x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected && !gp.ghost, ghost: gp.crossing, ...(gp.assist ? { assist: true } : {}),
         ...(gp.slip ? { slipT: g.time - gp.slip.t0, slideMs: gp.slip.slideMs } : {}), ...(g.hazards && !gp.slip && (gp.immuneUntil ?? 0) > g.time ? { immune: true } : {}),
       });
     }
