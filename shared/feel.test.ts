@@ -284,7 +284,7 @@ describe('R4 soft collision', () => {
     addPlayer(g, 1, 0); addPlayer(g, 2, 1);
     const a = g.players.get(1)!, b = g.players.get(2)!;
     put(a, 5.5, 4.5); put(b, 7.5, 4.5);
-    walk(g, 300, { 1: { x: 1 } });
+    walk(g, 800, { 1: { x: 1 } }); // without collision this walks right through (the old rule)
     expect(a.x).toBeLessThan(b.x);
     expect(b.x - a.x).toBeGreaterThanOrEqual(2 * 0.35 - 0.02);
   });
@@ -293,10 +293,14 @@ describe('R4 soft collision', () => {
     const a = g.players.get(1)!, b = g.players.get(2)!;
     put(a, 3.5, 4.5); put(b, 6.5, 4.5);
     const push = { 1: { x: 1 }, 2: { x: -1 } };
-    let crossedAt = -1;
-    for (let t = 0; t < 4000 && crossedAt < 0; t += TICK_MS) { step(g, push); if (a.x > b.x) crossedAt = t; }
-    expect(crossedAt).toBeGreaterThan(400); // not before they have pushed for 0.4 s
-    expect(crossedAt).toBeLessThan(1500);
+    let contactAt = -1, crossedAt = -1;
+    for (let t = 0; t < 4000 && crossedAt < 0; t += TICK_MS) {
+      step(g, push);
+      if (contactAt < 0 && b.x - a.x < 2 * 0.35 + 0.01) contactAt = t;
+      if (a.x > b.x) crossedAt = t;
+    }
+    expect(crossedAt - contactAt).toBeGreaterThan(450); // 0.4 s of pushing, then centres meet after a further ~0.1 s at 40% speed
+    expect(crossedAt - contactAt).toBeLessThan(800);
     expect(g.crowd.size).toBeGreaterThan(0);
     const v = Math.abs(a.vx) * 0.4;
     expect(v).toBeLessThan(2); // crossing speed is 40% of walking pace
