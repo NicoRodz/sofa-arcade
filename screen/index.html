@@ -13,27 +13,54 @@
   #debug th:first-child, #debug td:first-child { text-align: left; }
   #debug button { margin-right: 6px; margin-top: 6px; }
   #warn { color: #ff5252; font-weight: bold; }
-  #join { position: fixed; left: 16px; bottom: 16px; background: #000c; padding: 12px; border-radius: 10px; text-align: center; }
-  #join .title { font: bold 16px system-ui, sans-serif; margin-bottom: 8px; }
-  #qr { width: 220px; height: 220px; background: #fff; border-radius: 6px; }
+  #debug.off { display: none; }
+  .panel { position: fixed; background: #000c; border-radius: 12px; font: 16px system-ui, sans-serif; }
+  #lobby { left: 24px; top: 24px; padding: 20px; width: 300px; text-align: center; }
+  #lobby.off, #hud.off, #results.off { display: none; }
+  #code { font: bold 56px ui-monospace, Menlo, monospace; letter-spacing: 10px; margin: 4px 0 12px; }
+  #qr { width: 220px; height: 220px; background: #fff; border-radius: 6px; margin: 0 auto; }
   #qr svg { width: 100%; height: 100%; display: block; }
-  #joinurl { margin-top: 8px; font-size: 14px; user-select: all; }
-</style>
-<style>
+  #joinurl { margin: 8px 0 12px; font-size: 14px; user-select: all; }
+  #plist { list-style: none; margin: 0 0 14px; padding: 0; text-align: left; font-size: 20px; min-height: 28px; }
+  #plist li { padding: 3px 0; }
+  #plist .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; }
+  #plist li.gone { color: #777; }
+  #plist li.gone .dot { opacity: .3; }
+  button.big { font: bold 20px system-ui, sans-serif; padding: 10px 28px; border-radius: 8px; border: 0; background: #69f0ae; color: #000; }
+  button.big:disabled { opacity: .35; }
+  #hud { left: 50%; top: 16px; transform: translateX(-50%); padding: 8px 20px; text-align: center; }
+  #timer { font: bold 40px ui-monospace, Menlo, monospace; }
+  #scores { display: flex; gap: 16px; font-size: 18px; }
+  #results { left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 28px 40px; text-align: center; min-width: 320px; }
+  #results h2 { margin: 0 0 14px; }
+  #rank { list-style: none; margin: 0 0 18px; padding: 0; font-size: 24px; text-align: left; }
+  #rank li { padding: 4px 0; display: flex; justify-content: space-between; gap: 32px; }
 </style>
 </head>
 <body>
 <div id="game"></div>
-<div id="join">
-  <div class="title">Escanea para unirte</div>
+<div id="lobby" class="panel">
+  <div>Código de sala</div>
+  <div id="code"></div>
   <div id="qr"></div>
   <div id="joinurl"></div>
+  <ul id="plist"></ul>
+  <button id="start" class="big" disabled>Iniciar (Enter)</button>
 </div>
-<div id="debug">
+<div id="hud" class="panel off">
+  <div id="timer"></div>
+  <div id="scores"></div>
+</div>
+<div id="results" class="panel off">
+  <h2>Resultados</h2>
+  <ol id="rank"></ol>
+  <button id="again" class="big">Volver al lobby (Enter)</button>
+</div>
+<div id="debug" class="off">
   <div id="warn"></div>
   <div id="summary"></div>
   <table id="table"></table>
-  <button id="csv">Export CSV</button><button id="clear">Clear</button>
+  <div>D: ocultar</div><button id="csv">Export CSV</button><button id="clear">Clear</button>
 </div>
 <script type="module" src="/src/main.ts"></script>
 </body>

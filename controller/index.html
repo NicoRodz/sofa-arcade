@@ -11,7 +11,14 @@
   #join { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 16px; align-items: center; justify-content: center; }
   #join input { font-size: 20px; padding: 12px; width: 70%; max-width: 320px; border-radius: 8px; border: 0; -webkit-user-select: text; user-select: text; }
   button { font-size: 20px; padding: 12px 28px; border-radius: 8px; border: 0; background: #40c4ff; color: #000; }
-  #pad { position: fixed; inset: 0; display: none; }
+  #pad { position: fixed; inset: 0; visibility: hidden; }
+  body[data-view=playing] #pad { visibility: visible; }
+  body[data-view] #join { display: none; }
+  .overlay { position: fixed; inset: 0; display: none; flex-direction: column; gap: 12px; align-items: center; justify-content: center; text-align: center; background: #111; font-size: 22px; padding: 16px; }
+  body[data-view=lobby] #wait, body[data-view=results] #results { display: flex; }
+  #rotate { z-index: 10; background: #111; }
+  @media (orientation: portrait) { body[data-view] #rotate { display: flex; } }
+  .big { font-size: 56px; font-weight: bold; }
   #zone { position: absolute; left: 0; top: 0; width: 55%; height: 100%; touch-action: none; }
   #fire { position: absolute; right: 8%; top: 50%; width: 34vmin; height: 34vmin; margin-top: -17vmin; border-radius: 50%; background: #ff5252; display: flex; align-items: center; justify-content: center; font-size: 28px; touch-action: none; }
   #fire.down { background: #ffd740; color: #000; }
@@ -28,6 +35,9 @@
   <div id="fire">A</div>
   <div id="hud"></div>
 </div>
+<div id="wait" class="overlay"><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div></div>
+<div id="results" class="overlay"><div>Fin de la ronda</div><div id="rank" class="big"></div><div id="myscore"></div></div>
+<div id="rotate" class="overlay"><div class="big">&#8635;</div><div>Gira tu teléfono</div></div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

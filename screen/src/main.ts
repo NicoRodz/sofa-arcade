@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import {
-  ClockSync, DEFAULT_ROOM, PING_MS, PressTracker, WS_PATH, type PublicPlayer, type ServerMsg,
+  ClockSync, PING_MS, ROUND_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
+  type ClientMsg, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 import { percentile } from '@party/shared/stats';
 
@@ -15,12 +16,25 @@ interface P {
   rtt: number[]; lag: number[];
   off: number | null; // phone clock -> server clock
   pkts: number; pktsRate: number;
+  score: number;
   circle?: Phaser.GameObjects.Arc; label?: Phaser.GameObjects.Text;
 }
 const players = new Map<number, P>();
 const pendingLag: { id: number; sendServerTime: number }[] = [];
 const csv: string[] = [];
 const sync = new ClockSync();
+const $ = (id: string) => document.getElementById(id)!;
+const room = (() => {
+  const q = new URLSearchParams(location.search).get('room');
+  try {
+    const code = q || sessionStorage.getItem('pg.screenRoom') || newRoomCode();
+    sessionStorage.setItem('pg.screenRoom', code);
+    return code;
+  } catch { return q || newRoomCode(); }
+})();
+let phase: Phase = 'lobby';
+let roundEnd = 0;
+let debugOverride: boolean | null = null;
 let screenRtt = NaN;
 let totalPkts = 0;
 let pktsRate = 0;
@@ -35,23 +49,57 @@ function upsert(info: PublicPlayer, reset = false) {
   if (!p) {
     p = {
       info, x: 200 + info.slot * 120, y: 300, vx: 0, vy: 0, flashUntil: 0, tracker: new PressTracker(),
-      rtt: [], lag: [], off: null, pkts: 0, pktsRate: 0,
+      rtt: [], lag: [], off: null, pkts: 0, pktsRate: 0, score: 0,
     };
     players.set(info.id, p);
   }
   p.info = info;
-  if (reset) { p.tracker.reset(); p.vx = p.vy = 0; }
+  if (reset) p.vx = p.vy = 0;
+  renderUi();
 }
+
+function remove(id: number) {
+  const p = players.get(id);
+  if (!p) return;
+  p.circle?.destroy();
+  p.label?.destroy();
+  players.delete(id);
+  renderUi();
+}
+
+const sendMsg = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
+const ranking = () => [...players.values()].sort((a, b) => b.score - a.score);
+
+function setPhase(next: Phase) {
+  if (next === phase) return;
+  phase = next;
+  if (phase === 'playing') {
+    roundEnd = performance.now() + ROUND_MS;
+    for (const p of players.values()) p.score = 0;
+  }
+  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? ranking().map((p) => ({ id: p.info.id, score: p.score })) : undefined });
+  renderUi();
+}
+const dispatch = (ev: Parameters<typeof nextPhase>[1]) => {
+  if (ev === 'start' && !canStart([...players.values()].map((p) => p.info))) return;
+  setPhase(nextPhase(phase, ev));
+};
 
 function onMessage(m: ServerMsg) {
   switch (m.t) {
-    case 'state': m.players.forEach((i) => upsert(i, true)); break;
+    case 'state': {
+      const ids = new Set(m.players.map((i) => i.id));
+      for (const id of [...players.keys()]) if (!ids.has(id)) remove(id);
+      m.players.forEach((i) => upsert(i, true));
+      break;
+    }
     case 'player_joined': upsert(m.player, true); break;
     case 'player_left': {
       const p = players.get(m.playerId);
-      if (p) { p.info.connected = false; p.vx = p.vy = 0; }
+      if (p) { p.info.connected = false; p.vx = p.vy = 0; renderUi(); }
       break;
     }
+    case 'player_removed': remove(m.playerId); break;
     case 'rtt': {
       const p = players.get(m.playerId);
       if (p) { p.off = m.off; record('rtt', p, m.rtt); }
@@ -69,6 +117,7 @@ function onMessage(m: ServerMsg) {
       p.vx = m.x; p.vy = m.y;
       const delta = p.tracker.update(m.presses);
       if (delta.some((d) => d > 0)) {
+        if (phase === 'playing') p.score += delta.reduce((a, b) => a + b, 0);
         p.flashUntil = performance.now() + FLASH_MS;
         if (p.off !== null) pendingLag.push({ id: p.info.id, sendServerTime: m.ts + p.off });
       }
@@ -79,7 +128,8 @@ function onMessage(m: ServerMsg) {
 
 let ws: WebSocket;
 function connect() {
-  ws = new WebSocket(`ws://${location.host}${WS_PATH}?role=screen&room=${DEFAULT_ROOM}`);
+  ws = new WebSocket(`ws://${location.host}${WS_PATH}?role=screen&room=${encodeURIComponent(room)}`);
+  ws.onopen = () => sendMsg({ t: 'phase', phase });
   ws.onmessage = (ev) => onMessage(JSON.parse(ev.data));
   ws.onclose = () => setTimeout(connect, 500);
 }
@@ -132,7 +182,8 @@ new Phaser.Game({
   scene: Main,
 });
 
-fetch('/api/info')
+$('code').textContent = room;
+fetch(`/api/info?room=${encodeURIComponent(room)}`)
   .then((r) => r.json())
   .then(({ url, qrSvg }: { url: string; qrSvg: string }) => {
     document.getElementById('qr')!.innerHTML = qrSvg;
@@ -141,7 +192,34 @@ fetch('/api/info')
   .catch(() => { document.getElementById('joinurl')!.textContent = 'no se pudo obtener la URL'; });
 
 const f = (n: number) => (Number.isFinite(n) ? n.toFixed(0) : '-');
-const $ = (id: string) => document.getElementById(id)!;
+const esc = (t: string) => t.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+
+function renderUi() {
+  $('lobby').classList.toggle('off', phase !== 'lobby');
+  $('hud').classList.toggle('off', phase !== 'playing');
+  $('results').classList.toggle('off', phase !== 'results');
+  $('debug').classList.toggle('off', !(debugOverride ?? phase !== 'playing'));
+  const list = [...players.values()];
+  $('plist').innerHTML = list
+    .map((p) => `<li class="${p.info.connected ? '' : 'gone'}"><span class="dot" style="background:${p.info.color}"></span>${esc(p.info.name)}</li>`)
+    .join('') || '<li style="color:#888">Esperando jugadores...</li>';
+  ($('start') as HTMLButtonElement).disabled = !canStart(list.map((p) => p.info));
+  $('rank').innerHTML = ranking()
+    .map((p, i) => `<li style="color:${p.info.color}"><span>${i + 1}. ${esc(p.info.name)}</span><b>${p.score}</b></li>`)
+    .join('');
+  $('scores').innerHTML = list
+    .map((p) => `<span style="color:${p.info.connected ? p.info.color : '#777'}">${esc(p.info.name)} ${p.score}</span>`)
+    .join('');
+}
+renderUi();
+
+$('start').addEventListener('click', () => dispatch('start'));
+$('again').addEventListener('click', () => dispatch('again'));
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'd' || e.key === 'D') { debugOverride = !($('debug').classList.contains('off')); renderUi(); }
+  else if (e.key === 'Enter' && phase === 'lobby') dispatch('start');
+  else if (e.key === 'Enter' && phase === 'results') dispatch('again');
+});
 setInterval(() => {
   pktsRate = totalPkts; totalPkts = 0;
   const rows = ['<tr><th>player</th><th>rtt last</th><th>p95</th><th>max</th><th>lag last</th><th>p95</th><th>pkt/s</th></tr>'];
@@ -156,6 +234,12 @@ setInterval(() => {
   }
   $('table').innerHTML = rows.join('');
   $('summary').textContent = `total ${pktsRate} pkt/s | screen<->server RTT ${f(screenRtt)} ms | clock offset ${f(sync.offset ?? NaN)} ms`;
+  if (phase === 'playing') {
+    const left = roundEnd - performance.now();
+    if (left <= 0) dispatch('timeout');
+    $('timer').textContent = String(Math.max(0, Math.ceil(left / 1000)));
+    renderUi();
+  }
   $('warn').textContent = document.hidden ? 'TAB HIDDEN: rendering paused, keep it in the foreground' : '';
 }, 250);
 

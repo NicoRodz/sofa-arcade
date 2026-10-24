@@ -20,7 +20,8 @@ export async function startServer(opts: { port: number; mode: Mode }) {
 
   app.get('/api/info', async (req, res) => {
     const port = req.socket.localPort ?? opts.port;
-    const url = `http://${lanIp()}:${port}/c`;
+    const room = typeof req.query.room === 'string' ? req.query.room.slice(0, 16) : '';
+    const url = `http://${lanIp()}:${port}/c${room ? `?room=${encodeURIComponent(room)}` : ''}`;
     const qrSvg = await QRCode.toString(url, { type: 'svg', margin: 1, color: { dark: '#000000', light: '#ffffff' } });
     res.json({ url, qrSvg });
   });

@@ -1,6 +1,7 @@
 import nipplejs from 'nipplejs';
 import {
-  ClockSync, DEADZONE, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, type ClientMsg, type ServerMsg,
+  ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
+  type ClientMsg, type Phase, type ServerMsg,
 } from '@party/shared';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -27,6 +28,13 @@ const sync = new ClockSync();
 let lastRtt: number | undefined;
 let ws: WebSocket | null = null;
 let joined = false;
+let started = false;
+let halted = false; // server refused us (e.g. room full): stop retrying until the page is shown again
+let phase: Phase = 'lobby';
+let myId = 0;
+let lastPong = 0;
+const room = new URLSearchParams(location.search).get('room') || DEFAULT_ROOM;
+const view = (v: string) => { document.body.dataset.view = v; };
 let pingId = 0;
 const sent = new Map<number, { perf: number; t0: number }>();
 
@@ -38,38 +46,64 @@ const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JS
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
 
+function showPhase(p: Phase, scores?: { id: number; score: number }[]) {
+  phase = p;
+  if (p !== 'playing') { state.x = 0; state.y = 0; state.btn = 0; $('fire').classList.remove('down'); }
+  if (p === 'results' && scores) {
+    const i = scores.findIndex((s) => s.id === myId);
+    $('rank').textContent = i >= 0 ? `#${i + 1}` : '-';
+    $('myscore').textContent = i >= 0 ? `${scores[i]!.score} puntos` : '';
+  }
+  view(p);
+}
+
 function connect() {
   if (ws && ws.readyState <= WebSocket.OPEN) return;
-  ws = new WebSocket(`ws://${location.host}${WS_PATH}`);
-  ws.onopen = () => tx({ t: 'join', name, token });
-  ws.onmessage = (ev) => {
+  halted = false;
+  const sock = (ws = new WebSocket(`ws://${location.host}${WS_PATH}?room=${encodeURIComponent(room)}`));
+  sock.onopen = () => { lastPong = Date.now(); tx({ t: 'join', name, token }); };
+  sock.onmessage = (ev) => {
     const m = JSON.parse(ev.data) as ServerMsg;
     if (m.t === 'joined') {
       joined = true;
+      myId = m.player.id;
       document.documentElement.style.setProperty('--c', m.player.color);
       $('fire').style.background = m.player.color;
+      $('who').textContent = m.player.name;
       hud(`${m.player.name} #${m.player.slot + 1}`);
+    } else if (m.t === 'phase') {
+      showPhase(m.phase, m.scores);
     } else if (m.t === 'pong') {
+      lastPong = Date.now();
       const s = sent.get(m.id);
       if (!s) return;
       sent.delete(m.id);
       lastRtt = performance.now() - s.perf;
       sync.add(lastRtt, s.t0, m.ts);
     } else if (m.t === 'error') {
+      halted = true;
       hud(m.reason);
     }
   };
-  ws.onclose = () => { joined = false; hud('reconnecting...'); setTimeout(connect, 500); };
+  sock.onclose = () => {
+    if (sock !== ws) return;
+    joined = false;
+    if (halted) return;
+    hud('reconnecting...');
+    setTimeout(connect, 500);
+  };
 }
 
 function sendInput() {
-  if (!joined) return;
+  if (!joined || phase !== 'playing') return;
   tx({ t: 'input', seq: state.seq++, x: state.x, y: state.y, btn: state.btn, presses: [state.presses], ts: Date.now() });
 }
 
 function startPad() {
-  $('join').style.display = 'none';
-  $('pad').style.display = 'block';
+  if (started) return;
+  started = true;
+  store.set('pg.room', room);
+  view('lobby');
   const stick = nipplejs.create({ zone: $('zone'), mode: 'dynamic', color: 'white', size: 130, threshold: DEADZONE });
   stick.on('move', (e) => {
     const [x, y] = applyDeadzone(e.data.vector.x, -e.data.vector.y);
@@ -110,7 +144,13 @@ function startPad() {
   }, PING_MS);
   setInterval(() => { if (joined && lastRtt !== undefined) $('hud').textContent = `${label} | ${lastRtt.toFixed(0)} ms`; }, 1000);
 
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) connect(); });
+  // A locked phone can leave a half-dead socket that still reads OPEN: drop it if the server went quiet.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    if (ws && ws.readyState === WebSocket.OPEN && Date.now() - lastPong > 3 * PING_MS) ws.close();
+    connect();
+  });
+  window.addEventListener('pageshow', () => connect());
   connect();
 }
 
@@ -121,3 +161,4 @@ $('name').setAttribute('value', name);
   store.set('pg.name', name);
   startPad();
 });
+if (name && store.get('pg.room') === room) startPad(); // reopened page: rejoin with the stored token

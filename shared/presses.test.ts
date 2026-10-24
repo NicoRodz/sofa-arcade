@@ -12,10 +12,22 @@ describe('press counter', () => {
   it('handles counter wraparound', () => {
     expect(pressDelta(PRESS_MOD - 1, 1)).toBe(2);
   });
-  it('reset forgets history (rejoin with counter back at 0)', () => {
+  it('reset makes the next sample a baseline', () => {
     const t = new PressTracker();
     t.update([10]);
     t.reset();
-    expect(t.update([1])).toEqual([1]);
+    expect(t.update([12])).toEqual([0]);
+    expect(t.update([13])).toEqual([1]);
+  });
+  it('keeps counting across a reconnect: taps made while offline arrive with the next packet', () => {
+    const t = new PressTracker();
+    t.update([5]);
+    expect(t.update([8])).toEqual([3]);
+  });
+  it('a restarted phone counter (back to 0) is not read as a huge burst', () => {
+    const t = new PressTracker();
+    t.update([17]);
+    expect(t.update([0])).toEqual([0]);
+    expect(t.update([2])).toEqual([2]);
   });
 });

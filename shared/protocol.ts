@@ -5,6 +5,9 @@ export const PING_MS = 1000;
 export const DEADZONE = 0.15;
 export const MAX_PLAYERS = 8;
 export const BUTTON_COUNT = 1;
+export const SLOT_GRACE_MS = 60_000; // a dropped phone keeps its slot this long
+export const ROUND_MS = 60_000;
+export const ROOM_CODE_LEN = 4;
 export const PRESS_MOD = 65536;
 export const COLORS = ['#ff5252', '#40c4ff', '#ffd740', '#69f0ae', '#e040fb', '#ff9100', '#b2ff59', '#18ffff'];
 
@@ -18,6 +21,11 @@ export interface InputState {
   ts: number; // sender Date.now()
 }
 
+export const PHASES = ['lobby', 'playing', 'results'] as const;
+export type Phase = (typeof PHASES)[number];
+export interface Score { id: number; score: number }
+export interface PhaseInfo { phase: Phase; scores?: Score[] }
+
 export interface PublicPlayer {
   id: number;
   name: string;
@@ -29,7 +37,8 @@ export interface PublicPlayer {
 export type ClientMsg =
   | { t: 'join'; name: string; token: string }
   | ({ t: 'input' } & InputState)
-  | { t: 'ping'; id: number; t0: number; rtt?: number; off?: number };
+  | { t: 'ping'; id: number; t0: number; rtt?: number; off?: number }
+  | ({ t: 'phase' } & PhaseInfo); // screen only
 
 export type ServerMsg =
   | { t: 'joined'; player: PublicPlayer; room: string }
@@ -37,7 +46,9 @@ export type ServerMsg =
   | { t: 'pong'; id: number; t0: number; ts: number }
   | { t: 'state'; players: PublicPlayer[] }
   | { t: 'player_joined'; player: PublicPlayer }
-  | { t: 'player_left'; playerId: number }
+  | { t: 'player_left'; playerId: number } // disconnected, slot still held
+  | { t: 'player_removed'; playerId: number } // grace expired, slot freed
+  | ({ t: 'phase' } & PhaseInfo)
   | ({ t: 'input'; playerId: number } & InputState)
   | { t: 'rtt'; playerId: number; rtt: number; off: number };
 
@@ -71,9 +82,31 @@ export function parseClientMessage(raw: string): ClientMsg | null {
     case 'ping':
       if (!num(m.id) || !num(m.t0)) return null;
       return { t: 'ping', id: m.id, t0: m.t0, rtt: num(m.rtt) ? m.rtt : undefined, off: num(m.off) ? m.off : undefined };
+    case 'phase': {
+      if (!PHASES.includes(m.phase)) return null;
+      if (m.scores === undefined) return { t: 'phase', phase: m.phase };
+      if (!Array.isArray(m.scores) || !m.scores.every((x: any) => x && num(x.id) && num(x.score))) return null;
+      return { t: 'phase', phase: m.phase, scores: m.scores.map((x: Score) => ({ id: x.id, score: x.score })) };
+    }
     default:
       return null;
   }
+}
+
+export type PhaseEvent = 'start' | 'timeout' | 'again';
+export function nextPhase(phase: Phase, ev: PhaseEvent): Phase {
+  if (phase === 'lobby' && ev === 'start') return 'playing';
+  if (phase === 'playing' && ev === 'timeout') return 'results';
+  if (phase === 'results' && ev === 'again') return 'lobby';
+  return phase;
+}
+export const canStart = (players: { connected: boolean }[]) => players.some((p) => p.connected);
+
+const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+export function newRoomCode(rand: () => number = Math.random): string {
+  let c = '';
+  for (let i = 0; i < ROOM_CODE_LEN; i++) c += ROOM_ALPHABET[Math.floor(rand() * ROOM_ALPHABET.length)];
+  return c;
 }
 
 export function applyDeadzone(x: number, y: number, dz = DEADZONE): [number, number] {
@@ -93,9 +126,15 @@ export class PressTracker {
   reset() {
     this.last = [];
   }
-  // Returns new presses per button since the previous call.
+  // Returns new presses per button since the previous call. The first sample after reset is a baseline,
+  // and a jump over half the range is a phone that restarted its counter: neither counts as presses.
   update(presses: number[]): number[] {
-    const out = presses.map((p, i) => pressDelta(this.last[i] ?? 0, p));
+    const out = presses.map((p, i) => {
+      const prev = this.last[i];
+      if (prev === undefined) return 0;
+      const d = pressDelta(prev, p);
+      return d > PRESS_MOD / 2 ? 0 : d;
+    });
     this.last = presses.slice();
     return out;
   }

@@ -1,8 +1,8 @@
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  COLORS, DEFAULT_ROOM, MAX_PLAYERS, WS_PATH, parseClientMessage,
-  type PublicPlayer, type ServerMsg,
+  COLORS, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage,
+  type PhaseInfo, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 
 interface Player {
@@ -11,11 +11,13 @@ interface Player {
   name: string;
   slot: number;
   ws: WebSocket | null;
+  expiry?: ReturnType<typeof setTimeout>;
 }
 interface Room {
   players: Map<number, Player>;
   screens: Set<WebSocket>;
   nextId: number;
+  phase: PhaseInfo;
 }
 
 const send = (ws: WebSocket, m: ServerMsg) => {
@@ -29,12 +31,16 @@ export function attachRelay(server: Server) {
   const rooms = new Map<string, Room>();
   const room = (code: string) => {
     let r = rooms.get(code);
-    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1 }));
+    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'lobby' } }));
     return r;
   };
   const toScreens = (r: Room, m: ServerMsg) => {
     const s = JSON.stringify(m);
     for (const ws of r.screens) if (ws.readyState === WebSocket.OPEN) ws.send(s);
+  };
+
+  const toPlayers = (r: Room, m: ServerMsg) => {
+    for (const p of r.players.values()) if (p.ws) send(p.ws, m);
   };
 
   const wss = new WebSocketServer({ server, path: WS_PATH });
@@ -59,6 +65,12 @@ export function attachRelay(server: Server) {
         }
         return;
       }
+      if (m.t === 'phase') {
+        if (!isScreen) return;
+        r.phase = { phase: m.phase, scores: m.scores };
+        toPlayers(r, { t: 'phase', ...r.phase });
+        return;
+      }
       if (isScreen) return;
       if (m.t === 'join') {
         let p = [...r.players.values()].find((x) => x.token === m.token);
@@ -77,9 +89,11 @@ export function attachRelay(server: Server) {
           p.name = m.name;
           if (p.ws && p.ws !== ws) p.ws.close();
         }
+        clearTimeout(p.expiry);
         p.ws = ws;
         me = p;
         send(ws, { t: 'joined', player: pub(p), room: url.searchParams.get('room') || DEFAULT_ROOM });
+        send(ws, { t: 'phase', ...r.phase });
         toScreens(r, { t: 'player_joined', player: pub(p) });
         return;
       }
@@ -94,6 +108,13 @@ export function attachRelay(server: Server) {
       if (me && me.ws === ws) {
         me.ws = null;
         toScreens(r, { t: 'player_left', playerId: me.id });
+        const p = me;
+        p.expiry = setTimeout(() => {
+          if (p.ws) return;
+          r.players.delete(p.id);
+          toScreens(r, { t: 'player_removed', playerId: p.id });
+        }, SLOT_GRACE_MS);
+        p.expiry.unref?.();
       }
     });
   });

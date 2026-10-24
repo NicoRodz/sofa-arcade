@@ -1,6 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
-import type { ClientMsg, ServerMsg } from '@party/shared';
+import { SLOT_GRACE_MS, type ClientMsg, type ServerMsg } from '@party/shared';
 import { startServer } from '../src/server';
 
 let srv: Awaited<ReturnType<typeof startServer>>;
@@ -17,10 +17,12 @@ class Client {
   open() { return new Promise<void>((r) => this.ws.once('open', () => r())); }
   send(m: ClientMsg | string) { this.ws.send(typeof m === 'string' ? m : JSON.stringify(m)); }
   async next<T extends ServerMsg['t']>(t: T): Promise<Extract<ServerMsg, { t: T }>> {
-    for (let i = 0; i < 100; i++) {
+    // setImmediate + Date.now: keeps working while setTimeout is faked
+    const end = Date.now() + 2000;
+    while (Date.now() < end) {
       const j = this.msgs.findIndex((m) => m.t === t);
       if (j >= 0) return this.msgs.splice(j, 1)[0] as Extract<ServerMsg, { t: T }>;
-      await new Promise((r) => setTimeout(r, 20));
+      await new Promise((r) => setImmediate(r));
     }
     throw new Error(`timeout waiting for ${t}; got ${JSON.stringify(this.msgs)}`);
   }
@@ -83,5 +85,118 @@ describe('relay', () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(other.msgs.filter((m) => m.t === 'input')).toEqual([]);
     [screen.ws, other.ws, c.ws].forEach((w) => w.close());
+  });
+});
+
+const settle = async () => { for (let i = 0; i < 50; i++) await new Promise((r) => setImmediate(r)); };
+
+describe('phases', () => {
+  it('screen phase changes reach every connected player; late joiners get the current phase; players cannot set it', async () => {
+    const screen = new Client('?role=screen&room=p1');
+    const a = new Client('?room=p1');
+    const b = new Client('?room=p1');
+    await Promise.all([screen.open(), a.open(), b.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined');
+    expect((await a.next('phase')).phase).toBe('lobby'); // phase right after joining
+
+    screen.send({ t: 'phase', phase: 'playing' });
+    expect((await a.next('phase')).phase).toBe('playing');
+
+    b.send({ t: 'join', name: 'Bo', token: 'b' });
+    await b.next('joined');
+    expect((await b.next('phase')).phase).toBe('playing'); // late joiner
+
+    b.send({ t: 'phase', phase: 'results' }); // not a screen: ignored
+    await settle();
+    expect(a.msgs.filter((m) => m.t === 'phase')).toEqual([]);
+
+    screen.send({ t: 'phase', phase: 'results', scores: [{ id: 2, score: 5 }, { id: 1, score: 1 }] });
+    expect(await a.next('phase')).toMatchObject({ phase: 'results', scores: [{ id: 2, score: 5 }, { id: 1, score: 1 }] });
+    expect((await b.next('phase')).phase).toBe('results');
+    [screen.ws, a.ws, b.ws].forEach((w) => w.close());
+  });
+
+  it('keeps the phase when a player reconnects with its token', async () => {
+    const screen = new Client('?role=screen&room=p2');
+    const a = new Client('?room=p2');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined');
+    screen.send({ t: 'phase', phase: 'playing' });
+    await a.next('phase');
+    a.ws.close();
+    await screen.next('player_left');
+    const a2 = new Client('?room=p2');
+    await a2.open();
+    a2.send({ t: 'join', name: 'Ana', token: 'a' });
+    expect((await a2.next('joined')).player.id).toBe(1);
+    expect((await a2.next('phase')).phase).toBe('playing');
+    [screen.ws, a2.ws].forEach((w) => w.close());
+  });
+});
+
+describe('slot expiry', () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  const dropped = async (room: string) => {
+    const screen = new Client(`?role=screen&room=${room}`);
+    const a = new Client(`?room=${room}`);
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined');
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    a.ws.close();
+    await screen.next('player_left');
+    return screen;
+  };
+
+  it('frees the slot after 60 s without the phone', async () => {
+    const screen = await dropped('e1');
+    vi.advanceTimersByTime(SLOT_GRACE_MS - 1);
+    await settle();
+    expect(screen.msgs.filter((m) => m.t === 'player_removed')).toEqual([]);
+    expect(srv.relay.rooms.get('e1')!.players.size).toBe(1);
+
+    vi.advanceTimersByTime(1);
+    expect((await screen.next('player_removed')).playerId).toBe(1);
+    expect(srv.relay.rooms.get('e1')!.players.size).toBe(0);
+
+    const b = new Client('?room=e1');
+    await b.open();
+    b.send({ t: 'join', name: 'Bo', token: 'b' });
+    expect((await b.next('joined')).player).toMatchObject({ id: 2, slot: 0 }); // slot 0 is free again
+    [screen.ws, b.ws].forEach((w) => w.close());
+  });
+
+  it('returning before 60 s cancels the expiry', async () => {
+    const screen = await dropped('e2');
+    vi.advanceTimersByTime(SLOT_GRACE_MS - 1000);
+    const a2 = new Client('?room=e2');
+    await a2.open();
+    a2.send({ t: 'join', name: 'Ana', token: 'a' });
+    expect((await a2.next('joined')).player.id).toBe(1);
+    vi.advanceTimersByTime(SLOT_GRACE_MS * 2);
+    await settle();
+    expect(screen.msgs.filter((m) => m.t === 'player_removed')).toEqual([]);
+    expect(srv.relay.rooms.get('e2')!.players.get(1)!.ws).not.toBeNull();
+    [screen.ws, a2.ws].forEach((w) => w.close());
+  });
+
+  it('a second drop restarts the 60 s window instead of inheriting the first timer', async () => {
+    const screen = await dropped('e3');
+    vi.advanceTimersByTime(30_000);
+    const a2 = new Client('?room=e3');
+    await a2.open();
+    a2.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a2.next('joined');
+    a2.ws.close();
+    await screen.next('player_left');
+    vi.advanceTimersByTime(40_000); // 70 s after the first drop, 40 s after the second
+    await settle();
+    expect(screen.msgs.filter((m) => m.t === 'player_removed')).toEqual([]);
+    vi.advanceTimersByTime(20_000);
+    expect((await screen.next('player_removed')).playerId).toBe(1);
+    screen.ws.close();
   });
 });
