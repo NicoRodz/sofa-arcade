@@ -37,6 +37,8 @@ export interface Player {
   y: number;
   fx: number; // facing, last non-null stick vector
   fy: number;
+  vx: number; // R1: smoothed velocity, tiles/s
+  vy: number;
   item: Item | null;
   cutting: boolean;
   chopAt: number; // station index being chopped, -1 if none
@@ -108,9 +110,20 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
 export function addPlayer(g: Game, id: number, slot: number, spawn = slot) {
   if (g.players.has(id)) return;
   const [sx, sy] = g.spawns[spawn % g.spawns.length] ?? [1, 1];
-  g.players.set(id, { id, slot, spawn: spawn % g.spawns.length, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, item: null, cutting: false, chopAt: -1 });
+  g.players.set(id, { id, slot, spawn: spawn % g.spawns.length, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, vx: 0, vy: 0, item: null, cutting: false, chopAt: -1 });
 }
 export const removePlayer = (g: Game, id: number) => { g.players.delete(id); };
+
+// R1: one integrator for the chef's velocity, v += (target - v) * (1 - e^(-dt/tau)). tau = 0 is "instant" (the old feel).
+function steer(p: Player, c: Controls, g: Game, dtMs: number) {
+  const { tauMs, tauStopMs } = g.params.tune;
+  const moving = c.x !== 0 || c.y !== 0;
+  const tau = moving ? tauMs : tauStopMs;
+  const k = tau > 0 ? 1 - Math.exp(-dtMs / tau) : 1;
+  p.vx += (c.x * SPEED - p.vx) * k;
+  p.vy += (c.y * SPEED - p.vy) * k;
+  if (!moving && Math.hypot(p.vx, p.vy) < 0.02) { p.vx = 0; p.vy = 0; } // the tail of the exponential is a stop
+}
 
 const blocked = (g: Game, x: number, y: number) => {
   for (let ty = Math.floor(y - RADIUS); ty <= Math.floor(y + RADIUS); ty++)
@@ -238,6 +251,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     if (wasCutting && (!p.cutting || at !== wasAt)) g.bus.emit(g.stations[wasAt]?.kind === 'sink' ? 'washStop' : 'chopStop', { player: p.id, station: wasAt });
     if (p.cutting && (!wasCutting || at !== wasAt)) g.bus.emit(target!.kind === 'sink' ? 'washStart' : 'chopStart', { player: p.id, station: at });
     p.chopAt = p.cutting ? at : -1;
+    if (p.cutting) { p.vx = 0; p.vy = 0; }
     if (p.cutting && target?.kind === 'sink') {
       target.progress += dtMs / WASH_MS;
       if (target.progress >= 1) {
@@ -254,10 +268,11 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
       }
     } else {
       if (c.x || c.y) { p.fx = c.x; p.fy = c.y; }
-      const nx = p.x + c.x * SPEED * dt;
-      if (!blocked(g, nx, p.y)) p.x = nx;
-      const ny = p.y + c.y * SPEED * dt;
-      if (!blocked(g, p.x, ny)) p.y = ny;
+      steer(p, c, g, dtMs);
+      const nx = p.x + p.vx * dt;
+      if (!blocked(g, nx, p.y)) p.x = nx; else p.vx = 0;
+      const ny = p.y + p.vy * dt;
+      if (!blocked(g, p.x, ny)) p.y = ny; else p.vy = 0;
     }
     for (let i = 0; i < c.a; i++) {
       const s = targetStation(g, p);

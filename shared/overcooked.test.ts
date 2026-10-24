@@ -98,7 +98,7 @@ describe('grab and drop', () => {
     run(g, 500, new Map([[1, { ...idle, x: 1 }]]));
     expect(p.x).toBeGreaterThan(7);
     run(g, 200, new Map([[1, { ...idle, y: -1 }]]));
-    run(g, 100, new Map()); // no input for this player: stands still
+    run(g, 300, new Map()); // no input for this player: coasts for ~tau_stop (R1) and then stands still
     const y = p.y;
     run(g, 100, new Map());
     expect(p.y).toBe(y);
