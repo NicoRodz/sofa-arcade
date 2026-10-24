@@ -1,15 +1,16 @@
 // Shared shapes of the world of F2a. Plain data only (no classes, no closures): a world can be hashed, snapshotted and compared.
 import type { Difficulty } from '../../../difficulty';
 import type { DifficultyParams } from '../constants';
-import type { ObstEventName, ObstEvents } from '../events';
+import type { AllObstEvents, ObstEventName } from '../events';
 import type { ParsedLevel } from '../parse';
 import type { Cell, EntityParam, GameMode, Weight } from '../types';
 import type { PxRect } from './collide';
+import type { CampaignParams, SignalKind } from './campaign';
 import type { Body, PhysicsParams } from './player';
 import type { Rope } from './rope';
 import type { TileGrid } from './tiles';
 
-export type ObstEvent = { [K in ObstEventName]: { name: K; data: ObstEvents[K] } }[ObstEventName];
+export type ObstEvent = { [K in ObstEventName]: { name: K; data: AllObstEvents[K] } }[ObstEventName];
 
 // --- players
 export type PlayerMode = 'active' | 'dead' | 'bubble';
@@ -41,6 +42,16 @@ export interface PlayerState {
   crushed: number; // steps in a row inside a solid
   deathGroup: number; // tick of the death (a team wipe is judged by this)
   stats: PlayerStats;
+  camp: PlayerCamp; // campaign layer (plan §4, §5.1); inert in a quick-match world
+}
+export interface PlayerCamp {
+  assist: number; // edge assist: steps left of the forced push towards the wall
+  assistDir: -1 | 0 | 1;
+  jumpTick: number; // tick of the last ground jump (super jump pairs two of them), -1000 none
+  mash: number; // bubble v2: boost levels from A presses
+  mashCool: number; // steps until a level is lost
+  signal: { kind: SignalKind; steps: number } | null; // shown over the head
+  goHold: number; // steps "go" has been held
 }
 
 // --- dynamic entities (plan §9)
@@ -96,7 +107,10 @@ export interface Entities {
 }
 
 export type WorldStatus = 'playing' | 'cleared' | 'failed';
-export interface LevelResult { timeSec: number; medal: 'gold' | 'silver' | 'bronze'; stars: number; deaths: number; livesLeft: number }
+// `campaign` only exists in a campaign world: heartsLost = deaths-steps that cost a heart (also counted with infinite hearts), refills = times the
+// hearts ran out and were refilled, perfect = both zero (the plan's third star, before the Captain's assists are applied by the caller).
+export interface CampaignResult { heartsLost: number; refills: number; perfect: boolean }
+export interface LevelResult { timeSec: number; medal: 'gold' | 'silver' | 'bronze'; stars: number; deaths: number; livesLeft: number; campaign?: CampaignResult }
 
 export interface World {
   level: ParsedLevel;
@@ -117,9 +131,13 @@ export interface World {
   activeCheckpoint: number; // index in ent.checkpoints, -1 = the spawn
   result: LevelResult | null;
   events: ObstEvent[]; // scratch of the step in progress
+  camp: CampaignParams | null; // null = quick match, every campaign rule is off
+  heartsLost: number; // campaign: deaths-steps that cost a heart
+  refills: number; // campaign: times the hearts ran out
+  countdown: { by: number; steps: number } | null; // campaign: a 3-2-1 launched by "go" held
 }
 
-export const emit = <K extends ObstEventName>(w: World, name: K, data: ObstEvents[K]): void => { w.events.push({ name, data } as ObstEvent); };
+export const emit = <K extends ObstEventName>(w: World, name: K, data: AllObstEvents[K]): void => { w.events.push({ name, data } as ObstEvent); };
 export const playerOf = (w: World, slot: number): PlayerState | undefined => w.players.find((p) => p.slot === slot);
 export const isActive = (p: PlayerState): boolean => p.connected && p.mode === 'active';
 export const connectedCount = (w: World): number => w.players.filter((p) => p.connected).length;

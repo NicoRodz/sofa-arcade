@@ -57,3 +57,29 @@ describe('InputTracker', () => {
     expect(t.step(3)).toMatchObject({ down: false, up: true });
   });
 });
+
+describe('InputTracker: campaign signals (dynamic 1)', () => {
+  const pkt = (sig?: { kind: 'wait' | 'go'; seq: number }, goHeld?: boolean) => ({ x: 0, y: 0, presses: [0, 0], signal: sig, goHeld });
+  it('the first signal sample is a baseline; a new seq is one signal, delivered once', () => {
+    const t = new InputTracker();
+    t.receive(pkt({ kind: 'wait', seq: 7 }), 0);
+    expect(t.step(0).signal).toBeUndefined(); // baseline: a phone that joins mid-counter signals nothing
+    t.receive(pkt({ kind: 'go', seq: 8 }), 16);
+    expect(t.step(16).signal).toBe('go');
+    expect(t.step(33).signal).toBeUndefined();
+    t.receive(pkt({ kind: 'go', seq: 8 }), 33); // same seq again (a repeated packet): nothing
+    expect(t.step(33).signal).toBeUndefined();
+  });
+  it('goHeld is a state: it follows the latest packet', () => {
+    const t = new InputTracker();
+    t.receive(pkt(undefined, true), 0);
+    expect(t.step(0).goHeld).toBe(true);
+    t.receive(pkt(undefined, false), 16);
+    expect(t.step(16).goHeld).toBeUndefined();
+  });
+  it('a quick-match packet (no signal fields) gives the same step as always', () => {
+    const t = new InputTracker();
+    t.receive({ x: 1, y: 0, presses: [0, 0] }, 0);
+    expect(t.step(0)).toEqual({ move: 1, down: false, up: false, jump: false, grab: false });
+  });
+});

@@ -187,3 +187,42 @@ describe('progressField (BFS from the goal)', () => {
     expect(() => progressAt(f, grid, 99999, 99999)).not.toThrow();
   });
 });
+
+describe('computeCamera: campaign look (plan §5.1)', () => {
+  const look = (o: Partial<NonNullable<CamInput['look']>> = {}) => ({ goalX: null, hazard: null, padTiles: 3, ...o });
+  it('without hints nothing changes: the lead follows where the group runs', () => {
+    const run = [P(0, 5000, 30, { vx: 330 }), P(1, 5200, 28, { vx: 330 })];
+    const s = settle(input(run), null, 3);
+    const t = settle(input(run, { look: look() }), null, 3);
+    expect(t.cx).toBeCloseTo(s.cx, 3); // goalX null: same lead as the quick match
+  });
+  it('looks toward the goal even when the group stands still, and flips when the goal is behind', () => {
+    const still = [P(0, 5000, 30), P(1, 5200, 28)];
+    const mid = 5100;
+    expect(settle(input(still, { look: look({ goalX: 9000 }) }), null, 3).cx).toBeGreaterThan(mid + 50);
+    expect(settle(input(still, { look: look({ goalX: 1000 }) }), null, 3).cx).toBeLessThan(mid - 50);
+    expect(settle(input(still), null, 3).cx).toBeCloseTo(mid, 0); // quick match: still group, no look-ahead
+  });
+  it('the margin is the hint\'s padTiles around both players', () => {
+    const ps = [P(0, 5000, 30), P(1, 6800, 28)];
+    const a = computeCamera(input(ps, { look: look({ padTiles: 3 }) }), null, 0).state.zoom;
+    const b = computeCamera(input(ps, { look: look({ padTiles: 6 }) }), null, 0).state.zoom;
+    expect(b).toBeLessThan(a);
+    expect(computeCamera(input(ps), null, 0).state.zoom).toBeCloseTo(a, 6); // 3 tiles = the legacy FRAME_PAD
+  });
+  it('an avalanche behind the group is pulled into the frame (zoom out, centre moves toward it) as long as it fits at the minimum zoom', () => {
+    const ps = [P(0, 5000, 30), P(1, 5200, 28)];
+    const plain = computeCamera(input(ps, { look: look() }), null, 0);
+    const chased = computeCamera(input(ps, { look: look({ hazard: { kind: 'avalanche', pos: 3500 } }) }), null, 0);
+    expect(chased.state.cx).toBeLessThan(plain.state.cx);
+    expect(chased.state.zoom).toBeLessThan(plain.state.zoom);
+    const far = computeCamera(input(ps, { look: look({ hazard: { kind: 'avalanche', pos: -9000 } }) }), null, 0);
+    expect(far.state).toEqual(plain.state); // too far to fit: the frame stays on the players
+  });
+  it('rising lava below pulls the frame down', () => {
+    const ps = [P(0, 5000, 30), P(1, 5200, 28)];
+    const plain = computeCamera(input(ps, { look: look() }), null, 0);
+    const lava = computeCamera(input(ps, { look: look({ hazard: { kind: 'risingLava', pos: 1000 } }) }), null, 0);
+    expect(lava.state.cy).toBeGreaterThan(plain.state.cy);
+  });
+});
