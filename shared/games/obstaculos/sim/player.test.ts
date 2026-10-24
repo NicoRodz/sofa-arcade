@@ -37,6 +37,21 @@ describe('jump (plan §2)', () => {
     expect(apex / 60).toBeGreaterThan(0.38 - 0.02);
     expect(apex / 60).toBeLessThan(0.38 + 0.06);
   });
+  it('hangs at the top (g x0.5 while |vy| < 80) and falls faster than it rises: 45 steps in the air, landing at terminal speed', () => {
+    const g = flat();
+    const b = standAt(0, 200, g);
+    let hang = 0, air = 0, landed = 0, landOn = '';
+    for (let i = 0; i < 100; i++) {
+      const ev = solo(g, b, { ...idle, jump: i === 0 });
+      if (!b.grounded) { air++; if (Math.abs(b.vy) < 80) hang++; }
+      if (ev.land) { landed = ev.land; landOn = ev.landOn; }
+    }
+    expect(hang).toBeGreaterThanOrEqual(6); // 4 without the hang
+    expect(air).toBeGreaterThanOrEqual(43); // 0.72 s up and down; with the same g both ways it would be 38
+    expect(air).toBeLessThanOrEqual(47);
+    expect(landed).toBe(MAX_FALL);
+    expect(landOn).toBe('ground');
+  });
   it('the height is fixed: pressing A on every step gives the same arc and no double jump', () => {
     const g = flat();
     const a = standAt(0, 200, g), c = standAt(1, 400, g);
@@ -94,6 +109,9 @@ describe('running (plan §2)', () => {
     const b = standAt(0, 100, g);
     for (let i = 0; i < 20; i++) solo(g, b, { ...idle, move: 0.45 });
     expect(b.vx).toBeCloseTo(148.5, 6);
+    expect(b.facing).toBe(1);
+    for (let i = 0; i < 20; i++) solo(g, b, { ...idle, move: -1 });
+    expect(b.facing).toBe(-1);
   });
 });
 
@@ -332,6 +350,29 @@ describe('one-way platforms, heads and trampolines', () => {
     stepPlayers(bodies, [idle, { move: 0, down: true, jump: true }], g, NORMAL);
     for (let i = 0; i < 40; i++) stepPlayers(bodies, [idle, idle], g, NORMAL);
     expect(rider.y + PLAYER_H).toBe(FLOOR_Y);
+  });
+});
+
+describe('landing events and surfaces', () => {
+  it('land reports the fall speed once, and where: ground, one-way tile or head', () => {
+    const g = grid(Array.from({ length: 12 }, (_, y) => (y === 9 ? '#'.repeat(40) : y === 7 ? '='.repeat(4) + '.'.repeat(36) : '.'.repeat(40))));
+    const onTile = newBody(0, 1 * TILE, 4 * TILE);
+    const evs: { land: number; landOn: string }[] = [];
+    for (let i = 0; i < 80; i++) evs.push(solo(g, onTile, idle));
+    expect(evs.filter((e) => e.land > 0)).toHaveLength(1);
+    expect(evs.find((e) => e.land > 0)!.landOn).toBe('oneWay');
+    // a solid tile and a one-way tile at the same height under the feet: solid wins (down + A jumps instead of dropping)
+    const mixed = grid(Array.from({ length: 12 }, (_, y) => (y === 9 ? '#'.repeat(5) + '='.repeat(5) + '.'.repeat(30) : '.'.repeat(40))));
+    const m = newBody(1, 5 * TILE - 17, 9 * TILE - PLAYER_H);
+    for (let i = 0; i < 3; i++) solo(mixed, m, idle);
+    expect(m.onOneWay).toBe(false);
+    expect(solo(mixed, m, { move: 0, down: true, jump: true }).jump).toBe('ground');
+    // on a head
+    const base = standAt(2, 600), top = newBody(3, 600, 6 * TILE);
+    const bodies = [base, top];
+    const heads: string[] = [];
+    for (let i = 0; i < 60; i++) heads.push(...stepPlayers(bodies, [idle, idle], flat(), NORMAL).filter((e) => e.land > 0).map((e) => e.landOn));
+    expect(heads).toEqual(['head']);
   });
 });
 
