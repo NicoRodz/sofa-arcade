@@ -114,6 +114,17 @@ describe('generateLevel: determinism and structure', { timeout: 120_000 }, () =>
     expect(wall5(8)).toBeGreaterThan(0);
   });
 
+  it('the validator is in the loop: over 60 seeds some drafts are refused and retried, and what comes back always validates', () => {
+    let rejected = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const o: GenerateOpts = { seed, n: NS[seed % 3]!, tether: TETHERS[seed % 2]!, difficulty: DIFFICULTIES[Math.floor(seed / 3) % 3]! };
+      const { level, report } = generateLevel(o);
+      rejected += report.rejected;
+      expect(revalidate(o, level.rows, level), `seed ${seed}`).toEqual([]);
+    }
+    expect(rejected).toBeGreaterThan(0);
+  });
+
   it('with nothing valid the generator falls back to a hand-made level that fits and logs the case', () => {
     // a 6 x 3 players level pool cannot be forced to fail; ask for a count outside the generator's reach instead
     FALLBACK_LOG.length = 0;
