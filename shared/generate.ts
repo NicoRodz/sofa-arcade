@@ -1,20 +1,24 @@
-// Seeded kitchen generator: archetype + loose obstacles + station slots + spawns, retried until it validates
-// and lands in the difficulty band. Same seed, difficulty and team size give the same map.
+// Seeded kitchen generator: topology + loose obstacles + station slots + spawns, retried until it validates and lands in
+// the difficulty band. Same seed, difficulty, team size (and range) give the same map. It builds for a range of team sizes
+// [nMin, nMax]: spawns and stations are sized for nMax and every N of the range is checked (puestos reachable, floor per chef).
+// Topologies (design: abierta, islas, carriles, zonas2 or zonas3) map to open, island, lanes and river/corridor (zonas2);
+// zonas3 (three rooms) is not generated: the fixed maps 13 and 15 cover it.
 import type { Difficulty } from './difficulty';
 import { teamSize } from './difficulty';
-import { MAPS_BY_DIFFICULTY, MAP_H, MAP_W, fixedMap, parseMap, pickFixedMap, posKey, type MapChoice, type MapDef, type Pos } from './maps';
+import { MAPS_BY_DIFFICULTY, MAP_H, MAP_W, fixedMap, parseMap, pickFixedMap, posKey, recommendedMaps, type MapChoice, type MapDef, type Pos } from './maps';
+import { PUESTOS, puestosFor, type Features, type PuestoId } from './puestos';
 import { mulberry32, pick, pickWeighted, randInt, type Rng } from './rng';
 import { metric } from './score';
-import { accessTiles, analyze, validate } from './validate';
+import { FLOOR_PER_PLAYER, accessTiles, analyze, floorTiles, minPlayers, spawnTiles, validateMap, zoneShareProblems } from './validate';
 
-export const ARCHETYPES = ['open', 'island', 'river', 'corridor'] as const;
+export const ARCHETYPES = ['open', 'island', 'lanes', 'river', 'corridor'] as const;
 export type Archetype = (typeof ARCHETYPES)[number];
 export const MAX_ATTEMPTS = 200;
 
 const WEIGHTS: Record<Difficulty, Record<Archetype, number>> = {
-  easy: { open: 0.6, island: 0.4, river: 0, corridor: 0 },
-  normal: { open: 0.1, island: 0.3, river: 0.3, corridor: 0.3 },
-  hard: { open: 0, island: 0, river: 0.5, corridor: 0.5 },
+  easy: { open: 0.6, island: 0.4, lanes: 0, river: 0, corridor: 0 },
+  normal: { open: 0.1, island: 0.25, lanes: 0.15, river: 0.25, corridor: 0.25 },
+  hard: { open: 0, island: 0, lanes: 0.2, river: 0.4, corridor: 0.4 },
 };
 const OBSTACLES: Record<Difficulty, number> = { easy: 0, normal: 2, hard: 4 };
 // D band per difficulty: easy < 50, normal 50..70, hard > 70.
@@ -25,10 +29,19 @@ export const inBand = (d: number, diff: Difficulty) => {
 };
 const bandDist = (d: number, diff: Difficulty) => (inBand(d, diff) ? 0 : Math.max(BAND[diff][0] - d, d - BAND[diff][1]));
 
-export function stationCounts(n: number, diff: Difficulty) {
+// Mechanics a generated map may bring. Washing only exists from 5 players (design: U and L only if sink and N >= 5).
+export type Mech = Features;
+export const NO_MECH: Mech = { cheese: false, sink: false };
+
+// Design 15-mapas §5: ovens ceil(N/3), boards ceil((N+1)/3) (+1 with cheese), E and P 1+floor(N/5), X 1+floor(N/4),
+// U and L one each with washing. Hard keeps its one board less (the difficulty selector still matters).
+export function stationCounts(n: number, diff: Difficulty, mech: Mech = NO_MECH) {
   const t = teamSize(n);
-  const boards = Math.max(1, (t <= 3 ? 2 : t <= 5 ? 3 : 4) - (diff === 'hard' ? 1 : 0));
-  return { boards, ovens: t <= 5 ? 2 : 3, crates: t >= 6 ? 2 : 1 };
+  const boards = Math.max(1, Math.ceil((t + 1) / 3) + (mech.cheese ? 1 : 0) - (diff === 'hard' ? 1 : 0));
+  return {
+    boards, ovens: Math.ceil(t / 3), crates: t >= 6 ? 2 : 1, cheese: mech.cheese ? 1 : 0,
+    serve: 1 + Math.floor(t / 5), trash: 1 + Math.floor(t / 4), wash: mech.sink && t >= 5 ? 1 : 0,
+  };
 }
 
 export type Cells = string[][];
@@ -48,6 +61,11 @@ export function applyArchetype(arch: Archetype, diff: Difficulty, rng: Rng): Lay
     const w = randInt(rng, 3, 7), h = randInt(rng, 1, 2);
     const x0 = Math.floor((MAP_W - w) / 2) + randInt(rng, -1, 1), y0 = h === 2 ? 3 : 4;
     for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) cells[y]![x] = 'C';
+    return { cells, zoneAt: null, blockX: null };
+  }
+  if (arch === 'lanes') { // two counter rows split the kitchen into three lanes joined at both ends (like Tres carriles)
+    const len = randInt(rng, 6, 10), x0 = randInt(rng, 3, 13 - len);
+    for (const y of [3, 5]) for (let x = x0; x < x0 + len; x++) cells[y]![x] = 'C';
     return { cells, zoneAt: null, blockX: null };
   }
   if (arch === 'river') {
@@ -89,24 +107,29 @@ export function scatterObstacles(cells: Cells, count: number, rng: Rng) {
   }
 }
 
-export function placeStations(l: Layout, n: number, diff: Difficulty, rng: Rng): Set<string> | null {
+export function placeStations(l: Layout, n: number, diff: Difficulty, rng: Rng, mech: Mech = NO_MECH): Set<string> | null {
   const { cells, zoneAt } = l;
   const grid = parseMap(rowsOf(cells));
   const passes = new Set(analyze(grid).passes.map((p) => posKey(...p.pos)));
   const claimed = new Set<string>();
-  const { boards, ovens, crates } = stationCounts(n, diff);
+  const c = stationCounts(n, diff, mech);
+  const times = (ch: string, count: number, zone: Zone): [string, Zone][] => Array.from({ length: count }, () => [ch, zone]);
   const order: [string, Zone][] = [
-    ['E', diff === 'hard' ? 'A' : 'B'],
-    ...Array<[string, Zone]>(ovens).fill(['O', 'B']),
-    ['P', 'B'],
-    ...Array<[string, Zone]>(boards).fill(['K', 'A']),
-    ...Array<[string, Zone]>(crates).fill(['1', 'A']),
-    ...Array<[string, Zone]>(crates).fill(['2', 'A']),
+    ...times('E', c.serve, diff === 'hard' ? 'A' : 'B'),
+    ...times('O', c.ovens, 'B'),
+    ...times('P', c.serve, 'B'),
+    ...times('K', c.boards, 'A'),
+    ...times('1', c.crates, 'A'),
+    ...times('2', c.crates, 'A'),
+    ...times('3', c.cheese, 'A'),
+    ...times('U', c.wash, 'B'),
+    ...times('L', c.wash, 'B'),
+    ...times('X', c.trash, 'A'),
   ];
   for (const [ch, zone] of order) {
     const slots: { at: Pos; acc: Pos }[] = [];
-    cells.forEach((row, y) => row.forEach((c, x) => {
-      if (c !== 'C' || passes.has(posKey(x, y))) return;
+    cells.forEach((row, y) => row.forEach((cell, x) => {
+      if (cell !== 'C' || passes.has(posKey(x, y))) return;
       const acc = accessTiles(parseMap(rowsOf(cells)), x, y).find(([ax, ay]) => !claimed.has(posKey(ax, ay)) && (!zoneAt || zoneAt(ax) === zone));
       if (acc) slots.push({ at: [x, y], acc });
     }));
@@ -118,11 +141,11 @@ export function placeStations(l: Layout, n: number, diff: Difficulty, rng: Rng):
   return claimed;
 }
 
-// Spawns: floor tiles that are nobody's access tile, 2+ apart, alternating zones when the map has them.
-function placeSpawns(l: Layout, n: number, claimed: Set<string>, rng: Rng): boolean {
+// Spawns: floor tiles that are nobody's access tile, 2+ apart, alternating zones when the map has them. One per chef of nMax.
+function placeSpawns(l: Layout, nMax: number, claimed: Set<string>, rng: Rng): boolean {
   const { cells, zoneAt, blockX } = l;
   const chosen: Pos[] = [];
-  for (let i = 0; i < teamSize(n); i++) {
+  for (let i = 0; i < teamSize(nMax); i++) {
     const want: Zone | null = zoneAt ? (i % 2 ? 'B' : 'A') : null;
     const cand: Pos[] = [];
     cells.forEach((row, y) => row.forEach((c, x) => {
@@ -139,32 +162,106 @@ function placeSpawns(l: Layout, n: number, claimed: Set<string>, rng: Rng): bool
   return true;
 }
 
-export interface Generated { rows: string[]; archetype: Archetype | 'fixed'; d: number; inBand: boolean; attempts: number }
+// Orders the spawns like the puesto table: spawn i goes next to the stations of puesto i (greedy, first puesto first).
+// Zone maps keep their alternating order (their puestos are assigned by zone instead, see zonePuestos).
+export function orderSpawns(rows: readonly string[], spawns: readonly Pos[], nMax: number, mech: Mech): Pos[] {
+  const g = parseMap(rows);
+  const stations: { kind: string; crate: number; x: number; y: number }[] = [];
+  g.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'station') stations.push({ kind: t.station, crate: t.crate, x, y }); }));
+  const left = [...spawns];
+  const out: Pos[] = [];
+  for (const ids of puestosFor(nMax, mech)) {
+    if (!left.length) break;
+    const cost = (sp: Pos) => ids.reduce((sum, id) => sum + PUESTOS[id].picks.reduce((s2, pick2) => {
+      const d = stations.filter((s) => s.kind === pick2.kind && (pick2.crate === undefined || s.crate === pick2.crate)).map((s) => Math.abs(s.x - sp[0]) + Math.abs(s.y - sp[1]));
+      return s2 + (d.length ? Math.min(...d) : 0);
+    }, 0), 0);
+    let best = 0;
+    left.forEach((sp, i) => { if (cost(sp) < cost(left[best]!)) best = i; });
+    out.push(left.splice(best, 1)[0]!);
+  }
+  return [...out, ...left];
+}
 
-export function generate(seed: number, diff: Difficulty, n: number, maxAttempts = MAX_ATTEMPTS): Generated {
+// Puestos of a two-zone map by zone (A: boards and crates; B: ovens and plates; E on A for hard): the default table would
+// ask a chef for stations on the other bank.
+export function zonePuestos(spawns: readonly Pos[], zoneAt: (x: number) => Zone, serveInA: boolean, mech: Mech): PuestoId[][] {
+  const zones = spawns.map(([x]) => zoneAt(x));
+  const lastOf = (z: Zone) => zones.lastIndexOf(z);
+  return spawns.map((_sp, i) => {
+    const z = zones[i]!;
+    const alone = zones.filter((v) => v === z).length === 1;
+    if (z === 'A') return serveInA && (i === lastOf('A')) ? (alone ? ['prep', 'entrega'] : ['entrega']) : ['prep'];
+    const base: PuestoId[] = serveInA ? ['horno', 'platos'] : ['horno', 'reparto'];
+    if (mech.sink && i === lastOf('B')) return alone ? [...base, 'lavado'] : ['lavado'];
+    return base;
+  });
+}
+
+export interface Generated {
+  rows: string[]; archetype: Archetype | 'fixed'; d: number; inBand: boolean; attempts: number;
+  nMin: number; nMax: number; mech: Mech;
+  spawns?: Pos[]; // chef order (spawn i = puesto i); fixed fallbacks use the map's own
+  puestos?: PuestoId[][]; // zone maps only
+}
+export interface GenOpts { nMin?: number; nMax?: number; mech?: Mech }
+
+// Cheese from 3 players on (often), washing from 5: decided by the seed so the same seed gives the same kitchen.
+export function pickMech(seed: number, nMax: number): Mech {
+  const r = mulberry32(seed ^ 0x9e3779b9);
+  const t = teamSize(nMax);
+  const cheese = t >= 3 && r() < (t >= 5 ? 0.8 : 0.5);
+  const sink = t >= 5 && r() < 0.6;
+  return { cheese, sink };
+}
+
+export function generate(seed: number, diff: Difficulty, n: number, maxAttempts = MAX_ATTEMPTS, opts: GenOpts = {}): Generated {
+  const t = teamSize(n);
+  const nMax = teamSize(opts.nMax ?? t), nMin = Math.min(teamSize(opts.nMin ?? t), nMax);
+  const mech = opts.mech ?? pickMech(seed, nMax);
   const rng = mulberry32(seed);
   let best: Generated | null = null;
   for (let i = 1; i <= maxAttempts; i++) {
     const arch = pickWeighted(rng, WEIGHTS[diff]);
     const layout = applyArchetype(arch, diff, rng);
     scatterObstacles(layout.cells, OBSTACLES[diff], rng);
-    const claimed = placeStations(layout, n, diff, rng);
-    if (!claimed || !placeSpawns(layout, n, claimed, rng)) continue;
-    const grid = parseMap(rowsOf(layout.cells));
-    if (!validate(grid).ok) continue;
-    const d = metric(grid, n).D;
-    const g: Generated = { rows: rowsOf(layout.cells), archetype: arch, d, inBand: inBand(d, diff), attempts: i };
+    const claimed = placeStations(layout, nMax, diff, rng, mech);
+    if (!claimed || !placeSpawns(layout, nMax, claimed, rng)) continue;
+    const rows = rowsOf(layout.cells);
+    const grid = parseMap(rows);
+    if (floorTiles(grid) < FLOOR_PER_PLAYER * nMax) continue;
+    const sp = spawnTiles(grid);
+    const zoneAt = layout.zoneAt;
+    const ordered = zoneAt ? alternate(sp, zoneAt) : orderSpawns(rows, sp, nMax, mech); // zone maps alternate A, B, A, B...
+    const puestos = zoneAt ? zonePuestos(ordered, zoneAt, diff === 'hard', mech) : undefined;
+    const def: MapDef = { id: 'gen', name: 'gen', rows, nMin, nMax, minDuro: minPlayers(grid), stars: 2, spawns: ordered, puestos };
+    if (!validateMap(def).ok || zoneShareProblems(grid).length) continue; // solvable, spawns and puestos fit every N of the range, no idle zone
+    const d = metric(grid, t).D;
+    const g: Generated = { rows, archetype: arch, d, inBand: inBand(d, diff), attempts: i, nMin, nMax, mech, spawns: ordered, puestos };
     if (g.inBand) return g;
     if (!best || bandDist(d, diff) < bandDist(best.d, diff)) best = g;
   }
   if (best) return best;
-  const fb = fixedMap(MAPS_BY_DIFFICULTY[diff][0]!)!;
-  return { rows: [...fb.rows], archetype: 'fixed', d: metric(parseMap(fb.rows), n).D, inBand: false, attempts: maxAttempts };
+  // Nothing validated: the first fixed map of the difficulty that fits N, else any map recommended for N
+  const fits = (id: string) => { const m = fixedMap(id)!; return m.nMin <= nMax && m.nMax >= nMin; };
+  const fb = fixedMap(MAPS_BY_DIFFICULTY[diff].find(fits) ?? recommendedMaps(t)[0]?.id ?? MAPS_BY_DIFFICULTY[diff][0]!)!;
+  return { rows: [...fb.rows], archetype: 'fixed', d: metric(parseMap(fb.rows), t).D, inBand: false, attempts: maxAttempts, nMin: fb.nMin, nMax: fb.nMax, mech: { cheese: fb.rows.some((r) => r.includes('3')), sink: fb.rows.some((r) => r.includes('L')) }, spawns: fb.spawns ? [...fb.spawns] : undefined, puestos: fb.puestos?.map((p) => [...p]) };
+}
+
+// A, B, A, B... by zone, keeping reading order inside each zone (what placeSpawns produced).
+function alternate(spawns: readonly Pos[], zoneAt: (x: number) => Zone): Pos[] {
+  const a = spawns.filter(([x]) => zoneAt(x) === 'A'), b = spawns.filter(([x]) => zoneAt(x) === 'B');
+  const out: Pos[] = [];
+  for (let i = 0; out.length < spawns.length; i++) { if (a[i]) out.push(a[i]!); if (b[i]) out.push(b[i]!); }
+  return out;
 }
 
 // The map a lobby choice stands for. "random" is generated from the lobby seed; the rest are fixed maps.
 export function resolveMap(choice: MapChoice, seed: number, diff: Difficulty, n: number, rand: Rng): { id: string; name: string; rows: readonly string[]; spawns?: readonly Pos[]; puestos?: MapDef['puestos'] } {
-  if (choice === 'random') return { id: 'random', name: `Aleatorio ${seed}`, rows: generate(seed, diff, n).rows };
+  if (choice === 'random') {
+    const g = generate(seed, diff, n);
+    return { id: 'random', name: `Aleatorio ${seed}`, rows: g.rows, spawns: g.spawns, puestos: g.puestos };
+  }
   const m = pickFixedMap(choice, diff, rand, n);
   return { id: m.id, name: m.name, rows: m.rows, spawns: m.spawns, puestos: m.puestos };
 }
