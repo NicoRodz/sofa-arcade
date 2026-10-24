@@ -44,7 +44,9 @@ interface View { g: Game; me: Player; stations: Station[]; floor: FloorItem[]; t
 function decideSab(v: View, role: Role, mem: SabMem, tickNo: number, rank: number): Controls {
   const { g, me, stations, floor } = v;
   const idle: Controls = { x: 0, y: 0, a: 0, b: false };
-  const st = g.sab!.teams[v.team]!;
+  if (role === 'cook') return decide({ grid: g.grid, stations, time: v.time } as unknown as Game, me, rank, mem.cook, tickNo);
+  if (role === 'idle' || !g.sab) return idle; // (no sabotage in this round: nothing for a saboteur or a janitor to do)
+  const st = g.sab.teams[v.team]!;
   const tile: Pos = [Math.floor(me.x), Math.floor(me.y)];
   const trashTiles = new Set(floor.filter((f) => f.kind === 'trash').map((f) => `${f.tx},${f.ty}`));
   const touches = (s: Station) => (x: number, y: number) => DIRS.some(([dx, dy]) => x + dx === s.tx && y + dy === s.ty);
@@ -62,9 +64,6 @@ function decideSab(v: View, role: Role, mem: SabMem, tickNo: number, rank: numbe
   };
   const bin = stations.find((s) => s.kind === 'trash')!;
   const cat = stations.find((s) => s.kind === 'catapult')!;
-
-  if (role === 'cook') return decide({ grid: g.grid, stations, time: v.time } as unknown as Game, me, rank, mem.cook, tickNo);
-  if (role === 'idle') return idle;
 
   if (role === 'saboteur') {
     if (st.aim?.player === me.id) { // anchored at the catapult: B after a time that changes from throw to throw

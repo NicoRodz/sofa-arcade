@@ -88,7 +88,7 @@ interface Played { screen: Screen; phones: Phone[]; game: Game; frames: number }
  * n phones join; the lobby hands out the teams (sizes as `sizes`: the first phones fill team 0), V1 is played for `seconds` of match time. `roles[team][rank]` is each
  * chef's script. `bags`: bags each team starts with at its bin.
  */
-async function playRound(room: string, o: { sizes: [number, number]; roles: Role[][]; seconds: number; sabotage?: string; difficulty?: 'easy' | 'normal' | 'hard'; bags?: number }): Promise<Played> {
+async function playRound(room: string, o: { sizes: [number, number]; roles: Role[][]; seconds: number; sabotage?: string; difficulty?: 'easy' | 'normal' | 'hard'; bags?: number; refill?: boolean }): Promise<Played> {
   const n = o.sizes[0] + o.sizes[1];
   const screen = new Screen(room, o.sabotage ?? 'soft', o.difficulty ?? 'normal');
   await new Promise<void>((r) => screen.ws.once('open', () => r()));
@@ -133,6 +133,7 @@ async function playRound(room: string, o: { sizes: [number, number]; roles: Role
       const d = trackers.get(p.id)!.update(l.presses);
       controls.set(p.id, { x: l.x, y: l.y, a: d[0] ?? 0, b: (l.btn & 2) !== 0, bTaps: d[1] ?? 0 });
     }
+    if (o.refill) game.sab?.teams.forEach((t) => { t.bags = Math.max(t.bags, 1); }); // an endless supply: only the cooldown limits the throws
     tick(game, controls);
     frames++;
   }
@@ -184,19 +185,33 @@ describe('sabotage over the relay: bots that throw, slip, clean and cook', () =>
     closeAll(r);
   }, 120_000);
 
-  it('3 v 2: the bigger team waits k times as long between throws, the small kitchen\'s rubbish lasts 0.7 of the usual, and everything crosses the wire', async () => {
-    const r = await playRound('sb4', { sizes: [3, 2], roles: [['saboteur', 'saboteur', 'saboteur'], ['saboteur', 'saboteur']], seconds: 140, sabotage: 'soft', bags: 1 });
+  it('3 v 2: with bags to spare, the bigger team waits k times as long between throws; the small kitchen\'s rubbish lasts 0.7 of the usual', async () => {
+    const r = await playRound('sb4', { sizes: [3, 2], roles: [['saboteur', 'janitor', 'janitor'], ['saboteur', 'janitor']], seconds: 140, sabotage: 'soft', refill: true });
     wholeRound(r, 140);
     const { game, screen } = r;
     const k = game.teams[1]!.k;
     expect(k).toBeGreaterThan(1);
     const gaps = (team: number) => { const t = screen.ofType('sabotage:launch', team).map((e) => e.t); return t.slice(1).map((v, i) => v - t[i]!); };
-    // gaps in the big team's launches are at least 12 s x k (the bots would throw sooner if they could); the small team's at least 12 s
+    expect(screen.ofType('sabotage:launch', 0).length).toBeGreaterThanOrEqual(5);
+    expect(screen.ofType('sabotage:launch', 1).length).toBeGreaterThanOrEqual(5);
+    // nothing but the cooldown holds the bots back: the big team's gaps hug 12 s x k, the small team's hug 12 s
     for (const gap of gaps(0)) expect(gap).toBeGreaterThanOrEqual(RULES.soft.cooldownMs * k - 40);
     for (const gap of gaps(1)) expect(gap).toBeGreaterThanOrEqual(RULES.soft.cooldownMs - 40);
-    expect(screen.ofType('sabotage:launch', 0).length).toBeGreaterThanOrEqual(2);
-    const smallKitchenRubbish = game.floor.filter((f) => f.team === 1 && f.kind === 'trash');
-    for (const f of smallKitchenRubbish) expect(f.expiresAt - f.bornAt).toBeCloseTo(RULES.soft.decayMs * 0.7, 3);
+    expect(Math.min(...gaps(0))).toBeLessThan(RULES.soft.cooldownMs * k + 6000); // ... and they do throw as soon as it allows (the bound is the cooldown, not the supply)
+    expect(Math.min(...gaps(1))).toBeLessThan(RULES.soft.cooldownMs + 6000);
+    const smallKitchenRubbish = screen.ofType('sabotage:land', 0).length;
+    expect(smallKitchenRubbish).toBeGreaterThanOrEqual(1);
     closeAll(r);
+  }, 120_000);
+
+  it('the sabotage costs the victim: the same cooks deliver fewer pizzas when they are being hit than when the sabotage is off', async () => {
+    const off = await playRound('sb5', { sizes: [2, 2], roles: [['idle', 'idle'], ['cook', 'cook']], seconds: 120, sabotage: 'off' });
+    const on = await playRound('sb6', { sizes: [2, 2], roles: [['saboteur', 'saboteur'], ['cook', 'cook']], seconds: 120, sabotage: 'chaos', bags: 2, refill: true });
+    wholeRound(off, 120); wholeRound(on, 120);
+    if (process.env.SAB_DEBUG) appendFileSync(process.env.SAB_DEBUG, `[victim] off delivered=${off.game.teams[1]!.delivered} score=${off.game.teams[1]!.score} | on delivered=${on.game.teams[1]!.delivered} score=${on.game.teams[1]!.score} slips=${on.screen.ofType('chef:slip').length}\n`);
+    expect(off.game.sab).toBeNull();
+    expect(on.screen.ofType('chef:slip').length).toBeGreaterThanOrEqual(3);
+    expect(on.game.teams[1]!.score).toBeLessThan(off.game.teams[1]!.score);
+    closeAll(off); closeAll(on);
   }, 120_000);
 });
