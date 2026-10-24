@@ -11,8 +11,9 @@ import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
   BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
-  type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg, type TeamInfo,
+  type BuzzKind, type ClientMsg, type HintLabels, type Phase, type PuestoMsg, type ServerMsg, type TeamInfo,
 } from '@party/shared';
+import type { IconId } from '@party/shared/icons';
 import { outcomeFor, type Outcome, type PhoneResult } from '@party/shared/versusReport';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -97,16 +98,21 @@ function fitLabels() {
 }
 window.addEventListener('resize', fitLabels);
 let controls: GameControls | null = null;
-let hint: { a: string | null; b: string | null } = { a: null, b: null };
+const NO_HINT: HintLabels = { a: null, b: null };
+let hint: HintLabels = NO_HINT;
+// A hint with a label also brings its icon and whether there is anything to do; the "mantén apretado" line only belongs to the game's own B.
+const hinted = (base: GameControls['btn1'], label: string | null, icon: IconId | undefined, hold: boolean): GameControls['btn1'] => (label ? { ...base, label, ...(icon ? { icon } : {}), hold } : base);
 function applyControls(c: GameControls | null = controls) {
   if (!c) return;
   controls = c;
   setControl($('stickhint'), $('stickLbl'), c.stick);
-  setControl($('btnA'), $('lblA'), hint.a ? { ...c.btn1, label: hint.a } : c.btn1);
-  setControl($('btnB'), $('lblB'), hint.b ? { ...c.btn2, label: hint.b, hold: false } : c.btn2);
+  setControl($('btnA'), $('lblA'), hinted(c.btn1, hint.a, hint.aIcon, !!c.btn1.hold));
+  setControl($('btnB'), $('lblB'), hinted(c.btn2, hint.b, hint.bIcon, false));
+  for (const [id, lbl, isOff] of [['btnA', 'lblA', hint.aOff], ['btnB', 'lblB', hint.bOff]] as const) { $(id).classList.toggle('off', !!isOff); $(lbl).classList.toggle('off', !!isOff); }
   fitLabels();
 }
-const setHint = (a: string | null, b: string | null) => { if (hint.a === a && hint.b === b) return; hint = { a, b }; applyControls(); };
+const sameHint = (x: HintLabels, y: HintLabels) => x.a === y.a && x.b === y.b && x.aIcon === y.aIcon && x.bIcon === y.bIcon && !!x.aOff === !!y.aOff && !!x.bOff === !!y.bOff;
+const setHint = (h: HintLabels) => { if (sameHint(hint, h)) return; hint = h; applyControls(); }; // every hint is a whole state, so the latest one is the truth
 
 // "Cómo se juega": one-view summary, closed with a tap. Opens on join and when the lobby picks a game not shown yet.
 let seenGame: string | null = null;
@@ -229,7 +235,7 @@ $('pswap').addEventListener('pointerup', (e) => {
 const VERDICT_TEXT: Record<Outcome, string> = { won: '¡Ganaron!', lost: 'Perdieron', draw: '¡Empate!', none: 'Sin ganador' };
 function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg, result?: PhoneResult) {
   phase = p;
-  if (p !== 'playing') setHint(null, null); // the labels the round gave go with it
+  if (p !== 'playing') setHint(NO_HINT); // the labels the round gave go with it
   seenGame = seenAfterPhase(seenGame, p);
   if (p === 'menu') setHowTo(false);
   else maybeShowHowTo(); // the screen just entered a game: show its summary
@@ -283,7 +289,8 @@ function connect() {
     } else if (m.t === 'buzz') {
       buzz(m.kind);
     } else if (m.t === 'hint') {
-      setHint(m.a, m.b);
+      const { t: _t, ...h } = m;
+      setHint(h);
     } else if (m.t === 'pong') {
       lastPong = Date.now();
       const s = sent.get(m.id);

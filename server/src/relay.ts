@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  COLORS, DEFAULT_CONFIG, captainOf, PROTOCOL_VERSION, configMsg, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage, youMsg,
+  COLORS, DEFAULT_CONFIG, captainOf, hintExtras, PROTOCOL_VERSION, configMsg, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage, youMsg,
   type LobbyConfig, type PhaseInfo, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 
@@ -99,7 +99,7 @@ export function attachRelay(server: Server) {
       }
       if (m.t === 'hint') {
         const to = r.players.get(m.playerId);
-        if (isScreen && to?.ws) send(to.ws, { t: 'hint', a: m.a, b: m.b });
+        if (isScreen && to?.ws) send(to.ws, { t: 'hint', a: m.a, b: m.b, ...hintExtras(m) });
         return;
       }
       if (m.t === 'config') {

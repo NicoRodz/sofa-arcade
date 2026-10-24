@@ -170,6 +170,10 @@ const vsConfig = () => ({ ...config(), modeId: 'versus', teams: VS_TEAMS, teamsL
 const you = (team: number) => ({ t: 'you', teamId: team, color: VS_TEAMS[team]!.color, icon: VS_TEAMS[team]!.icon, sideLabel: VS_TEAMS[team]!.side });
 const vsResult = (verdict: string, winner: number | null) => ({ verdict, winner, scores: [{ team: 0, score: 410 }, { team: 1, score: 340 }] });
 
+// contextual buttons: the screen sends the label, the glyph and the greyed state of A and B with the state of every tick
+const hint = (h: object) => ({ t: 'hint', ...h });
+const PLAYING = [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) })];
+
 const WIDE = `document.documentElement.style.setProperty('--font', 'Verdana, sans-serif'); window.dispatchEvent(new Event('resize'))`;
 
 export const SCENARIOS: Scenario[] = [
@@ -185,6 +189,12 @@ export const SCENARIOS: Scenario[] = [
   { name: 'play-puesto', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) })] },
   { name: 'play-puesto-long', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['prep']) })] },
   { name: 'play-puesto-double', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#FFC21A'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['reparto', 'lavado']) })] },
+  { name: 'play-hint', msgs: [...PLAYING, hint({ a: 'Al horno', b: 'Estirar', aIcon: 'oven', bIcon: 'chop' })] },
+  { name: 'play-hint-off', msgs: [...PLAYING, hint({ a: 'Tomar', b: 'Correr', aIcon: 'grab', bIcon: 'move', aOff: true, bOff: true })] },
+  { name: 'play-hint-mixed', msgs: [...PLAYING, hint({ a: 'Entregar', b: 'Picar', aIcon: 'bell', bIcon: 'chop', bOff: true })] },
+  { name: 'play-hint-long', msgs: [...PLAYING, hint({ a: 'Devolver plato', b: 'Poner en tabla', aIcon: 'plate', bIcon: 'chop' })] },
+  { name: 'play-hint-long-off', msgs: [...PLAYING, hint({ a: 'Despensa vacía', b: 'Sin control', aIcon: 'crate', bIcon: 'chop', aOff: true, bOff: true })] },
+  { name: 'play-hint-wide-font', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#1FB5A8'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['prep', 'lavado']) }), hint({ a: 'Devolver plato', b: 'Poner en tabla', aIcon: 'plate', bIcon: 'chop' })], after: WIDE },
   { name: 'play-pressed', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['masa']) })], after: `document.querySelectorAll('.act').forEach((b) => b.classList.add('down'))` },
   { name: 'play-hold-labels', msgs: [player('Nico'), config(LONG), phase('lobby'), phase('playing', { puestos: puestos(1, ['corte']) })] },
   { name: 'play-reconnecting', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['masa', 'horno']) })], after: `window.__closeSocket()` },

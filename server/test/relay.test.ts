@@ -210,6 +210,17 @@ describe('hint (the label of A and B, sabotage)', () => {
     expect(b.msgs.filter((m) => m.t === 'hint')).toEqual([]);
     [screen.ws, a.ws, b.ws].forEach((w) => w.close());
   });
+  it('the glyph and the greyed state travel with the labels (contextual buttons), and nothing else from the payload', async () => {
+    const screen = new Client('?role=screen&room=ht2');
+    const a = new Client('?room=ht2');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    const idA = (await a.next('joined')).player.id;
+    await a.next('phase');
+    screen.ws.send(JSON.stringify({ t: 'hint', playerId: idA, a: 'Al horno', b: 'Picar', aIcon: 'oven', bIcon: 'chop', bOff: true, evil: 'x' }));
+    expect(await a.next('hint')).toEqual({ t: 'hint', a: 'Al horno', b: 'Picar', aIcon: 'oven', bIcon: 'chop', bOff: true });
+    [screen.ws, a.ws].forEach((w) => w.close());
+  });
 });
 
 describe('lobby config', () => {

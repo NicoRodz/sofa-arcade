@@ -49,7 +49,8 @@ import {
   COUNTDOWN_MS, TICK_MS, addPlayer, createGame, dropPlayer, floorItemNear, rejoinPlayer, removePlayer, resolvePause, targetStation, tick,
   type Controls,
 } from '@party/shared/game';
-import { sabotageAimPress, sabotageHint, sabotageLoad } from '@party/shared/sabotage';
+import { sabotageAimPress, sabotageLoad } from '@party/shared/sabotage';
+import { createHintSync } from '@party/shared/hints';
 import { addFloorItem } from '@party/shared/floor';
 import type { RoundView } from './art/hud';
 
@@ -485,7 +486,7 @@ const host: Host = {
   puestos: () => puestoOf,
   step(delta) {
     syncPauseBar();
-    if (phase !== 'playing' || activeGame !== 'pizzas' || performance.now() < gateUntil) { acc = 0; return; }
+    if (phase !== 'playing' || activeGame !== 'pizzas' || performance.now() < gateUntil) { acc = 0; syncHints(); return; }
     acc += Math.min(delta, 100);
     while (acc >= TICK_MS) {
       acc -= TICK_MS;
@@ -502,6 +503,7 @@ const host: Host = {
       }
       if (game.over) { overAt ??= performance.now(); break; }
     }
+    syncHints(); // the labels of the state this frame ends in
     // "¡TIEMPO!" stays on screen for a beat before the results
     if (game.over && overAt !== null && performance.now() - overAt > 1100) { overAt = null; dispatch('timeout'); }
   },
@@ -883,21 +885,11 @@ gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
 gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
 gameBus.on('dash', (e) => buzz(e.player, 'dash'));
 gameBus.on('chef:slip', (e) => buzz(e.chef, 'slip')); // sabotage: the phone of the chef that slipped vibrates and says "¡Resbalaste!"
-// Sabotage: A and B keep their two buttons, only their names follow what the chef can do ("Tomar bolsa", "Cargar", "¡Lanzar!", "Recoger").
-const sentHint = new Map<number, string>();
-function syncHints() {
-  const on = phase === 'playing' && activeGame === 'pizzas' && !!game.sab;
-  for (const [id, key] of [...sentHint]) if (!on || !game.players.has(id)) { if (key !== '|') sendMsg({ t: 'hint', playerId: id, a: null, b: null }); sentHint.delete(id); } // round over or chef gone: its labels go back
-  if (!on) return;
-  for (const p of game.players.values()) {
-    const h = sabotageHint(game, p, targetStation(game, p), !!floorItemNear(game, p));
-    const key = `${h.a ?? ''}|${h.b ?? ''}`;
-    if ((sentHint.get(p.id) ?? '|') === key) continue;
-    sentHint.set(p.id, key);
-    sendMsg({ t: 'hint', playerId: p.id, a: h.a, b: h.b });
-  }
-}
-setInterval(syncHints, 100);
+// Contextual buttons: A and B keep their two buttons, only their names, glyphs and greying follow what the chef has in front ("Tomar masa", "Picar", "Al horno",
+// "Entregar", grey when nothing can be done). The label is the STATE of the sim after the last tick, recomputed every frame and sent whole when it changes (at most one
+// message per chef every HINT_MIN_MS), plus a refresh every HINT_REFRESH_MS: a late, lost or missed packet (a phone that reconnects) is replaced by the next, never an event the phone has to catch (hints.ts).
+const hints = createHintSync(sendMsg);
+const syncHints = (now = performance.now()) => hints.sync(phase === 'playing' && activeGame === 'pizzas' ? game : null, now);
 
 // round stats for the results screen: deliveries per chef (the podium, and the MVP of each team)
 const tally = tallyDeliveries(gameBus);

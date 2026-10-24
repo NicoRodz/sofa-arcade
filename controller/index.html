@@ -63,6 +63,12 @@
   #slip { position: fixed; left: 0; right: 0; top: 30%; z-index: 4; text-align: center; pointer-events: none; font: 800 clamp(28px, 11vmin, 52px) var(--font); color: var(--cheese); -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; opacity: 0; transform: scale(.6) rotate(-6deg); transition: opacity .12s, transform .25s cubic-bezier(.2,1.6,.4,1); }
   #slip.on { opacity: 1; transform: scale(1) rotate(-3deg); }
   body.flash::after { content: ''; position: fixed; inset: 0; z-index: 3; pointer-events: none; background: var(--c); opacity: .4; }
+  /* contextual buttons: nothing to do with what is in front now. Both buttons go to the SAME flat grey (a red and a yellow one greyed by a filter would read as two different things), glyph and
+     plate dimmed; still pressable: it is only a hint, and the sim buffers an early press for a station that shows up. */
+  .act { transition: opacity .12s; }
+  #btnA.off, #btnB.off { --btn: #8A857F; --btn2: #6B6661; color: #E9E1D5; text-shadow: 0 2px 0 rgba(43,27,23,.35); opacity: .8; }
+  #btnA.off .ico, #btnB.off .ico { filter: none; }
+  .plq.off .pl { background: rgba(43,27,23,.5); color: rgba(255,244,224,.6); }
   .act.down { transform: translateY(1.2vmin); box-shadow: 0 .5vmin 0 rgba(43,27,23,.4); filter: brightness(1.12); }
 
   .brand { font: 800 clamp(30px, 11vmin, 44px) var(--font); letter-spacing: 1px; margin: 0; color: var(--c); -webkit-text-stroke: 9px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(43,27,23,.35); }
