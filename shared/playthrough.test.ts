@@ -2,7 +2,7 @@
 // proves the route exists; this proves the engine accepts the recipe on that map's stations).
 import { describe, expect, it } from 'vitest';
 import { FIXED_MAPS, DIRS, isFloor } from './maps';
-import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
+import { TICK_MS, addPlayer, createGame, recipeBase, tick, type Controls, type Game, type Station } from './overcooked';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const press = (g: Game) => tick(g, new Map([[1, { ...idle, a: 1 }]]));
@@ -59,7 +59,7 @@ describe('playthrough: one marinara delivered on every fixed map', () => {
     it(`map ${m.id} ${m.name}`, () => {
       const g = createGame({ rows: m.rows, spawns: m.spawns, n: m.nMin });
       addPlayer(g, 1, 0);
-      expect(playMarinara(g)).toBeGreaterThanOrEqual(g.params.reward);
+      expect(playMarinara(g)).toBeGreaterThanOrEqual(recipeBase('marinara', g.params.tune));
       expect(g.delivered).toBe(1);
     });
   }
@@ -70,7 +70,7 @@ describe('playthrough: one Margarita on every map with a cheese crate', () => {
     it(`map ${m.id} ${m.name}`, () => {
       const g = createGame({ rows: m.rows, spawns: m.spawns, n: m.nMin });
       addPlayer(g, 1, 0);
-      expect(playMargarita(g)).toBeGreaterThanOrEqual(g.params.reward);
+      expect(playMargarita(g)).toBeGreaterThanOrEqual(recipeBase('margarita', g.params.tune));
     });
   }
 });
@@ -96,7 +96,7 @@ describe('playthrough: dish washing on every map with a sink', () => {
       const g = createGame({ rows: m.rows, spawns: m.spawns, n: m.nMin });
       addPlayer(g, 1, 0);
       expect(g.finitePlates).toBe(true);
-      expect(playMarinara(g)).toBeGreaterThanOrEqual(g.params.reward);
+      expect(playMarinara(g)).toBeGreaterThanOrEqual(recipeBase('marinara', g.params.tune));
       washCycle(g);
     });
   }

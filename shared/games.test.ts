@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GAMES, GAME_IDS, HOWTO_MAX_STEPS, HOWTO_MIN_STEPS, LABEL_MAX, gameInfo, gameProblems, isGameId, type GameDef } from './games';
+import { COMING_SOON, GAMES, GAME_IDS, HOWTO_MAX_STEPS, HOWTO_MIN_STEPS, LABEL_MAX, gameInfo, gameProblems, isGameId, playersLabel, type GameDef } from './games';
 import { ICON_IDS, isIconId } from './icons';
 import { configMsg, DEFAULT_CONFIG } from './protocol';
 
@@ -14,10 +14,23 @@ describe('game registry', () => {
   it('pizzas declares the agreed labels and four how-to steps', () => {
     expect(pizzas.controls.stick).toMatchObject({ label: 'Mover' });
     expect(pizzas.controls.btn1).toMatchObject({ label: 'Tomar / Soltar' });
-    expect(pizzas.controls.btn2).toMatchObject({ label: 'Picar', hold: true });
+    expect(pizzas.controls.btn2).toMatchObject({ label: 'Picar / Correr' });
     expect(pizzas.controls.btn1.hold).toBeUndefined();
     expect(pizzas.howTo.steps).toHaveLength(4);
     expect(pizzas.howTo.note).toMatch(/equipo/);
+  });
+  it('declares a player range the menu can use, and the authoring check rejects a broken one', () => {
+    expect(pizzas).toMatchObject({ minPlayers: 2, maxPlayers: 8 });
+    expect(playersLabel(pizzas)).toBe('2 a 8 jugadores');
+    expect(playersLabel({ minPlayers: 4, maxPlayers: 4 })).toBe('4 jugadores');
+    for (const [min, max] of [[0, 8], [5, 3], [1.5, 4]] as const) {
+      const bad = { ...clone(), minPlayers: min, maxPlayers: max };
+      expect(gameProblems(bad).some((p) => p.startsWith('players')), `${min}-${max}`).toBe(true);
+    }
+  });
+  it('the announced games are not in the registry, so config and phones never see them', () => {
+    expect(COMING_SOON.length).toBeGreaterThanOrEqual(1); // obstaculos left the list when F3 published it
+    for (const s of COMING_SOON) { expect(isGameId(s.id)).toBe(false); expect(s.name.length).toBeGreaterThan(0); }
   });
   it('every icon the registry references exists', () => {
     for (const g of GAMES) for (const i of [g.controls.stick.icon, g.controls.btn1.icon, g.controls.btn2.icon, ...g.howTo.steps.map((s) => s.icon)]) expect(isIconId(i)).toBe(true);

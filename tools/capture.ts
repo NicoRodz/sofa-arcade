@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <lobby|game|results|all|phone> [outDir]
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone> [outDir]
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -59,16 +59,16 @@ class Cdp {
 }
 
 interface Snap {
-  phase: string; fps: number; time: number; score: number; countdown: number;
+  phase: string; fps: number; time: number; score: number; countdown: number; streak: number; bestStreak: number; crowd: string[];
   players: { id: number; x: number; y: number; item: string | null; cutting: boolean }[];
-  stations: { kind: string; tx: number; ty: number; crate: number; item: string | null; progress: number; inputs: number[]; done: boolean }[];
-  orders: unknown[];
+  stations: { kind: string; tx: number; ty: number; crate: number; item: string | null; progress: number; inputs: number[]; done: boolean; count: number; clean: number }[];
+  orders: { recipe: string }[];
 }
 
 class Bot {
   ws: WebSocket;
   id = 0;
-  seq = 0; a = 0;
+  seq = 0; a = 0; b = 0;
   vec = { x: 0, y: 0 }; btn = 0;
   private waitUntil = 0; private lastPress = 0; private stable = 0; private nextCrate = 0; private hadItem = false;
   constructor(private slot: number, name: string, room: string, private rows: readonly string[]) {
@@ -80,7 +80,7 @@ class Bot {
   startSending() {
     setInterval(() => {
       if (this.ws.readyState !== WebSocket.OPEN) return;
-      this.ws.send(JSON.stringify({ t: 'input', seq: this.seq++, x: this.vec.x, y: this.vec.y, btn: this.btn, presses: [this.a, 0], ts: Date.now() }));
+      this.ws.send(JSON.stringify({ t: 'input', seq: this.seq++, x: this.vec.x, y: this.vec.y, btn: this.btn, presses: [this.a, this.b], ts: Date.now() }));
     }, 33).unref();
   }
   private floor(x: number, y: number) { const c = this.rows[y]?.[x]; return c === '.' || c === 'S'; }
@@ -122,19 +122,32 @@ class Bot {
     const pots = st.filter((s) => s.kind === 'pot');
     const boards = st.filter((s) => s.kind === 'board');
     const counters = st.filter((s) => s.kind === 'counter');
+    const sinks = st.filter((s) => s.kind === 'sink');
+    const returns = st.filter((s) => s.kind === 'dirty');
+    const finite = sinks.length > 0 && returns.length > 0;
+    const hasCheese = st.some((s) => s.kind === 'crate' && s.crate === 2);
     let cutHere = false;
-    if (me.item && !this.hadItem) this.nextCrate = 1 - this.nextCrate;
+    if (me.item && !this.hadItem) this.nextCrate = (this.nextCrate + 1) % (hasCheese ? 3 : 2);
     this.hadItem = !!me.item;
-    if (me.item === 'raw0' || me.item === 'raw1') target = nearest(boards.filter((b) => !b.item));
-    else if (me.item === 'cut0' || me.item === 'cut1') {
-      target = nearest(pots.filter((p) => !p.done && p.inputs.length < 2 && !p.inputs.includes(cutType(me.item))))
+    const cutT = (it: string | null) => (it === 'cut0' ? 0 : it === 'cut1' ? 1 : it === 'cut2' ? 2 : -1);
+    if (me.item === 'raw0' || me.item === 'raw1' || me.item === 'raw2') target = nearest(boards.filter((b) => !b.item));
+    else if (me.item === 'cut0' || me.item === 'cut1' || me.item === 'cut2') {
+      const t = cutT(me.item);
+      target = nearest(pots.filter((p) => !p.done && p.inputs.length < 3 && !p.inputs.includes(t) && (t < 2 || p.inputs.length >= 1)))
         ?? nearest(counters.filter((c) => !c.item && c.tx >= 6 && c.tx <= 8 && c.ty >= 1 && c.ty <= 7));
     } else if (me.item === 'plate') target = nearest(pots.filter((p) => p.done));
-    else if (me.item === 'dish') target = nearest(st.filter((s) => s.kind === 'window'));
+    else if (me.item === 'dish' || me.item === 'dishQ') target = nearest(st.filter((s) => s.kind === 'window'));
+    else if (me.item === 'dirty') target = nearest(sinks);
     else {
       const crates = st.filter((s) => s.kind === 'crate');
       const canCrate = !!nearest(crates);
-      if (pots.some((p) => p.done)) target = nearest(st.filter((s) => s.kind === 'plates'));
+      const dirtyAt = returns.find((r) => r.count > 0), washing = sinks.find((k) => k.count > 0);
+      if (pots.some((p) => p.done)) {
+        const pile = st.filter((s) => s.kind === 'plates' && (!finite || s.count > 0));
+        target = nearest(pile) ?? nearest(sinks.filter((k) => k.clean > 0));
+        if (!target && washing) { target = washing; cutHere = true; }
+      } else if (washing && (this.slot % 4 === 3 || !canCrate)) { target = washing; cutHere = true; }
+      else if (dirtyAt && this.slot % 4 === 3) target = dirtyAt;
       else {
         const ready = boards.filter((b) => b.item?.startsWith('cut'));
         const raw = boards.filter((b) => b.item?.startsWith('raw'));
@@ -142,7 +155,9 @@ class Bot {
         else if (ready.length) target = nearest(ready);
         else if (raw.length) { target = nearest(raw); cutHere = !!target; }
         else {
-          const wantType = pots.some((p) => p.inputs.includes(0)) ? 1 : pots.some((p) => p.inputs.includes(1)) ? 0 : this.nextCrate;
+          const have = new Set(pots.filter((p) => !p.done).flatMap((p) => p.inputs));
+          const missing = [0, 1, ...(hasCheese ? [2] : [])].filter((k) => !have.has(k));
+          const wantType = missing.length ? missing[this.slot % missing.length]! : this.nextCrate;
           target = nearest(crates.filter((s) => s.crate === wantType)) ?? nearest(crates);
         }
       }
@@ -164,6 +179,7 @@ class Bot {
     this.stable++;
     if (this.stable < 3) return;
     if (cutHere && !me.item) { this.btn = 2; return; }
+    if (target.kind === 'sink' && me.item !== 'dirty' && target.count > 0 && !me.item) { this.btn = 2; return; }
     this.btn = 0;
     if (now - this.lastPress > 500) { this.a++; this.lastPress = now; this.waitUntil = now + 120; }
   }
@@ -191,10 +207,12 @@ async function main() {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 
     const open = async (room: string) => { await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${room}` }); await sleep(2500); };
-    const join = async (room: string, n: number, rows: readonly string[]) => {
+    // bots i..n-1 join; by default the screen then skips the start menu (its player range included) so the older modes keep working
+    const join = async (room: string, n: number, rows: readonly string[], opts: { from?: number; menu?: boolean } = {}) => {
       const names = ['Nico', 'Angi', 'Pablo', 'Mati', 'Coni', 'Rafa', 'Vale', 'Tomás'];
-      for (let i = 0; i < n; i++) { const b = new Bot(i, names[i]!, room, rows); bots.push(b); await sleep(150); }
+      for (let i = opts.from ?? 0; i < n; i++) { const b = new Bot(i, names[i]!, room, rows); bots.push(b); await sleep(150); }
       await sleep(600);
+      if (!opts.menu) await cdp.eval('window.__pg.forceLobby()');
     };
     const click = (sel: string) => cdp.eval(`document.querySelector(${JSON.stringify(sel)}).click()`);
     const snap = () => cdp.eval<Snap>('JSON.parse(JSON.stringify(window.__pg.snapshot()))');
@@ -215,7 +233,7 @@ async function main() {
       const fake = new WebSocket(`ws://127.0.0.1:${PORT}/ws?role=screen&room=${room}`);
       await new Promise((r) => fake.once('open', r));
       const cfg = { t: 'config', game: 'pizzas', difficulty: 'normal', map: '1', seed: 1 };
-      fake.send(JSON.stringify(cfg)); fake.send(JSON.stringify({ t: 'phase', phase: 'lobby' }));
+      fake.send(JSON.stringify(cfg)); fake.send(JSON.stringify({ t: 'phase', phase: 'menu' })); // the screen is still on the Pichiclub start
       await cdp.send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
       await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
       await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=${room}` });
@@ -223,6 +241,9 @@ async function main() {
       await cdp.shot('phone-join');
       await cdp.eval(`document.getElementById('name').value = 'Nico'; document.getElementById('join').requestSubmit()`);
       await sleep(1200);
+      await cdp.shot('phone-menu');
+      console.log('in the menu: view =', await cdp.eval(`document.body.dataset.view`), ', how-to card =', await cdp.eval(`document.body.dataset.howto`), ', text =', JSON.stringify(await cdp.eval(`document.querySelector('#choosing .big').textContent`)));
+      fake.send(JSON.stringify({ t: 'phase', phase: 'lobby' })); await sleep(600); // the screen picked the game
       await cdp.shot('phone-lobby');
       console.log('how-to card open after joining:', await cdp.eval(`document.body.dataset.howto`));
       const tap = async (x: number, y: number) => {
@@ -238,10 +259,26 @@ async function main() {
       await tap(ob.x, ob.y);
       console.log('after tapping "Cómo se juega":', await cdp.eval(`document.body.dataset.howto`));
       await tap(422, 195);
-      fake.send(JSON.stringify({ t: 'phase', phase: 'playing' }));
+      fake.send(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { cheese: true, sink: true, assign: [{ id: 1, puestos: ['horno', 'reparto'], pool: ['masa', 'corte', 'queso', 'horno', 'reparto', 'lavado', 'apoyo'] }] } }));
       await sleep(800);
       await cdp.shot('phone-play');
+      // R7: buzz from the screen. Android path (vibrate exists and works) and the iOS path (no vibration: the phone flashes its colour)
+      await cdp.eval(`Object.defineProperty(navigator, 'vibrate', { value: (p) => { window.__vib = p; return true; }, configurable: true })`);
+      fake.send(JSON.stringify({ t: 'buzz', playerId: 1, kind: 'pick' })); await sleep(300);
+      console.log('vibrate called with:', JSON.stringify(await cdp.eval('window.__vib')));
+      fake.send(JSON.stringify({ t: 'buzz', playerId: 1, kind: 'chop' })); await sleep(300);
+      console.log('vibrate called with:', JSON.stringify(await cdp.eval('window.__vib')));
+      await cdp.eval(`Object.defineProperty(navigator, 'vibrate', { value: undefined, configurable: true })`);
+      fake.send(JSON.stringify({ t: 'buzz', playerId: 1, kind: 'pick' })); await sleep(40);
+      console.log('no vibrate API: flash class on body =', await cdp.eval(`document.body.classList.contains('flash')`));
+      await cdp.shot('phone-flash');
+      await sleep(300);
+      console.log('flash gone after 300 ms =', await cdp.eval(`!document.body.classList.contains('flash')`));
       const r = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('btnB').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+      const sw = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('pswap').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+      await tap(sw.x, sw.y);
+      console.log('after Cambiar:', await cdp.eval(`document.getElementById('pname').textContent`));
+      await cdp.shot('phone-play-swap');
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.x, y: r.y, id: 1 }] });
       await sleep(250);
       await cdp.shot('phone-play-hold');
@@ -293,6 +330,33 @@ async function main() {
       while (Date.now() - t0 < 20_000 && ph !== 'playing') { await sleep(100); ph = await cdp.eval<string>('window.__pg.snapshot().phase'); }
       console.log('howto-timeout: reached playing after', Date.now() - t0, 'ms (expect ~11 s: iris half + card 10 s + iris half)');
     }
+    if (what === 'menu') {
+      // Pichiclub start: 0, 2 and 8 players, keyboard selection, then the step into the game's lobby (and back with Esc)
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('1')!.rows;
+      await open('MENU'); await sleep(500);
+      await cdp.shot('menu-0');
+      await join('MENU', 1, rows, { menu: true }); await sleep(500);
+      await cdp.shot('menu-1');
+      console.log('menu with 1 player:', JSON.stringify(await cdp.eval('window.__pg.menu()')));
+      await key('Enter'); await sleep(300);
+      console.log('Enter on a disabled card -> phase', await cdp.eval('window.__pg.snapshot().phase'));
+      await join('MENU', 2, rows, { from: 1, menu: true }); await sleep(500);
+      await cdp.shot('menu-2');
+      console.log('menu with 2 players:', JSON.stringify(await cdp.eval('window.__pg.menu()')));
+      await join('MENU', 8, rows, { from: 2, menu: true }); await sleep(600);
+      await cdp.shot('menu-8');
+      await key('ArrowRight'); await key('ArrowDown'); await sleep(200);
+      console.log('after arrows (nothing to move to):', JSON.stringify(await cdp.eval('window.__pg.menu()')));
+      await key('Enter'); await sleep(550); await cdp.shot('menu-to-lobby-iris');
+      await sleep(1000);
+      console.log('after Enter -> phase', await cdp.eval('window.__pg.snapshot().phase'));
+      await cdp.shot('menu-lobby');
+      await key('Escape'); await sleep(1700);
+      console.log('after Esc -> phase', await cdp.eval('window.__pg.snapshot().phase'));
+      await cdp.shot('menu-back');
+      bots.splice(0).forEach((b) => b.close());
+    }
     if (what === 'lobby' || what === 'all') {
       await open('LOBY');
       await join('LOBY', 8, fixedMap('1')!.rows);
@@ -314,7 +378,7 @@ async function main() {
       bots.forEach((b) => b.startSending());
       timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
       await waitFor((s) => s.countdown <= 0 && s.time > 0, 8000);
-      const good = await waitFor((s) => s.players.some((p) => p.cutting) && s.stations.some((x) => x.kind === 'pot' && (x.inputs.length === 2 || x.done)) && s.orders.length >= 1, Number(process.env.WAIT_MS ?? 90_000));
+      const good = await waitFor((s) => s.players.some((p) => p.cutting) && s.stations.some((x) => x.kind === 'pot' && (x.inputs.length >= 2 || x.done)) && s.orders.length >= 1, Number(process.env.WAIT_MS ?? 90_000));
       console.log(`map ${mapId} scene ready:`, !!good, good ? `score ${good.score}` : '');
       await cdp.shot(`game-map${mapId}${n > 4 ? '-8chefs' : ''}`);
       if (results) {
@@ -342,6 +406,100 @@ async function main() {
         for (let i = 0; i < 6; i++) { await cdp.shot(`solo-chop${i}`, { x: cx - 170, y: cy - 200, width: 340, height: 260, scale: 2 }); await sleep(30); }
       }
       timers.splice(0).forEach(clearInterval);
+    }
+    if (what === 'newmaps') {
+      // lobby with 5 players (filter by N), then three new maps: 2 chefs, 5 chefs (sink + cheese), 8 chefs with bots
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const scenario: [string, number][] = (process.env.SCENARIOS ?? '6:2,10:5,12:8').split(',').map((x) => [x.split(':')[0]!, Number(x.split(':')[1])]);
+      for (const [id, n] of scenario) {
+        const room = `N${id}X`.padEnd(4, 'X').slice(0, 4);
+        await open(room);
+        await join(room, n, fixedMap(id)!.rows);
+        await sleep(800);
+        await cdp.shot(`lobby-n${n}`);
+        await click(`[data-map="${id}"]`); await click('[data-diff="easy"]'); await sleep(300);
+        await cdp.shot(`lobby-n${n}-map${id}`);
+        await click('#start'); await sleep(1500); await key('Enter');
+        await sleep(2100); await cdp.shot(`map${id}-n${n}-countdown`);
+        bots.forEach((b) => b.startSending());
+        timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+        await waitFor((s) => s.countdown <= 0 && s.time > 9000, 20_000);
+        await cdp.shot(`map${id}-n${n}-icons`);
+        const good = await waitFor((s) => s.stations.some((x) => x.kind === 'pot' && x.inputs.length >= 2) && s.players.some((p) => p.cutting), Number(process.env.WAIT_MS ?? 70_000));
+        console.log(`map ${id} n=${n} scene ready:`, !!good);
+        await sleep(1500);
+        await cdp.shot(`map${id}-n${n}-play`);
+        if (process.env.LATE) { await sleep(Number(process.env.LATE)); await cdp.shot(`map${id}-n${n}-late`); }
+        timers.splice(0).forEach(clearInterval);
+        bots.splice(0).forEach((b) => b.close());
+        await sleep(400);
+      }
+    }
+    if (what === 'fase1') {
+      // phase 1 of the overcooked-2 plan: 4 chefs (streak badge, dash, results with stars) and 8 chefs on a map for 4-8
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      await open('F1AA'); await join('F1AA', 4, fixedMap('1')!.rows);
+      await click('[data-map="1"]'); await sleep(300);
+      await cdp.shot('f1-lobby');
+      await click('#start'); await sleep(1500); await key('Enter');
+      await sleep(2100); await cdp.shot('f1-4-countdown');
+      bots.forEach((b) => b.startSending());
+      timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+      const hot = await waitFor((s) => s.streak >= 2, Number(process.env.WAIT_MS ?? 110_000));
+      console.log('streak >= 2 reached:', !!hot, hot ? `streak ${hot.streak} score ${hot.score}` : '');
+      await sleep(250); await cdp.shot('f1-4-streak');
+      timers.splice(0).forEach(clearInterval);
+      // the dash: bot 0 runs to the right with B tapped; the screenshots fall inside the 180 ms and the dust after it
+      const b0 = bots[0]!;
+      for (const b of bots) { b.vec = { x: 0, y: 0 }; b.btn = 0; }
+      await sleep(500);
+      const s0 = await snap(); const me = s0.players.find((p) => p.id === b0.id)!;
+      b0.vec = { x: 1, y: 0 }; await sleep(200); b0.b++;
+      await sleep(60);
+      const s1 = await snap(); const p1 = s1.players.find((p) => p.id === b0.id)!;
+      const cx = 96 + p1.x * 108, cy = 106 + p1.y * 108;
+      await cdp.shot('f1-4-dash', { x: Math.max(0, cx - 260), y: Math.max(0, cy - 230), width: 520, height: 330, scale: 2 });
+      console.log('dash: x before', me.x.toFixed(2), 'x 60 ms after the tap', p1.x.toFixed(2));
+      await sleep(900); b0.vec = { x: 0, y: 0 };
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
+      await cdp.eval('window.__pg.setScore(400)'); await cdp.eval('window.__pg.fastForward(1200)');
+      await sleep(1700); await cdp.shot('f1-4-timeup');
+      await sleep(5200); await cdp.shot('f1-4-results-2star');
+      bots.splice(0).forEach((b) => b.close());
+      await click('#again'); await sleep(800);
+      // 8 chefs
+      await open('F1BB'); await join('F1BB', 8, fixedMap('11')!.rows);
+      await click('[data-map="11"]'); await sleep(300);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await sleep(2100); await cdp.shot('f1-8-countdown');
+      bots.forEach((b) => b.startSending());
+      timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+      await waitFor((s) => s.countdown <= 0 && s.time > 25_000, 60_000);
+      await cdp.shot('f1-8-play');
+      const s8 = await snap();
+      console.log('8 chefs: score', s8.score, 'streak', s8.streak, 'pairs crossing', s8.crowd.length, 'fps', s8.fps.toFixed(0));
+      await cdp.eval('window.__pg.setScore(760)'); await cdp.eval('window.__pg.fastForward(1200)');
+      timers.splice(0).forEach(clearInterval);
+      await sleep(1700); await cdp.shot('f1-8-timeup'); await sleep(5200); await cdp.shot('f1-8-results-3star');
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'dash') {
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      await open('DASH'); await join('DASH', 2, fixedMap('1')!.rows);
+      await click('[data-map="1"]'); await sleep(300); await click('#start'); await sleep(1500); await key('Enter');
+      bots.forEach((b) => b.startSending());
+      await waitFor((s) => s.countdown <= 0 && s.time > 500, 15_000);
+      const b0 = bots[0]!;
+      b0.vec = { x: -1, y: 0 }; await sleep(900); b0.vec = { x: 0, y: 0 }; await sleep(400);
+      b0.vec = { x: 1, y: 0 }; await sleep(120); b0.b++;
+      for (let i = 0; i < 4; i++) {
+        await sleep(i === 0 ? 40 : 60);
+        const s = await snap(); const p = s.players.find((q) => q.id === b0.id)!;
+        const cx = 96 + p.x * 108, cy = 106 + p.y * 108;
+        await cdp.shot(`dash-${i}`, { x: Math.max(0, cx - 360), y: Math.max(0, cy - 200), width: 520, height: 330, scale: 2 });
+        console.log('frame', i, 'x', p.x.toFixed(2));
+      }
+      b0.vec = { x: 0, y: 0 };
     }
     if (what === 'maps') {
       for (const id of ['2', '4', '5']) {

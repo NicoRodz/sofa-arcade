@@ -1,4 +1,5 @@
 // Pure music: a 12-bar tarantela in A minor, 6/8. Notes come from stepEvents(); the scheduler only does arithmetic.
+import type { Phase } from '@party/shared';
 export type Mode = 'silent' | 'lobby' | 'game' | 'rush' | 'results';
 export type Voice = 'bass' | 'accordion' | 'mandolin' | 'tambourine';
 export interface Note {
@@ -84,9 +85,9 @@ function resultsEvents(step: number): Note[] {
   return [];
 }
 
-export interface Snapshot { phase: 'lobby' | 'playing' | 'results'; started: boolean; timeLeftMs: number | null }
+export interface Snapshot { phase: Phase; started: boolean; timeLeftMs: number | null }
 export function modeFor(s: Snapshot): Mode {
-  if (s.phase === 'lobby') return 'lobby';
+  if (s.phase === 'menu' || s.phase === 'lobby') return 'lobby'; // the start menu shares the lobby's music
   if (s.phase === 'results') return 'results';
   if (!s.started) return 'silent'; // the 3-2-1 countdown is heard on its own
   return s.timeLeftMs !== null && s.timeLeftMs <= RUSH_MS ? 'rush' : 'game';

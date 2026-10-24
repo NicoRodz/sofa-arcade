@@ -6,7 +6,7 @@ import { R } from './gfx';
 import { foodKey } from './food';
 import { Bar, place } from './stations';
 import { makeText } from './fx';
-import { TICKET_WIDTH, clockText, ticketXs } from './layout';
+import { MAX_TICKETS, TICKET_SHAKE_AT, TICKET_WIDTH, clockText, ticketXs } from './layout';
 
 const TICKET_W = TICKET_WIDTH;
 
@@ -31,6 +31,10 @@ export class Hud {
   private panel: Phaser.GameObjects.Image;
   private dim: Phaser.GameObjects.Rectangle;
   private banner?: Phaser.GameObjects.Text;
+  private streakBox: Phaser.GameObjects.Container;
+  private streakBg: Phaser.GameObjects.Graphics;
+  private streakTxt: Phaser.GameObjects.Text;
+  private streakMult = 1;
   private t = 0;
   private lastSecond = -1;
   private pulse = 1;
@@ -45,6 +49,34 @@ export class Hud {
     this.coin = scene.add.image(1600, 52, 'coin').setScale(84 / 96 / R).setDepth(D + 1);
     this.scoreTxt = makeText(scene, 1770, 54, '0', { size: 56, color: C.ink, stroke: 0, depth: D + 2 });
     this.dim = scene.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.35).setDepth(1900).setVisible(false);
+    // R15: the tip multiplier, left of the score. Hidden at x1.
+    this.streakBg = scene.add.graphics();
+    const label = makeText(scene, 0, -19, 'RACHA', { size: 15, color: C.cream, stroke: 3, depth: 0 });
+    this.streakTxt = makeText(scene, 0, 8, 'x2', { size: 40, color: C.cream, stroke: 6, depth: 0 });
+    this.streakBox = scene.add.container(1462, 52, [this.streakBg, label, this.streakTxt]).setDepth(D + 1).setVisible(false);
+  }
+
+  // R15: pops when the multiplier goes up, shakes and drops out when the streak is lost.
+  streak(n: number, mult: number) {
+    const was = this.streakMult;
+    this.streakMult = mult;
+    const box = this.streakBox;
+    this.scene.tweens.killTweensOf(box);
+    if (n === 0) {
+      if (was > 1) this.scene.tweens.add({ targets: box, angle: { from: -9, to: 9 }, duration: 60, yoyo: true, repeat: 3, onComplete: () => { box.setVisible(false).setAngle(0); } });
+      return;
+    }
+    if (mult < 2) { box.setVisible(false); return; }
+    const col = mult >= 4 ? C.tomato : mult === 3 ? C.fire : C.cheese2;
+    this.streakTxt.setText(`x${mult}`);
+    const g = this.streakBg;
+    g.clear();
+    g.fillStyle(0x2b1b17, 0.28).fillRoundedRect(-62, -26, 128, 60, 28);
+    g.fillStyle(hexNum(col), 1).fillRoundedRect(-64, -30, 128, 60, 28);
+    g.lineStyle(5, hexNum(C.ink), 1).strokeRoundedRect(-64, -30, 128, 60, 28);
+    g.fillStyle(0xffffff, 0.3).fillRoundedRect(-52, -25, 104, 7, 3);
+    box.setVisible(true).setAngle(0).setScale(1.5);
+    this.scene.tweens.add({ targets: box, scale: 1, duration: 260, ease: 'back.out' });
   }
 
   private makeTicket(id: number, recipe: 'marinara' | 'margarita'): Ticket {
@@ -53,13 +85,17 @@ export class Hud {
     const bar = new Bar(s, 100); bar.root.setPosition(0, 17);
     const q = recipe === 'margarita'; // Margarita: three ingredient icons, the pizza with cheese
     const pizza = place(s, foodKey(q ? 'pizza_done_q' : 'pizza_done'), -27, 57, 1);
-    const dough = place(s, foodKey('dough_str'), 30, q ? 35 : 46, 1);
-    const tomato = place(s, foodKey('tomato_cut'), 30, q ? 58 : 72, 1);
-    const cheese = q ? place(s, foodKey('cheese_cut'), 30, 81, 1) : null;
+    // ingredients already drawn in their processed form (stretched dough, sliced tomato, shredded cheese)
+    const dough = place(s, foodKey('dough_str'), 28, q ? 37 : 46, 1);
+    const tomato = place(s, foodKey('tomato_cut'), 28, q ? 56 : 72, 1);
+    const cheese = q ? place(s, foodKey('cheese_cut'), 28, 75, 1) : null;
     const num = makeText(s, -48, 74, `#${id + 1}`, { size: 14, color: C.muted, stroke: 0, depth: 0 });
-    pizza.setScale(0.86 / R); dough.setScale((q ? 0.42 : 0.5) / R); tomato.setScale((q ? 0.44 : 0.52) / R); cheese?.setScale(0.42 / R);
+    pizza.setScale(0.86 / R); dough.setScale((q ? 0.4 : 0.5) / R); tomato.setScale((q ? 0.4 : 0.52) / R); cheese?.setScale(0.4 / R);
+    // R23: process glyphs, so the ticket reads "cut these, bake them": a knife by the ingredients and a flame on the pizza
+    const knife = place(s, 'knife', 54, 56, 1).setScale(0.3 / R).setAngle(-65);
+    const flame = place(s, 'flame_1', -9, 41, 1).setScale(0.34 / R);
     bar.root.setVisible(true);
-    const root = s.add.container(W + 200, 6, [bg, bar.root, pizza, dough, tomato, ...(cheese ? [cheese] : []), num]).setDepth(2100 + id * 0.001);
+    const root = s.add.container(W + 200, 6, [bg, bar.root, pizza, dough, tomato, ...(cheese ? [cheese] : []), knife, flame, num]).setDepth(2100 + id * 0.001);
     root.setAngle((id % 3) - 1);
     const t: Ticket = { id, root, bar, x: NaN, enter: { v: 0 }, leaving: false };
     s.tweens.add({ targets: t.enter, v: 1, duration: 300, ease: 'back.out' });
@@ -104,20 +140,21 @@ export class Hud {
     this.t += dtMs;
     const g = this.game;
     // tickets
-    const live = g.orders.map((o) => o.id);
-    for (const o of g.orders) if (!this.tickets.has(o.id)) this.tickets.set(o.id, this.makeTicket(o.id, o.recipe));
+    const shown = g.orders.slice(0, MAX_TICKETS);
+    const live = shown.map((o) => o.id);
+    for (const o of shown) if (!this.tickets.has(o.id)) this.tickets.set(o.id, this.makeTicket(o.id, o.recipe));
     for (const [id, t] of this.tickets) {
       if (!live.includes(id) && !t.leaving) { this.leave(t, this.expired.has(id) ? 'expire' : 'deliver'); }
       if (t.leaving && !t.root.active) this.tickets.delete(id);
     }
     const xs = ticketXs(live.length);
     live.forEach((id, i) => {
-      const t = this.tickets.get(id)!, o = g.orders[i]!;
+      const t = this.tickets.get(id)!, o = shown[i]!;
       const target = xs[i]!;
       t.x = Number.isNaN(t.x) ? target : t.x + (target - t.x) * Math.min(1, dtMs / 90);
       const left = (o.expiresAt - g.time) / g.params.orderTtlMs;
       t.bar.set(left, timerColor(left));
-      const shake = left < 0.25 ? Math.sin(this.t / 28 + id) * 2.2 : 0;
+      const shake = left < TICKET_SHAKE_AT ? Math.sin(this.t / 28 + id) * 2.2 : 0;
       t.root.x = t.x + TICKET_W / 2 + (1 - t.enter.v) * 480 + shake;
     });
     // clock
@@ -152,6 +189,6 @@ export class Hud {
   destroy() {
     for (const t of this.tickets.values()) t.root.destroy();
     this.tickets.clear();
-    for (const o of [this.clockG, this.clockImg, this.clockTxt, this.coin, this.scoreTxt, this.panel, this.dim, this.banner]) o?.destroy();
+    for (const o of [this.clockG, this.clockImg, this.clockTxt, this.coin, this.scoreTxt, this.panel, this.dim, this.banner, this.streakBox]) o?.destroy();
   }
 }

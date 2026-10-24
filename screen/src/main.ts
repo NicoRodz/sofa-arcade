@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import {
   ClockSync, DEFAULT_CONFIG, PING_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
-  type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
+  type BuzzKind, type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
-import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/difficulty';
-import { GAMES } from '@party/shared/games';
+import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
+import { summarize } from '@party/shared/results';
+import { GAMES, PLATFORM, gameName } from '@party/shared/games';
 import { howToHtml } from '@party/shared/render';
 import { generate, resolveMap } from '@party/shared/generate';
 import { defaultMap, fixedMap, isMapChoice, lobbyMaps, lobbyN, mapFeatures, mapStatus, replacementMap, type MapChoice } from '@party/shared/maps';
@@ -13,7 +14,10 @@ import { gameBus } from './bus';
 import { chefCanvas } from './art/chef';
 import { chefOf } from './art/tokens';
 import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
+import { drawCardArt } from './art/cards';
+import { NAV_SFX, clampSel, lobbyEscGoesBack, menuCards, menuOnKey, menuPick, soundFor, type MenuAction } from './menu';
 import { iris } from './art/iris';
+import { toggleShake } from './art/fx';
 import { HOWTO_MS, howToOnKey, isExpired, progress, secondsLeft, type HowToState } from './howto';
 import { MainScene, type Host } from './scene';
 import type { PuestoView } from './art/puestos';
@@ -29,6 +33,7 @@ interface P {
   info: PublicPlayer;
   ctl: { x: number; y: number; b: boolean }; // latest input: no queue
   pendA: number; // A presses not yet consumed by a tick
+  pendB: number; // same for B (a quick tap can start and end between two ticks: the dash needs it)
   tracker: PressTracker;
   rtt: number[]; lag: number[];
   off: number | null; // phone clock -> server clock
@@ -39,7 +44,8 @@ const pendingLag: { id: number; sendServerTime: number }[] = [];
 const csv: string[] = [];
 const sync = new ClockSync();
 const $ = (id: string) => document.getElementById(id)!;
-const connectedN = () => lobbyN([...players.values()].filter((p) => p.info.connected).length);
+const connectedCount = () => [...players.values()].filter((p) => p.info.connected).length;
+const connectedN = () => lobbyN(connectedCount());
 const room = (() => {
   const q = new URLSearchParams(location.search).get('room');
   try {
@@ -48,7 +54,7 @@ const room = (() => {
     return code;
   } catch { return q || newRoomCode(); }
 })();
-let phase: Phase = 'lobby';
+let phase: Phase = 'menu'; // Pichiclub start: the screen picks the game, then that game's lobby
 let config: LobbyConfig = { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 };
 let game = createGame();
 const played = new Set<string>(); // fixed maps already played in this session: the lobby proposes a new one by default
@@ -74,7 +80,7 @@ function upsert(info: PublicPlayer, reset = false) {
   let p = players.get(info.id);
   if (!p) {
     p = {
-      info, ctl: { x: 0, y: 0, b: false }, pendA: 0, tracker: new PressTracker(),
+      info, ctl: { x: 0, y: 0, b: false }, pendA: 0, pendB: 0, tracker: new PressTracker(),
       rtt: [], lag: [], off: null, pkts: 0, pktsRate: 0,
     };
     players.set(info.id, p);
@@ -102,11 +108,11 @@ function setPhase(next: Phase) {
   if (phase === 'playing') {
     const n = connectedN();
     const map = resolveMap(config.map, config.seed, config.difficulty, n, Math.random);
-    game = createGame({ difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
+    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
     played.add(map.id);
     // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
     const order = [...players.values()].sort((a, b) => Number(b.info.connected) - Number(a.info.connected) || a.info.slot - b.info.slot);
-    order.forEach((p, rank) => { addPlayer(game, p.info.id, p.info.slot, rank); p.pendA = 0; });
+    order.forEach((p, rank) => { addPlayer(game, p.info.id, p.info.slot, rank); p.pendA = 0; p.pendB = 0; });
     puestoOf.clear();
     const live = order.filter((p) => p.info.connected);
     if (live.length >= 2) {
@@ -115,10 +121,11 @@ function setPhase(next: Phase) {
       puestoMsg = pm;
     } else puestoMsg = undefined;
     overAt = null;
-    stats.delivered.clear(); stats.expired = 0;
+    stats.delivered.clear();
     scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
   else if (phase === 'lobby') scene.endRound();
+  else if (phase === 'menu') menuSel = Math.max(0, menuCards(connectedCount()).findIndex((c) => c.id === config.game)); // coming back: the game just left stays highlighted
   // cooperative: every player carries the team score
   sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: game.score })) : undefined, puestos: phase === 'playing' ? puestoMsg : undefined });
   renderUi();
@@ -209,6 +216,7 @@ function onMessage(m: ServerMsg) {
       const delta = p.tracker.update(m.presses);
       if (delta.some((d) => d > 0)) {
         p.pendA += delta[0] ?? 0;
+        p.pendB += delta[1] ?? 0;
         if (p.off !== null) pendingLag.push({ id: p.info.id, sendServerTime: m.ts + p.off });
       }
       break;
@@ -244,8 +252,8 @@ const host: Host = {
       acc -= TICK_MS;
       const controls = new Map<number, Controls>();
       for (const p of players.values()) {
-        controls.set(p.info.id, { ...p.ctl, a: p.pendA });
-        p.pendA = 0;
+        controls.set(p.info.id, { ...p.ctl, a: p.pendA, bTaps: p.pendB });
+        p.pendA = 0; p.pendB = 0;
       }
       tick(game, controls);
       if (game.over) { overAt ??= performance.now(); break; }
@@ -274,9 +282,12 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   }
 });
 (window as unknown as { __pg: unknown }).__pg = {
+  forceLobby: () => { if (phase === 'menu') setPhase('lobby'); }, // capture tool: skip the menu (and its player range)
+  menu: () => ({ sel: menuSel, cards: menuCards(connectedCount()).map((c) => `${c.id}:${c.state}`) }),
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
   fastForward: (ms: number) => { game.params.roundMs = game.time + ms; },
-  snapshot: () => ({ fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown }),
+  setScore: (n: number) => { game.score = n; }, // capture tool: results screen with stars
+  snapshot: () => ({ fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
 $('code').textContent = room;
@@ -345,14 +356,65 @@ function syncMap(n: number) {
     patch(r.id);
   } else if (!cur) mapNotice = '';
 }
+// Start menu: one persistent card per registry game (plus the announced ones), so the art is drawn once and the idle state never restarts.
+let menuSel = 0;
+function renderMenu() {
+  const cards = menuCards(connectedCount());
+  const host = $('menucards');
+  const key = cards.map((c) => c.id).join('|');
+  if (host.dataset.key !== key) {
+    host.dataset.key = key;
+    host.replaceChildren(...cards.map((c) => {
+      const el = document.createElement('div');
+      if (c.state !== 'soon') el.dataset.game = c.id;
+      el.dataset.card = c.id;
+      el.innerHTML = `<canvas class="art"></canvas><div class="body"><div class="nm">${esc(c.name)}</div><div class="bl">${esc(c.blurb)}</div>${c.range ? `<div class="pl">${esc(c.range)}</div>` : ''}</div><div class="tag"></div>`;
+      drawCardArt(el.querySelector('canvas')!, c.id);
+      return el;
+    }));
+  }
+  menuSel = clampSel(cards, menuSel);
+  cards.forEach((c, i) => {
+    const el = host.children[i] as HTMLElement;
+    el.className = `gc ${c.state}${i === menuSel && c.state !== 'soon' ? ' sel' : ''}${el.classList.contains('nope') ? ' nope' : ''}`;
+    el.querySelector('.tag')!.textContent = c.notice;
+  });
+}
+function menuAct(a: MenuAction) {
+  const snd = soundFor(a);
+  if (snd) audio.ui(NAV_SFX[snd]);
+  if (a.kind === 'move') { menuSel = a.sel; renderUi(); }
+  else if (a.kind === 'pick') {
+    const g = GAMES.find((x) => x.id === a.id);
+    if (g) transition(() => { setConfig({ game: g.id }); dispatch('pick'); });
+  } else if (a.kind === 'refuse') {
+    const el = $('menucards').querySelector<HTMLElement>('.sel');
+    el?.classList.remove('nope'); void el?.offsetWidth; el?.classList.add('nope');
+  }
+}
+// iris wipe between menu and lobby, the same one that opens a round
+function transition(swap: () => void) {
+  if (starting) return;
+  starting = true;
+  iris(swap, () => { starting = false; });
+}
+const goBack = () => { if (phase !== 'lobby' || starting || howTo) return; audio.ui(NAV_SFX.back); transition(() => dispatch('back')); };
+
 function renderUi() {
+  const inMenu = phase === 'menu';
   const lobby = phase === 'lobby';
-  $('lobbybg').classList.toggle('off', !lobby);
-  $('stage').classList.toggle('off', !lobby);
+  const hub = inMenu || lobby; // both share the logo, the QR + room code and the connected players
+  $('lobbybg').classList.toggle('off', !hub);
+  $('stage').classList.toggle('off', !hub);
+  $('menuui').classList.toggle('off', !inMenu);
+  $('lobbyui').classList.toggle('off', !lobby);
   $('results').classList.toggle('off', phase !== 'results');
   $('debug').classList.toggle('off', !debugOverride);
-  if (!lobby) return;
-  setHtml('games', GAMES.map((g) => `<button class="pill ${g.id === config.game ? 'sel' : ''}" id="gamepill" data-game="${g.id}" title="${esc(g.blurb)}">${g.name}</button>`).join(''));
+  if (!hub) return;
+  $('title').textContent = inMenu ? PLATFORM : gameName(config.game);
+  $('platform').textContent = inMenu ? 'Elige un juego' : PLATFORM;
+  renderChips();
+  if (inMenu) { renderMenu(); return; }
   setHtml('diffs', DIFFICULTIES.map((d) => `<button class="pill ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join(''));
   const list = [...players.values()];
   const n = connectedN();
@@ -363,7 +425,7 @@ function renderUi() {
     const tags = `${f.cheese ? '<i class="tag" title="Queso: Margarita">Q</i>' : ''}${f.sink ? '<i class="tag l" title="Lavado de platos">L</i>' : ''}`;
     return `<button class="${cls}" data-map="${map.id}"><span class="t"><b>${map.id}</b>${esc(map.name)}</span><span class="m">${map.nMin}-${map.nMax}<span class="st">${'★'.repeat(map.stars)}</span>${tags}</span>${status.state === 'recommended' ? '' : `<span class="why">${status.reason}</span>`}</button>`;
   });
-  const special = [['auto', 'Aleatorio', 'entre los recomendados'], ['random', 'Mapa generado', 'semilla nueva']]
+  const special = [['auto', 'Aleatorio', 'de los ideales'], ['random', 'Mapa generado', 'semilla nueva']]
     .map(([id, label, sub]) => `<button class="mc special ${id === config.map ? 'sel' : ''}" data-map="${id}"><span class="t">${label}</span><span class="m">${sub}</span></button>`);
   setHtml('maps', [...cards, ...special].join(''));
   $('mapfor').textContent = `· para ${n} ${n === 1 ? 'jugador' : 'jugadores'}`;
@@ -386,21 +448,29 @@ function renderUi() {
   info.classList.toggle('notice', !!mapNotice);
   const pr = params(config.difficulty, n);
   $('diffinfo').textContent = `Pedido cada ${(pr.orderEveryMs / 1000).toFixed(0)} s, paciencia ${pr.orderTtlMs / 1000} s, hasta ${pr.maxOrders} pedidos`;
-  renderChips();
   ($('start') as HTMLButtonElement).disabled = !canStart(list.map((p) => p.info));
 }
 renderUi();
 
+// R7: a short vibration on the phone of the chef the event belongs to (the phone falls back to a colour flash)
+const buzz = (player: number, kind: BuzzKind) => sendMsg({ t: 'buzz', playerId: player, kind });
+gameBus.on('itemPicked', (e) => buzz(e.player, 'pick'));
+gameBus.on('chopDone', (e) => buzz(e.player, 'chop'));
+gameBus.on('washDone', (e) => buzz(e.player, 'chop'));
+gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
+gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
+gameBus.on('dash', (e) => buzz(e.player, 'dash'));
+
 // round stats for the results screen
-const stats = { delivered: new Map<number, number>(), expired: 0 };
+const stats = { delivered: new Map<number, number>() };
 gameBus.on('delivered', (e) => stats.delivered.set(e.player, (stats.delivered.get(e.player) ?? 0) + 1));
-gameBus.on('orderExpired', () => { stats.expired++; });
 
 let resultsTimers: ReturnType<typeof setTimeout>[] = [];
 function renderResults() {
   resultsTimers.forEach(clearTimeout);
   resultsTimers = [];
-  const st = stars(game.difficulty, game.n, game.score);
+  const sum = summarize(game);
+  const st = sum.stars;
   const starsEl = $('stars');
   starsEl.replaceChildren();
   for (let i = 0; i < 3; i++) {
@@ -417,7 +487,11 @@ function renderResults() {
     if (k < 1 && phase === 'results') requestAnimationFrame(step);
   };
   step();
-  $('stats').innerHTML = `<div class="stat good"><b>${game.delivered}</b><span>Entregadas</span></div><div class="stat bad"><b>${stats.expired}</b><span>Falladas</span></div>`;
+  const [t1, t2, t3] = sum.thresholds;
+  $('starline').innerHTML = sum.next === null ? '¡Tres estrellas!' : `Próxima estrella a <b>${sum.thresholds[st]}</b> · te faltaron <b>${sum.next}</b>`;
+  $('starline').title = `★ ${t1} · ★★ ${t2} · ★★★ ${t3}`;
+  const stat = (cls: string, v: number | string, label: string) => `<div class="stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
+  $('stats').innerHTML = stat('good', sum.delivered, 'Entregadas') + stat('gold', sum.bestStreak, 'Mejor racha') + stat('gold', sum.tips, 'En propinas') + stat('bad', sum.expired + sum.rejected, 'Falladas');
   const ranked = [...players.values()].map((p) => ({ p, n: stats.delivered.get(p.info.id) ?? 0 })).sort((a, b) => b.n - a.n || a.p.info.slot - b.p.info.slot);
   const top = ranked.filter((r) => r.n > 0).slice(0, 3);
   const order = top.length === 3 ? [1, 0, 2] : top.length === 2 ? [1, 0] : [0];
@@ -435,11 +509,20 @@ function renderResults() {
   if (!top.length) pod.innerHTML = '<div class="hint">Nadie alcanzó a entregar una pizza</div>';
 }
 
-$('games').addEventListener('click', (e) => {
+$('menucards').addEventListener('click', (e) => {
   const id = (e.target as HTMLElement).closest<HTMLElement>('[data-game]')?.dataset.game;
-  const game = GAMES.find((g) => g.id === id);
-  if (game) setConfig({ game: game.id });
+  if (!id || starting || phase !== 'menu') return;
+  const cards = menuCards(connectedCount());
+  menuSel = Math.max(0, cards.findIndex((c) => c.id === id));
+  renderUi();
+  menuAct(menuPick(cards, id));
 });
+$('menucards').addEventListener('pointermove', (e) => { // hovering moves the highlight (silently), so mouse and keys agree
+  const id = (e.target as HTMLElement).closest<HTMLElement>('[data-game]')?.dataset.game;
+  const i = menuCards(connectedCount()).findIndex((c) => c.id === id);
+  if (i >= 0 && i !== menuSel && phase === 'menu' && !starting) { menuSel = i; renderUi(); }
+});
+$('back').addEventListener('click', goBack);
 $('diffs').addEventListener('click', (e) => {
   const d = (e.target as HTMLElement).closest<HTMLElement>('[data-diff]')?.dataset.diff;
   const diff = DIFFICULTIES.find((x) => x === d);
@@ -460,11 +543,15 @@ $('howtobtn').addEventListener('click', () => { if (!howTo && !starting && phase
 $('howto').addEventListener('click', () => { if (howTo?.mode === 'preview') closeHowTo(); });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); return; }
+  if ((e.key === 's' || e.key === 'S') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { toggleShake(); return; }
   const act = starting ? 'none' : howToOnKey(howTo, phase, e.key);
   if (act === 'open-preview') { openHowTo('preview'); return; }
   if (act === 'close') { closeHowTo(); return; }
   if (act === 'skip') { beginRound(); return; }
-  if (howTo) return; // the card swallows Enter
+  if (howTo || starting) return; // the card swallows Enter and the iris swallows everything
+  if (phase === 'menu') { menuAct(menuOnKey(menuCards(connectedCount()), menuSel, e.key)); return; }
+  if (lobbyEscGoesBack(phase, e.key, !!howTo, starting)) { goBack(); return; }
+  if (e.key === 'Enter' && e.repeat) return; // a held Enter that picked the game must not also start the round
   if (e.key === 'Enter' && phase === 'lobby') startRound();
   else if (e.key === 'Enter' && phase === 'results') dispatch('again');
 });

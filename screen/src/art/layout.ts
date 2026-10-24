@@ -1,6 +1,8 @@
 // Pure layout helpers (no Phaser): ticket strip and clock text.
 export const TICKET_WIDTH = 128;
 const TICKET_GAP = 10;
+export const MAX_TICKETS = 6; // R23: no more than six on screen (the queue is 6 at most, with 8 players)
+export const TICKET_SHAKE_AT = 0.2; // R23: a ticket starts to tremble with 20% of its patience left
 const TICKET_X0 = 28;
 const TICKET_MAX_X = 872; // clock sits at 960 +- 56
 

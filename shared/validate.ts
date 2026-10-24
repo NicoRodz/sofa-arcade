@@ -136,3 +136,28 @@ export function validateMap(m: MapDef): { ok: boolean; errors: string[] } {
   if (floorTiles(g) < FLOOR_PER_PLAYER * m.nMax) errors.push(`${floorTiles(g)} floor tiles for ${m.nMax} players (want ${FLOOR_PER_PLAYER} each)`);
   return { ok: !errors.length, errors };
 }
+
+// Share of one pizza's actions (picks, board work, oven loads and takes, plate, delivery, washing) that each floor region
+// receives. A station touching two regions (a counter or an oven in a wall) splits its share. Design: a region with a spawn
+// must get at least 15% or its players have nothing to do.
+export const MIN_ZONE_SHARE = 0.15;
+export function zoneShares(g: Grid): number[] {
+  const a = analyze(g);
+  const ingredients = hasCheese(g) ? 3 : 2;
+  const actions: [StationKey, number][] = [['1', 1], ['2', 1], ...(hasCheese(g) ? ([['3', 1]] as [StationKey, number][]) : []),
+    ['K', 2 * ingredients], ['O', ingredients + 1], ['P', 1], ['E', 1], ...(hasSink(g) ? ([['U', 1], ['L', 3]] as [StationKey, number][]) : [])];
+  const w = Array<number>(a.count).fill(0);
+  for (const [key, weight] of actions) {
+    const list = stationsOf(g, key);
+    for (const [x, y] of list) {
+      const comps = [...new Set(accessTiles(g, x, y).map(([ax, ay]) => a.comp[ay]![ax]!))];
+      for (const c of comps) w[c]! += weight / list.length / comps.length;
+    }
+  }
+  const total = w.reduce((n, v) => n + v, 0) || 1;
+  return w.map((v) => v / total);
+}
+export const zoneShareProblems = (g: Grid): string[] => {
+  const a = analyze(g), shares = zoneShares(g);
+  return shares.flatMap((sh, c) => (a.spawns[c]! > 0 && a.count > 1 && sh < MIN_ZONE_SHARE ? [`region ${c} gets ${(sh * 100).toFixed(0)}% of the actions (< ${MIN_ZONE_SHARE * 100}%)`] : []));
+};

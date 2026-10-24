@@ -2,11 +2,11 @@
 import type { Emitter, GameEvents } from '@party/shared/events';
 import { DUCK_GAIN, DUCK_S, BUS_GAIN, LoopTable, SfxLimiter, hintText, masterGain, rateFor } from './mixer';
 import { LOOKAHEAD_S, TICK_MS, advance, modeFor, newSched, type Snapshot } from './music';
-import { ACTIONS, type Action } from './recipes';
+import { ACTIONS, type Action, type SfxId } from './recipes';
 import { createChain, playNote, playSfx } from './synth';
 
-export interface AudioController { playerJoined(): void; toggleMute(): void }
-const NOOP: AudioController = { playerJoined() {}, toggleMute() {} };
+export interface AudioController { playerJoined(): void; toggleMute(): void; ui(id: SfxId): void }
+const NOOP: AudioController = { playerJoined() {}, toggleMute() {}, ui() {} };
 const MUTE_KEY = 'pg.muted';
 
 export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): AudioController {
@@ -58,7 +58,7 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
     if (ctx.state !== 'running') return; // the game never depends on audio
     const now = ctx.currentTime;
     for (const a of actions) {
-      if (a.kind === 'play') { if (limiter.allow(a.id, now)) playSfx(ctx, chain, a.id, now, rateFor(a.id, Math.random())); }
+      if (a.kind === 'play') { if (limiter.allow(a.id, now)) playSfx(ctx, chain, a.id, now, rateFor(a.id, Math.random()) * 2 ** ((a.semis ?? 0) / 12)); }
       else if (a.kind === 'duck') duck(now);
       else loops.apply(a, now);
     }
@@ -79,5 +79,5 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
     for (const h of loops.due(now, look, Math.random)) playSfx(ctx, chain, h.sfx, h.at, rateFor(h.sfx, Math.random()));
   }, TICK_MS);
 
-  return { playerJoined: () => run([{ kind: 'play', id: 'join' }]), toggleMute };
+  return { playerJoined: () => run([{ kind: 'play', id: 'join' }]), toggleMute, ui: (id) => run([{ kind: 'play', id }]) };
 }

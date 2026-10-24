@@ -38,6 +38,21 @@ export class World {
     const g = this.game;
     on('itemPicked', (e) => this.chefOf(e.player)?.bump());
     on('interactInvalid', (e) => this.chefOf(e.player)?.fail());
+    on('dash', (e) => {
+      this.chefOf(e.player)?.dash();
+      const puff = () => { const q = g.players.get(e.player); if (q) { const f = this.feet(q); this.fx.dashDust(f.x, f.y); } };
+      puff();
+      for (const ms of [45, 90, 135]) this.scene.time.delayedCall(ms, puff);
+    });
+    on('bump', (e) => {
+      const o = g.players.get(e.other);
+      if (!o) return;
+      const f = this.feet(o);
+      this.fx.starBurst(f.x, f.y - TILE * 0.45, 4);
+      this.fx.ring(f.x, f.y, 0xffffff, 0.3, 1.1);
+      this.fx.shake(70, 0.002);
+      this.chefOf(e.other)?.bump();
+    });
     on('chopDone', (e) => {
       const p = this.stations.pos(e.station);
       this.fx.dustPoof(p.x, p.y);
@@ -64,11 +79,19 @@ export class World {
       if (ch) {
         this.fx.starBurst(ch.root.x, ch.root.y - TILE * 0.5, 5);
         this.fx.float(ch.root.x, ch.root.y - TILE * 1.15, `+${e.points}`, C.cheese, 52);
+        if (e.mult > 1) this.fx.float(ch.root.x, ch.root.y - TILE * 1.55, `propina x${e.mult}`, e.mult >= 4 ? C.tomato : C.fire, 30);
       }
       this.fx.ring(w.x, w.y, 0xffc93c, 0.5, 2);
       const box = place(this.scene, foodKey('box'), w.x, w.y - TILE * 0.1, 1.0).setDepth(1300);
       this.scene.tweens.add({ targets: box, y: box.y - 90, alpha: 0, duration: 800, ease: 'cubic.out', onComplete: () => box.destroy() });
     });
+    on('dishRejected', (e) => {
+      const w = this.stations.pos(this.stations.windowIdx());
+      this.fx.float(w.x, w.y - TILE * 0.4, '¡Pedido equivocado!', C.danger, 38);
+      this.chefOf(e.player)?.fail();
+      this.fx.shake(90, 0.003);
+    });
+    on('streak', (e) => this.hud.streak(e.n, e.mult));
     on('countdownTick', (e) => { if (e.kind === 'start') this.hud.countdown(e.n); else this.hud.clockPulse(); });
     on('roundEnd', () => { this.hud.timeUp(); this.fx.shake(250, 0.006); });
   }
@@ -100,7 +123,7 @@ export class World {
         chop.set(gp.chopAt, action);
       }
       const f = this.feet(gp);
-      chef.update(dtMs, { x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected });
+      chef.update(dtMs, { x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected, ghost: gp.crossing });
     }
     for (const [id, c] of this.chefs) if (!g.players.has(id)) { c.destroy(); this.chefs.delete(id); }
     this.stations.update(dtMs, chop);

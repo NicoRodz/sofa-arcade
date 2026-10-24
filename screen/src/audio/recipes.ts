@@ -28,6 +28,8 @@ export const SFX = {
     bus: 'sfx', pitchVar: 0.08,
     voices: [noise(0.06, 0.45, { type: 'bandpass', f0: 2500, q: 1 }), osc('triangle', 900, 0.03, 0.3, { f1: 300 })],
   },
+  whoosh: { bus: 'sfx', pitchVar: 0.06, voices: [noise(0.16, 0.3, { type: 'bandpass', f0: 500, f1: 2400, q: 0.9 }, { att: 0.06 })] },
+  thud: { bus: 'sfx', pitchVar: 0.08, voices: [osc('sine', 150, 0.12, 0.45, { f1: 60 }), noise(0.04, 0.2, { type: 'lowpass', f0: 600 })] },
   ding: { bus: 'sfx', voices: [osc('sine', 1318, 0.15, 0.35)] },
   ovenOn: { bus: 'sfx', voices: [noise(0.3, 0.5, { type: 'lowpass', f0: 400 }, { att: 0.15 })] },
   crackle: { bus: 'sfx', voices: [noise(0.01, 0.08, { type: 'highpass', f0: 3000 }, { att: 0.002 })] },
@@ -52,6 +54,10 @@ export const SFX = {
   go: { bus: 'ui', voices: [osc('square', 880, 0.4, 0.3)] },
   tickEnd: { bus: 'ui', voices: [osc('square', 1000, 0.02, 0.15, { att: 0.002 })] },
   whistle: { bus: 'ui', voices: [osc('sine', 1800, 0.7, 0.5, { vib: { rate: 30, depth: 80 } })] },
+  // menu navigation: soft blips in the same square/sine/triangle family as the countdown and the join chime
+  navMove: { bus: 'ui', pitchVar: 0.03, voices: [osc('triangle', 660, 0.05, 0.22, { f1: 740 })] },
+  navPick: { bus: 'ui', voices: [osc('sine', 659, 0.1, 0.35), osc('sine', 988, 0.18, 0.35, { at: 0.07 }), osc('square', 1318, 0.05, 0.08, { at: 0.07 })] },
+  navBack: { bus: 'ui', voices: [osc('triangle', 784, 0.07, 0.3, { f1: 700 }), osc('triangle', 523, 0.12, 0.3, { at: 0.06, f1: 440 })] },
   join: { bus: 'ui', voices: [osc('sine', 523, 0.15, 0.4, { f1: 784 })] },
 } as const satisfies Record<string, Sfx>;
 export type SfxId = keyof typeof SFX;
@@ -68,7 +74,7 @@ export const LOOPS = {
 export type LoopId = keyof typeof LOOPS;
 
 export type Action =
-  | { kind: 'play'; id: SfxId }
+  | { kind: 'play'; id: SfxId; semis?: number } // semis: pitch shift in semitones
   | { kind: 'loopStart'; key: string; loop: LoopId }
   | { kind: 'loopStop'; key: string }
   | { kind: 'stopLoops' }
@@ -84,6 +90,8 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   itemPicked: () => [play('pickup')],
   itemDropped: () => [play('drop')],
   interactInvalid: () => [play('buzz')],
+  dash: () => [play('whoosh')],
+  bump: () => [play('thud')],
   chopStart: (p) => [{ kind: 'loopStart', key: chopKey(p), loop: 'chop' }],
   chopStop: (p) => [{ kind: 'loopStop', key: chopKey(p) }],
   chopDone: (p) => [{ kind: 'loopStop', key: chopKey(p) }, play('ding')],
@@ -96,7 +104,10 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   orderNew: () => [play('orderNew')],
   orderWarning: () => [play('warn')],
   orderExpired: () => [play('expired')],
-  delivered: () => [play('deliver'), { kind: 'duck' }],
+  // R7: the delivery chime climbs a whole tone per step of the tip multiplier (x1 plain, x4 six semitones up)
+  delivered: (p) => [{ kind: 'play', id: 'deliver', semis: (p.mult - 1) * 2 }, { kind: 'duck' }],
+  dishRejected: () => [play('expired')],
+  streak: () => [],
   countdownTick: (p) => (p.kind === 'end' ? (p.n >= 1 && p.n <= 10 ? [play('tickEnd')] : []) : [play(p.n > 0 ? 'count' : 'go')]),
   roundStart: () => [], // the music follows the game snapshot; the "go" sound comes with countdown 0
   roundEnd: () => [{ kind: 'stopLoops' }, play('whistle')],

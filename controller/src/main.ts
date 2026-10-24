@@ -4,11 +4,11 @@ import { fixedMap } from '@party/shared/maps';
 import { gameName, type GameControls, type HowTo } from '@party/shared/games';
 import { controlHtml, howToHtml, iconSvg } from '@party/shared/render';
 import { PUESTOS, type PuestoId } from '@party/shared/puestos';
-import { shouldShowHowTo } from './howto';
+import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
-  ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
-  type ClientMsg, type Phase, type PuestoMsg, type ServerMsg,
+  BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
+  type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg,
 } from '@party/shared';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -58,7 +58,7 @@ let ws: WebSocket | null = null;
 let joined = false;
 let started = false;
 let halted = false; // server refused us (e.g. room full): stop retrying until the page is shown again
-let phase: Phase = 'lobby';
+let phase: Phase = 'menu'; // until the screen says otherwise the phone waits for the game to be picked
 let myId = 0;
 let lastPong = 0;
 const room = new URLSearchParams(location.search).get('room') || DEFAULT_ROOM;
@@ -80,14 +80,30 @@ function applyControls(c: GameControls) {
 // "Cómo se juega": one-view summary, closed with a tap. Opens on join and when the lobby picks a game not shown yet.
 let seenGame: string | null = null;
 const setHowTo = (open: boolean) => { document.body.dataset.howto = open ? 'open' : 'closed'; };
+let shown: { game: string; name: string; howTo: HowTo } | null = null; // the game the screen last announced
 function renderHowTo(game: string, name: string, h: HowTo) {
+  shown = { game, name, howTo: h };
   $('howtogame').textContent = name;
   $('howtobody').innerHTML = howToHtml(h);
-  if (shouldShowHowTo(seenGame, game, phase)) { seenGame = game; setHowTo(true); }
+  maybeShowHowTo();
+}
+function maybeShowHowTo() {
+  if (shown && shouldShowHowTo(seenGame, shown.game, phase)) { seenGame = shown.game; setHowTo(true); }
 }
 // pointerup, not click: a touchend inside the double-tap window is cancelled (see above) and would swallow the click
 $('howto').addEventListener('pointerup', () => setHowTo(false));
 $('howtoopen').addEventListener('pointerup', () => setHowTo(true));
+
+// R7: vibrate where the browser can (Android), flash the phone's colour where it cannot (iOS Safari has no vibration API).
+let flashTimer: ReturnType<typeof setTimeout> | undefined;
+function buzz(kind: BuzzKind) {
+  if (phase !== 'playing') return;
+  const pattern = BUZZ_PATTERNS[kind];
+  try { if (typeof navigator.vibrate === 'function' && navigator.vibrate([...pattern])) return; } catch { /* blocked: fall back to the flash */ }
+  document.body.classList.add('flash');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => document.body.classList.remove('flash'), 120);
+}
 
 const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
 let label = '';
@@ -122,6 +138,9 @@ $('pswap').addEventListener('pointerup', (e) => {
 
 function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg) {
   phase = p;
+  seenGame = seenAfterPhase(seenGame, p);
+  if (p === 'menu') setHowTo(false);
+  else maybeShowHowTo(); // the screen just entered a game: show its summary
   applyPuestos(p === 'playing' ? puestos : undefined);
   if (p === 'playing') setHowTo(false);
   if (p !== 'playing') { state.x = 0; state.y = 0; state.btn = 0; document.querySelectorAll('.act').forEach((b) => b.classList.remove('down')); }
@@ -145,6 +164,7 @@ function connect() {
       myId = m.player.id;
       document.documentElement.style.setProperty('--c', m.player.color);
       $('who').textContent = m.player.name;
+      $('who2').textContent = m.player.name;
       hud(`${m.player.name} #${m.player.slot + 1}`);
     } else if (m.t === 'config') {
       $('game').textContent = gameName(m.game);
@@ -153,6 +173,8 @@ function connect() {
       $('setup').textContent = `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores, m.puestos);
+    } else if (m.t === 'buzz') {
+      buzz(m.kind);
     } else if (m.t === 'pong') {
       lastPong = Date.now();
       const s = sent.get(m.id);
@@ -183,7 +205,7 @@ function startPad() {
   if (started) return;
   started = true;
   store.set('pg.room', room);
-  view('lobby');
+  view('menu');
   const stick = nipplejs.create({ zone: $('zone'), mode: 'dynamic', color: 'white', size: 130, threshold: DEADZONE });
   stick.on('move', (e) => {
     const [x, y] = applyDeadzone(e.data.vector.x, -e.data.vector.y);

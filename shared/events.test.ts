@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Emitter, type GameEvents } from './events';
-import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
+import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, recipeBase, tick, type Controls, type Game, type Station } from './overcooked';
 import { DIRS, isFloor } from './maps';
 import { params } from './difficulty';
 
@@ -127,7 +127,7 @@ describe('game events', () => {
     const { points, tip } = log[0]!.payload as { points: number; tip: number };
     expect(log[0]!.type).toBe('delivered');
     expect(points).toBe(g.score);
-    expect(points).toBe(params('normal', 2).reward + tip);
+    expect(points).toBe(recipeBase('marinara', g.params.tune) + tip);
   });
 
   it('orders: orderNew on creation and schedule, one warning under 10 s, orderExpired at the end', () => {

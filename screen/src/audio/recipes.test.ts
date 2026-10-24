@@ -29,7 +29,14 @@ describe('event -> sound mapping', () => {
     expect(ids(ACTIONS.orderNew({ order: 1, recipe: 'marinara' }))).toEqual(['orderNew']);
     expect(ids(ACTIONS.orderWarning({ order: 1 }))).toEqual(['warn']);
     expect(ids(ACTIONS.orderExpired({ order: 1 }))).toEqual(['expired']);
-    expect(ids(ACTIONS.delivered({ player: 1, points: 20, tip: 0 }))).toEqual(['deliver', 'duck']);
+    expect(ids(ACTIONS.delivered({ player: 1, points: 70, tip: 0, base: 70, mult: 1 }))).toEqual(['deliver', 'duck']);
+  });
+  it('R7: the delivery chime climbs two semitones per step of the tip multiplier; a lost dish and a lost streak have their own sound', () => {
+    const semis = (mult: number) => (ACTIONS.delivered({ player: 1, points: 0, tip: 0, base: 70, mult })[0] as { semis: number }).semis;
+    expect([1, 2, 3, 4].map(semis)).toEqual([0, 2, 4, 6]);
+    expect(ids(ACTIONS.dishRejected({ player: 1 }))).toEqual(['expired']);
+    expect(ids(ACTIONS.dash({ player: 1, dx: 1, dy: 0 }))).toEqual(['whoosh']);
+    expect(ids(ACTIONS.bump({ player: 1, other: 2 }))).toEqual(['thud']);
   });
   it('countdown: 3-2-1 beep, 0 is "go", the last 10 s tick', () => {
     expect(ids(ACTIONS.countdownTick({ n: 3, kind: 'start' }))).toEqual(['count']);

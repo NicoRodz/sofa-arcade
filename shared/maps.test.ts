@@ -69,6 +69,10 @@ describe('lobby: map status by connected players', () => {
     expect(st('3', 1)).toEqual({ state: 'blocked', reason: 'necesita 2+ jugadores' });
     expect(st('1', 1)).toEqual({ state: 'warn', reason: 'pensado para 2+' });
     expect(st('1', 5)).toEqual({ state: 'blocked', reason: 'hasta 4 jugadores' });
+    expect(st('5', 3).state).toBe('recommended'); // both ends of the range are inside it
+    expect(st('5', 6).state).toBe('recommended');
+    expect(st('1', 4).state).toBe('recommended');
+    expect(st('3', 2).state).toBe('recommended'); // minDuro == nMin
   });
   it('orders recommended first (fewer stars first, then nearest to the middle of the range), then warned, then blocked', () => {
     const l = lobbyMaps(4, base);

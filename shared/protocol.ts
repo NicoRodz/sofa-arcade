@@ -1,7 +1,7 @@
 import { DEFAULT_DIFFICULTY, isDifficulty, type Difficulty } from './difficulty';
 import { DEFAULT_GAME, gameInfo, isGameId, type GameId, type GameInfo } from './games';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
-import { isPuestoId, type PuestoId } from './puestos';
+import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
 
 export { ROUND_MS } from './difficulty';
 
@@ -28,13 +28,20 @@ export interface InputState {
   ts: number; // sender Date.now()
 }
 
-export const PHASES = ['lobby', 'playing', 'results'] as const;
+// menu: the Pichiclub start screen, where the screen picks the game (phones wait). lobby: that game's setup.
+export const PHASES = ['menu', 'lobby', 'playing', 'results'] as const;
 export type Phase = (typeof PHASES)[number];
 export interface Score { id: number; score: number }
 // Suggested stations for the round (see puestos.ts): the screen assigns them, the phones show them. Never enforced.
 export interface PuestoAssign { id: number; puestos: PuestoId[]; pool: PuestoId[] } // pool: what "Cambiar" cycles through
 export interface PuestoMsg { cheese: boolean; sink: boolean; assign: PuestoAssign[] }
 export interface PhaseInfo { phase: Phase; scores?: Score[]; puestos?: PuestoMsg }
+
+// R7: a short vibration on one phone (Android); iOS has no vibration API, so the phone flashes its colour instead.
+// The screen decides when (it owns the game events); the phone only plays the pattern, in ms on / off / on...
+export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15] } as const satisfies Record<string, readonly number[]>;
+export type BuzzKind = keyof typeof BUZZ_PATTERNS;
+export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.prototype.hasOwnProperty.call(BUZZ_PATTERNS, v);
 
 // What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
 export const SEED_MAX = 2 ** 32;
@@ -60,7 +67,8 @@ export type ClientMsg =
   | { t: 'ping'; id: number; t0: number; rtt?: number; off?: number }
   | ({ t: 'phase' } & PhaseInfo) // screen only
   | ({ t: 'config' } & LobbyConfig) // screen only
-  | { t: 'puesto'; puestos: PuestoId[] }; // phone: "Cambiar" picked another puesto
+  | { t: 'puesto'; puestos: PuestoId[] } // phone: "Cambiar" picked another puesto
+  | { t: 'buzz'; playerId: number; kind: BuzzKind }; // screen only: vibrate that phone
 
 export type ServerMsg =
   | { t: 'joined'; player: PublicPlayer; room: string }
@@ -74,17 +82,18 @@ export type ServerMsg =
   | ConfigMsg
   | ({ t: 'input'; playerId: number } & InputState)
   | { t: 'rtt'; playerId: number; rtt: number; off: number }
-  | { t: 'puesto'; playerId: number; puestos: PuestoId[] };
+  | { t: 'puesto'; playerId: number; puestos: PuestoId[] }
+  | { t: 'buzz'; kind: BuzzKind };
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 
-const parsePuestoIds = (v: unknown): PuestoId[] | null => (Array.isArray(v) && v.length <= 4 && v.every(isPuestoId) ? [...v] : null);
+const parsePuestoIds = (v: unknown, max = 4): PuestoId[] | null => (Array.isArray(v) && v.length <= max && v.every(isPuestoId) ? [...v] : null);
 function parsePuestoMsg(v: any): PuestoMsg | null {
   if (!v || typeof v !== 'object' || typeof v.cheese !== 'boolean' || typeof v.sink !== 'boolean' || !Array.isArray(v.assign) || v.assign.length > MAX_PLAYERS) return null;
   const assign: PuestoAssign[] = [];
   for (const a of v.assign) {
-    const puestos = parsePuestoIds(a?.puestos), pool = parsePuestoIds(a?.pool);
+    const puestos = parsePuestoIds(a?.puestos), pool = parsePuestoIds(a?.pool, PUESTO_IDS.length);
     if (!a || !num(a.id) || !puestos || !pool) return null;
     assign.push({ id: a.id, puestos, pool });
   }
@@ -136,6 +145,8 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       const ids = parsePuestoIds(m.puestos);
       return ids?.length ? { t: 'puesto', puestos: ids } : null;
     }
+    case 'buzz':
+      return num(m.playerId) && isBuzzKind(m.kind) ? { t: 'buzz', playerId: m.playerId, kind: m.kind } : null;
     case 'config':
       if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map) || !isSeed(m.seed)) return null;
       return { t: 'config', game: m.game, difficulty: m.difficulty, map: m.map, seed: m.seed };
@@ -144,8 +155,10 @@ export function parseClientMessage(raw: string): ClientMsg | null {
   }
 }
 
-export type PhaseEvent = 'start' | 'timeout' | 'again';
+export type PhaseEvent = 'pick' | 'back' | 'start' | 'timeout' | 'again';
 export function nextPhase(phase: Phase, ev: PhaseEvent): Phase {
+  if (phase === 'menu' && ev === 'pick') return 'lobby';
+  if (phase === 'lobby' && ev === 'back') return 'menu';
   if (phase === 'lobby' && ev === 'start') return 'playing';
   if (phase === 'playing' && ev === 'timeout') return 'results';
   if (phase === 'results' && ev === 'again') return 'lobby';

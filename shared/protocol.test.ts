@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ClockSync, applyDeadzone, canStart, newRoomCode, nextPhase, parseClientMessage } from './protocol';
+import { BUZZ_PATTERNS, ClockSync, applyDeadzone, canStart, newRoomCode, nextPhase, parseClientMessage } from './protocol';
+import { assignPuestos } from './puestos';
 
 describe('protocol', () => {
   it('rejects malformed messages and clamps input', () => {
@@ -33,6 +34,15 @@ describe('protocol', () => {
     expect(parseClientMessage('{"t":"phase","phase":"results","scores":[{"id":1}]}')).toBeNull();
     expect(parseClientMessage('{"t":"phase","phase":"results","scores":"no"}')).toBeNull();
   });
+  it('parses buzz (screen to one phone): needs a player and a known kind, and each pattern is a short on/off list', () => {
+    expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"pick"}')).toEqual({ t: 'buzz', playerId: 3, kind: 'pick' });
+    expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"earthquake"}')).toBeNull();
+    expect(parseClientMessage('{"t":"buzz","kind":"pick"}')).toBeNull();
+    expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"constructor"}')).toBeNull();
+    expect(BUZZ_PATTERNS.pick).toEqual([20]);
+    expect(BUZZ_PATTERNS.chop).toEqual([40]);
+    for (const p of Object.values(BUZZ_PATTERNS)) expect(p.reduce((a, b) => a + b, 0)).toBeLessThan(200);
+  });
   it('rejects unknown message types', () => {
     expect(parseClientMessage('{"t":"hack"}')).toBeNull();
     expect(parseClientMessage('null')).toBeNull();
@@ -40,6 +50,17 @@ describe('protocol', () => {
 });
 
 describe('phases', () => {
+  it('the menu hands over to the lobby of the picked game and back, and nothing else leaves the menu', () => {
+    expect(nextPhase('menu', 'pick')).toBe('lobby');
+    expect(nextPhase('lobby', 'back')).toBe('menu');
+    for (const ev of ['start', 'timeout', 'again', 'back'] as const) expect(nextPhase('menu', ev)).toBe('menu');
+    for (const ph of ['playing', 'results'] as const) for (const ev of ['pick', 'back'] as const) expect(nextPhase(ph, ev)).toBe(ph);
+    expect(nextPhase('lobby', 'pick')).toBe('lobby');
+  });
+  it('a phone message cannot invent a phase, and menu is a known one', () => {
+    expect(parseClientMessage('{"t":"phase","phase":"menu"}')).toEqual({ t: 'phase', phase: 'menu' });
+    expect(parseClientMessage('{"t":"phase","phase":"arena"}')).toBeNull();
+  });
   it('walks lobby -> playing -> results -> lobby', () => {
     expect(nextPhase('lobby', 'start')).toBe('playing');
     expect(nextPhase('playing', 'timeout')).toBe('results');
@@ -86,6 +107,13 @@ describe('puestos on the wire', () => {
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, assign: [{ id: 1, puestos: ['hack'], pool: [] }] } }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, cheese: 'yes' } }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: 7 }))).toBeNull();
+  });
+  it('a real round message fits: every chef of an 8-player table with the full pool of puestos', () => {
+    const f = { cheese: true, sink: true };
+    const pm = assignPuestos([1, 2, 3, 4, 5, 6, 7, 8], f);
+    expect(pm.assign[0]!.pool.length).toBeGreaterThanOrEqual(6);
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: pm }))).toEqual({ t: 'phase', phase: 'playing', puestos: pm });
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: assignPuestos([1, 2], f) }))).not.toBeNull();
   });
   it('"Cambiar" sends the new puesto list', () => {
     expect(parseClientMessage('{"t":"puesto","puestos":["corte"]}')).toEqual({ t: 'puesto', puestos: ['corte'] });

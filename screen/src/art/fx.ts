@@ -78,6 +78,17 @@ export function buildFxTextures(scene: Phaser.Scene) {
   });
 }
 
+// R7: screen shake is light and can be switched off (key S on the screen); the choice is remembered.
+const SHAKE_KEY = 'pg.shake';
+let shakeEnabled = true;
+try { shakeEnabled = localStorage.getItem(SHAKE_KEY) !== '0'; } catch { /* storage blocked: shake stays on */ }
+export const shakeOn = () => shakeEnabled;
+export function toggleShake(): boolean {
+  shakeEnabled = !shakeEnabled;
+  try { localStorage.setItem(SHAKE_KEY, shakeEnabled ? '1' : '0'); } catch { /* ignore */ }
+  return shakeEnabled;
+}
+
 export const confettiColors = [0xe63b2e, 0x2f7de1, 0x3fa34d, 0xffc21a, 0x8e5cd9, 0xff7a1a, 0xff5fa2, 0x1fb5a8];
 
 export interface TextOpts { size?: number; color?: string; stroke?: number; depth?: number }
@@ -99,6 +110,7 @@ export class Fx {
   private dust: Phaser.GameObjects.Particles.ParticleEmitter;
   private foam: Phaser.GameObjects.Particles.ParticleEmitter;
   private sparks: Phaser.GameObjects.Particles.ParticleEmitter;
+  private puff: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(private scene: Phaser.Scene) {
     const mk = (key: string, cfg: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig, depth = 1200) =>
@@ -116,6 +128,7 @@ export class Fx {
     });
     this.stars = mk('fx_star', { lifespan: 700, speed: { min: 90, max: 200 }, angle: { min: -150, max: -30 }, gravityY: 300, rotate: { start: 0, end: 200 }, scale: { start: 0.9, end: 0.2 }, alpha: { start: 1, end: 0 } });
     this.smoke = mk('fx_smoke', { lifespan: 1400, speedY: { min: -50, max: -28 }, speedX: { min: -10, max: 10 }, scale: { start: 0.6, end: 1.6 }, alpha: { start: 0.6, end: 0 } }, 1100);
+    this.puff = mk('fx_smoke', { lifespan: 480, speed: { min: 20, max: 60 }, angle: { min: 180, max: 360 }, scale: { start: 0.55, end: 1.2 }, alpha: { start: 0.75, end: 0 }, tint: 0xa88d68 }, 90);
     this.sparks = mk('fx_dot', { lifespan: 900, speedY: { min: -60, max: -30 }, speedX: { min: -14, max: 14 }, scale: { start: 0.8, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xff8a1f, 0xffc93c] });
   }
 
@@ -141,6 +154,8 @@ export class Fx {
     this.scene.tweens.add({ targets: t, alpha: 0, delay: 600, duration: 300, onComplete: () => t.destroy() });
   }
 
-  shake(ms: number, amp: number) { this.scene.cameras.main.shake(ms, amp); }
+  // Short grey puffs left behind by a dash, pushed against the run direction
+  dashDust(x: number, y: number) { this.puff.explode(2, x, y - 6); this.dust.explode(3, x, y); } // brown-grey: the floor is cream
+  shake(ms: number, amp: number) { if (shakeOn()) this.scene.cameras.main.shake(ms, amp); }
 }
 

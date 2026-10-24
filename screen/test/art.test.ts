@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { COLORS } from '@party/shared';
 import { COLS, ROWS } from '@party/shared/game';
 import { CHEFS, FLOORS, H, HUD_H, OX, OY, SKINS, TILE, W, chefOf, floorPair, hairOf, progressColor, skinOf, timerColor, C } from '../src/art/tokens';
-import { TICKET_WIDTH, clockText, ticketXs } from '../src/art/layout';
+import { MAX_TICKETS, TICKET_SHAKE_AT, TICKET_WIDTH, clockText, ticketXs } from '../src/art/layout';
+import { CUT_KIND, ITEM_KIND, RAW_KIND } from '../src/art/food';
+import { maxOrders } from '@party/shared/difficulty';
 
 describe('layout', () => {
   it('the 16x9 map plus the HUD strip fits the 1920x1080 canvas', () => {
@@ -64,5 +66,21 @@ describe('floors', () => {
     expect(floorPair('3')).toEqual(FLOORS['3']);
     expect(floorPair('random', 7)).toEqual(FLOORS['3']);
     expect(floorPair('random', 0)).toEqual(FLOORS['1']);
+  });
+});
+
+describe('R23 tickets and R24 item state', () => {
+  it('at most six tickets are drawn, as many as the biggest queue (8 players), and they tremble at 20% patience', () => {
+    expect(MAX_TICKETS).toBe(6);
+    expect(maxOrders(8)).toBeLessThanOrEqual(MAX_TICKETS);
+    expect(TICKET_SHAKE_AT).toBe(0.2);
+    expect(timerColor(TICKET_SHAKE_AT - 0.01)).toBe(C.danger); // the bar is red by then
+  });
+  it('raw and processed items are different pictures (shape, not only colour): ball vs disc, whole vs slices, block vs shreds', () => {
+    const items = ['raw0', 'cut0', 'raw1', 'cut1', 'raw2', 'cut2'] as const;
+    expect(new Set(items.map((i) => ITEM_KIND[i])).size).toBe(6);
+    expect(RAW_KIND.every((k) => !CUT_KIND.includes(k))).toBe(true);
+    expect(ITEM_KIND.dish).not.toBe(ITEM_KIND.dishQ);
+    expect(ITEM_KIND.plate).not.toBe(ITEM_KIND.dirty);
   });
 });

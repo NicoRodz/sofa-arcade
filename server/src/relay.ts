@@ -32,7 +32,7 @@ export function attachRelay(server: Server) {
   const rooms = new Map<string, Room>();
   const room = (code: string) => {
     let r = rooms.get(code);
-    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'lobby' }, config: DEFAULT_CONFIG }));
+    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'menu' }, config: DEFAULT_CONFIG }));
     return r;
   };
   const toScreens = (r: Room, m: ServerMsg) => {
@@ -70,6 +70,11 @@ export function attachRelay(server: Server) {
         if (!isScreen) return;
         r.phase = { phase: m.phase, scores: m.scores, puestos: m.puestos };
         toPlayers(r, { t: 'phase', ...r.phase });
+        return;
+      }
+      if (m.t === 'buzz') {
+        const to = r.players.get(m.playerId);
+        if (isScreen && to?.ws) send(to.ws, { t: 'buzz', kind: m.kind });
         return;
       }
       if (m.t === 'config') {

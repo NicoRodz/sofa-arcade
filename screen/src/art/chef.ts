@@ -1,7 +1,7 @@
 // The eight pizzaiolos: part textures plus a procedural rig (squash & stretch, walk bounce, chop, carry, expressions).
 import Phaser from 'phaser';
 import type { Item } from '@party/shared/game';
-import { C, TILE, U, chefOf, SKINS } from './tokens';
+import { C, TILE, U, chefOf, hexNum, SKINS } from './tokens';
 import { R, domCanvas, makeTex, rr, texSize, type Ctx } from './gfx';
 import {
   HEAD_Y, MOUTH_DY, drawArm, drawBody, drawBodyBack, drawChefStatic, drawDrop, drawEye, drawFaceA, drawFaceB, drawHat,
@@ -16,6 +16,11 @@ const BOX = { w: 120, h: 170, ox: 60, oy: 150 };
 export function buildChefTextures(scene: Phaser.Scene) {
   makeTex(scene, 'chef_shadow', { w: 80, h: 36, ox: 40, oy: 18 }, drawShadow);
   makeTex(scene, 'chef_shoe', { w: 24, h: 16 }, drawShoe);
+  // R25: the colour ring on the floor around each chef's feet (white with a dark edge, tinted per chef)
+  makeTex(scene, 'chef_ring', { w: 100, h: 48, ox: 50, oy: 24 }, (c) => {
+    c.lineWidth = 10; c.strokeStyle = '#000'; c.globalAlpha = 0.55; c.beginPath(); c.ellipse(0, 0, 35, 12.5, 0, 0, Math.PI * 2); c.stroke();
+    c.globalAlpha = 1; c.lineWidth = 5.5; c.strokeStyle = '#fff'; c.beginPath(); c.ellipse(0, 0, 35, 12.5, 0, 0, Math.PI * 2); c.stroke();
+  });
   SKINS.forEach((s, i) => makeTex(scene, `chef_arm_${i}`, { w: 24, h: 48, ox: 12, oy: 9 }, (c) => drawArm(c, s)));
   for (let i = 0; i < 8; i++) {
     makeTex(scene, `chef_body_${i}`, BOX, (c) => drawBody(c, i));
@@ -70,6 +75,7 @@ export interface ChefState {
   item: Item | null;
   action: 'none' | 'chop' | 'stretch';
   connected: boolean;
+  ghost?: boolean; // R4: crossing through another chef
 }
 
 type Face = 'down' | 'side' | 'up';
@@ -94,6 +100,7 @@ export class Chef {
   private itemImg: Phaser.GameObjects.Image;
   private tag: Phaser.GameObjects.Image;
   private shadow: Phaser.GameObjects.Image;
+  private ring: Phaser.GameObjects.Image;
   private lx = NaN; private ly = NaN;
   private phase = 0; private breath = 0; private hitT = 0; private wasMoving = false; private flip = 1;
   private sx = 0; private sy = 0; private vx = 0; private vy = 0; // scale spring
@@ -108,6 +115,7 @@ export class Chef {
       return scene.add.image(x, y, key).setOrigin(t.ox / t.w, t.oy / t.h).setScale(1 / R);
     };
     this.shadow = at('chef_shadow');
+    this.ring = at('chef_ring').setTint(hexNum(chefOf(slot).color));
     this.feet = [at('chef_shoe', -10, -3), at('chef_shoe', 10, -3)];
     this.arms = [at(`chef_arm_${skin}`, -25, -41), at(`chef_arm_${skin}`, 25, -41)];
     this.torso = at(`chef_body_${slot % 8}`);
@@ -125,7 +133,7 @@ export class Chef {
     this.rig = scene.add.container(0, 0, [...this.feet, this.torsoB, this.torso, ...this.arms, this.itemImg, this.head]);
     this.tagKey = plateKey(scene, slot, name);
     this.tag = at(this.tagKey, 0, 20);
-    this.root = scene.add.container(0, 0, [this.shadow, this.rig, this.tag]);
+    this.root = scene.add.container(0, 0, [this.shadow, this.ring, this.rig, this.tag]);
     this.root.setScale(U * CHEF_SCALE);
   }
 
@@ -135,6 +143,7 @@ export class Chef {
   }
   celebrate() { this.happyT = 900; this.jumpT = 0; }
   fail() { this.failT = 700; }
+  dash() { this.sx = 0.2; this.sy = -0.16; this.vx = 0; this.vy = 0; } // stretches along the run
   bump() { this.sx = 0.08; this.sy = -0.08; this.vx = 0; this.vy = 0; }
   destroy() { this.root.destroy(); }
 
@@ -254,7 +263,7 @@ export class Chef {
     // world placement
     this.root.setPosition(s.x, s.y);
     this.root.setDepth(100 + s.y);
-    this.root.setAlpha(s.connected ? 1 : 0.35);
+    this.root.setAlpha(s.connected ? (s.ghost ? 0.6 : 1) : 0.35);
     this.tag.setDepth(0);
   }
 }

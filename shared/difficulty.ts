@@ -9,6 +9,34 @@ export const DEFAULT_DIFFICULTY: Difficulty = 'normal';
 export const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: 'Fácil', normal: 'Normal', hard: 'Difícil' };
 export const isDifficulty = (v: unknown): v is Difficulty => DIFFICULTIES.includes(v as Difficulty);
 
+// Feel and scoring knobs per difficulty (overcooked2 plan, phase 1). One table, so a later phase tunes Easy or Hard without
+// touching the rules. tauMs = 0 means "instant", which is the pre-R1 feel: R1 is only on for Normal for now.
+export interface Tuning {
+  tauMs: number; // R1: velocity smoothing while the stick is held
+  tauStopMs: number; // R1: smoothing once the stick is released
+  dashMult: number; // R2: dash speed as a multiple of the walking speed
+  dashMs: number; // R2: dash duration
+  dashCdMs: number; // R2: cooldown, counted from the dash start
+  bufferMs: number; // R6: how long an early A or B press is remembered
+  pushSpeed: number; // R5: tiles/s given to a chef hit by a dash (never drops the item)
+  yieldAfterMs: number; // R4: opposed pushing this long and the two chefs cross each other
+  yieldSpeed: number; // R4: speed multiplier while crossing
+  baseComponent: number; // R13: points per ingredient in the recipe
+  baseProcess: number; // R13: points per process (cut, grate, stretch, bake)
+  tipPct: number; // R14: tip at the very start of the order's patience, as a share of the base
+  streakMax: number; // R15: top of the tip multiplier
+  starPct: readonly [number, number, number]; // R17: share of the expected score for 1, 2 and 3 stars
+}
+const COMMON: Omit<Tuning, 'tauMs' | 'tauStopMs'> = {
+  dashMult: 2.6, dashMs: 180, dashCdMs: 600, bufferMs: 150, pushSpeed: 1.5, yieldAfterMs: 400, yieldSpeed: 0.4,
+  baseComponent: 20, baseProcess: 10, tipPct: 0.5, streakMax: 4, starPct: [0.35, 0.6, 0.85],
+};
+export const TUNING: Record<Difficulty, Tuning> = {
+  easy: { ...COMMON, tauMs: 0, tauStopMs: 0 },
+  normal: { ...COMMON, tauMs: 60, tauStopMs: 50 },
+  hard: { ...COMMON, tauMs: 0, tauStopMs: 0 },
+};
+
 export interface Params {
   roundMs: number;
   orderTtlMs: number; // patience
@@ -19,17 +47,16 @@ export interface Params {
   plates: number; // plates in circulation (only used on maps with a sink)
   cutMs: number;
   cookMs: number;
-  reward: number;
-  tipMax: number;
   penalty: number; // applied per expired order, negative or 0
+  tune: Tuning;
 }
 
 // Order interval, queue and starting orders do not live here: they come from the team size (see params).
-type Base = Omit<Params, 'orderEveryMs' | 'maxOrders' | 'initialOrders' | 'cheesePct' | 'plates'>;
+type Base = Omit<Params, 'orderEveryMs' | 'maxOrders' | 'initialOrders' | 'cheesePct' | 'plates' | 'tune'>;
 const BASE: Record<Difficulty, Base> = {
-  easy: { roundMs: ROUND_MS, orderTtlMs: 90_000, cutMs: 1500, cookMs: 6000, reward: 20, tipMax: 10, penalty: 0 },
-  normal: { roundMs: ROUND_MS, orderTtlMs: 70_000, cutMs: 2000, cookMs: 8000, reward: 20, tipMax: 8, penalty: -10 },
-  hard: { roundMs: ROUND_MS, orderTtlMs: 55_000, cutMs: 2500, cookMs: 10_000, reward: 20, tipMax: 6, penalty: -20 },
+  easy: { roundMs: ROUND_MS, orderTtlMs: 90_000, cutMs: 1500, cookMs: 6000, penalty: 0 },
+  normal: { roundMs: ROUND_MS, orderTtlMs: 70_000, cutMs: 2000, cookMs: 8000, penalty: -10 },
+  hard: { roundMs: ROUND_MS, orderTtlMs: 55_000, cutMs: 2500, cookMs: 10_000, penalty: -20 },
 };
 export const ORDER_BASE_MS = 40_000; // Normal: interval = 40 s / (0.6 + 0.2 N)
 const INTERVAL_K: Record<Difficulty, number> = { easy: 1.25, normal: 1, hard: 0.8 };
@@ -45,6 +72,7 @@ const band = <T>(n: number, v: [T, T, T, T]): T => { const t = teamSize(n); retu
 export function params(d: Difficulty, n: number): Params {
   return {
     ...BASE[d],
+    tune: TUNING[d],
     orderEveryMs: orderEveryMs(d, n),
     maxOrders: maxOrders(n),
     initialOrders: band(n, [1, 2, 2, 3]),
@@ -52,11 +80,3 @@ export function params(d: Difficulty, n: number): Params {
     plates: band(n, [3, 4, 5, 6]),
   };
 }
-
-// Score needed for 1, 2 and 3 stars: k * 25 * (180 / order interval in s), k = 0.40 / 0.65 / 0.85.
-export function starThresholds(d: Difficulty, n: number): [number, number, number] {
-  const p = params(d, n);
-  const base = 25 * (p.roundMs / p.orderEveryMs);
-  return [Math.round(0.4 * base), Math.round(0.65 * base), Math.round(0.85 * base)];
-}
-export const stars = (d: Difficulty, n: number, score: number) => starThresholds(d, n).filter((t) => score >= t).length;
