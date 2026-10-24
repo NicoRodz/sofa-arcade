@@ -172,6 +172,8 @@ const vsResult = (verdict: string, winner: number | null) => ({ verdict, winner,
 
 // contextual buttons: the screen sends the label, the glyph and the greyed state of A and B with the state of every tick
 const hint = (h: object) => ({ t: 'hint', ...h });
+const school = (step: number, text: string, btn: 'a' | 'b', done = false) => ({ t: 'school', step, total: 4, text, btn, ...(done ? { done: true } : {}) });
+const SCHOOL = [player('Nico'), config(), phase('lobby'), phase('school')];
 const PLAYING = [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) })];
 
 const WIDE = `document.documentElement.style.setProperty('--font', 'Verdana, sans-serif'); window.dispatchEvent(new Event('resize'))`;
@@ -234,6 +236,14 @@ export const SCENARIOS: Scenario[] = [
   { name: 'captain-play', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) }), captain()] }, // the round: the pad alone, no D-pad
   { name: 'not-captain-menu', msgs: [player('Nico'), config(), phase('menu'), captain(2)] },
   { name: 'not-captain-howto', msgs: [player('Nico'), config(), phase('lobby'), captain(2)] },
+  // the Cocina escuela: the pad plus the school card (step, dots, instruction, "Ya sé" and, for the Captain, "Saltar a todos"); the lit button comes with the message
+  { name: 'school-step', msgs: [...SCHOOL, school(0, 'Toma masa del cajón', 'a')] },
+  { name: 'school-knife', msgs: [...SCHOOL, school(1, 'Toma tomate y pícalo en la tabla', 'b'), hint({ a: 'Poner en tabla', b: 'Picar', aIcon: 'chop', bIcon: 'chop' })] },
+  { name: 'school-captain', msgs: [...SCHOOL, captain(), school(2, 'Lleva el tomate picado al horno', 'a'), hint({ a: 'Al horno', b: 'Correr', aIcon: 'oven', bIcon: 'move', bOff: true })] },
+  { name: 'school-done-captain', msgs: [...SCHOOL, captain(), school(4, 'Aléjate y toca B para correr', 'b', true)] },
+  { name: 'school-versus', msgs: [player('Nico'), vsConfig(), you(1), phase('lobby'), phase('school'), captain(), school(3, 'Entrega la pizza en la ventanilla', 'a')] },
+  { name: 'school-wide-font', msgs: [player('WWWWWWWWWWWWWWWW'), config(), phase('lobby'), phase('school'), captain(), school(3, 'Entrega la pizza en la ventanilla', 'a'), hint({ a: 'Devolver plato', b: 'Poner en tabla', aIcon: 'plate', bIcon: 'chop' })], after: WIDE },
+  { name: 'school-zoomed', msgs: [...SCHOOL, captain(), school(1, 'Toma tomate y pícalo en la tabla', 'a')], after: `document.body.classList.add('zoomed')` },
   { name: 'rotate', portrait: true, msgs: [player('Nico'), config(), phase('lobby'), phase('playing')] },
 ];
 

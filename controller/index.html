@@ -141,7 +141,7 @@
   #school.done { background: #D9F2DC; }
   body[data-school=on] .act.hl { animation: schoolpulse .8s ease-in-out infinite alternate; z-index: 5; border-color: var(--cheese); } /* the ring never goes away: it only breathes */
   body[data-school=on] .plq.hl .pl { background: var(--cheese); color: var(--ink); }
-  @keyframes schoolpulse { from { box-shadow: 0 0 0 .9vmin rgba(255,226,74,.95), 0 0 0 1.8vmin rgba(255,226,74,.35); transform: scale(1); } to { box-shadow: 0 0 0 1.5vmin rgba(255,226,74,1), 0 0 0 3.2vmin rgba(255,226,74,.45); transform: scale(1.07); } }
+  @keyframes schoolpulse { from { box-shadow: 0 0 0 .9vmin rgba(255,226,74,.95), 0 0 0 1.8vmin rgba(255,226,74,.35); } to { box-shadow: 0 0 0 1.5vmin rgba(255,226,74,1), 0 0 0 3.2vmin rgba(255,226,74,.45); } } /* only the ring breathes: the button keeps its size and place (the layout checks measure it) */
   /* ---- Captain's remote: a D-pad on the right of every screen but the round. Touch size follows the short side (44..72px); the
      overlays keep clear of it (padding-right) so nothing they say sits under a button. */
   :root { --dp: clamp(44px, 18vmin, 72px); --dpgap: 6px; --rr: max(10px, calc(var(--sr) + 10px)); --rw: calc(var(--rr) + 3 * var(--dp) + 2 * var(--dpgap) + 12px); }
