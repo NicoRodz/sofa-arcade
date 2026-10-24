@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -426,6 +426,47 @@ async function main() {
       await waitFor((s) => s.time > 33_500, 40_000); await sleep(300);
       await cdp.shot('vs-drop-gone');
       console.log('teams after the drop:', JSON.stringify((await snap() as any).teams));
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'sabotage') {
+      // Sabotage: a round on V1 (Suave, Normal) with 6 chefs; the sim is driven by hand (window.__pg.sab) to frame the throw: the loaded catapult with its reticle,
+      // the bag in the air with its shadow, the impact, a rival chef slipping on the rubbish, and the cleaning. The chefs of team 1 are moved and pushed by their bots.
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = versusMap('V1')!.rows;
+      await open('SABO'); await join('SABO', 6, rows);
+      await click('[data-mode="versus"]'); await click('[data-map="V1"]'); await click('[data-diff="normal"]'); await sleep(500);
+      await cdp.shot('sab-lobby');
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      bots.forEach((b) => b.startSending());
+      const pg = (expr: string) => cdp.eval<any>(`window.__pg.sab.${expr}`);
+      const team1 = (await snap() as any).players.filter((p: any) => p.team === 1).map((p: any) => p.id as number);
+      await pg('give(0, 1)');
+      const aimer = await pg('aim(0)');
+      await sleep(1100); await cdp.shot('sab-aim');
+      await pg(`throw(${aimer})`);
+      await sleep(330); await cdp.shot('sab-flight');
+      await sleep(500); await cdp.shot('sab-impact');
+      const st = await pg('state()');
+      const trash = st.floor.find((f: any) => f.kind === 'trash');
+      console.log('rubbish on the floor:', JSON.stringify(trash), '| bags/desechos team 0:', st.sab.teams[0].bags, st.sab.teams[0].desechos);
+      // a chef of team 1 walks over it carrying a pizza
+      const floorAt = (x: number, y: number) => rows[y]?.[x] === '.' || rows[y]?.[x] === 'S';
+      const dir = floorAt(trash.tx - 2, trash.ty) ? 1 : -1;
+      const walker = team1[0]!, helper = team1[1]!;
+      await pg(`place(${walker}, ${trash.tx + 0.5 - dir * 1.8}, ${trash.ty + 0.5}, ${dir}, 0)`); await pg(`item(${walker}, 'dishQ')`);
+      const bw = bots.find((b) => b.id === walker)!, bh = bots.find((b) => b.id === helper)!;
+      bw.vec = { x: dir, y: 0 };
+      await sleep(330); await cdp.shot('sab-slip');
+      await sleep(260); await cdp.shot('sab-slip-spin');
+      bw.vec = { x: 0, y: 0 };
+      await sleep(900); await cdp.shot('sab-dropped');
+      // the helper cleans: the dropped pizza first, then the rubbish
+      const st2 = await pg('state()');
+      const dropped = st2.floor.find((f: any) => f.kind === 'dropped');
+      if (dropped) { await pg(`place(${helper}, ${dropped.tx + 0.5 - dir * 0.9}, ${dropped.ty + 0.5}, ${dir}, 0)`); await sleep(150); bh.a++; await sleep(350); }
+      await cdp.shot('sab-clean');
+      console.log('final state:', JSON.stringify((await pg('state()')).floor));
       bots.splice(0).forEach((b) => b.close());
     }
     if (what === 'vs-pantry') {

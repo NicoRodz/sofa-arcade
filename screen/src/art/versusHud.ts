@@ -111,7 +111,7 @@ export class VersusHud {
     const s = this.scene, { w, x } = VS_PLATE;
     const x0 = (x[id] ?? x[0]) + (w - SAB_TAB.w) / 2;
     const g = s.add.graphics().setDepth(D - 1);
-    const bag = place(s, foodKey('bag'), x0 + 24, VS_PLATE.y + SAB_TAB.dy + 15, 0.42).setDepth(D + 2);
+    const bag = place(s, foodKey('bag'), x0 + 24, VS_PLATE.y + SAB_TAB.dy + 22, 1).setScale(0.4 / R).setDepth(D + 2);
     const n = makeText(s, x0 + 44, VS_PLATE.y + SAB_TAB.dy + 15, '', { size: 22, color: C.cream, stroke: 4, depth: D + 2 }).setOrigin(0, 0.5);
     const label = makeText(s, x0 + SAB_TAB.w - 12, VS_PLATE.y + SAB_TAB.dy + 16, '', { size: 19, color: C.cream, stroke: 4, depth: D + 2 }).setOrigin(1, 0.5);
     return { g, bag, n, label, x: x0, key: '', last: 0 };
@@ -140,7 +140,9 @@ export class VersusHud {
     tab.bag.setAlpha(st.bags > 0 ? 1 : 0.45);
     tab.label.setText(`basura ${whole}/3`);
     if (st.bags > tab.last) {
-      this.scene.tweens.add({ targets: [tab.bag, tab.n], scale: { from: 1.7, to: 1 }, duration: 320, ease: 'back.out' });
+      const k = tab.bag.scaleX;
+      this.scene.tweens.add({ targets: tab.bag, scaleX: { from: k * 1.7, to: k }, scaleY: { from: k * 1.7, to: k }, duration: 320, ease: 'back.out' });
+      this.scene.tweens.add({ targets: tab.n, scale: { from: 1.7, to: 1 }, duration: 320, ease: 'back.out' });
       this.notice(`${info?.name ?? `Equipo ${i + 1}`}: ¡bolsa de basura lista!`, info ? this.light(info.color) : C.cream);
     }
     tab.last = st.bags;

@@ -46,7 +46,8 @@ import {
   COUNTDOWN_MS, TICK_MS, addPlayer, createGame, dropPlayer, floorItemNear, rejoinPlayer, removePlayer, resolvePause, targetStation, tick,
   type Controls,
 } from '@party/shared/game';
-import { sabotageHint } from '@party/shared/sabotage';
+import { sabotageAimPress, sabotageHint, sabotageLoad } from '@party/shared/sabotage';
+import { addFloorItem } from '@party/shared/floor';
 import type { RoundView } from './art/hud';
 
 interface P {
@@ -539,6 +540,23 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   setDelivered: (id: number, n: number) => { tally.counts.set(id, n); }, // capture tool: deliveries of a chef (the MVP of the results)
   setPantry: (stock: number, nextInMs: number) => { if (game.pantry) { game.pantry.stock = stock; game.pantry.nextAt = game.time + nextInMs; } }, // capture tool: the shared pantry's stock and the time to the next unit
   dropChef: (id: number) => dropPlayer(game, id), // capture tool: a chef's phone drops (versus)
+  // capture tool (sabotage): drive the sim by hand to frame a shot (a bag, a loaded catapult, a throw, rubbish on the floor, a chef put somewhere)
+  sab: {
+    give: (team: number, n = 1) => { game.sab!.teams[team]!.bags += n; },
+    place: (id: number, x: number, y: number, fx = 1, fy = 0) => { const p = game.players.get(id); if (p) Object.assign(p, { x, y, fx, fy, vx: 0, vy: 0 }); },
+    item: (id: number, item: string | null) => { const p = game.players.get(id); if (p) p.item = item as never; },
+    aim: (team: number) => { // the first chef of the team carries a bag to its catapult and loads it
+      const p = [...game.players.values()].find((q) => q.team === team && !q.ghost)!;
+      const s = game.stations.find((x) => x.kind === 'catapult' && x.owner === team)!;
+      const [dx, dy] = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).find(([a, b]) => game.grid[s.ty + b]?.[s.tx + a]?.kind === 'floor')!;
+      Object.assign(p, { x: s.tx + dx + 0.5, y: s.ty + dy + 0.5, fx: -dx, fy: -dy, vx: 0, vy: 0, item: 'trashBag' });
+      sabotageLoad(game, p, s);
+      return p.id;
+    },
+    throw: (id: number) => { const p = game.players.get(id); return !!p && sabotageAimPress(game, p); },
+    trash: (team: number, tx: number, ty: number, by: number, ttlMs?: number) => { addFloorItem(game, { tx, ty, item: 'trash', kind: 'trash', team, by, ttlMs }); },
+    state: () => JSON.parse(JSON.stringify({ sab: game.sab && { teams: game.sab.teams }, floor: game.floor, hazards: game.hazards })),
+  },
   snapshot: () => ({ versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 

@@ -76,6 +76,9 @@ export interface ChefState {
   action: 'none' | 'chop' | 'stretch';
   connected: boolean;
   ghost?: boolean; // R4: crossing through another chef
+  slipT?: number; // sabotage: ms since the chef slipped (-1 / absent: it is not slipping)
+  slideMs?: number; // ... and how long the slide lasts (the spin follows it)
+  immune?: boolean; // sabotage: rubbish cannot make it slip now (it blinks)
 }
 
 type Face = 'down' | 'side' | 'up';
@@ -108,6 +111,8 @@ export class Chef {
   private jumpT = 1; private happyT = 0; private failT = 0; private blinkT = 2 + Math.random() * 3; private blinkOn = 0;
   private face: Face = 'down';
   private tagKey: string;
+  private spinStars: Phaser.GameObjects.Image[]; // sabotage: three stars circling the head while the chef slips
+  private clock = 0;
 
   constructor(private scene: Phaser.Scene, readonly slot: number, name: string) {
     const skin = ((slot % 4) + 4) % 4;
@@ -134,7 +139,8 @@ export class Chef {
     this.rig = scene.add.container(0, 0, [...this.feet, this.torsoB, this.torso, ...this.arms, this.itemImg, this.head]);
     this.tagKey = plateKey(scene, slot, name);
     this.tag = at(this.tagKey, 0, 20);
-    this.root = scene.add.container(0, 0, [this.shadow, this.ring, this.rig, this.tag]);
+    this.spinStars = [0, 1, 2].map(() => scene.add.image(0, 0, 'fx_star').setScale(0.9 / R * 1.4).setVisible(false));
+    this.root = scene.add.container(0, 0, [this.shadow, this.ring, this.rig, ...this.spinStars, this.tag]);
     this.root.setScale(U * CHEF_SCALE);
   }
 
@@ -227,10 +233,26 @@ export class Chef {
     this.feet[0]!.y = -3 + (moving ? Math.sin(this.phase / 2) * 3 : 0);
     this.feet[1]!.y = -3 - (moving ? Math.sin(this.phase / 2) * 3 : 0);
 
+    // sabotage: a slip is two spins and flailing arms (the slide is the spin), then the chef gets up with a squash; the stars circle the head
+    this.clock += dtMs;
+    const slipT = s.slipT ?? -1, slipping = slipT >= 0;
+    let spin = 0, slipSquash = 0;
+    if (slipping) {
+      const sl = s.slideMs ?? 600;
+      spin = slipT < sl ? Math.min(1, slipT / sl) * Math.PI * 4 * this.flip : 0;
+      slipSquash = slipT < sl ? -0.12 : -0.2 * (1 - Math.min(1, (slipT - sl) / 120)); // flat on the floor, then up
+      aL.setRotation(-2.2 + Math.sin(this.clock / 45) * 0.9); aR.setRotation(2.2 - Math.sin(this.clock / 45) * 0.9);
+      this.failT = Math.max(this.failT, 160);
+    }
+    this.spinStars.forEach((st, i) => {
+      st.setVisible(slipping);
+      if (slipping) { const a = this.clock / 110 + (i * Math.PI * 2) / 3; st.setPosition(Math.cos(a) * 26, HEAD_Y - 34 + Math.sin(a) * 7).setRotation(a * 2); }
+    });
+
     // rig transform
-    this.rig.setPosition(0, -bounce - jump);
-    this.rig.setRotation(lean);
-    this.rig.setScale(this.flip * (1 + this.sx - br * 0.3), 1 + this.sy + br);
+    this.rig.setPosition(0, -bounce - jump + (slipping ? 8 : 0));
+    this.rig.setRotation(lean + spin);
+    this.rig.setScale(this.flip * (1 + this.sx - br * 0.3), 1 + this.sy + br + slipSquash);
     this.shadow.setScale((1 / R) * (1 - bounce * 0.02 - jump * 0.012), (1 / R) * (1 - bounce * 0.02));
     this.shadow.setAlpha(1 - jump * 0.015);
 
@@ -271,7 +293,7 @@ export class Chef {
     // world placement
     this.root.setPosition(s.x, s.y);
     this.root.setDepth(100 + s.y);
-    this.root.setAlpha(s.connected ? (s.ghost ? 0.6 : 1) : 0.35);
+    this.root.setAlpha((s.connected ? (s.ghost ? 0.6 : 1) : 0.35) * (s.immune ? (Math.sin(this.clock / 55) > 0 ? 1 : 0.45) : 1)); // immune after a slip: it blinks
     this.tag.setDepth(0);
   }
 }

@@ -194,16 +194,22 @@ function box(c: Ctx) {
 
 // Sabotage: the banana-skin that makes chefs slip (yellow, three petals around a core, brown tips), and the black bag that is thrown.
 function peel(c: Ctx) {
-  contactShadow(c, 1, 14, 28, 7);
-  for (let i = 0; i < 3; i++) {
-    const a = -Math.PI / 2 + (i * Math.PI * 2) / 3 + 0.25;
-    c.save(); c.rotate(a);
-    drawOutlined(c, () => { c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(8, -6, 26, -14, 34, -3); c.bezierCurveTo(28, 6, 14, 10, 0, 4); c.closePath(); }, vgrad(c, -14, 8, '#FFE45C', '#F2B21B'), { lw: 2.5 });
-    c.fillStyle = '#7A4A1E'; c.beginPath(); c.moveTo(27, -9); c.quadraticCurveTo(36, -5, 33, -2); c.quadraticCurveTo(30, -3, 27, -9); c.fill();
+  contactShadow(c, 2, 18, 34, 7);
+  // a banana skin laid on the floor: the curved skin with its brown stalk, and the two flaps that peeled off and fell open
+  c.save(); c.rotate(-0.12);
+  const flap = (x: number, y: number, rot: number, len: number) => {
+    c.save(); c.translate(x, y); c.rotate(rot);
+    drawOutlined(c, () => { c.beginPath(); c.moveTo(0, -8); c.bezierCurveTo(len * 0.4, -16, len * 0.9, -12, len, 0); c.bezierCurveTo(len * 0.8, 14, len * 0.3, 14, 0, 8); c.closePath(); }, vgrad(c, -14, 14, '#FFEE70', '#F2B51E'), { lw: 2.8 });
+    c.strokeStyle = 'rgba(190,120,10,0.5)'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(6, 0); c.quadraticCurveTo(len * 0.5, -3, len * 0.85, 1); c.stroke();
     c.restore();
-  }
-  drawOutlined(c, circle(c, 0, 0, 7), '#FFF0A0', { lw: 2.2 });
-  shine(c, 0, 0, 5, 0.6, 2);
+  };
+  flap(8, 2, 0.95, 34); flap(8, 2, 2.2, 31);
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(-40, 4); c.quadraticCurveTo(-28, -22, 8, -14); c.quadraticCurveTo(34, -8, 40, 8); c.quadraticCurveTo(14, -2, -6, 4); c.quadraticCurveTo(-24, 14, -40, 4); c.closePath(); }, vgrad(c, -22, 14, '#FFF07C', '#F5B91F'), { lw: 3 });
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(-40, 4); c.quadraticCurveTo(-48, 2, -50, -6); c.lineTo(-44, -8); c.quadraticCurveTo(-42, -2, -35, 0); c.closePath(); }, '#6B3F1A', { lw: 2.4 });
+  c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-26, -6); c.quadraticCurveTo(-10, -15, 6, -11); c.stroke();
+  c.fillStyle = '#7A4A1E';
+  for (const [x, y] of [[-8, -4], [12, -3], [22, 0]] as const) { c.beginPath(); c.ellipse(x, y, 1.9, 1.3, 0.3, 0, Math.PI * 2); c.fill(); }
+  c.restore();
 }
 function bag(c: Ctx) {
   contactShadow(c, 1, 26, 26, 6);
