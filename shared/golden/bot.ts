@@ -16,13 +16,13 @@ export const SCENARIOS: readonly Scenario[] = [
 
 // Rounds with the new rules switched on (the oven that burns, the fire, the mid-round event), fixtures of their own, re-recorded on purpose with
 // tools/record-golden.ts. The three above stay byte for byte what they were: they never set a flag. These were picked by scanning (map, difficulty, n, seed)
-// for scripted chefs that leave pizzas in the oven: map 2 on Hard with 4 chefs burns one and the fire jumps to a counter; map 11 on Normal with 6 chefs burns
-// one and the fire jumps four times; the 2-chef round is the quiet one.
-const FLAGS: RuleFlags = { burn: true, fire: true };
+// for scripted chefs that leave pizzas in the oven: map 2 on Hard with 4 chefs (seed 2: Hora punta) burns one, the fire jumps to a counter and a pizza is rescued;
+// map 11 on Normal with 6 chefs (seed 1: Corte de luz) burns one and the fire jumps four times; the 2-chef round (seed 11) is the quiet one and has the rat steal a dish.
+const FLAGS: RuleFlags = { burn: true, fire: true, events: true };
 export const RULES_SCENARIOS: readonly Scenario[] = [
   { name: 'coop-n2-map2-normal-rules', mapId: '2', difficulty: 'normal', n: 2, seed: 11, flags: FLAGS },
-  { name: 'coop-n4-map2-hard-rules', mapId: '2', difficulty: 'hard', n: 4, seed: 7, flags: FLAGS },
-  { name: 'coop-n6-map11-normal-rules', mapId: '11', difficulty: 'normal', n: 6, seed: 7, flags: FLAGS },
+  { name: 'coop-n4-map2-hard-rules', mapId: '2', difficulty: 'hard', n: 4, seed: 2, flags: FLAGS },
+  { name: 'coop-n6-map11-normal-rules', mapId: '11', difficulty: 'normal', n: 6, seed: 1, flags: FLAGS },
 ];
 
 export interface GoldenRun {

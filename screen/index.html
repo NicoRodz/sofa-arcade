@@ -105,8 +105,14 @@
   #sabs .pill { height: 44px; padding: 0 16px; font-size: 22px; }
   #sabinfo { margin: 0; min-height: 0; flex: 1; min-width: 0; font-size: 19px; line-height: 1.15; }
   #sabinfo.notice { color: var(--tomato2); }
-  #sabinfo b { color: var(--ink); }
-  #sabinfo kbd { font-size: 14px; min-width: 0; line-height: 20px; padding: 0 5px; }
+  /* the mid-round events option: label, Sí / No, on the line of the map heading (both modes of the pizza game) */
+  #maprow { display: flex; align-items: flex-end; justify-content: space-between; }
+  #evbox { display: flex; align-items: center; gap: 12px; margin-bottom: 2px; margin-right: 262px; } /* left of the minimap */
+  #evbox.off { display: none; }
+  #evbox h3 { margin: 0; flex: none; }
+  #evbox kbd { font-size: 13px; min-width: 0; line-height: 18px; padding: 0 5px; letter-spacing: 0; }
+  #evs { flex-wrap: nowrap; flex: none; }
+  #evs .pill { height: 38px; padding: 0 18px; font-size: 20px; }
   #seedrow { margin-top: 8px; font: 600 22px var(--font); color: var(--muted); }
   #seedrow b { color: var(--ink); }
   #again-seed { height: 40px; font-size: 20px; padding: 0 16px; margin-left: 10px; }
@@ -422,7 +428,8 @@
         </div>
         <div id="sabbox" class="off"><h3>Sabotaje</h3><div id="sabs" class="seg"></div><div id="sabinfo" class="hint"></div></div>
         <div id="pizzaops">
-          <h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
+          <div id="maprow"><h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
+            <div id="evbox"><h3 title="Un evento por ronda, entre el 1:00 y el 2:00">Eventos <kbd>E</kbd></h3><div id="evs" class="seg"></div></div></div>
           <div id="maps"></div>
           <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
           <canvas id="minimap" width="232" height="130"></canvas>

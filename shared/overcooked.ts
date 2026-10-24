@@ -8,7 +8,8 @@ import { PANTRY_EVERY_MS, PANTRY_MAX, VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS, kitche
 import { SLIP, SLIP_DASH_EXTRA, SLIP_MIN_SPEED, SLIP_PUSH, SLIP_TRIGGER, type FloorItem, type Sabotage, type SabotageMode, type Slip } from './sabotage-config';
 import { createSabotage, isAiming, sabotageAimPress, sabotageBinned, sabotageCancelAim, sabotageLoad, sabotageTakeBag, sabotageTick } from './sabotage';
 import { addFloorItem, removeFloorItem } from './floor';
-import { burnTick, clearPot, createBurn, douse, fireAllowed, type Burn } from './burn';
+import { burnTick, clearPot, createBurn, douse, fireAllowed, isDark, type Burn } from './burn';
+import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, createMid, midTick, type Mid, type MidFx } from './midround';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -84,7 +85,7 @@ export interface Player {
   inTrash?: number[]; // rubbish items whose trigger disc the chef is inside of now: slipping counts entering, not standing there
   dousing?: boolean; // burn only: the chef's Picar is going into a fire (the extinguisher), not into a board or a sink
 }
-export interface Order { id: number; expiresAt: number; warned: boolean; recipe: Recipe; vip?: boolean }
+export interface Order { id: number; expiresAt: number; warned: boolean; recipe: Recipe; vip?: boolean; birthday?: boolean } // birthday: the mid-round event's order, worth BIRTHDAY_POINTS flat
 // a = new A presses since last tick; bTaps = new B presses since last tick (a quick tap can start and end between two ticks)
 export interface Controls { x: number; y: number; a: number; b: boolean; bTaps?: number }
 export const COLS = MAP_W;
@@ -149,6 +150,7 @@ export interface Game {
   spoilRaw: boolean; // ... and a raw ingredient that falls becomes rubbish
   sab: Sabotage | null; // versus sabotage (sabotage.ts): the bags, the catapults, the throws
   burn: Burn | null; // the oven that burns and the fire (burn.ts): null (the default, and every golden round) = the oven never burns
+  mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none
 }
 
 /** One team's side of the round. */
@@ -186,9 +188,9 @@ const tag = (g: Game, team: TeamId | null): { team?: number } => (g.versus && te
 
 // A new order for the team. In versus the recipe is drawn at EVERY slot, admitted or not, so both queues see the same recipe at the
 // same instant whatever each team has delivered; coop draws only when the order is admitted (the golden rounds pin that).
-export const spawnOrder = (g: Game, team: TeamState = g.teams[0]!) => {
-  const room = team.orders.length < g.params.maxOrders;
-  if (!room && !g.versus) return;
+export const spawnOrder = (g: Game, team: TeamState = g.teams[0]!, force = false) => {
+  const room = team.orders.length < (force ? EVENT_MAX_QUEUE : g.params.maxOrders); // force: the rush event, which may fill the strip beyond the usual queue
+  if (!room && !g.versus && !force) return;
   const recipe: Recipe = g.hasCheese && team.rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
   if (!room) return;
   const o: Order = { id: team.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe };
@@ -223,7 +225,7 @@ function settleVip(g: Game) {
 
 export interface TeamSeat { playerIds: readonly number[] } // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
 
-export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName; burn?: boolean; fire?: boolean } = {}): Game {
+export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName; burn?: boolean; fire?: boolean; events?: boolean; eventsSeed?: number } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
@@ -253,7 +255,7 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
     hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(),
     teams, versus, roster: [], paused: null, noWinner: false, result: null, vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null }, pantry: stations.some((s) => s.pantry) ? { stock: PANTRY_MAX, nextAt: Infinity } : null,
     teamIds: seats ? seats.map((t) => [...t.playerIds]) : [], open: !seats, handicap, pauseDismissed: false, kitchens, teamSpawns: [],
-    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null, burn: null,
+    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null, burn: null, mid: null,
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0
   for (const key of LEGACY) Object.defineProperty(g, key, { get: () => teams[0]![key], set: (v) => { (teams[0] as unknown as Record<string, unknown>)[key] = v; }, enumerable: true, configurable: true });
@@ -268,8 +270,9 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
   }
   for (const t of teams) for (let i = 0; i < p.initialOrders; i++) spawnOrder(g, t);
   if (opts.sabotage && opts.sabotage !== 'off') g.sab = createSabotage(g, opts.sabotage, opts.sigma); // null when the map cannot host it: the round plays without
-  // the new rules, each behind its own flag (off by default): a pizza that waits burns (and, from Normal up and not under the Suave sabotage, sets the oven on fire)
+  // the new rules, each behind its own flag (off by default): a pizza that waits burns (and, from Normal up and not under the Suave sabotage, sets the oven on fire); one event per round
   if (opts.burn) g.burn = createBurn(difficulty, !!opts.fire && fireAllowed(difficulty, g.sab?.mode), teamCount);
+  if (opts.events) g.mid = createMid(g, opts.eventsSeed ?? seed); // `eventsSeed`: the coop lobby does not seed its orders (they are the same every round), but the event must still vary
   return g;
 }
 
@@ -593,6 +596,7 @@ function interact(g: Game, p: Player, s: Station) {
         // the VIP first (a Margarita fits any VIP); else the order that asked for this pizza; a Margarita also satisfies a Marinara order, never the other way round
         const want: Recipe = p.item === 'dishQ' ? 'margarita' : 'marinara';
         let at = team.orders.findIndex((o) => o.vip && (o.recipe === want || p.item === 'dishQ'));
+        if (at < 0) at = team.orders.findIndex((o) => o.birthday && (o.recipe === want || p.item === 'dishQ')); // the birthday order is the second to be served
         if (at < 0) at = team.orders.findIndex((o) => o.recipe === want);
         if (at < 0 && p.item === 'dishQ') at = 0;
         if (at < 0) { // R16: the wrong plate is refused, goes back dirty and pays nothing
@@ -605,10 +609,11 @@ function interact(g: Game, p: Player, s: Station) {
         }
         const o = team.orders.splice(at, 1)[0]!;
         const { tune, orderTtlMs } = g.params;
-        const base = recipeBase(o.recipe, tune); // R13
+        const birthday = !!o.birthday; // the event's order: BIRTHDAY_POINTS flat, no tip (the streak still counts)
+        const base = birthday ? BIRTHDAY_POINTS : recipeBase(o.recipe, tune); // R13
         const left = Math.min(1, Math.max(0, o.expiresAt - g.time) / orderTtlMs);
-        const mult = tipMultiplier(team.streak, tune); // R15: the streak multiplies only the tip
-        const tip = Math.round(base * tune.tipPct * left) * mult; // R14: up to +50% of the base, by the patience left
+        const mult = birthday ? 1 : tipMultiplier(team.streak, tune); // R15: the streak multiplies only the tip
+        const tip = birthday ? 0 : Math.round(base * tune.tipPct * left) * mult; // R14: up to +50% of the base, by the patience left
         const vip = !!o.vip; // won the golden order: x2. Another team delivering it in this same tick wins it too (settleVip runs at the end of the tick)
         const raw = (base + tip) * (vip ? VIP_MULT : 1);
         const gain = Math.round(raw * team.k); // the handicap k of this instant
@@ -659,6 +664,18 @@ function countdown(g: Game, dtMs: number) {
   const now = Math.ceil(g.countdown / 1000);
   if (now !== prev) g.bus.emit('countdownTick', { n: now, kind: 'start' });
 }
+
+// The two mid-round events that touch the queues: a rush is three orders in every queue (drawn at every slot, so the twin queues stay twins); the birthday order is worth BIRTHDAY_POINTS flat.
+const MID_FX: MidFx = {
+  rush(g) { for (const t of g.teams) for (let i = 0; i < RUSH_ORDERS; i++) spawnOrder(g, t, true); },
+  birthday(g) {
+    for (const t of g.teams) {
+      const o: Order = { id: t.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe: 'marinara', birthday: true };
+      if (t.orders.length >= EVENT_MAX_QUEUE) t.orders.unshift(o); else t.orders.push(o); // a full strip still shows it
+      g.bus.emit('orderNew', { order: o.id, recipe: 'marinara', ...tag(g, t.id), birthday: true });
+    }
+  },
+};
 
 export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   if (g.over) return;
@@ -749,13 +766,15 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   if (g.sab) sabotageTick(g);
   settleVip(g);
 
+  const dark = isDark(g); // the "Corte de luz" event: the ovens do not cook
   for (const s of g.stations) {
-    if (s.kind === 'pot' && !s.done && baked(s)) {
+    if (s.kind === 'pot' && !s.done && baked(s) && !dark) {
       s.progress += dtMs / g.params.cookMs;
       if (s.progress >= 1) { s.progress = 1; s.done = true; if (g.burn) s.readyAt = g.time; g.bus.emit('potReady', { station: g.stations.indexOf(s) }); }
     }
   }
   if (g.burn) burnTick(g, dtMs);
+  if (g.mid) midTick(g, dtMs, MID_FX);
 
   for (const team of g.teams) while (team.dirtyDue.length && team.dirtyDue[0]! <= g.time) { // delivered plates come back dirty, to the team's own return
     team.dirtyDue.shift();

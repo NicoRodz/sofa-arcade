@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn|events|events-vs> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -506,6 +506,73 @@ async function main() {
       await cdp.eval('window.__pg.fastForward(800)');
       await waitFor((s) => (s as any).over === true, 8000);
       await sleep(3500); await cdp.shot('burn-8-results');
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'events') {
+      // The mid-round events on map 13 (it has plates to wash, so the inspector can come), Normal, 6 chefs (the map asks for 5 or more): the lobby option, and for each event the banner (3 s before), the start and
+      // the event itself. The sim is driven by hand (window.__pg.kit.event forces the kind and the instant).
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('13')!.rows;
+      await open('EVTS'); await join('EVTS', 6, rows);
+      await click('[data-diff="normal"]'); await click('[data-map="13"]'); await sleep(500);
+      await cdp.shot('ev-0-lobby');
+      await click('[data-ev="false"]'); await sleep(300);
+      console.log('events option after clicking No: selected =', await cdp.eval(`document.querySelector('#evs .sel').textContent`));
+      await cdp.shot('ev-0-lobby-off');
+      await click('#evs [data-ev="true"]'); await sleep(200);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      const kit = (expr: string) => cdp.eval<any>(`window.__pg.kit.${expr}`);
+      const cs = await kit('counters()');
+      const counters = cs.filter((c: any) => c.kind === 'counter'), ovens = cs.filter((c: any) => c.kind === 'pot');
+      const stations = (await snap()).stations;
+      const sinkIdx = stations.findIndex((s) => s.kind === 'sink'), dirtyIdx = stations.findIndex((s) => s.kind === 'dirty');
+      const ids = (await snap()).players.map((p) => p.id);
+      const phaseOf = async () => ((await snap()) as any).mid?.phase as string;
+      const untilDone = async (ms: number) => { const end = Date.now() + ms; while (Date.now() < end && (await phaseOf()) !== 'done') await sleep(200); };
+      // Hora punta
+      await kit(`event('rush')`); await sleep(1300); await cdp.shot('ev-rush-1-announce');
+      await sleep(2000); await cdp.shot('ev-rush-2-start'); await sleep(700); await cdp.shot('ev-rush-3-tickets'); await untilDone(8000);
+      // Cumpleaños
+      await kit(`event('birthday')`); await sleep(1300); await cdp.shot('ev-birthday-1-announce');
+      await sleep(2000); await cdp.shot('ev-birthday-2-start'); await sleep(800); await cdp.shot('ev-birthday-3-balloons'); await untilDone(8000);
+      // Corte de luz: an oven cooking and a ready one
+      await kit(`bake(${ovens[0].i})`);
+      await kit(`event('blackout')`); await sleep(1300); await cdp.shot('ev-blackout-1-announce');
+      await sleep(2000); await cdp.shot('ev-blackout-2-start'); await sleep(2500); await cdp.shot('ev-blackout-3-dark'); await untilDone(14_000); await sleep(600); await cdp.shot('ev-blackout-4-back');
+      // Inspector: two dirty plates (one in the sink, one at the return), then clean
+      await kit(`setCount(${sinkIdx}, 1)`); await kit(`setCount(${dirtyIdx}, 1)`);
+      await kit(`event('inspector')`); await sleep(1300); await cdp.shot('ev-inspector-1-announce');
+      await sleep(2200); await cdp.shot('ev-inspector-2-dirty');
+      await kit(`setCount(${sinkIdx}, 0)`); await kit(`setCount(${dirtyIdx}, 0)`); await sleep(900); await cdp.shot('ev-inspector-3-clean');
+      await untilDone(30_000); await sleep(500); await cdp.shot('ev-inspector-4-verdict');
+      // Rata: something to steal on a counter; one chef runs at it
+      await sleep(4000);
+      await kit(`setItem(${counters[3].i}, 'raw1')`); await kit(`setItem(${counters[9].i}, 'cut0')`);
+      await kit(`event('rat')`); await sleep(1300); await cdp.shot('ev-rat-1-announce');
+      await sleep(2300); await cdp.shot('ev-rat-2-appears');
+      for (let i = 0; i < 12 && !((await snap()) as any).mid?.rat; i++) await sleep(200);
+      await sleep(1500); await cdp.shot('ev-rat-3-running');
+      await untilDone(12_000); await cdp.shot('ev-rat-4-gone');
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'events-vs') {
+      // Versus on V3 (rotation, ovens with counters beside them): the burning oven and a blackout reach both kitchens. Hard + Caos (the sabotage level that allows fire).
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      await open('EVVS'); await join('EVVS', 4, versusMap('V3')!.rows);
+      await click('[data-mode="versus"]'); await click('[data-map="V3"]'); await click('[data-diff="hard"]'); await sleep(500);
+      await cdp.shot('evvs-0-lobby');
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      const kit = (expr: string) => cdp.eval<any>(`window.__pg.kit.${expr}`);
+      const ovens = (await kit('counters()')).filter((c: any) => c.kind === 'pot');
+      for (const o of ovens) await kit(`bake(${o.i})`);
+      for (const o of ovens) await kit(`age(${o.i}, 5500)`);
+      await sleep(500); await cdp.shot('evvs-1-warn');
+      for (const o of ovens) await kit(`age(${o.i}, 13100)`);
+      await kit(`event('blackout')`);
+      await sleep(1500); await cdp.shot('evvs-2-fire-banner');
+      await sleep(3500); await cdp.shot('evvs-3-dark');
       bots.splice(0).forEach((b) => b.close());
     }
     if (what === 'vs-pantry') {

@@ -157,3 +157,38 @@ describe('burn sounds', () => {
     expect(sfxDuration('fireStart')).toBeGreaterThan(sfxDuration('fireSpread') * 1.5);
   });
 });
+
+describe('mid-round event sounds', () => {
+  it('the announcement is a siren; each event then has a sting of its own, the rat has no sting (it squeaks when it shows up)', () => {
+    expect(ids(ACTIONS['event:announce']({ kind: 'rush', inMs: 3000 }))).toEqual(['siren']);
+    const start = (kind: 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat') => ids(ACTIONS['event:start']({ kind, durationMs: 1000 }));
+    expect([start('rush'), start('inspector'), start('blackout'), start('birthday'), start('rat')]).toEqual([['rushStart'], ['inspectorStart'], ['blackoutStart'], ['birthday'], []]);
+    expect(ids(ACTIONS['rat:appear']({ at: [2, 3] }))).toEqual(['ratAppear']);
+  });
+  it('the power comes back with its own sound; no other event ends with one', () => {
+    expect(ids(ACTIONS['event:end']({ kind: 'blackout' }))).toEqual(['blackoutEnd']);
+    for (const kind of ['rush', 'inspector', 'birthday', 'rat'] as const) expect(ACTIONS['event:end']({ kind })).toEqual([]);
+  });
+  it("the inspector's verdict: a coin arpeggio that climbs when it passes, a sad slide that falls when it does not", () => {
+    expect(ids(ACTIONS['event:inspector']({ passed: true, points: 100 }))).toEqual(['inspectorPass']);
+    expect(ids(ACTIONS['event:inspector']({ passed: false, points: 0 }))).toEqual(['inspectorFail']);
+    const up = SFX.inspectorPass.voices.filter((v) => v.src === 'triangle').map((v) => v.f0!);
+    expect([...up].sort((a, b) => a - b)).toEqual(up);
+    const slide = SFX.inspectorFail.voices.at(-1)!;
+    expect(slide.f1!).toBeLessThan(slide.f0! / 1.5);
+  });
+  it('the rat: a grab and a scare are different squeaks; the scare falls fast and a stolen item is a small pop', () => {
+    expect(ids(ACTIONS['rat:steal']({ station: 4, item: 'raw1' }))).toEqual(['ratSteal']);
+    expect(ids(ACTIONS['rat:scared']({ player: 1, returned: true }))).toEqual(['ratScared']);
+    expect(ACTIONS['rat:gone']({ stolen: true })).toEqual([]);
+    const squeak = SFX.ratScared.voices.find((v) => v.src === 'sine')!;
+    expect(squeak.f1!).toBeLessThan(squeak.f0! / 2);
+    expect(sfxDuration('ratSteal')).toBeLessThan(0.2);
+  });
+  it('the blackout is a power-down: a sawtooth that falls, and a thud after it', () => {
+    const down = SFX.blackoutStart.voices[0]!;
+    expect(down.f1!).toBeLessThan(down.f0! / 4);
+    expect(Math.max(...SFX.blackoutStart.voices.map((v) => v.at))).toBeGreaterThan(0.4);
+    expect(sfxDuration('birthday')).toBeGreaterThan(1.2);
+  });
+});

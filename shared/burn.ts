@@ -37,6 +37,9 @@ const tag = (g: Game, team: number | null): { team?: number } => (g.versus && te
 const kitchenOf = (s: Station) => s.owner ?? 0;
 const adjacent = (a: Station, b: Station) => Math.abs(a.tx - b.tx) + Math.abs(a.ty - b.ty) === 1;
 
+/** True while the lights are out (the "Corte de luz" event): the ovens neither cook nor count the grace down. */
+export const isDark = (g: Pick<Game, 'mid'>) => !!g.mid?.dark;
+
 /** The oven is empty again (a chef took the pizza, or the fire ate it). */
 export function clearPot(s: Station) {
   s.inputs = []; s.done = false; s.progress = 0;
@@ -68,8 +71,10 @@ export const ovenStage = (s: Station): 'idle' | 'ready' | 'burnt' | 'fire' => (s
 /** End of the tick: pizzas that wait too long burn, burnt ones set the oven on fire, fire jumps. */
 export function burnTick(g: Game, dtMs: number) {
   const b = g.burn!;
+  const dark = isDark(g);
   for (const s of g.stations) {
     if (s.kind !== 'pot' || s.fire !== undefined || !s.done || s.readyAt === undefined) continue;
+    if (dark) { s.readyAt += dtMs; continue; } // lights out: the grace time does not run
     const age = g.time - s.readyAt;
     const at = g.stations.indexOf(s);
     if (!s.burnt) {

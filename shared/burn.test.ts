@@ -63,8 +63,9 @@ describe('burn off (the default): the oven waits for ever', () => {
     expect(log['oven:warn'] ?? log['oven:burnt'] ?? log['fire:start']).toBeUndefined();
   });
   it('a game with `fire` but not `burn` burns nothing either', () => {
-    const g = createGame({ n: 2, fire: true });
+    const g = createGame({ n: 2, fire: true, events: false });
     expect(g.burn).toBeNull();
+    expect(g.mid).toBeNull();
   });
 });
 

@@ -213,14 +213,15 @@ export class StationViews {
     const burnt = !!st.burnt;
     const cooking = st.inputs.includes(0) && st.inputs.includes(1) && !st.done; // dough + tomato; cheese may join until it is done
     const q = st.inputs.includes(2); // Margarita
-    const lit = cooking || (st.done && !burnt);
+    const dark = !!this.game.mid?.dark; // the "Corte de luz" event: the oven is off, nothing glows and nothing crackles
+    const lit = (cooking || (st.done && !burnt)) && !dark;
     v.flick -= dtMs;
     if (v.flick <= 0) {
       v.flick = 90;
       const base = (0.7 * U) / R;
-      v.flames!.forEach((f) => f.setScale(base * (cooking ? 1.1 : 0.85), base * (0.9 + Math.random() * 0.2) * (cooking ? 1.3 : lit ? 1 : 0.75)).setAlpha(lit ? 0.95 : 0.8));
+      v.flames!.forEach((f) => f.setScale(base * (cooking ? 1.1 : 0.85), base * (0.9 + Math.random() * 0.2) * (cooking ? 1.3 : lit ? 1 : 0.75)).setAlpha(dark ? 0.12 : lit ? 0.95 : 0.8));
     }
-    v.glow!.setAlpha(lit ? 0.55 + Math.sin(this.t / 90) * 0.08 : 0.2);
+    v.glow!.setAlpha(dark ? 0.03 : lit ? 0.55 + Math.sin(this.t / 90) * 0.08 : 0.2);
     // contents
     const partial = cooking || st.done ? [] : st.inputs; // loose ingredients waiting for the rest
     v.minis!.forEach((m, i) => {
@@ -263,7 +264,7 @@ export class StationViews {
       v.smokeT -= dtMs; if (v.smokeT <= 0) { v.smokeT = 150; this.fx.sootPuff(v.cx + (Math.random() - 0.5) * TILE * 0.3, v.cy + TILE * 0.05); }
     }
     // embers and chimney smoke while cooking
-    if (cooking) {
+    if (cooking && !dark) {
       v.emberT -= dtMs; if (v.emberT <= 0) { v.emberT = 200; this.fx.ember(v.cx + (Math.random() - 0.5) * TILE * 0.3, v.cy + TILE * 0.2); }
       v.smokeT -= dtMs; if (v.smokeT <= 0) { v.smokeT = 520; this.fx.smokePuff(v.cx + TILE * 0.3, v.cy - TILE * 0.55); }
     }

@@ -6,6 +6,7 @@ import {
 import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
 import { summarize } from '@party/shared/results';
 import { kudosLines, tallyKitchen } from '@party/shared/kudos';
+import { EVENTS_OPTION, eventsOf, roundRules } from '@party/shared/midround';
 import { DECIDED_TEXT, NO_LEAD, nextLead, phoneResult, recordRound, scoreHidden, seriesLine, tallyDeliveries, versusReport, type LeadState, type Series, type VersusReport } from '@party/shared/versusReport';
 import { GAMES, PLATFORM, gameInfo, gameName, hasModeChoice, modeOf, selectableModes, type GameDef, type ModeId } from '@party/shared/games';
 import { SABOTAGE_BLURB, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '@party/shared/sabotage-config';
@@ -84,6 +85,8 @@ let lastKeyAt: number | null = null; // when the Mac keyboard last pressed somet
 let phase: Phase = 'menu'; // Pichiclub start: the screen picks the game, then that game's lobby
 let config: LobbyConfig = { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 };
 let game = createGame();
+let roundNo = 0; // rounds started in this session: the mid-round event of each one comes from the lobby seed plus this, so a rematch (same orders, same seed) gets another event
+const nextEventsSeed = () => (config.seed + roundNo++) >>> 0;
 const played = new Set<string>(); // maps already played in this session (coop and versus ids): the lobby proposes a new one by default
 let teamsTouched = false; // somebody moved a player by hand: the lobby stops rebalancing the teams on its own
 let lockBeforeStart = false; // the teams lock while a match runs; this is what the host had set
@@ -178,7 +181,7 @@ function setPhase(next: Phase) {
     showScene('main');
     const n = connectedN();
     const map = resolveMap(config.map as MapChoice, config.seed, config.difficulty, n, Math.random);
-    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus, burn: true, fire: true }); // the lobby turns the new rules on: the oven burns (and, from Normal up, catches fire)
+    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus, eventsSeed: nextEventsSeed(), ...roundRules(config.modeOptions, config.difficulty) }); // the lobby turns the new rules on: the oven burns (and, from Normal up, catches fire), the event by its option
     played.add(map.id);
     // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
     const order = [...players.values()].sort((a, b) => Number(b.info.connected) - Number(a.info.connected) || a.info.slot - b.info.slot);
@@ -251,7 +254,7 @@ const obstFrameMs: number[] = []; // ms a whole scene update took (simulation + 
 // Versus: the lobby's frozen teams and map become the round (createVersusGame), with the puestos dealt inside each kitchen.
 function startVersus(): MatchStart {
   const slotOf = (id: number) => players.get(id)?.info.slot ?? 0;
-  const round = startVersusRound({ teams: config.teams!, choice: config.map, difficulty: config.difficulty, seed: config.seed, modeOptions: config.modeOptions, slotOf, rand: Math.random, bus: gameBus, countdownMs: COUNTDOWN_MS });
+  const round = startVersusRound({ teams: config.teams!, choice: config.map, difficulty: config.difficulty, seed: config.seed, eventsSeed: nextEventsSeed(), modeOptions: config.modeOptions, slotOf, rand: Math.random, bus: gameBus, countdownMs: COUNTDOWN_MS });
   const { map, teams } = round;
   game = round.game;
   played.add(map.id);
@@ -316,6 +319,16 @@ function setSabotage(v: string) {
   sabotageTouched = true;
   audio.ui(NAV_SFX.move);
   setConfig({ modeOptions: { ...config.modeOptions, [SABOTAGE_OPTION]: v } });
+}
+// The mid-round events option (Sí / No, both modes of the pizza game): Sí on Normal and Difícil, No on Fácil, until the host picks. Pills and the E key.
+function setEvents(on: boolean) {
+  if (phase !== 'lobby' || config.game === OBST_ID) return;
+  audio.ui(NAV_SFX.move);
+  setConfig({ modeOptions: { ...config.modeOptions, [EVENTS_OPTION]: on } });
+}
+function renderEvents() {
+  const on = eventsOf(config.modeOptions, config.difficulty);
+  setHtml('evs', [true, false].map((v) => `<button class="pill ${v === on ? 'sel' : ''}" data-ev="${v}" title="${v ? 'Un evento por ronda, entre el 1:00 y el 2:00' : 'Sin eventos'}">${v ? 'Sí' : 'No'}</button>`).join(''));
 }
 // Why the round cannot start yet ('' when it can). Versus also needs a legal split.
 function startProblem(): string {
@@ -601,9 +614,13 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
       if (p) Object.assign(p, { x: s.tx + dx + 0.5, y: s.ty + dy + 0.5, fx: -dx, fy: -dy, vx: 0, vy: 0 });
     },
     item: (id: number, item: string | null) => { const p = game.players.get(id); if (p) p.item = item as never; },
+    // mid-round events: make this round's event `kind`, announced now and starting in `startInMs`; put an item on a station; a dirty-plate count on a station
+    event: (kind: string, startInMs = 3100) => { const m = game.mid; if (!m) return false; Object.assign(m, { kind, phase: 'wait', announceAt: game.time + 100, startAt: game.time + startInMs, endAt: Infinity, dark: false, rat: null }); return true; },
+    setItem: (i: number, item: string | null) => { game.stations[i]!.item = item as never; },
+    setCount: (i: number, n: number) => { game.stations[i]!.count = n; },
     counters: () => game.stations.map((s, i) => ({ i, kind: s.kind, tx: s.tx, ty: s.ty, fire: s.fire, burnt: !!s.burnt, done: s.done })).filter((s) => s.kind === 'pot' || s.kind === 'counter'),
   },
-  snapshot: () => ({ versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
+  snapshot: () => ({ mid: game.mid && { kind: game.mid.kind, phase: game.mid.phase, dark: game.mid.dark, rat: !!game.mid.rat }, versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
 $('code').textContent = room;
@@ -850,6 +867,7 @@ function renderUi() {
   showTeams(vs);
   if (vs) renderTeams();
   renderSabotage(vs);
+  renderEvents();
   const sizes = teamSizes(config.teams);
   const rows = vs ? versusLobbyMaps(sizes).map(({ map, status }) => ({ map, status: status.state === 'recommended' ? { state: 'recommended' as const } : status })) : lobbyMaps(n);
   const cards = rows.map(({ map, status }) => {
@@ -1130,6 +1148,10 @@ $('diffs').addEventListener('click', (e) => {
   if (isVersus() && !sabotageTouched) setConfig({ difficulty: diff, modeOptions: { ...config.modeOptions, [SABOTAGE_OPTION]: defaultSabotage(diff) } });
   else setConfig({ difficulty: diff });
 });
+$('evs').addEventListener('click', (e) => {
+  const v = (e.target as HTMLElement).closest<HTMLElement>('[data-ev]')?.dataset.ev;
+  if (v === 'true' || v === 'false') setEvents(v === 'true');
+});
 $('sabs').addEventListener('click', (e) => {
   const v = (e.target as HTMLElement).closest<HTMLElement>('[data-sab]')?.dataset.sab;
   if (isVersus() && isSabotageMode(v)) setSabotage(v);
@@ -1210,6 +1232,7 @@ function onKey(key: string, repeat: boolean) {
   if (act === 'skip') { beginRound(); return; }
   if (howTo || starting) return; // the card swallows Enter and the iris swallows everything
   if (phase === 'menu') { menuAct(menuOnKey(menuCards(connectedCount()), menuSel, key)); return; }
+  if (phase === 'lobby' && config.game !== OBST_ID && (key === 'e' || key === 'E') && !repeat) { setEvents(!eventsOf(config.modeOptions, config.difficulty)); return; }
   if (phase === 'lobby' && isVersus() && (key === 'ArrowLeft' || key === 'ArrowRight')) { // the sabotage level: the keyboard arrows, and the Captain's D-pad sends the same keys
     const c = modeNow().choices?.find((x) => x.id === SABOTAGE_OPTION);
     const v = c ? stepChoice(c, config.modeOptions[SABOTAGE_OPTION], key) : null;

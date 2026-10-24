@@ -94,7 +94,7 @@ export class Hud {
     this.scene.tweens.add({ targets: box, scale: 1, duration: 260, ease: 'back.out' });
   }
 
-  private makeTicket(id: number, recipe: 'marinara' | 'margarita', team: number, vip: boolean): Ticket {
+  private makeTicket(id: number, recipe: 'marinara' | 'margarita', team: number, vip: boolean, birthday = false): Ticket {
     const s = this.scene;
     const bg = s.add.image(0, 0, 'ticket_bg').setOrigin(0.5, 0).setScale(1 / R);
     const bar = new Bar(s, 100); bar.root.setPosition(0, 17);
@@ -113,9 +113,18 @@ export class Hud {
     const frame = s.add.graphics().setVisible(vip);
     frame.lineStyle(7, hexNum(C.cheese2), 1).strokeRoundedRect(-62, 3, 124, 96, 10);
     frame.lineStyle(3, hexNum(C.cheese), 1).strokeRoundedRect(-62, 3, 124, 96, 10);
-    const root = s.add.container(W + 200, 6, [bg, frame, bar.root, pizza, dough, tomato, ...(cheese ? [cheese] : []), knife, flame, num]).setDepth(2100 + id * 0.001);
+    // the "Pedido de cumpleaños" (midround.ts): a pink ticket with a pink frame, a balloon and what it pays
+    const extra: Phaser.GameObjects.GameObject[] = [];
+    if (birthday) {
+      frame.clear().setVisible(true);
+      frame.lineStyle(7, 0xa83572, 1).strokeRoundedRect(-62, 3, 124, 96, 10);
+      frame.lineStyle(3, 0xff8cc4, 1).strokeRoundedRect(-62, 3, 124, 96, 10);
+      extra.push(place(s, 'balloon', -45, 36, 0.3).setScale(0.3 / R).setTint(0xe95fa5), makeText(s, 30, 20, '150', { size: 30, color: C.tomato, stroke: 6, depth: 0 }));
+    }
+    const root = s.add.container(W + 200, 6, [bg, frame, bar.root, pizza, dough, tomato, ...(cheese ? [cheese] : []), knife, flame, num, ...extra]).setDepth(2100 + id * 0.001);
     root.setAngle((id % 3) - 1);
     if (vip) bg.setTint(hexNum(C.cheese));
+    else if (birthday) bg.setTint(0xffc9e2);
     const t: Ticket = { id, team, vip, bg, frame, root, bar, x: NaN, enter: { v: 0 }, leaving: false };
     s.tweens.add({ targets: t.enter, v: 1, duration: 300, ease: 'back.out' });
     return t;
@@ -165,7 +174,7 @@ export class Hud {
     for (const q of queues) for (const o of q.orders.slice(0, MAX_TICKETS)) {
       const key = ticketKey(o.id, q.team);
       live.add(key);
-      if (!this.tickets.has(key)) this.tickets.set(key, this.makeTicket(o.id, o.recipe, q.team, !!o.vip));
+      if (!this.tickets.has(key)) this.tickets.set(key, this.makeTicket(o.id, o.recipe, q.team, !!o.vip, !!o.birthday));
     }
     for (const [key, t] of this.tickets) {
       if (!live.has(key) && !t.leaving) { this.leave(t, this.expired.has(key) ? 'expire' : 'deliver'); }

@@ -15,12 +15,18 @@ describe('coop golden rounds with the new rules on', () => {
     expect(RULES_SCENARIOS.every((s) => s.flags && Object.values(s.flags).some(Boolean))).toBe(true);
     expect(SCENARIOS.every((s) => s.flags === undefined)).toBe(true);
   });
-  it('the fixtures cover what they are for: a pizza that burns, a fire that jumps, a round with deliveries', () => {
+  it('the fixtures cover what they are for: a pizza that burns, a fire that jumps, a pizza rescued, an event of each kind that shows (rat, rush, blackout), a round with deliveries', () => {
     expect(count(b, 'oven:burnt')).toBeGreaterThanOrEqual(1);
     expect(count(b, 'fire:start')).toBe(1);
     expect(count(b, 'fire:spread')).toBeGreaterThanOrEqual(1);
+    expect(count(b, 'oven:rescued')).toBeGreaterThanOrEqual(1);
     expect(count(c, 'fire:start')).toBe(1);
     expect(count(c, 'fire:spread')).toBeGreaterThanOrEqual(2);
+    const kind = (r: GoldenRun) => r.events.find((e) => e.split('|')[1] === 'event:start')!.split('"kind":"')[1]!.split('"')[0];
+    expect([kind(a), kind(b), kind(c)]).toEqual(['rat', 'rush', 'blackout']);
+    for (const r of [a, b, c]) { expect(count(r, 'event:announce')).toBe(1); expect(count(r, 'event:start')).toBe(1); expect(count(r, 'event:end')).toBe(1); }
+    expect(count(a, 'rat:steal')).toBe(1);
+    expect(count(a, 'rat:gone')).toBe(1);
     for (const r of [a, b, c]) expect(r.delivered).toBeGreaterThan(0);
   });
   for (const sc of RULES_SCENARIOS) {
