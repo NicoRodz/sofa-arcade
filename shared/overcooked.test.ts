@@ -581,14 +581,7 @@ describe('trash and shared stations', () => {
     press(g, 1);
     expect(left.item).toBe('dish'); // the left side takes it out even though the right side loaded it
   });
-
-  it('players walk through each other (no collision between chefs)', () => {
-    const g = setup();
-    const a = g.players.get(1)!, b = g.players.get(2)!;
-    a.x = 5.5; a.y = 3.5; b.x = 7.5; b.y = 3.5;
-    run(g, 800, new Map([[1, { ...idle, x: 1 }]]));
-    expect(a.x).toBeGreaterThan(b.x);
-  });
+  // chefs used to walk through each other; since R4 they are solid circles (see feel.test.ts)
 });
 
 describe('difficulty applies to the stations', () => {

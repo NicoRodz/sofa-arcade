@@ -230,3 +230,95 @@ describe('R6 input buffer: a press made a little early still counts', () => {
     expect(p.buffA).toBe(0);
   });
 });
+
+describe('R4 soft collision', () => {
+  const CORRIDOR = [
+    '################',
+    '################',
+    '################',
+    '################',
+    '#..............#',
+    '################',
+    '################',
+    '################',
+    '################',
+  ];
+  const lane = (n: number, starts: [number, number][]) => {
+    const g = createGame({ rows: CORRIDOR, spawns: starts, n });
+    starts.forEach((_s, i) => addPlayer(g, i + 1, i));
+    return g;
+  };
+  /** Bots ping-pong along the corridor; returns the longest time any bot kept pushing without moving, and how many trips were made. */
+  function corridor(g: Game, ms: number) {
+    const dir = new Map<number, number>([...g.players.keys()].map((id) => [id, id <= 4 ? 1 : -1]));
+    const stalled = new Map<number, number>(), worst = new Map<number, number>();
+    let trips = 0;
+    for (let t = 0; t < ms; t += TICK_MS) {
+      const before = new Map([...g.players].map(([id, p]) => [id, p.x]));
+      step(g, Object.fromEntries([...dir].map(([id, d]) => [id, { x: d }])));
+      for (const [id, p] of g.players) {
+        if (Math.abs(p.x - before.get(id)!) < 0.1 * SPEED * (TICK_MS / 1000)) stalled.set(id, (stalled.get(id) ?? 0) + TICK_MS);
+        else stalled.set(id, 0);
+        worst.set(id, Math.max(worst.get(id) ?? 0, stalled.get(id)!));
+        if (dir.get(id) === 1 && p.x > 13.5) { dir.set(id, -1); trips++; }
+        else if (dir.get(id) === -1 && p.x < 1.5) { dir.set(id, 1); trips++; }
+      }
+    }
+    return { worst: Math.max(...worst.values()), trips };
+  }
+
+  it('8 bots in a one-tile corridor, 4 against 4, never stay blocked more than 3 s and keep making trips', () => {
+    const g = lane(8, [[1, 4], [2, 4], [3, 4], [4, 4], [11, 4], [12, 4], [13, 4], [14, 4]]);
+    const { worst, trips } = corridor(g, 90_000);
+    expect(worst).toBeLessThanOrEqual(3000);
+    expect(trips).toBeGreaterThan(30);
+  });
+  it('same with 8 bots all going the same way and a slow one: they queue and do not jam', () => {
+    const g = lane(8, [[1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4]]);
+    const { worst } = corridor(g, 30_000);
+    expect(worst).toBeLessThanOrEqual(3000);
+  });
+
+  it('chefs are solid: one walking into an idle chef pushes it along instead of passing through', () => {
+    const g = open();
+    addPlayer(g, 1, 0); addPlayer(g, 2, 1);
+    const a = g.players.get(1)!, b = g.players.get(2)!;
+    put(a, 5.5, 4.5); put(b, 7.5, 4.5);
+    walk(g, 300, { 1: { x: 1 } });
+    expect(a.x).toBeLessThan(b.x);
+    expect(b.x - a.x).toBeGreaterThanOrEqual(2 * 0.35 - 0.02);
+  });
+  it('opposed pushing for 0.4 s makes the pair cross at 40% speed, and then they are solid again', () => {
+    const g = lane(2, [[3, 4], [4, 4]]);
+    const a = g.players.get(1)!, b = g.players.get(2)!;
+    put(a, 3.5, 4.5); put(b, 6.5, 4.5);
+    const push = { 1: { x: 1 }, 2: { x: -1 } };
+    let crossedAt = -1;
+    for (let t = 0; t < 4000 && crossedAt < 0; t += TICK_MS) { step(g, push); if (a.x > b.x) crossedAt = t; }
+    expect(crossedAt).toBeGreaterThan(400); // not before they have pushed for 0.4 s
+    expect(crossedAt).toBeLessThan(1500);
+    expect(g.crowd.size).toBeGreaterThan(0);
+    const v = Math.abs(a.vx) * 0.4;
+    expect(v).toBeLessThan(2); // crossing speed is 40% of walking pace
+    walk(g, 800, { 1: { x: 0 }, 2: { x: 0 } });
+    expect(g.crowd.size).toBe(0);
+    expect(a.crossing || b.crossing).toBe(false);
+  });
+  it('a chef who is cutting does not give way: the other one is held back, and only crosses after 0.4 s', () => {
+    const g = open();
+    addPlayer(g, 1, 0); addPlayer(g, 2, 1);
+    const a = g.players.get(1)!, b = g.players.get(2)!;
+    const board = g.stations.find((s) => s.kind === 'board' && s.tx === 7)!;
+    board.item = 'raw0';
+    put(b, 7.5, 1.5, 0, -1);
+    put(a, 5.5, 1.5);
+    walk(g, 100, { 2: { b: true } });
+    expect(b.cutting).toBe(true);
+    const bx = b.x;
+    walk(g, 250, { 1: { x: 1 }, 2: { b: true } });
+    expect(b.x).toBe(bx);
+    expect(a.x).toBeLessThanOrEqual(bx - 2 * 0.35 + 0.02);
+    walk(g, 1300, { 1: { x: 1 }, 2: { b: true } });
+    expect(a.x).toBeGreaterThan(bx); // after 0.4 s of pushing against someone who cannot give way, it crosses
+  });
+});
