@@ -5,20 +5,44 @@ screen/src/games/obstaculos/campaign/adapter.test.ts	passed	a campaign world in 
 screen/src/games/obstaculos/campaign/adapter.test.ts	passed	a campaign world in the picture a signal shows over the explorer that sent it, only
 screen/src/games/obstaculos/campaign/adapter.test.ts	passed	a campaign world in the picture the 3-2-1 of "go" held is visible as camp.countdown, and gone when released
 screen/src/games/obstaculos/campaign/adapter.test.ts	passed	a campaign world in the picture the seconds out of the picture before the bubble come from the world (Playa 1 s), not from the lobby difficulty
-shared/versus.test.ts	passed	a chef drops 10 s: ghost with no body or input, what it held goes to the nearest free counter, and it comes back to the same team and chef with k unchanged
-shared/versus.test.ts	passed	a chef drops 30 s: after 20 s the chef leaves, k is recomputed from that instant and the late phone watches
+shared/tutorial/school.test.ts	passed	a chef alone goes through the four steps, in order finishes them all, one after the other, each strictly later than the one before
+shared/tutorial/school.test.ts	passed	a chef alone goes through the four steps, in order takes seconds, not minutes (the practice must not drag)
+shared/tutorial/school.test.ts	passed	a chef alone goes through the four steps, in order the contextual buttons work in the school: the hints name the real verbs
+shared/tutorial/school.test.ts	passed	a chef alone goes through the four steps, in order the knife step lights B while the tomato is under the knife (not only A)
+shared/tutorial/school.test.ts	passed	a chef alone goes through the four steps, in order the phone is told each step in turn, with the step number and the 8-word-max instruction, ending with "done"
+shared/versus.slow.test.ts	passed	a chef drops 10 s: ghost with no body or input, what it held goes to the nearest free counter, and it comes back to the same team and chef with k unchanged
+shared/versus.slow.test.ts	passed	a chef drops 30 s: after 20 s the chef leaves, k is recomputed from that instant and the late phone watches
 shared/teams.test.ts	passed	a chef drops a 10 s drop changes nothing; a 30 s drop recomputes k from that instant
 shared/teams.test.ts	passed	a chef drops a chef that comes back inside the window is the same entry: same team, nothing recomputed
-shared/versus.test.ts	passed	a chef drops a ghost is not in anybody way: no collision with its team-mates
+shared/versus.slow.test.ts	passed	a chef drops a ghost is not in anybody way: no collision with its team-mates
 shared/teams.test.ts	passed	a chef drops a team left empty pauses the match, and the host picks to continue or end
-shared/versus.test.ts	passed	a chef drops a team left with nobody pauses the clock; the host picks: continue (no winner) or end
+shared/versus.slow.test.ts	passed	a chef drops a team left with nobody pauses the clock; the host picks: continue (no winner) or end
 shared/teams.test.ts	passed	a chef drops holds the place for 20 s (the boundary counts), then gives it up
 shared/teams.test.ts	passed	a chef drops k keeps applying to a lopsided result (3v1 after drops is not refused) and is 1 without the score-k handicap
 shared/games/obstaculos/sim/actions.test.ts	passed	A lets go of what the hands hold A with a box in the hands drops it and jumps
 shared/games/obstaculos/sim/actions.test.ts	passed	A lets go of what the hands hold dying drops everything: a carried teammate falls free, a held box is let go
-shared/games/obstaculos/sim/regression.test.ts	passed	A5 regression: what existed before does not move campaign worlds on the old levels: the bodies of every run without a throw are the ones master had (Playa and Glaciar)
-shared/games/obstaculos/sim/regression.test.ts	passed	A5 regression: what existed before does not move quick match: the hash of the 15 levels (2 and 4 players, both modes) after 900 noisy steps is the one master had
-shared/games/obstaculos/sim/regression6.test.ts	passed	A6 regression: Mundo 1 does not move the hash of the 7 levels of Mundo 1 (campaign Playa, 2 players, 2 seeds) after 1200 noisy steps is the one master had
+shared/tutorial/protocol.school.test.ts	passed	a phone's 'schoolDone' carries nothing but an optional skip flag (it never says who: the relay knows the socket)
+shared/tutorial/school.test.ts	passed	a player that joins halfway a joiner that arrives after everyone was done reopens the table
+shared/tutorial/school.test.ts	passed	a player that joins halfway starts at step 0 while the others are further on; the table is not done until they are
+shared/recipes.test.ts	passed	a round with the card: the orders, the crate, the plates a recipe whose station the map lacks is dropped: the card of map 9 on a kitchen with no cheese crate is Marinara + Calzone
+shared/recipes.test.ts	passed	a round with the card: the orders, the crate, the plates delivering pays the base of the order: a Calzone 90, a Pepperoni 100, a Marinara 70 (tip and streak on top as always)
+shared/recipes.test.ts	passed	a round with the card: the orders, the crate, the plates every order of the round comes from the card, in about the card proportions, and the same seed gives the same queue
+shared/recipes.test.ts	passed	a round with the card: the orders, the crate, the plates the card of the map: Marinara 40%, the rest split equally; the crate gives the topping of the card
+shared/recipes.test.ts	passed	a round with the card: the orders, the crate, the plates the old window rule is untouched without a card: a Margarita fits any order, a Marinara only a Marinara
+shared/recipes.test.ts	passed	a round with the card: the orders, the crate, the plates the window serves a plate to its own recipe: a Calzone only to a Calzone, a topping plate also to a Marinara, never a Marinara to a Pepperoni
+shared/recipes.test.ts	passed	a round with the card: the orders, the crate, the plates without the flag nothing changes: no card, and the same recipe draws as always (Margarita only on a cheese map, a draw only when it has cheese)
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients a card round with the whole queue drawn from the card: every ticket of the round is a recipe of the card
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients calzone on map 2: delivered, paid 90 base, nothing refused
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients calzone on map 9: delivered, paid 90 base, nothing refused
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients champinon on map 10: delivered, paid 100 base, nothing refused
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients champinon on map 12: delivered, paid 100 base, nothing refused
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients marinara on map 9: delivered, paid 70 base, nothing refused
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients pepperoni on map 14: delivered, paid 100 base, nothing refused
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients pepperoni on map 9: delivered, paid 100 base, nothing refused
+shared/recipes.cook.test.ts	passed	a scripted chef cooks each recipe of the card from the raw ingredients the calzone takes longer than a marinara from the first ingredient in the oven to the plate out (the long oven)
+shared/games/obstaculos/sim/regression.slow.test.ts	passed	A5 regression: what existed before does not move campaign worlds on the old levels: the bodies of every run without a throw are the ones master had (Playa and Glaciar)
+shared/games/obstaculos/sim/regression.slow.test.ts	passed	A5 regression: what existed before does not move quick match: the hash of the 15 levels (2 and 4 players, both modes) after 900 noisy steps is the one master had
+shared/games/obstaculos/sim/regression6.slow.test.ts	passed	A6 regression: Mundo 1 does not move the hash of the 7 levels of Mundo 1 (campaign Playa, 2 players, 2 seeds) after 1200 noisy steps is the one master had
 shared/captain.test.ts	passed	acceptNav: only the captain moves the menus accepts the captain and refuses everyone else
 shared/captain.test.ts	passed	acceptNav: only the captain moves the menus refuses an id that is not the number the relay stamped (a string "2", a missing from)
 shared/captain.test.ts	passed	acceptNav: only the captain moves the menus refuses everything while nobody holds the crown
@@ -44,11 +68,13 @@ screen/src/games/obstaculos/render/render.test.ts	passed	autotile mask the corne
 screen/src/games/obstaculos/render/render.test.ts	passed	autotile mask the wall column, an edge of the world, counts as closed to the outside
 shared/burn.assist.test.ts	passed	Ayudante and the fire one tap of B in front of the fire and it goes on by itself until it is out (a normal chef has to hold)
 shared/burn.assist.test.ts	passed	Ayudante and the fire walking away with the stick ends it (the progress stays); the Ayudante never slips but burns its pizzas like everybody
-server/test/assist.ws.test.ts	passed	Ayudante over the relay (bots on websockets) a mixed table: the chef with Ayudante chops with taps while the other chef (who taps too) does not
-server/test/assist.ws.test.ts	passed	Ayudante over the relay (bots on websockets) cooking with B held (the usual way) works with and without it, and both teams of bots deliver pizzas
-server/test/assist.ws.test.ts	passed	Ayudante over the relay (bots on websockets) ONE TAP of B per chop, sent through the wire as a single press: nothing gets chopped without Ayudante, everything does with it
-server/test/assist.ws.test.ts	passed	Ayudante over the relay (bots on websockets) the choice crosses the wire: phones -> relay -> screen -> sim, and ONLY the chefs that chose it carry the flag
-server/test/assist.ws.test.ts	passed	Ayudante over the relay (bots on websockets) versus: the lobby shows the k the Ayudante costs (1.03 for the team that has one), the round starts with it, a chef that dropped it before the start is back to 1
+server/test/assist.ws.slow.test.ts	passed	Ayudante over the relay (bots on websockets) a mixed table: the chef with Ayudante chops with taps while the other chef (who taps too) does not
+server/test/assist.ws.slow.test.ts	passed	Ayudante over the relay (bots on websockets) cooking with B held (the usual way) works with and without it, and both teams of bots deliver pizzas
+server/test/assist.ws.slow.test.ts	passed	Ayudante over the relay (bots on websockets) ONE TAP of B per chop, sent through the wire as a single press: nothing gets chopped without Ayudante, everything does with it
+server/test/assist.ws.slow.test.ts	passed	Ayudante over the relay (bots on websockets) the choice crosses the wire: phones -> relay -> screen -> sim, and ONLY the chefs that chose it carry the flag
+server/test/assist.ws.slow.test.ts	passed	Ayudante over the relay (bots on websockets) versus: the lobby shows the k the Ayudante costs (1.03 for the team that has one), the round starts with it, a chef that dropped it before the start is back to 1
+shared/tutorial/school.test.ts	passed	Ayudante works the same a chef on Ayudante finishes with ONE tap of B per chop; the same taps chop nothing without it
+shared/tutorial/school.test.ts	passed	Ayudante works the same the flag follows a chef that joins later
 shared/games/obstaculos/sim/actions.test.ts	passed	B is contextual (plan §5): ring > teammate > box/lever > plant A stands a planted player up and jumps
 shared/games/obstaculos/sim/actions.test.ts	passed	B is contextual (plan §5): ring > teammate > box/lever > plant plant: B stands the player still (stick ignored), B again stands up
 shared/games/obstaculos/sim/actions.test.ts	passed	B is contextual (plan §5): ring > teammate > box/lever > plant previewB follows the priority as the options disappear
@@ -230,20 +256,20 @@ shared/games/obstaculos/parse.test.ts	passed	constants derived numbers of the pl
 shared/games/obstaculos/session.test.ts	passed	constants the screen relies on the expedition is three levels and a step is 1/60 s
 server/test/hints.ws.test.ts	passed	contextual buttons over the relay a bot cooking a pizza hears the recipe in its buttons: Tomar masa, Poner en tabla, Estirar, Tomar picado, Al horno, Tomar tomate... Sacar pizza, Entregar
 server/test/hints.ws.test.ts	passed	contextual buttons over the relay a phone that drops for a few seconds and returns hears its state again within HINT_REFRESH_MS, without anything to catch up on
-shared/coop.golden.test.ts	passed	coop golden rounds coop-n2-map2-normal: score, counters, final chefs and the whole event sequence match the fixture
-shared/coop.golden.test.ts	passed	coop golden rounds coop-n4-map9-hard: score, counters, final chefs and the whole event sequence match the fixture
-shared/coop.golden.test.ts	passed	coop golden rounds coop-n6-map11-easy: score, counters, final chefs and the whole event sequence match the fixture
-shared/coop.golden.test.ts	passed	coop golden rounds covers 2, 4 and 6 players on three different maps
-shared/burn.golden.test.ts	passed	coop golden rounds with the new rules on coop-n2-map2-normal-rules: score, counters, final chefs and the whole event sequence match the fixture
-shared/burn.golden.test.ts	passed	coop golden rounds with the new rules on coop-n4-map2-hard-rules: score, counters, final chefs and the whole event sequence match the fixture
-shared/burn.golden.test.ts	passed	coop golden rounds with the new rules on coop-n6-map11-normal-rules: score, counters, final chefs and the whole event sequence match the fixture
-shared/burn.golden.test.ts	passed	coop golden rounds with the new rules on every scenario has its fixture, all with a flag on, and none of the original three has one
-shared/burn.golden.test.ts	passed	coop golden rounds with the new rules on the fixtures cover what they are for: a pizza that burns, a fire that jumps, a pizza rescued, an event of each kind that shows (rat, rush, blackout), a round with deliveries
-shared/versus.test.ts	passed	coop regression: one team is the same round as before coop draws a recipe only when the order is admitted (a full queue spends nothing); versus draws at every slot
-shared/versus.test.ts	passed	coop regression: one team is the same round as before coop events carry no team and no VIP fields; the legacy fields are team 0
-shared/versus.test.ts	passed	coop regression: one team is the same round as before coop-n2-map2-normal: with a declared single team the whole round matches the recorded fixture
-shared/versus.test.ts	passed	coop regression: one team is the same round as before coop-n4-map9-hard: with a declared single team the whole round matches the recorded fixture
-shared/versus.test.ts	passed	coop regression: one team is the same round as before coop-n6-map11-easy: with a declared single team the whole round matches the recorded fixture
+shared/coop.golden.slow.test.ts	passed	coop golden rounds coop-n2-map2-normal: score, counters, final chefs and the whole event sequence match the fixture
+shared/coop.golden.slow.test.ts	passed	coop golden rounds coop-n4-map9-hard: score, counters, final chefs and the whole event sequence match the fixture
+shared/coop.golden.slow.test.ts	passed	coop golden rounds coop-n6-map11-easy: score, counters, final chefs and the whole event sequence match the fixture
+shared/coop.golden.slow.test.ts	passed	coop golden rounds covers 2, 4 and 6 players on three different maps
+shared/burn.golden.slow.test.ts	passed	coop golden rounds with the new rules on coop-n2-map2-normal-rules: score, counters, final chefs and the whole event sequence match the fixture
+shared/burn.golden.slow.test.ts	passed	coop golden rounds with the new rules on coop-n4-map2-hard-rules: score, counters, final chefs and the whole event sequence match the fixture
+shared/burn.golden.slow.test.ts	passed	coop golden rounds with the new rules on coop-n6-map11-normal-rules: score, counters, final chefs and the whole event sequence match the fixture
+shared/burn.golden.slow.test.ts	passed	coop golden rounds with the new rules on every scenario has its fixture, all with a flag on, and none of the original three has one
+shared/burn.golden.slow.test.ts	passed	coop golden rounds with the new rules on the fixtures cover what they are for: a pizza that burns, a fire that jumps, a pizza rescued, an event of each kind that shows (rat, rush, blackout), a round with deliveries
+shared/versus.slow.test.ts	passed	coop regression: one team is the same round as before coop draws a recipe only when the order is admitted (a full queue spends nothing); versus draws at every slot
+shared/versus.slow.test.ts	passed	coop regression: one team is the same round as before coop events carry no team and no VIP fields; the legacy fields are team 0
+shared/versus.slow.test.ts	passed	coop regression: one team is the same round as before coop-n2-map2-normal: with a declared single team the whole round matches the recorded fixture
+shared/versus.slow.test.ts	passed	coop regression: one team is the same round as before coop-n4-map9-hard: with a declared single team the whole round matches the recorded fixture
+shared/versus.slow.test.ts	passed	coop regression: one team is the same round as before coop-n6-map11-easy: with a declared single team the whole round matches the recorded fixture
 shared/games/obstaculos/sim/rope.test.ts	passed	cordadas (plan §4) a free-mode world has no ropes; a chain world has them
 screen/src/games/obstaculos/render/stub.test.ts	passed	cordadas (plan §4) a level can force pairs
 shared/games/obstaculos/sim/rope.test.ts	passed	cordadas (plan §4) buildRopes links consecutive slots of each cordada in slot order, whatever order the slots come in
@@ -427,12 +453,12 @@ shared/vote.test.ts	passed	edge cases E=1 and E=0 E=0: the clock freezes (does n
 shared/vote.test.ts	passed	edge cases E=1 and E=0 E=1: a tap on another option within the grace changes the result
 shared/vote.test.ts	passed	edge cases E=1 and E=0 E=1: every tap closes in 1.5 s (remote control)
 shared/events.test.ts	passed	Emitter delivers to subscribers and stops after unsubscribe
-shared/versus.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first a complete tie has no winner
-shared/versus.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first everything equal: the team that reached its final score first
-shared/versus.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first more points wins
-shared/versus.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first same points and deliveries: more VIPs won
-shared/versus.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first same points: more deliveries wins
-shared/versus.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first the score that counts is the one with k, and reachedAt moves with every point
+shared/versus.slow.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first a complete tie has no winner
+shared/versus.slow.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first everything equal: the team that reached its final score first
+shared/versus.slow.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first more points wins
+shared/versus.slow.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first same points and deliveries: more VIPs won
+shared/versus.slow.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first same points: more deliveries wins
+shared/versus.slow.test.ts	passed	end of the round: score, deliveries, VIPs, who got there first the score that counts is the one with k, and reachedAt moves with every point
 screen/src/games/obstaculos/render/stub.test.ts	passed	entitiesFromLevel level 1: three stars, a checkpoint and the goal
 screen/src/games/obstaculos/render/stub.test.ts	passed	entitiesFromLevel level 4: one ring entity per o marker (plan geometry: (14,9) and (44,7))
 screen/src/games/obstaculos/render/stub.test.ts	passed	entitiesFromLevel level 8: plates carry their weight text, objects are as big as their cells, tags pair activators and objectives
@@ -466,8 +492,13 @@ screen/src/audio/recipes.test.ts	passed	event -> sound mapping orders and delive
 screen/src/audio/recipes.test.ts	passed	event -> sound mapping oven: start plays the swell and loops crackle until ready
 screen/src/audio/recipes.test.ts	passed	event -> sound mapping R7: the delivery chime climbs two semitones per step of the tip multiplier; a lost dish and a lost streak have their own sound
 screen/src/audio/recipes.test.ts	passed	event -> sound mapping round end stops every loop and blows the whistle; round start is silent by itself
+screen/src/audio/recipes.test.ts	passed	event -> sound mapping the calzone: a kneading loop per oven while Picar is held, and a whump when it is folded
 screen/src/audio/recipes.test.ts	passed	event -> sound mapping washing: a splash loop per sink while B is held, a plink per clean plate, a clink when a dirty one arrives
 shared/midround.test.ts	passed	events off (the default): nothing new runs a game made without `events` has no event and a whole round emits none of them
+shared/tutorial/school.test.ts	passed	every chef at its own pace 2 chefs all finish, none is held back by another, and nobody gets stuck
+shared/tutorial/school.test.ts	passed	every chef at its own pace 4 chefs all finish, none is held back by another, and nobody gets stuck
+shared/tutorial/school.test.ts	passed	every chef at its own pace 8 chefs all finish, none is held back by another, and nobody gets stuck
+shared/tutorial/school.test.ts	passed	every chef at its own pace a chef that stands still does not stop the other from finishing, and the table waits for it
 shared/hints.test.ts	passed	every label fits the phone at most LABEL_MAX characters, in Spanish, never empty, each with a known icon (collected from every case above)
 shared/games/obstaculos/session.test.ts	passed	explorers with phones: the bot completes the first two levels in Libres with 2, 4 and 8 players (real world, real inputs) a level that needs the whole group fails if one explorer stays at the start (the goal counts everybody connected)
 shared/games/obstaculos/session.test.ts	passed	explorers with phones: the bot completes the first two levels in Libres with 2, 4 and 8 players (real world, real inputs) level 1 with 2 bots
@@ -521,49 +552,54 @@ shared/games.test.ts	passed	game registry has unique ids and every entry passes 
 shared/games.test.ts	passed	game registry pizzas declares the agreed labels and four how-to steps
 shared/games.test.ts	passed	game registry the announced games are not in the registry, so config and phones never see them
 shared/games.test.ts	passed	game registry the authoring check rejects bad entries
-shared/generate.test.ts	passed	generate 500 seeds per difficulty: all valid, at least 90% inside the band (2 players)
-shared/generate.test.ts	passed	generate a generated map plays: the game builds with every recipe station and N players on floor
-shared/generate.test.ts	passed	generate a range of team sizes: spawns for nMax, valid for every N, floor for every chef
-shared/generate.test.ts	passed	generate also valid with 4, 6 and 8 players, with the station counts of the design table
-shared/generate.test.ts	passed	generate difficulty picks the archetypes: easy has no river or corridor, hard has no open or island
-shared/generate.test.ts	passed	generate falls back to the first fixed map of the difficulty when nothing validates
-shared/generate.test.ts	passed	generate mechanics come from the seed: no cheese for 2, washing only from 5, and the same seed always gives the same
-shared/generate.test.ts	passed	generate spawns are N distinct floor tiles, 2+ apart, and river maps put players on both sides
-shared/generate.test.ts	passed	generate spawns are ordered like the puesto table: spawn 1 is at least as close to the dough crate and a board as any other spawn
-shared/generate.test.ts	passed	generate stations by team size follow the design table: ovens ceil(N/3), boards ceil((N+1)/3) (+1 cheese), E and P 1+floor(N/5), X 1+floor(N/4)
-shared/generate.test.ts	passed	generate the range is part of the result: same seed with another range is another kitchen
-shared/generate.test.ts	passed	generate the same seed, difficulty and team give an identical grid
+shared/generate.slow.test.ts	passed	generate 500 seeds per difficulty: all valid, at least 90% inside the band (2 players)
+shared/generate.slow.test.ts	passed	generate a generated map plays: the game builds with every recipe station and N players on floor
+shared/generate.slow.test.ts	passed	generate a range of team sizes: spawns for nMax, valid for every N, floor for every chef
+shared/generate.slow.test.ts	passed	generate also valid with 4, 6 and 8 players, with the station counts of the design table
+shared/generate.slow.test.ts	passed	generate difficulty picks the archetypes: easy has no river or corridor, hard has no open or island
+shared/generate.slow.test.ts	passed	generate falls back to the first fixed map of the difficulty when nothing validates
+shared/generate.slow.test.ts	passed	generate mechanics come from the seed: no cheese for 2, washing only from 5, and the same seed always gives the same
+shared/generate.slow.test.ts	passed	generate spawns are N distinct floor tiles, 2+ apart, and river maps put players on both sides
+shared/generate.slow.test.ts	passed	generate spawns are ordered like the puesto table: spawn 1 is at least as close to the dough crate and a board as any other spawn
+shared/generate.slow.test.ts	passed	generate stations by team size follow the design table: ovens ceil(N/3), boards ceil((N+1)/3) (+1 cheese), E and P 1+floor(N/5), X 1+floor(N/4)
+shared/generate.slow.test.ts	passed	generate the range is part of the result: same seed with another range is another kitchen
+shared/generate.slow.test.ts	passed	generate the same seed, difficulty and team give an identical grid
 shared/generate.reject.test.ts	passed	generate with a validator that rejects everything never returns a candidate: it falls back to the first fixed map of the difficulty
-shared/generate.test.ts	passed	generate zone maps get zone puestos (prep / bake) and every zone with a spawn gets 15% of the actions
-shared/generate.test.ts	passed	generate zone shares of the fixed maps: every region that holds a spawn gets at least 15% (Tres cuartos plating room is the tightest)
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: 500 consecutive seeds, every one valid 500 seeds (difficulty, players and mode rotating) produce a valid level each, with no hand-made fallback and within the attempt cap
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: 500 consecutive seeds, every one valid tether any: valid in both modes at once
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: 500 consecutive seeds, every one valid the full matrix: 3 difficulties x n in {2,4,8} x 2 modes x 20 seeds, all valid
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: determinism and structure a level has one S, one G, uniform width of 90 to 180 columns, 18 rows, 3 to 6 stars, checkpoints, and carries n, tether and difficulty
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: determinism and structure cooperative modules respect n: with 2 players no tower of 3 and no wall of 5 ever appears; with 8 they can
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: determinism and structure the harder the difficulty, the higher D on average (bands 10-35 < 35-60 < 60-85)
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: determinism and structure the same seed gives the same level, byte for byte; the seed is not ignored
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: determinism and structure the validator is in the loop: over 60 seeds some drafts are refused and retried, and what comes back always validates
-shared/games/obstaculos/generate/generate.test.ts	passed	generateLevel: determinism and structure with nothing valid the generator falls back to a hand-made level that fits and logs the case
-shared/generate.versus.test.ts	passed	generateVersus 500 seeds in a row per difficulty and player count: always valid and always generated (no fallback), at the first attempts
-shared/generate.versus.test.ts	passed	generateVersus each kitchen has the stations of the design table for its biggest team, cheese only where the seed brings it
-shared/generate.versus.test.ts	passed	generateVersus the half is composed by the isometry: halfLayout leaves the barrier as wall, composeVersus fills the other half
-shared/generate.versus.test.ts	passed	generateVersus the same seed, difficulty and players give the same map; the seed decides it (100 seeds, at least 80 different maps)
-shared/generate.versus.test.ts	passed	generateVersus with no attempts at all, or when none validates, a fixed versus map comes back and it is valid
-shared/generate.versus.test.ts	passed	generateVersus works for a range of players: the half is validated for the smallest team (1 chef) and the biggest
+shared/generate.slow.test.ts	passed	generate zone maps get zone puestos (prep / bake) and every zone with a spawn gets 15% of the actions
+shared/generate.slow.test.ts	passed	generate zone shares of the fixed maps: every region that holds a spawn gets at least 15% (Tres cuartos plating room is the tightest)
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: 500 consecutive seeds, every one valid 500 seeds (difficulty, players and mode rotating) produce a valid level each, with no hand-made fallback and within the attempt cap
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: 500 consecutive seeds, every one valid tether any: valid in both modes at once
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: 500 consecutive seeds, every one valid the full matrix: 3 difficulties x n in {2,4,8} x 2 modes x 20 seeds, all valid
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: determinism and structure a level has one S, one G, uniform width of 90 to 180 columns, 18 rows, 3 to 6 stars, checkpoints, and carries n, tether and difficulty
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: determinism and structure cooperative modules respect n: with 2 players no tower of 3 and no wall of 5 ever appears; with 8 they can
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: determinism and structure the harder the difficulty, the higher D on average (bands 10-35 < 35-60 < 60-85)
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: determinism and structure the same seed gives the same level, byte for byte; the seed is not ignored
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: determinism and structure the validator is in the loop: over 60 seeds some drafts are refused and retried, and what comes back always validates
+shared/games/obstaculos/generate/generate.slow.test.ts	passed	generateLevel: determinism and structure with nothing valid the generator falls back to a hand-made level that fits and logs the case
+shared/generate.versus.slow.test.ts	passed	generateVersus 500 seeds in a row per difficulty and player count: always valid and always generated (no fallback), at the first attempts
+shared/generate.versus.slow.test.ts	passed	generateVersus each kitchen has the stations of the design table for its biggest team, cheese only where the seed brings it
+shared/generate.versus.slow.test.ts	passed	generateVersus the half is composed by the isometry: halfLayout leaves the barrier as wall, composeVersus fills the other half
+shared/generate.versus.slow.test.ts	passed	generateVersus the same seed, difficulty and players give the same map; the seed decides it (100 seeds, at least 80 different maps)
+shared/generate.versus.slow.test.ts	passed	generateVersus with no attempts at all, or when none validates, a fixed versus map comes back and it is valid
+shared/generate.versus.slow.test.ts	passed	generateVersus works for a range of players: the half is validated for the smallest team (1 chef) and the biggest
 shared/generate.versus.reject.test.ts	passed	generateVersus: retries a rejected candidate is retried with the same stream: 3 rejections give the 4th attempt, still valid and not a fallback
 shared/generate.versus.reject.test.ts	passed	generateVersus: retries when every candidate is rejected the attempts are bounded and a fixed map comes back
+shared/recipes.cook.test.ts	passed	golden rounds with the cards on every scenario has its fixture, and each fixture delivers what its card brings
+shared/recipes.cook.test.ts	passed	golden rounds with the cards on recipes-n2-map2-normal: score, counters, final chefs and every event match the fixture
+shared/recipes.cook.test.ts	passed	golden rounds with the cards on recipes-n2-map9-normal: score, counters, final chefs and every event match the fixture
+shared/recipes.cook.test.ts	passed	golden rounds with the cards on recipes-n3-map12-hard: score, counters, final chefs and every event match the fixture
+shared/recipes.cook.test.ts	passed	golden rounds with the cards on recipes-n4-map14-normal: score, counters, final chefs and every event match the fixture
 shared/overcooked.test.ts	passed	grab and drop A does nothing when no station is in the facing direction
 shared/overcooked.test.ts	passed	grab and drop a player holds at most one item
 shared/overcooked.test.ts	passed	grab and drop a second press in the same tick finds the hands full
 shared/overcooked.test.ts	passed	grab and drop grabs from a crate, drops on a counter and picks it up again
 shared/overcooked.test.ts	passed	grab and drop moves with the stick, faces the last non-null vector and stops at walls
-shared/versus.test.ts	passed	handicap k by stretches 3v2: the small team starts at k = 1.22 and its delivery pays round(70 x 1.22) = 85; the big one pays 70
-shared/versus.test.ts	passed	handicap k by stretches even teams never get a multiplier
-shared/versus.test.ts	passed	handicap k by stretches the multiplier follows the chefs that still hold a place: 1.22, then 1 after a drop of the big team, then 1.41 after a drop of the small one
-shared/versus.test.ts	passed	handicap k by stretches the order flow of a 3v2 is the one of 3 chefs (round of the average)
-shared/versus.test.ts	passed	handicap k by stretches the penalty of an expired order is not multiplied
-shared/versus.test.ts	passed	handicap k by stretches turned off in the lobby option: k stays 1
+shared/versus.slow.test.ts	passed	handicap k by stretches 3v2: the small team starts at k = 1.22 and its delivery pays round(70 x 1.22) = 85; the big one pays 70
+shared/versus.slow.test.ts	passed	handicap k by stretches even teams never get a multiplier
+shared/versus.slow.test.ts	passed	handicap k by stretches the multiplier follows the chefs that still hold a place: 1.22, then 1 after a drop of the big team, then 1.41 after a drop of the small one
+shared/versus.slow.test.ts	passed	handicap k by stretches the order flow of a 3v2 is the one of 3 chefs (round of the average)
+shared/versus.slow.test.ts	passed	handicap k by stretches the penalty of an expired order is not multiplied
+shared/versus.slow.test.ts	passed	handicap k by stretches turned off in the lobby option: k stays 1
 shared/teams.test.ts	passed	handicapK matches the design table: 1 for even teams, sqrt(rival/own) for the smaller one
 shared/teams.test.ts	passed	handicapK rejects 3v1 (ratio above 2) in both directions, and an empty team
 shared/teams.test.ts	passed	handicapK teamMultipliers measures every team against the biggest and is refused as a whole
@@ -657,12 +693,12 @@ shared/games/obstaculos/validator/validate.test.ts	passed	keys, rings, hazards a
 shared/games/obstaculos/validator/validate.test.ts	passed	keys, rings, hazards a ring bridges a 7-wide abyss when tied; without the ring it does not; a ring in a free-only level is a lint error
 shared/games/obstaculos/validator/validate.test.ts	passed	keys, rings, hazards rising lava catches a climb that is too slow (level 14 at its speed and at 5x)
 shared/games/obstaculos/validator/validate.test.ts	passed	keys, rings, hazards the avalanche catches a slow route and spares a fast one
-shared/versus.test.ts	passed	kitchens: each team has its own side and stations a chef that is on no team (a latecomer) is not added: it watches
-shared/versus.test.ts	passed	kitchens: each team has its own side and stations a map with a single kitchen cannot host two teams
-shared/versus.test.ts	passed	kitchens: each team has its own side and stations chefs start inside their own kitchen, on the tile of their rank, and the twin ranks are twins
-shared/versus.test.ts	passed	kitchens: each team has its own side and stations coop: every station belongs to team 0 and everybody is on it
-shared/versus.test.ts	passed	kitchens: each team has its own side and stations V1: the left kitchen is team 0 and the right one team 1, with the same stations on each side
-shared/versus.test.ts	passed	kitchens: each team has its own side and stations V3 (rotation): the top kitchen is team 0 and the bottom one team 1
+shared/versus.slow.test.ts	passed	kitchens: each team has its own side and stations a chef that is on no team (a latecomer) is not added: it watches
+shared/versus.slow.test.ts	passed	kitchens: each team has its own side and stations a map with a single kitchen cannot host two teams
+shared/versus.slow.test.ts	passed	kitchens: each team has its own side and stations chefs start inside their own kitchen, on the tile of their rank, and the twin ranks are twins
+shared/versus.slow.test.ts	passed	kitchens: each team has its own side and stations coop: every station belongs to team 0 and everybody is on it
+shared/versus.slow.test.ts	passed	kitchens: each team has its own side and stations V1: the left kitchen is team 0 and the right one team 1, with the same stations on each side
+shared/versus.slow.test.ts	passed	kitchens: each team has its own side and stations V3 (rotation): the top kitchen is team 0 and the bottom one team 1
 shared/kudos.test.ts	passed	kudos: who rescued pizzas and who put fires out a tie lists everybody, in id order; reset clears the round; off stops listening
 shared/kudos.test.ts	passed	kudos: who rescued pizzas and who put fires out counts oven:rescued and fire:out per chef; nothing counted says nothing
 shared/kudos.test.ts	passed	kudos: who rescued pizzas and who put fires out the events of a versus round (they carry a team) count the same
@@ -671,44 +707,44 @@ shared/games/obstaculos/sim/entities.test.ts	passed	ladders down on a ladder rea
 shared/games/obstaculos/sim/entities.test.ts	passed	ladders up on a ladder climbs at 170 px/s with no gravity; A jumps off
 shared/games/obstaculos/sim/player.test.ts	passed	landing events and surfaces land reports the fall speed once, and where: ground, one-way tile or head
 screen/test/art.test.ts	passed	layout the 16x9 map plus the HUD strip fits the 1920x1080 canvas
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-1 Huellas: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-2 El mosquetón: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-3 Torre de arena: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-4 Mano amiga: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-5 Coco-pulta: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-6 Liana: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-7 Jefe: La marea: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-1 El roble: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-2 Saltamontes: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-3 Sube y baja: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-4 La diana: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-5 Guardabosques: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-6 Escarabajos: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-7 Jefe: El jabalí: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-1 Lago helado: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-2 Ventisca: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-3 Témpanos: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-4 El piolet: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-5 Grietas: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-6 Cordada perfecta: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-7 Jefe: Avalancha: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught D of every level sits in its world's band (+-5 slack): Playa 0-15, Bosque 15-35, Glaciar 35-55
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught debut of each mechanic the validator models: without it the bot fails, with it the record shows at least one use
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 1-5: filling the 5-tile pit, or narrowing it to 4 tiles (a plain jump), makes the throw unnecessary; water 2 rows under the far ledge leaves the pulled partner nowhere to hang
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 2-1: taking the ladders away leaves a 7-tile trunk nobody climbs; 2-2: a 3-tile ledge needs no super jump and no springs leaves the wide pit open
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 2-3: opening the mountain lets the pair walk off the platform without the balance (the enclosed tunnel is what makes it necessary)
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 2-4: a target ring out of reach leaves its gate shut; 2-5: no keys leaves the doors shut
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 2-6 with a hint (levels 6 and 7 have none) is red
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 3-3: lakes narrow enough to jump make the movers unnecessary; 3-4: walls a jump climbs make the pickaxe unnecessary and no pickaxe item is unsolvable
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red a fourth star out of reach is red
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red a hard existing level in the Playa slot is out of band (l12 as 1-1)
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red a hint of 10 words is red, so are 3 hints on a level and any hint on level 6 or 7
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red a level with no checkpoint on a long route is red
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red putting 1-4 (anchor, needs tower and hand) before 1-3 is red too
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red putting 2-7 (needs ladder and spring) before 2-1 and 3-6 (needs superjump and pickaxe) before 3-4 are red: the order check
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red taking the ring out of 1-6 makes the level unsolvable
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red taking the wall out of 1-3 makes the tower unnecessary: "still finishes" (a debut with no need is red)
-shared/games/obstaculos/campaign/learning.test.ts	passed	learning test (plan §8): the bot only knows what was taught what the validator cannot show is listed, not hidden: rope, signals, anchor, softEnemies, ice and wind wait for the real-sim tests (move and coyote are passive)
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-1 Huellas: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-2 El mosquetón: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-3 Torre de arena: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-4 Mano amiga: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-5 Coco-pulta: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-6 Liana: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 1-7 Jefe: La marea: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-1 El roble: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-2 Saltamontes: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-3 Sube y baja: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-4 La diana: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-5 Guardabosques: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-6 Escarabajos: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 2-7 Jefe: El jabalí: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-1 Lago helado: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-2 Ventisca: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-3 Témpanos: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-4 El piolet: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-5 Grietas: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-6 Cordada perfecta: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught 3-7 Jefe: Avalancha: finishes with what is taught, stars and checkpoints reachable, D in band, hints ok
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught D of every level sits in its world's band (+-5 slack): Playa 0-15, Bosque 15-35, Glaciar 35-55
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught debut of each mechanic the validator models: without it the bot fails, with it the record shows at least one use
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 1-5: filling the 5-tile pit, or narrowing it to 4 tiles (a plain jump), makes the throw unnecessary; water 2 rows under the far ledge leaves the pulled partner nowhere to hang
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 2-1: taking the ladders away leaves a 7-tile trunk nobody climbs; 2-2: a 3-tile ledge needs no super jump and no springs leaves the wide pit open
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 2-3: opening the mountain lets the pair walk off the platform without the balance (the enclosed tunnel is what makes it necessary)
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 2-4: a target ring out of reach leaves its gate shut; 2-5: no keys leaves the doors shut
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 2-6 with a hint (levels 6 and 7 have none) is red
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red 3-3: lakes narrow enough to jump make the movers unnecessary; 3-4: walls a jump climbs make the pickaxe unnecessary and no pickaxe item is unsolvable
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red a fourth star out of reach is red
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red a hard existing level in the Playa slot is out of band (l12 as 1-1)
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red a hint of 10 words is red, so are 3 hints on a level and any hint on level 6 or 7
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red a level with no checkpoint on a long route is red
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red putting 1-4 (anchor, needs tower and hand) before 1-3 is red too
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red putting 2-7 (needs ladder and spring) before 2-1 and 3-6 (needs superjump and pickaxe) before 3-4 are red: the order check
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red taking the ring out of 1-6 makes the level unsolvable
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught sabotage: each of these must be red taking the wall out of 1-3 makes the tower unnecessary: "still finishes" (a debut with no need is red)
+shared/games/obstaculos/campaign/learning.slow.test.ts	passed	learning test (plan §8): the bot only knows what was taught what the validator cannot show is listed, not hidden: rope, signals, anchor, softEnemies, ice and wind wait for the real-sim tests (move and coyote are passive)
 shared/games/obstaculos/modules/modules.test.ts	passed	letters rename gives every module fresh letters and keeps params pointing at the right ones; the pool runs dry after 6 + 6
 shared/games/obstaculos/levels/chain-rope.test.ts	passed	level 1 in Encadenados (the bug: it could not be finished tied) the shipped 4-tile wall: the real sim agrees with the validator (nobody gets to G tied)
 shared/games/obstaculos/levels/chain-rope.test.ts	passed	level 1 in Encadenados (the bug: it could not be finished tied) two or more bots finish the fixed level 1 in the real sim: chain, n=2
@@ -806,13 +842,16 @@ shared/games/obstaculos/sim/entities.test.ts	passed	movers and balance a mover c
 shared/games/obstaculos/sim/entities.test.ts	passed	movers and balance a mover with an opener stays put until it is opened
 shared/games/obstaculos/sim/entities.test.ts	passed	movers and balance balance with one side empty does not move
 shared/games/obstaculos/sim/entities.test.ts	passed	movers and balance balance: moves only when both plates carry weight, the heavier side goes down at speed tiles/s, the other goes up
-shared/generate.test.ts	passed	mulberry32 is deterministic, in [0, 1) and differs between seeds
+shared/generate.slow.test.ts	passed	mulberry32 is deterministic, in [0, 1) and differs between seeds
+screen/src/tutorial/music.school.test.ts	passed	music in the Cocina escuela is the lobby's calm music, not silence (the school has no countdown) and not the rush of a match
 screen/src/audio/mixer.test.ts	passed	mute and hint duck is -6 dB
 screen/src/audio/mixer.test.ts	passed	mute and hint hint asks for a click until the context runs, then only reports mute
 screen/src/audio/mixer.test.ts	passed	mute and hint mute zeroes the master and unmute restores 0.9
 screen/src/games/obstaculos/campaign/flow.test.ts	passed	names joins the group like people say it
 screen/src/menu.test.ts	passed	navigation sound and Esc each action maps to a synthesised UI voice that exists; moving, picking and back differ; refusing reuses the game buzz
 screen/src/menu.test.ts	passed	navigation sound and Esc Esc goes back to the menu only from the lobby, with no how-to card open and no round starting
+shared/tutorial/school.test.ts	passed	no clock, no score at stake five minutes of nobody doing anything: the round never ends and no order expires
+shared/tutorial/school.test.ts	passed	no clock, no score at stake the window always has an order for the next pizza (a chef delivers, another still can)
 shared/assist.test.ts	passed	no inertia and stops dead the tick the stick is released
 shared/assist.test.ts	passed	no inertia on Normal (where the stick is smoothed) the Ayudante is at full speed after ONE tick, the control is still accelerating
 screen/src/games/obstaculos/audio/music.test.ts	passed	note voices every timbre makes finite, positive voices
@@ -860,10 +899,10 @@ shared/overcooked.test.ts	passed	orders and score starts with the difficulty ini
 shared/overcooked.test.ts	passed	orders and score the order queue is capped at the difficulty maximum
 shared/overcooked.test.ts	passed	orders and score the score never drops below zero, and easy has no penalty
 shared/overcooked.test.ts	passed	orders and score the window rejects a dish when there is no order, and non-dishes
-shared/versus.test.ts	passed	owner: a rival kitchen does not answer a station with no owner (a shared pantry) answers to both teams
-shared/versus.test.ts	passed	owner: a rival kitchen does not answer rival crates give nothing, the rival counter does not hold what it is given, and its window pays nothing
-shared/versus.test.ts	passed	owner: a rival kitchen does not answer the chef own oven does take it (the harness works)
-shared/versus.test.ts	passed	owner: a rival kitchen does not answer the rival oven takes nothing: the cut dough stays in the chef's hands
+shared/versus.slow.test.ts	passed	owner: a rival kitchen does not answer a station with no owner (a shared pantry) answers to both teams
+shared/versus.slow.test.ts	passed	owner: a rival kitchen does not answer rival crates give nothing, the rival counter does not hold what it is given, and its window pays nothing
+shared/versus.slow.test.ts	passed	owner: a rival kitchen does not answer the chef own oven does take it (the harness works)
+shared/versus.slow.test.ts	passed	owner: a rival kitchen does not answer the rival oven takes nothing: the cut dough stays in the chef's hands
 screen/src/games/obstaculos/render/render.test.ts	passed	palettes every biome has its palette with the plan colours
 screen/src/games/obstaculos/render/render.test.ts	passed	palettes lerpColor mixes in rgb
 screen/src/games/obstaculos/render/render.test.ts	passed	palettes plates and gates of a pair share a colour; different pairs differ
@@ -905,6 +944,9 @@ shared/midround.test.ts	passed	Pedido de cumpleaños: a pizza order worth 150 a 
 shared/midround.test.ts	passed	Pedido de cumpleaños: a pizza order worth 150 a full strip still shows it: it goes to the front
 shared/midround.test.ts	passed	Pedido de cumpleaños: a pizza order worth 150 it is served before the older plain order of the same recipe, and a Margarita fits it too
 shared/midround.test.ts	passed	Pedido de cumpleaños: a pizza order worth 150 versus: one for each team, each worth 150 times its own k
+shared/tutorial/protocol.school.test.ts	passed	phase "school" is a phase of its own, between the lobby and the round, and the protocol version says so
+shared/tutorial/protocol.school.test.ts	passed	phase "school" the lobby goes to the school and back; no other phase does
+shared/tutorial/protocol.school.test.ts	passed	phase "school" the old transitions are untouched
 shared/protocol.test.ts	passed	phases a phone message cannot invent a phase, and menu is a known one
 shared/protocol.test.ts	passed	phases ignores events that do not apply to the current phase
 server/test/relay.test.ts	passed	phases keeps the phase when a player reconnects with its token
@@ -918,27 +960,28 @@ controller/src/howto.test.ts	passed	phone how-to card never opens over a round i
 controller/src/howto.test.ts	passed	phone how-to card shows on join (nothing seen yet) and when the game changes
 controller/src/howto.test.ts	passed	phone how-to card shows when the screen leaves the menu for a game, every time it enters one
 controller/src/howto.test.ts	passed	phone how-to card stays closed in the start menu: no game has been picked yet
-controller/test/layout.test.ts	passed	phone layout a greyed button still takes the press (it is only a hint, and the sim buffers an early press for a station that shows up)
-controller/test/layout.test.ts	passed	phone layout Ayudante: the switch is in the pizzas lobby only; a tap sends the whole choice, the label and aria follow, and the relay settles it (also for a reconnect)
-controller/test/layout.test.ts	passed	phone layout contextual buttons: label, glyph and greyed state follow the hint; a later hint replaces the earlier one whole; leaving the round gives the game its labels back
-controller/test/layout.test.ts	passed	phone layout has no overlaps, clipped text, small touch targets or safe-area violations in any state
-controller/test/layout.test.ts	passed	phone layout hit-testing: each D-pad button takes the touch at its centre, in every viewport and inset
-controller/test/layout.test.ts	passed	phone layout hit-testing: each signal button takes the touch at its centre, in every viewport and inset
-controller/test/layout.test.ts	passed	phone layout hit-testing: the circles take their own touches, plates and the hint let them through, the left half is the stick zone
-controller/test/layout.test.ts	passed	phone layout tapping the D-pad sends one 'nav' per button with only the key in it (no id: the relay knows the socket), and the pad's buttons still work
-controller/test/layout.test.ts	passed	phone layout tapping the signal pad sends one new signal per tap (a counter from the baseline 0), holding "¡Ya!" holds `go`, and a quick-match phone sends neither
-controller/test/layout.test.ts	passed	phone layout the Captain's D-pad shows its 7 buttons on every screen but the round, and only on the Captain's phone
-controller/test/layout.test.ts	passed	phone layout the pad shows the three controls in the playing state (sanity of the harness)
-controller/test/layout.test.ts	passed	phone layout the signal pad (campaign): 6 buttons in a campaign round, none in a quick-match round or before the round starts
-controller/test/layout.test.ts	passed	phone layout versus results: the phone shows how its team ended and the score of its OWN team, framed in the team's colour; coop shows neither
+controller/test/layout.slow.test.ts	passed	phone layout a greyed button still takes the press (it is only a hint, and the sim buffers an early press for a station that shows up)
+controller/test/layout.slow.test.ts	passed	phone layout Ayudante: the switch is in the pizzas lobby only; a tap sends the whole choice, the label and aria follow, and the relay settles it (also for a reconnect)
+controller/test/layout.slow.test.ts	passed	phone layout contextual buttons: label, glyph and greyed state follow the hint; a later hint replaces the earlier one whole; leaving the round gives the game its labels back
+controller/test/layout.slow.test.ts	passed	phone layout hit-testing: each D-pad button takes the touch at its centre, in every viewport and inset
+controller/test/layout.slow.test.ts	passed	phone layout hit-testing: each signal button takes the touch at its centre, in every viewport and inset
+controller/test/layout.slow.test.ts	passed	phone layout hit-testing: the circles take their own touches, plates and the hint let them through, the left half is the stick zone
+controller/test/layout.slow.test.ts	passed	phone layout landscape: no overlaps, clipped text, small touch targets, covered buttons or safe-area violations in any state
+controller/test/layout.slow.test.ts	passed	phone layout portrait: no overlaps, clipped text, small touch targets, covered buttons or safe-area violations in any state
+controller/test/layout.slow.test.ts	passed	phone layout tapping the D-pad sends one 'nav' per button with only the key in it (no id: the relay knows the socket), and the pad's buttons still work
+controller/test/layout.slow.test.ts	passed	phone layout tapping the signal pad sends one new signal per tap (a counter from the baseline 0), holding "¡Ya!" holds `go`, and a quick-match phone sends neither
+controller/test/layout.slow.test.ts	passed	phone layout the Captain's D-pad shows its 7 buttons on every screen but the round, and only on the Captain's phone
+controller/test/layout.slow.test.ts	passed	phone layout the pad shows the three controls in the playing state (sanity of the harness)
+controller/test/layout.slow.test.ts	passed	phone layout the signal pad (campaign): 6 buttons in a campaign round, none in a quick-match round or before the round starts
+controller/test/layout.slow.test.ts	passed	phone layout versus results: the phone shows how its team ended and the score of its OWN team, framed in the team's colour; coop shows neither
 shared/games/obstaculos/validator/dynamics.test.ts	passed	pickaxe: an ice wall taller than any tower is climbed by whoever carries it, and the partner follows a level with no pickaxe item, or one the pioneer cannot reach, is not solvable even if the mechanic is known
 shared/games/obstaculos/validator/dynamics.test.ts	passed	pickaxe: an ice wall taller than any tower is climbed by whoever carries it, and the partner follows the climb is not capped by the rope (a 7-tile wall, 336 px, against a 201.6 px rope): that is its niche over the tower
 shared/games/obstaculos/validator/dynamics.test.ts	passed	pickaxe: an ice wall taller than any tower is climbed by whoever carries it, and the partner follows without the pickaxe the wall is out of reach; with it the pioneer climbs and the record shows the climb (followers use the edge too)
 screen/src/audio/mixer.test.ts	passed	pitch variation stays within +-8% for repetitive sounds and is 1 for the rest
-shared/generate.test.ts	passed	placement rules every recipe station gets its own access tile (matching, no two stations share one)
-shared/generate.test.ts	passed	placement rules loose obstacles never split the floor nor remove a passing counter
-shared/generate.test.ts	passed	placement rules placement claims one distinct access tile per station
-shared/generate.test.ts	passed	placement rules zones: boards and crates on side A, ovens and trays on B, the delivery counter on A for hard and B for normal
+shared/generate.slow.test.ts	passed	placement rules every recipe station gets its own access tile (matching, no two stations share one)
+shared/generate.slow.test.ts	passed	placement rules loose obstacles never split the floor nor remove a passing counter
+shared/generate.slow.test.ts	passed	placement rules placement claims one distinct access tile per station
+shared/generate.slow.test.ts	passed	placement rules zones: boards and crates on side A, ovens and trays on B, the delivery counter on A for hard and B for normal
 shared/games/obstaculos/sim/entities.test.ts	passed	plate weights half-up / half-down / all / all-but-1 / number, resolved with the connected players
 shared/games/obstaculos/sim/entities.test.ts	passed	plates and gates "all" counts the connected players, not the slots: 3 connected need 3 on the plate
 shared/games/obstaculos/sim/entities.test.ts	passed	plates and gates a closed gate blocks walking; an open one lets a second player through
@@ -996,6 +1039,9 @@ shared/presses.test.ts	passed	press counter keeps counting across a reconnect: t
 shared/presses.test.ts	passed	press counter reset makes the next sample a baseline
 shared/games/obstaculos/sim/rules.test.ts	passed	progress and awards awards: Ancla, Taxi, Coleccionista, Kamikaze and Pegamento go to the slot with the most (or the least time off camera)
 shared/games/obstaculos/sim/rules.test.ts	passed	progress and awards progressField: the goal is 0, a neighbour 1, the spawn is far, solid cells are never "near"
+shared/tutorial/steps.test.ts	passed	progress of one chef and of the table a skipped chef is done AND marked as skipped; advancing keeps the mark
+shared/tutorial/steps.test.ts	passed	progress of one chef and of the table advances one step at a time and stops at the total
+shared/tutorial/steps.test.ts	passed	progress of one chef and of the table the school ends only when somebody is connected and every connected chef is done
 screen/src/games/obstaculos/render/camera.test.ts	passed	progressField (BFS from the goal) cells inside solid rock are not reachable and sort after everything reachable
 screen/src/games/obstaculos/render/camera.test.ts	passed	progressField (BFS from the goal) clamps positions outside the grid
 screen/src/games/obstaculos/render/camera.test.ts	passed	progressField (BFS from the goal) is 0 at the goal and grows with the walking distance
@@ -1010,24 +1056,30 @@ shared/protocol.test.ts	passed	protocol rejects malformed messages and clamps in
 shared/protocol.test.ts	passed	protocol rejects unknown message types
 shared/protocol.test.ts	passed	protocol the hint also carries the glyph and the greyed state of each button (contextual buttons): known icons only, true or nothing
 shared/protocol.test.ts	passed	protocol the slip buzz is a single 120 ms pulse (sabotage); the hint message carries two labels of at most 14 characters, or null
-shared/events.mirror.test.ts	passed	prueba del espejo con eventos a mitad de ronda the event moves the result: a round with a birthday order is not the round without it
-shared/events.mirror.test.ts	passed	prueba del espejo con eventos a mitad de ronda the proof can fail: an event that reaches only one kitchen breaks the tie
-shared/events.mirror.test.ts	passed	prueba del espejo con eventos a mitad de ronda V1 3v3: birthday reaches both kitchens in the same tick and the two sides tie
-shared/events.mirror.test.ts	passed	prueba del espejo con eventos a mitad de ronda V1 3v3: blackout reaches both kitchens in the same tick and the two sides tie
-shared/events.mirror.test.ts	passed	prueba del espejo con eventos a mitad de ronda V1 3v3: rush reaches both kitchens in the same tick and the two sides tie
-shared/events.mirror.test.ts	passed	prueba del espejo con eventos a mitad de ronda V3 (rotation) 2v2 with the burning oven, the fire AND the event on: still an exact tie
-shared/burn.mirror.test.ts	passed	prueba del espejo con horno que quema y fuego the flags are what turn it on: the same round without them has no burn event at all
-shared/burn.mirror.test.ts	passed	prueba del espejo con horno que quema y fuego the proof can fail: a pizza left to burn in one kitchen only breaks the tie
-shared/burn.mirror.test.ts	passed	prueba del espejo con horno que quema y fuego V1 (reflection), 1v1 on Hard: the same (its ovens have no counter beside them, so the fire stays in the oven), and the timing is the grace window plus the fire delay
-shared/burn.mirror.test.ts	passed	prueba del espejo con horno que quema y fuego V3 (rotation), 1v1: both kitchens burn the pizza and catch fire in the same tick, the fire jumps to the twin counters, and everything ties
-shared/sabotage.mirror.test.ts	passed	prueba del espejo con sabotaje: the same script on both sides ties exactly ...and the round has slips, drops and cleaning in it (the script is not idle)
-shared/sabotage.mirror.test.ts	passed	prueba del espejo con sabotaje: the same script on both sides ties exactly the proof can fail: one chef less on team 1 breaks the tie
-shared/sabotage.mirror.test.ts	passed	prueba del espejo con sabotaje: the same script on both sides ties exactly V1 (reflection), Suave on Normal: bags, throws, landings, slips, cleaning and scores match event for event; the chefs end up as twins
-shared/sabotage.mirror.test.ts	passed	prueba del espejo con sabotaje: the same script on both sides ties exactly V3 (half turn), Caos on Difícil: the same
-shared/versus.test.ts	passed	prueba del espejo: scripted chefs reflected by the isometry tie exactly a different team play breaks the tie (the proof can fail): one chef less in team 1 loses points
-shared/versus.test.ts	passed	prueba del espejo: scripted chefs reflected by the isometry tie exactly the VIP is part of the proof: a golden order wins in both kitchens in the same tick
-shared/versus.test.ts	passed	prueba del espejo: scripted chefs reflected by the isometry tie exactly V1 3v3 (reflection): identical score, counters and events in both kitchens, and the chefs end up as twins
-shared/versus.test.ts	passed	prueba del espejo: scripted chefs reflected by the isometry tie exactly V3 2v2 (rotation of 180 degrees): the same
+shared/events.mirror.slow.test.ts	passed	prueba del espejo con eventos a mitad de ronda the event moves the result: a round with a birthday order is not the round without it
+shared/events.mirror.slow.test.ts	passed	prueba del espejo con eventos a mitad de ronda the proof can fail: an event that reaches only one kitchen breaks the tie
+shared/events.mirror.slow.test.ts	passed	prueba del espejo con eventos a mitad de ronda V1 3v3: birthday reaches both kitchens in the same tick and the two sides tie
+shared/events.mirror.slow.test.ts	passed	prueba del espejo con eventos a mitad de ronda V1 3v3: blackout reaches both kitchens in the same tick and the two sides tie
+shared/events.mirror.slow.test.ts	passed	prueba del espejo con eventos a mitad de ronda V1 3v3: rush reaches both kitchens in the same tick and the two sides tie
+shared/events.mirror.slow.test.ts	passed	prueba del espejo con eventos a mitad de ronda V3 (rotation) 2v2 with the burning oven, the fire AND the event on: still an exact tie
+shared/burn.mirror.slow.test.ts	passed	prueba del espejo con horno que quema y fuego the flags are what turn it on: the same round without them has no burn event at all
+shared/burn.mirror.slow.test.ts	passed	prueba del espejo con horno que quema y fuego the proof can fail: a pizza left to burn in one kitchen only breaks the tie
+shared/burn.mirror.slow.test.ts	passed	prueba del espejo con horno que quema y fuego V1 (reflection), 1v1 on Hard: the same (its ovens have no counter beside them, so the fire stays in the oven), and the timing is the grace window plus the fire delay
+shared/burn.mirror.slow.test.ts	passed	prueba del espejo con horno que quema y fuego V3 (rotation), 1v1: both kitchens burn the pizza and catch fire in the same tick, the fire jumps to the twin counters, and everything ties
+shared/recipes.mirror.test.ts	passed	prueba del espejo con la carta del día a derived versus map plays the card of its coop map, and a versus round made through the lobby has the card on (and off with the option)
+shared/recipes.mirror.test.ts	passed	prueba del espejo con la carta del día the proof can fail: a rival queue with one recipe swapped, or a kitchen that cannot fold, breaks the tie
+shared/recipes.mirror.test.ts	passed	prueba del espejo con la carta del día the VIP order of a card round is a recipe of the card, the same in both queues
+shared/recipes.mirror.test.ts	passed	prueba del espejo con la carta del día V1 3v3: one card for both teams, twin queues, the new recipes cooked in both kitchens, and an exact tie
+shared/recipes.mirror.test.ts	passed	prueba del espejo con la carta del día V3 (half turn) 2v2: the same, with the Margarita and the Calzone on the card
+shared/recipes.mirror.test.ts	passed	prueba del espejo con la carta del día with the burning oven, the fire and the mid-round event on as well (the lobby has them all on): still an exact tie, on three seeds
+shared/sabotage.mirror.slow.test.ts	passed	prueba del espejo con sabotaje: the same script on both sides ties exactly ...and the round has slips, drops and cleaning in it (the script is not idle)
+shared/sabotage.mirror.slow.test.ts	passed	prueba del espejo con sabotaje: the same script on both sides ties exactly the proof can fail: one chef less on team 1 breaks the tie
+shared/sabotage.mirror.slow.test.ts	passed	prueba del espejo con sabotaje: the same script on both sides ties exactly V1 (reflection), Suave on Normal: bags, throws, landings, slips, cleaning and scores match event for event; the chefs end up as twins
+shared/sabotage.mirror.slow.test.ts	passed	prueba del espejo con sabotaje: the same script on both sides ties exactly V3 (half turn), Caos on Difícil: the same
+shared/versus.slow.test.ts	passed	prueba del espejo: scripted chefs reflected by the isometry tie exactly a different team play breaks the tie (the proof can fail): one chef less in team 1 loses points
+shared/versus.slow.test.ts	passed	prueba del espejo: scripted chefs reflected by the isometry tie exactly the VIP is part of the proof: a golden order wins in both kitchens in the same tick
+shared/versus.slow.test.ts	passed	prueba del espejo: scripted chefs reflected by the isometry tie exactly V1 3v3 (reflection): identical score, counters and events in both kitchens, and the chefs end up as twins
+shared/versus.slow.test.ts	passed	prueba del espejo: scripted chefs reflected by the isometry tie exactly V3 2v2 (rotation of 180 degrees): the same
 shared/puestos.test.ts	passed	puesto reachability per map map 1 Cocina abierta: every chef reaches the stations of their puesto for every N in 2-4
 shared/puestos.test.ts	passed	puesto reachability per map map 10 El lavadero: every chef reaches the stations of their puesto for every N in 4-6
 shared/puestos.test.ts	passed	puesto reachability per map map 11 Tres carriles: every chef reaches the stations of their puesto for every N in 4-8
@@ -1147,7 +1199,7 @@ shared/render.test.ts	passed	render how-to: numbered steps in order, with icons 
 server/test/expeditions.test.ts	passed	reset goes to a recoverable trash moves the file to trash/, lists it and restores it whole
 server/test/expeditions.test.ts	passed	reset goes to a recoverable trash restoring does not overwrite an expedition that exists again, and a bad name is refused
 server/test/expeditions.test.ts	passed	reset goes to a recoverable trash trashing twice in the same instant does not clobber the first trash
-shared/generate.test.ts	passed	resolveMap "random" is the generated map of the lobby seed; other choices are fixed maps
+shared/generate.slow.test.ts	passed	resolveMap "random" is the generated map of the lobby seed; other choices are fixed maps
 shared/versusLobby.test.ts	passed	resolveVersusMap and kitchen sides "auto" only draws among the maps that fit (3 v 3: never V5)
 shared/versusLobby.test.ts	passed	resolveVersusMap and kitchen sides "random" is generated from the seed (same seed, same map; another seed, another map) and is a legal two-kitchen map
 shared/versusLobby.test.ts	passed	resolveVersusMap and kitchen sides a fixed choice gives that map with both kitchens' starts (A then B)
@@ -1174,11 +1226,11 @@ shared/sabotage-config.test.ts	passed	sabotage config the events are part of Gam
 shared/sabotage-config.test.ts	passed	sabotage config the item falls from Normal up and always in Caos; Suave on Fácil only slips
 shared/sabotage-config.test.ts	passed	sabotage config the slip table of the plan (section 4): control lost 550 / 750 / 900 ms
 shared/sabotage-config.test.ts	passed	sabotage config the three modes, in the lobby order, with their labels
-server/test/sabotage.ws.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook 3 v 2: with bags to spare, the bigger team waits k times as long between throws; the small kitchen's rubbish lasts 0.7 of the usual
-server/test/sabotage.ws.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook a balanced team (one saboteur, one cook) stays within 3 orders of a team of two cooks
-server/test/sabotage.ws.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook a team that only sabotages loses to a team that only cooks (the sabotage costs the saboteurs their time)
-server/test/sabotage.ws.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook both teams only sabotage and clean: bags are thrown over the wire, banana-skins land, chefs slip, the rubbish is picked up and binned, the phones feel it
-server/test/sabotage.ws.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook the sabotage costs the victim: the same cooks deliver fewer pizzas when they are being hit than when the sabotage is off
+server/test/sabotage.ws.slow.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook 3 v 2: with bags to spare, the bigger team waits k times as long between throws; the small kitchen's rubbish lasts 0.7 of the usual
+server/test/sabotage.ws.slow.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook a balanced team (one saboteur, one cook) stays within 3 orders of a team of two cooks
+server/test/sabotage.ws.slow.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook a team that only sabotages loses to a team that only cooks (the sabotage costs the saboteurs their time)
+server/test/sabotage.ws.slow.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook both teams only sabotage and clean: bags are thrown over the wire, banana-skins land, chefs slip, the rubbish is picked up and binned, the phones feel it
+server/test/sabotage.ws.slow.test.ts	passed	sabotage over the relay: bots that throw, slip, clean and cook the sabotage costs the victim: the same cooks deliver fewer pizzas when they are being hit than when the sabotage is off
 screen/src/audio/recipes.test.ts	passed	sabotage sounds each sabotage event has its sound: the throw climbs, the impact and the burst are different, the slip is followed by the laugh of the other side
 screen/src/audio/recipes.test.ts	passed	sabotage sounds the laugh comes after the fall has started, the whoosh of the throw is a rising sweep, the impact is short
 shared/games/obstaculos/campaign/practice.test.ts	passed	Sala de practica: one station per action, opening when its mechanic debuts has a station for every mechanic Mundo 1 introduces, each opening at the level that introduces it
@@ -1251,6 +1303,26 @@ screen/src/games/obstaculos/adapter.test.ts	passed	SimWorldView: the real world 
 screen/src/games/obstaculos/adapter.test.ts	passed	SimWorldView: the real world seen as a WorldView shows lives, stars, time and where in the expedition we are
 screen/src/games/obstaculos/adapter.test.ts	passed	SimWorldView: the real world seen as a WorldView stars, checkpoints and the goal light up when the world says so
 screen/src/games/obstaculos/adapter.test.ts	passed	SimWorldView: the real world seen as a WorldView what B would do shows above the head: plant when idle on the ground, nothing in the air, throw when carrying
+tools/meta/size-budget.test.ts	passed	size budget (real repo) no file or folder breaks the budget or its exception
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) code: 300 warns without failing
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) css/html: 150 soft, 250 hard
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) data/, fixtures/ and levels/ are exempt
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) fails a file over the hard limit that is not listed
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) fails a listed file that grows above its max
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) fails a listed file that shrank more than 25 lines (ratchet down)
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) fails an entry whose path no longer exists
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) fails an expired exception
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) folder: 12 code files warn, 21 fail; tests do not count
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) index.ts: over 40 lines or more than re-exports fails
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) onlyReexports reads comments and multi-line exports
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) passes the listed exception at its max
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) tests: 500 soft (warn), 800 hard (fail)
+tools/meta/size-budget.test.ts	passed	size budget rules (synthetic) tolerates a shrink of up to 25 lines
+shared/tutorial/school.test.ts	passed	skipping "Saltar" finishes that chef at once, wherever it was, and the others carry on
+shared/tutorial/school.test.ts	passed	skipping a "Saltar" that arrives before the chef was first seen is not lost
+shared/tutorial/school.test.ts	passed	skipping a chef that is done cannot be "skipped" again (no double notification)
+shared/tutorial/school.test.ts	passed	skipping chefs whose phone already did the school start finished; with useKnown off (opened by hand) everybody practises
+shared/tutorial/school.test.ts	passed	skipping skipping everyone ends the table at once
 server/test/relay.test.ts	passed	slot expiry a second drop restarts the 60 s window instead of inheriting the first timer
 server/test/relay.test.ts	passed	slot expiry frees the slot after 60 s without the phone
 server/test/relay.test.ts	passed	slot expiry returning before 60 s cancels the expiry
@@ -1277,6 +1349,9 @@ shared/games/obstaculos/campaign/progress.test.ts	passed	stars: 1 goal, 2 every 
 shared/games/obstaculos/campaign/progress.test.ts	passed	stars: 1 goal, 2 every collectible, 3 no hearts lost an unknown level id is ignored
 shared/games/obstaculos/campaign/progress.test.ts	passed	stars: 1 goal, 2 every collectible, 3 no hearts lost star 2 needs the whole set of collectibles, and they add up across runs
 shared/games/obstaculos/campaign/progress.test.ts	passed	stars: 1 goal, 2 every collectible, 3 no hearts lost star 3 needs zero hearts lost and is not given with infinite hearts
+shared/recipes.test.ts	passed	stars: version 1 stays, version 2 follows the card a round with a card is table 2: the old thresholds times a factor near 1 (0.95 to 1.1 on every card of every map)
+shared/recipes.test.ts	passed	stars: version 1 stays, version 2 follows the card a round without a card reads the original table: factor 1, table 1, the same thresholds
+shared/recipes.test.ts	passed	stars: version 1 stays, version 2 follows the card the factor is value per effort against the old mix: Marinara + Calzone is worth more per unit of work than Marinara alone (no cheese map), Pepperoni less than Margarita
 shared/vote.test.ts	passed	statu quo destructive: a plurality below M does not win even when it is the leader
 shared/vote.test.ts	passed	statu quo destructive: a tie between destructive options keeps the current one
 shared/vote.test.ts	passed	statu quo destructive: an unreached M with E=1 is impossible; the lone voter decides
@@ -1338,24 +1413,29 @@ screen/src/games/obstaculos/audio/music.test.ts	passed	tension and layers tempo 
 screen/src/games/obstaculos/audio/music.test.ts	passed	tension and layers tension adds hits: sixteenth ticks from 0.6, an octave on the melody from 0.8
 screen/src/games/obstaculos/audio/music.test.ts	passed	tension and layers tension is 0 when calm, 1 when everything is at the limit, and grows with each ingredient
 screen/src/games/obstaculos/audio/music.test.ts	passed	tension and layers the drone is a fifth on the low root, sounding once per 16 steps
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) an easier physics (Easy, Normal) never invalidates what Hard accepts
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) are 15, in order, with the table's name, biome, players, mode and stars
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) calibration: Spearman >= 0.7 between the plan's stars and the measured difficulty D
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l01 Primeros pasos: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l02 El muelle flojo: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l03 Marea alta: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l04 Argollas del alerce: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l05 Troncos del río: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l06 La copa del coigüe: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l07 Vagonetas: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l08 Balanza de cobre: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l09 La veta oscura: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l10 Hielo resbaloso: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l11 Grietas: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l12 Avalancha: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l13 Lluvia de ceniza: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l14 Lava ascendente: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
-shared/games/obstaculos/levels/levels.test.ts	passed	the 15 levels (plan §10) l15 El cráter: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) an easier physics (Easy, Normal) never invalidates what Hard accepts
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) are 15, in order, with the table's name, biome, players, mode and stars
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) calibration: Spearman >= 0.7 between the plan's stars and the measured difficulty D
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l01 Primeros pasos: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l02 El muelle flojo: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l03 Marea alta: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l04 Argollas del alerce: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l05 Troncos del río: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l06 La copa del coigüe: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l07 Vagonetas: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l08 Balanza de cobre: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l09 La veta oscura: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l10 Hielo resbaloso: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l11 Grietas: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l12 Avalancha: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l13 Lluvia de ceniza: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l14 Lava ascendente: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the 15 levels (plan §10) l15 El cráter: parses clean and is solvable in every mode, with the fewest, a middle and the most players (Hard physics)
+shared/recipes.test.ts	passed	the Calzone: hold Picar at the oven with dough and tomato, and it bakes longer a folded calzone bakes CALZONE_COOK_MULT times longer, comes out as a dishC, and nobody can add a topping to it
+shared/recipes.test.ts	passed	the Calzone: hold Picar at the oven with dough and tomato, and it bakes longer a pepperoni pizza comes out as a dishP and a champiñón one as a dishM; burnt is still burnt
+shared/recipes.test.ts	passed	the Calzone: hold Picar at the oven with dough and tomato, and it bakes longer FOLD_MS of Picar folds it (foldStart, foldDone, foldStop), a shorter one only advances the fold
+shared/recipes.test.ts	passed	the Calzone: hold Picar at the oven with dough and tomato, and it bakes longer foldable only with a card that has a calzone, dough and tomato (nothing else) loaded, cooking, not folded, not on fire
+shared/recipes.test.ts	passed	the Calzone: hold Picar at the oven with dough and tomato, and it bakes longer Picar at an oven that cannot be folded does nothing (no fold, no cutting state)
 server/test/relay.test.ts	passed	the Captain (F0 of the menus from the phone) drops nav from anyone who is not the captain, from a screen, from a socket that never joined, and malformed ones
 server/test/relay.test.ts	passed	the Captain (F0 of the menus from the phone) forwards the captain's nav to the screens stamped with `from` from the socket, ignoring any id in the payload
 server/test/relay.test.ts	passed	the Captain (F0 of the menus from the phone) the first player to join gets the crown, everyone hears it, and a later joiner does not take it
@@ -1365,10 +1445,20 @@ shared/protocol.test.ts	passed	the Captain's 'nav' on the wire (protocol v3) dro
 shared/protocol.test.ts	passed	the Captain's 'nav' on the wire (protocol v3) every D-pad key parses to a nav with only the key in it
 shared/protocol.test.ts	passed	the Captain's 'nav' on the wire (protocol v3) refuses an unknown or missing key and anything that is not a string
 shared/protocol.test.ts	passed	the Captain's 'nav' on the wire (protocol v3) the version was bumped for the crown
+controller/src/school.test.ts	passed	the Captain's button "Saltar a todos" sends the D-pad's ok (Enter on the TV) when this phone holds the crown; nobody else can
+controller/src/school.test.ts	passed	the Captain's button the button is only drawn for the Captain
+shared/tutorial/protocol.school.test.ts	passed	the Captain's D-pad shows in the menus and the lobby, not over the pad of the round or of the school (the school card has its own "saltar para todos")
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the Captain's reset: "?" arms it, 3 seconds, OK confirms "?" in the results does nothing (a level was just played, not an expedition picked)
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the Captain's reset: "?" arms it, 3 seconds, OK confirms any other key cancels it, and the window runs out
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the Captain's reset: "?" arms it, 3 seconds, OK confirms arming needs something to reset: the highlighted Continuar, a listed expedition or the open one
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the Captain's reset: "?" arms it, 3 seconds, OK confirms OK before 3 s is refused, OK after 3 s resets that expedition
+shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated a bad card on a versus map is reported once per kitchen, with the kitchen named
+shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated and a card the map cannot serve: a Pepperoni where there is no cheese crate, and a cheese crate no chef can reach
+shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated every card has the right shape, and a card with a topping recipe sits on a map with the cheese crate
+shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated every one of the 15 coop maps and the 5 versus maps has a card (a derived versus map plays its coop map card)
+shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated the cards are varied: all five recipes show up, and a map without the cheese crate has Marinara + Calzone
+shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated the validator proves every card on the 15 coop maps and, in each kitchen, on the 5 versus maps (plus the derived one)
+shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated the validator rejects a bad card: wrong size, a repeat, no Marinara, two toppings
 shared/games/obstaculos/campaign/campaign.test.ts	passed	the catalog: 5 worlds x 7 + 5 Cumbres = 40 (plan §2) every built level has 3 collectibles on its tilemap and a world-valid id
 shared/games/obstaculos/campaign/campaign.test.ts	passed	the catalog: 5 worlds x 7 + 5 Cumbres = 40 (plan §2) every level of Mundos 2 and 3 has at most 2 hints of at most 6 words, none in levels 6 and 7, and a hint on the level that introduces something with a modelled rule
 shared/games/obstaculos/campaign/campaign.test.ts	passed	the catalog: 5 worlds x 7 + 5 Cumbres = 40 (plan §2) has 40 levels in order, 7 per world, 5 Cumbres, a boss at the end of each world
@@ -1402,6 +1492,7 @@ shared/games/obstaculos/session.test.ts	passed	the clock: 60 Hz fixed steps from
 shared/games/obstaculos/session.test.ts	passed	the clock: 60 Hz fixed steps from the last input the latest stick wins and the previous one is not replayed: two phones, two different directions
 shared/games/obstaculos/session.test.ts	passed	the clock: 60 Hz fixed steps from the last input the number of steps follows the time that passes, whatever the frame length (30, 60 or 144 fps)
 shared/games/obstaculos/session.test.ts	passed	the clock: 60 Hz fixed steps from the last input the same packets give the same hash, however the frames are cut
+controller/src/howto.test.ts	passed	the Cocina escuela is played with the pad like a round: no how-to card over it, and the phone that reconnects into it does not get one
 shared/burn.assist.test.ts	passed	the contextual buttons know the fire on a burning station A is greyed "En llamas" and B reads "Apagar"; a burnt pizza comes out as "Sacar quemada"; every label fits the button
 shared/captain.test.ts	passed	the D-pad speaks the keyboard has exactly the keys of the plan: 4 arrows, OK, Atrás, ? (help)
 shared/captain.test.ts	passed	the D-pad speaks the keyboard isNavKey is a closed list
@@ -1421,6 +1512,9 @@ shared/validate.test.ts	passed	the fifteen maps match the design availability ta
 shared/assist.test.ts	passed	the flag is per chef and costs nothing when it is off a round that names an Ayudante nobody plays (or nobody at all) is the golden round, event for event
 shared/assist.test.ts	passed	the flag is per chef and costs nothing when it is off only the chef that chose it carries the flag, and the roster knows
 shared/assist.test.ts	passed	the flag is per chef and costs nothing when it is off the same round with a real Ayudante is NOT the golden one (the control proves the flag does something) but still cooks and delivers
+shared/tutorial/steps.test.ts	passed	the four steps are exactly: take dough, chop tomato, bake, deliver
+shared/tutorial/steps.test.ts	passed	the four steps every instruction the phone can show has at most 8 words, in Spanish
+shared/tutorial/steps.test.ts	passed	the four steps the TV subtitles say there is no clock and no points, and the versus one says the teams play together
 shared/versusReport.test.ts	passed	the golden order card is up from the moment the golden order shows up until a team wins it or it runs out
 shared/burn.test.ts	passed	the grace window: 8 s on Normal and Hard, 15 s on Easy, with a warning beep before it ends easy: warn 3000 ms before the grace ends, burnt when it does
 shared/burn.test.ts	passed	the grace window: 8 s on Normal and Hard, 15 s on Easy, with a warning beep before it ends hard: warn 3000 ms before the grace ends, burnt when it does
@@ -1437,6 +1531,10 @@ shared/assist.test.ts	passed	the handicap k (versus): an Ayudante weighs 0.7 and
 shared/assist.test.ts	passed	the handicap k (versus): an Ayudante weighs 0.7 and its immunity costs 0.05 of k  [numbers to calibrate] the sim applies it: createGame / startVersusRound with an Ayudante gives the team its k, and the lobby shows the same number before the start
 shared/assist.test.ts	passed	the handicap k (versus): an Ayudante weighs 0.7 and its immunity costs 0.05 of k  [numbers to calibrate] two Ayudantes in the same team of 2 (eff 1.4 vs 2): sqrt(2/1.4) = 1.20 minus 0.10 = 1.10
 shared/assist.test.ts	passed	the handicap k (versus): an Ayudante weighs 0.7 and its immunity costs 0.05 of k  [numbers to calibrate] with no Ayudantes every k is what it always was (the old table: 2v1 1.41, 3v2 1.22, 4v3 1.15)
+shared/tutorial/school.test.ts	passed	the hands and the wire a chef that does nothing is told its step again every second (a phone that came back is right within a second), not every frame
+shared/tutorial/school.test.ts	passed	the hands and the wire a message that flaps every frame (the lit button flips while the board fills and empties) reaches the phone at most every 50 ms
+shared/tutorial/school.test.ts	passed	the hands and the wire the chopped tomato is in the chef's hands the very moment the chop is done, and the board is free again
+shared/tutorial/school.test.ts	passed	the hands and the wire when the school ends every phone gets the game's own button labels back
 server/test/expeditions.test.ts	passed	the HTTP API, and "Continuar" after the server restarts a server that never plays the campaign leaves no folder behind
 server/test/expeditions.test.ts	passed	the HTTP API, and "Continuar" after the server restarts serves create / merge / claim / reset / restore, and a new server on the same folder offers the right level
 screen/src/games/obstaculos/campaign/flow.test.ts	passed	the hub: who is there to continue offers the remembered expedition; the most recent one when nothing is remembered; nothing when the server is down
@@ -1447,6 +1545,9 @@ shared/hazards.test.ts	passed	the item that falls spoilRaw (Caos): a raw ingredi
 shared/hazards.test.ts	passed	the item that falls the dropped item is picked up with A by a chef of the team (nearest, in front or underfoot), and it makes nobody slip
 shared/captain.test.ts	passed	the keyboard keeps the last word a keyboard that was never touched blocks nothing
 shared/captain.test.ts	passed	the keyboard keeps the last word drops a remote intent that lands within the quiet window after a key press, and lets it through after
+screen/src/tutorial/host.test.ts	passed	the keys P in the lobby opens it; in any other phase or game, or with the iris moving, it does nothing
+screen/src/tutorial/host.test.ts	passed	the keys the iris moving swallows Enter (no double end)
+screen/src/tutorial/host.test.ts	passed	the keys while it runs every key is the school's (nothing else moves), but only Enter and Escape end it, and a held key does not
 shared/sabotage.test.ts	passed	the labels of the two buttons (no third button) A and B are only renamed: Tomar bolsa at the bin with a bag waiting, Cargar at the catapult with the bag, ¡Lanzar! while aiming, Recoger next to rubbish
 shared/sabotage.test.ts	passed	the labels of the two buttons (no third button) with the sabotage off there is nothing to rename
 screen/src/games/obstaculos/campaign/host.test.ts	passed	the level end reaches the campaign at once a clear with nothing collected has an empty mask
@@ -1460,15 +1561,29 @@ shared/midround.test.ts	passed	the lobby option Eventos is Sí on Normal and Dif
 shared/midround.test.ts	passed	the lobby option roundRules: the burning oven always, the event by the option
 shared/midround.test.ts	passed	the lobby option the constants are the council numbers: 3 orders, +100, 150 (a triple of a Marinara), 3 s of warning, a window of 1:00 to 2:00
 shared/burn.test.ts	passed	the lobby turns the rules on a versus round from the lobby has the burning oven; the fire follows the difficulty and the sabotage level (Easy no, Suave no, Caos yes)
+server/test/recipes.ws.test.ts	passed	the new recipes over the relay a phone that holds Picar at an oven with dough and tomato for FOLD_MS folds the calzone
+server/test/recipes.ws.test.ts	passed	the new recipes over the relay two phones cook calzone on map 9 from raw ingredients: it is delivered, it pays 90 base and nothing is refused
+server/test/recipes.ws.test.ts	passed	the new recipes over the relay two phones cook champinon on map 12 from raw ingredients: it is delivered, it pays 100 base and nothing is refused
+server/test/recipes.ws.test.ts	passed	the new recipes over the relay two phones cook pepperoni on map 9 from raw ingredients: it is delivered, it pays 100 base and nothing is refused
 server/test/burn.ws.test.ts	passed	the oven that burns over the relay a firefighter that walks to the flames and holds Picar through the phone puts them out in DOUSE_MS of match time, while the cook goes on cooking
 server/test/burn.ws.test.ts	passed	the oven that burns over the relay nobody takes the pizza out and nobody puts the fire out: it burns after the grace time, catches fire 5 s later, jumps to the counters and stays lit to the end
 shared/pantry.test.ts	passed	the pantry only exists where the map declares it a coop round ignores a declared pantry
 shared/pantry.test.ts	passed	the pantry only exists where the map declares it the lobby's start of a V2 round builds the pantry from the map
 shared/pantry.test.ts	passed	the pantry only exists where the map declares it V1 and the other versus maps have no pantry: crates give for free, as before
+shared/recipes.test.ts	passed	the Pepperoni: the slices take longer on the board a raw pepperoni needs SLICE_MULT times the board time of a tomato, and ends as cut3
+shared/recipes.test.ts	passed	the phone: contextual buttons for the new recipes the cheese crate says what it gives (queso, Pepperoni, Champiñón); an oven that can be folded offers Doblar on B, and it greys out once folded
+screen/src/tutorial/host.test.ts	passed	the phones during the school a skip with no school running is ignored
+screen/src/tutorial/host.test.ts	passed	the phones during the school each frame tells every connected phone its step; a phone that pressed "Saltar" is done on the TV at once
+screen/src/tutorial/host.test.ts	passed	the phones during the school the presses a phone sent before the school started are not carried into it
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the pictures a name cannot inject markup
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the pictures the hub carries the exact Continuar text and the difficulty pills
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the pictures the map draws a node per level with its state, the lock, the boss tag and the clock
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the pictures the results show the stars earned now as fresh and the buttons
+shared/tutorial/school.test.ts	passed	the practice never leaves a chef stuck a chef at the oven step that puts its chopped tomato down gets another one REGRANT_MS later, and still finishes
+shared/tutorial/school.test.ts	passed	the practice never leaves a chef stuck a chef that drops (phone gone) leaves the kitchen and keeps its progress for when it is back
+shared/tutorial/school.test.ts	passed	the practice never leaves a chef stuck an oven shows what a chef put in it for OVEN_SHOW_MS, then empties for the next chef
+shared/tutorial/school.test.ts	passed	the practice never leaves a chef stuck the pizza comes out of the oven in the chef's hands at once; if the chef loses it, another one appears REGRANT_MS later
+shared/tutorial/school.test.ts	passed	the practice never leaves a chef stuck what does not belong in the hands at this step goes away after a moment (the dough once it was taken)
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the practice room a station opens when its debut level is open in the expedition
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the practice room Enter plays an open station and refuses a closed one with the level that opens it; Esc goes back to the hub
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the practice room opens from the hub and lists the 8 stations; without progress only the ones of the first level are open
@@ -1501,10 +1616,24 @@ shared/midround.test.ts	passed	the schedule: one event per round, between 1:00 a
 shared/midround.test.ts	passed	the schedule: one event per round, between 1:00 and 2:00, announced 3 s before the kind and the instant come from the seed alone: the same seed gives the same event, other seeds give other ones, the start is always inside the window
 shared/midround.test.ts	passed	the schedule: one event per round, between 1:00 and 2:00, announced 3 s before the pool: no rat in versus, no inspector on a map with no plates to wash; the rat and the inspector do exist where they can
 shared/midround.test.ts	passed	the schedule: one event per round, between 1:00 and 2:00, announced 3 s before the timeline: announce 3 s before, start on time, end after its duration, and then nothing else for the rest of the round
+controller/src/school.test.ts	passed	the school card done: "Listo", all dots, the skip button off, the green card
+controller/src/school.test.ts	passed	the school card leaving the school clears the lit button, and a late message after that changes nothing
+controller/src/school.test.ts	passed	the school card lights the button of the step (A, then B at the knife) and only that one: the button and its label plate
+controller/src/school.test.ts	passed	the school card shows the step, the instruction and the dots that are done
+shared/tutorial/steps.test.ts	passed	the school kitchen has no cheese, sink or plates: the school teaches the four steps and nothing else
+shared/tutorial/steps.test.ts	passed	the school kitchen is a valid 16x9 map with eight spawn tiles and every station of the four steps, twice (a counter line on each wall)
+server/test/school.ws.test.ts	passed	the school over the relay (bots on websockets) 1 player(s): everybody gets the phase, their own steps one after the other, and finishes
+server/test/school.ws.test.ts	passed	the school over the relay (bots on websockets) 2 player(s): everybody gets the phase, their own steps one after the other, and finishes
+server/test/school.ws.test.ts	passed	the school over the relay (bots on websockets) 8 player(s): everybody gets the phase, their own steps one after the other, and finishes
+server/test/school.ws.test.ts	passed	the school over the relay (bots on websockets) a phone that already did the school arrives finished: the relay keeps it with the slot (also across a reconnect) and the table starts with it checked
+server/test/school.ws.test.ts	passed	the school over the relay (bots on websockets) a phone that presses "Saltar" is done at once, wherever it was; the other keeps cooking
+server/test/school.ws.test.ts	passed	the school over the relay (bots on websockets) a player that joins halfway starts at step 0 and the school waits for them
 shared/versusReport.test.ts	passed	the scoreboard a comeback is the trailing team taking the lead; the first points, a tie and regaining its own lead are not
 shared/versusReport.test.ts	passed	the scoreboard shows ??? only while the clock runs, in the last 20 s, and only when the host kept the option
 shared/versusReport.test.ts	passed	the scoreboard while the scoreboard is hidden the lead does not move and no cue goes out (the sound would give it away)
 shared/versusReport.test.ts	passed	the scoreboard writes the handicap with a decimal comma, and nothing at 1
+shared/tutorial/protocol.school.test.ts	passed	the screen's 'school' message to one phone parses the step, the total, the instruction and the button to light
+shared/tutorial/protocol.school.test.ts	passed	the screen's 'school' message to one phone refuses a malformed one (no player, step beyond the total, empty or huge text, unknown button)
 shared/versusReport.test.ts	passed	the series of the session a round the host ended or played on without a winner does not count
 shared/versusReport.test.ts	passed	the series of the session counts wins and draws of the same group; nothing to show before the first round
 shared/versusReport.test.ts	passed	the series of the session the same chefs on swapped teams go on with the series; a different group starts over
@@ -1514,14 +1643,14 @@ shared/pantry.test.ts	passed	the shared pantry (V2) both crates on the barrier b
 shared/pantry.test.ts	passed	the shared pantry (V2) one team can drain it alone: 4 takes in a row leave nothing for the rival
 shared/pantry.test.ts	passed	the shared pantry (V2) the pantry is the only way to cheese on V2: no other crate gives it
 shared/pantry.test.ts	passed	the shared pantry (V2) the refill clock does not run while the stock is full: the first take after a long wait gives 6 s from the take, not an instant refill
-shared/games/obstaculos/levels/levels.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l04 Argollas: tied, the 7-wide abyss needs the ring (no ring, no crossing); free, the stones are enough
-shared/games/obstaculos/levels/levels.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l05 Troncos: without the logs the river is 40 tiles of water
-shared/games/obstaculos/levels/levels.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l06 La copa: with 2 players there is no tower of 2, so a 5-tile wall stops them
-shared/games/obstaculos/levels/levels.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l07 Vagonetas: the elevator is useless without its second lever (the holder would be stranded)
-shared/games/obstaculos/levels/levels.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l08 Balanza: walling the ladder F off (the heavy group's way up) leaves the level unsolvable; with 3 players the balance does not move
-shared/games/obstaculos/levels/levels.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l09 La veta: a level whose key is gone is a lint error (door without key)
-shared/games/obstaculos/levels/levels.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l11 Grietas: without the bridge (plate a and mover A) the crevasse stays open
-shared/games/obstaculos/levels/levels.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l15 El cráter: without the ladder the 6-tile wall strands the followers (Hard hand zone is 2 tiles)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l04 Argollas: tied, the 7-wide abyss needs the ring (no ring, no crossing); free, the stones are enough
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l05 Troncos: without the logs the river is 40 tiles of water
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l06 La copa: with 2 players there is no tower of 2, so a 5-tile wall stops them
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l07 Vagonetas: the elevator is useless without its second lever (the holder would be stranded)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l08 Balanza: walling the ladder F off (the heavy group's way up) leaves the level unsolvable; with 3 players the balance does not move
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l09 La veta: a level whose key is gone is a lint error (door without key)
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l11 Grietas: without the bridge (plate a and mover A) the crevasse stays open
+shared/games/obstaculos/levels/levels.slow.test.ts	passed	the signature mechanic of each level is load-bearing (take it away and the validator says no) l15 El cráter: without the ladder the 6-tile wall strands the followers (Hard hand zone is 2 tiles)
 shared/hazards.test.ts	passed	the slip: dash, wall, buffered B a chef that enters dashing slides 0.5 tile farther
 shared/hazards.test.ts	passed	the slip: dash, wall, buffered B a wall stops the slide dead; the time without control is the same
 shared/hazards.test.ts	passed	the slip: dash, wall, buffered B B pressed while sliding does nothing then, but it is remembered and dashes as soon as the chef is up
@@ -1540,6 +1669,7 @@ server/test/expeditions.test.ts	passed	the store refuses an invalid body, a body
 shared/versusReport.test.ts	passed	the summary of each team carries the numbers of the sim: deliveries, tips, best streak, golden orders, handicap, stars (by the team size and the score with k)
 shared/versusReport.test.ts	passed	the summary of each team the MVP of a team is its chef with most deliveries (the first one listed on a tie, nobody when nobody delivered)
 shared/versusReport.test.ts	passed	the summary of each team the tally counts deliveries per chef off the bus and can start over
+shared/tutorial/school.test.ts	passed	the table is done: how long, and the rows the TV draws doneMs grows only while everyone is done; rows list the connected chefs by slot with their step
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the trail of a world a closed world says what opens it
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the trail of a world an open level that was not validated for this many players cannot be played, and says for how many
 screen/src/games/obstaculos/campaign/model.test.ts	passed	the trail of a world carries the stars, the clock medal and the best time of a played level
@@ -1580,10 +1710,10 @@ screen/test/art.test.ts	passed	timers ticket and bar colours follow the threshol
 shared/games/obstaculos/modules/modules.test.ts	passed	tramos: jumps sampled inside the validated envelope the largest gap is 4 tied and 5 free; every kind at every fraction is solvable in its own mode
 shared/overcooked.test.ts	passed	trash and shared stations Espejo: the oven in the central column takes ingredients from both sides, and each side picks up from it
 shared/overcooked.test.ts	passed	trash and shared stations the trash discards whatever is in hand
-shared/versus.test.ts	passed	twin queues: same seed per team, same recipes at the same instants a full queue does not shift the recipes: the team that skips a slot still draws it, so each recipe arrives when the rival got it
-shared/versus.test.ts	passed	twin queues: same seed per team, same recipes at the same instants both teams receive the same order sequence, with both recipes present
-shared/versus.test.ts	passed	twin queues: same seed per team, same recipes at the same instants delivering in A does not change anything in B (queue, deadlines, events)
-shared/versus.test.ts	passed	twin queues: same seed per team, same recipes at the same instants the order of calls does not matter: spawnOrder by hand on one team leaves the other stream alone
+shared/versus.slow.test.ts	passed	twin queues: same seed per team, same recipes at the same instants a full queue does not shift the recipes: the team that skips a slot still draws it, so each recipe arrives when the rival got it
+shared/versus.slow.test.ts	passed	twin queues: same seed per team, same recipes at the same instants both teams receive the same order sequence, with both recipes present
+shared/versus.slow.test.ts	passed	twin queues: same seed per team, same recipes at the same instants delivering in A does not change anything in B (queue, deadlines, events)
+shared/versus.slow.test.ts	passed	twin queues: same seed per team, same recipes at the same instants the order of calls does not matter: spawnOrder by hand on one team leaves the other stream alone
 server/test/campaign.ws.test.ts	passed	two bots on websockets play 1-1 and the campaign moves on a signal sent from a phone crosses the relay and shows over that explorer in the campaign layer
 server/test/campaign.ws.test.ts	passed	two bots on websockets play 1-1 and the campaign moves on saves 1-1 and 1-2, survives a server restart and offers 1-3 in Continuar
 shared/games/obstaculos/sim/rope.test.ts	passed	unilateral link a rope never pushes: walking toward each other, nobody is shoved away
@@ -1638,14 +1768,14 @@ screen/test/art.test.ts	passed	versus HUD layout (F4) each scoreboard plate sits
 screen/test/art.test.ts	passed	versus HUD layout (F4) every versus map gets the same neutral floor (the team colour does the rest), and coop maps keep theirs
 screen/test/art.test.ts	passed	versus HUD layout (F4) the golden order card sits in the middle of the barrier: upper part of a vertical one (the pantry may fill its middle row), middle of a horizontal one
 screen/test/art.test.ts	passed	versus HUD layout (F4) the plates fit under the top of the stage and above the map
-server/test/versus.ws.test.ts	passed	versus lobby over the relay: teams are the screen's call a phone asks to change team: the screen moves it and the phone gets its new colour and side; locked teams refuse
+server/test/versus.ws.slow.test.ts	passed	versus lobby over the relay: teams are the screen's call a phone asks to change team: the screen moves it and the phone gets its new colour and side; locked teams refuse
 shared/versusLobby.test.ts	passed	versus maps filtered by team size a lopsided team that does not fit its kitchen blocks the map even when the total does (V3: 4 v 2 = 6 players, 3 starts per side)
 shared/versusLobby.test.ts	passed	versus maps filtered by team size choices are recognised by the protocol check
 shared/versusLobby.test.ts	passed	versus maps filtered by team size the list puts the maps that fit first and the default skips the ones already played
 shared/versusLobby.test.ts	passed	versus maps filtered by team size V1 takes everything 2..8; V2 and V4 need 4; V3 up to 6; V5 up to 4
-server/test/versus.ws.test.ts	passed	versus over the relay: bots on websockets 4 phones: 2 v 2 on V1 play a whole round and it ends with a winner
-server/test/versus.ws.test.ts	passed	versus over the relay: bots on websockets 5 phones: 3 v 2, the small team carries k 1.22 on every delivery and the big one plays at 1
-server/test/versus.ws.test.ts	passed	versus over the relay: bots on websockets 6 phones: 3 v 3 on V1 play a whole round and it ends with a winner
+server/test/versus.ws.slow.test.ts	passed	versus over the relay: bots on websockets 4 phones: 2 v 2 on V1 play a whole round and it ends with a winner
+server/test/versus.ws.slow.test.ts	passed	versus over the relay: bots on websockets 5 phones: 3 v 2, the small team carries k 1.22 on every delivery and the big one plays at 1
+server/test/versus.ws.slow.test.ts	passed	versus over the relay: bots on websockets 6 phones: 3 v 3 on V1 play a whole round and it ends with a winner
 screen/src/audio/recipes.test.ts	passed	versus sounds (F4) a chef dropping, coming back, leaving for good and the pause each have their own sound
 screen/src/audio/recipes.test.ts	passed	versus sounds (F4) the comeback and a unit back in the pantry
 screen/src/audio/recipes.test.ts	passed	versus sounds (F4) the end of a versus round: the whistle, then a fanfare for a winner or a plain close for a draw; coop keeps its whistle alone
@@ -1655,12 +1785,12 @@ screen/src/audio/recipes.test.ts	passed	versus sounds (F4) the handicap: only a 
 shared/versusLobby.test.ts	passed	versusAvailability: when the mode can be picked a mode with a tighter ratio refuses the odd split by the same rule (validateTeamSetup decides, not a table)
 shared/versusLobby.test.ts	passed	versusAvailability: when the mode can be picked even N needs 4 or more; odd N needs a legal handicap; the rest says why not
 shared/versusLobby.test.ts	passed	versusAvailability: when the mode can be picked the reasons are lobby texts, and an odd lobby carries a heads-up with the multiplier
-shared/versus.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 a pizza goes to the golden order first, even when a normal order of the same recipe is ahead of it
-shared/versus.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 appears in both queues at the same instant with the same recipe and 30 s of patience, every 60 s on Normal
-shared/versus.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 coop never has a VIP
-shared/versus.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 nobody delivers: both golden orders expire at 30 s, with the usual penalty
-shared/versus.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 the first team to deliver gets x2 and the rival order turns normal (and keeps its pizza)
-shared/versus.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 two teams delivering it in the same tick both win it
+shared/versus.slow.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 a pizza goes to the golden order first, even when a normal order of the same recipe is ahead of it
+shared/versus.slow.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 appears in both queues at the same instant with the same recipe and 30 s of patience, every 60 s on Normal
+shared/versus.slow.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 coop never has a VIP
+shared/versus.slow.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 nobody delivers: both golden orders expire at 30 s, with the usual penalty
+shared/versus.slow.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 the first team to deliver gets x2 and the rival order turns normal (and keeps its pizza)
+shared/versus.slow.test.ts	passed	VIP: one golden order in both queues, the first to deliver wins x2 two teams delivering it in the same tick both win it
 screen/src/games/obstaculos/audio/mixer.test.ts	passed	VoiceLimiter continuous rope strain is throttled per rope
 screen/src/games/obstaculos/audio/mixer.test.ts	passed	VoiceLimiter drops a repeat of the same key inside 40 ms only
 screen/src/games/obstaculos/audio/mixer.test.ts	passed	VoiceLimiter frees voices when their sounds end
@@ -1672,6 +1802,10 @@ shared/games/obstaculos/campaign/progress.test.ts	passed	what "Continuar" and "S
 shared/games/obstaculos/campaign/progress.test.ts	passed	what "Continuar" and "Siguiente" offer Siguiente is the following level only when it is open
 shared/games/obstaculos/campaign/progress.test.ts	passed	what "Continuar" and "Siguiente" offer the button text names the group, the world, the level and the stars
 shared/games/obstaculos/campaign/progress.test.ts	passed	what "Continuar" and "Siguiente" offer the legacy catalog walks the same rules
+shared/tutorial/steps.test.ts	passed	what a chef holds, and the button to light A is the button, except B while a raw tomato is under the knife and B for the dash once done
+shared/tutorial/steps.test.ts	passed	what a chef holds, and the button to light each step wants one item; a done chef may hold anything useful
+shared/tutorial/steps.test.ts	passed	what a chef holds, and the button to light only the steps after the chop hand the item back (a chopped tomato, a pizza)
+shared/tutorial/steps.test.ts	passed	what a chef holds, and the button to light the instruction follows the step; finished says what is left, and "todos listos" once the table is done
 screen/src/games/obstaculos/campaign/flow.test.ts	passed	what a level asks and what it gives back a clear after failures resets the streak
 screen/src/games/obstaculos/campaign/flow.test.ts	passed	what a level asks and what it gives back a clear is saved on the server at once and offers Siguiente
 screen/src/games/obstaculos/campaign/flow.test.ts	passed	what a level asks and what it gives back a failed session saves nothing
@@ -1683,12 +1817,49 @@ screen/src/games/obstaculos/campaign/flow.test.ts	passed	what a level asks and w
 screen/src/games/obstaculos/campaign/flow.test.ts	passed	what a level asks and what it gives back the sim world of a level is its biome, one world down for Fácil and one up for Difícil, clamped at the ends
 screen/src/games/obstaculos/campaign/flow.test.ts	passed	what a level asks and what it gives back with the server down the clear stays in memory, says so, and goes up with the next save
 shared/versusReport.test.ts	passed	what a phone is told the verdict, the winner and every team's score; each phone reads its own outcome
+shared/recipes.test.ts	passed	what each recipe is worth: 20 per ingredient, 10 per process items: raw<N> is cut into cut<N>; a plate says which recipe it holds
+shared/recipes.test.ts	passed	what each recipe is worth: 20 per ingredient, 10 per process Marinara 70 and Margarita 100 exactly as before; Pepperoni and Champiñón 100 (a topping: one more ingredient, one more cut); Calzone 90 (two ingredients, fold and a double bake)
+shared/recipes.test.ts	passed	what each recipe is worth: 20 per ingredient, 10 per process only the Calzone adds the verb "doblar"; only the topping recipes need the cheese crate (station 3)
+screen/src/tutorial/host.test.ts	passed	what follows the school a school opened by hand ignores what the phones remember: everybody starts at step 0; the one offered at the start honours it
+screen/src/tutorial/host.test.ts	passed	what follows the school by hand it works again and again, whatever the room remembers
+screen/src/tutorial/host.test.ts	passed	what follows the school offered by "A cocinar": the round goes on (the how-to card, then the countdown) once it ends
+screen/src/tutorial/host.test.ts	passed	what follows the school opened by hand (P, or the button): back to the lobby, the host starts the round when ready
 shared/games/obstaculos/sim/player.test.ts	passed	what the jump reaches (plan §2): walls, towers, gaps a 4-tile gap is comfortable (a wide timing window, also without coyote)
 shared/games/obstaculos/sim/player.test.ts	passed	what the jump reaches (plan §2): walls, towers, gaps a 5-tile gap is passable, and 7 is impossible even with the full coyote window
 shared/games/obstaculos/sim/player.test.ts	passed	what the jump reaches (plan §2): walls, towers, gaps a tower of 2 players reaches 4 tiles but not 5; a tower of 3 reaches 5 but not 6
 shared/games/obstaculos/sim/player.test.ts	passed	what the jump reaches (plan §2): walls, towers, gaps alone: 3 tiles yes, 4 no
 shared/games/obstaculos/sim/player.test.ts	passed	what the jump reaches (plan §2): walls, towers, gaps MEASURED: a 6-tile gap only works as a perfectly timed jump (<= 8 steps wide), not "impossible" as the plan says
+controller/src/school.test.ts	passed	what the phone remembers and tells "Ya sé · saltar": tells the relay to skip THIS chef (with the skip flag) and remembers; once done it does nothing
+controller/src/school.test.ts	passed	what the phone remembers and tells a phone that remembers says so when it (re)joins; one that does not says nothing
+controller/src/school.test.ts	passed	what the phone remembers and tells another phone (another token) does not inherit it
+controller/src/school.test.ts	passed	what the phone remembers and tells finishing the school writes it under the token and tells the relay ONCE (not on every refresh the screen sends)
+controller/src/school.test.ts	passed	what the phone remembers and tells storage blocked or missing: it still works, it just cannot remember
+server/test/school.ws.test.ts	passed	what the relay allows around the school Ayudante cannot be switched on or off during the school (the chefs are in), only in the lobby
+server/test/school.ws.test.ts	passed	what the relay allows around the school only a screen can send a phone its step; a phone cannot send itself (or another) one, and a 'schoolDone' never carries an id
+screen/src/tutorial/host.test.ts	passed	what the room remembers "todos listos" stays on screen for about two seconds before it ends (a beat to cheer, not a flash)
+screen/src/tutorial/host.test.ts	passed	what the room remembers another room (another code) is a new session: the school is offered again
+screen/src/tutorial/host.test.ts	passed	what the room remembers Enter skips it for everybody at once, and that counts as done for the session too
+screen/src/tutorial/host.test.ts	passed	what the room remembers when everybody finishes the school ends by itself after the "todos listos" beat, and the room does not offer it again
+screen/src/tutorial/host.test.ts	passed	what the room remembers with blocked storage it still remembers for the life of the page
+screen/src/tutorial/host.test.ts	passed	what the room remembers with no storage object at all (private mode) the same
+shared/tutorial/memory.test.ts	passed	what the school remembers a room and a phone remember apart: the room by its code, the phone by its token
+shared/tutorial/memory.test.ts	passed	what the school remembers blocked or missing storage never throws: the school is simply offered again
+shared/tutorial/memory.test.ts	passed	what the school remembers only the value the school writes counts as done
+shared/tutorial/memory.test.ts	passed	what the school remembers wraps a Web Storage object
+screen/src/tutorial/host.test.ts	passed	when "A cocinar" offers the school not in the other game, not while the iris or the how-to card is up, not with nobody connected
+screen/src/tutorial/host.test.ts	passed	when "A cocinar" offers the school not when every connected phone already did it (the relay flagged them)
+screen/src/tutorial/host.test.ts	passed	when "A cocinar" offers the school the first time of a room with players who have not done it: it takes over (phase school, the school map, no clock or score in the view)
+screen/src/tutorial/host.test.ts	passed	when "A cocinar" offers the school versus lobby: the school runs all together (one cooperative kitchen) and says so
+shared/tutorial/memory.test.ts	passed	when the school is offered at "A cocinar" not in another game, and not with nobody connected
+shared/tutorial/memory.test.ts	passed	when the school is offered at "A cocinar" not once the room did or skipped it
+shared/tutorial/memory.test.ts	passed	when the school is offered at "A cocinar" not when every connected phone already knows it
+shared/tutorial/memory.test.ts	passed	when the school is offered at "A cocinar" the first time, in the pizza game, with somebody who has not done it
 shared/captain.test.ts	passed	where the D-pad is visible only the captain, only while joined, on every screen but the round
+shared/tutorial/steps.test.ts	passed	which event finishes which step a finished chef (step 4) is finished by nothing
+shared/tutorial/steps.test.ts	passed	which event finishes which step step 0: dough taken from a crate, nothing else
+shared/tutorial/steps.test.ts	passed	which event finishes which step step 1: a TOMATO chopped (not dough, not cheese)
+shared/tutorial/steps.test.ts	passed	which event finishes which step step 2: the chopped tomato put into an oven, not on a counter
+shared/tutorial/steps.test.ts	passed	which event finishes which step step 3: a delivery
 shared/versusReport.test.ts	passed	who won and why (the design's tie-break order, read out of a real finished round) decidedBy on a single team or an unfinished list says nothing
 shared/versusReport.test.ts	passed	who won and why (the design's tie-break order, read out of a real finished round) identical on every rule: a draw, with no winner and both teams sharing the first place
 shared/versusReport.test.ts	passed	who won and why (the design's tie-break order, read out of a real finished round) more points wins, and the margin is the difference
