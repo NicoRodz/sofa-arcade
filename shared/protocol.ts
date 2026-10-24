@@ -9,6 +9,7 @@ import { SIGNAL_KINDS, type SignalKind } from './games/obstaculos/sim/campaign';
 import type { PhoneResult, Verdict } from './versusReport';
 
 export { ROUND_MS } from './difficulty';
+export type { SignalKind } from './games/obstaculos/sim/campaign';
 export { MAX_TEAMS, type TeamInfo } from './teams';
 export { KEYBOARD_QUIET_MS, NAV_KEYS, NAV_TO_KEY, acceptNav, captainOf, isNavKey, navToKey, remoteBlocked, remoteVisible, type NavKey } from './captain';
 
