@@ -17,7 +17,8 @@ export { KEYBOARD_QUIET_MS, NAV_KEYS, NAV_TO_KEY, acceptNav, captainOf, isNavKey
 // those fields and is read as cooperative with no teams assigned.
 // 3: the Captain ('captain' to everyone, 'nav' from the Captain's phone to the screens, stamped with 'from'). Additive: an older screen or phone ignores both.
 // 4: the versus result ('phase' results carries `result`: verdict, winner and every team's score). Additive: an older phone ignores it.
-export const PROTOCOL_VERSION = 4;
+// 5: Ayudante ('assist' from a phone, and to the screens and that phone; PublicPlayer.assist). Additive: an older screen never reads it, an older phone never sends it.
+export const PROTOCOL_VERSION = 5;
 export const WS_PATH = '/ws';
 export const DEFAULT_ROOM = 'main';
 export const INPUT_HZ = 30;
@@ -89,6 +90,7 @@ export interface PublicPlayer {
   slot: number;
   connected: boolean;
   teamId: number | null; // the relay fills it from the lobby teams; null: no teams assigned (or a spectator)
+  assist?: true; // the player chose Ayudante in the lobby (assist.ts); absent otherwise
 }
 
 export type ClientMsg =
@@ -101,6 +103,7 @@ export type ClientMsg =
   | { t: 'setTeam'; teamId: number } // phone: "Cambiar de equipo" (the screen decides: it is the host and owns the lobby)
   | { t: 'buzz'; playerId: number; kind: BuzzKind } // screen only: vibrate that phone
   | ({ t: 'hint'; playerId: number } & HintLabels) // screen only: what A and B do for that chef right now (null: the game's own label), their icons and whether they are greyed; no third button
+  | { t: 'assist'; on: boolean } // phone: switch Ayudante on or off for this player (lobby only; the relay keeps it with the player's slot)
   | { t: 'nav'; key: NavKey }; // phone: a D-pad button (only the Captain's is forwarded; the relay stamps who sent it)
 
 export type ServerMsg =
@@ -120,6 +123,7 @@ export type ServerMsg =
   | { t: 'you'; teamId: number; color: string; icon: string; sideLabel?: string } // to one phone: its team (when it has one)
   | { t: 'buzz'; kind: BuzzKind }
   | ({ t: 'hint' } & HintLabels) // the label, icon and greyed state of A and B right now (null: back to the game's label)
+  | { t: 'assist'; playerId: number; on: boolean } // to the screens, and to that phone itself (it remembers across a reconnect): this player's Ayudante is now on / off
   | { t: 'captain'; playerId: number | null } // to everyone: who holds the crown now (null: nobody is connected)
   | { t: 'nav'; from: number; key: NavKey }; // to the screens: the Captain's phone pressed this. `from` is set by the relay from the socket, never taken from the payload
 
@@ -249,6 +253,8 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       if (!num(m.playerId) || a === undefined || b === undefined || aIcon === undefined || bIcon === undefined) return null;
       return { t: 'hint', playerId: m.playerId, a, b, ...hintExtras({ a, b, ...(aIcon ? { aIcon } : {}), ...(bIcon ? { bIcon } : {}), ...(m.aOff === true ? { aOff: true } : {}), ...(m.bOff === true ? { bOff: true } : {}) }) };
     }
+    case 'assist':
+      return typeof m.on === 'boolean' ? { t: 'assist', on: m.on } : null;
     case 'nav':
       return isNavKey(m.key) ? { t: 'nav', key: m.key } : null; // anything else in the payload (a fake `from`) is dropped here
     case 'config':

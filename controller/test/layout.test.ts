@@ -106,6 +106,30 @@ describe('phone layout', () => {
     expect((await s.eval<{ t: string; presses?: number[] }[]>(`window.__sent`)).some((m) => m.t === 'input' && (m.presses?.[0] ?? 0) >= 1)).toBe(true);
   }, 60_000);
 
+  it('Ayudante: the switch is in the pizzas lobby only; a tap sends the whole choice, the label and aria follow, and the relay settles it (also for a reconnect)', async () => {
+    const state = () => s.eval<{ label: string; on: boolean; aria: string; shown: boolean }>(`(() => { const b = document.getElementById('assist'); return { label: document.getElementById('assistlbl').textContent, on: b.classList.contains('on'), aria: b.getAttribute('aria-pressed'), shown: getComputedStyle(b).display !== 'none' && b.getBoundingClientRect().width > 0 }; })()`);
+    const centre = () => s.eval<[number, number]>(`(() => { const r = document.getElementById('assist').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    const sentAssist = async () => (await s.eval<{ t: string; on?: boolean }[]>(`window.__sent`)).filter((m) => m.t === 'assist');
+    await s.load(SCENARIOS.find((x) => x.name === 'lobby')!);
+    await s.setViewport(VIEWPORTS[3]!, VIEWPORTS[3]!.insets[0]!);
+    expect(await state()).toEqual({ label: 'Ayudante: no', on: false, aria: 'false', shown: true });
+    await s.eval(`window.__sent = []`);
+    await s.tap(...(await centre()));
+    expect(await sentAssist()).toEqual([{ t: 'assist', on: true }]);
+    expect(await state()).toEqual({ label: 'Ayudante: sí', on: true, aria: 'true', shown: true });
+    await s.tap(...(await centre()));
+    expect(await sentAssist()).toEqual([{ t: 'assist', on: true }, { t: 'assist', on: false }]);
+    expect((await state()).label).toBe('Ayudante: no');
+    await s.eval(`window.__push({ t: 'assist', playerId: 1, on: true })`); // the relay: this phone had it on (a reconnect)
+    expect(await state()).toEqual({ label: 'Ayudante: sí', on: true, aria: 'true', shown: true });
+    await s.eval(`window.__push({ t: 'assist', playerId: 7, on: false })`); // somebody else's: ignored
+    expect((await state()).on).toBe(true);
+    await s.eval(`window.__push({ t: 'phase', phase: 'playing' })`); // in the round the overlay is gone: no switch to press
+    expect((await state()).shown).toBe(false);
+    await s.load(SCENARIOS.find((x) => x.name === 'lobby-other-game')!);
+    expect((await state()).shown, 'another game has no Ayudante').toBe(false);
+  }, 60_000);
+
   it("versus results: the phone shows how its team ended and the score of its OWN team, framed in the team's colour; coop shows neither", async () => {
     const read = async (name: string) => {
       await s.load(SCENARIOS.find((x) => x.name === name)!);

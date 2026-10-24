@@ -19,7 +19,7 @@ import { generate, resolveMap } from '@party/shared/generate';
 import { defaultMap, fixedMap, isMapChoice, lobbyMaps, lobbyN, mapFeatures, mapStatus, replacementMap, type MapChoice } from '@party/shared/maps';
 import { initAudio } from './audio';
 import { gameBus } from './bus';
-import { chefCanvas } from './art/chef';
+import { assistBadgeCanvas, chefCanvas } from './art/chef';
 import { chefOf } from './art/tokens';
 import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
 import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from './art/flags';
@@ -178,7 +178,7 @@ function setPhase(next: Phase) {
     showScene('main');
     const n = connectedN();
     const map = resolveMap(config.map as MapChoice, config.seed, config.difficulty, n, Math.random);
-    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
+    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus, assist: assistIds() });
     played.add(map.id);
     // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
     const order = [...players.values()].sort((a, b) => Number(b.info.connected) - Number(a.info.connected) || a.info.slot - b.info.slot);
@@ -251,7 +251,7 @@ const obstFrameMs: number[] = []; // ms a whole scene update took (simulation + 
 // Versus: the lobby's frozen teams and map become the round (createVersusGame), with the puestos dealt inside each kitchen.
 function startVersus(): MatchStart {
   const slotOf = (id: number) => players.get(id)?.info.slot ?? 0;
-  const round = startVersusRound({ teams: config.teams!, choice: config.map, difficulty: config.difficulty, seed: config.seed, modeOptions: config.modeOptions, slotOf, rand: Math.random, bus: gameBus, countdownMs: COUNTDOWN_MS });
+  const round = startVersusRound({ teams: config.teams!, choice: config.map, difficulty: config.difficulty, seed: config.seed, modeOptions: config.modeOptions, slotOf, rand: Math.random, bus: gameBus, countdownMs: COUNTDOWN_MS, assist: assistIds() });
   const { map, teams } = round;
   game = round.game;
   played.add(map.id);
@@ -281,6 +281,8 @@ const setConfig = (patch: Partial<LobbyConfig>) => {
 const gameDef = (): GameDef => GAMES.find((x) => x.id === config.game) ?? GAMES[0];
 const modeNow = () => modeOf(gameDef(), config.modeId);
 const isVersus = () => config.modeId === 'versus';
+// Ayudante (assist.ts): the players that chose it from their phones. The round reads them once, at the start; a change mid-round waits for the next one.
+const assistIds = () => [...players.values()].filter((p) => p.info.assist).map((p) => p.info.id);
 const connectedIds = () => [...players.values()].filter((p) => p.info.connected).sort((a, b) => a.info.slot - b.info.slot).map((p) => p.info.id);
 const MODE_PILL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
 const OPTION_PILL: Record<string, string> = { hiddenScore: 'Marcador oculto', handicap: 'Ventaja equipo chico' }; // the registry labels are sentences; the pills need short ones
@@ -320,7 +322,7 @@ function setSabotage(v: string) {
 // Why the round cannot start yet ('' when it can). Versus also needs a legal split.
 function startProblem(): string {
   if (!canStart([...players.values()].map((p) => p.info))) return 'Esperando jugadores';
-  if (isVersus()) { const s = lobbySetup(modeNow(), config.teams); if (!s.ok) return s.problems[0]!; }
+  if (isVersus()) { const s = lobbySetup(modeNow(), config.teams, new Set(assistIds())); if (!s.ok) return s.problems[0]!; }
   return '';
 }
 
@@ -426,6 +428,11 @@ function onMessage(m: ServerMsg) {
     }
     case 'setTeam': moveToTeam(m.playerId, m.teamId); break; // a phone asked to change team
     case 'player_removed': remove(m.playerId); break;
+    case 'assist': { // a phone switched Ayudante on or off in the lobby
+      const p = players.get(m.playerId);
+      if (p) { p.info = m.on ? { ...p.info, assist: true } : (({ assist: _a, ...rest }) => rest)(p.info); renderUi(); }
+      break;
+    }
     case 'captain': captainId = m.playerId; renderUi(); break;
     case 'nav': { // the Captain's D-pad: the same handler as the keyboard, fed with the key that intent stands for
       if (!acceptNav(captainId, m.from) || remoteBlocked(lastKeyAt, performance.now())) break;
@@ -638,8 +645,11 @@ function renderChips() {
       c.av.replaceChildren(chefCanvas(i, 'idle', true));
       c.el.classList.remove('pop'); void c.el.offsetWidth; c.el.classList.add('pop');
     }
+    const helper = !!info.assist, badge = c.av.querySelector('.hbadge');
+    if (helper && !badge) { const b = assistBadgeCanvas(); b.className = 'hbadge'; c.av.appendChild(b); } else if (!helper && badge) badge.remove();
+    c.el.classList.toggle('helper', helper);
     c.nm.textContent = (info.id === captainId ? '👑 ' : '') + info.name;
-    c.sub.textContent = info.connected ? `${chefOf(i).name} · listo` : 'Desconectado';
+    c.sub.textContent = info.connected ? `${chefOf(i).name} · ${helper ? 'Ayudante' : 'listo'}` : 'Desconectado';
   });
 }
 
@@ -654,7 +664,7 @@ function showTeams(on: boolean) {
 function renderTeams() {
   chipsInTeams = true;
   const teams = config.teams ?? [];
-  const setup = lobbySetup(modeNow(), config.teams);
+  const setup = lobbySetup(modeNow(), config.teams, new Set(assistIds()));
   $('teams').classList.toggle('teams-locked', config.teamsLocked);
   teams.forEach((t, i) => {
     const col = $(`tc${i}`);
@@ -678,7 +688,7 @@ function renderTeams() {
   const th = $('teamhint');
   const sizes = teamSizes(config.teams), big = Math.max(...sizes), small = Math.min(...sizes);
   const uneven = setup.ok && big !== small;
-  th.textContent = teamNotice || (!setup.ok ? setup.problems[0]! : uneven ? (config.modeOptions.handicap !== false ? `${big} contra ${small}: el equipo de ${small} gana ×${Math.max(...setup.k)}` : `${big} contra ${small}, sin ventaja para el equipo chico`) : 'Clic en un jugador: cambia de equipo');
+  th.textContent = teamNotice || (!setup.ok ? setup.problems[0]! : uneven ? (config.modeOptions.handicap !== false ? `${big} contra ${small}: el equipo de ${small} gana ×${Math.max(...setup.k)}` : `${big} contra ${small}, sin ventaja para el equipo chico`) : setup.ok && config.modeOptions.handicap !== false && Math.max(...setup.k) > 1 ? `Con Ayudante pesa 0,7: el equipo con más ayuda gana ×${Math.max(...setup.k)}` : 'Clic en un jugador: cambia de equipo');
   th.classList.toggle('bad', !!teamNotice || !setup.ok);
 }
 // The generated versus map of a seed is expensive enough (bounded attempts, each one validated) not to redo it on every render.

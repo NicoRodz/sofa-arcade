@@ -11,6 +11,7 @@ interface Player {
   name: string;
   slot: number;
   ws: WebSocket | null;
+  assist?: true; // Ayudante, chosen from the phone in the lobby; it stays with the slot (a reconnect with the token keeps it)
   expiry?: ReturnType<typeof setTimeout>;
 }
 interface Room {
@@ -28,7 +29,7 @@ const send = (ws: WebSocket, m: ServerMsg) => {
 // The team comes from the lobby teams the screen sent (it owns them), so a phone that reconnects with its token keeps it.
 const teamIdOf = (r: Room, id: number) => r.config.teams?.find((t) => t.playerIds.includes(id))?.id ?? null;
 const pub = (p: Player, r: Room): PublicPlayer => ({
-  id: p.id, name: p.name, color: COLORS[p.slot % COLORS.length]!, slot: p.slot, connected: p.ws !== null, teamId: teamIdOf(r, p.id),
+  id: p.id, name: p.name, color: COLORS[p.slot % COLORS.length]!, slot: p.slot, connected: p.ws !== null, teamId: teamIdOf(r, p.id), ...(p.assist ? { assist: true as const } : {}),
 });
 
 export function attachRelay(server: Server) {
@@ -134,6 +135,7 @@ export function attachRelay(server: Server) {
         send(ws, { t: 'joined', player: pub(p, r), room: url.searchParams.get('room') || DEFAULT_ROOM, v: PROTOCOL_VERSION });
         send(ws, configMsg(r.config));
         sendYou(r, p);
+        if (p.assist) send(ws, { t: 'assist', playerId: p.id, on: true }); // a phone that comes back remembers its choice
         send(ws, { t: 'phase', ...r.phase });
         toScreens(r, { t: 'player_joined', player: pub(p, r) });
         syncCaptain(r, ws);
@@ -142,6 +144,14 @@ export function attachRelay(server: Server) {
       if (m.t === 'nav' && me) {
         // The Captain's D-pad only; `from` comes from the socket (set at join), so nothing in the payload can pose as someone else.
         if (r.captain === me.id) toScreens(r, { t: 'nav', from: me.id, key: m.key });
+        return;
+      }
+      if (m.t === 'assist' && me) {
+        if (r.phase.phase === 'playing' || !!me.assist === m.on) return; // the round has its chefs: the choice is for the lobby
+        if (m.on) me.assist = true; else delete me.assist;
+        const msg: ServerMsg = { t: 'assist', playerId: me.id, on: m.on };
+        toScreens(r, msg);
+        send(ws, msg);
         return;
       }
       if (m.t === 'setTeam' && me) {

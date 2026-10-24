@@ -214,6 +214,32 @@ export function drawHat(c: Ctx, slot: number) {
   }
 }
 
+// Ayudante (assist.ts): a propeller beanie perched on top of the chef's hat, big and bright so the whole table SEES who plays with help (from the couch, at 3 m).
+// The beanie + stalk + hub is one texture per hat (the hats are not equally tall), the blades another that the chef spins (squash in x) while it is on screen.
+export const hatTop = (slot: number) => { const a = chefOf(slot).accessory; return a === 'cap' ? -109 : a === 'tallhat' ? -148 : a === 'bow' ? -120 : -115; };
+export const PROP_Y = 38; // the hub sits this far above the hat
+export function drawPropStem(c: Ctx, slot: number) {
+  const y = hatTop(slot);
+  drawOutlined(c, () => rr(c, -3, y - PROP_Y + 4, 6, PROP_Y - 14, 2.5), '#F1E9D8', { lw: 3 }); // stalk
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(-19, y + 3); c.quadraticCurveTo(-20, y - 20, 0, y - 20); c.quadraticCurveTo(20, y - 20, 19, y + 3); c.closePath(); }, vgrad(c, y - 20, y + 3, '#7FE3FF', '#1FA9E0'), { lw: 3.5 }); // the beanie
+  drawOutlined(c, () => rr(c, -20, y - 4, 40, 8, 4), '#FFE14A', { lw: 3 }); // its band
+  c.fillStyle = 'rgba(255,255,255,0.6)'; c.beginPath(); c.ellipse(-7, y - 13, 5, 2.2, -0.5, 0, Math.PI * 2); c.fill();
+  drawOutlined(c, circle(c, 0, y - PROP_Y, 6.5), '#E2338C', { lw: 3 });
+}
+export function drawPropBlades(c: Ctx) {
+  drawOutlined(c, ellipse(c, -19, 0, 19, 7.5), '#35D0FF', { lw: 3.5 });
+  drawOutlined(c, ellipse(c, 19, 0, 19, 7.5), '#FFE14A', { lw: 3.5 });
+  c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.ellipse(-23, -2.5, 8, 1.8, 0, 0, Math.PI * 2); c.ellipse(15, -2.5, 8, 1.8, 0, 0, Math.PI * 2); c.fill();
+  drawOutlined(c, circle(c, 0, 0, 6), '#E2338C', { lw: 3 });
+}
+/** DOM badge for the lobby chips: a round cyan sticker with the propeller (the chip is too short for the beanie itself). Centre = (0, 0), radius 20. */
+export function drawAssistBadge(c: Ctx) {
+  drawOutlined(c, circle(c, 0, 0, 19), vgrad(c, -19, 19, '#7FE3FF', '#1FA9E0'), { lw: 3.5 });
+  c.save(); c.translate(0, -3); c.scale(0.42, 0.42); drawPropBlades(c); c.restore();
+  drawOutlined(c, () => rr(c, -1.8, -2, 3.6, 13, 1.5), '#F1E9D8', { lw: 2 });
+  c.fillStyle = 'rgba(255,255,255,0.5)'; c.beginPath(); c.ellipse(-8, -11, 5, 2, -0.6, 0, Math.PI * 2); c.fill();
+}
+
 // Whole chef standing still: lobby chips and results podium.
 export function drawChefStatic(c: Ctx, slot: number, mood: 'idle' | 'happy' = 'idle') {
   drawShadow(c);

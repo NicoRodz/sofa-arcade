@@ -179,6 +179,22 @@ $('teamswap').addEventListener('pointerup', (e) => {
   tx({ t: 'setTeam', teamId: next.id });
 });
 
+// Ayudante (assist.ts): one switch for this player, in the lobby. The phone shows what it asked for at once and the relay's echo ('assist' with this id) confirms it,
+// also after a reconnect (the relay keeps the choice with the slot).
+let assist = false;
+function showAssist(on: boolean) {
+  assist = on;
+  $('assist').classList.toggle('on', on);
+  $('assist').setAttribute('aria-pressed', String(on));
+  $('assistlbl').textContent = on ? 'Ayudante: sí' : 'Ayudante: no';
+}
+$('assist').addEventListener('pointerup', (e) => {
+  e.preventDefault();
+  if (phase !== 'lobby') return;
+  showAssist(!assist);
+  tx({ t: 'assist', on: assist });
+});
+
 const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
@@ -268,9 +284,11 @@ function connect() {
       myId = m.player.id;
       document.documentElement.style.setProperty('--c', m.player.color);
       myName = m.player.name;
+      showAssist(false); // the relay tells a phone that comes back what it had chosen (after this message)
       hud(`${m.player.name} #${m.player.slot + 1}`);
       renderCaptain();
     } else if (m.t === 'config') {
+      document.body.dataset.game = m.game; // CSS: the Ayudante switch is a pizzas thing
       $('game').textContent = gameName(m.game);
       applyControls(m.controls);
       renderHowTo(m.game, gameName(m.game), m.howTo);
@@ -279,6 +297,8 @@ function connect() {
       $('setup').textContent = m.game === 'obstaculos'
         ? setupLabel(parseObstOptions(m.modeOptions), m.difficulty, m.seed, DIFFICULTY_LABEL)
         : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}${m.modeId === 'versus' ? ` · Sabotaje ${SABOTAGE_LABEL[sabotageOf(m.modeOptions)]}` : ''}`;
+    } else if (m.t === 'assist') {
+      if (m.playerId === myId) showAssist(m.on);
     } else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {

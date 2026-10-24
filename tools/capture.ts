@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|assist> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -70,12 +70,13 @@ class Bot {
   ws: WebSocket;
   id = 0;
   seq = 0; a = 0; b = 0;
+  hints: any[] = []; // every `hint` message this phone heard (contextual buttons)
   vec = { x: 0, y: 0 }; btn = 0;
   private waitUntil = 0; private lastPress = 0; private stable = 0; private nextCrate = 0; private hadItem = false;
   constructor(private slot: number, name: string, room: string, private rows: readonly string[]) {
     this.ws = new WebSocket(`ws://127.0.0.1:${PORT}/ws?room=${room}`);
     this.ws.on('open', () => this.ws.send(JSON.stringify({ t: 'join', name, token: `bot-${room}-${slot}` })));
-    this.ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'joined') this.id = m.player.id; });
+    this.ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'joined') this.id = m.player.id; else if (m.t === 'hint') this.hints.push(m); });
     this.nextCrate = slot % 2;
   }
   startSending() {
@@ -426,6 +427,41 @@ async function main() {
       await waitFor((s) => s.time > 33_500, 40_000); await sleep(300);
       await cdp.shot('vs-drop-gone');
       console.log('teams after the drop:', JSON.stringify((await snap() as any).teams));
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'assist') {
+      // Ayudante on the REAL screen and relay: 4 bot phones, two of them switch it on from their lobby. The lobby lists them (badge + "Ayudante"), versus shows the k it
+      // costs, the round gives them the propeller, the sim flags exactly those chefs, and every phone hears its contextual buttons (labels + glyphs) through the relay.
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('6')!.rows;
+      await open('ASST'); await join('ASST', 4, rows);
+      for (const i of [0, 2]) bots[i]!.ws.send(JSON.stringify({ t: 'assist', on: true }));
+      await sleep(700);
+      await cdp.shot('assist-lobby');
+      bots[2]!.ws.send(JSON.stringify({ t: 'assist', on: false })); await sleep(400); // one Ayudante only: its team is the one that gets the k
+      await click('[data-mode="versus"]'); await sleep(900);
+      await cdp.shot('assist-lobby-versus');
+      console.log('versus team headers:', JSON.stringify(await cdp.eval(`[0, 1].map((i) => document.getElementById('th' + i).textContent)`)), '| hint:', JSON.stringify(await cdp.eval(`document.getElementById('teamhint').textContent`)));
+      bots[2]!.ws.send(JSON.stringify({ t: 'assist', on: true })); await sleep(400);
+      await click('[data-mode="coop"]'); await sleep(500);
+      await click('[data-map="6"]'); await click('[data-diff="easy"]'); await sleep(300);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1000, 20_000);
+      bots.forEach((b) => b.startSending());
+      timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+      await waitFor((s) => s.time > 12_000, 40_000);
+      const sn: any = await snap();
+      console.log('chefs on Ayudante in the sim:', JSON.stringify(sn.players.map((p: any) => [p.id, !!p.assist])), '| bot ids', JSON.stringify(bots.map((b) => b.id)));
+      await cdp.shot('assist-play');
+      for (const p of sn.players.filter((q: any) => q.assist).slice(0, 2)) {
+        const cx = 96 + p.x * 108, cy = 106 + p.y * 108;
+        await cdp.shot(`assist-chef-${p.id}`, { x: cx - 150, y: cy - 230, width: 300, height: 300, scale: 2 });
+      }
+      for (const b of bots) {
+        const labels = [...new Set(b.hints.map((h: any) => `${h.a ?? '-'}|${h.b ?? '-'}`))];
+        console.log(`phone ${b.id}: ${b.hints.length} hint messages, ${labels.length} different; icons seen: ${[...new Set(b.hints.flatMap((h: any) => [h.aIcon, h.bIcon]).filter(Boolean))].join(',')}; some greyed: ${b.hints.some((h: any) => h.aOff || h.bOff)}; sample: ${labels.slice(0, 6).join(' ; ')}`);
+      }
+      timers.splice(0).forEach(clearInterval);
       bots.splice(0).forEach((b) => b.close());
     }
     if (what === 'sabotage') {

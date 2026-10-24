@@ -8,6 +8,7 @@ import { PANTRY_EVERY_MS, PANTRY_MAX, VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS, kitche
 import { SLIP, SLIP_DASH_EXTRA, SLIP_MIN_SPEED, SLIP_PUSH, SLIP_TRIGGER, type FloorItem, type Sabotage, type SabotageMode, type Slip } from './sabotage-config';
 import { createSabotage, isAiming, sabotageAimPress, sabotageBinned, sabotageCancelAim, sabotageLoad, sabotageTakeBag, sabotageTick } from './sabotage';
 import { addFloorItem, removeFloorItem } from './floor';
+import { ASSIST_FACING_BONUS, ASSIST_REACH_MULT, ASSIST_STICK_CANCEL } from './assist';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -71,6 +72,9 @@ export interface Player {
   crossing: boolean; // R4: in a pair that is crossing through each other (slower, drawn see-through)
   team: TeamId; // the team this chef plays for (0 in a cooperative round)
   ghost: boolean; // a dropped chef: no collision, no input, no interaction, until it reconnects (GHOST_MS) or is removed
+  // Ayudante (assist.ts): absent for every other chef, so a round without it never touches these
+  assist?: true; // this chef plays on Ayudante: reach x1.5 with auto-aim, no inertia, one-tap chopping, no slipping
+  chopLatch?: boolean; // Ayudante: B was tapped at a cuttable board / a sink and the chop goes on without holding it
   // hazards only (absent otherwise: a round without hazards never creates them)
   slip?: Slip | null; // sliding on rubbish: no control until it ends
   immuneUntil?: number; // match time until which rubbish does not make this chef slip
@@ -140,6 +144,7 @@ export interface Game {
   slipDrops: boolean; // a chef that slips drops what it carries
   spoilRaw: boolean; // ... and a raw ingredient that falls becomes rubbish
   sab: Sabotage | null; // versus sabotage (sabotage.ts): the bags, the catapults, the throws
+  assist: ReadonlySet<number>; // ids of the chefs that play on Ayudante (assist.ts); empty in a round that has none
 }
 
 /** One team's side of the round. */
@@ -214,7 +219,7 @@ function settleVip(g: Game) {
 
 export interface TeamSeat { playerIds: readonly number[] } // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
 
-export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName } = {}): Game {
+export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName; assist?: readonly number[] } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
@@ -234,7 +239,8 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
     stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false, count: 0, clean: 0, owner: pantry ? null : kitchens ? stationOwner(grid, kitchens, tx, ty) : 0, ...(pantry ? { pantry: true as const } : {}) });
   }));
   const handicap = versus && (opts.handicap ?? true);
-  const ks = handicap ? teamMultipliers(seats!.map((t) => t.playerIds.length), Infinity) : null; // null: an empty team, or no handicap
+  const assist = new Set(opts.assist ?? []);
+  const ks = handicap ? teamMultipliers(seats!.map((t) => t.playerIds.length), Infinity, assist.size ? seats!.map((t) => t.playerIds.filter((id) => assist.has(id)).length) : undefined) : null; // null: an empty team, or no handicap
   const teams: TeamState[] = Array.from({ length: teamCount }, (_v, id) => ({
     id, n: seats ? seats[id]!.playerIds.length : teamSize(n), score: 0, gross: 0, delivered: 0, streak: 0, bestStreak: 0, tips: 0, expired: 0, rejected: 0, vips: 0, reachedAt: 0,
     k: ks?.[id] ?? 1, orders: [], orderSeq: 0, nextOrderAt: p.orderEveryMs, rng: mulberry32(seed), dirtyDue: [],
@@ -244,7 +250,7 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
     hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(),
     teams, versus, roster: [], paused: null, noWinner: false, result: null, vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null }, pantry: stations.some((s) => s.pantry) ? { stock: PANTRY_MAX, nextAt: Infinity } : null,
     teamIds: seats ? seats.map((t) => [...t.playerIds]) : [], open: !seats, handicap, pauseDismissed: false, kitchens, teamSpawns: [],
-    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null,
+    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null, assist,
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0
   for (const key of LEGACY) Object.defineProperty(g, key, { get: () => teams[0]![key], set: (v) => { (teams[0] as unknown as Record<string, unknown>)[key] = v; }, enumerable: true, configurable: true });
@@ -279,8 +285,8 @@ export function addPlayer(g: Game, id: number, slot: number, spawn = slot): bool
     const found = g.spawns.findIndex(([x, y]) => x === sx && y === sy);
     at = found >= 0 ? found : rank;
   }
-  g.players.set(id, { id, slot, spawn: at, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, vx: 0, vy: 0, item: null, cutting: false, chopAt: -1, bHeld: false, dashMs: 0, dashCd: 0, dashDx: 0, dashDy: 0, dashHit: [], kx: 0, ky: 0, buffA: 0, buffAge: 0, buffB: 0, crossing: false, team, ghost: false });
-  g.roster.push({ id, teamId: team, droppedAt: null });
+  g.players.set(id, { id, slot, spawn: at, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, vx: 0, vy: 0, item: null, cutting: false, chopAt: -1, bHeld: false, dashMs: 0, dashCd: 0, dashDx: 0, dashDy: 0, dashHit: [], kx: 0, ky: 0, buffA: 0, buffAge: 0, buffB: 0, crossing: false, team, ghost: false, ...(g.assist.has(id) ? { assist: true as const } : {}) });
+  g.roster.push({ id, teamId: team, droppedAt: null, ...(g.assist.has(id) ? { assist: true as const } : {}) });
   return true;
 }
 export const removePlayer = (g: Game, id: number) => {
@@ -293,7 +299,7 @@ export const removePlayer = (g: Game, id: number) => {
 function steer(p: Player, c: Controls, g: Game, dtMs: number) {
   const { tauMs, tauStopMs } = g.params.tune;
   const moving = c.x !== 0 || c.y !== 0;
-  const tau = moving ? tauMs : tauStopMs;
+  const tau = p.assist ? 0 : moving ? tauMs : tauStopMs; // Ayudante: no inertia
   const k = tau > 0 ? 1 - Math.exp(-dtMs / tau) : 1;
   p.vx += (c.x * SPEED - p.vx) * k;
   p.vy += (c.y * SPEED - p.vy) * k;
@@ -462,7 +468,7 @@ function hazardsTick(g: Game) {
     if (f.kind === 'trash') g.bus.emit('trash:decayed', { team: f.team, tile: [f.tx, f.ty] });
   }
   for (const p of g.players.values()) {
-    if (p.ghost || p.slip) continue;
+    if (p.ghost || p.slip || p.assist) continue; // Ayudante: the banana-skin never makes it slip
     const now = g.floor.filter((f) => f.kind === 'trash' && Math.hypot(p.x - (f.tx + 0.5), p.y - (f.ty + 0.5)) <= SLIP_TRIGGER);
     const before = p.inTrash ?? [];
     const entered = now.filter((f) => !before.includes(f.id));
@@ -498,6 +504,7 @@ function pickFloor(g: Game, p: Player): boolean {
 
 // The station in front of the chef, among the ones it may use (its own team's, or shared).
 export function targetStation(g: Game, p: Player): Station | null {
+  if (p.assist) return assistStation(g, p);
   const len = Math.hypot(p.fx, p.fy) || 1;
   const px = p.x + (p.fx / len) * REACH;
   const py = p.y + (p.fy / len) * REACH;
@@ -509,6 +516,39 @@ export function targetStation(g: Game, p: Player): Station | null {
     if (d < bestD) { best = s; bestD = d; }
   }
   return best;
+}
+
+// Ayudante (assist.ts): the nearest usable station within ASSIST_REACH_MULT times the usual radius, whichever way the chef faces (a near tie goes to the one it
+// already faces), and never through a wall. The normal rule measures from a probe in front of the chef; this one from the chef's centre to the station's tile.
+const nearestPoint = (p: Player, s: Station): [number, number] => [Math.max(s.tx, Math.min(p.x, s.tx + 1)), Math.max(s.ty, Math.min(p.y, s.ty + 1))];
+function assistStation(g: Game, p: Player): Station | null {
+  const reach = (REACH + REACH_SLACK) * ASSIST_REACH_MULT;
+  const len = Math.hypot(p.fx, p.fy) || 1;
+  let best: Station | null = null, bestKey = Infinity;
+  for (const s of g.stations) {
+    if (s.owner !== null && s.owner !== p.team) continue;
+    const [nx, ny] = nearestPoint(p, s);
+    const dx = nx - p.x, dy = ny - p.y, d = Math.hypot(dx, dy);
+    if (d > reach) continue;
+    let clear = true; // a wall (or another station) between the chef and the point it would reach blocks it
+    for (let t = 0.05; t < 0.96 && clear; t += 0.05) { const tx = Math.floor(p.x + dx * t), ty = Math.floor(p.y + dy * t); if ((tx !== s.tx || ty !== s.ty) && isSolid(g, tx, ty)) clear = false; }
+    if (!clear) continue;
+    const key = d - ASSIST_FACING_BONUS * (d > 1e-6 ? (dx * p.fx + dy * p.fy) / (len * d) : 1);
+    if (key < bestKey) { best = s; bestKey = key; }
+  }
+  return best;
+}
+// Ayudante: is the stick pushing into the station (within 60 degrees of the way to it)? Walking into what you are chopping is not walking away.
+function pushesInto(p: Player, s: Station, c: Controls) {
+  const [nx, ny] = nearestPoint(p, s);
+  const dx = nx - p.x, dy = ny - p.y, d = Math.hypot(dx, dy), m = Math.hypot(c.x, c.y);
+  return d > 1e-6 && m > 1e-6 && (c.x * dx + c.y * dy) / (m * d) > 0.5;
+}
+// Ayudante, stick idle: the chef turns to the station it will use (the screen draws it facing it).
+function faceStation(p: Player, s: Station) {
+  const [nx, ny] = nearestPoint(p, s);
+  const dx = nx - p.x, dy = ny - p.y;
+  if (Math.hypot(dx, dy) > 1e-6) { const [ux, uy] = unit(dx, dy); p.fx = ux; p.fy = uy; }
 }
 
 const cutOf = (i: Item): Item | null => (i === 'raw0' ? 'cut0' : i === 'raw1' ? 'cut1' : i === 'raw2' ? 'cut2' : null);
@@ -661,12 +701,18 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     if (g.sab && isAiming(g, p)) { aimStep(g, p, c, dtMs); continue; } // loaded the catapult: anchored there until B (or 3 s)
     const tune = g.params.tune;
     const target = targetStation(g, p);
+    if (p.assist && target && !c.x && !c.y) faceStation(p, target); // Ayudante: turns to its station by itself
     p.dashCd = Math.max(0, p.dashCd - dtMs);
     const bEdge = (c.b && !p.bHeld) || (c.bTaps ?? 0) > 0;
     p.bHeld = c.b;
     const wasCutting = p.cutting;
     // B held: cut / grate / stretch on a board with a raw item, or scrub plates at a sink with dirty ones
-    p.cutting = !!(c.b && target && ((target.kind === 'board' && target.item && cutOf(target.item)) || (target.kind === 'sink' && target.count > 0)));
+    const cuttable = !!(target && ((target.kind === 'board' && target.item && cutOf(target.item)) || (target.kind === 'sink' && target.count > 0)));
+    if (p.assist) { // Ayudante: a tap of B starts the chop and it goes on while the chef stays and there is something to cut; the stick (or the item being done) ends it
+      if (bEdge && cuttable) p.chopLatch = true;
+      else if (p.chopLatch && (!cuttable || (Math.hypot(c.x, c.y) > ASSIST_STICK_CANCEL && !pushesInto(p, target!, c)))) p.chopLatch = false;
+    }
+    p.cutting = !!((c.b || p.chopLatch) && cuttable);
     const at = target ? g.stations.indexOf(target) : -1;
     const wasAt = p.chopAt;
     if (wasCutting && (!p.cutting || at !== wasAt)) g.bus.emit(g.stations[wasAt]?.kind === 'sink' ? 'washStop' : 'chopStop', { player: p.id, station: wasAt });
@@ -821,6 +867,7 @@ export function dropPlayer(g: Game, id: number): boolean {
   if (!p || !e || e.droppedAt !== null) return false;
   if (p.cutting) g.bus.emit(g.stations[p.chopAt]?.kind === 'sink' ? 'washStop' : 'chopStop', { player: id, station: p.chopAt });
   e.droppedAt = g.time;
+  if (p.assist) p.chopLatch = false;
   Object.assign(p, { ghost: true, cutting: false, chopAt: -1, vx: 0, vy: 0, kx: 0, ky: 0, dashMs: 0, buffA: 0, buffB: 0, crossing: false });
   if (p.slip) p.slip = null; // hazards only: the slide ends where it was
   if (g.sab) sabotageCancelAim(g, p); // the bag it had loaded goes back to its team's bin

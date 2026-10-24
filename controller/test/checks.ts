@@ -19,7 +19,7 @@ const fmt = (b: Box) => `[${b.x.toFixed(0)},${b.y.toFixed(0)} ${b.w.toFixed(0)}x
 const nm = (i: Item) => `${i.sel}#${i.i}`;
 
 // 1. Everything you press is at least 44x44 CSS px.
-const TOUCH = ['#remote .rb', '#btnA', '#btnB', '#pswap', '#howtoopen', '#howtoclose', '#zoomfix', '#join button', '#name'];
+const TOUCH = ['#remote .rb', '#btnA', '#btnB', '#pswap', '#howtoopen', '#assist', '#howtoclose', '#zoomfix', '#join button', '#name'];
 export function touchSize(p: Probe): string[] {
   const out: string[] = [];
   for (const sel of TOUCH) for (const i of all(p, sel)) if (i.box.w < MIN_TOUCH - 0.5 || i.box.h < MIN_TOUCH - 0.5) out.push(`touch target ${nm(i)} is ${i.box.w.toFixed(0)}x${i.box.h.toFixed(0)} (< ${MIN_TOUCH})`);
@@ -65,7 +65,7 @@ export function textInBox(p: Probe): string[] {
 }
 
 // 4. Controls and text stay inside the safe area (notch, rounded corners, home indicator).
-const SAFE_BOXES = ['#remote .rb', '#remote .crown', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#zoomfix', '#join button', '#name', '#howtoopen', '#howtoclose', '#howto .steps li', '#howto .note'];
+const SAFE_BOXES = ['#remote .rb', '#remote .crown', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#zoomfix', '#join button', '#name', '#howtoopen', '#assist', '#howtoclose', '#howto .steps li', '#howto .note'];
 export function safeArea(p: Probe): string[] {
   const out: string[] = [];
   const safe = safeRect(p), full: Box = { x: 0, y: 0, w: p.vw, h: p.vh };

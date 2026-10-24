@@ -105,7 +105,7 @@ export const SELECTORS = [
   '#btnA', '#btnA .ico', '#btnA .lbl', '#btnA .hold', '#btnB', '#btnB .ico', '#btnB .lbl', '#btnB .hold',
   '#stickLbl .pl', '#stickLbl .lbl', '#stickLbl .hold', '#lblA .pl', '#lblA .lbl', '#lblA .hold', '#lblB .pl', '#lblB .lbl', '#lblB .hold',
   '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap',
-  '#wait > *', '#howtoopen', '#choosing > *', '#results > *',
+  '#wait > *', '#howtoopen', '#assist', '#assist svg', '#assistlbl', '#choosing > *', '#results > *',
   '#howto h2', '#howtogame', '#howto .steps', '#howto .steps li', '#howto .steps .n', '#howto .steps .ic', '#howto .steps .tx', '#howto .note', '#howtoclose',
   '#rotate > *', '#zoomfix', '#remote .rb', '#remote .crown',
 ];
@@ -184,6 +184,12 @@ export const SCENARIOS: Scenario[] = [
   { name: 'howto', msgs: [player('Nico'), config(), phase('lobby')] }, // joining opens the "Cómo se juega" card
   { name: 'howto-long', msgs: [player('Nico'), config(PIZZAS, HOWTO_LONG), phase('lobby')] },
   { name: 'lobby', msgs: [player('Nico'), config(), phase('lobby')], after: `document.body.dataset.howto = 'closed'` },
+  // Ayudante: the switch next to "Cómo se juega", off and on; in versus (the busiest lobby: team card + swap + the switch) and with the Captain's D-pad
+  { name: 'lobby-assist', msgs: [player('Nico'), config(), phase('lobby'), { t: 'assist', playerId: 1, on: true }], after: `document.body.dataset.howto = 'closed'` },
+  { name: 'lobby-assist-versus', msgs: [player('WWWWWWWWWWWWWWWW'), vsConfig(), you(0), phase('lobby'), { t: 'assist', playerId: 1, on: true }], after: `document.body.dataset.howto = 'closed'` },
+  { name: 'captain-lobby-assist', msgs: [player('Nico'), vsConfig(), you(1), phase('lobby'), captain(), { t: 'assist', playerId: 1, on: true }], after: `document.body.dataset.howto = 'closed'` },
+  { name: 'lobby-assist-wide-font', msgs: [player('WWWWWWWWWWWWWWWW'), { ...vsConfig(), map: 'V1' }, you(1), phase('lobby'), captain(), { t: 'assist', playerId: 1, on: true }], after: `${WIDE}; document.body.dataset.howto = 'closed'` },
+  { name: 'lobby-other-game', msgs: [player('Nico'), { ...config(), game: 'obstaculos' }, phase('lobby')], after: `document.body.dataset.howto = 'closed'` }, // a game with no use for the switch
   { name: 'lobby-longname', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#2F7DE1'), { ...config(), map: 'random', seed: 4000000000, difficulty: 'hard' }, phase('lobby')], after: `document.body.dataset.howto = 'closed'` },
   { name: 'play', msgs: [player('Nico'), config(), phase('lobby'), phase('playing')] },
   { name: 'play-puesto', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) })] },

@@ -74,6 +74,12 @@ describe('protocol', () => {
     expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar","aIcon":"<script>"}')).toBeNull(); // an icon id the sheet does not have: the whole message is refused
     expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Botar","aIcon":"trash","aOff":true}')).toEqual({ t: 'hint', playerId: 3, a: 'Botar', b: null, aIcon: 'trash', aOff: true });
   });
+  it('assist: a phone says on or off, with a real boolean (Ayudante)', () => {
+    expect(parseClientMessage('{"t":"assist","on":true}')).toEqual({ t: 'assist', on: true });
+    expect(parseClientMessage('{"t":"assist","on":false,"playerId":9}')).toEqual({ t: 'assist', on: false }); // nothing else survives: the relay knows whose socket it is
+    for (const bad of ['{"t":"assist"}', '{"t":"assist","on":1}', '{"t":"assist","on":"true"}', '{"t":"assist","on":null}']) expect(parseClientMessage(bad), bad).toBeNull();
+    expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(5);
+  });
   it('rejects unknown message types', () => {
     expect(parseClientMessage('{"t":"hack"}')).toBeNull();
     expect(parseClientMessage('null')).toBeNull();
