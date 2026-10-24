@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  COLORS, DEFAULT_CONFIG, PROTOCOL_VERSION, configMsg, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage, youMsg,
+  COLORS, DEFAULT_CONFIG, captainOf, PROTOCOL_VERSION, configMsg, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage, youMsg,
   type LobbyConfig, type PhaseInfo, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 
@@ -19,6 +19,7 @@ interface Room {
   nextId: number;
   phase: PhaseInfo;
   config: LobbyConfig;
+  captain: number | null; // who holds the crown (see captainOf); only the relay knows who is connected, so it elects and tells everyone
 }
 
 const send = (ws: WebSocket, m: ServerMsg) => {
@@ -34,7 +35,7 @@ export function attachRelay(server: Server) {
   const rooms = new Map<string, Room>();
   const room = (code: string) => {
     let r = rooms.get(code);
-    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'menu' }, config: DEFAULT_CONFIG }));
+    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'menu' }, config: DEFAULT_CONFIG, captain: null }));
     return r;
   };
   const toScreens = (r: Room, m: ServerMsg) => {
@@ -44,6 +45,17 @@ export function attachRelay(server: Server) {
 
   const toPlayers = (r: Room, m: ServerMsg) => {
     for (const p of r.players.values()) if (p.ws) send(p.ws, m);
+  };
+
+  // Re-elects the Captain after anyone joins or drops. Tells everyone when it changed; `to` also gets it when it did not (a socket that just arrived).
+  const syncCaptain = (r: Room, to?: WebSocket) => {
+    const next = captainOf([...r.players.values()].map((p) => ({ id: p.id, connected: p.ws !== null })));
+    if (next !== r.captain) {
+      r.captain = next;
+      const m: ServerMsg = { t: 'captain', playerId: next };
+      toScreens(r, m);
+      toPlayers(r, m);
+    } else if (to) send(to, { t: 'captain', playerId: next });
   };
 
   const sendYou = (r: Room, p: Player) => {
@@ -61,6 +73,7 @@ export function attachRelay(server: Server) {
     if (isScreen) {
       r.screens.add(ws);
       send(ws, { t: 'state', players: [...r.players.values()].map((p) => pub(p, r)) });
+      send(ws, { t: 'captain', playerId: r.captain });
     }
 
     ws.on('message', (data) => {
@@ -118,6 +131,12 @@ export function attachRelay(server: Server) {
         sendYou(r, p);
         send(ws, { t: 'phase', ...r.phase });
         toScreens(r, { t: 'player_joined', player: pub(p, r) });
+        syncCaptain(r, ws);
+        return;
+      }
+      if (m.t === 'nav' && me) {
+        // The Captain's D-pad only; `from` comes from the socket (set at join), so nothing in the payload can pose as someone else.
+        if (r.captain === me.id) toScreens(r, { t: 'nav', from: me.id, key: m.key });
         return;
       }
       if (m.t === 'setTeam' && me) {
@@ -139,6 +158,7 @@ export function attachRelay(server: Server) {
       if (me && me.ws === ws) {
         me.ws = null;
         toScreens(r, { t: 'player_left', playerId: me.id });
+        syncCaptain(r);
         const p = me;
         p.expiry = setTimeout(() => {
           if (p.ws) return;

@@ -7,7 +7,7 @@ import { PUESTOS, type PuestoId } from '@party/shared/puestos';
 import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
-  BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
+  BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
   type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg,
 } from '@party/shared';
 
@@ -60,6 +60,8 @@ let started = false;
 let halted = false; // server refused us (e.g. room full): stop retrying until the page is shown again
 let phase: Phase = 'menu'; // until the screen says otherwise the phone waits for the game to be picked
 let myId = 0;
+let myName = ''; // as the relay registered it (trimmed)
+let captainId: number | null = null; // who holds the crown (the relay says); the Captain gets the D-pad
 let lastPong = 0;
 const room = new URLSearchParams(location.search).get('room') || DEFAULT_ROOM;
 const view = (v: string) => { document.body.dataset.view = v; };
@@ -128,6 +130,28 @@ const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JS
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
 
+// The Captain's remote: shown on every screen but the round, and only while the socket is joined (a button that cannot send would lie).
+const isCaptain = () => joined && captainId !== null && captainId === myId;
+function renderCaptain() {
+  document.body.dataset.remote = remoteVisible(isCaptain(), joined, phase) ? 'on' : 'off';
+  const crown = isCaptain() ? '👑 ' : '';
+  $('who').textContent = crown + myName;
+  $('who2').textContent = crown + myName;
+}
+for (const b of Array.from(document.querySelectorAll<HTMLElement>('#remote [data-nav]'))) {
+  const up = () => b.classList.remove('down');
+  // pointerdown (not click): the D-pad answers the instant the thumb lands, like the pad's buttons
+  b.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const key = b.dataset.nav;
+    if (!isNavKey(key) || !isCaptain()) return;
+    b.classList.add('down');
+    try { navigator.vibrate?.(8); } catch { /* no vibration API (iOS) */ }
+    tx({ t: 'nav', key }); // no id in it: the relay knows which phone this socket is
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, up);
+}
+
 // Suggested station card: informs, never blocks. "Cambiar" cycles to another puesto and tells the screen.
 let puestoPool: PuestoId[] = [];
 let puestoNow: PuestoId[] = [];
@@ -169,6 +193,7 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
     $('myscore').textContent = mine ? 'puntos de equipo' : '';
   }
   view(p);
+  renderCaptain();
 }
 
 function connect() {
@@ -182,9 +207,9 @@ function connect() {
       joined = true;
       myId = m.player.id;
       document.documentElement.style.setProperty('--c', m.player.color);
-      $('who').textContent = m.player.name;
-      $('who2').textContent = m.player.name;
+      myName = m.player.name;
       hud(`${m.player.name} #${m.player.slot + 1}`);
+      renderCaptain();
     } else if (m.t === 'config') {
       $('game').textContent = gameName(m.game);
       applyControls(m.controls);
@@ -192,6 +217,9 @@ function connect() {
       $('setup').textContent = `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores, m.puestos);
+    } else if (m.t === 'captain') {
+      captainId = m.playerId;
+      renderCaptain();
     } else if (m.t === 'buzz') {
       buzz(m.kind);
     } else if (m.t === 'pong') {
@@ -209,6 +237,7 @@ function connect() {
   sock.onclose = () => {
     if (sock !== ws) return;
     joined = false;
+    renderCaptain();
     if (halted) return;
     hud('reconnecting...');
     setTimeout(connect, 500);
