@@ -3,11 +3,11 @@ import Phaser from 'phaser';
 import type { Emitter, GameEvents } from '@party/shared/events';
 import type { Game } from '@party/shared/game';
 import type { PublicPlayer } from '@party/shared';
-import { C, OX, OY, TILE } from './tokens';
+import { C, OX, OY, TILE, hexNum } from './tokens';
 import { buildBackground } from './env';
 import { Chef } from './chef';
-import { Fx } from './fx';
-import { Hud } from './hud';
+import { Fx, makeText } from './fx';
+import { Hud, ticketKey, type RoundView } from './hud';
 import { StationViews, place } from './stations';
 import { foodKey } from './food';
 import { PuestoMarks, type PuestoView } from './puestos';
@@ -21,16 +21,35 @@ export class World {
   private marks: PuestoMarks;
   private off: (() => void)[] = [];
 
-  constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, private puestos: () => Map<number, PuestoView>, bus: Emitter<GameEvents>, mapId: string, seed: number) {
+  constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, private puestos: () => Map<number, PuestoView>, bus: Emitter<GameEvents>, mapId: string, seed: number, private view?: RoundView) {
     this.bg = buildBackground(scene, game.grid, mapId, seed);
+    if (game.versus && view?.teams) this.tintKitchens(view);
     this.fx = new Fx(scene);
     this.stations = new StationViews(scene, game, this.fx);
-    this.hud = new Hud(scene, game);
+    this.hud = new Hud(scene, game, view);
     this.marks = new PuestoMarks(scene, game, puestos);
     this.wire(bus);
   }
 
   private chefOf(id: number) { return this.chefs.get(id); }
+
+  // Versus: each kitchen's floor takes its team's colour, with the team's glyph big and faint in the middle (colour alone never says whose it is).
+  private tintKitchens(view: RoundView) {
+    const k = this.game.kitchens;
+    if (!k) return;
+    const g = this.scene.add.graphics().setDepth(1);
+    view.teams!.forEach((team, i) => {
+      const region = k.regions[i];
+      let sx = 0, sy = 0, n = 0;
+      g.fillStyle(hexNum(team.color), 0.17);
+      k.comp.forEach((row, y) => row.forEach((c, x) => {
+        if (c !== region) return;
+        g.fillRect(OX + x * TILE, OY + y * TILE, TILE, TILE);
+        sx += x + 0.5; sy += y + 0.5; n++;
+      }));
+      if (n) makeText(this.scene, OX + (sx / n) * TILE, OY + (sy / n) * TILE, team.icon, { size: 170, color: team.color, stroke: 0, depth: 2 }).setAlpha(0.2);
+    });
+  }
   private feet(gp: { x: number; y: number }) { return { x: OX + gp.x * TILE, y: OY + (gp.y + 0.3) * TILE }; }
 
   private wire(bus: Emitter<GameEvents>) {
@@ -61,10 +80,11 @@ export class World {
     on('washDone', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y, 0x7fd0f2, 0.4, 1.3); this.fx.bubbles(p.x, p.y); this.chefOf(e.player)?.bump(); });
     on('dirtyNew', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y, 0xd7263d, 0.3, 1.1); });
     on('potStart', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y + TILE * 0.2, 0xff8a1f, 0.5, 1.5); });
-    on('orderWarning', (e) => this.hud.orderWarning(e.order));
+    on('orderWarning', (e) => this.hud.orderWarning(ticketKey(e.order, e.team)));
     on('orderExpired', (e) => {
-      this.hud.expired.add(e.order);
-      const c = this.hud.ticketCenter(e.order);
+      const key = ticketKey(e.order, e.team);
+      this.hud.expired.add(key);
+      const c = this.hud.ticketCenter(key);
       this.fx.float(Math.max(160, c.x), c.y + 70, g.params.penalty ? String(g.params.penalty) : '¡Vencido!', C.danger, 44);
       this.fx.shake(100, 0.003);
       for (const ch of this.chefs.values()) ch.fail();
@@ -72,7 +92,7 @@ export class World {
     on('delivered', (e) => {
       const ch = this.chefOf(e.player);
       ch?.celebrate();
-      const wi = this.stations.windowIdx();
+      const wi = this.stations.windowIdx(e.team);
       const w = this.stations.pos(wi);
       this.fx.confettiBurst(w.x, w.y);
       this.stations.ding(wi);
@@ -86,12 +106,12 @@ export class World {
       this.scene.tweens.add({ targets: box, y: box.y - 90, alpha: 0, duration: 800, ease: 'cubic.out', onComplete: () => box.destroy() });
     });
     on('dishRejected', (e) => {
-      const w = this.stations.pos(this.stations.windowIdx());
+      const w = this.stations.pos(this.stations.windowIdx(e.team));
       this.fx.float(w.x, w.y - TILE * 0.4, '¡Pedido equivocado!', C.danger, 38);
       this.chefOf(e.player)?.fail();
       this.fx.shake(90, 0.003);
     });
-    on('streak', (e) => this.hud.streak(e.n, e.mult));
+    on('streak', (e) => { if (!g.versus) this.hud.streak(e.n, e.mult); }); // versus: the streak per team is F4's HUD
     on('countdownTick', (e) => { if (e.kind === 'start') this.hud.countdown(e.n); else this.hud.clockPulse(); });
     on('roundEnd', () => { this.hud.timeUp(); this.fx.shake(250, 0.006); });
   }
@@ -113,6 +133,8 @@ export class World {
           else if (kind === 'stretch') this.fx.flourPuff(p.x, p.y);
           else this.fx.chop(p.x, p.y, { raw0: 0, raw1: 1, raw2: 2 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2'] ?? 1);
         };
+        const team = g.versus ? this.view?.teams?.[gp.team] : undefined;
+        if (team) chef.setTeam(hexNum(team.color));
         this.chefs.set(gp.id, chef);
       }
       chef.setName(info.name);
@@ -123,7 +145,7 @@ export class World {
         chop.set(gp.chopAt, action);
       }
       const f = this.feet(gp);
-      chef.update(dtMs, { x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected, ghost: gp.crossing });
+      chef.update(dtMs, { x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected && !gp.ghost, ghost: gp.crossing });
     }
     for (const [id, c] of this.chefs) if (!g.players.has(id)) { c.destroy(); this.chefs.delete(id); }
     this.stations.update(dtMs, chop);

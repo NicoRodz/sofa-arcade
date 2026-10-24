@@ -1,11 +1,17 @@
 import Phaser from 'phaser';
 import {
   ClockSync, DEFAULT_CONFIG, PING_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
-  type BuzzKind, type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
+  type BuzzKind, type ClientMsg, type LobbyConfig, type MatchStart, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
-import { summarize } from '@party/shared/results';
-import { GAMES, PLATFORM, gameName } from '@party/shared/games';
+import { summarize, summarizeTeam } from '@party/shared/results';
+import { GAMES, PLATFORM, gameInfo, gameName, hasModeChoice, modeOf, selectableModes, type GameDef, type ModeId } from '@party/shared/games';
+import { movePlayer, reshuffleTeams, teamOf } from '@party/shared/teams';
+import {
+  VERSUS_AUTO, VERSUS_RANDOM, createVersusGame, defaultModeOptions, defaultVersusChoice, isVersusChoice, kitchenSides, lobbySetup, resolveVersusMap, syncTeams, teamSizes,
+  versusAvailability, versusLobbyMaps, versusMapStatus, withSides,
+} from '@party/shared/versusLobby';
+import { versusMap } from '@party/shared/versusMaps';
 import { howToHtml } from '@party/shared/render';
 import { generate, resolveMap } from '@party/shared/generate';
 import { defaultMap, fixedMap, isMapChoice, lobbyMaps, lobbyN, mapFeatures, mapStatus, replacementMap, type MapChoice } from '@party/shared/maps';
@@ -25,9 +31,10 @@ import { assignPuestos, featuresOf, type PuestoId } from '@party/shared/puestos'
 import { C, H, W } from './art/tokens';
 import { percentile } from '@party/shared/stats';
 import {
-  COUNTDOWN_MS, TICK_MS, addPlayer, createGame, removePlayer, tick,
+  COUNTDOWN_MS, TICK_MS, addPlayer, createGame, dropPlayer, rejoinPlayer, removePlayer, resolvePause, tick,
   type Controls,
 } from '@party/shared/game';
+import type { RoundView } from './art/hud';
 
 interface P {
   info: PublicPlayer;
@@ -57,7 +64,11 @@ const room = (() => {
 let phase: Phase = 'menu'; // Pichiclub start: the screen picks the game, then that game's lobby
 let config: LobbyConfig = { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 };
 let game = createGame();
-const played = new Set<string>(); // fixed maps already played in this session: the lobby proposes a new one by default
+const played = new Set<string>(); // maps already played in this session (coop and versus ids): the lobby proposes a new one by default
+let teamsTouched = false; // somebody moved a player by hand: the lobby stops rebalancing the teams on its own
+let lockBeforeStart = false; // the teams lock while a match runs; this is what the host had set
+let teamNotice = ''; // why the last move or mode change was refused
+let roundView: RoundView = { teams: null, hiddenScore: false };
 let mapTouched = false; // the host picked a map by hand: stop proposing defaults
 let mapNotice = '';
 const puestoOf = new Map<number, PuestoView>(); // suggested stations of the running round, by player id
@@ -87,8 +98,10 @@ function upsert(info: PublicPlayer, reset = false) {
     addPlayer(game, info.id, info.slot);
     audio.playerJoined();
   }
+  const back = !!p && !p.info.connected && info.connected;
   p.info = info;
   if (reset) p.ctl = { x: 0, y: 0, b: false };
+  if (back && phase === 'playing' && game.versus) rejoinPlayer(game, info.id); // back within the grace time: same team, same chef
   renderUi();
 }
 
@@ -105,9 +118,12 @@ const sendMsg = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.se
 function setPhase(next: Phase) {
   if (next === phase) return;
   phase = next;
-  if (phase === 'playing') {
+  let match: MatchStart | undefined;
+  if (phase === 'playing' && config.modeId === 'versus' && config.teams) {
+    match = startVersus();
+  } else if (phase === 'playing') {
     const n = connectedN();
-    const map = resolveMap(config.map, config.seed, config.difficulty, n, Math.random);
+    const map = resolveMap(config.map as MapChoice, config.seed, config.difficulty, n, Math.random);
     game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
     played.add(map.id);
     // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
@@ -122,19 +138,127 @@ function setPhase(next: Phase) {
     } else puestoMsg = undefined;
     overAt = null;
     stats.delivered.clear();
+    roundView = { teams: null, hiddenScore: false };
     scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
-  else if (phase === 'lobby') scene.endRound();
+  else if (phase === 'lobby') {
+    scene.endRound();
+    if (config.modeId === 'versus' && config.teamsLocked !== lockBeforeStart) setConfig({ teamsLocked: lockBeforeStart }); // the match is over: the host's own lock again
+  }
   else if (phase === 'menu') menuSel = Math.max(0, menuCards(connectedCount()).findIndex((c) => c.id === config.game)); // coming back: the game just left stays highlighted
   // cooperative: every player carries the team score
-  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: game.score })) : undefined, puestos: phase === 'playing' ? puestoMsg : undefined });
+  // cooperative: every player carries the team score; versus: the score of the player's own team
+  const scoreOf = (id: number) => (game.versus ? game.teams[game.players.get(id)?.team ?? teamOf(config.teams, id)?.id ?? 0]?.score ?? 0 : game.score);
+  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: scoreOf(id) })) : undefined, puestos: phase === 'playing' ? puestoMsg : undefined, ...(match ? { match } : {}) });
   renderUi();
+}
+
+// Versus: the lobby's frozen teams and map become the round (createVersusGame), with the puestos dealt inside each kitchen.
+function startVersus(): MatchStart {
+  const teams0 = config.teams!;
+  const sizes = teamSizes(teams0);
+  const map = resolveVersusMap(config.map, config.seed, config.difficulty, sizes, Math.random);
+  const teams = withSides(teams0, map);
+  const slotOf = (id: number) => players.get(id)?.info.slot ?? 0;
+  game = createVersusGame({ teams, map, difficulty: config.difficulty, seed: config.seed, modeOptions: config.modeOptions, slotOf, bus: gameBus, countdownMs: COUNTDOWN_MS });
+  played.add(map.id);
+  for (const p of players.values()) { p.pendA = 0; p.pendB = 0; }
+  puestoOf.clear();
+  const f = featuresOf(game.stations);
+  const assign = teams.flatMap((t) => assignPuestos(t.playerIds, f).assign); // chef i of a team = puesto i; the default table is the same for both kitchens
+  puestoMsg = { cheese: f.cheese, sink: f.sink, assign };
+  assign.forEach((a) => puestoOf.set(a.id, { ids: a.puestos, stamp: ++puestoStamp }));
+  overAt = null;
+  stats.delivered.clear();
+  lockBeforeStart = config.teamsLocked;
+  config = { ...config, teams, teamsLocked: true }; // frozen for the match; the phones get their kitchen side with `you`
+  sendMsg({ t: 'config', ...config });
+  roundView = { teams, hiddenScore: config.modeOptions.hiddenScore === true };
+  scene.startRound(game, map.id, config.seed, roundView);
+  return { gameId: config.game, modeId: 'versus', mapId: map.id, difficulty: config.difficulty, teams, modeOptions: config.modeOptions };
 }
 const setConfig = (patch: Partial<LobbyConfig>) => {
   config = { ...config, ...patch };
   sendMsg({ t: 'config', ...config });
   renderUi();
 };
+
+// --- Modes and teams (Versus F1). The screen is the host: it owns the teams, the phones only ask (setTeam) and the relay forwards. ---
+const gameDef = (): GameDef => GAMES.find((x) => x.id === config.game) ?? GAMES[0];
+const modeNow = () => modeOf(gameDef(), config.modeId);
+const isVersus = () => config.modeId === 'versus';
+const connectedIds = () => [...players.values()].filter((p) => p.info.connected).sort((a, b) => a.info.slot - b.info.slot).map((p) => p.info.id);
+const MODE_PILL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+function setMode(id: ModeId) {
+  if (phase !== 'lobby' || id === config.modeId) return;
+  const mode = modeOf(gameDef(), id);
+  if (id === 'versus') {
+    const av = versusAvailability(mode, connectedCount());
+    if (!av.ok) { teamNotice = av.reason; renderUi(); return; }
+  }
+  teamNotice = ''; teamsTouched = false; mapTouched = false; mapNotice = '';
+  const teams = syncTeams(mode, null, connectedIds(), config.seed, false);
+  setConfig({ modeId: id, teams, teamsLocked: false, modeOptions: id === 'versus' ? defaultModeOptions(mode) : {}, map: id === 'versus' ? defaultVersusChoice(teamSizes(teams), played) : defaultMap(connectedN(), played).id });
+}
+// A phone ("Cambiar de equipo") or the host (click on a chip) moves a player; the lobby decides (locked teams, unknown team, a player that is not here).
+function moveToTeam(playerId: number, teamId: number) {
+  if (phase !== 'lobby' || !isVersus() || !config.teams || !connectedIds().includes(playerId)) return;
+  const r = movePlayer(config.teams, playerId, teamId, config.teamsLocked);
+  if (!r.ok) { teamNotice = r.reason; renderUi(); return; }
+  teamNotice = ''; teamsTouched = true;
+  setConfig({ teams: r.teams });
+}
+function shuffleTeams() {
+  if (!config.teams) return;
+  if (config.teamsLocked) { teamNotice = 'Los equipos están bloqueados'; renderUi(); return; }
+  teamNotice = ''; teamsTouched = false;
+  setConfig({ teams: reshuffleTeams(config.teams, (Math.random() * 2 ** 32) >>> 0) });
+}
+// Why the round cannot start yet ('' when it can). Versus also needs a legal split.
+function startProblem(): string {
+  if (!canStart([...players.values()].map((p) => p.info))) return 'Esperando jugadores';
+  if (isVersus()) { const s = lobbySetup(modeNow(), config.teams); if (!s.ok) return s.problems[0]!; }
+  return '';
+}
+
+// Keeps the lobby coherent with who is connected: versus that stopped being possible falls back to coop (saying so), the teams follow the
+// players, and the map proposal follows the teams. Returns true when the mode is versus.
+function syncLobby(n: number): boolean {
+  if (isVersus()) {
+    const av = versusAvailability(modeNow(), connectedCount());
+    if (!av.ok) {
+      teamNotice = `${av.reason}: se volvió a Cooperativo`;
+      mapTouched = false;
+      config = { ...config, modeId: 'coop', teams: null, teamsLocked: false, modeOptions: {}, map: defaultMap(n, played).id };
+      sendMsg({ t: 'config', ...config });
+    }
+  }
+  if (!isVersus()) {
+    if (isVersusChoice(config.map)) { config = { ...config, map: defaultMap(n, played).id }; sendMsg({ t: 'config', ...config }); }
+    syncMap(n);
+    return false;
+  }
+  const teams = syncTeams(modeNow(), config.teams, connectedIds(), config.seed, teamsTouched);
+  if (teams !== config.teams) { config = { ...config, teams }; sendMsg({ t: 'config', ...config }); }
+  syncVersusMap();
+  return true;
+}
+function syncVersusMap() {
+  const sizes = teamSizes(config.teams);
+  const patch = (map: LobbyConfig['map']) => { config = { ...config, map }; sendMsg({ t: 'config', ...config }); };
+  const cur = config.map;
+  if (!isVersusChoice(cur)) { patch(defaultVersusChoice(sizes, played)); return; }
+  const m = versusMap(cur);
+  if (!mapTouched) { const d = defaultVersusChoice(sizes, played); if (cur !== d) patch(d); return; }
+  if (m && versusMapStatus(m, sizes).state === 'blocked') {
+    const r = versusLobbyMaps(sizes).find((x) => x.status.state === 'recommended')?.map;
+    mapNotice = `${m.name} no sirve para ${sizes.join(' contra ')}: se cambió a ${r?.name ?? 'Aleatorio'}`;
+    patch(r ? (r.id as LobbyConfig['map']) : VERSUS_AUTO);
+  } else if (!m) mapNotice = '';
+}
+
 // Starting a round: iris closes, the "how to play" card shows for ~10 s (Enter skips), iris again, then the countdown.
 function startRound() {
   if (phase !== 'lobby' || starting || howTo || !canStart([...players.values()].map((p) => p.info))) return;
@@ -152,7 +276,7 @@ function openHowTo(mode: HowToState['mode']) {
   const g = GAMES.find((x) => x.id === config.game) ?? GAMES[0];
   howTo = { mode, startedAt: performance.now() };
   $('howtogame').textContent = g.name;
-  $('howtobody').innerHTML = howToHtml(g.howTo);
+  $('howtobody').innerHTML = howToHtml(gameInfo(g.id, GAMES, config.modeId).howTo);
   $('howtobar').style.visibility = mode === 'start' ? 'visible' : 'hidden';
   $('howto').classList.remove('off');
   tickHowTo();
@@ -190,9 +314,14 @@ function onMessage(m: ServerMsg) {
     case 'player_joined': upsert(m.player, true); break;
     case 'player_left': {
       const p = players.get(m.playerId);
-      if (p) { p.info.connected = false; p.ctl = { x: 0, y: 0, b: false }; renderUi(); }
+      if (p) {
+        p.info.connected = false; p.ctl = { x: 0, y: 0, b: false };
+        if (phase === 'playing' && game.versus) dropPlayer(game, p.info.id); // a ghost for GHOST_MS: what it held goes to a free counter
+        renderUi();
+      }
       break;
     }
+    case 'setTeam': moveToTeam(m.playerId, m.teamId); break; // a phone asked to change team
     case 'player_removed': remove(m.playerId); break;
     case 'puesto': { // the phone picked another puesto with "Cambiar": the screen lights it up again
       if (phase === 'playing' && players.has(m.playerId)) puestoOf.set(m.playerId, { ids: m.puestos as PuestoId[], stamp: ++puestoStamp });
@@ -246,6 +375,7 @@ const host: Host = {
   players: () => new Map([...players].map(([id, p]) => [id, p.info])),
   puestos: () => puestoOf,
   step(delta) {
+    syncPauseBar();
     if (phase !== 'playing' || performance.now() < gateUntil) { acc = 0; return; }
     acc += Math.min(delta, 100);
     while (acc >= TICK_MS) {
@@ -262,6 +392,15 @@ const host: Host = {
     if (game.over && overAt !== null && performance.now() - overAt > 1100) { overAt = null; dispatch('timeout'); }
   },
 };
+// Versus: a team with nobody stops the clock; the host picks "Seguir sin ganador" or "Terminar" (resolvePause).
+let pauseShown = false;
+function syncPauseBar() {
+  const on = phase === 'playing' && !!game.paused;
+  if (on === pauseShown) return;
+  pauseShown = on;
+  $('pausebar').classList.toggle('off', !on);
+  if (on) $('pausetxt').textContent = `${game.paused!.teams.map((t) => roundView.teams?.[t]?.name ?? `Equipo ${t + 1}`).join(' y ')} se quedó sin jugadores`;
+}
 const scene = new MainScene(host);
 // Called right after the frame is drawn: closest browser-side proxy for "visible on screen".
 const phaser = new Phaser.Game({
@@ -287,7 +426,7 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
   fastForward: (ms: number) => { game.params.roundMs = game.time + ms; },
   setScore: (n: number) => { game.score = n; }, // capture tool: results screen with stars
-  snapshot: () => ({ fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
+  snapshot: () => ({ versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
 $('code').textContent = room;
@@ -313,7 +452,7 @@ const chips = Array.from({ length: 8 }, (_v, i) => {
   const el = document.createElement('div');
   el.className = 'chip empty';
   el.style.setProperty('--c', chefOf(i).color);
-  el.innerHTML = '<div class="av"></div><div><div class="nm"></div><div class="sub"></div></div><div class="num"></div>';
+  el.innerHTML = '<div class="av"></div><div><div class="nm"></div><div class="sub"></div></div><div class="num"></div><div class="mv" title="Pasar al otro equipo">⇄</div>';
   $('chips').appendChild(el);
   return { el, av: el.querySelector('.av')!, nm: el.querySelector('.nm')!, sub: el.querySelector('.sub')!, num: el.querySelector('.num')!, who: -1 };
 });
@@ -337,6 +476,50 @@ function renderChips() {
     c.nm.textContent = info.name;
     c.sub.textContent = info.connected ? `${chefOf(i).name} · listo` : 'Desconectado';
   });
+}
+
+// Versus lobby: the chip elements are the same ones, moved into the team columns (and back home for coop / the menu).
+let chipsInTeams = false;
+function showTeams(on: boolean) {
+  $('chips').classList.toggle('off', on);
+  $('teams').classList.toggle('off', !on);
+  $('teambar').classList.toggle('off', !on);
+  if (!on && chipsInTeams) { chipsInTeams = false; $('chips').replaceChildren(...chips.map((c) => c.el)); }
+}
+function renderTeams() {
+  chipsInTeams = true;
+  const teams = config.teams ?? [];
+  const setup = lobbySetup(modeNow(), config.teams);
+  $('teams').classList.toggle('teams-locked', config.teamsLocked);
+  teams.forEach((t, i) => {
+    const col = $(`tc${i}`);
+    col.style.setProperty('--tc', t.color);
+    const k = setup.ok ? setup.k[i] ?? 1 : 1;
+    setHtml(`th${i}`, `<span class="ti">${esc(t.icon)}</span>${esc(t.name)}${k > 1 ? `<span class="tk" title="Multiplicador del equipo chico">×${k}</span>` : ''}<small>${plural(t.playerIds.length, 'jugador', 'jugadores')}</small>`);
+    const list = col.querySelector('.tlist')!;
+    const want: HTMLElement[] = t.playerIds.map((id) => chips.find((c) => c.who === id)?.el).filter((el): el is HTMLDivElement => !!el);
+    if (!want.length) { const note = document.createElement('div'); note.className = 'empty-note'; note.textContent = 'Sin jugadores'; want.push(note); }
+    const cur = Array.from(list.children);
+    if (want.length !== cur.length || want.some((el, j) => el !== cur[j])) list.replaceChildren(...want);
+  });
+  $('lock').textContent = config.teamsLocked ? 'Desbloquear equipos' : 'Bloquear equipos';
+  $('lock').classList.toggle('sel', config.teamsLocked);
+  for (const o of modeNow().options ?? []) {
+    const el = $(`opt-${o.id}`);
+    el.textContent = o.label;
+    el.classList.toggle('on', config.modeOptions[o.id] === true);
+    el.classList.toggle('sel', config.modeOptions[o.id] === true);
+  }
+  const th = $('teamhint');
+  th.textContent = teamNotice || (setup.ok ? 'Clic en un jugador para pasarlo al otro equipo' : setup.problems[0]!);
+  th.classList.toggle('bad', !!teamNotice || !setup.ok);
+}
+// The generated versus map of a seed is expensive enough (bounded attempts, each one validated) not to redo it on every render.
+let vsGenCache: { key: string; rows: readonly string[] } | null = null;
+function versusGenerated(seed: number, difficulty: LobbyConfig['difficulty'], sizes: readonly number[]) {
+  const key = `${seed}|${difficulty}|${Math.max(0, ...sizes)}`;
+  if (vsGenCache?.key !== key) vsGenCache = { key, rows: resolveVersusMap(VERSUS_RANDOM, seed, difficulty, sizes, Math.random).rows };
+  return vsGenCache;
 }
 
 let lastMapKey = '';
@@ -414,41 +597,54 @@ function renderUi() {
   $('title').textContent = inMenu ? PLATFORM : gameName(config.game);
   $('platform').textContent = inMenu ? 'Elige un juego' : PLATFORM;
   renderChips();
-  if (inMenu) { renderMenu(); return; }
+  if (inMenu) { showTeams(false); renderMenu(); return; }
   setHtml('diffs', DIFFICULTIES.map((d) => `<button class="pill ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join(''));
   const list = [...players.values()];
   const n = connectedN();
-  syncMap(n);
-  const cards = lobbyMaps(n).map(({ map, status }) => {
+  const vs = syncLobby(n);
+  const def = gameDef();
+  $('modebox').classList.toggle('off', !hasModeChoice(def));
+  setHtml('modes', selectableModes(def).map((m) => {
+    const av = m.id === 'versus' ? versusAvailability(m, connectedCount()) : { ok: true, reason: '' };
+    return `<button class="pill ${m.id === config.modeId ? 'sel' : ''} ${av.ok ? '' : 'dis'}" data-mode="${m.id}" title="${esc(av.ok ? m.label : av.reason)}">${esc(MODE_PILL[m.id] ?? m.label)}</button>`;
+  }).join(''));
+  showTeams(vs);
+  if (vs) renderTeams();
+  const sizes = teamSizes(config.teams);
+  const rows = vs ? versusLobbyMaps(sizes).map(({ map, status }) => ({ map, status: status.state === 'recommended' ? { state: 'recommended' as const } : status })) : lobbyMaps(n);
+  const cards = rows.map(({ map, status }) => {
     const f = mapFeatures(map.rows);
     const cls = `mc ${status.state === 'recommended' ? 'rec' : status.state === 'warn' ? 'warn' : 'blk'} ${map.id === config.map ? 'sel' : ''}`;
     const tags = `${f.cheese ? '<i class="tag" title="Queso: Margarita">Q</i>' : ''}${f.sink ? '<i class="tag l" title="Lavado de platos">L</i>' : ''}`;
     return `<button class="${cls}" data-map="${map.id}"><span class="t"><b>${map.id}</b>${esc(map.name)}</span><span class="m">${map.nMin}-${map.nMax}<span class="st">${'★'.repeat(map.stars)}</span>${tags}</span>${status.state === 'recommended' ? '' : `<span class="why">${status.reason}</span>`}</button>`;
   });
-  const special = [['auto', 'Aleatorio', 'de los ideales'], ['random', 'Mapa generado', 'semilla nueva']]
+  const special = (vs ? [[VERSUS_AUTO, 'Aleatorio', 'de los que caben'], [VERSUS_RANDOM, 'Mapa generado', 'semilla nueva']] : [['auto', 'Aleatorio', 'de los ideales'], ['random', 'Mapa generado', 'semilla nueva']])
     .map(([id, label, sub]) => `<button class="mc special ${id === config.map ? 'sel' : ''}" data-map="${id}"><span class="t">${label}</span><span class="m">${sub}</span></button>`);
   setHtml('maps', [...cards, ...special].join(''));
-  $('mapfor').textContent = `· para ${n} ${n === 1 ? 'jugador' : 'jugadores'}`;
-  const rand = config.map === 'random';
+  $('mapfor').textContent = vs && sizes.length ? `· para ${sizes.join(' contra ')}` : `· para ${n} ${n === 1 ? 'jugador' : 'jugadores'}`;
+  const rand = config.map === 'random' || config.map === VERSUS_RANDOM;
   $('seedrow').classList.toggle('off', !rand);
   $('seed').textContent = String(config.seed);
-  const gen = rand ? generate(config.seed, config.difficulty, n) : null;
-  const shown = gen ? { rows: gen.rows } : config.map === 'auto' ? null : fixedMap(config.map);
+  const gen = rand && !vs ? generate(config.seed, config.difficulty, n) : null;
+  const vsGen = rand && vs ? versusGenerated(config.seed, config.difficulty, sizes) : null;
+  const shown = vsGen ? { rows: vsGen.rows } : gen ? { rows: gen.rows } : config.map === 'auto' || config.map === VERSUS_AUTO ? null : vs ? versusMap(config.map) ?? null : fixedMap(config.map);
   const key = shown ? shown.rows.join('') : 'none';
   if (key !== lastMapKey) {
     lastMapKey = key;
     const cv = $('minimap') as HTMLCanvasElement;
     if (shown) drawMiniMap(cv, shown.rows); else { const c = cv.getContext('2d')!; c.fillStyle = '#3A2A24'; c.fillRect(0, 0, cv.width, cv.height); c.fillStyle = '#FFF4E0'; c.font = '800 54px ui-rounded, system-ui'; c.textAlign = 'center'; c.fillText('?', cv.width / 2, cv.height / 2 + 18); }
   }
-  const sel = config.map === 'auto' || config.map === 'random' ? null : fixedMap(config.map);
+  const sel = vs || config.map === 'auto' || config.map === 'random' ? null : fixedMap(config.map);
   const selStatus = sel ? mapStatus(sel, n) : null;
   const info = $('mapinfo');
   info.textContent = mapNotice || (gen && !gen.inBand ? 'Esta semilla no cae en la banda de la dificultad: se usa el mapa válido más cercano'
     : selStatus?.state === 'warn' ? `${sel!.name}: ${selStatus.reason}. Con ${n} se puede, pero cuesta` : '');
   info.classList.toggle('notice', !!mapNotice);
-  const pr = params(config.difficulty, n);
-  $('diffinfo').textContent = `Pedido cada ${(pr.orderEveryMs / 1000).toFixed(0)} s, paciencia ${pr.orderTtlMs / 1000} s, hasta ${pr.maxOrders} pedidos`;
-  ($('start') as HTMLButtonElement).disabled = !canStart(list.map((p) => p.info));
+  const pr = params(config.difficulty, vs ? Math.round(sizes.reduce((a, b) => a + b, 0) / Math.max(1, sizes.length)) : n);
+  const di = $('diffinfo');
+  di.textContent = teamNotice || `Pedido cada ${(pr.orderEveryMs / 1000).toFixed(0)} s, paciencia ${pr.orderTtlMs / 1000} s, hasta ${pr.maxOrders} pedidos`;
+  di.classList.toggle('notice', !!teamNotice);
+  ($('start') as HTMLButtonElement).disabled = !!startProblem();
 }
 renderUi();
 
@@ -466,9 +662,37 @@ const stats = { delivered: new Map<number, number>() };
 gameBus.on('delivered', (e) => stats.delivered.set(e.player, (stats.delivered.get(e.player) ?? 0) + 1));
 
 let resultsTimers: ReturnType<typeof setTimeout>[] = [];
+// Versus (minimal; F4 completes it): who won, and the numbers of each team.
+function renderVersusResults() {
+  const res = game.result;
+  const teams = roundView.teams ?? [];
+  const winner = res?.winner ?? null;
+  const head = $('resh');
+  if (winner !== null) {
+    const w = teams[winner];
+    head.textContent = `¡Ganan los ${w?.name ?? `Equipo ${winner + 1}`}!`;
+    head.style.color = w?.color ?? '';
+  } else {
+    head.textContent = res?.aborted || game.noWinner ? 'Partida sin ganador' : '¡Empate!';
+    head.style.color = '';
+  }
+  const win = (id: number) => id === winner;
+  $('vsres').innerHTML = game.teams.map((t) => {
+    const sum = summarizeTeam(game, t.id), info = teams[t.id];
+    const row = (label: string, v: number) => `<div class="vr"><span>${label}</span><b>${v}</b></div>`;
+    return `<div class="vteam ${win(t.id) ? 'win' : ''}" style="--tc:${info?.color ?? '#888'}"><div class="vh">${esc(info?.icon ?? '')} ${esc(info?.name ?? `Equipo ${t.id + 1}`)}</div>${win(t.id) ? '<div class="crown">👑</div>' : ''}`
+      + `<div class="vs">${sum.score}</div><div class="vk">${sum.k > 1 ? `ventaja ×${sum.k} sobre ${sum.gross}` : ''}</div>`
+      + `${row('Entregadas', sum.delivered)}${row('En propinas', sum.tips)}${row('Pedido dorado', sum.vips)}${row('Falladas', sum.expired + sum.rejected)}</div>`;
+  }).join('');
+  $('vsnote').textContent = res?.aborted ? 'El anfitrión terminó la partida' : '';
+}
+
 function renderResults() {
   resultsTimers.forEach(clearTimeout);
   resultsTimers = [];
+  $('resultsInner').classList.toggle('vs', game.versus);
+  if (game.versus) { renderVersusResults(); return; }
+  $('resh').textContent = '¡Fin de la ronda!'; $('resh').style.color = '';
   const sum = summarize(game);
   const st = sum.stars;
   const starsEl = $('stars');
@@ -529,13 +753,33 @@ $('diffs').addEventListener('click', (e) => {
   if (diff) setConfig({ difficulty: diff });
 });
 $('maps').addEventListener('click', (e) => {
-  const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map as MapChoice | undefined;
-  if (!isMapChoice(m)) return;
-  const f = m === 'auto' || m === 'random' ? null : fixedMap(m);
-  if (f && mapStatus(f, connectedN()).state === 'blocked') return;
-  mapTouched = true; mapNotice = '';
-  setConfig({ map: m });
+  const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map;
+  if (isVersus() ? isVersusChoice(m) : isMapChoice(m)) {
+    const blocked = isVersus() ? (() => { const v = versusMap(m!); return !!v && versusMapStatus(v, teamSizes(config.teams)).state === 'blocked'; })() : (() => { const f = m === 'auto' || m === 'random' ? null : fixedMap(m!); return !!f && mapStatus(f, connectedN()).state === 'blocked'; })();
+    if (blocked) return;
+    mapTouched = true; mapNotice = '';
+    setConfig({ map: m as LobbyConfig['map'] });
+  }
 });
+$('modes').addEventListener('click', (e) => {
+  const id = (e.target as HTMLElement).closest<HTMLElement>('[data-mode]')?.dataset.mode;
+  const mode = selectableModes(gameDef()).find((m) => m.id === id);
+  if (mode) setMode(mode.id);
+});
+$('shuffle').addEventListener('click', shuffleTeams);
+$('lock').addEventListener('click', () => { teamNotice = ''; setConfig({ teamsLocked: !config.teamsLocked }); });
+$('teambar').addEventListener('click', (e) => {
+  const opt = (e.target as HTMLElement).closest<HTMLElement>('[data-opt]')?.dataset.opt;
+  if (opt) setConfig({ modeOptions: { ...config.modeOptions, [opt]: config.modeOptions[opt] !== true } });
+});
+$('teams').addEventListener('click', (e) => { // the host clicks a chip: that player goes to the other team
+  const chip = (e.target as HTMLElement).closest<HTMLElement>('.chip');
+  const c = chips.find((x) => x.el === chip);
+  const t = c && c.who >= 0 ? teamOf(config.teams, c.who) : undefined;
+  if (c && t && config.teams) moveToTeam(c.who, (t.id + 1) % config.teams.length);
+});
+$('pcont').addEventListener('click', () => { if (game.paused) resolvePause(game, 'continue'); });
+$('pend').addEventListener('click', () => { if (game.paused) resolvePause(game, 'end'); });
 $('again-seed').addEventListener('click', () => setConfig({ seed: (config.seed + 1) % 2 ** 32 }));
 $('start').addEventListener('click', () => startRound());
 $('again').addEventListener('click', () => dispatch('again'));
