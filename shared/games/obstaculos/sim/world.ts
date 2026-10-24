@@ -22,7 +22,7 @@ import { dropCrumbs, goalZone, placeAtCell, progressField, progressOf, revive, s
 import { emit, isActive, playerOf, type LevelResult, type ObstEvent, type PlayerState, type World, type WorldStatus } from './state';
 import { hashBodies, headPlatform, newBody, physicsFor, stepPlayer, type Body, type Platform } from './player';
 import { buildGrid, boxTouches } from './tiles';
-import { CLIMB_SIDE_MULT, CLIMB_SPEED, PLANT_AIR_STEPS, SLOT_COUNT } from './tuning';
+import { CLIMB_SIDE_MULT, CLIMB_SPEED, PLANT_AIR_STEPS, SLOT_COUNT, THROW_VX } from './tuning';
 
 export type { BPreview } from './actions';
 export type { ObstEvent, World, PlayerState, WorldStatus, LevelResult } from './state';
@@ -148,13 +148,13 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
       emit(w, 'obst.jump', { player: p.slot, kind: 'rope' });
     }
     let move = p.planted ? 0 : inp.move;
-    if (p.thrown > 0) { move = b.facing; if (b.grounded && p.thrown < 85) p.thrown = 0; else p.thrown--; } // no control until it lands
+    if (p.thrown > 0) { move = (b.facing * THROW_VX) / RUN_SPEED; p.thrown--; } // no control until it lands; keeps the throw speed (target 420 px/s)
     const bd = beltDx(w, p);
     if (bd !== 0) pushBody(b, bd, 0, w.grid);
     const ev = stepPlayer(b, { move, down: inp.down, jump }, { grid: w.grid, platforms, params: w.params });
     if (ev.jump) emit(w, 'obst.jump', { player: p.slot, kind: ev.jump });
     if (ev.land > 0) emit(w, 'obst.land', { player: p.slot, impact: ev.land, on: ev.landOn });
-    if (b.grounded) p.ropeJump = true;
+    if (b.grounded) { p.ropeJump = true; p.thrown = 0; }
   }
 
   // 4. Carried players ride on their holder; mano amiga lifts; boxes and keys follow their holders.

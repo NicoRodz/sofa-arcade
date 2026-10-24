@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../../../rng';
-import { PLAYER_H, PLAYER_W, ROPE_LEN, ROPE_MAX_CORRECTION, ROPE_RELINK_SEC, TILE } from '../constants';
+import { ROPE_LEN, ROPE_MAX_CORRECTION, ROPE_RELINK_SEC, TILE } from '../constants';
 import { newBody } from './player';
 import { buildRopes, cordadaSizes, hangingOnRope, solveRopes, type RopeNode } from './rope';
 import { buildGrid } from './tiles';

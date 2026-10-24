@@ -4,10 +4,10 @@ import { DT, GRAVITY_DOWN_MULT, GRAVITY_UP, MAX_FALL, PLAYER_H, PLAYER_W, TILE }
 import { T, isHazardKind, isOneWayKind, isSolidKind } from '../legend';
 import type { ParsedLevel } from '../parse';
 import type { Cell, Weight } from '../types';
-import { bodyRect, cellRect, overlaps, pushRect, rectGap, type PxRect } from './collide';
+import { bodyRect, cellRect, overlaps, pushRect, type PxRect } from './collide';
 import type { Platform } from './player';
 import {
-  emit, isActive, type Activator, type BoxE, type CrumbleE, type Entities, type HazardE, type KeyE, type Objective, type PlayerState, type World,
+  emit, isActive, type BoxE, type CrumbleE, type Entities, type HazardE, type KeyE, type Objective, type PlayerState, type World,
 } from './state';
 import { AVALANCHE_START_TILES, BELT_SPEED, BOX_ID0, BOX_SIZE, BALANCE_ID0, FREEZE_SEC, HEAVY_GRIPS, HOLD_BREAK, KEY_REACH, MOVER_ID0, TIDE_PERIOD_SEC } from './tuning';
 import { boxTouches, setTile, tileAt, tileOf, type TileGrid } from './tiles';
@@ -326,4 +326,3 @@ export function hazardKills(w: World, p: PlayerState): 'hazard' | 'liquid' | nul
   return b.y + PLAYER_H > h.pos + 4 ? (h.kind === 'tide' ? 'liquid' : 'hazard') : null;
 }
 
-export { rectGap };

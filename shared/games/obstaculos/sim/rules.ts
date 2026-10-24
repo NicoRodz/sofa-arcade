@@ -43,8 +43,8 @@ export function progressOf(w: World, p: PlayerState): number {
   return w.progress[y * w.level.w + x]!;
 }
 // Median player in progress (the one the camera follows and the bubble flies to): of the active ones sorted by distance, the middle.
-export function medianPlayer(w: World): PlayerState | null {
-  const act = w.players.filter(isActive).sort((a, b) => progressOf(w, a) - progressOf(w, b) || a.slot - b.slot);
+export function medianPlayer(w: World, among: readonly PlayerState[] = w.players.filter(isActive)): PlayerState | null {
+  const act = [...among].sort((a, b) => progressOf(w, a) - progressOf(w, b) || a.slot - b.slot);
   return act.length ? act[Math.floor((act.length - 1) / 2)]! : null;
 }
 
@@ -128,15 +128,16 @@ export function sendToBubble(w: World, p: PlayerState, reason: 'offscreen' | 'st
 }
 
 export function stepStragglers(w: World, offCamera: readonly boolean[] | undefined): void {
-  const act = w.players.filter(isActive);
-  const med = medianPlayer(w);
   const limit = steps(w.dparams.bubbleSec);
   for (const p of w.players) {
     if (!isActive(p)) { p.offCamera = 0; continue; }
     if (offCamera?.[p.slot]) { p.offCamera++; p.stats.offCameraSteps++; } else p.offCamera = 0;
-    if (act.length >= 2 && med && p.slot !== med.slot && p.offCamera >= limit) {
-      sendToBubble(w, p, progressOf(w, p) < progressOf(w, med) ? 'stray' : 'offscreen');
-    }
+  }
+  // The reference is the median of those the camera shows (the majority): whoever is out of frame too long, behind or ahead of it, goes back in a bubble.
+  const med = medianPlayer(w, w.players.filter((p) => isActive(p) && !offCamera?.[p.slot]));
+  if (!med) return;
+  for (const p of w.players) {
+    if (isActive(p) && p.slot !== med.slot && p.offCamera >= limit) sendToBubble(w, p, progressOf(w, p) < progressOf(w, med) ? 'stray' : 'offscreen');
   }
 }
 
