@@ -7,6 +7,7 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/dif
 import { GAMES } from '@party/shared/games';
 import { generate, resolveMap } from '@party/shared/generate';
 import { MAP_IDS, fixedMap, isMapChoice, type MapChoice } from '@party/shared/maps';
+import { initAudio } from './audio';
 import { gameBus } from './bus';
 import { percentile } from '@party/shared/stats';
 import {
@@ -45,6 +46,9 @@ let debugOverride: boolean | null = null;
 let screenRtt = NaN;
 let totalPkts = 0;
 let pktsRate = 0;
+const audio = initAudio(gameBus, () => ({
+  phase, started: game.started, timeLeftMs: phase === 'playing' && game.started ? game.params.roundMs - game.time : null,
+}));
 
 const record = (kind: 'rtt' | 'lag', p: P, v: number) => {
   (kind === 'rtt' ? p.rtt : p.lag).push(v);
@@ -60,6 +64,7 @@ function upsert(info: PublicPlayer, reset = false) {
     };
     players.set(info.id, p);
     addPlayer(game, info.id, info.slot);
+    audio.playerJoined();
   }
   p.info = info;
   if (reset) p.ctl = { x: 0, y: 0, b: false };
