@@ -6,7 +6,7 @@ import { T, isHazardKind, isSolidKind } from '../legend';
 import type { ParsedLevel, LevelObject } from '../parse';
 import { buildGrid, boxHitsSolid, tileAt, tileOf, type TileGrid } from '../sim/tiles';
 import { physicsFor, type PhysicsParams } from '../sim/player';
-import { campaignParams, dparamsForCampaign, physicsOfWorld, type WorldId } from '../sim/campaign';
+import { campaignParams, dparamsForCampaign, physicsOfWorld, superJumpV0, type WorldId } from '../sim/campaign';
 import { THROW_VX, THROW_VY } from '../sim/tuning';
 import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode } from '../types';
@@ -26,7 +26,7 @@ export function envParams(env: Env): { physics: PhysicsParams; dp: DifficultyPar
 }
 export const can = (env: Env, m: Mechanic): boolean => !env.allow || env.allow.has(m);
 export interface OpenState { open: Set<string>; doors: Set<number>; pick?: boolean } // pick: the pioneer has the pickaxe (ice walls can be climbed)
-export type EdgeKind = 'jump' | 'tower' | 'hand' | 'throw' | 'swing' | 'ladder' | 'ride' | 'climb';
+export type EdgeKind = 'jump' | 'tower' | 'hand' | 'throw' | 'swing' | 'ladder' | 'ride' | 'climb' | 'superjump';
 export interface Edge {
   from: number; to: number; kind: EdgeKind;
   coop: boolean; // needs a teammate (tower, hand, throw, swing, balance)
@@ -224,7 +224,7 @@ export interface GraphOpts { pioneer: boolean; catchTargets?: Set<number>; cache
 export type SimCache = Map<string, Map<string, (Omit<Landing, 'cx' | 'ty'> & { dcx: number; dty: number }) | null>>;
 export const newSimCache = (): SimCache => new Map();
 const CACHE_COLS = 26;
-const planSig = (p: Plan, s: Seg): string => `${p.trigger}|${p.dir}|${p.x - s.x0 * TILE}|${p.feetY - s.row * TILE}|${p.k}|${p.lead ?? ''}|${p.endX === undefined ? '' : p.endX - s.x0 * TILE}|${p.air}|${p.f}|${p.vx0 ?? ''}|${p.vy0 ?? ''}`;
+const planSig = (p: Plan, s: Seg): string => `${p.boost ?? ''}|${p.boostDelay ?? ''}|${p.trigger}|${p.dir}|${p.x - s.x0 * TILE}|${p.feetY - s.row * TILE}|${p.k}|${p.lead ?? ''}|${p.endX === undefined ? '' : p.endX - s.x0 * TILE}|${p.air}|${p.f}|${p.vx0 ?? ''}|${p.vy0 ?? ''}`;
 function windowKey(g: TileGrid, cols: string[], s: Seg, params: PhysicsParams): string {
   let k = `${s.row}:${s.x1 - s.x0}:${params.coyote}:${params.buffer}:${params.stickyEdges ? 1 : 0}:${g.h}:`;
   for (let x = s.x0 - CACHE_COLS; x <= s.x1 + CACHE_COLS; x++) k += (x < 0 || x >= g.w ? 'W' : cols[x]!) + '/';
@@ -267,7 +267,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     const dx = Math.abs(l.landX - l.takeoffX);
     if (env.mode === 'chain' && dx > (kind === 'throw' && cp ? ropeLen * cp.throwSlack : CHAIN_MAX_DX)) return null; // the campaign throw's rope stretches (sim/actions.ts slackRope)
     const tgt = segs[to]!;
-    if (ropeCapsRise(env, feetOfRow(from.row) - feetOfRow(tgt.row))) return null;
+    if (kind !== 'superjump' && ropeCapsRise(env, feetOfRow(from.row) - feetOfRow(tgt.row))) return null; // a super jump lifts BOTH: nobody hangs from the rope
     if ((from.tramp || tgt.tramp) && !can(env, 'spring')) return null;
     const timing = from.tramp === true || tgt.tramp === true || surfaceTiming(grid, from.row, from.x0, from.x1) || surfaceTiming(grid, tgt.row, tgt.x0, tgt.x1) || l.steps > 140;
     return { from: from.id, to, kind, coop, timing, steps: l.steps, takeoffX: l.takeoffX, landX: l.landX, plan, k, rise: feetOfRow(from.row) - feetOfRow(tgt.row), landCell: { x: l.cx, y: l.ty } };
@@ -290,6 +290,17 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
       if (catches && plan.trigger !== 'walk' && plan.trigger !== 'drop') {
         const h = simPlan(grid, params, plan, catches);
         if (h && h.viaHand) { const e = toEdge(s, h, 'hand', plan, true); if (e) addEdge(e); }
+      }
+    }
+    // Super jump (campaign dynamic 3, n = 2): both jump within the pairing window and rise x1.3, so the pair reaches ledges and gaps a plain jump does not. Both go: followers get it too.
+    // Modelled for the partner that jumped FIRST (boost `window` steps after its jump: the lower peak), so a pair that lands together has margin. A plain run-up or a jump from a spot.
+    if (cp && env.n === 2 && can(env, 'superjump')) {
+      const boost = superJumpV0(cp) - JUMP_V0, delay = Math.round(cp.superJumpWindowMs / (1000 / 60));
+      for (const base of planSet(grid, s, f)) {
+        if (base.trigger !== 'at' && base.trigger !== 'edge') continue;
+        const plan: Plan = { ...base, boost, boostDelay: delay };
+        const l = simCached(grid, params, s, plan, bucket);
+        if (l) { const e = toEdge(s, l, 'superjump', plan, true); if (e) addEdge({ ...e, timing: true }); } // both must jump within the window: timing
       }
     }
     if (opts.pioneer && maxTower >= 1 && can(env, 'tower')) {

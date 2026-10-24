@@ -4,7 +4,7 @@
 // ===== MECHANIC IDS (owner: S1, the only writer of sim/ and the rules; S2 reads them for `introduces` / `requires`) =====
 //   signals     dynamic 1  debut 1-2   PlayerStep.signal; events obst.signal, obst.countdown; works from the bubble
 //   anchor      dynamic 2  debut 1-4   B on the ground = planted = infinite rope mass (campaign); the one pulled by a hanger slides 0.5 tile/s
-//   superjump   dynamic 3  debut 2-2   two ground jumps <= 150 ms apart: jump height x1.3 for both; event obst.superJump
+//   superjump   dynamic 3  debut 2-2   MODELED (A5 S2) two ground jumps <= 150 ms apart: jump height x1.3 for both; event obst.superJump
 //   Layer-for-2 rules (no id: they are always on in a campaign world): rope +20 %, edge assist (obst.edgeAssist), throw arc (PlayerSnap.arc),
 //   shared hearts (death -> bubble beside the partner; both down -> checkpoint; 0 hearts -> refill, obst.heartsOut), camera hints, bubble v2.
 //   balance     dynamic 4  debut 2-3   MODELED  campaign rule: ANY load difference moves the plates (also against an empty one) at balanceTilesPerSec (2); event obst.balance
@@ -14,8 +14,8 @@
 //   wind        dynamic 8  debut 3-2   SIM_ONLY LevelDef.wind {dir, periodSec, gustSec, zone?}: 1 s warning, then a gust drifts whoever is in the air by windPxPerSec; obst.wind
 //   pickaxe     dynamic 9  debut 3-4   MODELED  marker 'p' + 'I' walls: UP beside ice with the item climbs 1 tile/s; B passes it (range = the rope when tied); obst.pickaxe
 //   Throw niche (no new id, 'throw' keeps its name): in a campaign the thrown player's rope stretches x1.5 for 1.2 s and the launch is x1.3 faster, so a TIED throw crosses a
-//   5-tile pit that no jump (4) or tower (3) does. The validator models it (kind 'throw' edges also for followers, see below). The learning test still pairs tower/throw (see
-//   campaign/learning.ts EQUIVALENT): drop the pair once a level built with the 5-tile pit debuts the throw.
+//   5-tile pit that no jump (4) or tower (3) does. The validator models it (kind 'throw' edges also for followers, see below). 1-5 is built around that pit (A5 S2), so the learning
+//   test no longer pairs tower/throw (EQUIVALENT is gone) and the throw has its own debut test.
 //   Later phases (A6) add ids here: lantern, bungee, sinkers, geyser.
 //
 // ===== A5 INTERFACE FOR S2 (levels and validator for the dynamics above; nothing below builds a level) =====
@@ -33,6 +33,8 @@
 //     throw     campaign + chain + n=2: throw edges reach dx <= ropeLen x throwSlack with the faster launch, and are also follower edges (pulled across: falls, hangs, hauled up when
 //               the partner walks away) provided the landing is at most 1 tile above the takeoff (a wall stays the hand's job) and no spikes/liquid lie within ropeLen + half a
 //               body BELOW the far ledge (pullSafe): dig such pits deep, 6+ tiles under the ledge.
+//     superjump (A5 S2) n=2 in a campaign world: 'superjump' edges from a spot or a run-up, boost = superJumpV0 - v0 applied `superJumpWindowMs` (9 steps) AFTER the jump, i.e. the
+//               pessimistic partner that jumped first (it peaks lower). Both jump, so followers get the edge too (no rope cap, nobody hangs). Real-sim check: campaign/realsim.test.ts.
 //     ice       only as the friction parameter in the real stepPlayer of every trajectory (physicsOfWorld): slow starts are in; SLIDING after a landing is NOT.
 //   WHAT IT DOES NOT MODEL (S2: verify with the real-sim bots, never with the validator, and keep a margin):
 //     wind      the drift is not in any trajectory. A 1 s airtime moves a body up to 140 px (2.9 tiles; 112 px at N>=3): leave that much landing and no hazard downwind.

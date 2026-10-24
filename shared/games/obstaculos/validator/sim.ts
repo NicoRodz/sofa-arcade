@@ -20,6 +20,10 @@ export interface Plan {
   f: number; // stick scale
   vx0?: number; // 'launch' (a throw or a rope jump): initial velocity in px/s
   vy0?: number;
+  // Super jump (campaign dynamic 3, sim/campaignrules.ts registerGroundJump): `boost` px/s of upward speed are added `boostDelay` steps after the ground jump, if the body is still
+  // rising. boostDelay = the pairing window (150 ms) is the pessimistic partner: the one that jumped first and got the boost last (the later one peaks higher).
+  boost?: number;
+  boostDelay?: number;
 }
 
 export interface CatchZone { x0: number; x1: number; yTop: number; yBot: number; cx: number; ty: number } // hand: a planted partner catches whoever falls here
@@ -47,7 +51,7 @@ export function simPlan(grid: TileGrid, params: PhysicsParams, plan: Plan, catch
   }
   const ctx = { grid, platforms: [], params };
   const move = plan.dir * plan.f;
-  let airborne = launch, pressed = false, leftAt = -1, takeoffX = launch ? plan.x : -1, minY = b.y, blocked = 0;
+  let airborne = launch, pressed = false, leftAt = -1, takeoffX = launch ? plan.x : -1, minY = b.y, blocked = 0, jumpedAt = -1;
   const startY = b.y;
   for (let i = 0; i < MAX_SIM_STEPS; i++) {
     let jump = false, down = false, mv = move;
@@ -69,6 +73,8 @@ export function simPlan(grid: TileGrid, params: PhysicsParams, plan: Plan, catch
     const wasGrounded = b.grounded;
     const xBefore = b.x;
     const ev = stepPlayer(b, { move: mv, down, jump }, ctx);
+    if (ev.jump === 'ground' || ev.jump === 'coyote') jumpedAt = i;
+    if (plan.boost && jumpedAt >= 0 && i - jumpedAt === (plan.boostDelay ?? 0) && b.vy < 0) b.vy -= plan.boost;
     if (ev.jump === 'trampoline' && i > 0) { // landed on a boya: it is a node of its own (the bounce is planned from there)
       return { cx: tileOf(b.x + PLAYER_W / 2), ty: Math.round((b.y + PLAYER_H) / TILE) - 1, takeoffX: takeoffX < 0 ? plan.x : takeoffX, landX: b.x, steps: i + 1, viaHand: false, apexRise: startY - minY };
     }
