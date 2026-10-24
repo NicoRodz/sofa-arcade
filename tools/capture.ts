@@ -407,6 +407,41 @@ async function main() {
         bots.splice(0).forEach((b) => b.close());
       }
     }
+    if (what === 'vs-lobby') {
+      await open('VSLB'); await join('VSLB', 6, versusMap('V1')!.rows);
+      await click('[data-mode="versus"]'); await sleep(900);
+      await cdp.shot('vs-lobby-colors');
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'vs-drop') {
+      // Versus: a chef's phone drops (ghost, notice), the grace time runs out (leaves, the handicap goes up for its team)
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      await open('VSDR'); await join('VSDR', 6, versusMap('V1')!.rows);
+      await click('[data-mode="versus"]'); await click('[data-map="V1"]'); await click('[data-diff="easy"]'); await sleep(400);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 12_000, 40_000);
+      const id = (await snap()).players[0]!.id;
+      await cdp.eval(`window.__pg.dropChef(${id})`); await sleep(700);
+      await cdp.shot('vs-drop-ghost');
+      await waitFor((s) => s.time > 33_500, 40_000); await sleep(300);
+      await cdp.shot('vs-drop-gone');
+      console.log('teams after the drop:', JSON.stringify((await snap() as any).teams));
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'vs-pantry') {
+      // Versus F5: the shared pantry of V2 with 6 chefs: full stock, then drained with the refill bar running
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      await open('VSPT'); await join('VSPT', 6, versusMap('V2')!.rows);
+      await click('[data-mode="versus"]'); await click('[data-map="V2"]'); await click('[data-diff="easy"]'); await sleep(400);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      await cdp.shot('vs-pantry-full');
+      await cdp.eval('window.__pg.setPantry(1, 3500)'); await sleep(600);
+      await cdp.shot('vs-pantry-low');
+      await cdp.eval('window.__pg.setPantry(0, 5000)'); await sleep(600);
+      await cdp.shot('vs-pantry-empty');
+      bots.splice(0).forEach((b) => b.close());
+    }
     if (what === 'vs-results') {
       // Versus F4: the results of a round with a winner, then (Revancha) of a draw with the series; the phone's own verdict is in versus-phone
       const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
@@ -420,9 +455,11 @@ async function main() {
       await stats(0, { score: 410, gross: 410, delivered: 7, bestStreak: 4, vips: 1, tips: 180, expired: 1, reachedAt: 150000 });
       await stats(1, { score: 340, gross: 340, delivered: 6, bestStreak: 3, vips: 0, tips: 120, expired: 2, rejected: 1, reachedAt: 170000 });
       for (const [i, n] of [[0, 4], [1, 2], [2, 1], [3, 3], [4, 2], [5, 1]] as const) await cdp.eval(`window.__pg.setDelivered(${ids[i]}, ${n})`);
-      await cdp.eval('window.__pg.fastForward(800)'); await sleep(1500); await cdp.shot('vs-timeup-reveal');
-      await sleep(1000); await cdp.shot('vs-results-reveal');
-      await sleep(3500); await cdp.shot('vs-results-win');
+      await cdp.eval('window.__pg.fastForward(800)');
+      await waitFor((s) => (s as any).over === true, 8000);
+      await sleep(850); await cdp.shot('vs-timeup-reveal');
+      await sleep(1300); await cdp.shot('vs-results-reveal');
+      await sleep(3300); await cdp.shot('vs-results-win');
       await click('#vs-rematch');
       await waitFor((s) => s.phase === 'playing' && s.countdown <= 0 && s.time > 800, 20_000);
       await stats(0, { score: 300, gross: 300, delivered: 5, bestStreak: 2, vips: 1, tips: 90, reachedAt: 100000 });

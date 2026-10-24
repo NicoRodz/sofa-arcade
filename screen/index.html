@@ -244,6 +244,8 @@
   .vteam .vmvp .none { color: var(--muted); font-weight: 700; }
   .vteam .vc { display: none; font-size: 40px; text-shadow: none; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); animation: crownbob2 1s ease-in-out infinite alternate; }
   .vteam.win .vc { display: inline-block; }
+  /* the ranking and the series wait for the verdict: the numbers count up first and nothing gives the winner away */
+  #resultsInner.vs:not(.revealed) .vteam .rk, #resultsInner.vs:not(.revealed) #vsseries { visibility: hidden; }
   @keyframes crownbob2 { to { transform: translateY(-5px) rotate(6deg); } }
   #vsbtns .btn { height: 70px; font-size: 32px; }
   #vsbtns .btn.alt { background: linear-gradient(#F4E3BC 0 50%, #E7CF9A 50% 100%); color: var(--ink); text-shadow: none; }

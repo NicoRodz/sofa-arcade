@@ -450,6 +450,7 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   vipNow: () => { game.vip.nextAt = game.time; }, // capture tool: the golden order shows up at the next tick
   setTeam: (id: number, patch: Record<string, number>) => { Object.assign(game.teams[id]!, patch); }, // capture tool: score, delivered, vips, streak... of a team
   setDelivered: (id: number, n: number) => { tally.counts.set(id, n); }, // capture tool: deliveries of a chef (the MVP of the results)
+  setPantry: (stock: number, nextInMs: number) => { if (game.pantry) { game.pantry.stock = stock; game.pantry.nextAt = game.time + nextInMs; } }, // capture tool: the shared pantry's stock and the time to the next unit
   dropChef: (id: number) => dropPlayer(game, id), // capture tool: a chef's phone drops (versus)
   snapshot: () => ({ versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
@@ -754,6 +755,7 @@ function renderVersusResults() {
     }
   });
   resultsTimers.push(setTimeout(() => {
+    $('resultsInner').classList.add('revealed');
     head.textContent = verdictText;
     head.style.color = w ? lightOf(w.color) : '';
     $('vsnote').innerHTML = noteText;
@@ -772,6 +774,7 @@ function renderResults() {
   $('resultsInner').classList.toggle('vs', game.versus);
   if (!game.versus) report = null;
   $('resh').className = '';
+  $('resultsInner').classList.remove('revealed');
   if (game.versus) { renderVersusResults(); return; }
   $('resh').textContent = '¡Fin de la ronda!'; $('resh').style.color = '';
   const sum = summarize(game);

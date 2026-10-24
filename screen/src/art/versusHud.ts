@@ -94,7 +94,7 @@ export class VersusHud {
     const flame = place(s, 'flame_1', chipX + 14, y + 74, 1).setScale(0.3 / R).setDepth(D + 2).setVisible(false);
     const streak = makeText(s, chipX + 46, y + 61, '', { size: 24, color: C.cream, stroke: 4, depth: D + 2 });
     const vips = makeText(s, chipX + 106, y + 61, '', { size: 24, color: C.cheese, stroke: 4, depth: D + 2 });
-    const crown = makeText(s, x0 + w / 2, y - 6, '👑', { size: 40, depth: D + 4 }).setVisible(false);
+    const crown = makeText(s, mirror ? x0 + w + 4 : x0 - 4, y + 14, '👑', { size: 40, depth: D + 4 }).setVisible(false).setAngle(mirror ? 16 : -16); // on the outer top corner of the plate
     const glow = s.add.graphics().setDepth(D - 1).setVisible(false);
     return { g, chips, name, score, k, streak, flame, vips, crown, glow, shown: 0, last: 0, chipKey: '', x0, mirror };
   }
