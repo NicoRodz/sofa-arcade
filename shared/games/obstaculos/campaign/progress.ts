@@ -32,7 +32,7 @@ export interface Expedition {
 }
 
 // A level as the screen reports it when it ends.
-export interface LevelResult {
+export interface LevelOutcome {
   levelId: string;
   cleared: boolean;
   timeMs: number; // of the run that ended the level
@@ -53,7 +53,7 @@ export const totalStars = (e: Expedition): number => Object.values(e.levels).red
 export const worldStars = (e: Expedition, c: Catalog, worldId: string): number => pathOf(c, worldId).reduce((a, l) => a + starCount(progressOf(e, l.id)), 0);
 
 // ---- stars (plan §3): 1 = the goal; 2 = every collectible (counted over the runs that cleared the level); 3 = no hearts lost and no infinite-hearts assist
-export function starsOf(r: LevelResult, level: CatalogLevel, assists: Assists, maskSoFar: number): Stars {
+export function starsOf(r: LevelOutcome, level: CatalogLevel, assists: Assists, maskSoFar: number): Stars {
   if (!r.cleared) return [false, false, false];
   const mask = (maskSoFar | r.collectiblesMask) >>> 0;
   return [true, level.collectibles > 0 && mask === fullMask(level.collectibles), r.deaths === 0 && !assists.infiniteHearts];
@@ -87,7 +87,7 @@ export function mergeExpedition(a: Expedition, b: Expedition): Expedition {
 
 // ---- applying what happened
 // A level was played: fold the result into the expedition. Returns a new object; a failed run changes nothing but lastLevelId.
-export function applyResult(e: Expedition, c: Catalog, r: LevelResult, now: number): Expedition {
+export function applyResult(e: Expedition, c: Catalog, r: LevelOutcome, now: number): Expedition {
   const level = levelById(c, r.levelId);
   if (!level) return e;
   const prev = progressOf(e, r.levelId);

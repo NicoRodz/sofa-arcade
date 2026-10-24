@@ -31,6 +31,9 @@ import {
   DIFFICULTY_PARAMS as OBST_DIFFICULTY, type Biome, type GameMode, type ObstOptions, type RunSummary,
 } from '@party/shared/obstaculos';
 import { ObstRun } from './games/obstaculos/host';
+import { LEGACY_CATALOG } from '@party/shared/obstaculos/campaign';
+import { CampaignApi } from './games/obstaculos/campaign/api';
+import { CampaignScreen } from './games/obstaculos/campaign/screen';
 import { ObstaclesScene } from './games/obstaculos/render/scene';
 import { initObstAudio, type MusicState } from './games/obstaculos/audio';
 import { snapshot as snapshotObst } from '@party/shared/obstaculos';
@@ -99,6 +102,21 @@ const obstAudio = initObstAudio(gameBus, () => obstRun?.biome ?? 'beach', () => 
 try { if (localStorage.getItem('pg.muted') === '1') obstAudio.toggleMute(); } catch { /* storage blocked */ }
 const obstOpts = (): ObstOptions => parseObstOptions(config.modeOptions);
 const slotName = (slot: number) => [...players.values()].find((p) => p.info.slot === slot)?.info.name ?? `J${slot + 1}`;
+// Obstaculos' campaign (the hub, the trail map and the results after each level; the progress lives on the server). campRun: the level that runs now, null in a quick game.
+let campRun: string | null = null;
+const camp = new CampaignScreen({
+  api: new CampaignApi(), catalog: LEGACY_CATALOG, room, kv: (() => { try { return localStorage; } catch { return null; } })(),
+  host: { set: (h) => setHtml('campaign', h) }, results: { set: (h) => setHtml('campres', h) },
+  names: () => [...players.values()].filter((p) => p.info.connected).sort((a, b) => a.info.slot - b.info.slot).map((p) => p.info.name),
+  count: connectedCount,
+  difficulty: () => ({ value: config.difficulty, set: (d) => setConfig({ difficulty: d }), labels: DIFFICULTY_LABEL, all: DIFFICULTIES }),
+  sfx: (s) => audio.ui(NAV_SFX[s]),
+  leaveToMenu: () => transition(() => dispatch('back')),
+  quick: () => renderUi(),
+  play: (id) => campStart(id),
+  toLobby: () => { if (phase === 'results') dispatch('again'); },
+  refresh: () => renderUi(),
+});
 
 const record = (kind: 'rtt' | 'lag', p: P, v: number) => {
   (kind === 'rtt' ? p.rtt : p.lag).push(v);
@@ -170,7 +188,7 @@ function setPhase(next: Phase) {
     scene.endRound(); endObst();
     if (config.modeId === 'versus' && config.teamsLocked !== lockBeforeStart) setConfig({ teamsLocked: lockBeforeStart }); // the match is over: the host's own lock again
   }
-  else if (phase === 'menu') { endObst(); menuSel = Math.max(0, menuCards(connectedCount()).findIndex((c) => c.id === config.game)); } // coming back: the game just left stays highlighted
+  else if (phase === 'menu') { endObst(); campRun = null; void camp.exit(); menuSel = Math.max(0, menuCards(connectedCount()).findIndex((c) => c.id === config.game)); } // coming back: the game just left stays highlighted
   // cooperative: every player carries the team score
   // cooperative: every player carries the team score; versus: the score of the player's own team
   const scoreOf = (id: number) => (activeGame === OBST_ID ? obstRun?.session.run.score ?? 0 : game.versus ? game.teams[game.players.get(id)?.team ?? teamOf(config.teams, id)?.id ?? 0]?.score ?? 0 : game.score);
@@ -194,13 +212,25 @@ function startObst() {
   const live = [...players.values()].filter((p) => p.info.connected);
   const o = obstOpts();
   const level = resolveLevel(o.level, live.length, o.tether);
+  const spec = campRun ? camp.runSpec(campRun) : null; // a campaign level: its own tilemap and mode, one level per run, saved the moment it ends
+  const cr = spec && !('ok' in spec) ? spec : null;
+  if (!cr) campRun = null;
   puestoOf.clear(); puestoMsg = undefined;
   activeGame = 'obstaculos';
   obstSummary = null;
-  obstRun = new ObstRun({ mode: o.tether, difficulty: config.difficulty, level, seed: config.seed, slots: live.map((p) => p.info.slot) }, {
-    names: slotName, bus: gameBus, onOver: () => { obstSummary = obstRun?.session.summary() ?? null; dispatch('timeout'); },
+  obstRun = new ObstRun({ mode: cr ? cr.mode : o.tether, difficulty: config.difficulty, level: cr ? 1 : level, seed: config.seed, slots: live.map((p) => p.info.slot), ...(cr ? { levels: [cr.def] } : {}) }, {
+    names: slotName, bus: gameBus,
+    onOver: () => { obstSummary = obstRun?.session.summary() ?? null; if (cr) void camp.over().then(() => dispatch('timeout')); else dispatch('timeout'); },
+    ...(cr ? { onLevelEnd: (e) => camp.levelEnd(e) } : {}),
   });
   showScene('obst');
+}
+// From the campaign's map or its results: the level `levelId` starts (the iris, then the round; no how-to card between levels).
+function campStart(levelId: string) {
+  if (starting) return;
+  campRun = levelId;
+  starting = true;
+  iris(() => { if (phase === 'results') dispatch('again'); dispatch('start'); gateUntil = performance.now() + 700; }, () => { starting = false; });
 }
 function endObst() { obstRun = null; if (activeGame === OBST_ID) { showScene('main'); activeGame = 'pizzas'; } }
 let obstSummary: RunSummary | null = null;
@@ -315,6 +345,7 @@ function syncVersusMap() {
 // Starting a round: iris closes, the "how to play" card shows for ~10 s (Enter skips), iris again, then the countdown.
 function startRound() {
   if (phase !== 'lobby' || starting || howTo || !canStart([...players.values()].map((p) => p.info))) return;
+  campRun = null;
   starting = true;
   iris(() => openHowTo('start'), () => { starting = false; });
 }
@@ -508,6 +539,7 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   obstSkip: (ms: number) => { if (!obstRun) return; for (let t = 0; t < ms; t += 1000 / 60) obstRun.step(1000 / 60); },
   deliver: (m: ServerMsg) => onMessage(m), // e2e: hand the screen a relay message directly (to prove the screen validates the Captain itself)
   captain: () => captainId,
+  camp: () => ({ on: camp.on, resultOn: camp.resultOn, state: camp.state, expId: camp.flow.exp?.id ?? null, outcome: camp.flow.outcome, run: campRun }), // e2e: what the campaign believes
   forceLobby: () => { if (phase === 'menu') setPhase('lobby'); }, // capture tool: skip the menu (and its player range)
   menu: () => ({ sel: menuSel, cards: menuCards(connectedCount()).map((c) => `${c.id}:${c.state}`) }),
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
@@ -692,6 +724,7 @@ function menuAct(a: MenuAction) {
       // a game that has no versus must not inherit the teams or the options of the one before (the relay would refuse the whole config)
       const reset: Partial<LobbyConfig> = g.id === OBST_ID ? { modeId: 'coop', teams: null, teamsLocked: false, modeOptions: toModeOptions(DEFAULT_OBST_OPTIONS) } : config.game === OBST_ID ? { modeOptions: {} } : {};
       setConfig({ game: g.id, ...reset }); dispatch('pick');
+      if (g.id === OBST_ID) void camp.enter();
     });
   } else if (a.kind === 'refuse') {
     const el = $('menucards').querySelector<HTMLElement>('.sel');
@@ -704,7 +737,12 @@ function transition(swap: () => void) {
   starting = true;
   iris(swap, () => { starting = false; });
 }
-const goBack = () => { if (phase !== 'lobby' || starting || howTo) return; audio.ui(NAV_SFX.back); transition(() => dispatch('back')); };
+const goBack = () => {
+  if (phase !== 'lobby' || starting || howTo) return;
+  audio.ui(NAV_SFX.back);
+  if (config.game === OBST_ID && !camp.on) { void camp.enter(); return; } // Esc in the quick-game setup goes back to the campaign's hub
+  transition(() => dispatch('back'));
+};
 
 function renderUi() {
   const inMenu = phase === 'menu';
@@ -723,9 +761,12 @@ function renderUi() {
   if (inMenu) { showTeams(false); renderMenu(); return; }
   setHtml('diffs', DIFFICULTIES.map((d) => `<button class="pill ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join(''));
   const isObst = config.game === OBST_ID;
+  $('lobbyui').classList.toggle('camp', isObst && camp.on);
+  $('campaign').classList.toggle('off', !(isObst && camp.on));
+  $('back').textContent = isObst && !camp.on ? '‹ Campaña · Esc' : '‹ Elegir otro juego · Esc';
   $('pizzaops').classList.toggle('off', isObst); $('obstops').classList.toggle('off', !isObst); $('obstmodewrap').classList.toggle('off', !isObst);
   $('start').textContent = isObst ? '¡A cruzar!' : '¡A cocinar!';
-  if (isObst) { showTeams(false); $('modebox').classList.add('off'); renderObstLobby(); return; }
+  if (isObst) { showTeams(false); $('modebox').classList.add('off'); if (camp.on) { camp.render(); return; } renderObstLobby(); return; }
   const list = [...players.values()];
   const n = connectedN();
   const vs = syncLobby(n);
@@ -866,6 +907,9 @@ function renderVersusResults() {
 function renderResults() {
   resultsTimers.forEach(clearTimeout);
   resultsTimers = [];
+  const campResults = activeGame === OBST_ID && camp.resultOn;
+  $('campres').classList.toggle('off', !campResults); $('resh').classList.toggle('off', campResults); $('again').classList.toggle('off', campResults);
+  if (campResults) { $('resultsInner').classList.remove('vs'); $('pizzares').classList.add('off'); $('obstres').classList.add('off'); $('vsres').replaceChildren(); $('vsnote').textContent = ''; camp.renderResults(); return; }
   if (activeGame === OBST_ID) { $('resultsInner').classList.remove('vs'); renderObstResults(); return; }
   $('pizzares').classList.remove('off'); $('obstres').classList.add('off');
   $('resultsInner').classList.toggle('vs', game.versus);
@@ -973,11 +1017,15 @@ $('obstlevels').addEventListener('click', (e) => {
   setObst({ level: lv });
 });
 $('start').addEventListener('click', () => startRound());
+$('campaign').addEventListener('click', (e) => { if (!starting) camp.click(e.target as HTMLElement); });
+$('campres').addEventListener('click', (e) => { if (!starting) camp.click(e.target as HTMLElement); });
+setInterval(() => { if (camp.armed) renderUi(); }, 250); // the Captain's 3 s before a reset can be confirmed
 $('again').addEventListener('click', () => dispatch('again'));
 $('howtobtn').addEventListener('click', () => { if (!howTo && !starting && phase === 'lobby') openHowTo('preview'); });
 $('howto').addEventListener('click', () => { if (howTo?.mode === 'preview') closeHowTo(); });
 // One handler for the Mac keyboard and for the Captain's D-pad (which arrives as the key it replaces).
 function onKey(key: string, repeat: boolean) {
+  if (camp.shows(phase) && !starting && !howTo && camp.key(key, repeat)) return; // the campaign owns the arrows, Enter, Esc and "?" in its screens
   const act = starting ? 'none' : howToOnKey(howTo, phase, key);
   if (act === 'open-preview') { openHowTo('preview'); return; }
   if (act === 'close') { closeHowTo(); return; }

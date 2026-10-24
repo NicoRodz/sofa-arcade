@@ -2,13 +2,14 @@
 // gives the scene the WorldView of the current level and feeds the camera's verdict (who is out of the picture) back to the simulation.
 // No DOM and no Phaser: main.ts wires it to the phones and to the scene, the tests drive it directly.
 import {
-  ObstSession, TILE, levelProgressField, type Biome, type ObstEvents, type ObstEvent, type Packet, type SessionOpts,
+  ObstSession, DT, TILE, levelProgressField, type Biome, type ObstEvents, type ObstEvent, type Packet, type SessionOpts,
 } from '@party/shared/obstaculos';
 import type { Emitter } from '@party/shared/events';
 import type { MusicState } from './audio';
 import { SimWorldView } from './render/adapter';
 import type { ObstaclesView } from './render/obstacles-view';
 import type { WorldView } from './render/view';
+import type { LevelEnd } from './campaign/flow';
 
 type ObstBus = Pick<Emitter<ObstEvents>, 'emit'>;
 
@@ -16,6 +17,7 @@ export interface RunHooks {
   names: (slot: number) => string;
   bus: ObstBus;
   onOver: () => void; // the final banner has been shown long enough: the screen goes to the results
+  onLevelEnd?: (e: LevelEnd) => void; // the campaign saves here, the moment a level is cleared or its hearts run out (not when the banners are over)
 }
 
 export class ObstRun {
@@ -45,11 +47,22 @@ export class ObstRun {
 
   // Scene host.step: advance the simulation, publish what happened, refresh the picture.
   step(dtMs: number): void {
+    const was = this.session.status;
     const ev = this.session.advance(dtMs);
     this.publish(ev);
+    if (was === 'playing' && this.session.status === 'between') this.hooks.onLevelEnd?.(this.levelEnd());
     if (this.session.world !== this.view.world) { this.view = new SimWorldView(this.session, this.session.world, this.hooks.names); this.field = levelProgressField(this.session.world.level); this.startDist = this.distAtSpawn(); }
     this.view.sync();
     if (this.session.overDue && !this.overSent) { this.overSent = true; this.hooks.onOver(); }
+  }
+
+  // The level that just ended, as the campaign needs it: the world is still the one that was played (the next one is built after the pause).
+  private levelEnd(): LevelEnd {
+    const w = this.session.world;
+    const cleared = w.status === 'cleared' && !!w.result;
+    let mask = 0;
+    w.ent.stars.forEach((s, i) => { if (s.taken) mask |= 1 << i; });
+    return { cleared, timeMs: Math.round((cleared ? w.result!.timeSec : w.tick * DT) * 1000), collectiblesMask: cleared ? mask : 0, deaths: w.deaths };
   }
 
   private publish(events: readonly ObstEvent[]): void {

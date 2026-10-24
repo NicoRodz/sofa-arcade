@@ -175,6 +175,76 @@
   #obsthints .hint { margin: 0; min-height: 30px; }
   #obsthints .hint.notice { color: var(--tomato2); }
 
+
+  /* Campaign: hub, trail map and the results after a level. It takes the place of the quick-game setup inside the Obstaculos lobby. */
+  #lobbyui.camp #setup, #lobbyui.camp #start, #lobbyui.camp #starthint { display: none; }
+  #campaign { position: absolute; left: 650px; top: 470px; width: 1190px; height: 580px; padding: 14px 26px; overflow: hidden; }
+  #campaign h3 { margin: 0; font: 800 22px var(--font); letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  #campaign .chead { display: flex; align-items: baseline; gap: 18px; height: 40px; }
+  #campaign .cnote { margin-left: auto; font: 700 21px var(--font); color: var(--tomato2); }
+  #campaign .cname { font: 800 34px var(--font); } #campaign .ctotal { font: 800 30px var(--font); color: #B9770E; }
+  #campaign .cwarn { margin: 4px 0; padding: 4px 12px; border: 3px solid var(--ink); border-radius: 12px; background: #F6D9B8; font: 700 20px var(--font); }
+  #campaign .chub { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+  #campaign .cbig { grid-column: 1 / -1; position: relative; height: 150px; padding: 12px 24px 12px 96px; border: 4px solid var(--ink); border-radius: 18px; background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); color: var(--cream); text-align: left; box-shadow: 0 8px 0 rgba(43,27,23,.35); text-shadow: 0 3px 0 rgba(43,27,23,.4); display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  #campaign .cbig .play { position: absolute; left: 24px; top: 28px; width: 62px; height: 62px; border-radius: 50%; background: var(--cream); color: var(--tomato2); border: 4px solid var(--ink); font: 800 34px/54px var(--font); text-align: center; text-shadow: none; padding-left: 5px; }
+  #campaign .cbig .lbl { font: 800 38px/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #campaign .cbig .sub { font: 700 23px var(--font); opacity: .9; }
+  #campaign .citem { height: 88px; padding: 8px 18px; border: 4px solid var(--ink); border-radius: 16px; background: #F6E8CB; color: var(--ink); text-align: left; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 5px 0 rgba(43,27,23,.2); }
+  #campaign .citem b { font: 800 29px/1.1 var(--font); } #campaign .citem span { font: 700 20px var(--font); color: var(--muted); }
+  #campaign .citem.row { grid-column: 1 / -1; }
+  #campaign .sel { outline: 6px solid var(--cheese); outline-offset: 2px; transform: translateY(-3px); }
+  #campaign .dis { opacity: .5; filter: grayscale(.7); }
+  #campaign .cbig.dis { opacity: .6; }
+  #campaign .cpick { display: grid; gap: 10px; margin-top: 10px; }
+  #campaign .cfoot { position: absolute; left: 26px; right: 26px; bottom: 12px; display: flex; justify-content: space-between; align-items: center; font: 600 21px var(--font); color: var(--muted); }
+  #campaign .cdiff .pill { height: 42px; font-size: 20px; padding: 0 16px; margin-left: 6px; }
+  #campaign .ckeys kbd { min-width: 30px; font-size: 18px; line-height: 26px; }
+  #campaign .creset { position: absolute; left: 26px; right: 26px; bottom: 64px; padding: 14px 20px; border: 5px solid var(--ink); border-radius: 18px; background: #FFE3A8; font: 700 26px/1.3 var(--font); box-shadow: 0 10px 0 rgba(43,27,23,.4); z-index: 5; }
+  #campaign .creset.ready { background: #F6A79F; } #campaign .creset small { display: block; font: 600 20px var(--font); color: var(--muted); }
+  #campaign .ctabs { display: flex; gap: 8px; margin: 4px 0 6px; }
+  #campaign .ctab { flex: 1; height: 50px; padding: 0 8px; border: 3px solid var(--ink); border-radius: 14px; background: #F1E3C6; color: var(--ink); font: 800 21px var(--font); white-space: nowrap; }
+  #campaign .ctab small { font: 700 16px var(--font); color: var(--muted); } #campaign .ctab.lock { opacity: .55; }
+  #campaign .ctab.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); color: var(--cream); outline: none; transform: none; } #campaign .ctab.sel small { color: var(--cream); }
+  #campaign .cmap { position: relative; height: 322px; border: 4px solid var(--ink); border-radius: 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--biome) 70%, white) 0%, var(--biome) 100%); overflow: hidden; }
+  #campaign .cmap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #campaign .trail { fill: none; stroke: rgba(43,27,23,.55); stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  #campaign .trail2 { fill: none; stroke: #FFF4E0; stroke-width: 12; stroke-dasharray: 2 22; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  #campaign .cnode { position: absolute; width: 86px; height: 86px; margin: -43px 0 0 -43px; padding: 0; border: 5px solid var(--ink); border-radius: 50%; background: var(--cream); color: var(--ink); box-shadow: 0 6px 0 rgba(43,27,23,.35); }
+  #campaign .cnode .n { position: absolute; inset: 0; font: 800 38px/76px var(--font); font-style: normal; text-align: center; }
+  #campaign .cnode .st { position: absolute; left: 50%; bottom: -36px; transform: translateX(-50%); font: 800 28px/1 var(--font); font-style: normal; white-space: nowrap; }
+  #campaign .st b, #campaign .istars b { font-weight: 800; color: #CBB8A6; text-shadow: -2px 0 var(--ink), 2px 0 var(--ink), 0 -2px var(--ink), 0 2px var(--ink); } #campaign .st b.on, #campaign .istars b.on { color: var(--cheese); }
+  #campaign .cnode .clk { position: absolute; right: -14px; top: -14px; width: 36px; height: 36px; border-radius: 50%; background: #9AD0EE; border: 3px solid var(--ink); font: 700 20px/30px var(--font); font-style: normal; text-align: center; }
+  #campaign .cnode .boss { position: absolute; left: 50%; top: -22px; transform: translateX(-50%); padding: 0 10px; border: 3px solid var(--ink); border-radius: 10px; background: var(--danger); color: #fff; font: 800 16px/22px var(--font); font-style: normal; letter-spacing: 2px; }
+  #campaign .cnode.done { background: linear-gradient(#7BE08A, var(--basil)); color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.35); }
+  #campaign .cnode.open { background: linear-gradient(#FFE68A, var(--cheese2)); animation: nodepulse 1.4s ease-in-out infinite alternate; }
+  #campaign .cnode.skipped { background: #DDE6EC; border-style: dashed; }
+  #campaign .cnode.locked, #campaign .cnode.hidden { background: #BFB3A3; color: #6B5D50; box-shadow: 0 3px 0 rgba(43,27,23,.3); } #campaign .cnode.locked .n { font-size: 32px; }
+  #campaign .cnode.boss { width: 112px; height: 112px; margin: -56px 0 0 -56px; border-color: #7A1710; } #campaign .cnode.boss .n { line-height: 102px; font-size: 48px; }
+  #campaign .cnode.summit { background: linear-gradient(#C9B6F0, #8E5CD9); color: #fff; border-radius: 22px 22px 50% 50%; }
+  #campaign .cnode.summit.hidden { background: #A99BC4; opacity: .8; }
+  #campaign .cnode.nop { filter: grayscale(.6); border-style: dotted; }
+  #campaign .cnode.sel { outline: 7px solid var(--cheese); outline-offset: 3px; transform: scale(1.12); z-index: 3; animation: none; }
+  @keyframes nodepulse { to { box-shadow: 0 6px 0 rgba(43,27,23,.35), 0 0 0 10px rgba(255,210,63,.45); } }
+  #campaign .cinfo { height: 40px; margin-top: 12px; font: 700 24px/1.3 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #campaign .cinfo b { font-size: 28px; } #campaign .istars { margin-left: 8px; letter-spacing: 2px; } #campaign .iclk, #campaign .ibest { color: var(--muted); margin-left: 12px; }
+  #campaign .iwhy { color: var(--tomato2); margin-left: 12px; } #campaign .igo { color: var(--basil2); margin-left: 12px; }
+
+  #campres .rtitle { font: 800 62px/1 var(--font); -webkit-text-stroke: 12px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 rgba(43,27,23,.3); }
+  #campres .rtitle.win { color: var(--basil); } #campres .rtitle.lose { color: var(--tomato); }
+  #campres .rname { margin-top: 10px; font: 800 30px var(--font); color: var(--muted); }
+  #campres .rstars { display: flex; justify-content: center; gap: 22px; margin: 12px 0 0; }
+  #campres .rs { font: 800 120px/1 var(--font); font-style: normal; color: #CBB8A6; text-shadow: -4px 0 var(--ink), 4px 0 var(--ink), 0 -4px var(--ink), 0 4px var(--ink); }
+  #campres .rs.on { color: var(--cheese); } #campres .rs.fresh { animation: stardrop .6s cubic-bezier(.3,1.5,.5,1) both; animation-delay: calc(.3s + var(--i) * .35s); }
+  #campres .rwhy { list-style: none; margin: 6px 0 0; padding: 0; font: 700 26px/1.5 var(--font); color: var(--muted); }
+  #campres .rwhy li.on { color: var(--ink); } #campres .rwhy li.fresh { color: var(--basil2); }
+  #campres .rmedal { display: inline-block; margin-top: 8px; padding: 2px 18px; border: 3px solid var(--ink); border-radius: 22px; background: #E4DAC6; font: 800 24px var(--font); color: var(--muted); }
+  #campres .rmedal.on { background: #9AD0EE; color: var(--ink); }
+  #campres .rline { margin-top: 12px; font: 700 26px var(--font); color: var(--muted); }
+  #campres .cwarn { margin: 10px auto 0; width: 80%; padding: 4px 12px; border: 3px solid var(--ink); border-radius: 12px; background: #F6D9B8; font: 700 20px var(--font); }
+  #campres .rbtns { display: flex; justify-content: center; gap: 18px; margin-top: 26px; }
+  #campres .rbtn { height: 78px; padding: 0 36px; border: 4px solid var(--ink); border-radius: 18px; background: #F1E3C6; color: var(--ink); font: 800 32px var(--font); box-shadow: 0 6px 0 rgba(43,27,23,.3); }
+  #campres .rbtn.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); color: var(--cream); text-shadow: 0 3px 0 rgba(43,27,23,.4); outline: 6px solid var(--cheese); outline-offset: 2px; transform: translateY(-3px); }
+
   #ostars { display: flex; justify-content: center; gap: 18px; height: 128px; margin-top: 10px; }
   #ostars canvas { width: 120px; height: 120px; transform: translateY(-700px) scale(2.2); opacity: 0; }
   #ostars canvas.drop { animation: stardrop .6s cubic-bezier(.3,1.5,.5,1) forwards; }
@@ -318,6 +388,7 @@
           <div id="obsthints"><div id="obstinfo" class="hint"></div><div id="obstlives" class="hint"></div></div>
         </div>
       </div>
+      <div id="campaign" class="panel off"></div>
       <button id="start" class="btn" disabled>¡A cocinar!</button>
       <div id="starthint">Enter para empezar<br><button id="howtobtn" class="pill">H · Cómo se juega</button><br><small>M sonido · S sacudida de pantalla</small></div>
     </div>
@@ -335,6 +406,7 @@
         <div id="stats"></div>
         <div id="podium"></div>
       </div>
+      <div id="campres" class="off"></div>
       <div id="obstres" class="off">
         <div id="ostars"></div>
         <div id="obigscore"><small>Puntaje de la expedición</small><span id="ofinalscore">0</span></div>

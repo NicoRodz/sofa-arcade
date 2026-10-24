@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { LEGACY_CATALOG, campaignOrder, legacyCatalog, levelById, pathOf, summitNeed } from './index';
 import {
   SKIP_AFTER_FAILURES, applyResult, canOfferSkip, continueLevel, emptyProgress, fullMask, isUnlocked, isWorldUnlocked, mergeExpedition, newExpedition, nextLevel, openWorld,
-  progressOf, skipLevel, starCount, summitState, totalStars, unlockedLevels, worldStars, type Expedition, type LevelResult,
+  progressOf, skipLevel, starCount, summitState, totalStars, unlockedLevels, worldStars, type Expedition, type LevelOutcome,
 } from './index';
 import { continueLabel } from './index';
 import { parseExpedition } from './index';
@@ -11,10 +11,10 @@ import { LEVELS } from '../levels';
 
 const T0 = 1_000;
 const plan = planCatalog();
-const res = (levelId: string, o: Partial<LevelResult> = {}): LevelResult => ({ levelId, cleared: true, timeMs: 50_000, collectiblesMask: 0, deaths: 3, ...o });
+const res = (levelId: string, o: Partial<LevelOutcome> = {}): LevelOutcome => ({ levelId, cleared: true, timeMs: 50_000, collectiblesMask: 0, deaths: 3, ...o });
 const fresh = (name = 'Nico y Angi') => newExpedition('exp-test0001', name, T0);
 let clock = T0;
-const play = (e: Expedition, r: LevelResult) => applyResult(e, plan, r, ++clock);
+const play = (e: Expedition, r: LevelOutcome) => applyResult(e, plan, r, ++clock);
 // Clears levels 1..n of world w with every star.
 function clearWorld(e: Expedition, w: string, upTo = 7, perfect = true): Expedition {
   for (let o = 1; o <= upTo; o++) e = play(e, res(`${w}-${o}`, perfect ? { collectiblesMask: fullMask(3), deaths: 0 } : {}));
