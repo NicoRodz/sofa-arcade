@@ -14,7 +14,8 @@ export const BUTTON_COUNT = 2; // btn bitmask: bit 0 = A, bit 1 = B
 export const SLOT_GRACE_MS = 60_000; // a dropped phone keeps its slot this long
 export const ROOM_CODE_LEN = 4;
 export const PRESS_MOD = 65536;
-export const COLORS = ['#ff5252', '#40c4ff', '#ffd740', '#69f0ae', '#e040fb', '#ff9100', '#b2ff59', '#18ffff'];
+// Chef palette (red, blue, green, yellow, purple, orange, pink, teal); the screen's chef specs use the same list.
+export const COLORS = ['#E63B2E', '#2F7DE1', '#3FA34D', '#FFC21A', '#8E5CD9', '#FF7A1A', '#FF5FA2', '#1FB5A8'];
 
 // x right+, y down+, both in [-1, 1]. btn is a bitmask (state); presses are monotonic counters (mod PRESS_MOD).
 export interface InputState {
