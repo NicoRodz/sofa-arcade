@@ -6,7 +6,7 @@ const D = (i: number, n = 2) => metric(parseMap(FIXED_MAPS[i]!.rows), n);
 
 describe('difficulty metric D', () => {
   it('orders the five fixed maps strictly with 2 players', () => {
-    const d = FIXED_MAPS.map((_, i) => D(i).D);
+    const d = FIXED_MAPS.slice(0, 5).map((_, i) => D(i).D);
     for (let i = 1; i < d.length; i++) expect(d[i]!, `D${i} vs D${i + 1}`).toBeGreaterThan(d[i - 1]!);
   });
 

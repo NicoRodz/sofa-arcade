@@ -1,0 +1,46 @@
+// Every fixed map is played once through the real engine by a player that teleports next to each station (the validator
+// proves the route exists; this proves the engine accepts the recipe on that map's stations).
+import { describe, expect, it } from 'vitest';
+import { FIXED_MAPS, DIRS, isFloor } from './maps';
+import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
+
+const idle: Controls = { x: 0, y: 0, a: 0, b: false };
+const press = (g: Game) => tick(g, new Map([[1, { ...idle, a: 1 }]]));
+const run = (g: Game, ms: number, c: Map<number, Controls> = new Map()) => { for (let t = 0; t < ms; t += TICK_MS) tick(g, c); };
+const hold = new Map([[1, { ...idle, b: true }]]);
+function face(g: Game, s: Station) {
+  const p = g.players.get(1)!;
+  const [dx, dy] = DIRS.find(([dx, dy]) => isFloor(g.grid, s.tx + dx, s.ty + dy))!;
+  p.x = s.tx + dx + 0.5; p.y = s.ty + dy + 0.5; p.fx = -dx; p.fy = -dy;
+}
+const use = (g: Game, s: Station) => { face(g, s); press(g); };
+export const first = (g: Game, kind: string, crate?: number) => g.stations.find((s) => s.kind === kind && (crate === undefined || s.crate === crate))!;
+
+/** Marinara by hand: both crates -> board (hold B) -> oven, then plate -> oven -> window. Returns the score gained. */
+export function playMarinara(g: Game): number {
+  const board = first(g, 'board'), pot = first(g, 'pot');
+  for (const type of [0, 1]) {
+    use(g, first(g, 'crate', type));
+    use(g, board);
+    run(g, g.params.cutMs + 100, hold);
+    use(g, board);
+    use(g, pot);
+  }
+  run(g, g.params.cookMs + 100);
+  use(g, first(g, 'plates'));
+  use(g, pot);
+  const before = g.score;
+  use(g, first(g, 'window'));
+  return g.score - before;
+}
+
+describe('playthrough: one marinara delivered on every fixed map', () => {
+  for (const m of FIXED_MAPS) {
+    it(`map ${m.id} ${m.name}`, () => {
+      const g = createGame({ rows: m.rows, spawns: m.spawns, n: m.nMin });
+      addPlayer(g, 1, 0);
+      expect(playMarinara(g)).toBeGreaterThanOrEqual(g.params.reward);
+      expect(g.delivered).toBe(1);
+    });
+  }
+});

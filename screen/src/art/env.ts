@@ -244,6 +244,24 @@ function plates(c: Ctx, x0: number, y0: number) {
   c.restore();
 }
 
+function trashCan(c: Ctx, x0: number, y0: number) {
+  c.save(); c.translate(x0, y0);
+  c.fillStyle = 'rgba(60,30,10,0.25)'; c.beginPath(); c.ellipse(60, 104, 40, 8, 0, 0, Math.PI * 2); c.fill();
+  // can body: slightly tapered steel drum with two ribs
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(30, 46); c.lineTo(90, 46); c.lineTo(84, 106); c.lineTo(36, 106); c.closePath(); }, vgrad(c, 46, 106, '#D6DFE5', C.steel2), { lw: 3 });
+  c.strokeStyle = 'rgba(43,27,23,0.3)'; c.lineWidth = 2.5;
+  for (const x of [48, 60, 72]) { c.beginPath(); c.moveTo(x - (60 - x) * 0.1, 56); c.lineTo(x + (x - 60) * 0.08, 98); c.stroke(); }
+  c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(35, 50, 5, 40);
+  // basil band with a cream cross: "tira aqui lo que no sirve"
+  drawOutlined(c, () => rr(c, 34, 66, 52, 18, 5), C.basil, { lw: 2.5 });
+  c.strokeStyle = C.cream; c.lineWidth = 3.5; c.beginPath(); c.moveTo(54, 70); c.lineTo(66, 80); c.moveTo(66, 70); c.lineTo(54, 80); c.stroke();
+  // lid and handle
+  drawOutlined(c, () => rr(c, 25, 34, 70, 15, 7), vgrad(c, 34, 49, '#EAF0F3', C.steel), { lw: 3 });
+  drawOutlined(c, () => rr(c, 50, 24, 20, 11, 5), C.steel2, { lw: 2.5 });
+  c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 3; c.beginPath(); c.moveTo(32, 39); c.lineTo(52, 38); c.stroke();
+  c.restore();
+}
+
 function windowStation(c: Ctx, x0: number, y0: number) {
   c.save(); c.translate(x0, y0);
   // cream service pad on the counter
@@ -288,6 +306,7 @@ export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, see
     else if (t.station === 'pot') oven(c, x0, y0);
     else if (t.station === 'plates') plates(c, x0, y0);
     else if (t.station === 'window') windowStation(c, x0, y0);
+    else if (t.station === 'trash') trashCan(c, x0, y0);
   }));
   c.restore();
   // soft vignette

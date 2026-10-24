@@ -327,6 +327,43 @@ describe('maps', () => {
   });
 });
 
+describe('trash and shared stations', () => {
+  it('the trash discards whatever is in hand', () => {
+    const g = createGame({ rows: fixedMap('6')!.rows });
+    addPlayer(g, 1, 0);
+    const p = g.players.get(1)!;
+    p.item = 'raw1';
+    face(g, 1, station(g, 'trash'));
+    press(g, 1);
+    expect(p.item).toBeNull();
+  });
+
+  it('Espejo: the oven in the central column takes ingredients from both sides, and each side picks up from it', () => {
+    const g = createGame({ rows: fixedMap('8')!.rows });
+    addPlayer(g, 1, 0); addPlayer(g, 2, 1); // left and right of the mirror
+    const oven = g.stations.find((s) => s.kind === 'pot' && s.tx === 7 && s.ty === 2)!;
+    const left = g.players.get(1)!, right = g.players.get(2)!;
+    left.x = 6.5; left.y = 2.5; left.fx = 1; left.fy = 0; left.item = 'cut0';
+    right.x = 8.5; right.y = 2.5; right.fx = -1; right.fy = 0; right.item = 'cut1';
+    press(g, 1);
+    press(g, 2);
+    expect(oven.inputs.sort()).toEqual([0, 1]);
+    run(g, P.cookMs + 100);
+    expect(oven.done).toBe(true);
+    left.item = 'plate';
+    press(g, 1);
+    expect(left.item).toBe('dish'); // the left side takes it out even though the right side loaded it
+  });
+
+  it('players walk through each other (no collision between chefs)', () => {
+    const g = setup();
+    const a = g.players.get(1)!, b = g.players.get(2)!;
+    a.x = 5.5; a.y = 3.5; b.x = 7.5; b.y = 3.5;
+    run(g, 800, new Map([[1, { ...idle, x: 1 }]]));
+    expect(a.x).toBeGreaterThan(b.x);
+  });
+});
+
 describe('difficulty applies to the stations', () => {
   const chop = (d: Difficulty, ms: number) => {
     const g = setup(d);

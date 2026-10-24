@@ -5,8 +5,9 @@ export const MAP_W = 16;
 export const MAP_H = 9;
 
 // # wall, . floor, S spawn (floor), ~ water, C counter, 1/2 ingredient crates, K board (stretch/cut),
-// O oven, P tray pile, E delivery counter
-export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter';
+// O oven, P tray pile, E delivery counter, X trash.
+// Design legend (15-mapas.md) -> this code: T->C, M->1, R->2, C (table)->K, H->O; Q->3, U, L arrive with cheese and washing.
+export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash';
 export type Tile =
   | { kind: 'wall' }
   | { kind: 'floor'; spawn: boolean }
@@ -22,8 +23,9 @@ const STATIONS: Record<string, { station: StationKind; crate: number }> = {
   P: { station: 'plates', crate: 0 },
   E: { station: 'window', crate: 0 },
   C: { station: 'counter', crate: 0 },
+  X: { station: 'trash', crate: 0 },
 };
-export const STATION_CHAR: Record<string, string> = { crate0: '1', crate1: '2', board: 'K', pot: 'O', plates: 'P', window: 'E', counter: 'C' };
+export const STATION_CHAR: Record<string, string> = { crate0: '1', crate1: '2', board: 'K', pot: 'O', plates: 'P', window: 'E', counter: 'C', trash: 'X' };
 
 export function parseTile(c: string): Tile | null {
   if (c === '#') return { kind: 'wall' };
@@ -193,6 +195,48 @@ export const FIXED_MAPS: readonly MapDef[] = [
       'C..S...C...S...C',
       '#......~.......#',
       '##CCCCC~CCCCCC##',
+    ],
+  },
+  {
+    id: '6', name: 'La ventanita', nMin: 2, nMax: 3, minDuro: 2, stars: 1,
+    rows: [
+      '##12#KK###O##EE#',
+      '#......#.......#',
+      '#..S...C.......P',
+      '#......#.......#',
+      'X......C...S...#',
+      '#......#.......X',
+      '#..S...C.......#',
+      '#......#.......#',
+      '#CCC############',
+    ],
+  },
+  {
+    id: '7', name: 'Food truck', nMin: 2, nMax: 3, minDuro: 1, stars: 2,
+    rows: [
+      '################',
+      '################',
+      '##12CKKCCOCPCX##',
+      '##S..........S##',
+      '##......S.....##',
+      '##CCCCOCCEECCC##',
+      '################',
+      '################',
+      '################',
+    ],
+  },
+  {
+    id: '8', name: 'Espejo', nMin: 2, nMax: 4, minDuro: 2, stars: 1,
+    rows: [
+      '#11#KK###KK#22##',
+      '#......C......##',
+      '#.S....O....S.##',
+      'X......C......X#',
+      '#......E......##',
+      '#......C......##',
+      '#.S....O....S.##',
+      '#......P......##',
+      '#CCC#######CCC##',
     ],
   },
 ];

@@ -146,6 +146,9 @@ function interact(g: Game, p: Player, s: Station) {
       }
       break;
     }
+    case 'trash':
+      p.item = null;
+      break;
     case 'window':
       if (p.item === 'dish' && g.orders.length) {
         const o = g.orders.shift()!;

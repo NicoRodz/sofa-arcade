@@ -80,3 +80,37 @@ describe('validateMap: one test per fixed map', () => {
     expect(validateMap({ ...m, rows: edit([...m.rows], [[7, 2, '~'], [7, 6, '~']]) }).errors.join()).toMatch(/no route/);
   });
 });
+
+describe('validateMap: maps 6 to 8', () => {
+  it('map 6 La ventanita: two kitchens joined only by the serving counters (7,2) (7,4) (7,6)', () => {
+    const m = fixedMap('6')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(analyze(parseMap([...m.rows])).passes.map((p) => p.pos)).toEqual([[7, 2], [7, 4], [7, 6]]);
+    expect(minPlayers(parseMap([...m.rows]))).toBe(2);
+    // sabotage: take the serving counters away and the recipe cannot cross
+    const cut = edit([...m.rows], [[7, 2, '#'], [7, 4, '#'], [7, 6, '#']]);
+    expect(validateMap({ ...m, rows: cut }).errors.join()).toMatch(/no route K -> O/);
+    // one counter is enough to keep it solvable
+    expect(validateMap({ ...m, rows: edit([...m.rows], [[7, 2, '#'], [7, 6, '#']]) }).ok).toBe(true);
+  });
+  it('map 7 Food truck: one 12x2 corridor, two ovens, three spawns', () => {
+    const m = fixedMap('7')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(analyze(parseMap([...m.rows])).count).toBe(1);
+    // sabotage: both ovens turn into counters
+    const noOven = edit([...m.rows], [[9, 2, 'C'], [6, 5, 'C']]);
+    expect(validateMap({ ...m, rows: noOven }).errors.join()).toMatch(/missing station O/);
+  });
+  it('map 8 Espejo: dough only on the left, tomato only on the right, oven/window/plates shared from both sides', () => {
+    const m = fixedMap('8')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    const g = parseMap([...m.rows]);
+    expect(analyze(g).count).toBe(2);
+    expect(minPlayers(g)).toBe(2);
+    // sabotage: close the left dough crates and nobody can make dough
+    expect(validateMap({ ...m, rows: edit([...m.rows], [[1, 0, '#'], [2, 0, '#']]) }).errors.join()).toMatch(/missing station 1/);
+    // sabotage: no counter or oven left on column 7 and the halves are disconnected
+    const split = edit([...m.rows], [[7, 1, '#'], [7, 2, '#'], [7, 3, '#'], [7, 4, '#'], [7, 5, '#'], [7, 6, '#'], [7, 7, '#']]);
+    expect(validateMap({ ...m, rows: split }).ok).toBe(false);
+  });
+});

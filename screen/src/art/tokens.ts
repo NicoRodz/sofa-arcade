@@ -47,6 +47,16 @@ export const FLOORS: Record<string, [string, string]> = {
   '3': ['#E4EBF2', '#C3D3E3'],
   '4': ['#F4DFD0', '#E0BFA6'],
   '5': ['#EFE0EF', '#D8C0D8'],
+  '6': ['#E3EFE6', '#C4DCCB'],
+  '7': ['#E8E4DE', '#C9C2B8'],
+  '8': ['#F4E6DA', '#E2C7B0'],
+  '9': ['#F3E7C9', '#E2CF9C'],
+  '10': ['#DCEAF2', '#B9D3E2'],
+  '11': ['#EDE0F0', '#D6C1DE'],
+  '12': ['#E2E6EE', '#BFC8D6'],
+  '13': ['#F0E8D9', '#D9CDB3'],
+  '14': ['#E9DCE8', '#CDB6CB'],
+  '15': ['#D9D5CC', '#B7B1A4'],
 };
 export const floorPair = (mapId: string, seed = 0): [string, string] =>
   FLOORS[mapId] ?? FLOORS[String(1 + (Math.abs(seed) % 5))]!;
