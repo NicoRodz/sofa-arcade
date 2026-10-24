@@ -8,7 +8,7 @@ import { WebSocket } from 'ws';
 import { startServer } from '../server/src/server';
 import { fixedMap } from '../shared/maps';
 
-const PORT = 3200, CDP = 9333;
+const PORT = Number(process.env.PORT ?? 3200), CDP = Number(process.env.CDP ?? 9333);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const what = process.argv[2] ?? 'all';
 const outDir = path.resolve(process.argv[3] ?? 'docs/screens');

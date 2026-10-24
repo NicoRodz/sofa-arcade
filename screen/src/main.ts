@@ -180,6 +180,7 @@ function startObst() {
 function endObst() { obstRun = null; if (activeGame === OBST_ID) { showScene('main'); activeGame = 'pizzas'; } }
 let obstSummary: RunSummary | null = null;
 const obstStepMs: number[] = []; // ms the simulation step took, last 600 frames (perf check)
+const obstFrameMs: number[] = []; // ms a whole scene update took (simulation + drawing calls), same window
 const setConfig = (patch: Partial<LobbyConfig>) => {
   config = { ...config, ...patch };
   sendMsg({ t: 'config', ...config });
@@ -314,7 +315,7 @@ const host: Host = {
   },
 };
 const scene = new MainScene(host);
-const obstScene = new ObstaclesScene({
+const obstScene: ObstaclesScene = new ObstaclesScene({
   step(delta) {
     if (phase !== 'playing' || activeGame !== OBST_ID || !obstRun || performance.now() < gateUntil) return;
     const t0 = performance.now();
@@ -324,6 +325,7 @@ const obstScene = new ObstaclesScene({
   world: () => (obstRun && activeGame === OBST_ID && (phase === 'playing' || phase === 'results') ? obstRun.world() : null),
   afterRender: (v) => obstRun?.afterRender(v),
 }, gameBus);
+{ const base = obstScene.update.bind(obstScene); obstScene.update = (t: number, d: number) => { const a = performance.now(); base(t, d); if (phase === 'playing' && activeGame === OBST_ID) { obstFrameMs.push(performance.now() - a); if (obstFrameMs.length > 600) obstFrameMs.shift(); } }; }
 // Called right after the frame is drawn: closest browser-side proxy for "visible on screen".
 const phaser = new Phaser.Game({
   type: Phaser.AUTO,
@@ -352,7 +354,7 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
     return { ...full, phase, sess: ss.status, level: w.level.def.id, levelIndex: ss.levelIndex, tick: w.tick, countdownMs: ss.countdownMs, over: ss.over, world: w.status };
   },
   obstGrid: () => (obstRun ? { w: obstRun.session.world.grid.w, h: obstRun.session.world.grid.h, cells: Array.from(obstRun.session.world.grid.cells), rows: obstRun.session.world.level.def.rows } : null),
-  obstPerf: () => { const a = [...obstStepMs].sort((x, y) => x - y); return { n: a.length, p50: a[Math.floor(a.length * 0.5)] ?? 0, p95: a[Math.floor(a.length * 0.95)] ?? 0, max: a[a.length - 1] ?? 0, fps: phaser.loop.actualFps }; },
+  obstPerf: () => { const q = (src: number[]) => { const a = [...src].sort((x, y) => x - y); return { p50: a[Math.floor(a.length * 0.5)] ?? 0, p95: a[Math.floor(a.length * 0.95)] ?? 0, max: a[a.length - 1] ?? 0 }; }; return { n: obstStepMs.length, ...q(obstStepMs), frame: q(obstFrameMs), fps: phaser.loop.actualFps }; },
   obstWin: () => { if (!obstRun) return; const w = obstRun.session.world, g = w.level.markers.goal[0]!; for (const p of w.players) if (p.connected) { p.body.x = g.x * 48 + 7; p.body.y = (g.y + 1) * 48 - 46; p.body.vx = 0; p.body.vy = 0; } },
   obstFail: () => { if (!obstRun) return; for (const p of obstRun.session.world.players) p.body.y = 100_000; },
   obstSkip: (ms: number) => { if (!obstRun) return; for (let t = 0; t < ms; t += 1000 / 60) obstRun.step(1000 / 60); },

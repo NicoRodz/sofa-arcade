@@ -109,9 +109,10 @@ async function main() {
   const dog = setTimeout(async () => { console.error('watchdog fired'); if (chromeRef) await killTree(chromeRef); process.exit(2); }, Number(process.env.MAX_MS ?? 900_000));
   const profile = mkdtempSync(path.join(tmpdir(), 'pg-obst-chrome-'));
   const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${CDP}`, `--user-data-dir=${profile}`, '--window-size=1920,1080', '--hide-scrollbars', '--no-first-run',
-    '--no-default-browser-check', '--ignore-gpu-blocklist', '--force-color-profile=srgb', '--autoplay-policy=no-user-gesture-required', ...(process.env.SOFTGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []), 'about:blank'], { stdio: 'ignore' });
+    '--no-default-browser-check', '--ignore-gpu-blocklist', '--force-color-profile=srgb', '--autoplay-policy=no-user-gesture-required', ...(process.env.UNCAP ? ['--disable-frame-rate-limit', '--disable-gpu-vsync'] : []), ...(process.env.SOFTGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []), 'about:blank'], { stdio: 'ignore' });
   chromeRef = chrome;
   const phones: Phone[] = [];
+  let cdpRef: Cdp | null = null;
   const timers: ReturnType<typeof setInterval>[] = [];
   let code = 0;
   try {
@@ -120,18 +121,55 @@ async function main() {
     const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
     await new Promise((r) => ws.once('open', r));
     const cdp = new Cdp(ws);
+    cdpRef = cdp;
     await cdp.send('Page.enable'); await cdp.send('Runtime.enable');
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 
+    if (what === 'phone') {
+      // the real controller page in a phone-sized viewport, driven by a fake screen that picks Obstaculos; taps reach the relay as counters
+      const room = 'OBPH';
+      const fake = new WebSocket(`ws://127.0.0.1:${PORT}/ws?role=screen&room=${room}`);
+      await new Promise((r) => fake.once('open', r));
+      const got: any[] = [];
+      fake.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'input') got.push(m); });
+      fake.send(JSON.stringify({ t: 'config', game: 'obstaculos', difficulty: 'normal', map: '1', seed: 4242, modeOptions: { tether: 'chain', level: 3 } }));
+      fake.send(JSON.stringify({ t: 'phase', phase: 'lobby' }));
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
+      await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+      await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=${room}` });
+      await sleep(1200);
+      await cdp.eval(`document.getElementById('name').value = 'Nico'; document.getElementById('join').requestSubmit()`);
+      await sleep(1500);
+      await cdp.shot('phone-lobby');
+      console.log('setup line:', JSON.stringify(await cdp.eval(`document.getElementById('setup').textContent`)), '| game:', JSON.stringify(await cdp.eval(`document.getElementById('game').textContent`)));
+      const tap = async (x: number, y: number) => { await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] }); await sleep(60); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await sleep(300); };
+      await tap(422, 195); // closes the how-to card
+      fake.send(JSON.stringify({ t: 'phase', phase: 'playing' }));
+      await sleep(900);
+      await cdp.shot('phone-play');
+      const lab = await cdp.eval<any>(`({ a: document.getElementById('btnA').textContent.trim(), b: document.getElementById('btnB').textContent.trim(), stick: document.getElementById('stickhint').textContent.trim() })`);
+      console.log('control labels:', JSON.stringify(lab));
+      const pos = async (id: string) => cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('${id}').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+      const A = await pos('btnA'), B = await pos('btnB');
+      await tap(A.x, A.y); await tap(A.x, A.y); await tap(B.x, B.y);
+      await sleep(400);
+      const last = got[got.length - 1];
+      console.log('relay saw presses:', JSON.stringify(last?.presses), 'inputs received:', got.length);
+      if (!last || last.presses[0] < 2 || last.presses[1] < 1 || lab.a !== 'Saltar' || lab.b !== 'Agarrar') code = 1;
+      fake.close();
+      return;
+    }
+
     const room = `OB${what.slice(0, 2).toUpperCase()}${N}`;
     await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${room}` });
-    await sleep(2500);
+    for (let i = 0; i < 50 && !(await cdp.eval<boolean>('!!window.__pg').catch(() => false)); i++) await sleep(200);
+    await sleep(1200);
     const names = ['Nico', 'Angi', 'Pablo', 'Mati', 'Coni', 'Rafa', 'Vale', 'Tomás'];
     for (let i = 0; i < N; i++) { phones.push(new Phone(i, names[i]!, room, !!process.env.LAG)); await sleep(150); }
     await sleep(800);
     const click = (sel: string) => cdp.eval(`document.querySelector(${JSON.stringify(sel)}).click()`);
     const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
-    const state = () => cdp.eval<ObstState | null>('window.__pg.obst()');
+    const state = () => cdp.eval<ObstState | null>('window.__pg ? window.__pg.obst() : null');
     const phase = () => cdp.eval<string>('window.__pg.snapshot().phase');
 
     // menu -> game card -> lobby (the iris wipe takes ~1 s each way)
@@ -166,6 +204,51 @@ async function main() {
     timers.push(loop);
     phones.forEach((p) => p.startSending());
 
+    if (what === 'drop') {
+      // a phone loses its connection in the middle of the level and comes back: the level goes on, the slot is kept
+      for (let i = 0; i < 80 && ((await state())?.tick ?? 0) < 240; i++) await sleep(100);
+      const victim = phones[1]!;
+      victim.ws.close();
+      await sleep(1500);
+      const away = await state();
+      console.log('while away: player 1 connected =', away?.players.find((p: any) => p.slot === 1)?.connected, ' level still', away?.world);
+      await cdp.shot('drop-away');
+      const back = new Phone(1, names[1]!, room, false);
+      phones[1] = back; back.level = victim.level; back.bot = victim.bot; back.startSending();
+      await sleep(1500);
+      const again = await state();
+      console.log('after rejoining: player 1 connected =', again?.players.find((p: any) => p.slot === 1)?.connected);
+      await cdp.shot('drop-back');
+      const t0 = Date.now(); let ok = false;
+      while (Date.now() - t0 < 120_000 && !ok) { await sleep(500); const st = await state(); ok = !!st && (st.world === 'cleared' || st.levelIndex > 0); }
+      console.log(`RESULT drop n=${N}: away connected=${away?.players.find((p: any) => p.slot === 1)?.connected}, back connected=${again?.players.find((p: any) => p.slot === 1)?.connected}, level cleared after the drop: ${ok}`);
+      if (!ok || away?.players.find((p: any) => p.slot === 1)?.connected !== false || again?.players.find((p: any) => p.slot === 1)?.connected !== true) code = 1;
+    }
+    if (what === 'switch') {
+      // obstaculos -> results -> lobby -> menu -> pizzas -> back: the two games share one canvas and one set of phones
+      for (let i = 0; i < 8; i++) {
+        for (let k = 0; k < 40 && (await state())?.sess !== 'playing'; k++) await sleep(200);
+        if ((await phase()) !== 'playing') break;
+        await cdp.eval('window.__pg.obstWin()');
+        await sleep(5200);
+      }
+      for (let i = 0; i < 40 && (await phase()) !== 'results'; i++) await sleep(300);
+      await sleep(2500); await cdp.shot('switch-results');
+      await click('#again'); await sleep(600);
+      console.log('after again ->', await phase());
+      await key('Escape'); for (let i = 0; i < 30 && (await phase()) !== 'menu'; i++) await sleep(200);
+      console.log('after Esc ->', await phase());
+      await sleep(1800); // the iris is still opening: clicks are ignored until it ends
+      await click('[data-game="pizzas"]'); for (let i = 0; i < 30 && (await phase()) !== 'lobby'; i++) await sleep(200);
+      await sleep(700);
+      await click('#start');
+      for (let i = 0; i < 40 && (await phase()) !== 'playing'; i++) { await sleep(300); await key('Enter'); }
+      await sleep(4500);
+      const sn = await cdp.eval<any>('({ phase: window.__pg.snapshot().phase, stations: window.__pg.snapshot().stations.length, players: window.__pg.snapshot().players.length, countdown: window.__pg.snapshot().countdown })');
+      await cdp.shot('switch-pizzas');
+      console.log('pizzas after obstaculos:', JSON.stringify(sn), 'page errors', cdp.errors.length);
+      if (sn.phase !== 'playing' || sn.stations < 5 || sn.players < 2) code = 1;
+    }
     if (what === 'play' || what === 'shots' || what === 'fps') {
       const cleared: { level: string; sec: number }[] = [];
       let lastLevelIdx = 0;
@@ -209,12 +292,17 @@ async function main() {
       const secs = Number(process.env.SOAK_S ?? 300);
       const t0 = Date.now();
       const mem: number[] = [];
-      let rounds = 1, lastPhase = 'playing', worstP95 = 0, worstMax = 0, minFps = 999;
+      let rounds = 1, lastPhase = 'playing', worstP95 = 0, worstMax = 0, minFps = 999, wins = 0, lastWin = Date.now();
+      const levelsSeen = new Set<string>();
       while (Date.now() - t0 < secs * 1000) {
         await sleep(2000);
         const ph = await phase();
         if (ph === 'results' && lastPhase !== 'results') { await sleep(2500); await click('#again'); await sleep(900); await click('#start'); rounds++; for (let i = 0; i < 40 && (await phase()) !== 'playing'; i++) { await sleep(300); await key('Enter'); } }
         lastPhase = ph;
+        // the lagging bots rarely clear a level on their own: every SOAK_WIN s the level is closed by hand so the transitions (new world, new view, results, new round) are part of the soak
+        const cur = await state();
+        if (cur) levelsSeen.add(`${rounds}:${cur.levelIndex}:${cur.level}`);
+        if (cur?.sess === 'playing' && Date.now() - lastWin > Number(process.env.SOAK_WIN ?? 40) * 1000) { await cdp.eval('window.__pg.obstWin()'); wins++; lastWin = Date.now(); }
         const perf = await cdp.eval<any>('window.__pg.obstPerf()');
         worstP95 = Math.max(worstP95, perf.p95); worstMax = Math.max(worstMax, perf.max); if (perf.fps) minFps = Math.min(minFps, perf.fps);
         const heap = await cdp.eval<number>('(performance.memory && performance.memory.usedJSHeapSize) || 0');
@@ -223,12 +311,13 @@ async function main() {
         if (mem.length % 10 === 0) console.log(`  t=${((Date.now() - t0) / 1000).toFixed(0)}s phase ${ph} level ${st?.level} idx ${st?.levelIndex} heap ${(heap / 1e6).toFixed(0)} MB step p95 ${perf.p95.toFixed(2)} ms max ${perf.max.toFixed(2)} fps ${perf.fps?.toFixed(0)}`);
       }
       const first = mem[Math.floor(mem.length * 0.2)] ?? 0, last = mem[mem.length - 1] ?? 0;
-      console.log(`RESULT soak ${secs}s n=${N}: rounds ${rounds}, step p95 worst ${worstP95.toFixed(2)} ms, max ${worstMax.toFixed(2)} ms, min fps ${minFps.toFixed(0)}, heap ${(first / 1e6).toFixed(0)} -> ${(last / 1e6).toFixed(0)} MB, page errors ${cdp.errors.length}, ws closed ${phones.filter((p) => p.ws.readyState !== WebSocket.OPEN).length}`);
+      console.log(`RESULT soak ${secs}s n=${N}: rounds ${rounds}, levels seen ${levelsSeen.size}, hand-cleared ${wins}, step p95 worst ${worstP95.toFixed(2)} ms, max ${worstMax.toFixed(2)} ms, min fps ${minFps.toFixed(0)}, heap ${(first / 1e6).toFixed(0)} -> ${(last / 1e6).toFixed(0)} MB, page errors ${cdp.errors.length}, ws closed ${phones.filter((p) => p.ws.readyState !== WebSocket.OPEN).length}`);
       if (cdp.errors.length) code = 1;
     }
     if (cdp.errors.length) console.log('PAGE ERRORS:', cdp.errors.slice(0, 8).join('\n'));
   } catch (e) {
     console.error('E2E FAILED', e);
+    console.error('page errors so far:', cdpRef?.errors.slice(0, 6));
     code = 1;
   } finally {
     timers.forEach(clearInterval);
