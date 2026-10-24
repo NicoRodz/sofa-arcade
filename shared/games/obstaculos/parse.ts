@@ -16,7 +16,7 @@ export interface ParsedLevel {
   errors: string[];
 }
 
-const emptyMarkers = (): Record<Marker, Cell[]> => ({ spawn: [], checkpoint: [], goal: [], star: [], ring: [], box: [], heavyBox: [], key: [] });
+const emptyMarkers = (): Record<Marker, Cell[]> => ({ spawn: [], checkpoint: [], goal: [], star: [], ring: [], box: [], heavyBox: [], key: [], pickaxe: [] });
 
 export function parseLevel(def: LevelDef): ParsedLevel {
   const errors: string[] = [];
@@ -57,13 +57,13 @@ export function parseLevel(def: LevelDef): ParsedLevel {
     const p = params[ch];
     if (!p) { errors.push(`letter '${ch}' has no params entry`); continue; }
     objects[ch]!.param = p;
-    if (isActivator(ch) && p.kind !== 'plate' && p.kind !== 'lever') errors.push(`'${ch}' is an activator: want plate or lever, got ${p.kind}`);
-    if (isObjective(ch) && (p.kind === 'plate' || p.kind === 'lever')) errors.push(`'${ch}' is an objective: got ${p.kind}`);
+    if (isActivator(ch) && p.kind !== 'plate' && p.kind !== 'lever' && p.kind !== 'target') errors.push(`'${ch}' is an activator: want plate, lever or target, got ${p.kind}`);
+    if (isObjective(ch) && (p.kind === 'plate' || p.kind === 'lever' || p.kind === 'target')) errors.push(`'${ch}' is an objective: got ${p.kind}`);
   }
   for (const [ch, p] of Object.entries(params)) {
     if (!objects[ch]) { errors.push(`params entry '${ch}' has no cells in the grid`); continue; }
-    if ((p.kind === 'plate' || p.kind === 'lever') && !objects[p.opens]) errors.push(`'${ch}' opens '${p.opens}', which is not in the grid`);
-    if ((p.kind === 'plate' || p.kind === 'lever') && !isObjective(p.opens)) errors.push(`'${ch}' opens '${p.opens}': must be an objective letter A-F`);
+    if ((p.kind === 'plate' || p.kind === 'lever' || p.kind === 'target') && !objects[p.opens]) errors.push(`'${ch}' opens '${p.opens}', which is not in the grid`);
+    if ((p.kind === 'plate' || p.kind === 'lever' || p.kind === 'target') && !isObjective(p.opens)) errors.push(`'${ch}' opens '${p.opens}': must be an objective letter A-F`);
     if (p.kind === 'balance') {
       const q = params[p.partner];
       if (!q || q.kind !== 'balance' || q.partner !== ch) errors.push(`'${ch}' balance partner '${p.partner}' is not a balance pointing back`);
@@ -76,6 +76,13 @@ export function parseLevel(def: LevelDef): ParsedLevel {
   if (!(def.parSec > 0)) errors.push('parSec must be > 0');
   const inside = (r: Rect) => r.w > 0 && r.h > 0 && r.x >= 0 && r.y >= 0 && r.x + r.w <= w && r.y + r.h <= h;
   def.cameraZones?.forEach((z, i) => { if (!inside(z)) errors.push(`cameraZones[${i}] outside the grid`); });
+  const wd = def.wind;
+  if (wd) {
+    if (!(wd.gustSec > 0 && wd.periodSec > wd.gustSec)) errors.push('wind: want 0 < gustSec < periodSec');
+    if (wd.dir !== 1 && wd.dir !== -1) errors.push('wind: dir must be 1 or -1');
+    if (wd.zone && !inside(wd.zone)) errors.push('wind: zone outside the grid');
+  }
+  def.enemies?.forEach((e, i) => { if (!inside({ x: e.x, y: e.y, w: 1, h: 1 }) || !(e.range >= 0)) errors.push(`enemies[${i}] outside the grid or with a negative range`); });
   def.hints?.forEach((hint, i) => { if (!inside({ x: hint.x, y: hint.y, w: 1, h: 1 })) errors.push(`hints[${i}] outside the grid`); });
 
   return { def, w, h, tiles, markers, objects, errors };

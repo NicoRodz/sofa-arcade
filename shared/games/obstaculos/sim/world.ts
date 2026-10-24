@@ -15,14 +15,16 @@ import { parseLevel } from '../parse';
 import type { GameMode, LevelDef } from '../types';
 import { applyA, applyB, dropAll, handCatchStep, previewB as previewBPlayer, releaseHolding, type BPreview } from './actions';
 import { moveXLedge, pushBody, supportBelow, type PxRect } from './collide';
-import { beltDx, computeLoads, createEntities, extraPlatforms, objRect, stepActivation, stepBoxes, stepCrumbles, stepHazard, stepKeys, stepMovers } from './entities';
+import { beltDx, computeLoads, createEntities, extraPlatforms, objRect, stepActivation, stepBoxes, stepCrumbles, stepHazard, stepKeys, stepMovers, stepTargets } from './entities';
 import type { PlayerStep } from './input';
 import { hangingOnRope, hashRopes, buildRopes, invMassOf, solveRopes, type RopeNode } from './rope';
 import type { CampaignParams, SignalKind } from './campaign';
-import { campaignParams, dparamsForCampaign, physicsForCampaign, type WorldId } from './campaign';
-import { applySlides, edgeAssist, prepareAnchors, registerGroundJump, stepCampaignInputs, throwArc } from './campaignrules';
+import { campaignParams, dparamsForCampaign, physicsOfWorld, type WorldId } from './campaign';
+import { applySlides, edgeAssist, prepareAnchors, registerGroundJump, stepCampaignInputs, stepIce, stepWind, throwArc } from './campaignrules';
+import { stepEnemies } from './enemies';
+import { stepPick, stepPickaxes } from './pickaxe';
 import { dropCrumbs, goalZone, placeAtCell, progressField, progressOf, revive, sendToBubble, stepBubbles, stepCheckpoints, stepDeaths, stepGoal, stepStars, stepStragglers } from './rules';
-import { emit, isActive, playerOf, type LevelResult, type ObstEvent, type PlayerState, type World, type WorldStatus } from './state';
+import { emit, isActive, playerOf, type LevelResult, type ObstEvent, type PlayerState, type WindPhase, type World, type WorldStatus } from './state';
 import { hashBodies, headPlatform, newBody, physicsFor, stepPlayer, type Body, type Platform } from './player';
 import { buildGrid, boxTouches } from './tiles';
 import { CLIMB_SIDE_MULT, CLIMB_SPEED, PLANT_AIR_STEPS, SLOT_COUNT, THROW_VX } from './tuning';
@@ -48,7 +50,7 @@ function newPlayer(slot: number, connected = true): PlayerState {
     slot, connected, mode: 'active', body: newBody(slot, 0, 0), planted: false, plantAir: 0, holding: null, carriedBy: -1, thrown: 0, lift: null, climbing: false, ropeJump: true,
     invuln: 0, timer: 0, bubble: null, inGoal: false, offCamera: 0, crumbs: [], crumbCool: 0, crushed: 0, deathGroup: -1,
     stats: { deaths: 0, stars: 0, anchoredSteps: 0, throws: 0, catches: 0, offCameraSteps: 0 },
-    camp: { assist: 0, assistDir: 0, jumpTick: -1000, mash: 0, mashCool: 0, signal: null, goHold: 0 },
+    camp: { assist: 0, assistDir: 0, jumpTick: -1000, mash: 0, mashCool: 0, signal: null, goHold: 0, pick: 0, onIce: false },
   };
 }
 
@@ -62,11 +64,11 @@ export function createWorld(o: WorldOptions): World {
   const tether = o.level.tether;
   const mode: GameMode = tether === 'freeOnly' ? 'free' : tether === 'chainOnly' ? 'chain' : (o.mode ?? 'chain');
   const grid = buildGrid(level, mode);
-  const ent = createEntities(level, grid, dparams.hazardSpeed);
+  const ent = createEntities(level, grid, dparams.hazardSpeed, camp);
   const w: World = {
-    level, mode, difficulty, dparams, params: camp ? physicsForCampaign(camp, o.p90LatencyMs ?? 0) : physicsFor(difficulty, o.p90LatencyMs ?? 0), grid, tilesVersion: 0, tick: 0, status: 'playing',
+    level, mode, difficulty, dparams, params: camp ? physicsOfWorld(camp, o.p90LatencyMs ?? 0) : physicsFor(difficulty, o.p90LatencyMs ?? 0), grid, tilesVersion: 0, tick: 0, status: 'playing',
     players: slots.map((s) => newPlayer(s)), ropes: [], ent, lives: dparams.lives, deaths: 0, progress: progressField(level), activeCheckpoint: -1, result: null, events: [],
-    camp, heartsLost: 0, refills: 0, countdown: null,
+    camp, heartsLost: 0, refills: 0, countdown: null, wind: camp && o.level.wind ? { phase: 'calm', dir: o.level.wind.dir } : null,
   };
   const spawn = level.markers.spawn[0]!;
   w.players.forEach((p, i) => placeAtCell(w, p, spawn, i, w.players.length));
@@ -137,6 +139,7 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
       p.plantAir = b.grounded ? 0 : p.plantAir + 1;
       if (p.plantAir > PLANT_AIR_STEPS) { p.planted = false; p.plantAir = 0; }
     }
+    if (w.camp && stepPick(w, p, inp)) continue; // campaign pickaxe: clinging to / climbing an ice wall
     // ladders
     if (!p.climbing && (inp.up || inp.down) && !p.planted && !p.thrown && ladderAt(w, b)) { p.climbing = true; b.vx = 0; b.vy = 0; }
     if (p.climbing) {
@@ -159,7 +162,7 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
     if (w.camp) edgeAssist(w, p, bySlot);
     let move = p.planted ? 0 : inp.move;
     if (p.camp.assist > 0) { move = p.camp.assistDir; p.camp.assist--; } // edge assist: pushed into the wall until it is on the ledge
-    if (p.thrown > 0) { move = (b.facing * THROW_VX) / RUN_SPEED; p.thrown--; } // no control until it lands; keeps the throw speed (target 420 px/s)
+    if (p.thrown > 0) { move = (b.facing * THROW_VX * (w.camp?.throwVxMult ?? 1)) / RUN_SPEED; p.thrown--; } // no control until it lands; keeps the throw speed (target 420 px/s)
     const bd = beltDx(w, p);
     if (bd !== 0) pushBody(b, bd, 0, w.grid);
     const ev = stepPlayer(b, { move, down: inp.down, jump }, { grid: w.grid, platforms, params: w.params });
@@ -168,6 +171,8 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
     if (ev.land > 0) emit(w, 'obst.land', { player: p.slot, impact: ev.land, on: ev.landOn });
     if (b.grounded) { p.ropeJump = true; p.thrown = 0; }
   }
+
+  if (w.camp) stepWind(w); // campaign: a gust shifts whoever is in the air
 
   // 4. Carried players ride on their holder; mano amiga lifts; boxes and keys follow their holders.
   for (const t of w.players) {
@@ -181,12 +186,13 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
   handCatchStep(w, w.dparams.handZoneTiles);
   stepBoxes(w, (p) => releaseHolding(w, p));
   stepKeys(w);
+  if (w.camp) { stepPickaxes(w); stepEnemies(w); } // campaign: the pickaxe follows its holder; soft enemies patrol and shove
 
   // 5. Rope: PBD, separating velocity removed, ground recomputed (plan §4 steps 3-5).
   if (w.ropes.length) {
     const nodes: (RopeNode | undefined)[] = [];
     for (const p of w.players) {
-      const anchored = p.holding?.kind === 'ring' || p.carriedBy >= 0 || !!p.lift || (!!w.camp && p.planted); // campaign: planted = anchor, infinite mass
+      const anchored = p.holding?.kind === 'ring' || p.carriedBy >= 0 || !!p.lift || (!!w.camp && (p.planted || p.camp.pick !== 0)); // campaign: planted or clinging to a wall = anchor, infinite mass
       nodes[p.slot] = { body: p.body, active: isActive(p), w: invMassOf(anchored ? 'anchored' : p.planted ? 'planted' : p.body.grounded ? 'ground' : 'air') };
     }
     const slides = w.camp ? prepareAnchors(w, nodes) : [];
@@ -208,9 +214,11 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
 
   // 6. Pressure, collectibles, checkpoints, danger, stragglers, victory.
   computeLoads(w);
+  stepTargets(w);
   stepActivation(w);
   dropCrumbs(w);
   stepStars(w);
+  if (w.camp) stepIce(w);
   stepCheckpoints(w);
   stepDeaths(w);
   stepStragglers(w, opts.offCamera);
@@ -242,7 +250,11 @@ export function hashState(w: World): number {
   if (e.hazard) { mix(e.hazard.pos); mix(e.hazard.frozen); }
   if (w.camp) { // the campaign layer's own state (a quick-match hash stays what it always was)
     mix(w.heartsLost); mix(w.refills); mix(w.countdown ? w.countdown.steps : -1);
-    for (const p of w.players) for (const v of [p.camp.assist, p.camp.assistDir, p.camp.jumpTick, p.camp.mash, p.camp.mashCool, p.camp.goHold, p.camp.signal ? p.camp.signal.steps : -1]) mix(v);
+    for (const p of w.players) for (const v of [p.camp.assist, p.camp.assistDir, p.camp.jumpTick, p.camp.mash, p.camp.mashCool, p.camp.goHold, p.camp.signal ? p.camp.signal.steps : -1, p.camp.pick, p.camp.onIce ? 1 : 0]) mix(v);
+    for (const a of e.activators) mix(a.timer);
+    for (const en of e.enemies) for (const v of [en.x, en.y, en.dir, en.stun]) mix(v);
+    for (const k of e.pickaxes) for (const v of [k.x, k.y, k.heldBy]) mix(v);
+    if (w.wind) mix(w.wind.phase === 'calm' ? 0 : w.wind.phase === 'warn' ? 1 : 2);
   }
   return h >>> 0;
 }
@@ -261,7 +273,7 @@ export interface WorldSnap {
   grid: World['grid'];
   players: PlayerSnap[];
   ropes: { id: number; members: number[]; links: { a: number; b: number; len: number; base: number; tension: number; taut: boolean; active: boolean }[] }[];
-  plates: { letter: string; kind: 'plate' | 'lever'; rect: PxRect; required: number; load: number; pressed: boolean; latched: boolean }[];
+  plates: { letter: string; kind: 'plate' | 'lever' | 'target'; rect: PxRect; required: number; load: number; pressed: boolean; latched: boolean; leftSec: number }[]; // leftSec: target's gate clock
   objects: { letter: string; kind: 'gate' | 'ladder' | 'mover' | 'balance'; rect: PxRect; open: boolean }[]; // rect = current position (movers and balance move)
   boxes: { id: number; heavy: boolean; x: number; y: number; held: boolean }[];
   keys: { x: number; y: number; heldBy: number; used: boolean }[];
@@ -273,6 +285,9 @@ export interface WorldSnap {
   goal: PxRect | null;
   // campaign layer (null / 0 in a quick match)
   camp: CampaignParams | null; heartsLost: number; refills: number; countdown: { by: number; n: number } | null; // n = the number on screen: 3, 2, 1
+  enemies: { x: number; y: number; w: number; h: number; dir: 1 | -1; stunned: boolean; stunLeftSec: number }[]; // dynamic 6
+  pickaxes: { x: number; y: number; heldBy: number }[]; // dynamic 9 (centre of the item, px)
+  wind: { phase: WindPhase; dir: -1 | 1; zone: PxRect | null } | null; // dynamic 8
 }
 
 export function snapshot(w: World): WorldSnap {
@@ -287,7 +302,7 @@ export function snapshot(w: World): WorldSnap {
       arc: w.camp ? throwArc(w, p) : null, signal: p.camp.signal?.kind ?? null, bubbleBoost: p.camp.mash,
     })),
     ropes: w.ropes.map((r) => ({ id: r.id, members: [...r.members], links: r.links.map((l) => ({ a: l.a, b: l.b, len: l.len, base: l.base, tension: l.tension, taut: l.taut, active: l.active })) })),
-    plates: e.activators.map((a) => ({ letter: a.letter, kind: a.kind, rect: { ...a.rect }, required: a.required, load: a.load, pressed: a.pressed, latched: a.latched })),
+    plates: e.activators.map((a) => ({ letter: a.letter, kind: a.kind, rect: { ...a.rect }, required: a.required, load: a.load, pressed: a.pressed, latched: a.latched, leftSec: a.timer * DT })),
     objects: e.objectives.map((o) => ({ letter: o.letter, kind: o.kind, rect: objRect(o), open: o.open })),
     boxes: e.boxes.map((b) => ({ id: b.id, heavy: b.heavy, x: b.x, y: b.y, held: b.holders.length > 0 })),
     keys: e.keys.map((k) => ({ x: k.x, y: k.y, heldBy: k.heldBy, used: k.used })),
@@ -298,6 +313,9 @@ export function snapshot(w: World): WorldSnap {
     hazard: e.hazard ? { kind: e.hazard.kind, pos: e.hazard.pos, frozen: e.hazard.frozen > 0 } : null,
     goal: goalZone(w.level),
     camp: w.camp, heartsLost: w.heartsLost, refills: w.refills, countdown: w.countdown ? { by: w.countdown.by, n: Math.ceil(w.countdown.steps / 60) } : null,
+    enemies: e.enemies.map((en) => ({ x: en.x, y: en.y, w: en.w, h: en.h, dir: en.dir, stunned: en.stun > 0, stunLeftSec: en.stun * DT })),
+    pickaxes: e.pickaxes.map((k) => ({ x: k.x, y: k.y, heldBy: k.heldBy })),
+    wind: w.wind && w.level.def.wind ? { phase: w.wind.phase, dir: w.wind.dir, zone: w.level.def.wind.zone ? { x: w.level.def.wind.zone.x * TILE, y: w.level.def.wind.zone.y * TILE, w: w.level.def.wind.zone.w * TILE, h: w.level.def.wind.zone.h * TILE } : null } : null,
   };
 }
 

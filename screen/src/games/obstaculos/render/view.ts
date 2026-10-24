@@ -28,7 +28,7 @@
 import type { GameMode, ParsedLevel, SignalKind, TileGrid } from '@party/shared/obstaculos';
 import type { Difficulty } from '@party/shared/difficulty';
 
-export type HandAction = 'none' | 'anchor' | 'lift' | 'grab' | 'plant' | 'throw' | 'release'; // what B would do now (icon above the head)
+export type HandAction = 'none' | 'anchor' | 'lift' | 'grab' | 'plant' | 'throw' | 'release'; // what B would do now (icon above the head); the campaign's 'pass' (pickaxe) reuses 'grab'
 
 export interface PlayerView {
   id: number;
@@ -60,7 +60,8 @@ export interface RopeView { id: number; cordada: number; links: RopeLink[]; base
 
 export type EntityKind =
   | 'star' | 'checkpoint' | 'goal' | 'ring' | 'box' | 'heavyBox' | 'key'
-  | 'plate' | 'lever' | 'gate' | 'ladder' | 'mover' | 'balance' | 'crumble' | 'rock' | 'saw';
+  | 'plate' | 'lever' | 'gate' | 'ladder' | 'mover' | 'balance' | 'crumble' | 'rock' | 'saw'
+  | 'target' | 'enemy' | 'pickaxe'; // campaign A5: target = diana (on = its gate is open, value = clock left 0..1), enemy = soft beetle (on = stunned, value = 1 walking right / 0 left), pickaxe = the item (on = held, holder = who)
 export interface EntityView {
   id: string; // stable across frames
   kind: EntityKind;
@@ -98,6 +99,7 @@ export interface WorldView {
   look?: { goalX: number | null; hazard: { kind: 'risingLava' | 'tide' | 'avalanche'; pos: number } | null; padTiles: number } | null;
   bubbleSec?: number;
   camp?: { countdown: number | null; refills: number } | null;
+  wind?: { phase: 'calm' | 'warn' | 'gust'; dir: -1 | 1; zone: { x: number; y: number; w: number; h: number } | null } | null; // campaign dynamic 8: the renderer draws the streaks
 }
 
 export const BIOME_NAME = { beach: 'Playa', forest: 'Bosque valdiviano', mine: 'Mina del norte', glacier: 'Glaciar', volcano: 'Volcán' } as const;

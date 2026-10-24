@@ -193,7 +193,7 @@ describe('campaign environment: the validator reads S1\'s parameters (sim/campai
   it('env.world gives the world\'s coyote/buffer (physicsForCampaign), hand zone and rope (params.ropeLen)', () => {
     const c = campaignParams(2, 'beach');
     const g = buildGraph(parseLevel(wallLevel(3)), { n: 2, mode: 'chain', diff: 'hard', world: 'beach' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
-    expect(g.params).toEqual(physicsForCampaign(c));
+    expect(g.params).toEqual({ ...physicsForCampaign(c), iceFriction: c.iceFriction }); // + the ice friction of A5 (physicsOfWorld): coyote, buffer and sticky edges are still the world's
     expect(g.dp.handZoneTiles).toBe(dparamsForCampaign(c).handZoneTiles);
     expect(g.ropeLen).toBeCloseTo(c.ropeLen, 6);
     const legacy = buildGraph(parseLevel(wallLevel(3)), { n: 2, mode: 'chain', diff: 'hard' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });

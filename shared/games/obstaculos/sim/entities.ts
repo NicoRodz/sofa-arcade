@@ -7,8 +7,10 @@ import type { Cell, Weight } from '../types';
 import { bodyRect, cellRect, overlaps, pushRect, type PxRect } from './collide';
 import type { Platform } from './player';
 import {
-  emit, isActive, type BoxE, type CrumbleE, type Entities, type HazardE, type KeyE, type Objective, type PlayerState, type World,
+  emit, isActive, type BoxE, type CrumbleE, type Entities, type HazardE, type KeyE, type Objective, type PickE, type PlayerState, type World,
 } from './state';
+import type { CampaignParams } from './campaign';
+import { createEnemies } from './enemies';
 import { AVALANCHE_START_TILES, BELT_SPEED, BOX_ID0, BOX_SIZE, BALANCE_ID0, FREEZE_SEC, HEAVY_GRIPS, HOLD_BREAK, KEY_REACH, MOVER_ID0, TIDE_PERIOD_SEC } from './tuning';
 import { boxTouches, setTile, tileAt, tileOf, type TileGrid } from './tiles';
 import { CRUMBLE_BACK_SEC, CRUMBLE_FALL_SEC } from '../constants';
@@ -16,11 +18,12 @@ import { CRUMBLE_BACK_SEC, CRUMBLE_FALL_SEC } from '../constants';
 const px = (c: Cell): PxRect => cellRect(c.x, c.y);
 const idx = (x: number, y: number, w: number) => y * w + x;
 
-export function createEntities(p: ParsedLevel, grid: TileGrid, hazardMult: number): Entities {
+export function createEntities(p: ParsedLevel, grid: TileGrid, hazardMult: number, camp: CampaignParams | null = null): Entities {
   const ent: Entities = {
     activators: [], objectives: [], boxes: [], keys: [], crumbles: [], rings: [...p.markers.ring], checkpoints: p.markers.checkpoint.map((cell) => ({ cell, activated: false })),
-    stars: p.markers.star.map((cell) => ({ cell, taken: false })), doorCells: new Set(), hazard: null, lastStarTick: -Infinity, streak: 0,
+    stars: p.markers.star.map((cell) => ({ cell, taken: false })), enemies: camp ? createEnemies(p, camp) : [], pickaxes: [], doorCells: new Set(), hazard: null, lastStarTick: -Infinity, streak: 0,
   };
+  if (camp) ent.pickaxes = p.markers.pickaxe.map((c): PickE => { const x = c.x * TILE + TILE / 2, y = c.y * TILE + TILE / 2; return { x, y, homeX: x, homeY: y, heldBy: -1 }; });
   for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
     const k = grid.cells[idx(x, y, p.w)];
     if (k === T.Door) ent.doorCells.add(idx(x, y, p.w));
@@ -32,11 +35,14 @@ export function createEntities(p: ParsedLevel, grid: TileGrid, hazardMult: numbe
     const param = o.param;
     if (!param) continue;
     const rect = { x: o.bounds.x * TILE, y: o.bounds.y * TILE, w: o.bounds.w * TILE, h: o.bounds.h * TILE };
-    if (param.kind === 'plate' || param.kind === 'lever') {
-      ent.activators.push({ letter: ch, kind: param.kind, rect, opens: param.opens, latch: param.latch, weight: param.kind === 'plate' ? param.weight : 1, required: 1, load: 0, pressed: false, latched: false, holders: [] });
+    if (param.kind === 'plate' || param.kind === 'lever' || param.kind === 'target') {
+      ent.activators.push({
+        letter: ch, kind: param.kind, rect, opens: param.opens, latch: param.kind === 'target' ? false : param.latch, weight: param.kind === 'plate' ? param.weight : 1, required: 1, load: 0, pressed: false,
+        latched: false, holders: [], timer: 0,
+      });
     } else {
       ent.objectives.push({
-        letter: ch, kind: param.kind, param, cells: o.cells, rect, hasOpener: false, open: false, platformId: -1, phase: 0, ox: 0, oy: 0, dx: 0, dy: 0, load: 0,
+        letter: ch, kind: param.kind, param, cells: o.cells, rect, hasOpener: false, open: false, platformId: -1, phase: 0, ox: 0, oy: 0, dx: 0, dy: 0, load: 0, moving: false,
       });
     }
   }
@@ -99,8 +105,9 @@ export function stepMovers(w: World): void {
     if (!q) continue;
     if (o.letter > q.letter) continue; // handled by the lower letter
     const oy0 = o.oy, qy0 = q.oy;
-    if (o.load > 0 && q.load > 0 && o.load !== q.load) {
-      const step = prm.speed * TILE * DT; // the balance is not a hazard: difficulty does not scale it
+    const c = w.camp; // campaign (dynamic 4): ANY difference moves it (also against an empty plate) at a fixed speed; the legacy rule needs both plates loaded
+    if (c ? o.load !== q.load : o.load > 0 && q.load > 0 && o.load !== q.load) {
+      const step = (c ? c.balanceTilesPerSec : prm.speed) * TILE * DT; // the balance is not a hazard: difficulty does not scale it
       o.oy += o.load > q.load ? step : -step;
       const lim = prm.travel * TILE;
       o.oy = Math.max(-lim, Math.min(lim, o.oy));
@@ -108,6 +115,9 @@ export function stepMovers(w: World): void {
     q.oy = -o.oy;
     o.dx = 0; q.dx = 0;
     o.dy = o.oy - oy0; q.dy = q.oy - qy0;
+    const moving = Math.abs(o.dy) > 1e-9;
+    if (c && moving && !o.moving) emit(w, 'obst.balance', { id: o.load > q.load ? o.letter : q.letter, other: o.load > q.load ? q.letter : o.letter }); // the heavier plate and its partner
+    o.moving = moving; q.moving = moving;
   }
 }
 
@@ -166,11 +176,27 @@ const occupied = (w: World, cells: Cell[]): boolean => {
   return false;
 };
 
+// --- targets (campaign dynamic 5): touched in flight (feet off the ground) opens its gate for targetSec; touching it again restarts the clock
+export function stepTargets(w: World): void {
+  const c = w.camp;
+  if (!c) return;
+  for (const a of w.ent.activators) {
+    if (a.kind !== 'target') continue;
+    if (a.timer > 0) a.timer--;
+    const hit = w.players.find((p) => isActive(p) && !p.body.grounded && !p.climbing && p.camp.pick === 0 && p.holding?.kind !== 'ring' && overlaps(a.rect, bodyRect(p.body)));
+    if (!hit) continue;
+    const fresh = a.timer === 0;
+    a.timer = Math.round(c.targetSec / DT);
+    if (fresh) emit(w, 'obst.target', { id: a.letter, player: hit.slot, seconds: c.targetSec });
+  }
+}
+
 export function stepActivation(w: World): void {
   const n = w.players.filter((p) => p.connected).length;
   for (const a of w.ent.activators) {
     const was = a.pressed;
     if (a.kind === 'plate') { a.required = requiredWeight(a.weight, n); a.pressed = n > 0 && a.load >= a.required; }
+    else if (a.kind === 'target') a.pressed = a.timer > 0;
     else a.pressed = a.holders.length > 0;
     if (a.pressed && a.latch) a.latched = true;
     if (a.kind === 'plate' && a.pressed !== was) emit(w, 'obst.plate', { id: a.letter, pressed: a.pressed, weight: a.load });

@@ -6,7 +6,7 @@ import { T, isHazardKind, isSolidKind } from '../legend';
 import type { ParsedLevel, LevelObject } from '../parse';
 import { buildGrid, boxHitsSolid, tileAt, tileOf, type TileGrid } from '../sim/tiles';
 import { physicsFor, type PhysicsParams } from '../sim/player';
-import { campaignParams, dparamsForCampaign, physicsForCampaign, type WorldId } from '../sim/campaign';
+import { campaignParams, dparamsForCampaign, physicsOfWorld, type WorldId } from '../sim/campaign';
 import { THROW_VX, THROW_VY } from '../sim/tuning';
 import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode } from '../types';
@@ -20,13 +20,13 @@ export interface Env { n: number; mode: GameMode; diff: Difficulty; allow?: Read
 export function envParams(env: Env): { physics: PhysicsParams; dp: DifficultyParams; ropeLen: number } {
   if (env.world) {
     const c = campaignParams(env.n, env.world);
-    return { physics: physicsForCampaign(c), dp: dparamsForCampaign(c), ropeLen: env.ropeLen ?? c.ropeLen };
+    return { physics: physicsOfWorld(c), dp: dparamsForCampaign(c), ropeLen: env.ropeLen ?? c.ropeLen };
   }
   return { physics: physicsFor(env.diff), dp: DIFFICULTY_PARAMS[env.diff], ropeLen: env.ropeLen ?? ROPE_LEN };
 }
 export const can = (env: Env, m: Mechanic): boolean => !env.allow || env.allow.has(m);
-export interface OpenState { open: Set<string>; doors: Set<number> }
-export type EdgeKind = 'jump' | 'tower' | 'hand' | 'throw' | 'swing' | 'ladder' | 'ride';
+export interface OpenState { open: Set<string>; doors: Set<number>; pick?: boolean } // pick: the pioneer has the pickaxe (ice walls can be climbed)
+export type EdgeKind = 'jump' | 'tower' | 'hand' | 'throw' | 'swing' | 'ladder' | 'ride' | 'climb';
 export interface Edge {
   from: number; to: number; kind: EdgeKind;
   coop: boolean; // needs a teammate (tower, hand, throw, swing, balance)
@@ -67,7 +67,7 @@ export function buildTerrain(p: ParsedLevel, env: Env, S: OpenState, doorGroups:
     g.cells[i] = k;
     if (onlyEmpty) shifted[i] = 1;
   };
-  const hasActivator = (ch: string) => Object.values(p.def.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever') && q.opens === ch);
+  const hasActivator = (ch: string) => Object.values(p.def.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever' || q.kind === 'target') && q.opens === ch);
   for (const o of Object.values(p.objects)) {
     const q = o.param;
     if (!q) continue;
@@ -80,7 +80,7 @@ export function buildTerrain(p: ParsedLevel, env: Env, S: OpenState, doorGroups:
       if (open) for (const c of o.cells) put(c.x + Math.round(q.dx), c.y + Math.round(q.dy), T.OneWay, true);
     } else if (q.kind === 'balance') {
       for (const c of o.cells) put(c.x, c.y, T.OneWay);
-      if (env.n >= 3) for (const c of o.cells) for (const s of [q.travel, -q.travel]) put(c.x, c.y + Math.round(s), T.OneWay, true);
+      if (env.n >= 3 || env.world) for (const c of o.cells) for (const s of [q.travel, -q.travel]) put(c.x, c.y + Math.round(s), T.OneWay, true); // campaign: also with 2 (sim/entities.ts stepMovers)
     }
   }
   doorGroups.forEach((cells, i) => { if (S.doors.has(i)) for (const c of cells) put(c.x, c.y, T.Empty); });
@@ -250,6 +250,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
   const { grid, shifted } = buildTerrain(p, env, S, doors);
   const { segs, cellSeg } = buildSegments(grid);
   const { physics: params, dp, ropeLen } = envParams(env);
+  const cp = env.world ? campaignParams(env.n, env.world) : null;
   const adj: Edge[][] = segs.map(() => []);
   const ladders = findLadders(grid);
   const best = new Map<string, Edge>();
@@ -264,7 +265,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     if (to === undefined || to < 0) return null;
     if (shifted[(l.ty + 1) * grid.w + l.cx]) return null; // that platform is somewhere else until somebody rides it
     const dx = Math.abs(l.landX - l.takeoffX);
-    if (env.mode === 'chain' && dx > CHAIN_MAX_DX) return null;
+    if (env.mode === 'chain' && dx > (kind === 'throw' && cp ? ropeLen * cp.throwSlack : CHAIN_MAX_DX)) return null; // the campaign throw's rope stretches (sim/actions.ts slackRope)
     const tgt = segs[to]!;
     if (ropeCapsRise(env, feetOfRow(from.row) - feetOfRow(tgt.row))) return null;
     if ((from.tramp || tgt.tramp) && !can(env, 'spring')) return null;
@@ -297,13 +298,17 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
         if (l) { const e = toEdge(s, l, 'tower', plan, true, k); if (e) addEdge(e); }
       }
     }
-    if (opts.pioneer && env.n >= 2 && can(env, 'throw')) {
-      // throw: the thrower lifts a partner and launches him at (420, -950) px/s (plan §2)
+    // Campaign, tied: the throw is not a one-way trip. The thrown one plants on the far side and the thrower is PULLED across (it falls off the near edge, hangs from the rope under
+    // the far ledge, and is hauled up when the partner un-plants and walks away: sim/actions.ts slackRope + the edge assist), so followers get the throw edges too, as long as nothing
+    // lethal lies in the band where it would hang (pullSafe).
+    const pull = !!cp && env.mode === 'chain' && env.n === 2;
+    if ((opts.pioneer || pull) && env.n >= 2 && can(env, 'throw')) {
+      // throw: the thrower lifts a partner and launches him at (420 x throwVxMult, -950) px/s (plan §2)
       for (const dir of [-1, 1] as const) {
         const x = dir === 1 ? (s.x1 + 1) * TILE - PLAYER_W : s.x0 * TILE;
-        const plan: Plan = { x, feetY: feetOfRow(s.row) - PLAYER_H, dir, trigger: 'launch', k: 0, air: 'hold', f: 1, vx0: dir * THROW_VX * f, vy0: THROW_VY * f };
+        const plan: Plan = { x, feetY: feetOfRow(s.row) - PLAYER_H, dir, trigger: 'launch', k: 0, air: 'hold', f: 1, vx0: dir * THROW_VX * (cp?.throwVxMult ?? 1) * f, vy0: THROW_VY * f };
         const l = simCached(grid, params, s, plan, bucket);
-        if (l) { const e = toEdge(s, l, 'throw', plan, true); if (e) addEdge(e); }
+        if (l) { const e = toEdge(s, l, 'throw', plan, true); if (e && (opts.pioneer || pullSafe(grid, s, segs[e.to]!, e, ropeLen))) addEdge(e); }
       }
     }
   }
@@ -323,11 +328,26 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     }
   }
 
+  // Ice walls ('I') with the pickaxe (campaign dynamic 9): from a segment whose end touches the foot of a wall, up the contiguous ice to the standing cell above it. The climber is a rope
+  // anchor, so the partner is hoisted along: followers use the edge too, and the rope's rise cap (ropeCapsRise) does not apply (that is the pickaxe's niche: walls taller than a tower).
+  if (S.pick && can(env, 'pickaxe')) {
+    for (const s of segs) for (const side of [-1, 1] as const) {
+      const x = side > 0 ? s.x1 + 1 : s.x0 - 1;
+      if (tileAt(grid, x, s.row) !== T.Ice) continue;
+      let t = s.row;
+      while (tileAt(grid, x, t - 1) === T.Ice) t--;
+      const id = cellSeg[(t - 1) * grid.w + x];
+      if (id === undefined || id < 0) continue;
+      const tgt = segs[id]!;
+      addEdge({ from: s.id, to: id, kind: 'climb', coop: false, timing: false, steps: (s.row - t + 1) * 60 + 30, takeoffX: side > 0 ? (s.x1 + 1) * TILE - PLAYER_W : s.x0 * TILE, landX: x * TILE, rise: feetOfRow(s.row) - feetOfRow(tgt.row), landCell: { x, y: t - 1 } });
+    }
+  }
+
   // Movers and balances: riding connects the segment above each of the platform's positions.
   for (const o of Object.values(p.objects)) {
     const q = o.param;
     if (!q || (q.kind !== 'mover' && q.kind !== 'balance')) continue;
-    if (q.kind === 'balance' && env.n < 3) continue;
+    if (q.kind === 'balance' && env.n < 3 && !env.world) continue;
     if (!can(env, q.kind)) continue;
     const shifts: [number, number][] = q.kind === 'mover' ? [[0, 0], [Math.round(q.dx), Math.round(q.dy)]] : [[0, 0], [0, Math.round(q.travel)], [0, -Math.round(q.travel)]];
     if (q.kind === 'mover' && !adjOpen(p, o.char, S)) continue;
@@ -343,7 +363,8 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     for (const a of ids) for (const b of ids) {
       if (a === b) continue;
       const sa = segs[a]!, sb = segs[b]!;
-      addEdge({ from: a, to: b, kind: 'ride', obj: o.char, coop: q.kind === 'balance', timing: true, steps: 240, takeoffX: sa.x0 * TILE, landX: sb.x0 * TILE, rise: feetOfRow(sa.row) - feetOfRow(sb.row), landCell: { x: sb.x0, y: sb.row } });
+      if (q.kind === 'balance' && env.n < 3 && sb.row <= sa.row) continue; // campaign with 2: alone on a plate it only goes DOWN (the empty one rises with nobody); up needs a heavier partner side
+      addEdge({ from: a, to: b, kind: 'ride', obj: o.char, coop: q.kind === 'balance' && env.n >= 3, timing: true, steps: 240, takeoffX: sa.x0 * TILE, landX: sb.x0 * TILE, rise: feetOfRow(sa.row) - feetOfRow(sb.row), landCell: { x: sb.x0, y: sb.row } });
     }
   }
 
@@ -375,7 +396,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
   return { grid, shifted, segs, cellSeg, adj, params, env, ladders, dp, ropeLen };
 }
 
-const adjOpen = (p: ParsedLevel, ch: string, S: OpenState): boolean => S.open.has(ch) || !Object.values(p.def.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever') && q.opens === ch);
+const adjOpen = (p: ParsedLevel, ch: string, S: OpenState): boolean => S.open.has(ch) || !Object.values(p.def.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever' || q.kind === 'target') && q.opens === ch);
 
 // Straight line free of solid tiles (the swing's arc stays clear).
 function seesFrom(g: TileGrid, a: { x: number; y: number }, b: { x: number; y: number }): boolean {
@@ -384,6 +405,14 @@ function seesFrom(g: TileGrid, a: { x: number; y: number }, b: { x: number; y: n
     const x = a.x + ((b.x - a.x) * i) / steps, y = a.y + ((b.y - a.y) * i) / steps;
     if (isSolidKind(tileAt(g, tileOf(x), tileOf(y)))) return false;
   }
+  return true;
+}
+
+// A follower pulled across a gap (see buildGraph): it falls off the near edge and hangs under the far ledge, at most ropeLen + half a body below it. No spikes or liquid in that band.
+function pullSafe(g: TileGrid, from: Seg, to: Seg, e: Edge, ropeLen: number): boolean {
+  const x0 = tileOf(Math.min(e.takeoffX, e.landX) + PLAYER_W / 2), x1 = tileOf(Math.max(e.takeoffX, e.landX) + PLAYER_W / 2);
+  const top = Math.min(feetOfRow(from.row), feetOfRow(to.row)), bottom = feetOfRow(to.row) + ropeLen + PLAYER_H / 2;
+  for (let y = Math.floor(top / TILE); y * TILE < bottom; y++) for (let x = x0; x <= x1; x++) if (isHazardKind(tileAt(g, x, y))) return false;
   return true;
 }
 

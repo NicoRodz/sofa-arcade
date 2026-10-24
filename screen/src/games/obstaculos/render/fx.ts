@@ -36,6 +36,13 @@ export class ObstFx {
     this.scene.tweens.add({ targets: t, y: y - 56, duration: 900, ease: 'cubic.out' });
     this.scene.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
   }
+  // A wind streak: a thin white line that drifts `dir` and fades (campaign dynamic 8).
+  streak(x: number, y: number, dir: number, len = 90) {
+    const g = this.scene.add.graphics();
+    g.lineStyle(3, 0xffffff, 0.85); g.lineBetween(0, 0, dir * len, 0); g.setPosition(x, y);
+    this.layer.add(g);
+    this.scene.tweens.add({ targets: g, x: x + dir * 260, alpha: 0, duration: 520, ease: 'sine.out', onComplete: () => g.destroy() });
+  }
   shake(ms: number, amp: number) { this.scene.cameras.main.shake(ms, amp); }
   destroy() { for (const e of [this.dust, this.bits, this.confetti, this.stars, this.sparks]) e.destroy(); }
 }

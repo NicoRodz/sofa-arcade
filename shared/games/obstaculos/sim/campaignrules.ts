@@ -5,11 +5,11 @@ import { isSolidKind } from '../legend';
 import { hangingOnRope } from './rope';
 import type { PlayerStep } from './input';
 import { superJumpV0 } from './campaign';
-import { emit, isActive, playerOf, type PlayerState, type World } from './state';
-import { boxHitsHazard, boxHitsSolid, boxTouches, tileAt, tileOf } from './tiles';
+import { emit, isActive, playerOf, type PlayerState, type WindPhase, type World } from './state';
+import { boxHitsHazard, boxHitsSolid, boxTouches, onIce, tileAt, tileOf } from './tiles';
 import { THROW_VX, THROWN_MAX_STEPS, THROW_VY } from './tuning';
 import { newBody, stepPlayer, type Body } from './player';
-import { pushBody } from './collide';
+import { bodyRect, overlaps, pushBody } from './collide';
 import type { RopeNode } from './rope';
 
 const NONE = 255;
@@ -112,7 +112,7 @@ export function prepareAnchors(w: World, nodes: (RopeNode | undefined)[]): Slide
   const out: Slide[] = [];
   for (const [slot, list] of hangers) {
     const p = playerOf(w, slot)!, node = nodes[slot]!;
-    const over = p.planted && list.length > w.camp!.anchorHolds;
+    const over = p.planted && (list.length > w.camp!.anchorHolds || onIce(w.grid, p.body)); // an anchor on ice slides too (dynamic 7)
     if (p.planted && !over) continue; // a true anchor: already w = 0
     node.w = over ? INV_MASS.planted : 0;
     const g = playerOf(w, list[0]!)!;
@@ -135,11 +135,12 @@ export function throwArc(w: World, p: PlayerState): { x: number; y: number }[] |
   const t = playerOf(w, p.holding.id);
   if (!t) return null;
   const b = newBody(t.slot, t.body.x, t.body.y);
-  b.facing = p.body.facing; b.vx = THROW_VX * p.body.facing; b.vy = THROW_VY; b.air = NONE;
+  const tvx = THROW_VX * w.camp!.throwVxMult;
+  b.facing = p.body.facing; b.vx = tvx * p.body.facing; b.vy = THROW_VY; b.air = NONE;
   const ctx = { grid: w.grid, platforms: [], params: w.params };
   const pts: { x: number; y: number }[] = [{ x: cx(b), y: cy(b) }];
   for (let i = 1; i <= THROWN_MAX_STEPS; i++) {
-    stepPlayer(b, { move: (b.facing * THROW_VX) / RUN_SPEED, down: false, jump: false }, ctx);
+    stepPlayer(b, { move: (b.facing * tvx) / RUN_SPEED, down: false, jump: false }, ctx);
     if (i % 3 === 0) pts.push({ x: cx(b), y: cy(b) });
     if (b.grounded || b.y > (w.level.h + 1) * TILE || boxHitsHazard(w.grid, b.x, b.y, PLAYER_W, PLAYER_H)) { pts.push({ x: cx(b), y: cy(b) }); break; }
   }
@@ -155,4 +156,37 @@ export function cameraHints(w: World): CameraHints | null {
   const g = w.level.markers.goal[0];
   const h = w.ent.hazard;
   return { goalX: c.camLookAtGoal && g ? g.x * TILE + TILE / 2 : null, hazard: h ? { kind: h.kind, pos: h.pos } : null, padTiles: c.camPadTiles };
+}
+
+// --- ice (dynamic 7): the friction itself is stepPlayer's (PhysicsParams.iceFriction); here the "stepped onto ice" cue. A planted anchor on ice: see prepareAnchors.
+export function stepIce(w: World): void {
+  for (const p of w.players) {
+    const on = isActive(p) && p.body.grounded && p.body.supportId === -1 && onIce(w.grid, p.body);
+    if (on && !p.camp.onIce) emit(w, 'obst.ice', { player: p.slot });
+    p.camp.onIce = on;
+  }
+}
+
+// --- wind (dynamic 8): LevelDef.wind blows in gusts. Phase is a pure function of the tick: 'calm', then 'warn' for windWarnSec, then 'gust' for gustSec, every periodSec.
+// A gust shifts every body in the air (feet off the ground: jumpers, the thrown, hangers of a rope) by windPxPerSec x dir, with collision. The rope has no mass of its
+// own in this sim (its nodes are the bodies), so "pushing the rope" is pushing the ones that hang from it. A ring-anchored body, a climber and a carried one are exempt.
+export function windPhaseAt(w: World): WindPhase {
+  const d = w.level.def.wind;
+  if (!d) return 'calm';
+  const per = steps(d.periodSec), gustAt = per - steps(d.gustSec), t = w.tick % per; // whole steps: no float drift at the phase edges
+  return t >= gustAt ? 'gust' : t >= gustAt - steps(w.camp!.windWarnSec) ? 'warn' : 'calm';
+}
+export function stepWind(w: World): void {
+  const d = w.level.def.wind;
+  if (!d || !w.wind) return;
+  const phase = windPhaseAt(w);
+  if (phase !== w.wind.phase) { w.wind.phase = phase; emit(w, 'obst.wind', { phase, dir: d.dir }); }
+  if (phase !== 'gust') return;
+  const dx = d.dir * w.camp!.windPxPerSec * DT;
+  const zone = d.zone ? { x: d.zone.x * TILE, y: d.zone.y * TILE, w: d.zone.w * TILE, h: d.zone.h * TILE } : null;
+  for (const p of w.players) {
+    if (!isActive(p) || p.body.grounded || p.climbing || p.camp.pick !== 0 || p.carriedBy >= 0 || p.lift || p.holding?.kind === 'ring') continue;
+    if (zone && !overlaps(zone, bodyRect(p.body))) continue;
+    pushBody(p.body, dx, 0, w.grid);
+  }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BIOMES, MAX_FALL, type Biome, type ObstEvents } from '@party/shared/obstaculos';
-import { HANDLERS, cueDuration, cuesFor, voicesFor, type Cue } from './recipes';
+import { BIOMES, MAX_FALL, type Biome, type CampaignEvents, type ObstEvents } from '@party/shared/obstaculos';
+import { CAMPAIGN_HANDLERS, HANDLERS, SOUND_EVENTS, cueDuration, cuesFor, voicesFor, type CampaignSound, type Cue } from './recipes';
 import { degreeFreq, slotFreq } from './scales';
 
 const SAMPLE: { [K in keyof ObstEvents]: ObstEvents[K] } = {
@@ -131,5 +131,48 @@ describe('event -> cue selection', () => {
     expect(first('obst.jump', { player: 0, kind: 'ground' }).priority).toBe(2);
     expect(first('obst.release', { player: 0 }).priority).toBe(0);
     expect(first('obst.bubble', { player: 0, reason: 'rope' }).priority).toBe(1);
+  });
+});
+
+// Campaign A5 (plan §4 #4-#9): the six dynamics have ONE effect each, made of the same voices.
+describe('campaign A5: one sound per dynamic', () => {
+  const S: { [K in CampaignSound]: CampaignEvents[K] } = {
+    'obst.balance': { id: 'D', other: 'E' },
+    'obst.target': { id: 'a', player: 0, seconds: 4 },
+    'obst.enemy': { enemy: 0, action: 'stun', player: 0 },
+    'obst.ice': { player: 0 },
+    'obst.wind': { phase: 'warn', dir: 1 },
+    'obst.pickaxe': { player: 0, action: 'climb' },
+  };
+  const cf = <K extends CampaignSound>(n: K, p: CampaignEvents[K], b: Biome = 'beach') => cuesFor(n, p, b);
+  it('each one rings a cue with sane voices (positive, at most 0.5 gain, under 3 s) in every biome', () => {
+    expect(Object.keys(S).sort()).toEqual(Object.keys(CAMPAIGN_HANDLERS).sort());
+    for (const b of BIOMES) for (const n of Object.keys(S) as CampaignSound[]) {
+      const cues = cuesFor(n as 'obst.ice', S[n] as never, b);
+      expect(cues.length, n).toBe(1);
+      for (const c of cues) {
+        expect(cueDuration(c)).toBeGreaterThan(0.02); expect(cueDuration(c)).toBeLessThan(3);
+        for (const x of voicesFor(c)) { expect(x.gain).toBeGreaterThan(0); expect(x.gain).toBeLessThanOrEqual(0.5); expect(x.dur).toBeGreaterThan(0); }
+      }
+    }
+  });
+  it('the director listens to the 18 quick-match events and these 6', () => {
+    expect(SOUND_EVENTS).toHaveLength(Object.keys(HANDLERS).length + 6);
+    for (const n of Object.keys(CAMPAIGN_HANDLERS)) expect(SOUND_EVENTS).toContain(n);
+  });
+  it('wind: silent when it calms, the gust louder than the warning; ice is the quietest priority', () => {
+    expect(cf('obst.wind', { phase: 'calm', dir: 1 })).toEqual([]);
+    const g = (phase: 'warn' | 'gust') => voicesFor(cf('obst.wind', { phase, dir: 1 })[0]!)[0]!.gain;
+    expect(g('gust')).toBeGreaterThan(g('warn'));
+    expect(cf('obst.ice', { player: 0 })[0]!.priority).toBe(0);
+  });
+  it('enemy: the stun is a falling squish, the shove a short thud; pickaxe: take < pass < climb < top in pitch; target rings on the biome scale', () => {
+    const sq = voicesFor(cf('obst.enemy', { enemy: 0, action: 'stun', player: 0 })[0]!), th = voicesFor(cf('obst.enemy', { enemy: 0, action: 'push', player: 0 })[0]!);
+    expect(sq[0]!.f1!).toBeLessThan(sq[0]!.f0!);
+    expect(Math.max(...th.map((v) => v.dur))).toBeLessThan(Math.max(...sq.map((v) => v.dur)));
+    const f = (a: 'take' | 'pass' | 'climb' | 'top') => cf('obst.pickaxe', { player: 0, action: a })[0]!.p.freq!;
+    expect([f('take'), f('pass'), f('climb'), f('top')]).toEqual([...[f('take'), f('pass'), f('climb'), f('top')]].sort((a, b) => a - b));
+    expect(new Set([f('take'), f('pass'), f('climb'), f('top')]).size).toBe(4);
+    expect(cf('obst.target', { id: 'a', player: 0, seconds: 4 }, 'forest')[0]!.p.freq).toBeCloseTo(degreeFreq('forest', 8, 2));
   });
 });

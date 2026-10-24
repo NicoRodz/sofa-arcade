@@ -41,3 +41,15 @@ export const CRUMB_KEEP = 12;
 export const CRUSH_STEPS = 2; // inside a solid for this many steps in a row = crushed
 export const VOID_MARGIN = TILE; // below the grid by this much = fell
 export const SPAWN_SPREAD = 18; // px between players at the spawn (assumed)
+
+// --- campaign A5 (the numbers that are not in CampaignParams: geometry and feel, never validated per N)
+export const ENEMY_W = 40; // px, soft enemy ("escarabajo") hitbox
+export const ENEMY_H = 34;
+export const ENEMY_STOMP_BOUNCE = 0.55; // x v0: the hop of whoever lands on one
+export const ENEMY_PUSH_COOL = 30; // steps between two obst.enemy pushes of the same enemy (the shove itself is every step)
+export const ENEMY_GRAVITY = 2000; // px/s^2 when the floor under it is gone
+export const PICK_TAKE_REACH = 6; // px around a free pickaxe that a player must touch to take it (like the key)
+export const PICK_ASSIST_STEPS = 27; // 0.45 s of push into the wall after the top of an ice wall (same as the edge assist)
+export const PICK_HOP = 0.8; // x v0 of the hop that mantles over the top of an ice wall
+export const PICK_STRIP = 2; // px: width of the strip beside the body that looks for ice
+export const WIND_BLOCKED_STEPS = 0; // (reserved) steps a gust is ignored after landing; 0 = none

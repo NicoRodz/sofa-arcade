@@ -11,7 +11,8 @@ import { worldForDifficulty, type WorldId } from '../sim/campaign';
 import { BAND_SLACK, HINT_FREE_FROM, HINT_MAX_PER_LEVEL, HINT_MAX_WORDS, WORLD_NAME, bandOf, checkpointEverySec, inBand } from './world';
 
 // Mechanics that the validator's graph reaches the same places with: a level cannot prove one necessary against a bot that already has the other.
-// (The throw's reach is the tower's: 5.4 tiles across and 4 up. If S1 gives the throw a niche, drop the pair and 1-5 gets a real debut test.)
+// (A5: S1 gave the throw its niche in a campaign: tied, it crosses a 5-tile pit that no jump or tower does (sim/campaign.ts header, validator/dynamics.test.ts). The frozen 1-5 is a
+// 4-tile wall, which the tower also climbs, so the pair stays until S2 builds a throw level around the pit; then drop it and 1-5 / its successor gets a real debut test.)
 export const EQUIVALENT: readonly (readonly ModeledMechanic[])[] = [['tower', 'throw']];
 const twinsOf = (m: Mechanic): Mechanic[] => EQUIVALENT.filter((g) => (g as readonly string[]).includes(m)).flatMap((g) => g.filter((x) => x !== m));
 

@@ -7,16 +7,37 @@
 //   superjump   dynamic 3  debut 2-2   two ground jumps <= 150 ms apart: jump height x1.3 for both; event obst.superJump
 //   Layer-for-2 rules (no id: they are always on in a campaign world): rope +20 %, edge assist (obst.edgeAssist), throw arc (PlayerSnap.arc),
 //   shared hearts (death -> bubble beside the partner; both down -> checkpoint; 0 hearts -> refill, obst.heartsOut), camera hints, bubble v2.
-//   Later phases (A5/A6) add ids here: balance, target, softEnemies, ice, wind, pickaxe, lantern, bungee, sinking, geyser.
+//   balance     dynamic 4  debut 2-3   MODELED  campaign rule: ANY load difference moves the plates (also against an empty one) at balanceTilesPerSec (2); event obst.balance
+//   target      dynamic 5  debut 2-4   MODELED  param {kind:'target', opens:'A'} on an activator letter a-f; touched with the feet off the ground it opens its gate for targetSec (4); obst.target
+//   softEnemies dynamic 6  debut 2-6   SIM_ONLY LevelDef.enemies [{x,y,range}]: patrol, shove (never kill), landing on one stuns it 3 s; obst.enemy (action stun | push)
+//   ice         dynamic 7  debut 3-1   SIM_ONLY tile 'I' (solid): ground acceleration and braking x0.15 on it; a planted anchor on ice slides; obst.ice when stepping onto it
+//   wind        dynamic 8  debut 3-2   SIM_ONLY LevelDef.wind {dir, periodSec, gustSec, zone?}: 1 s warning, then a gust drifts whoever is in the air by windPxPerSec; obst.wind
+//   pickaxe     dynamic 9  debut 3-4   MODELED  marker 'p' + 'I' walls: UP beside ice with the item climbs 1 tile/s; B passes it (range = the rope when tied); obst.pickaxe
+//   Throw niche (no new id, 'throw' keeps its name): in a campaign the thrown player's rope stretches x1.5 for 1.2 s and the launch is x1.3 faster, so a TIED throw crosses a
+//   5-tile pit that no jump (4) or tower (3) does. The validator models it (kind 'throw' edges also for followers, see below). The learning test still pairs tower/throw (see
+//   campaign/learning.ts EQUIVALENT): drop the pair once a level built with the 5-tile pit debuts the throw.
+//   Later phases (A6) add ids here: lantern, bungee, sinkers, geyser.
 //
-// ===== INTERFACE FOR S2 (levels and validator) =====
-//   createWorld({ ..., campaign: { world: WorldId, n?: number } })   n defaults to the number of slots
-//   campaignParams(n, worldId)                          every number of the layer as a function of N (N=2 frozen by test, see campaign.test.ts)
-//   physicsForCampaign(params, p90LatencyMs)            PhysicsParams (coyote, buffer, stickyEdges) of that world: the validator must use THESE, not physicsFor(diff)
-//   params.ropeLen                                      rope length in px (the legacy ROPE_LEN x 1.2 = 201.6); RopeLink.base carries it
-//   params.superJumpMult                                jump HEIGHT x1.3 (v0 x sqrt(1.3)); superJumpV0(params) gives the launch speed in px/s
-//   params.band                                         world band of D in the plan's 0..1 scale (the metric of this repo is 0..100: multiply by 100)
-//   WORLD_ORDER, worldForDifficulty(world, diff)        lobby Easy = previous world's numbers, Hard = next world's
+// ===== A5 INTERFACE FOR S2 (levels and validator for the dynamics above; nothing below builds a level) =====
+//   LevelDef authoring (all additive; a level without them is the old one):
+//     'I' ice tile, 'p' pickaxe marker (one item per marker), a-f letter with {kind:'target', opens}, enemies: [{x, y, range}] (cell of the feet, patrol +-range tiles),
+//     wind: {dir: 1|-1, periodSec, gustSec, zone?: Rect in tiles} (a gust is the LAST gustSec of each period, announced windWarnSec before). Balance plates keep their old params
+//     ({kind:'balance', partner, travel, speed}); in a campaign `speed` is ignored (balanceTilesPerSec), `travel` still limits the plates.
+//   WHAT THE VALIDATOR MODELS (validator/graph.ts, validate.ts; tests in validator/dynamics.test.ts):
+//     balance   n=2 in a campaign env: 'ride' edges go DOWN only and need no partner (alone on a plate it descends; the empty one rises with nobody). Up needs a heavier partner side
+//               (a heavy box counts 2, n>=3 players): with 2 players it is NOT modelled, so a level that needs somebody to go UP by balance is unsolvable for the validator.
+//     target    an opener like a latch lever: reachable when a jump from a reached segment passes through its cells (<= 3 tiles above); the gate then stays open for good in the model.
+//               The 4 s clock is a LINT (validate.ts lint): the gate must be <= 20 tiles (manhattan) from the target. The real route time is the sim bot's to show.
+//     pickaxe   S.pick: once a reached segment touches a 'p' marker, 'climb' edges exist from the foot of every ice wall to the standing cell above it, for the pioneer AND the
+//               followers (the climber passes the item down the rope and the partner climbs too, see sim/pickaxe.ts). Not capped by the rope: walls taller than a tower are its niche.
+//     throw     campaign + chain + n=2: throw edges reach dx <= ropeLen x throwSlack with the faster launch, and are also follower edges (pulled across: falls, hangs, hauled up when
+//               the partner walks away) provided no spikes/liquid lie within ropeLen + half a body BELOW the far ledge (pullSafe): dig such pits deep, 6+ tiles under the ledge.
+//     ice       only as the friction parameter in the real stepPlayer of every trajectory (physicsOfWorld): slow starts are in; SLIDING after a landing is NOT.
+//   WHAT IT DOES NOT MODEL (S2: verify with the real-sim bots, never with the validator, and keep a margin):
+//     wind      the drift is not in any trajectory. A 1 s airtime moves a body up to 140 px (2.9 tiles; 112 px at N>=3): leave that much landing and no hazard downwind.
+//     softEnemies  invisible to the graph: they only shove at 360 px/s, so never put one where a jump must land or a plate must be held.
+//     balance up, target clock, ice sliding: as above.
+//   TO MODEL LATER (if the playtest asks): wind as a pessimistic push in simPlan; a time budget (steps) per target-gate pair; the balance counts for a heavy box.
 // A level in the campaign is a plain LevelDef (rows, params, hazard...). Nothing in LevelDef changed.
 import { DIFFICULTY_PARAMS, JUMP_V0, LATENCY_FRAME_MS, ROPE_LEN } from '../constants';
 import type { Difficulty } from '../../../difficulty';
@@ -75,6 +96,20 @@ export interface CampaignParams {
   // --- camera (plan §5.1): read by screen/render/camera.ts
   camPadTiles: number;
   camLookAtGoal: boolean;
+  // --- A5 (plan §4 #4-#9). Everything below is new in A5: the values above did not change.
+  balanceTilesPerSec: number; // #4 balance: the plate with the larger load goes down at this speed (any difference moves it, also against an empty plate)
+  targetSec: number; // #5 target: seconds its gate stays open after a touch in flight (+1 s every 2 players beyond 2)
+  enemyStunSec: number; // #6 soft enemies: stunned this long when a player lands on them
+  enemyExtra: number; // #6: extra enemies the level gets (+1 every 2 players beyond 2), cloned from the level's own list
+  enemyTilesPerSec: number; // #6: patrol speed
+  enemyPushPxPerSec: number; // #6: a touched player is shoved sideways this fast (a bit above the run speed: they cannot be walked through)
+  iceFriction: number; // #7 ice: x the ground acceleration and braking on an ice tile (0.15); a planted anchor on ice slides like one over its limit
+  windPxPerSec: number; // #8 wind: drift of whoever is in the air during a gust (x0.8 for N >= 3)
+  windWarnSec: number; // #8: announced this long before the gust
+  pickTilesPerSec: number; // #9 pickaxe: climbing speed on ice walls
+  throwVxMult: number; // throw niche: horizontal launch speed x this (the throw reaches farther than a jump or a tower)
+  throwSlack: number; // throw niche: the rope of a thrown player is this much longer (x base) at the throw...
+  throwSlackSec: number; // ...and eases back to its length over this long
 }
 
 // N=2 is frozen by campaign.test.ts (snapshot). N>2 only adds what the plan's §5.2 table says; everything else stays as at N=2.
@@ -95,6 +130,8 @@ export function campaignParams(n: number, world: WorldId = 'forest'): CampaignPa
     bubbleMashMax: 4, bubbleMashGain: 0.5,
     signalShowSec: 2, signalHoldSec: 0.4,
     camPadTiles: 3, camLookAtGoal: true,
+    balanceTilesPerSec: 2, targetSec: 4 + Math.floor(extra / 2), enemyStunSec: 3, enemyExtra: Math.floor(extra / 2), enemyTilesPerSec: 1.5, enemyPushPxPerSec: 360,
+    iceFriction: 0.15, windPxPerSec: N <= 2 ? 140 : 112, windWarnSec: 1, pickTilesPerSec: 1, throwVxMult: 1.3, throwSlack: 1.5, throwSlackSec: 1.2,
   };
 }
 
@@ -106,6 +143,9 @@ export function physicsForCampaign(c: CampaignParams, p90LatencyMs = 0): Physics
   const coyote = Math.round(n.coyoteBase * c.forgiveMult) + Math.ceil(Math.max(0, p90LatencyMs) / LATENCY_FRAME_MS);
   return { coyote: Math.min(Math.round(n.coyoteCap * c.forgiveMult), coyote), buffer: Math.round(n.bufferFrames * c.forgiveMult), stickyEdges: c.world === 'beach' };
 }
+
+// What a campaign world's bodies are stepped with: the world's coyote/buffer (physicsForCampaign, unchanged) plus the ice friction. The sim and the validator use THIS.
+export const physicsOfWorld = (c: CampaignParams, p90LatencyMs = 0): PhysicsParams => ({ ...physicsForCampaign(c, p90LatencyMs), iceFriction: c.iceFriction });
 
 // The legacy DifficultyParams a campaign world runs with (lives, bubble delay, hazard speed come from the world; the rest is Normal's).
 export function dparamsForCampaign(c: CampaignParams): DifficultyParams {
