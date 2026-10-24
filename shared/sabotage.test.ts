@@ -121,14 +121,14 @@ describe('desechos and bags: what fills the bin', () => {
     expect(g.sab!.teams[1]!.desechos).toBeCloseTo(1, 5);
   });
   it('the stock is full (Suave: 1 bag): the counter stops adding', () => {
-    const { g } = mk({ mode: 'soft' });
+    const { g, log } = mk({ mode: 'soft' });
     const st = g.sab!.teams[0]!;
     bin(g, 1, 'dish'); bin(g, 1, 'raw0');
     expect(st.bags).toBe(1);
     bin(g, 1, 'dish'); bin(g, 1, 'dish'); bin(g, 1, 'dish');
     expect(st.bags).toBe(1);
-    expect(st.desechos).toBeLessThan(3);
-    expect(g.sab!.teams[0]!.desechos).toBeLessThanOrEqual(2);
+    expect(st.desechos).toBe(0); // it stayed where it was: nothing was added while the stock is full
+    expect(log['trash:binned']!.slice(2).map((e) => e.p.gained)).toEqual([0, 0, 0]);
   });
   it('A with empty hands at the bin takes the bag (once); with no bag waiting nothing happens', () => {
     const { g, log } = mk();
