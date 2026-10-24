@@ -2,6 +2,8 @@
 // a geyser vent is a spring. The sinking, the geyser's period, the lantern's carrier and the bungee's extra reach are NOT modelled, and no test here pretends they are.
 import { describe, expect, it } from 'vitest';
 import type { Mechanic } from '../mechanics';
+import { Canvas } from '../modules/dsl';
+import { flatCap, toLevel } from '../generate/assemble';
 import type { EntityParam, LevelDef } from '../types';
 import { lint, validateState } from './validate';
 
@@ -31,19 +33,24 @@ describe('dynamic 10: crystals count as lit when the level has a lantern', () =>
 });
 
 describe('dynamic 11: the elastic ring is modelled as a plain ring', () => {
-  // two ledges 7 tiles apart (a pit between them): only a swing from a ring above crosses it
-  const swing = (ring: string) => {
-    let rows = flat(40);
-    rows = rect(rows, 14, 15, 21, 17, '.'); // the pit
-    rows = rect(rows, 14, 18 - 1, 21, 17, '.');
-    rows = set(rows, 17, 9, ring);
-    return def(rows, { tether: 'chainOnly' });
+  // an abyss (the same as validate.test.ts uses for the ring): crossed only by a bot that knows how to swing from a ring above it
+  const abyss = (ring: string) => {
+    const c = new Canvas(18).pit(4, 10, '~').set(4, 12, ring);
+    const lvl = toLevel([flatCap(6, { ch: 'S', x: 2 }), { w: c.w, rows: c.rows() }, flatCap(6, { ch: 'G', x: 3 })], { id: 't', name: 't', biome: 'mine', players: { min: 2, max: 8 }, tether: 'chainOnly', stars: 1, parSec: 60 });
+    return lvl;
   };
-  it('a "u" ring gives the same verdict, route and swing use as an "o" ring', () => {
-    const o = validateState(swing('o'), env()), u = validateState(swing('u'), env());
-    expect(u.ok).toBe(o.ok);
-    expect(u.path.map((e) => e.kind)).toEqual(o.path.map((e) => e.kind));
-    expect(u.uses).toEqual(o.uses);
+  const known = (...m: Mechanic[]) => new Set<Mechanic>(m);
+  it('a "u" ring bridges the abyss for a bot that knows how to swing, exactly like an "o" ring (same swing use), and for nobody else', () => {
+    for (const ring of ['o', 'u']) {
+      expect(validateState(abyss(ring), { n: 2, mode: 'chain', diff: 'hard', world: 'mine', allow: known('jump', 'tower', 'hand') }).ok, `${ring} without swing`).toBe(false);
+      const r = validateState(abyss(ring), { n: 2, mode: 'chain', diff: 'hard', world: 'mine', allow: known('jump', 'swing') });
+      expect(r.ok, `${ring} with swing: ${r.errors.join()}`).toBe(true);
+      expect(r.uses.swing, ring).toBeGreaterThanOrEqual(1);
+    }
+  });
+  it('lint: a freeOnly level may not have an elastic ring either (rings need the rope)', () => {
+    const def = { ...abyss('u'), tether: 'freeOnly' as const };
+    expect(lint(parse(def)).join()).toMatch(/rings only work tied/);
   });
 });
 
