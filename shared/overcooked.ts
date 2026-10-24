@@ -292,12 +292,13 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     p.chopAt = p.cutting ? at : -1;
     if (p.cutting) { p.vx = 0; p.vy = 0; p.kx = 0; p.ky = 0; p.dashMs = 0; }
     // R2 + R6: a B press with free hands and nothing in front is a dash; if the cooldown ends within bufferMs it still goes
-    if (bEdge && !p.item && !target) p.buffB = tune.bufferMs;
-    if (p.buffB > 0) {
-      if (p.item || target || p.cutting) p.buffB = 0;
-      else if (p.dashMs <= 0 && p.dashCd <= 0) { startDash(g, p, c); p.buffB = 0; }
-      else p.buffB -= dtMs;
-    }
+    const free = !p.item && !target && !p.cutting;
+    const ready = p.dashMs <= 0 && p.dashCd <= 0;
+    if (!free) p.buffB = 0;
+    else if (bEdge && ready) startDash(g, p, c);
+    else if (bEdge) p.buffB = tune.bufferMs;
+    else if (p.buffB > 0 && ready) { startDash(g, p, c); p.buffB = 0; }
+    else p.buffB = Math.max(0, p.buffB - dtMs);
     if (p.cutting && target?.kind === 'sink') {
       target.progress += dtMs / WASH_MS;
       if (target.progress >= 1) {
