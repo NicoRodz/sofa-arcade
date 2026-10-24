@@ -131,7 +131,7 @@ function addDesechos(g: Game, team: number, n: number) {
   if (st.bags >= sab.rules.stock) st.desechos = Math.min(st.desechos, DESECHOS_PER_BAG - 1);
   return st.desechos + st.bags * DESECHOS_PER_BAG - before;
 }
-const worth = (item: Item) => (item === 'trashBag' ? DESECHOS_OF.bag : item === 'dish' || item === 'dishQ' ? DESECHOS_OF.pizza : item === 'trash' ? DESECHOS_OF.trash : DESECHOS_OF.item);
+const worth = (item: Item) => (item === 'trashBag' ? DESECHOS_OF.bag : item === 'dish' || item === 'dishQ' || item === 'burnt' ? DESECHOS_OF.pizza : item === 'trash' ? DESECHOS_OF.trash : DESECHOS_OF.item);
 
 /** A chef bins an item at X: it feeds the team's desechos (an item 1, a baked pizza 2, rubbish 1, a caught bag 3). */
 export function sabotageBinned(g: Game, p: Player, item: Item) {

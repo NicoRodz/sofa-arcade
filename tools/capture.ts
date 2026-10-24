@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -467,6 +467,45 @@ async function main() {
       if (dropped) { await pg(`place(${helper}, ${dropped.tx + 0.5 - dir * 0.9}, ${dropped.ty + 0.5}, ${dir}, 0)`); await sleep(150); bh.a++; await sleep(350); }
       await cdp.shot('sab-clean');
       console.log('final state:', JSON.stringify((await pg('state()')).floor));
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'burn') {
+      // The oven that burns: map 1 (open kitchen, ovens with counters beside them), Normal, 2 chefs. The sim is driven by hand (window.__pg.kit) to frame each stage:
+      // a ready pizza with its grace ring, the warning, the burnt pizza smoking, the fire, the fire jumping, a chef putting it out with the extinguisher, and the results.
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('1')!.rows;
+      await open('BURN'); await join('BURN', 2, rows);
+      await click('[data-diff="normal"]'); await click('[data-map="1"]'); await sleep(400);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      const kit = (expr: string) => cdp.eval<any>(`window.__pg.kit.${expr}`);
+      const cs = await kit('counters()');
+      const ovens = cs.filter((c: any) => c.kind === 'pot');
+      const [o1, o2] = [ovens[0].i, ovens[1].i];
+      const ids = (await snap()).players.map((p) => p.id);
+      await kit(`bake(${o1})`); await kit(`bake(${o2})`);
+      await sleep(900); await cdp.shot('burn-1-ready');
+      await kit(`age(${o1}, 5300)`); await kit(`age(${o2}, 3000)`);
+      await sleep(400); await cdp.shot('burn-2-warn');
+      await kit(`age(${o1}, 8200)`); await kit(`age(${o2}, 8200)`);
+      await sleep(900); await cdp.shot('burn-3-burnt');
+      await kit(`age(${o1}, 13100)`);
+      await sleep(700); await cdp.shot('burn-4-fire');
+      await sleep(3200); await cdp.shot('burn-5-spread');
+      // chef 1 puts the oven out: stands in front of it and holds B (the bot sends the button; the sim does the rest)
+      const b1 = bots.find((b) => b.id === ids[0])!;
+      b1.startSending();
+      await kit(`stand(${ids[0]}, ${o1})`);
+      const st = (await snap()).stations[o1]!;
+      const face = (await snap()).players.find((p) => p.id === ids[0])!;
+      b1.vec = { x: st.tx + 0.5 - face.x, y: st.ty + 0.5 - face.y }; b1.btn = 2;
+      await sleep(1500); await cdp.shot('burn-6-extinguish');
+      await sleep(1900); await cdp.shot('burn-7-out');
+      b1.btn = 0; b1.vec = { x: 0, y: 0 };
+      // results with the kudos line
+      await cdp.eval('window.__pg.fastForward(800)');
+      await waitFor((s) => (s as any).over === true, 8000);
+      await sleep(3500); await cdp.shot('burn-8-results');
       bots.splice(0).forEach((b) => b.close());
     }
     if (what === 'vs-pantry') {

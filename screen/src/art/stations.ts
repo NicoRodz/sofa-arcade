@@ -203,9 +203,17 @@ export class StationViews {
 
   private updateOven(v: View, dtMs: number) {
     const st = v.st;
+    const burn = this.game.burn;
+    if (st.fire !== undefined) { // on fire (burn.ts): the flames are drawn by BurnView; the oven itself shows nothing of its contents
+      for (const o of [v.rawPizza!, v.donePizza!, ...v.minis!, ...v.flames!]) o.setVisible(false);
+      v.glow!.setAlpha(0.1); v.ring!.clear(); v.wasDone = false;
+      return;
+    }
+    v.flames!.forEach((f) => f.setVisible(true));
+    const burnt = !!st.burnt;
     const cooking = st.inputs.includes(0) && st.inputs.includes(1) && !st.done; // dough + tomato; cheese may join until it is done
     const q = st.inputs.includes(2); // Margarita
-    const lit = cooking || st.done;
+    const lit = cooking || (st.done && !burnt);
     v.flick -= dtMs;
     if (v.flick <= 0) {
       v.flick = 90;
@@ -221,27 +229,39 @@ export class StationViews {
       if (t === undefined) return;
       m.setTexture(foodKey(CUT_KIND[t]!)).setX(v.cx + (partial.length === 1 ? 0 : (i ? 1 : -1) * TILE * 0.17));
     });
-    const rawKey = foodKey(q ? 'pizza_raw_q' : 'pizza_raw'), doneKey = foodKey(q ? 'pizza_done_q' : 'pizza_done');
+    const rawKey = foodKey(q ? 'pizza_raw_q' : 'pizza_raw'), doneKey = foodKey(burnt ? 'pizza_burnt' : q ? 'pizza_done_q' : 'pizza_done');
     if (v.rawPizza!.texture.key !== rawKey) v.rawPizza!.setTexture(rawKey);
     if (v.donePizza!.texture.key !== doneKey) v.donePizza!.setTexture(doneKey);
     v.rawPizza!.setVisible(cooking || false);
     v.donePizza!.setVisible(st.done || cooking);
     if (cooking) { v.rawPizza!.setAlpha(1); v.donePizza!.setAlpha(Math.max(0, (st.progress - 0.15) / 0.85)); }
     else if (st.done) v.donePizza!.setAlpha(1);
-    // ring around the icon: amber arc while cooking, solid green when ready
+    // ring around the icon: amber arc while cooking, solid green when ready. With the burn rules on, the green ring is the grace time left: it empties
+    // (green, then amber, then red and blinking after the warning) and a burnt pizza has a solid dark-red ring
     const g = v.ring!; g.clear();
     if (cooking || st.done) {
       const r = TILE * 0.22, y = v.cy + TILE * 0.2 + 2;
       g.lineStyle(7, 0x2b1b17, 0.9).strokeCircle(v.cx, y - 2, r + 2);
-      if (st.done) g.lineStyle(6, hexNum(C.basil), 1).strokeCircle(v.cx, y - 2, r + 2);
+      if (st.done && burn && burnt) g.lineStyle(6, hexNum(C.danger), 1).strokeCircle(v.cx, y - 2, r + 2);
+      else if (st.done && burn && st.readyAt !== undefined) {
+        const left = Math.max(0, Math.min(1, 1 - (this.game.time - st.readyAt) / burn.graceMs));
+        const blink = !!st.warned && Math.floor(this.t / 120) % 2 === 0;
+        g.lineStyle(6, hexNum(blink ? C.danger : left > 0.5 ? C.basil : left > 0.3 ? C.warn : C.danger), 1);
+        g.beginPath(); g.arc(v.cx, y - 2, r + 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, left), false); g.strokePath();
+        if (st.warned) v.donePizza!.setX(v.cx + Math.sin(this.t / 35) * 2.2); // the pizza trembles: take it out now
+      } else if (st.done) g.lineStyle(6, hexNum(C.basil), 1).strokeCircle(v.cx, y - 2, r + 2);
       else { g.lineStyle(6, hexNum(progressColor(st.progress)), 1); g.beginPath(); g.arc(v.cx, y - 2, r + 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * st.progress, false); g.strokePath(); }
     }
+    if (!st.warned || burnt) v.donePizza!.setX(v.cx);
     if (st.done && !v.wasDone) {
       this.fx.ring(v.cx, v.cy + TILE * 0.2, hexNum(C.basil), 0.4, 1.4);
       const d = v.donePizza!, k = d.scaleX;
       this.scene.tweens.add({ targets: d, scaleX: k * 1.3, scaleY: k * 1.3, duration: 120, yoyo: true, ease: 'sine.out' });
     }
     v.wasDone = st.done;
+    if (burnt) { // a burnt pizza smokes black until somebody takes it out
+      v.smokeT -= dtMs; if (v.smokeT <= 0) { v.smokeT = 150; this.fx.sootPuff(v.cx + (Math.random() - 0.5) * TILE * 0.3, v.cy + TILE * 0.05); }
+    }
     // embers and chimney smoke while cooking
     if (cooking) {
       v.emberT -= dtMs; if (v.emberT <= 0) { v.emberT = 200; this.fx.ember(v.cx + (Math.random() - 0.5) * TILE * 0.3, v.cy + TILE * 0.2); }

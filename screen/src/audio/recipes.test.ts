@@ -133,3 +133,27 @@ describe('sabotage sounds', () => {
     expect(sfxDuration('aimTick')).toBeLessThan(0.05);
   });
 });
+
+describe('burn sounds', () => {
+  it('each burn event has its sound: the warning is an alarm of its own, the burnt pizza sizzles, the fire ignites and crackles until it is put out', () => {
+    expect(ids(ACTIONS['oven:warn']({ station: 5, msLeft: 3000 }))).toEqual(['ovenWarn']);
+    expect(ids(ACTIONS['oven:burnt']({ station: 5 }))).toEqual(['burnt']);
+    expect(ids(ACTIONS['oven:rescued']({ player: 1, station: 5 }))).toEqual(['rescued']);
+    expect(ACTIONS['fire:start']({ station: 5 })).toEqual([{ kind: 'play', id: 'fireStart' }, { kind: 'loopStart', key: 'fire:5', loop: 'blaze' }]);
+    expect(ACTIONS['fire:spread']({ station: 6 })).toEqual([{ kind: 'play', id: 'fireSpread' }, { kind: 'loopStart', key: 'fire:6', loop: 'blaze' }]);
+    expect(ACTIONS['fire:out']({ player: 1, station: 5 })).toEqual([{ kind: 'loopStop', key: 'fire:5' }, { kind: 'loopStop', key: 'douse:5' }, { kind: 'play', id: 'fireOut' }]);
+    expect(ACTIONS['fire:end']({})).toEqual([]);
+  });
+  it('the extinguisher hisses in a loop while Picar is held in front of a fire (and has nothing to do with the chop loop)', () => {
+    expect(ACTIONS.douseStart({ player: 1, station: 5 })).toEqual([{ kind: 'loopStart', key: 'douse:5', loop: 'douse' }]);
+    expect(ACTIONS.douseStop({ player: 1, station: 5 })).toEqual([{ kind: 'loopStop', key: 'douse:5' }]);
+    expect(LOOPS.douse.sfx).toBe('hiss');
+    expect(LOOPS.blaze.max).toBeGreaterThan(1);
+  });
+  it('the warning is not the order warning: more notes, higher, and it repeats; a fire out has the relieved notes after the hiss', () => {
+    expect(SFX.ovenWarn.voices.length).toBeGreaterThan(SFX.warn.voices.length);
+    expect(Math.max(...SFX.ovenWarn.voices.map((v) => v.f0 ?? 0))).toBeGreaterThan(1500);
+    expect(Math.min(...SFX.fireOut.voices.filter((v) => v.src === 'sine').map((v) => v.at))).toBeGreaterThanOrEqual(0.3);
+    expect(sfxDuration('fireStart')).toBeGreaterThan(sfxDuration('fireSpread') * 1.5);
+  });
+});

@@ -43,6 +43,16 @@ export interface GameEvents extends SabotageEvents {
   playerGone: { player: number; team: number }; // the grace time ran out: the chef left the kitchen
   matchPaused: { teams: number[] }; // these teams are empty: the host picks 'continue' or 'end' (resolvePause)
   matchResumed: Record<string, never>;
+  // the oven that burns and the fire (burn.ts; only in a round whose config switched it on). `team` only in versus, as everywhere; `station` is an index in game.stations
+  'oven:warn': { station: number; msLeft: number; team?: number }; // a ready pizza is about to burn: the warning beep
+  'oven:burnt': { station: number; team?: number }; // it burnt: smoke, it cannot be delivered, it goes to the bin
+  'oven:rescued': { player: number; station: number; team?: number }; // a chef took the pizza out after the warning, in time
+  'fire:start': { station: number; team?: number }; // the oven caught fire
+  'fire:spread': { station: number; team?: number }; // the fire jumped to this counter
+  'fire:out': { player: number; station: number; team?: number }; // a chef put this station out
+  'fire:end': { team?: number }; // the last flame of the kitchen is out
+  douseStart: { player: number; station: number }; // a chef holds Picar in front of a station on fire (the extinguisher)
+  douseStop: { player: number; station: number };
 }
 
 export class Emitter<M extends object> {

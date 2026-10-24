@@ -180,6 +180,7 @@ export function createVersusGame(o: VersusStart): Game {
     mapId: o.map.id, difficulty: o.difficulty, rows: o.map.rows, spawns: o.map.spawns, seed: o.seed, countdownMs: o.countdownMs, bus: o.bus,
     teams: o.teams.map((t) => ({ playerIds: t.playerIds })), handicap: o.modeOptions.handicap !== false, shared: o.map.shared,
     sabotage: sabotageOf(o.modeOptions), sigma: o.map.sigma, // the sim switches it off by itself on a map with no catapult
+    burn: true, fire: true, // the oven burns in every round; the sim itself leaves the fire out on Easy and under the Suave sabotage
   });
   for (const t of o.teams) t.playerIds.forEach((id, rank) => addPlayer(game, id, o.slotOf(id), rank));
   return game;

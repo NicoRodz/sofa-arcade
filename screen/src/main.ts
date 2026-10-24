@@ -5,6 +5,7 @@ import {
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
 import { summarize } from '@party/shared/results';
+import { kudosLines, tallyKitchen } from '@party/shared/kudos';
 import { DECIDED_TEXT, NO_LEAD, nextLead, phoneResult, recordRound, scoreHidden, seriesLine, tallyDeliveries, versusReport, type LeadState, type Series, type VersusReport } from '@party/shared/versusReport';
 import { GAMES, PLATFORM, gameInfo, gameName, hasModeChoice, modeOf, selectableModes, type GameDef, type ModeId } from '@party/shared/games';
 import { SABOTAGE_BLURB, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '@party/shared/sabotage-config';
@@ -177,7 +178,7 @@ function setPhase(next: Phase) {
     showScene('main');
     const n = connectedN();
     const map = resolveMap(config.map as MapChoice, config.seed, config.difficulty, n, Math.random);
-    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
+    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus, burn: true, fire: true }); // the lobby turns the new rules on: the oven burns (and, from Normal up, catches fire)
     played.add(map.id);
     // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
     const order = [...players.values()].sort((a, b) => Number(b.info.connected) - Number(a.info.connected) || a.info.slot - b.info.slot);
@@ -190,7 +191,7 @@ function setPhase(next: Phase) {
       puestoMsg = pm;
     } else puestoMsg = undefined;
     overAt = null;
-    tally.reset();
+    tally.reset(); kitchen.reset();
     roundView = { teams: null, hiddenScore: false };
     scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
@@ -261,7 +262,7 @@ function startVersus(): MatchStart {
   puestoMsg = { cheese: f.cheese, sink: f.sink, assign };
   assign.forEach((a) => puestoOf.set(a.id, { ids: a.puestos, stamp: ++puestoStamp }));
   overAt = null;
-  tally.reset();
+  tally.reset(); kitchen.reset();
   lockBeforeStart = config.teamsLocked;
   config = { ...config, teams, teamsLocked: true }; // frozen for the match; the phones get their kitchen side with `you`
   sendMsg({ t: 'config', ...config });
@@ -589,6 +590,19 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
     trash: (team: number, tx: number, ty: number, by: number, ttlMs?: number) => { addFloorItem(game, { tx, ty, item: 'trash', kind: 'trash', team, by, ttlMs }); },
     state: () => JSON.parse(JSON.stringify({ sab: game.sab && { teams: game.sab.teams }, floor: game.floor, hazards: game.hazards })),
   },
+  // capture tool (burn): put an oven at a stage of its life, stand a chef in front of a station
+  kit: {
+    bake: (i: number) => { const s = game.stations[i]!; s.inputs = [0, 1]; s.progress = 1; s.done = true; s.readyAt = game.time; },
+    age: (i: number, ms: number) => { const s = game.stations[i]!; if (s.readyAt !== undefined) s.readyAt = game.time - ms; }, // as if the pizza had been ready for `ms`
+    stand: (id: number, i: number, k = 0) => { // the chef on the k-th open tile of the station, facing it
+      const p = game.players.get(id), s = game.stations[i]!;
+      const open = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).filter(([a, b]) => game.grid[s.ty + b]?.[s.tx + a]?.kind === 'floor');
+      const [dx, dy] = open[k % open.length]!;
+      if (p) Object.assign(p, { x: s.tx + dx + 0.5, y: s.ty + dy + 0.5, fx: -dx, fy: -dy, vx: 0, vy: 0 });
+    },
+    item: (id: number, item: string | null) => { const p = game.players.get(id); if (p) p.item = item as never; },
+    counters: () => game.stations.map((s, i) => ({ i, kind: s.kind, tx: s.tx, ty: s.ty, fire: s.fire, burnt: !!s.burnt, done: s.done })).filter((s) => s.kind === 'pot' || s.kind === 'counter'),
+  },
   snapshot: () => ({ versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
@@ -902,6 +916,12 @@ setInterval(syncHints, 100);
 // round stats for the results screen: deliveries per chef (the podium, and the MVP of each team)
 const tally = tallyDeliveries(gameBus);
 const stats = { delivered: tally.counts };
+const kitchen = tallyKitchen(gameBus); // pizzas rescued from the oven and fires put out, for the results
+function renderKudos() { // the extra lines of the results: empty (and hidden) when the round had no burn rules or nobody did any of it
+  const lines = kudosLines(kitchen, (id) => players.get(id)?.info.name ?? 'Un chef');
+  setHtml('kudos', lines.map((l) => `<div>${esc(l)}</div>`).join(''));
+  $('kudos').classList.toggle('off', !lines.length);
+}
 
 let resultsTimers: ReturnType<typeof setTimeout>[] = [];
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
@@ -1036,12 +1056,14 @@ function renderResults() {
   resultsTimers = [];
   cancelAnimationFrame(flagLoop);
   const campResults = activeGame === OBST_ID && camp.resultOn;
+  $('kudos').classList.add('off'); // the pizza results turn it on when there is something to say
   $('campres').classList.toggle('off', !campResults); $('resh').classList.toggle('off', campResults); $('again').classList.toggle('off', campResults);
   if (campResults) { $('resultsInner').classList.remove('vs'); $('pizzares').classList.add('off'); $('obstres').classList.add('off'); $('vsres').replaceChildren(); $('vsnote').textContent = ''; camp.renderResults(); return; }
   if (activeGame === OBST_ID) { $('resultsInner').classList.remove('vs'); renderObstResults(); return; }
   $('pizzares').classList.remove('off'); $('obstres').classList.add('off');
   $('resultsInner').classList.toggle('vs', game.versus);
   if (!game.versus) report = null;
+  renderKudos();
   $('resh').className = '';
   $('resultsInner').classList.remove('revealed');
   if (game.versus) { renderVersusResults(); return; }

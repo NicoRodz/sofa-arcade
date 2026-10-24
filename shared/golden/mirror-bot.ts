@@ -55,6 +55,7 @@ export function twinSpawns(rows: readonly string[], sigma: Sigma, half: (x: numb
 export interface VersusRun {
   rows: readonly string[]; sigma: Sigma; half: (x: number, y: number) => boolean;
   difficulty: Difficulty; seed: number; teams: number[][]; handicap?: boolean;
+  flags?: { burn?: boolean; fire?: boolean }; // the new rules (off by default: the original proofs stay exact)
 }
 export const MIRRORS = {
   v1: { rows: MIRROR_V1, sigma: SIGMAS.mirrorX, half: (x: number) => x < MAP_W / 2 },
@@ -69,7 +70,7 @@ export interface VersusResult { g: Game; bus: RecBus; ticks: number }
 export function runVersus(r: VersusRun, before?: (g: Game, t: number) => void): VersusResult {
   const iso = isoOf(r.sigma);
   const bus = new RecBus();
-  const g = createGame({ mapId: 'versus-test', difficulty: r.difficulty, rows: r.rows, spawns: twinSpawns(r.rows, r.sigma, r.half), seed: r.seed, countdownMs: COUNTDOWN_MS, bus, teams: r.teams.map((playerIds) => ({ playerIds })), handicap: r.handicap });
+  const g = createGame({ mapId: 'versus-test', difficulty: r.difficulty, rows: r.rows, spawns: twinSpawns(r.rows, r.sigma, r.half), seed: r.seed, countdownMs: COUNTDOWN_MS, bus, teams: r.teams.map((playerIds) => ({ playerIds })), handicap: r.handicap, ...r.flags });
   r.teams.forEach((ids) => ids.forEach((id, rank) => addPlayer(g, id, rank, rank)));
   const mem = new Map(r.teams.flat().map((id) => [id, { step: 0, since: 0, lastPress: -99, bin: false } as Mem]));
   const rankOf = new Map(r.teams.flatMap((ids) => ids.map((id, rank) => [id, rank] as const)));
