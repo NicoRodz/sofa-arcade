@@ -76,7 +76,7 @@ function connect() {
       hud(`${m.player.name} #${m.player.slot + 1}`);
     } else if (m.t === 'config') {
       $('game').textContent = gameName(m.game);
-      $('setup').textContent = `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : fixedMap(m.map)?.name ?? ''}`;
+      $('setup').textContent = `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores);
     } else if (m.t === 'pong') {

@@ -1,13 +1,10 @@
 // Map solvability: floor components, zone graph over passing counters, recipe legs, spawns per zone.
-import { DIRS, isFloor, type Grid } from './maps';
+import { DIRS, floorComponents, isFloor, posKey, type Grid, type Pos } from './maps';
 
 export type StationKey = '1' | '2' | 'K' | 'O' | 'P' | 'E';
 // 1 -> K, 2 -> K, K -> O (once per ingredient), P -> O, O -> E
 export const RECIPE_LEGS: readonly (readonly [StationKey, StationKey])[] = [['1', 'K'], ['K', 'O'], ['2', 'K'], ['K', 'O'], ['P', 'O'], ['O', 'E']];
 export const STATION_KEYS: readonly StationKey[] = ['1', '2', 'K', 'O', 'P', 'E'];
-
-export type Pos = [number, number];
-export const posKey = (x: number, y: number) => `${x},${y}`;
 
 export function stationsOf(g: Grid, key: StationKey): Pos[] {
   const out: Pos[] = [];
@@ -36,25 +33,6 @@ export interface Analysis {
   spawns: number[]; // spawn tiles per component
   passes: { pos: Pos; comps: number[] }[]; // counters touching 2+ components: items cross there
   zone: number[]; // component -> zone id (components joined by passing counters share one)
-}
-
-export function floorComponents(g: Grid, skip?: string): { comp: number[][]; count: number } {
-  const comp = g.map((row) => row.map(() => -1));
-  let count = 0;
-  g.forEach((row, y) => row.forEach((_t, x) => {
-    if (!isFloor(g, x, y) || comp[y]![x]! >= 0 || posKey(x, y) === skip) return;
-    const stack: Pos[] = [[x, y]];
-    comp[y]![x] = count;
-    while (stack.length) {
-      const [cx, cy] = stack.pop()!;
-      for (const [dx, dy] of DIRS) {
-        const nx = cx + dx, ny = cy + dy;
-        if (isFloor(g, nx, ny) && comp[ny]![nx]! < 0 && posKey(nx, ny) !== skip) { comp[ny]![nx] = count; stack.push([nx, ny]); }
-      }
-    }
-    count++;
-  }));
-  return { comp, count };
 }
 
 export function analyze(g: Grid): Analysis {

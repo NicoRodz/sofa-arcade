@@ -43,6 +43,7 @@
   .chips.wrap { flex-wrap: wrap; }
   .chips.wrap .chip { flex: 0 0 auto; font-size: 14px; padding: 6px 10px; }
   #mappreview { margin: 0 0 6px; font: 13px/1.1 ui-monospace, Menlo, monospace; color: #bbb; background: #0006; border-radius: 6px; padding: 8px; white-space: pre; }
+  .off { display: none; }
   #hud { right: 16px; top: 14px; padding: 6px 20px; text-align: center; }
   #timer { font: bold 40px ui-monospace, Menlo, monospace; }
   #scores { display: flex; gap: 16px; font-size: 18px; }
@@ -71,6 +72,7 @@
   <div id="diffinfo" class="hint"></div>
   <h3>Mapa</h3>
   <div id="maps" class="chips wrap"></div>
+  <div id="seedrow" class="hint off">Semilla <b id="seed" style="color:#eee;font-size:16px"></b> <button id="again-seed" class="chip" style="flex:none;padding:4px 12px;margin-left:8px">Otra</button></div>
   <pre id="mappreview"></pre>
   <div id="mapinfo" class="hint"></div>
 </div>

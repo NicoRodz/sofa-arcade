@@ -5,7 +5,8 @@ import {
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/difficulty';
 import { GAMES } from '@party/shared/games';
-import { MAP_IDS, fixedMap, pickFixedMap, type MapChoice } from '@party/shared/maps';
+import { generate, resolveMap } from '@party/shared/generate';
+import { MAP_IDS, fixedMap, type MapChoice } from '@party/shared/maps';
 import { percentile } from '@party/shared/stats';
 import {
   COLS, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
@@ -36,7 +37,7 @@ const room = (() => {
   } catch { return q || newRoomCode(); }
 })();
 let phase: Phase = 'lobby';
-let config: LobbyConfig = { ...DEFAULT_CONFIG };
+let config: LobbyConfig = { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 };
 let mapName = '';
 let game = createGame();
 let debugOverride: boolean | null = null;
@@ -79,7 +80,7 @@ function setPhase(next: Phase) {
   if (next === phase) return;
   phase = next;
   if (phase === 'playing') {
-    const map = pickFixedMap(config.map, config.difficulty, Math.random);
+    const map = resolveMap(config.map, config.seed, config.difficulty, players.size, Math.random);
     mapName = map.name;
     game = createGame({ difficulty: config.difficulty, n: players.size, rows: map.rows });
     for (const p of players.values()) { addPlayer(game, p.info.id, p.info.slot); p.pendA = 0; }
@@ -303,12 +304,17 @@ function renderUi() {
   $('diffs').innerHTML = DIFFICULTIES.map((d) =>
     `<button class="chip ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join('');
   const mapLabel = (id: string) => `${id} ${fixedMap(id)!.name}`;
-  $('maps').innerHTML = [['auto', 'Al azar'], ...MAP_IDS.map((id) => [id, mapLabel(id)])]
+  $('maps').innerHTML = [['auto', 'Al azar'], ...MAP_IDS.map((id) => [id, mapLabel(id)]), ['random', 'Mapa aleatorio']]
     .map(([id, label]) => `<button class="chip ${id === config.map ? 'sel' : ''}" data-map="${id}">${label}</button>`).join('');
   const list = [...players.values()];
-  const shown = config.map === 'auto' ? null : fixedMap(config.map);
+  const rand = config.map === 'random';
+  $('seedrow').classList.toggle('off', !rand);
+  $('seed').textContent = String(config.seed);
+  const gen = rand ? generate(config.seed, config.difficulty, list.length) : null;
+  const shown = gen ? { rows: gen.rows } : config.map === 'auto' ? null : fixedMap(config.map);
   $('mappreview').textContent = shown ? shown.rows.join('\n') : `Un mapa de la dificultad ${DIFFICULTY_LABEL[config.difficulty]}`;
-  $('mapinfo').textContent = list.length > 4 ? 'Mapa pensado para 2 a 4: los extra aparecen junto a un punto de inicio' : '';
+  $('mapinfo').textContent = gen && !gen.inBand ? 'Esta semilla no cae en la banda de la dificultad: se usa el mapa válido más cercano'
+    : list.length > 4 && !rand ? 'Mapa pensado para 2 a 4: los extra aparecen junto a un punto de inicio' : '';
   const pr = params(config.difficulty, list.length);
   $('diffinfo').textContent = `Pedido cada ${(pr.orderEveryMs / 1000).toFixed(0)} s, paciencia ${pr.orderTtlMs / 1000} s, hasta ${pr.maxOrders} pedidos`;
   $('plist').innerHTML = list
@@ -337,6 +343,7 @@ $('maps').addEventListener('click', (e) => {
   const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map as MapChoice | undefined;
   if (m && (m === 'auto' || MAP_IDS.includes(m))) setConfig({ map: m });
 });
+$('again-seed').addEventListener('click', () => setConfig({ seed: (config.seed + 1) % 2 ** 32 }));
 $('start').addEventListener('click', () => dispatch('start'));
 $('again').addEventListener('click', () => dispatch('again'));
 window.addEventListener('keydown', (e) => {

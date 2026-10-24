@@ -32,8 +32,10 @@ export interface Score { id: number; score: number }
 export interface PhaseInfo { phase: Phase; scores?: Score[] }
 
 // What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
-export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice }
-export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY, map: DEFAULT_MAP };
+export const SEED_MAX = 2 ** 32;
+export const isSeed = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) < SEED_MAX;
+export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice; seed: number }
+export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY, map: DEFAULT_MAP, seed: 1 };
 
 export interface PublicPlayer {
   id: number;
@@ -100,8 +102,8 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       return { t: 'phase', phase: m.phase, scores: m.scores.map((x: Score) => ({ id: x.id, score: x.score })) };
     }
     case 'config':
-      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map)) return null;
-      return { t: 'config', game: m.game, difficulty: m.difficulty, map: m.map };
+      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map) || !isSeed(m.seed)) return null;
+      return { t: 'config', game: m.game, difficulty: m.difficulty, map: m.map, seed: m.seed };
     default:
       return null;
   }

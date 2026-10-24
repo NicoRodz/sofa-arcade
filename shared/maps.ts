@@ -49,12 +49,40 @@ export function parseMap(rows: readonly string[]): Grid {
 export const isFloor = (g: Grid, x: number, y: number) => g[y]?.[x]?.kind === 'floor';
 export const isStation = (g: Grid, x: number, y: number) => g[y]?.[x]?.kind === 'station';
 export const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
+export type Pos = [number, number];
+export const posKey = (x: number, y: number) => `${x},${y}`;
 
-// One spawn tile per slot: the S tiles in reading order, then the free floor nearest to a spawn (BFS),
-// taking turns between the S tiles so split maps get players on both sides.
+export function floorComponents(g: Grid, skip?: string): { comp: number[][]; count: number } {
+  const comp = g.map((row) => row.map(() => -1));
+  let count = 0;
+  g.forEach((row, y) => row.forEach((_t, x) => {
+    if (!isFloor(g, x, y) || comp[y]![x]! >= 0 || posKey(x, y) === skip) return;
+    const stack: Pos[] = [[x, y]];
+    comp[y]![x] = count;
+    while (stack.length) {
+      const [cx, cy] = stack.pop()!;
+      for (const [dx, dy] of DIRS) {
+        const nx = cx + dx, ny = cy + dy;
+        if (isFloor(g, nx, ny) && comp[ny]![nx]! < 0 && posKey(nx, ny) !== skip) { comp[ny]![nx] = count; stack.push([nx, ny]); }
+      }
+    }
+    count++;
+  }));
+  return { comp, count };
+}
+
+
+// One spawn tile per slot: the S tiles in reading order, taking turns between floor regions so split maps get
+// players on both sides, then the free floor nearest to a spawn (BFS) for extra players.
 export function spawnPoints(g: Grid, count: number): [number, number][] {
+  const { comp } = floorComponents(g);
+  const groups = new Map<number, [number, number][]>();
+  g.forEach((row, y) => row.forEach((t, x) => {
+    if (t.kind === 'floor' && t.spawn) groups.set(comp[y]![x]!, [...(groups.get(comp[y]![x]!) ?? []), [x, y]]);
+  }));
+  const lists = [...groups.entries()].sort((p, q) => p[0] - q[0]).map(([, l]) => l);
   const base: [number, number][] = [];
-  g.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'floor' && t.spawn) base.push([x, y]); }));
+  for (let i = 0; base.length < lists.reduce((n, l) => n + l.length, 0); i++) for (const l of lists) if (l[i]) base.push(l[i]!);
   if (!base.length) return [];
   const used = new Set(base.map(([x, y]) => `${x},${y}`));
   const out = base.slice(0, count);
@@ -167,14 +195,14 @@ export const fixedMap = (id: string): MapDef | undefined => FIXED_MAPS.find((m) 
 // Which fixed maps each difficulty draws from.
 export const MAPS_BY_DIFFICULTY: Record<Difficulty, readonly string[]> = { easy: ['1', '2'], normal: ['2', '3', '4'], hard: ['4', '5'] };
 
-export const MAP_CHOICES = ['auto', ...MAP_IDS] as const;
+export const MAP_CHOICES = ['auto', ...MAP_IDS, 'random'] as const;
 export type MapChoice = (typeof MAP_CHOICES)[number];
 export const DEFAULT_MAP: MapChoice = 'auto';
 export const isMapChoice = (v: unknown): v is MapChoice => MAP_CHOICES.includes(v as MapChoice);
 
 // "auto" draws one of the maps listed for the difficulty; rand is injected so the logic stays deterministic.
 export function pickFixedMap(choice: MapChoice, d: Difficulty, rand: () => number): MapDef {
-  if (choice !== 'auto') return fixedMap(choice)!;
+  if (choice !== 'auto') return fixedMap(choice) ?? fixedMap(MAPS_BY_DIFFICULTY[d][0]!)!;
   const ids = MAPS_BY_DIFFICULTY[d];
   return fixedMap(ids[Math.floor(rand() * ids.length)]!)!;
 }
