@@ -38,6 +38,6 @@ describe('phone layout', () => {
     await s.load(sc);
     await s.setViewport(VIEWPORTS[0]!, VIEWPORTS[0]!.insets[0]!);
     const p = await s.probe();
-    for (const sel of ['#stickhint', '#btnA', '#btnB', '#puesto', '#pswap', '#btnA .lbl', '#btnB .lbl']) expect(p.items.some((i) => i.sel === sel), sel).toBe(true);
+    for (const sel of ['#stickhint', '#btnA', '#btnB', '#puesto', '#pswap', '#stickLbl .lbl', '#lblA .lbl', '#lblB .lbl']) expect(p.items.some((i) => i.sel === sel), sel).toBe(true);
   }, 60_000);
 });

@@ -44,7 +44,8 @@ export function insideControl(p: Probe): string[] {
 }
 
 // 3. Text stays inside the box that is meant to hold it (cards, tiles); a designed ellipsis only clips horizontally.
-const CONTAINERS: [string, string][] = [['#puesto', '#pico'], ['#puesto', '#pname'], ['#puesto', '#phint'], ['#puesto', '#pswap'], ['#howto .steps li', '#howto .steps .tx'], ['#howto .steps li', '#howto .steps .ic']];
+const CONTAINERS: [string, string][] = [['#puesto', '#pico'], ['#puesto', '#pname'], ['#puesto', '#phint'], ['#puesto', '#pswap'], ['#howto .steps li', '#howto .steps .tx'], ['#howto .steps li', '#howto .steps .ic'],
+  ...['#stickLbl', '#lblA', '#lblB'].flatMap((l): [string, string][] => [[`${l} .pl`, `${l} .lbl`], [`${l} .pl`, `${l} .hold`]])];
 export function textInBox(p: Probe): string[] {
   const out: string[] = [];
   for (const [cs, ks] of CONTAINERS) {
@@ -64,7 +65,7 @@ export function textInBox(p: Probe): string[] {
 }
 
 // 4. Controls and text stay inside the safe area (notch, rounded corners, home indicator).
-const SAFE_BOXES = ['#btnA', '#btnB', '#stickhint', '#puesto', '#zoomfix', '#join button', '#name', '#howtoopen', '#howtoclose', '#howto .steps li', '#howto .note'];
+const SAFE_BOXES = ['#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#zoomfix', '#join button', '#name', '#howtoopen', '#howtoclose', '#howto .steps li', '#howto .note'];
 export function safeArea(p: Probe): string[] {
   const out: string[] = [];
   const safe = safeRect(p), full: Box = { x: 0, y: 0, w: p.vw, h: p.vh };
@@ -80,7 +81,7 @@ export function safeArea(p: Probe): string[] {
 // 5. Nothing on the pad sits on top of anything else: stick, two buttons, station card, HUD, zoom banner.
 export function padOverlaps(p: Probe): string[] {
   const out: string[] = [];
-  const parts = ['#stickhint', '#btnA', '#btnB', '#puesto', '#hud', '#zoomfix'].flatMap((s) => all(p, s));
+  const parts = ['#stickhint', '#btnA', '#btnB', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#puesto', '#hud', '#zoomfix'].flatMap((s) => all(p, s));
   for (let a = 0; a < parts.length; a++) for (let b = a + 1; b < parts.length; b++) {
     const A = parts[a]!, B = parts[b]!;
     const ba = A.sel === '#hud' ? A.text ?? A.box : A.box, bb = B.sel === '#hud' ? B.text ?? B.box : B.box;
@@ -119,9 +120,25 @@ export function stacked(p: Probe): string[] {
   return out;
 }
 
+// 7. The touch zones are the ones the game was tuned with: the left half is the stick, A and B keep their size and place
+// (A may only move left of the safe-area inset and up by what the home indicator takes).
+export function touchZones(p: Probe): string[] {
+  const out: string[] = [];
+  const z = one(p, '#zone'), a = one(p, '#btnA'), b = one(p, '#btnB');
+  if (!z || !a || !b) return out;
+  const vmin = Math.min(p.vw, p.vh), size = 0.34 * vmin, near = (x: number, y: number, t = 1.5) => Math.abs(x - y) <= t;
+  if (!near(z.box.x, 0) || !near(z.box.y, 0) || !near(z.box.w, p.vw / 2) || !near(z.box.h, p.vh)) out.push(`stick zone is ${fmt(z.box)}, want the left half`);
+  for (const [n, i] of [['A', a], ['B', b]] as const) if (!near(i.box.w, size) || !near(i.box.h, size)) out.push(`button ${n} is ${i.box.w.toFixed(0)}x${i.box.h.toFixed(0)}, want ${size.toFixed(0)}`);
+  if (!near(b.box.x + b.box.w, p.vw * 0.73) || !near(b.box.y, p.vh * 0.09, p.pressed ? 0.012 * vmin + 1.5 : 1.5)) out.push(`button B moved: ${fmt(b.box)}`);
+  const wantRight = Math.max(p.vw * 0.04, p.inset.right + 10), top = p.vh * 0.52;
+  const lift = p.inset.bottom ? 16 : 0, dip = p.pressed ? 0.012 * vmin + 1.5 : 1.5; // a pressed button sinks 1.2vmin by design
+  if (!near(a.box.x + a.box.w, p.vw - wantRight, 2) || a.box.y > top + dip || a.box.y < top - lift - 1.5) out.push(`button A moved: ${fmt(a.box)} (want right edge ${(p.vw - wantRight).toFixed(0)}, top ${(top - lift).toFixed(0)}..${top.toFixed(0)})`);
+  return out;
+}
+
 export const RULES: [string, (p: Probe) => string[]][] = [
   ['touch size >= 44px', touchSize], ['labels inside their control', insideControl], ['text inside its box', textInBox],
-  ['safe area', safeArea], ['pad parts do not overlap', padOverlaps], ['stacked text does not collide', stacked],
+  ['safe area', safeArea], ['pad parts do not overlap', padOverlaps], ['stacked text does not collide', stacked], ['touch zones unchanged', touchZones],
 ];
 export const violations = (p: Probe): string[] => RULES.flatMap(([n, f]) => f(p).map((v) => `${n}: ${v}`));
 export type { Insets };

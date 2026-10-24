@@ -96,13 +96,14 @@ export interface Item {
   clipped: boolean; // content taller/wider than the box (not designed)
   round: boolean; // a circle (border-radius 50%)
 }
-export interface Probe { vw: number; vh: number; inset: Insets; zoomed: boolean; items: Item[] }
+export interface Probe { vw: number; vh: number; inset: Insets; zoomed: boolean; pressed: boolean; items: Item[] }
 
 // Selectors that matter for layout. Anything not displayed in the current state is skipped by the probe.
 export const SELECTORS = [
   '#join .brand', '#name', '#join button',
   '#zone', '#stickhint', '#stickhint .ico', '#stickhint .lbl',
   '#btnA', '#btnA .ico', '#btnA .lbl', '#btnA .hold', '#btnB', '#btnB .ico', '#btnB .lbl', '#btnB .hold',
+  '#stickLbl .pl', '#stickLbl .lbl', '#stickLbl .hold', '#lblA .pl', '#lblA .lbl', '#lblA .hold', '#lblB .pl', '#lblB .lbl', '#lblB .hold',
   '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap',
   '#wait > *', '#howtoopen', '#choosing > *', '#results > *',
   '#howto h2', '#howtogame', '#howto .steps', '#howto .steps li', '#howto .steps .n', '#howto .steps .ic', '#howto .steps .tx', '#howto .note', '#howtoclose',
@@ -138,14 +139,14 @@ const PROBE = `((selectors) => {
         round: parseFloat(cs.borderTopLeftRadius) >= Math.min(r.width, r.height) / 2 - 0.5 && r.width > 0 && Math.abs(r.width - r.height) < 1 });
     });
   }
-  return { vw: innerWidth, vh: innerHeight, inset, zoomed: document.body.classList.contains('zoomed'), items };
+  return { vw: innerWidth, vh: innerHeight, inset, zoomed: document.body.classList.contains('zoomed'), pressed: !!document.querySelector('.act.down'), items };
 })`;
 
 // ---- scenarios: relay messages that put the page in each state
 export interface ControlsMsg { stick: { label: string; icon: string; hold?: boolean }; btn1: { label: string; icon: string; hold?: boolean }; btn2: { label: string; icon: string; hold?: boolean } }
 const PIZZAS: ControlsMsg = { stick: { label: 'Mover', icon: 'move' }, btn1: { label: 'Tomar / Soltar', icon: 'grab' }, btn2: { label: 'Picar / Correr', icon: 'chop' } };
 // A future game at the registry's limits: 14-char labels and the "hold" hint on both buttons.
-const LONG: ControlsMsg = { stick: { label: 'Apuntar largo!', icon: 'move' }, btn1: { label: 'Mmmmmmmmmmmmmm', icon: 'grab', hold: true }, btn2: { label: 'Picar / Correr', icon: 'chop', hold: true } };
+const LONG: ControlsMsg = { stick: { label: 'Apuntar largo!', icon: 'move' }, btn1: { label: 'Desplazamiento', icon: 'grab', hold: true }, btn2: { label: 'Mmmmmmm Mmmmmm', icon: 'chop', hold: true } };
 const HOWTO = {
   steps: [
     { icon: 'crate', text: 'Toma masa y tomate de las cajas' },
@@ -163,6 +164,8 @@ export interface Scenario { name: string; portrait?: boolean; fresh?: boolean; m
 const player = (name: string, id = 1, color = '#E63B2E') => ({ t: 'joined', player: { id, name, color, slot: 0 }, room: 'main' });
 const config = (controls: ControlsMsg = PIZZAS, howTo = HOWTO) => ({ t: 'config', game: 'pizzas', difficulty: 'normal', map: 'auto', seed: 1, controls, howTo });
 const phase = (p: string, extra: object = {}) => ({ t: 'phase', phase: p, ...extra });
+
+const WIDE = `document.documentElement.style.setProperty('--font', 'Verdana, sans-serif'); window.dispatchEvent(new Event('resize'))`;
 
 export const SCENARIOS: Scenario[] = [
   { name: 'join', fresh: true, msgs: [] },
@@ -182,6 +185,12 @@ export const SCENARIOS: Scenario[] = [
   { name: 'play-reconnecting', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['masa', 'horno']) })], after: `window.__closeSocket()` },
   { name: 'play-error', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), { t: 'error', reason: 'Sala llena (8 jugadores)' }] },
   { name: 'play-zoomed', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno']) })], after: `document.body.classList.add('zoomed')` },
+  // iOS draws SF Rounded, wider than the fallback of headless Chrome: Verdana (~12% wider) stands in to check there is room to spare
+  { name: 'play-wide-font', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#1FB5A8'), config(LONG), phase('lobby'), phase('playing', { puestos: puestos(1, ['prep', 'lavado']) })], after: WIDE },
+  { name: 'play-wide-font-real', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['reparto', 'lavado']) })], after: WIDE },
+  { name: 'howto-wide-font', msgs: [player('Nico'), config(PIZZAS, HOWTO_LONG), phase('lobby')], after: WIDE },
+  { name: 'lobby-wide-font', msgs: [player('WWWWWWWWWWWWWWWW'), { ...config(), map: 'random', seed: 4000000000, difficulty: 'hard' }, phase('lobby')], after: `${WIDE}; document.body.dataset.howto = 'closed'` },
+  { name: 'lobby-zoomed', msgs: [player('Nico'), config(), phase('lobby')], after: `document.body.dataset.howto = 'closed'; document.body.classList.add('zoomed')` },
   { name: 'results', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1240 }] })] },
   { name: 'results-big', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1234567 }] })] },
   { name: 'rotate', portrait: true, msgs: [player('Nico'), config(), phase('lobby'), phase('playing')] },
