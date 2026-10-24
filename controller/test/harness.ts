@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
 import { WebSocket } from 'ws';
 
-export const PORT = 3600; // 3000 / 3100 belong to the dev servers of the user
-const CDP_PORT = 9366;
+export const PORT = Number(process.env.PG_PORT ?? 3600); // 3000 / 3100 belong to the dev servers of the user; PG_PORT / PG_CDP_PORT let two worktrees run this suite at once
+const CDP_PORT = Number(process.env.PG_CDP_PORT ?? 9366);
 const CHROME = process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -78,7 +78,7 @@ const FAKE_WS = `(() => {
   const socks = [];
   class FakeWS {
     constructor(url) { this.url = url; this.readyState = 0; socks.push(this); setTimeout(() => { this.readyState = 1; if (this.onopen) this.onopen({}); }, 5); }
-    send() {}
+    send(d) { (window.__sent = window.__sent || []).push(JSON.parse(d)); }
     close() { if (this.readyState === 3) return; this.readyState = 3; setTimeout(() => { if (this.onclose) this.onclose({}); }, 0); }
   }
   FakeWS.CONNECTING = 0; FakeWS.OPEN = 1; FakeWS.CLOSING = 2; FakeWS.CLOSED = 3;
@@ -107,7 +107,7 @@ export const SELECTORS = [
   '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap',
   '#wait > *', '#howtoopen', '#choosing > *', '#results > *',
   '#howto h2', '#howtogame', '#howto .steps', '#howto .steps li', '#howto .steps .n', '#howto .steps .ic', '#howto .steps .tx', '#howto .note', '#howtoclose',
-  '#rotate > *', '#zoomfix',
+  '#rotate > *', '#zoomfix', '#remote .rb', '#remote .crown',
 ];
 
 const PROBE = `((selectors) => {
@@ -163,6 +163,7 @@ const puestos = (id: number, list: string[], cheese = true) => ({ cheese, sink: 
 export interface Scenario { name: string; portrait?: boolean; fresh?: boolean; msgs: object[]; after?: string; storedName?: boolean }
 const player = (name: string, id = 1, color = '#E63B2E') => ({ t: 'joined', player: { id, name, color, slot: 0 }, room: 'main' });
 const config = (controls: ControlsMsg = PIZZAS, howTo = HOWTO) => ({ t: 'config', game: 'pizzas', difficulty: 'normal', map: 'auto', seed: 1, controls, howTo });
+const captain = (id: number | null = 1) => ({ t: 'captain', playerId: id }); // the relay's crown message: id 1 is the phone every scenario plays
 const phase = (p: string, extra: object = {}) => ({ t: 'phase', phase: p, ...extra });
 
 const WIDE = `document.documentElement.style.setProperty('--font', 'Verdana, sans-serif'); window.dispatchEvent(new Event('resize'))`;
@@ -193,6 +194,21 @@ export const SCENARIOS: Scenario[] = [
   { name: 'lobby-zoomed', msgs: [player('Nico'), config(), phase('lobby')], after: `document.body.dataset.howto = 'closed'; document.body.classList.add('zoomed')` },
   { name: 'results', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1240 }] })] },
   { name: 'results-big', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1234567 }] })] },
+  // the Captain's D-pad (id 1 holds the crown): every screen but the round, and the others do not get it
+  { name: 'captain-menu', msgs: [player('Nico'), config(), phase('menu'), captain()] },
+  { name: 'captain-menu-longname', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#8E5CD9'), config(), phase('menu'), captain()] },
+  { name: 'captain-lobby', msgs: [player('Nico'), config(), phase('lobby'), captain()], after: `document.body.dataset.howto = 'closed'` },
+  { name: 'captain-lobby-longname', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#2F7DE1'), { ...config(), map: 'random', seed: 4000000000, difficulty: 'hard' }, phase('lobby'), captain()], after: `document.body.dataset.howto = 'closed'` },
+  { name: 'captain-howto', msgs: [player('Nico'), config(), phase('lobby'), captain()] },
+  { name: 'captain-howto-long', msgs: [player('Nico'), config(PIZZAS, HOWTO_LONG), phase('lobby'), captain()] },
+  { name: 'captain-results', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1240 }] }), captain()] },
+  { name: 'captain-results-big', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1234567 }] }), captain()] },
+  { name: 'captain-lobby-zoomed', msgs: [player('Nico'), config(), phase('lobby'), captain()], after: `document.body.dataset.howto = 'closed'; document.body.classList.add('zoomed')` },
+  { name: 'captain-wide-font', msgs: [player('WWWWWWWWWWWWWWWW'), { ...config(), map: 'random', seed: 4000000000, difficulty: 'hard' }, phase('lobby'), captain()], after: `${WIDE}; document.body.dataset.howto = 'closed'` },
+  { name: 'captain-howto-wide-font', msgs: [player('Nico'), config(PIZZAS, HOWTO_LONG), phase('lobby'), captain()], after: WIDE },
+  { name: 'captain-play', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) }), captain()] }, // the round: the pad alone, no D-pad
+  { name: 'not-captain-menu', msgs: [player('Nico'), config(), phase('menu'), captain(2)] },
+  { name: 'not-captain-howto', msgs: [player('Nico'), config(), phase('lobby'), captain(2)] },
   { name: 'rotate', portrait: true, msgs: [player('Nico'), config(), phase('lobby'), phase('playing')] },
 ];
 

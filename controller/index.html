@@ -71,7 +71,7 @@
   /* ---- "Cómo se juega": header / tiles / footer (note + close). The footer row keeps the close button >= 44px high without eating the tiles' room */
   #howto { z-index: 5; background: var(--cocoa); display: none; padding: max(8px, var(--st)) max(14px, var(--sr)) max(8px, var(--sb)) max(14px, var(--sl)); }
   body[data-view][data-howto=open] #howto { display: grid; grid-template: "head head" auto "steps steps" minmax(0, 1fr) "note btn" auto / minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; justify-items: center; }
-  #howto .hhead { grid-area: head; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; column-gap: 12px; }
+  #howto .hhead { grid-area: head; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; column-gap: 12px; row-gap: 3px; }
   #howto h2 { margin: 0; font: 800 clamp(20px, 7.4vmin, 28px)/1.1 var(--font); color: var(--c); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; }
   #howto .gname { font-size: clamp(11px, 3.4vmin, 13px); letter-spacing: 2px; text-transform: uppercase; color: rgba(255,244,224,.6); }
   #howto .steps { grid-area: steps; list-style: none; margin: 4px 0 0; padding: 0; width: 100%; height: 100%; max-width: 760px; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(0, 1fr); gap: 10px 14px; min-height: 0; }
@@ -101,6 +101,25 @@
   #pname { display: block; font: 800 16px/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #phint { display: block; font: 700 13px/1.15 var(--font); color: var(--muted); }
   #pswap { flex: none; min-width: 78px; min-height: 44px; font-size: 15px; padding: 6px 12px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 rgba(43,27,23,.4); }
+  /* ---- Captain's remote: a D-pad on the right of every screen but the round. Touch size follows the short side (44..72px); the
+     overlays keep clear of it (padding-right) so nothing they say sits under a button. */
+  :root { --dp: clamp(44px, 18vmin, 72px); --dpgap: 6px; --rr: max(10px, calc(var(--sr) + 10px)); --rw: calc(var(--rr) + 3 * var(--dp) + 2 * var(--dpgap) + 12px); }
+  /* the how-to card is the tightest screen: the D-pad shrinks to a bit over the minimum and the tile text a notch, so 4 tiles still fit beside it */
+  body[data-remote=on][data-howto=open] { --dp: clamp(44px, 14vmin, 56px); --dpgap: 4px; }
+  body[data-remote=on][data-howto=open] #howto .steps .tx { font-size: clamp(11px, 3.6vmin, 17px); }
+  @media (max-width: 620px) { body[data-remote=on][data-howto=open] #howto .steps { grid-template-columns: 1fr; gap: 8px; } } /* the smallest phones: 4 tiles in one column, 2 lines each */
+  #remote { position: fixed; z-index: 6; right: var(--rr); top: 50%; transform: translateY(-50%); display: none; grid-template: repeat(3, var(--dp)) / repeat(3, var(--dp)); gap: var(--dpgap); }
+  body[data-remote=on] #remote { display: grid; }
+  body[data-remote=on]:not([data-view=playing]) .overlay:not(#rotate) { padding-right: var(--rw); }
+  #remote .rb { width: var(--dp); height: var(--dp); min-height: 0; padding: 0; border-radius: 18px; border-width: 3px; display: flex; align-items: center; justify-content: center; font-size: clamp(13px, 4.6vmin, 18px); line-height: 1; box-shadow: 0 4px 0 rgba(43,27,23,.4); background: linear-gradient(#85685A 0 50%, #6F5245 50% 100%); }
+  #remote .rb:active, #remote .rb.down { transform: translateY(3px); box-shadow: 0 1px 0 rgba(43,27,23,.4); filter: brightness(1.15); }
+  #remote .rb svg { width: 56%; height: 56%; fill: none; stroke: var(--cream); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+  #remote .up { grid-area: 1 / 2; } #remote .left { grid-area: 2 / 1; } #remote .right { grid-area: 2 / 3; } #remote .down { grid-area: 3 / 2; }
+  #remote .up svg { transform: rotate(0deg); } #remote .right svg { transform: rotate(90deg); } #remote .down svg { transform: rotate(180deg); } #remote .left svg { transform: rotate(270deg); }
+  #remote .ok { grid-area: 2 / 2; font-size: clamp(17px, 6vmin, 24px); background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+  #remote .back { grid-area: 1 / 3; font-size: calc(var(--dp) * .23); background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+  #remote .help { grid-area: 1 / 1; color: var(--ink); text-shadow: none; font-size: clamp(20px, 7vmin, 28px); background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); }
+  #remote .crown { grid-area: 3 / 1; display: flex; align-items: center; justify-content: center; font-size: clamp(20px, 7vmin, 30px); line-height: 1; pointer-events: none; }
   #hud { position: absolute; top: max(6px, calc(var(--st) + 6px)); left: var(--gutter); max-width: calc(73% - var(--bsz) - var(--gutter) - 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; line-height: 1.2; color: var(--c); opacity: .9; pointer-events: none; }
 </style>
 </head>
@@ -123,6 +142,16 @@
 <div id="results" class="overlay"><div>Fin de la ronda</div><div id="rank" class="big"></div><div id="myscore"></div></div>
 <div id="howto" class="overlay"><div class="hhead"><h2>Cómo se juega</h2><div id="howtogame" class="gname"></div></div><div id="howtobody" style="display:contents"></div><button id="howtoclose" type="button">Entendido</button></div>
 <div id="rotate" class="overlay"><div class="big">&#8635;</div><div>Gira tu teléfono</div></div>
+<div id="remote" role="group" aria-label="Control remoto del Capitán">
+  <button class="rb help" type="button" data-nav="help" aria-label="Cómo se juega">?</button>
+  <button class="rb up" type="button" data-nav="up" aria-label="Arriba"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+  <button class="rb back" type="button" data-nav="back" aria-label="Atrás">Atrás</button>
+  <button class="rb left" type="button" data-nav="left" aria-label="Izquierda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+  <button class="rb ok" type="button" data-nav="ok" aria-label="OK">OK</button>
+  <button class="rb right" type="button" data-nav="right" aria-label="Derecha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+  <span class="crown" aria-hidden="true">👑</span>
+  <button class="rb down" type="button" data-nav="down" aria-label="Abajo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+</div>
 <button id="zoomfix" type="button">Pantalla ampliada. Toca para restablecer</button>
 <script type="module" src="/src/main.ts"></script>
 </body>

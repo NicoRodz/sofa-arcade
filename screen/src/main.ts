@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import {
-  ClockSync, DEFAULT_CONFIG, PING_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
+  ClockSync, DEFAULT_CONFIG, PING_MS, PressTracker, WS_PATH, acceptNav, canStart, navToKey, newRoomCode, nextPhase, remoteBlocked,
   type BuzzKind, type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
@@ -54,6 +54,8 @@ const room = (() => {
     return code;
   } catch { return q || newRoomCode(); }
 })();
+let captainId: number | null = null; // the phone that holds the crown (the relay elects it): the only one whose D-pad moves the menus
+let lastKeyAt: number | null = null; // when the Mac keyboard last pressed something: it keeps the last word over the D-pad
 let phase: Phase = 'menu'; // Pichiclub start: the screen picks the game, then that game's lobby
 let config: LobbyConfig = { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 };
 let game = createGame();
@@ -194,6 +196,12 @@ function onMessage(m: ServerMsg) {
       break;
     }
     case 'player_removed': remove(m.playerId); break;
+    case 'captain': captainId = m.playerId; renderUi(); break;
+    case 'nav': { // the Captain's D-pad: the same handler as the keyboard, fed with the key that intent stands for
+      if (!acceptNav(captainId, m.from) || remoteBlocked(lastKeyAt, performance.now())) break;
+      onKey(navToKey(m.key), false);
+      break;
+    }
     case 'puesto': { // the phone picked another puesto with "Cambiar": the screen lights it up again
       if (phase === 'playing' && players.has(m.playerId)) puestoOf.set(m.playerId, { ids: m.puestos as PuestoId[], stamp: ++puestoStamp });
       break;
@@ -282,6 +290,8 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   }
 });
 (window as unknown as { __pg: unknown }).__pg = {
+  deliver: (m: ServerMsg) => onMessage(m), // e2e: hand the screen a relay message directly (to prove the screen validates the Captain itself)
+  captain: () => captainId,
   forceLobby: () => { if (phase === 'menu') setPhase('lobby'); }, // capture tool: skip the menu (and its player range)
   menu: () => ({ sel: menuSel, cards: menuCards(connectedCount()).map((c) => `${c.id}:${c.state}`) }),
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
@@ -334,7 +344,7 @@ function renderChips() {
       c.av.replaceChildren(chefCanvas(i, 'idle', true));
       c.el.classList.remove('pop'); void c.el.offsetWidth; c.el.classList.add('pop');
     }
-    c.nm.textContent = info.name;
+    c.nm.textContent = (info.id === captainId ? '👑 ' : '') + info.name;
     c.sub.textContent = info.connected ? `${chefOf(i).name} · listo` : 'Desconectado';
   });
 }
@@ -541,19 +551,24 @@ $('start').addEventListener('click', () => startRound());
 $('again').addEventListener('click', () => dispatch('again'));
 $('howtobtn').addEventListener('click', () => { if (!howTo && !starting && phase === 'lobby') openHowTo('preview'); });
 $('howto').addEventListener('click', () => { if (howTo?.mode === 'preview') closeHowTo(); });
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); return; }
-  if ((e.key === 's' || e.key === 'S') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { toggleShake(); return; }
-  const act = starting ? 'none' : howToOnKey(howTo, phase, e.key);
+// One handler for the Mac keyboard and for the Captain's D-pad (which arrives as the key it replaces).
+function onKey(key: string, repeat: boolean) {
+  const act = starting ? 'none' : howToOnKey(howTo, phase, key);
   if (act === 'open-preview') { openHowTo('preview'); return; }
   if (act === 'close') { closeHowTo(); return; }
   if (act === 'skip') { beginRound(); return; }
   if (howTo || starting) return; // the card swallows Enter and the iris swallows everything
-  if (phase === 'menu') { menuAct(menuOnKey(menuCards(connectedCount()), menuSel, e.key)); return; }
-  if (lobbyEscGoesBack(phase, e.key, !!howTo, starting)) { goBack(); return; }
-  if (e.key === 'Enter' && e.repeat) return; // a held Enter that picked the game must not also start the round
-  if (e.key === 'Enter' && phase === 'lobby') startRound();
-  else if (e.key === 'Enter' && phase === 'results') dispatch('again');
+  if (phase === 'menu') { menuAct(menuOnKey(menuCards(connectedCount()), menuSel, key)); return; }
+  if (lobbyEscGoesBack(phase, key, !!howTo, starting)) { goBack(); return; }
+  if (key === 'Enter' && repeat) return; // a held Enter that picked the game must not also start the round
+  if (key === 'Enter' && phase === 'lobby') startRound();
+  else if (key === 'Enter' && phase === 'results') dispatch('again');
+}
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); return; }
+  if ((e.key === 's' || e.key === 'S') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { toggleShake(); return; }
+  lastKeyAt = performance.now();
+  onKey(e.key, e.repeat);
 });
 setInterval(() => {
   pktsRate = totalPkts; totalPkts = 0;

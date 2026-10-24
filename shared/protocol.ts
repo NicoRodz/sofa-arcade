@@ -3,13 +3,16 @@ import { DEFAULT_GAME, DEFAULT_MODE, GAMES, gameInfo, isGameId, isModeId, resolv
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
 import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
 import { MAX_TEAMS, teamOf, type TeamInfo } from './teams';
+import { isNavKey, type NavKey } from './captain';
 
 export { ROUND_MS } from './difficulty';
 export { MAX_TEAMS, type TeamInfo } from './teams';
+export { KEYBOARD_QUIET_MS, NAV_KEYS, NAV_TO_KEY, acceptNav, captainOf, isNavKey, navToKey, remoteBlocked, remoteVisible, type NavKey } from './captain';
 
 // 2: teams (modeId, teams and teamsLocked in the lobby config, teamId per player, 'setTeam' and 'you'). A v1 screen or phone never sends
 // those fields and is read as cooperative with no teams assigned.
-export const PROTOCOL_VERSION = 2;
+// 3: the Captain ('captain' to everyone, 'nav' from the Captain's phone to the screens, stamped with 'from'). Additive: an older screen or phone ignores both.
+export const PROTOCOL_VERSION = 3;
 export const WS_PATH = '/ws';
 export const DEFAULT_ROOM = 'main';
 export const INPUT_HZ = 30;
@@ -81,7 +84,8 @@ export type ClientMsg =
   | ({ t: 'config' } & ConfigFromScreen) // screen only
   | { t: 'puesto'; puestos: PuestoId[] } // phone: "Cambiar" picked another puesto
   | { t: 'setTeam'; teamId: number } // phone: "Cambiar de equipo" (the screen decides: it is the host and owns the lobby)
-  | { t: 'buzz'; playerId: number; kind: BuzzKind }; // screen only: vibrate that phone
+  | { t: 'buzz'; playerId: number; kind: BuzzKind } // screen only: vibrate that phone
+  | { t: 'nav'; key: NavKey }; // phone: a D-pad button (only the Captain's is forwarded; the relay stamps who sent it)
 
 export type ServerMsg =
   | { t: 'joined'; player: PublicPlayer; room: string; v: number }
@@ -98,7 +102,9 @@ export type ServerMsg =
   | { t: 'puesto'; playerId: number; puestos: PuestoId[] }
   | { t: 'setTeam'; playerId: number; teamId: number } // to the screens: this phone asks to change team
   | { t: 'you'; teamId: number; color: string; icon: string; sideLabel?: string } // to one phone: its team (when it has one)
-  | { t: 'buzz'; kind: BuzzKind };
+  | { t: 'buzz'; kind: BuzzKind }
+  | { t: 'captain'; playerId: number | null } // to everyone: who holds the crown now (null: nobody is connected)
+  | { t: 'nav'; from: number; key: NavKey }; // to the screens: the Captain's phone pressed this. `from` is set by the relay from the socket, never taken from the payload
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
@@ -202,6 +208,8 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       return intIn(m.teamId, 0, MAX_TEAMS - 1) ? { t: 'setTeam', teamId: m.teamId } : null;
     case 'buzz':
       return num(m.playerId) && isBuzzKind(m.kind) ? { t: 'buzz', playerId: m.playerId, kind: m.kind } : null;
+    case 'nav':
+      return isNavKey(m.key) ? { t: 'nav', key: m.key } : null; // anything else in the payload (a fake `from`) is dropped here
     case 'config':
       if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map) || !isSeed(m.seed)) return null;
       {

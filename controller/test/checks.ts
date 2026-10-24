@@ -19,7 +19,7 @@ const fmt = (b: Box) => `[${b.x.toFixed(0)},${b.y.toFixed(0)} ${b.w.toFixed(0)}x
 const nm = (i: Item) => `${i.sel}#${i.i}`;
 
 // 1. Everything you press is at least 44x44 CSS px.
-const TOUCH = ['#btnA', '#btnB', '#pswap', '#howtoopen', '#howtoclose', '#zoomfix', '#join button', '#name'];
+const TOUCH = ['#remote .rb', '#btnA', '#btnB', '#pswap', '#howtoopen', '#howtoclose', '#zoomfix', '#join button', '#name'];
 export function touchSize(p: Probe): string[] {
   const out: string[] = [];
   for (const sel of TOUCH) for (const i of all(p, sel)) if (i.box.w < MIN_TOUCH - 0.5 || i.box.h < MIN_TOUCH - 0.5) out.push(`touch target ${nm(i)} is ${i.box.w.toFixed(0)}x${i.box.h.toFixed(0)} (< ${MIN_TOUCH})`);
@@ -65,7 +65,7 @@ export function textInBox(p: Probe): string[] {
 }
 
 // 4. Controls and text stay inside the safe area (notch, rounded corners, home indicator).
-const SAFE_BOXES = ['#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#zoomfix', '#join button', '#name', '#howtoopen', '#howtoclose', '#howto .steps li', '#howto .note'];
+const SAFE_BOXES = ['#remote .rb', '#remote .crown', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#zoomfix', '#join button', '#name', '#howtoopen', '#howtoclose', '#howto .steps li', '#howto .note'];
 export function safeArea(p: Probe): string[] {
   const out: string[] = [];
   const safe = safeRect(p), full: Box = { x: 0, y: 0, w: p.vw, h: p.vh };
@@ -136,9 +136,27 @@ export function touchZones(p: Probe): string[] {
   return out;
 }
 
+// 8. The Captain's D-pad: its buttons never sit on each other nor on anything the screen says or presses (overlay text, how-to tiles,
+// the zoom banner), and it holds the same place on every screen it shows.
+export function remoteClear(p: Probe): string[] {
+  const out: string[] = [];
+  const rb = all(p, '#remote .rb'), crown = all(p, '#remote .crown');
+  if (!rb.length) return out;
+  const parts = [...rb, ...crown];
+  for (let a = 0; a < parts.length; a++) for (let b = a + 1; b < parts.length; b++) if (rectsHit(parts[a]!.box, parts[b]!.box)) out.push(`${nm(parts[a]!)} overlaps ${nm(parts[b]!)}`);
+  if (rb.length !== 7) out.push(`the D-pad has ${rb.length} buttons, want 7 (up, down, left, right, OK, Atrás, ?)`);
+  const others = p.items.filter((i) => !i.sel.startsWith('#remote'));
+  for (const r of parts) for (const o of others) {
+    const ob = o.text ?? o.box;
+    if (['#zone', '#howto .steps'].includes(o.sel)) continue; // containers: their children are measured one by one
+    if (rectsHit(r.box, ob)) out.push(`${nm(r)} ${fmt(r.box)} overlaps ${nm(o)} ${fmt(ob)}`);
+  }
+  return out;
+}
+
 export const RULES: [string, (p: Probe) => string[]][] = [
   ['touch size >= 44px', touchSize], ['labels inside their control', insideControl], ['text inside its box', textInBox],
-  ['safe area', safeArea], ['pad parts do not overlap', padOverlaps], ['stacked text does not collide', stacked], ['touch zones unchanged', touchZones],
+  ['safe area', safeArea], ['pad parts do not overlap', padOverlaps], ['stacked text does not collide', stacked], ['touch zones unchanged', touchZones], ["Captain's D-pad is clear", remoteClear],
 ];
 export const violations = (p: Probe): string[] => RULES.flatMap(([n, f]) => f(p).map((v) => `${n}: ${v}`));
 export type { Insets };

@@ -183,3 +183,16 @@ describe('teams on the wire (protocol v2)', () => {
     expect(youMsg(null, 1)).toBeNull();
   });
 });
+
+describe("the Captain's 'nav' on the wire (protocol v3)", () => {
+  it('the version was bumped for the crown', () => { expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(3); });
+  it('every D-pad key parses to a nav with only the key in it', () => {
+    for (const key of ['up', 'down', 'left', 'right', 'ok', 'back', 'help']) expect(parseClientMessage(JSON.stringify({ t: 'nav', key }))).toEqual({ t: 'nav', key });
+  });
+  it('drops a `from`, a playerId or any extra field a phone puts in the payload: who sent it is the relay\'s call', () => {
+    expect(parseClientMessage('{"t":"nav","key":"ok","from":1,"playerId":1,"captain":true}')).toEqual({ t: 'nav', key: 'ok' });
+  });
+  it('refuses an unknown or missing key and anything that is not a string', () => {
+    for (const bad of ['{"t":"nav"}', '{"t":"nav","key":"start"}', '{"t":"nav","key":"Enter"}', '{"t":"nav","key":1}', '{"t":"nav","key":null}', '{"t":"nav","key":["ok"]}', '{"t":"nav","key":"__proto__"}']) expect(parseClientMessage(bad), bad).toBeNull();
+  });
+});
