@@ -4,7 +4,8 @@ import { CEILING, DUCK_GAIN, KNEE, LoopTable, MASTER_GAIN, SfxLimiter, hintText,
 describe('mute and hint', () => {
   it('mute zeroes the master and unmute restores 0.9', () => {
     expect(masterGain(true)).toBe(0);
-    expect(masterGain(false)).toBe(MASTER_GAIN);
+    expect(masterGain(false)).toBe(0.9);
+    expect(MASTER_GAIN).toBe(0.9);
   });
   it('hint asks for a click until the context runs, then only reports mute', () => {
     expect(hintText({ running: false, muted: false })).toBe('Haz clic para activar el sonido');

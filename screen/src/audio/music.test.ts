@@ -94,7 +94,10 @@ describe('scheduler', () => {
     expect(times[1]! - times[0]!).toBeCloseTo(0.6, 5); // beats 1 and 4 are 3 eighths apart
     expect(times[2]! - times[0]!).toBeCloseTo(1.2, 5);
   });
-  it('silent mode schedules nothing', () => expect(run(newSched(0), 0, 2, 'silent').n).toBe(0));
+  it('silent mode schedules nothing and does not advance the loop', () => {
+    const r = run(newSched(0), 0, 2, 'silent');
+    expect([r.n, r.st.step]).toEqual([0, 0]);
+  });
   it('entering the last minute ramps the tempo without restarting the loop', () => {
     let { st } = run(newSched(0), 0, 4, 'game');
     const stepBefore = st.step;
