@@ -11,6 +11,8 @@ import { Hud, ticketKey, type RoundView } from './hud';
 import { StationViews, place } from './stations';
 import { foodKey } from './food';
 import { PuestoMarks, type PuestoView } from './puestos';
+import { FlagView } from './flagView';
+import { kText } from '@party/shared/versusReport';
 
 export class World {
   private bg: Phaser.GameObjects.Image;
@@ -20,6 +22,10 @@ export class World {
   private chefs = new Map<number, Chef>();
   private marks: PuestoMarks;
   private off: (() => void)[] = [];
+  private kitchenTiles: [number, number][][] = []; // versus: the floor tiles of each kitchen (tile centres)
+  private flags: FlagView[] = [];
+  private dims: Phaser.GameObjects.Graphics[] = [];
+  private finale: { winner: number | null; ms: number; next: number } | null = null; // versus: the end-of-round celebration
 
   constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, private puestos: () => Map<number, PuestoView>, bus: Emitter<GameEvents>, mapId: string, seed: number, private view?: RoundView) {
     this.bg = buildBackground(scene, game.grid, mapId, seed);
@@ -34,6 +40,7 @@ export class World {
   private chefOf(id: number) { return this.chefs.get(id); }
 
   // Versus: each kitchen's floor takes its team's colour, with the team's glyph big and faint in the middle (colour alone never says whose it is).
+  // The tint is a flat wash plus a stripe of the team's colour along the barrier, so even from the sofa the two halves read as two teams.
   private tintKitchens(view: RoundView) {
     const k = this.game.kitchens;
     if (!k) return;
@@ -41,17 +48,33 @@ export class World {
     view.teams!.forEach((team, i) => {
       const region = k.regions[i];
       const tiles: [number, number][] = [];
-      g.fillStyle(hexNum(team.color), 0.17);
+      g.fillStyle(hexNum(team.color), 0.24);
       k.comp.forEach((row, y) => row.forEach((c, x) => {
         if (c !== region) return;
         g.fillRect(OX + x * TILE, OY + y * TILE, TILE, TILE);
         tiles.push([x + 0.5, y + 0.5]);
       }));
+      this.kitchenTiles[i] = tiles;
       if (!tiles.length) return;
       // the glyph sits on the floor tile closest to the middle of the kitchen (never over a counter island)
       const mx = tiles.reduce((a, t) => a + t[0], 0) / tiles.length, my = tiles.reduce((a, t) => a + t[1], 0) / tiles.length;
       const [gx, gy] = tiles.reduce((a, t) => (Math.hypot(t[0] - mx, t[1] - my) < Math.hypot(a[0] - mx, a[1] - my) ? t : a));
-      makeText(this.scene, OX + gx * TILE, OY + gy * TILE, team.icon, { size: 150, color: team.color, stroke: 0, depth: 2 }).setAlpha(0.22);
+      makeText(this.scene, OX + gx * TILE, OY + gy * TILE, team.icon, { size: 150, color: team.color, stroke: 0, depth: 2 }).setAlpha(0.3);
+    });
+    // a stripe along every edge where a kitchen's floor meets something that is not its own floor and not a counter: the barrier
+    const edge = this.scene.add.graphics().setDepth(2);
+    view.teams!.forEach((team, i) => {
+      edge.fillStyle(hexNum(team.color), 0.9);
+      for (const [cx, cy] of this.kitchenTiles[i] ?? []) {
+        const x = Math.floor(cx), y = Math.floor(cy);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          const t = this.game.grid[y + dy]?.[x + dx];
+          if (t?.kind !== 'wall') continue; // only the barrier and the outer wall, not the stations
+          const px = OX + x * TILE, py = OY + y * TILE, w = 8;
+          if (dx === 1) edge.fillRect(px + TILE - w, py, w, TILE); else if (dx === -1) edge.fillRect(px, py, w, TILE);
+          else if (dy === 1) edge.fillRect(px, py + TILE - w, TILE, w); else edge.fillRect(px, py, TILE, w);
+        }
+      }
     });
   }
   private feet(gp: { x: number; y: number }) { return { x: OX + gp.x * TILE, y: OY + (gp.y + 0.3) * TILE }; }
@@ -115,13 +138,78 @@ export class World {
       this.chefOf(e.player)?.fail();
       this.fx.shake(90, 0.003);
     });
-    on('streak', (e) => { if (!g.versus) this.hud.streak(e.n, e.mult); }); // versus: the streak per team is F4's HUD
+    on('streak', (e) => { if (!g.versus) this.hud.streak(e.n, e.mult); }); // versus: each plate reads its team's streak from the sim
     on('countdownTick', (e) => { if (e.kind === 'start') this.hud.countdown(e.n); else this.hud.clockPulse(); });
-    on('roundEnd', () => { this.hud.timeUp(); this.fx.shake(250, 0.006); });
+    on('roundEnd', (e) => {
+      this.hud.timeUp();
+      this.fx.shake(250, 0.006);
+      if (g.versus) this.startFinale(e.winner ?? null);
+    });
+    // versus: the golden order, the handicap and the chefs that drop
+    const teamName = (t: number) => this.view?.teams?.[t]?.name ?? `Equipo ${t + 1}`;
+    const chefName = (id: number) => this.players().get(id)?.name ?? 'Un chef';
+    on('vipNew', () => this.hud.vs?.vipNew());
+    on('vipWon', (e) => {
+      this.hud.vs?.vipWon(e.team, e.tie);
+      const w = this.stations.pos(this.stations.windowIdx(e.team));
+      this.fx.confettiBurst(w.x, w.y); this.fx.starBurst(w.x, w.y - TILE * 0.4, 8);
+      this.fx.ring(w.x, w.y, 0xffd23f, 0.6, 2.8);
+      this.fx.shake(120, 0.003);
+    });
+    on('vipLost', (e) => this.hud.vs?.vipLost(e.team));
+    on('comeback', (e) => this.hud.vs?.notice(`¡Remontada de ${teamName(e.team)}!`, C.cheese));
+    on('teamK', (e) => { if (e.k > 1) this.hud.vs?.notice(`Ventaja ${kText(e.k)} para ${teamName(e.team)}`, C.cheese); });
+    on('playerDropped', (e) => this.hud.vs?.notice(`${chefName(e.player)} se cayó`, '#FF8D8D'));
+    on('playerBack', (e) => this.hud.vs?.notice(`${chefName(e.player)} volvió`, '#8BE59A'));
+    on('playerGone', (e) => this.hud.vs?.notice(`${chefName(e.player)} salió de la partida`, '#C9BBA7'));
+    on('pantryRefill', () => { for (const s of g.stations) if (s.pantry) { const p = this.stations.pos(g.stations.indexOf(s)); this.fx.ring(p.x, p.y, 0xffd23f, 0.3, 1.2); } });
+  }
+
+  // Versus, the round just ended: the scoreboard reveals, the winner's kitchen celebrates under a waving flag and the other one slumps under a flag at half mast.
+  private startFinale(winner: number | null) {
+    this.hud.vs?.reveal(winner);
+    this.finale = { winner, ms: 0, next: 0 };
+    this.game.teams.forEach((t) => {
+      const team = this.view?.teams?.[t.id];
+      const tiles = this.kitchenTiles[t.id];
+      if (!team || !tiles?.length) return;
+      const mx = tiles.reduce((a, p) => a + p[0], 0) / tiles.length, my = tiles.reduce((a, p) => a + p[1], 0) / tiles.length;
+      const [gx, gy] = tiles.reduce((a, p) => (Math.hypot(p[0] - mx, p[1] - my) < Math.hypot(a[0] - mx, a[1] - my) ? p : a));
+      const mood = winner === null ? 'idle' : t.id === winner ? 'wave' : 'droop';
+      const f = new FlagView(this.scene, `flag_${t.id}`, team.color, team.icon, mood, OX + gx * TILE, OY + (gy + 0.4) * TILE, 100 + OY + (gy + 1) * TILE, TILE * (mood === 'droop' ? 1.5 : 2.1));
+      f.raise();
+      this.flags.push(f);
+      if (winner !== null && t.id !== winner) {
+        const dim = this.scene.add.graphics().setDepth(3).setAlpha(0);
+        dim.fillStyle(0x1a0f0c, 0.34);
+        for (const [x, y] of tiles) dim.fillRect(OX + (x - 0.5) * TILE, OY + (y - 0.5) * TILE, TILE, TILE);
+        this.scene.tweens.add({ targets: dim, alpha: 1, duration: 900 });
+        this.dims.push(dim);
+      }
+    });
+  }
+  private updateFinale(dtMs: number) {
+    const f = this.finale;
+    if (!f) return;
+    f.ms += dtMs;
+    for (const fl of this.flags) fl.update(dtMs);
+    if (f.ms < f.next) return;
+    f.next = f.ms + 700;
+    for (const [id, chef] of this.chefs) {
+      const team = this.game.players.get(id)?.team;
+      if (f.winner === null) continue;
+      if (team === f.winner) chef.celebrate(); else chef.fail();
+    }
+    if (f.winner !== null && f.ms < 2400) {
+      const tiles = this.kitchenTiles[f.winner] ?? [];
+      const at = tiles[Math.floor(Math.random() * tiles.length)];
+      if (at) { this.fx.confettiBurst(OX + at[0] * TILE, OY + at[1] * TILE); this.fx.starBurst(OX + at[0] * TILE, OY + at[1] * TILE, 4); }
+    }
   }
 
   update(dtMs: number) {
     const g = this.game;
+    this.updateFinale(dtMs);
     const chop = new Map<number, 'chop' | 'stretch'>();
     for (const gp of g.players.values()) {
       const info = this.players().get(gp.id);
@@ -165,6 +253,9 @@ export class World {
     this.stations.destroy();
     this.marks.destroy();
     this.hud.destroy();
+    for (const f of this.flags) f.destroy();
+    this.flags = [];
+    this.dims = [];
     this.bg.destroy();
     this.scene.tweens.killAll();
     this.scene.children.removeAll(true);

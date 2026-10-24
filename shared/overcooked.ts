@@ -1,10 +1,10 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
 import { Emitter, type GameEvents } from './events';
-import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type StationKind } from './maps';
+import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type Pos, type StationKind } from './maps';
 import { DEFAULT_DIFFICULTY, DIRTY_MS, WASH_MS, params as difficultyParams, teamSize, type Difficulty, type Params, type Tuning } from './difficulty';
 import { mulberry32, type Rng } from './rng';
 import { holdsPlace, matchStatus, rankTeams, teamMultipliers, type PauseChoice, type RosterEntry, type TeamId, type TeamResult } from './teams';
-import { VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS, kitchenRegions, stationOwner, teamStarts, type Kitchens } from './versus';
+import { PANTRY_EVERY_MS, PANTRY_MAX, VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS, kitchenRegions, stationOwner, teamStarts, type Kitchens } from './versus';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -38,6 +38,7 @@ export interface Station {
   count: number; // plates: clean stock (finite-plate maps); dirty (return): dirty plates waiting; sink: dirty plates to wash
   clean: number; // sink: washed plates ready to take
   owner: TeamId | null; // the team whose kitchen it is: chefs of another team cannot use it. null: shared (nobody owns it)
+  pantry?: true; // a crate of the shared pantry: it gives from the common stock (game.pantry) instead of for free
 }
 export interface Player {
   id: number;
@@ -103,6 +104,7 @@ export interface Game {
   noWinner: boolean; // the host chose to go on without a winner after a team emptied
   result: MatchResult | null; // set when the round ends
   vip: { nextAt: number; rng: Rng; round: VipRound | null };
+  pantry: Pantry | null; // versus maps that declare a shared pantry (V2): the stock both kitchens' pantry crates draw from
   // legacy single-team view: the fields of team 0 (the whole round in coop)
   score: number; // points of team 0 (versus: times k)
   delivered: number;
@@ -146,6 +148,8 @@ export interface TeamState {
   rng: Rng; // the team's own stream: the same seed for every team, so the queues are twins
   dirtyDue: number[];
 }
+/** The shared pantry: `stock` units both teams take from; below PANTRY_MAX one unit returns every PANTRY_EVERY_MS (`nextAt`, match time; Infinity when full). */
+export interface Pantry { stock: number; nextAt: number }
 export interface VipRound { recipe: Recipe; winners: { team: TeamId; at: number }[]; settled: boolean }
 export interface MatchResult { order: TeamResult[]; winner: TeamId | null; aborted: boolean } // aborted: the host ended it from the pause
 
@@ -195,7 +199,7 @@ function settleVip(g: Game) {
 
 export interface TeamSeat { playerIds: readonly number[] } // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
 
-export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean } = {}): Game {
+export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[] } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows);
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
@@ -208,8 +212,11 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
   const seed = opts.seed ?? 1;
   const kitchens = versus ? kitchenRegions(grid, teamCount, opts.spawns) : null;
   const stations: Station[] = [];
+  const pantryAt = new Set(versus ? (opts.shared ?? []).map(([x, y]) => `${x},${y}`) : []); // only a versus round has a pantry; coop ignores the declaration
   grid.forEach((row, ty) => row.forEach((t, tx) => {
-    if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false, count: 0, clean: 0, owner: kitchens ? stationOwner(grid, kitchens, tx, ty) : 0 });
+    if (t.kind !== 'station') return;
+    const pantry = t.station === 'crate' && pantryAt.has(`${tx},${ty}`);
+    stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false, count: 0, clean: 0, owner: pantry ? null : kitchens ? stationOwner(grid, kitchens, tx, ty) : 0, ...(pantry ? { pantry: true as const } : {}) });
   }));
   const handicap = versus && (opts.handicap ?? true);
   const ks = handicap ? teamMultipliers(seats!.map((t) => t.playerIds.length), Infinity) : null; // null: an empty team, or no handicap
@@ -220,7 +227,7 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
   const g = {
     bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(n), params: p, time: 0, over: false, mapId: opts.mapId, players: new Map(), stations,
     hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(),
-    teams, versus, roster: [], paused: null, noWinner: false, result: null, vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null },
+    teams, versus, roster: [], paused: null, noWinner: false, result: null, vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null }, pantry: stations.some((s) => s.pantry) ? { stock: PANTRY_MAX, nextAt: Infinity } : null,
     teamIds: seats ? seats.map((t) => [...t.playerIds]) : [], open: !seats, handicap, pauseDismissed: false, kitchens, teamSpawns: [],
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0
@@ -384,7 +391,14 @@ const baked = (s: Station) => s.inputs.includes(0) && s.inputs.includes(1);
 function interact(g: Game, p: Player, s: Station) {
   switch (s.kind) {
     case 'crate':
-      if (!p.item) p.item = RAW_OF[s.crate] ?? 'raw1';
+      if (p.item) break;
+      if (s.pantry) { // the shared pantry: a unit of the common stock, or nothing when it ran out (the other team may have emptied it)
+        const pantry = g.pantry!;
+        if (pantry.stock <= 0) break;
+        if (pantry.stock === PANTRY_MAX) pantry.nextAt = g.time + PANTRY_EVERY_MS; // the refill clock starts when the stock leaves the maximum
+        pantry.stock--;
+      }
+      p.item = RAW_OF[s.crate] ?? 'raw1';
       break;
     case 'plates':
       if (!g.finitePlates) { if (!p.item) p.item = 'plate'; }
@@ -589,6 +603,13 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     team.dirtyDue.shift();
     const back = g.stations.filter((s) => s.kind === 'dirty' && s.owner === team.id).sort((a, b) => a.count - b.count)[0];
     if (back) { back.count++; g.bus.emit('dirtyNew', { station: g.stations.indexOf(back), ...tag(g, team.id) }); }
+  }
+
+  const pantry = g.pantry;
+  while (pantry && pantry.stock < PANTRY_MAX && g.time >= pantry.nextAt) {
+    pantry.stock++;
+    pantry.nextAt = pantry.stock < PANTRY_MAX ? pantry.nextAt + PANTRY_EVERY_MS : Infinity;
+    g.bus.emit('pantryRefill', { stock: pantry.stock });
   }
 
   if (g.versus && g.time >= g.vip.nextAt) spawnVip(g);

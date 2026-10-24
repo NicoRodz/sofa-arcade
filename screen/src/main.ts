@@ -4,7 +4,8 @@ import {
   type BuzzKind, type ClientMsg, type LobbyConfig, type MatchStart, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
-import { summarize, summarizeTeam } from '@party/shared/results';
+import { summarize } from '@party/shared/results';
+import { DECIDED_TEXT, NO_LEAD, nextLead, phoneResult, recordRound, scoreHidden, seriesLine, tallyDeliveries, versusReport, type LeadState, type Series, type VersusReport } from '@party/shared/versusReport';
 import { GAMES, PLATFORM, gameInfo, gameName, hasModeChoice, modeOf, selectableModes, type GameDef, type ModeId } from '@party/shared/games';
 import { movePlayer, reshuffleTeams, teamOf } from '@party/shared/teams';
 import {
@@ -20,6 +21,8 @@ import { gameBus } from './bus';
 import { chefCanvas } from './art/chef';
 import { chefOf } from './art/tokens';
 import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
+import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from './art/flags';
+import { domCanvas } from './art/gfx';
 import { drawCardArt } from './art/cards';
 import { NAV_SFX, clampSel, lobbyEscGoesBack, menuCards, menuOnKey, menuPick, soundFor, type MenuAction } from './menu';
 import { iris } from './art/iris';
@@ -79,6 +82,9 @@ let teamsTouched = false; // somebody moved a player by hand: the lobby stops re
 let lockBeforeStart = false; // the teams lock while a match runs; this is what the host had set
 let teamNotice = ''; // why the last move or mode change was refused
 let roundView: RoundView = { teams: null, hiddenScore: false };
+let report: VersusReport | null = null; // versus: the verdict of the round that just ended (the results screen and the phones read it)
+let lead: LeadState = NO_LEAD; // versus: who led last, for the comeback cue
+let series: Series | null = null; // versus: who has won how many rounds of this group in this session
 let mapTouched = false; // the host picked a map by hand: stop proposing defaults
 let mapNotice = '';
 const puestoOf = new Map<number, PuestoView>(); // suggested stations of the running round, by player id
@@ -162,7 +168,7 @@ function setPhase(next: Phase) {
       puestoMsg = pm;
     } else puestoMsg = undefined;
     overAt = null;
-    stats.delivered.clear();
+    tally.reset();
     roundView = { teams: null, hiddenScore: false };
     scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
@@ -174,7 +180,7 @@ function setPhase(next: Phase) {
   // cooperative: every player carries the team score
   // cooperative: every player carries the team score; versus: the score of the player's own team
   const scoreOf = (id: number) => (activeGame === OBST_ID ? obstRun?.session.run.score ?? 0 : game.versus ? game.teams[game.players.get(id)?.team ?? teamOf(config.teams, id)?.id ?? 0]?.score ?? 0 : game.score);
-  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: scoreOf(id) })) : undefined, puestos: phase === 'playing' && activeGame === 'pizzas' ? puestoMsg : undefined, ...(match ? { match } : {}) });
+  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: scoreOf(id) })) : undefined, puestos: phase === 'playing' && activeGame === 'pizzas' ? puestoMsg : undefined, ...(match ? { match } : {}), ...(phase === 'results' && game.versus && report ? { result: phoneResult(report) } : {}) });
   renderUi();
 }
 
@@ -221,11 +227,12 @@ function startVersus(): MatchStart {
   puestoMsg = { cheese: f.cheese, sink: f.sink, assign };
   assign.forEach((a) => puestoOf.set(a.id, { ids: a.puestos, stamp: ++puestoStamp }));
   overAt = null;
-  stats.delivered.clear();
+  tally.reset();
   lockBeforeStart = config.teamsLocked;
   config = { ...config, teams, teamsLocked: true }; // frozen for the match; the phones get their kitchen side with `you`
   sendMsg({ t: 'config', ...config });
   roundView = { teams, hiddenScore: config.modeOptions.hiddenScore === true };
+  lead = NO_LEAD;
   scene.startRound(game, map.id, config.seed, roundView);
   return round.match;
 }
@@ -251,7 +258,7 @@ function setMode(id: ModeId) {
     const av = versusAvailability(mode, connectedCount());
     if (!av.ok) { teamNotice = av.reason; renderUi(); return; }
   }
-  teamNotice = ''; teamsTouched = false; mapTouched = false; mapNotice = '';
+  teamNotice = ''; teamsTouched = false; mapTouched = false; mapNotice = ''; series = null; // another mode: the series starts over
   const teams = syncTeams(mode, null, connectedIds(), config.seed, false);
   setConfig({ modeId: id, teams, teamsLocked: false, modeOptions: id === 'versus' ? defaultModeOptions(mode) : {}, map: id === 'versus' ? defaultVersusChoice(teamSizes(teams), played) : defaultMap(connectedN(), played).id });
 }
@@ -447,6 +454,11 @@ const host: Host = {
         p.pendA = 0; p.pendB = 0;
       }
       tick(game, controls);
+      if (game.versus && !game.over) { // the lead changed hands: a cue, unless the scoreboard is hidden (the sound must not give the lead away)
+        const r = nextLead(lead, game.teams.map((t) => t.score), scoreHidden(roundView.hiddenScore, game.countdown <= 0, game.params.roundMs - game.time));
+        lead = r.state;
+        if (r.cue && lead.leader !== null) gameBus.emit('comeback', { team: lead.leader });
+      }
       if (game.over) { overAt ??= performance.now(); break; }
     }
     // "¡TIEMPO!" stays on screen for a beat before the results
@@ -513,6 +525,11 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
   fastForward: (ms: number) => { game.params.roundMs = game.time + ms; },
   setScore: (n: number) => { game.score = n; }, // capture tool: results screen with stars
+  vipNow: () => { game.vip.nextAt = game.time; }, // capture tool: the golden order shows up at the next tick
+  setTeam: (id: number, patch: Record<string, number>) => { Object.assign(game.teams[id]!, patch); }, // capture tool: score, delivered, vips, streak... of a team
+  setDelivered: (id: number, n: number) => { tally.counts.set(id, n); }, // capture tool: deliveries of a chef (the MVP of the results)
+  setPantry: (stock: number, nextInMs: number) => { if (game.pantry) { game.pantry.stock = stock; game.pantry.nextAt = game.time + nextInMs; } }, // capture tool: the shared pantry's stock and the time to the next unit
+  dropChef: (id: number) => dropPlayer(game, id), // capture tool: a chef's phone drops (versus)
   snapshot: () => ({ versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
@@ -784,9 +801,9 @@ gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
 gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
 gameBus.on('dash', (e) => buzz(e.player, 'dash'));
 
-// round stats for the results screen
-const stats = { delivered: new Map<number, number>() };
-gameBus.on('delivered', (e) => stats.delivered.set(e.player, (stats.delivered.get(e.player) ?? 0) + 1));
+// round stats for the results screen: deliveries per chef (the podium, and the MVP of each team)
+const tally = tallyDeliveries(gameBus);
+const stats = { delivered: tally.counts };
 
 let resultsTimers: ReturnType<typeof setTimeout>[] = [];
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
@@ -838,37 +855,94 @@ function renderObstResults() {
     aw.appendChild(el);
   }
 }
-// Versus (minimal; F4 completes it): who won, and the numbers of each team.
+
+// Versus results (F4): the verdict, one card per team, the series of the session. The numbers come from versusReport (shared, tested);
+// this only lays them out. A short reveal: the scores count up from 0, then the winner's card lights up and the loser's slumps.
+const lightOf = (hex: string) => { const n = parseInt(hex.slice(1), 16); const m = (v: number) => Math.min(255, Math.round(v + (255 - v) * 0.5)); return `rgb(${m((n >> 16) & 255)},${m((n >> 8) & 255)},${m(n & 255)})`; };
+const ordinal = (rank: number) => `${rank}º`;
+let flagLoop = 0;
 function renderVersusResults() {
-  const res = game.result;
   const teams = roundView.teams ?? [];
-  const winner = res?.winner ?? null;
+  const rep = versusReport(game, teams, stats.delivered);
+  report = rep;
+  const counted = rep.verdict === 'win' || rep.verdict === 'draw';
+  series = (counted || series) ? recordRound(series, teams, rep.verdict, rep.winner) : series;
+  const names = teams.map((t) => t.name);
   const head = $('resh');
-  if (winner !== null) {
-    const w = teams[winner];
-    head.textContent = `¡Ganan los ${w?.name ?? `Equipo ${winner + 1}`}!`;
-    head.style.color = w?.color ?? '';
-  } else {
-    head.textContent = res?.aborted || game.noWinner ? 'Partida sin ganador' : '¡Empate!';
-    head.style.color = '';
-  }
-  const win = (id: number) => id === winner;
-  $('vsres').innerHTML = game.teams.map((t) => {
-    const sum = summarizeTeam(game, t.id), info = teams[t.id];
-    const row = (label: string, v: number) => `<div class="vr"><span>${label}</span><b>${v}</b></div>`;
-    return `<div class="vteam ${win(t.id) ? 'win' : ''}" style="--tc:${info?.color ?? '#888'}"><div class="vh">${esc(info?.icon ?? '')} ${esc(info?.name ?? `Equipo ${t.id + 1}`)}</div>${win(t.id) ? '<div class="crown">👑</div>' : ''}`
-      + `<div class="vs">${sum.score}</div><div class="vk">${sum.k > 1 ? `ventaja ×${sum.k} sobre ${sum.gross}` : ''}</div>`
-      + `${row('Entregadas', sum.delivered)}${row('En propinas', sum.tips)}${row('Pedido dorado', sum.vips)}${row('Falladas', sum.expired + sum.rejected)}</div>`;
+  head.className = 'vsh';
+  head.textContent = '¡Y el resultado es…!'; head.style.color = '';
+  $('vsnote').textContent = '';
+  const w = rep.winner !== null ? rep.teams[rep.winner] : null;
+  const verdictText = rep.verdict === 'win' ? `¡Ganan los ${w?.name ?? 'del equipo ' + (rep.winner! + 1)}!` : rep.verdict === 'draw' ? '¡Empate!' : rep.verdict === 'aborted' ? 'Partida terminada' : 'Partida sin ganador';
+  const noteText = rep.verdict === 'win'
+    ? (rep.decidedBy === 'score' ? `Ganaron por <b>${rep.margin}</b> ${rep.margin === 1 ? 'punto' : 'puntos'}` : DECIDED_TEXT[rep.decidedBy ?? 'score'])
+    : rep.verdict === 'draw' ? 'Empate perfecto: puntaje, entregas, pedidos dorados y hasta el momento en que lo lograron' : rep.verdict === 'aborted' ? 'El anfitrión terminó la partida' : 'El anfitrión siguió sin ganador';
+  const row = (cls: string, label: string, v: number | string) => `<div class="vr ${cls}"><span>${label}</span><b>${v}</b></div>`;
+  const slotOf = (id: number) => players.get(id)?.info.slot ?? 0;
+  $('vsres').innerHTML = rep.teams.map((t) => {
+    const mvp = t.mvp ? `<div class="vmvp"><span class="mvpav" data-slot="${slotOf(t.mvp.playerId)}"></span><div><small>MVP</small>${esc(players.get(t.mvp.playerId)?.info.name ?? 'Chef')} · ${t.mvp.delivered} ${t.mvp.delivered === 1 ? 'pizza' : 'pizzas'}</div></div>` : '<div class="vmvp"><div class="none">Nadie alcanzó a entregar</div></div>';
+    return `<div class="vteam" data-team="${t.teamId}" style="--tc:${t.color}"><div class="vh"><span class="vi">${esc(t.icon)}</span>${esc(t.name)}<span class="vc">👑</span>${counted ? `<span class="rk">${ordinal(t.rank)}</span>` : ''}</div>`
+      + `<div class="vtop"><canvas class="vflag" width="${FLAG_W * 2}" height="${FLAG_H * 2}"></canvas><div class="vmid"><div class="vs" data-to="${t.score}">0</div><div class="vk">${t.k > 1 ? `ventaja ×${String(t.k).replace('.', ',')} sobre ${t.gross}` : ''}</div><div class="vstars"></div></div></div>`
+      + `${row('', 'Pedidos entregados', t.delivered)}${row('', 'Mejor racha', t.bestStreak)}${row('g', 'Pedidos dorados ganados', t.vips)}${row('', 'En propinas', t.tips)}${row('b', 'Falladas', t.expired + t.rejected)}${mvp}</div>`;
   }).join('');
-  $('vsnote').textContent = res?.aborted ? 'El anfitrión terminó la partida' : '';
+  const line = seriesLine(series, names);
+  $('vsseries').innerHTML = line ? `<small>Serie</small>${esc(line)}` : '';
+  // the flags wave (winner), hang (loser) or rest, redrawn every frame while the screen is up
+  cancelAnimationFrame(flagLoop);
+  const cards = Array.from($('vsres').querySelectorAll<HTMLElement>('.vteam'));
+  const moods = (id: number): FlagMood => (rep.winner === null ? 'idle' : id === rep.winner ? 'wave' : 'droop');
+  const t0 = performance.now();
+  const paint = () => {
+    for (const el of cards) {
+      const id = Number(el.dataset.team), cv = el.querySelector('canvas.vflag') as HTMLCanvasElement, c = cv.getContext('2d')!;
+      c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, FLAG_W, FLAG_H);
+      drawFlag(c, { color: rep.teams[id]!.color, glyph: rep.teams[id]!.icon, mood: performance.now() - t0 < 1900 ? 'idle' : moods(id), t: (performance.now() - t0) / 1000 });
+    }
+    if (phase === 'results') flagLoop = requestAnimationFrame(paint);
+  };
+  paint();
+  for (const el of Array.from($('vsres').querySelectorAll<HTMLElement>('.mvpav'))) el.replaceChildren(chefCanvas(Number(el.dataset.slot), 'happy', true));
+  // the reveal
+  const t1 = performance.now() + 400, dur = 1300;
+  const step = () => {
+    const k = Math.max(0, Math.min(1, (performance.now() - t1) / dur));
+    for (const el of cards) { const sc = el.querySelector('.vs') as HTMLElement; sc.textContent = String(Math.round(Number(sc.dataset.to) * (1 - (1 - k) ** 3))); }
+    if (k < 1 && phase === 'results') requestAnimationFrame(step);
+  };
+  step();
+  cards.forEach((el) => {
+    const t = rep.teams[Number(el.dataset.team)]!;
+    const stars = el.querySelector('.vstars')!;
+    for (let i = 0; i < 3; i++) {
+      const cv = starCanvas();
+      if (i >= t.stars) cv.classList.add('off2');
+      stars.appendChild(cv);
+      resultsTimers.push(setTimeout(() => cv.classList.add('drop'), 700 + i * 260));
+    }
+  });
+  resultsTimers.push(setTimeout(() => {
+    $('resultsInner').classList.add('revealed');
+    head.textContent = verdictText;
+    head.style.color = w ? lightOf(w.color) : '';
+    $('vsnote').innerHTML = noteText;
+    for (const el of cards) {
+      const id = Number(el.dataset.team);
+      el.classList.toggle('win', rep.winner === id);
+      el.classList.toggle('lose', rep.winner !== null && rep.winner !== id);
+    }
+  }, 1900));
 }
 
 function renderResults() {
   resultsTimers.forEach(clearTimeout);
   resultsTimers = [];
+  cancelAnimationFrame(flagLoop);
   if (activeGame === OBST_ID) { $('resultsInner').classList.remove('vs'); renderObstResults(); return; }
   $('pizzares').classList.remove('off'); $('obstres').classList.add('off');
   $('resultsInner').classList.toggle('vs', game.versus);
+  if (!game.versus) report = null;
+  $('resh').className = '';
+  $('resultsInner').classList.remove('revealed');
   if (game.versus) { renderVersusResults(); return; }
   $('resh').textContent = '¡Fin de la ronda!'; $('resh').style.color = '';
   const sum = summarize(game);
@@ -974,6 +1048,24 @@ $('obstlevels').addEventListener('click', (e) => {
 });
 $('start').addEventListener('click', () => startRound());
 $('again').addEventListener('click', () => dispatch('again'));
+// Versus results: Revancha (same teams, same map, straight into the next round), Cambiar equipos (back to the lobby with the players dealt again), Volver al lobby (teams as they were).
+function rematch() {
+  if (phase !== 'results' || starting || !game.versus) return;
+  starting = true;
+  if (versusMap(game.mapId ?? '')) { mapTouched = true; config = { ...config, map: game.mapId as LobbyConfig['map'] }; } // the same kitchens (a generated map keeps its seed)
+  iris(() => {
+    dispatch('again');
+    if (isVersus() && !startProblem()) { dispatch('start'); gateUntil = performance.now() + 700; } // a player left and the split is not legal any more: the lobby says why
+  }, () => { starting = false; });
+}
+function newTeams() {
+  if (phase !== 'results' || starting || !game.versus) return;
+  starting = true;
+  iris(() => { dispatch('again'); shuffleTeams(); }, () => { starting = false; });
+}
+$('vs-rematch').addEventListener('click', rematch);
+$('vs-shuffle').addEventListener('click', newTeams);
+$('vs-lobby').addEventListener('click', () => { if (phase === 'results' && !starting) dispatch('again'); });
 $('howtobtn').addEventListener('click', () => { if (!howTo && !starting && phase === 'lobby') openHowTo('preview'); });
 $('howto').addEventListener('click', () => { if (howTo?.mode === 'preview') closeHowTo(); });
 // One handler for the Mac keyboard and for the Captain's D-pad (which arrives as the key it replaces).
@@ -987,7 +1079,7 @@ function onKey(key: string, repeat: boolean) {
   if (lobbyEscGoesBack(phase, key, !!howTo, starting)) { goBack(); return; }
   if (key === 'Enter' && repeat) return; // a held Enter that picked the game must not also start the round
   if (key === 'Enter' && phase === 'lobby') startRound();
-  else if (key === 'Enter' && phase === 'results') dispatch('again');
+  else if (key === 'Enter' && phase === 'results') { if (game.versus) rematch(); else dispatch('again'); }
 }
 window.addEventListener('keydown', (e) => {
   if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); return; }

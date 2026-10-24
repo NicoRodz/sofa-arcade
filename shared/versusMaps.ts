@@ -34,7 +34,7 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
   },
   {
     // Design V2: V1 without its own cheese crate. The two '3' in the barrier, (7, 4) for the left team and (8, 4) for the right one,
-    // are the shared pantry. Until F5 (common stock: 4 units, +1 every 6 s) they are plain cheese crates, one per side.
+    // are the shared pantry (F5): both crates draw from one stock of 4 units that gets +1 every 6 s (PANTRY_MAX / PANTRY_EVERY_MS in versus.ts).
     id: 'V2', name: 'Despensa', nMin: 4, nMax: 8, minDuro: 4, stars: 2,
     versus: { sigma: 'mirrorX', spawns: spawnsFor('mirrorX', [[2, 5], [5, 5], [5, 6], [2, 6]]), shared: [[7, 4], [8, 4]] },
     rows: [

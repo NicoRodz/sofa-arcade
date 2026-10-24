@@ -51,6 +51,41 @@ describe('event -> sound mapping', () => {
   });
 });
 
+describe('versus sounds (F4)', () => {
+  it('the golden order: a shimmer when it shows up, a fanfare (and a duck) for the team that wins it, a dull slide for the one that loses it', () => {
+    expect(ids(ACTIONS.vipNew({ recipe: 'marinara' }))).toEqual(['vipNew']);
+    expect(ids(ACTIONS.vipWon({ team: 0, player: 1, tie: false }))).toEqual(['vipWon', 'duck']);
+    expect(ids(ACTIONS.vipLost({ team: 1 }))).toEqual(['vipLost']);
+    expect(Math.min(...SFX.vipLost.voices.map((v) => v.at))).toBeGreaterThan(0.2); // it lands after the winner's arpeggio, not on top of it
+  });
+  it('the handicap: only a bigger k is news (a chef of that kitchen dropped); back to 1 is silent', () => {
+    expect(ids(ACTIONS.teamK({ team: 1, k: 1.22 }))).toEqual(['advantage']);
+    expect(ACTIONS.teamK({ team: 1, k: 1 })).toEqual([]);
+  });
+  it('a chef dropping, coming back, leaving for good and the pause each have their own sound', () => {
+    expect(ids(ACTIONS.playerDropped({ player: 1, team: 0 }))).toEqual(['playerDropped']);
+    expect(ids(ACTIONS.playerBack({ player: 1, team: 0 }))).toEqual(['playerBack']);
+    expect(ids(ACTIONS.playerGone({ player: 1, team: 0 }))).toEqual(['playerGone']);
+    expect(ids(ACTIONS.matchPaused({ teams: [1] }))).toEqual(['paused']);
+    expect(ids(ACTIONS.matchResumed({}))).toEqual(['resumed']);
+  });
+  it('the comeback and a unit back in the pantry', () => {
+    expect(ids(ACTIONS.comeback({ team: 1 }))).toEqual(['comeback']);
+    expect(ids(ACTIONS.pantryRefill({ stock: 2 }))).toEqual(['plink']);
+  });
+  it('the end of a versus round: the whistle, then a fanfare for a winner or a plain close for a draw; coop keeps its whistle alone', () => {
+    const end = (winner?: number | null) => ids(ACTIONS.roundEnd({ score: 10, delivered: 1, ...(winner === undefined ? {} : { winner }) }));
+    expect(end(0)).toEqual(['stopLoops', 'whistle', 'fanfare']);
+    expect(end(1)).toEqual(['stopLoops', 'whistle', 'fanfare']);
+    expect(end(null)).toEqual(['stopLoops', 'whistle', 'tieJingle']);
+    expect(end()).toEqual(['stopLoops', 'whistle']);
+  });
+  it('the fanfare and the close come after the whistle (0.7 s), so they never mask it', () => {
+    for (const id of ['fanfare', 'tieJingle'] as const) expect(Math.min(...SFX[id].voices.map((v) => v.at)), id).toBeGreaterThanOrEqual(sfxDuration('whistle'));
+    expect(sfxDuration('fanfare')).toBeGreaterThan(2.5);
+  });
+});
+
 describe('recipes', () => {
   it('every voice has a positive duration and a gain in (0, 1]', () => {
     for (const [id, s] of Object.entries(SFX)) for (const v of s.voices) {

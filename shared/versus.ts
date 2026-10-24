@@ -9,6 +9,9 @@ import type { TeamId } from './teams';
 export const VIP_EVERY_MS: Record<Difficulty, number> = { easy: 75_000, normal: 60_000, hard: 45_000 }; // a VIP order shows up in both queues this often
 export const VIP_TTL_MS = 30_000; // patience of a VIP order
 export const VIP_MULT = 2; // the delivery that wins the VIP is worth this much (before the handicap k)
+// The shared pantry (map V2, design §2): one stock for both kitchens' crates on the barrier. A take lowers it, it fills up again by itself.
+export const PANTRY_MAX = 4; // units in stock at the start, and the most it holds
+export const PANTRY_EVERY_MS = 6000; // one unit comes back this often while the stock is below the maximum
 
 export interface Kitchens { comp: number[][]; regions: number[] } // comp: floor region of each tile (-1 off floor); regions[team] = the region of that team
 

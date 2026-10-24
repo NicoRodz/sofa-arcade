@@ -101,7 +101,7 @@ export function defaultVersusChoice(sizes: readonly number[], played: ReadonlySe
   return (fit.find((id) => !played.has(id)) ?? fit[0] ?? VERSUS_AUTO) as VersusChoice;
 }
 
-export interface ResolvedVersusMap { id: string; name: string; rows: readonly string[]; spawns: readonly Pos[]; sigma: SigmaName }
+export interface ResolvedVersusMap { id: string; name: string; rows: readonly string[]; spawns: readonly Pos[]; sigma: SigmaName; shared?: readonly Pos[] } // shared: the tiles of a shared pantry (V2)
 
 /**
  * The map a lobby choice stands for. `spawns` is kitchen A's starts followed by kitchen B's (createGame keeps each team's own, in order).
@@ -115,7 +115,7 @@ export function resolveVersusMap(choice: string, seed: number, difficulty: Diffi
   }
   const fit = versusLobbyMaps(sizes).filter((x) => x.status.state === 'recommended').map((x) => x.map);
   const m = (choice === VERSUS_AUTO ? undefined : versusMap(choice)) ?? (fit.length ? fit[Math.floor(rand() * fit.length)]! : versusMap('V1')!);
-  return { id: m.id, name: m.name, rows: m.rows, spawns: [...m.versus.spawns[0], ...m.versus.spawns[1]], sigma: m.versus.sigma };
+  return { id: m.id, name: m.name, rows: m.rows, spawns: [...m.versus.spawns[0], ...m.versus.spawns[1]], sigma: m.versus.sigma, ...(m.versus.shared?.length ? { shared: m.versus.shared } : {}) };
 }
 
 /** "izquierda" / "derecha" or "arriba" / "abajo" for each kitchen of a map, from where its floor really is (team 0 = the region met first). */
@@ -159,7 +159,7 @@ export const withSides = (teams: readonly TeamInfo[], map: Pick<ResolvedVersusMa
 export function createVersusGame(o: VersusStart): Game {
   const game = createGame({
     mapId: o.map.id, difficulty: o.difficulty, rows: o.map.rows, spawns: o.map.spawns, seed: o.seed, countdownMs: o.countdownMs, bus: o.bus,
-    teams: o.teams.map((t) => ({ playerIds: t.playerIds })), handicap: o.modeOptions.handicap !== false,
+    teams: o.teams.map((t) => ({ playerIds: t.playerIds })), handicap: o.modeOptions.handicap !== false, shared: o.map.shared,
   });
   for (const t of o.teams) t.playerIds.forEach((id, rank) => addPlayer(game, id, o.slotOf(id), rank));
   return game;
