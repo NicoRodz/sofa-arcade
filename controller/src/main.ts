@@ -3,6 +3,7 @@ import { DIFFICULTY_LABEL } from '@party/shared/difficulty';
 import { fixedMap } from '@party/shared/maps';
 import { gameName, type GameControls } from '@party/shared/games';
 import { controlHtml } from '@party/shared/render';
+import { createZoomGuard, isDoubleTap } from './zoom';
 import {
   ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
   type ClientMsg, type Phase, type ServerMsg,
@@ -14,18 +15,39 @@ const store = {
   set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } },
 };
 
-// Touch hardening: no zoom, scroll, double-tap zoom or context menu.
+// Touch hardening: no zoom (pinch, double-tap), scroll, selection or context menu. iOS Safari ignores user-scalable=no,
+// so the gesture events are cancelled too, and zoom.ts watches visualViewport in case it zooms anyway.
 const stop = (e: Event) => e.preventDefault();
 document.addEventListener('touchmove', stop, { passive: false });
-document.addEventListener('gesturestart', stop);
-document.addEventListener('gesturechange', stop);
-document.addEventListener('contextmenu', stop);
+document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false }); // second finger = pinch
+for (const g of ['gesturestart', 'gesturechange', 'gestureend', 'contextmenu', 'dblclick', 'selectstart']) {
+  document.addEventListener(g, (e) => { if (!(e.target as HTMLElement | null)?.closest?.('input')) e.preventDefault(); });
+}
 let lastEnd = 0;
 document.addEventListener('touchend', (e) => {
   const now = Date.now();
-  if (now - lastEnd < 350) e.preventDefault();
+  if (isDoubleTap(lastEnd, now)) e.preventDefault();
   lastEnd = now;
 }, { passive: false });
+
+function resetZoom() {
+  window.scrollTo(0, 0);
+  const meta = document.querySelector<HTMLMetaElement>('meta[name=viewport]');
+  if (!meta) return;
+  const original = meta.content;
+  meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'; // a changed value makes iOS re-evaluate the scale
+  setTimeout(() => { meta.content = original; }, 120);
+}
+const zoomGuard = createZoomGuard({
+  viewport: window.visualViewport,
+  reset: resetZoom,
+  onZoomed: (z) => document.body.classList.toggle('zoomed', z),
+  later: (fn, ms) => { setTimeout(fn, ms); },
+});
+window.visualViewport?.addEventListener('resize', zoomGuard.check);
+window.visualViewport?.addEventListener('scroll', zoomGuard.check);
+setInterval(zoomGuard.check, 2000);
+$('zoomfix').addEventListener('click', () => zoomGuard.manualReset());
 
 const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0 };
 const sync = new ClockSync();

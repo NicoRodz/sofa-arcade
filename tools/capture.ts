@@ -233,6 +233,28 @@ async function main() {
       await sleep(250);
       await cdp.shot('phone-play-hold');
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      // zoom defenses: cancelable gesture events, double-tap touchend, and the visualViewport.scale check
+      const prevented = await cdp.eval<Record<string, boolean>>(`(() => {
+        const r = {};
+        for (const t of ['gesturestart', 'gesturechange', 'gestureend', 'dblclick']) { const e = new Event(t, { cancelable: true, bubbles: true }); document.body.dispatchEvent(e); r[t] = e.defaultPrevented; }
+        const a = new Event('touchend', { cancelable: true, bubbles: true }); document.dispatchEvent(a);
+        const b = new Event('touchend', { cancelable: true, bubbles: true }); document.dispatchEvent(b);
+        r.secondTouchend = b.defaultPrevented;
+        return r;
+      })()`);
+      console.log('prevented:', JSON.stringify(prevented));
+      // a real pinch (synthesized by CDP): the touchstart guard should keep the scale at 1
+      await cdp.send('Input.synthesizePinchGesture', { x: 420, y: 200, scaleFactor: 2.5, relativeSpeed: 400 });
+      await sleep(600);
+      console.log('scale after a real pinch:', await cdp.eval('visualViewport.scale'));
+      // wiring of the banner: force the reported scale (headless cannot reproduce the iOS zoom state)
+      await cdp.eval(`window.__fakeScale = 2.5; Object.defineProperty(visualViewport, 'scale', { get: () => window.__fakeScale, configurable: true }); visualViewport.dispatchEvent(new Event('resize'))`);
+      await sleep(1500);
+      console.log('banner shown with scale 2.5:', await cdp.eval(`document.body.classList.contains('zoomed')`));
+      await cdp.shot('phone-zoomed');
+      await cdp.eval(`window.__fakeScale = 1; visualViewport.dispatchEvent(new Event('resize'))`);
+      await sleep(300);
+      console.log('banner after scale back to 1:', await cdp.eval(`document.body.classList.contains('zoomed')`));
       fake.close();
     }
     if (what === 'lobby' || what === 'all') {
