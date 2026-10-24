@@ -23,6 +23,8 @@ describe('params(N): the numbers of the layer, N=2 frozen', () => {
       // A5 (dynamics 4-9 and the throw niche): new keys, none of the ones above changed
       balanceTilesPerSec: 2, targetSec: 4, enemyStunSec: 3, enemyExtra: 0, enemyTilesPerSec: 1.5, enemyPushPxPerSec: 360, iceFriction: 0.15,
       windPxPerSec: 140, windWarnSec: 1, pickTilesPerSec: 1, throwVxMult: 1.3, throwSlack: 1.5, throwSlackSec: 1.2,
+      // A6 (dynamics 10-12): new keys, none of the ones above changed
+      lanternRadiusTiles: 4, bungeeMaxMult: 1.6, bungeeStiffness: 40, bungeeDamping: 7, sinkTilesPerSec: 0.5, sinkRiseTilesPerSec: 0.5, geyserWarnSec: 1, geyserLaunchMult: 1.65,
     });
   });
   it('the world table of plan §3 (hearts, forgiveness, auto-rescue, hazards, checkpoint spacing, bands)', () => {

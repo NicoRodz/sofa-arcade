@@ -12,7 +12,7 @@ import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode, LevelDef, Weight } from '../types';
 import type { ModeledMechanic } from '../mechanics';
 import { campaignParams } from '../sim/campaign';
-import { buildGraph, can, doorGroupsOf, newSimCache, pathTo, shortest, type Edge, type Env, type Graph, type OpenState, type Seg } from './graph';
+import { buildGraph, can, doorGroupsOf, newSimCache, pathTo, ringsOf, shortest, type Edge, type Env, type Graph, type OpenState, type Seg } from './graph';
 
 export const resolveWeight = (w: Weight, n: number): number =>
   typeof w === 'number' ? w : w === 'half-up' ? Math.ceil(n / 2) : w === 'half-down' ? Math.floor(n / 2) : w === 'all' ? n : Math.max(1, n - 1);
@@ -61,7 +61,7 @@ export function lint(p: ParsedLevel): string[] {
   for (const o of Object.values(p.objects)) {
     const q = o.param;
     if (!q) continue;
-    const shifts: [number, number][] = q.kind === 'mover' ? [[Math.round(q.dx), Math.round(q.dy)]] : q.kind === 'balance' ? [[0, Math.round(q.travel)], [0, -Math.round(q.travel)]] : [];
+    const shifts: [number, number][] = q.kind === 'mover' ? [[Math.round(q.dx), Math.round(q.dy)]] : q.kind === 'sinker' ? [[0, Math.round(q.travel)]] : q.kind === 'balance' ? [[0, Math.round(q.travel)], [0, -Math.round(q.travel)]] : [];
     for (const [sx, sy] of shifts) for (const c of o.cells) {
       const x = c.x + sx, y = c.y + sy;
       if (x < 0 || y < 0 || x >= wPx || y >= hPx) errors.push(`'${o.char}' ${q.kind} leaves the grid at (${x},${y})`);
@@ -69,6 +69,10 @@ export function lint(p: ParsedLevel): string[] {
     }
     if ((q.kind === 'plate' || q.kind === 'lever' || q.kind === 'target') && !isActivator(o.char)) errors.push(`'${o.char}' must be an activator letter`);
   }
+  // A6 (dynamics 10-12)
+  const crystals = p.tiles.reduce((n, k) => n + (k === T.Crystal ? 1 : 0), 0);
+  if (crystals > 0 && p.markers.lantern.length === 0) errors.push(`${crystals} crystals ('Y') but no lantern ('l'): nothing ever lights them`);
+  for (const o of Object.values(p.objects)) if (o.param?.kind === 'geyser') for (const c of o.cells) if (!(p.tiles[(c.y + 1) * wPx + c.x] === T.Solid || p.tiles[(c.y + 1) * wPx + c.x] === T.FreeSolid)) errors.push(`geyser '${o.char}' vent at (${c.x},${c.y}) has no solid floor under it`);
   const hasAct = (ch: string) => Object.values(d.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever' || q.kind === 'target') && q.opens === ch);
   // a target's gate closes after targetSec: the run from the target to the gate must fit (straight-line tiles at the run speed, with a quarter of the time in hand)
   const maxTargetTiles = Math.floor((0.75 * campaignParams(2).targetSec * RUN_SPEED) / TILE);
@@ -82,7 +86,7 @@ export function lint(p: ParsedLevel): string[] {
     if (d2 > maxTargetTiles) errors.push(`target '${o.char}' is ${d2.toFixed(0)} tiles from its gate '${q.opens}': at most ${maxTargetTiles} (the gate stays open ${campaignParams(2).targetSec} s)`);
   }
   for (const o of Object.values(p.objects)) if (o.param?.kind === 'gate' && !hasAct(o.char)) errors.push(`gate '${o.char}' has no activator: it never opens`);
-  if (d.tether === 'freeOnly' && p.markers.ring.length) errors.push('rings only work tied (tether freeOnly has rings)');
+  if (d.tether === 'freeOnly' && ringsOf(p).length) errors.push('rings only work tied (tether freeOnly has rings)');
   return errors;
 }
 
@@ -135,7 +139,7 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
 
   for (let iter = 0; iter < 40; iter++) {
     let changed = false;
-    p.markers.ring.forEach((r, i) => { if (!rings.has(i) && can(env, 'swing') && [...reached].some((id) => touches(g.segs[id]!, r, 2))) { rings.add(i); routeTo(g, sr, [r], 2); changed = true; gadgetsUsed.push(`ring${i}`); gadgetWeight += 1; } });
+    ringsOf(p).forEach((r, i) => { if (!rings.has(i) && can(env, 'swing') && [...reached].some((id) => touches(g.segs[id]!, r, 2))) { rings.add(i); routeTo(g, sr, [r], 2); changed = true; gadgetsUsed.push(`ring${i}`); gadgetWeight += 1; } });
     const keysHeld = !can(env, 'key') ? 0 : p.markers.key.filter((k) => [...reached].some((id) => touches(g.segs[id]!, k, 3))).length;
     doors.forEach((grp, i) => {
       if (S.doors.has(i) || keysHeld <= S.doors.size) return;

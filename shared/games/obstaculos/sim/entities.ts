@@ -11,7 +11,7 @@ import {
 } from './state';
 import type { CampaignParams } from './campaign';
 import { createEnemies } from './enemies';
-import { AVALANCHE_START_TILES, BELT_SPEED, BOX_ID0, BOX_SIZE, BALANCE_ID0, FREEZE_SEC, HEAVY_GRIPS, HOLD_BREAK, KEY_REACH, MOVER_ID0, TIDE_PERIOD_SEC } from './tuning';
+import { AVALANCHE_START_TILES, BELT_SPEED, BOX_ID0, BOX_SIZE, BALANCE_ID0, FREEZE_SEC, HEAVY_GRIPS, HOLD_BREAK, KEY_REACH, MOVER_ID0, SINKER_ID0, TIDE_PERIOD_SEC } from './tuning';
 import { boxTouches, setTile, tileAt, tileOf, type TileGrid } from './tiles';
 import { CRUMBLE_BACK_SEC, CRUMBLE_FALL_SEC } from '../constants';
 
@@ -20,12 +20,14 @@ const idx = (x: number, y: number, w: number) => y * w + x;
 
 export function createEntities(p: ParsedLevel, grid: TileGrid, hazardMult: number, camp: CampaignParams | null = null): Entities {
   const ent: Entities = {
-    activators: [], objectives: [], boxes: [], keys: [], crumbles: [], rings: [...p.markers.ring], checkpoints: p.markers.checkpoint.map((cell) => ({ cell, activated: false })),
-    stars: p.markers.star.map((cell) => ({ cell, taken: false })), enemies: camp ? createEnemies(p, camp) : [], pickaxes: [], doorCells: new Set(), hazard: null, lastStarTick: -Infinity, streak: 0,
+    activators: [], objectives: [], boxes: [], keys: [], crumbles: [], rings: [...p.markers.ring, ...p.markers.bungee], checkpoints: p.markers.checkpoint.map((cell) => ({ cell, activated: false })),
+    stars: p.markers.star.map((cell) => ({ cell, taken: false })), enemies: camp ? createEnemies(p, camp) : [], pickaxes: [], lanterns: [], crystals: [], bungeeFrom: p.markers.ring.length, doorCells: new Set(), hazard: null, lastStarTick: -Infinity, streak: 0,
   };
   if (camp) ent.pickaxes = p.markers.pickaxe.map((c): PickE => { const x = c.x * TILE + TILE / 2, y = c.y * TILE + TILE / 2; return { x, y, homeX: x, homeY: y, heldBy: -1 }; });
+  if (camp) ent.lanterns = p.markers.lantern.map((c): PickE => { const x = c.x * TILE + TILE / 2, y = c.y * TILE + TILE / 2; return { x, y, homeX: x, homeY: y, heldBy: -1 }; });
   for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) {
     const k = grid.cells[idx(x, y, p.w)];
+    if (k === T.Crystal) { if (camp) ent.crystals.push({ x, y }); else grid.cells[idx(x, y, p.w)] = T.Empty; } // a crystal outside a campaign is just air (nothing lights it)
     if (k === T.Door) ent.doorCells.add(idx(x, y, p.w));
     if (k === T.Crumble) ent.crumbles.push({ x, y, state: 0, t: 0 });
   }
@@ -46,11 +48,12 @@ export function createEntities(p: ParsedLevel, grid: TileGrid, hazardMult: numbe
       });
     }
   }
-  let m = 0, b = 0;
+  let m = 0, b = 0, sk = 0;
   for (const ob of ent.objectives) {
     ob.hasOpener = ent.activators.some((a) => a.opens === ob.letter);
     if (ob.kind === 'mover') ob.platformId = MOVER_ID0 + m++;
     if (ob.kind === 'balance') ob.platformId = BALANCE_ID0 + b++;
+    if (ob.kind === 'sinker') ob.platformId = SINKER_ID0 + sk++;
     ob.open = ob.kind === 'gate' ? false : ob.kind === 'ladder' ? !ob.hasOpener : ob.kind === 'mover' ? !ob.hasOpener : true;
     if (ob.kind === 'gate') for (const c of ob.cells) setTile(grid, c.x, c.y, T.Door);
     if (ob.kind === 'ladder') for (const c of ob.cells) setTile(grid, c.x, c.y, ob.open ? T.Ladder : T.Object);
@@ -78,7 +81,7 @@ export function extraPlatforms(w: World): Platform[] {
   const out: Platform[] = [];
   for (const b of w.ent.boxes) if (b.holders.length === 0) out.push(boxPlatform(b));
   for (const o of w.ent.objectives) {
-    if (o.kind !== 'mover' && o.kind !== 'balance') continue;
+    if (o.kind !== 'mover' && o.kind !== 'balance' && o.kind !== 'sinker') continue;
     const r = objRect(o);
     out.push({ id: o.platformId, x: r.x, y: r.y, w: r.w, h: r.h, oneWay: true, dx: o.dx, dy: o.dy });
   }
@@ -141,7 +144,7 @@ export function computeLoads(w: World): void {
   for (const o of w.ent.objectives) o.load = 0;
   const units = unitsOf(w);
   const plates = w.ent.activators.filter((a) => a.kind === 'plate');
-  const balances = w.ent.objectives.filter((o) => o.kind === 'balance');
+  const balances = w.ent.objectives.filter((o) => o.kind === 'balance' || o.kind === 'sinker'); // (a sinker's load is the same count)
   for (const u of units.values()) {
     if (!u.standing) continue;
     let base = u, depth = 0;

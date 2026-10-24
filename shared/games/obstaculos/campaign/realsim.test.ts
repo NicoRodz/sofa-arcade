@@ -156,7 +156,7 @@ describe('Bosque and Glaciar in the real sim: the cooperative tricks work with b
 });
 
 describe('Bosque and Glaciar in the real sim: ObstBot (2 players) plays what the dynamics only make harder', () => {
-  const play = (id: string, sec: number) => { const events: ObstEvent[] = []; const s = playWithBots(def(id), 2, CAMPAIGN.find((l) => l.id === id)!.mode === 'L' ? 'free' : 'chain', sec, camp(id), events); return { s, events }; };
+  const play = (id: string, sec: number) => { const events: ObstEvent[] = []; const s = playWithBots(def(id), 2, CAMPAIGN.find((l) => l.id === id)!.mode === 'L' ? 'free' : 'chain', sec, camp(id).campaign, events); return { s, events }; };
   const count = (events: ObstEvent[], name: string) => events.filter((e) => e.name === name).length;
   const cleared = (s: ReturnType<typeof playWithBots>) => s.world.status === 'cleared' && s.world.players.every((p) => p.inGoal);
 

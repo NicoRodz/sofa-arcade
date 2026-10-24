@@ -104,7 +104,7 @@ export const SELECTORS = [
   '#zone', '#stickhint', '#stickhint .ico', '#stickhint .lbl',
   '#btnA', '#btnA .ico', '#btnA .lbl', '#btnA .hold', '#btnB', '#btnB .ico', '#btnB .lbl', '#btnB .hold',
   '#stickLbl .pl', '#stickLbl .lbl', '#stickLbl .hold', '#lblA .pl', '#lblA .lbl', '#lblA .hold', '#lblB .pl', '#lblB .lbl', '#lblB .hold',
-  '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap',
+  '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap', '#signals', '#signals .sg',
   '#wait > *', '#howtoopen', '#assist', '#assist svg', '#assistlbl', '#choosing > *', '#results > *',
   '#howto h2', '#howtogame', '#howto .steps', '#howto .steps li', '#howto .steps .n', '#howto .steps .ic', '#howto .steps .tx', '#howto .note', '#howtoclose',
   '#rotate > *', '#zoomfix', '#remote .rb', '#remote .crown',
@@ -147,6 +147,9 @@ export interface ControlsMsg { stick: { label: string; icon: string; hold?: bool
 const PIZZAS: ControlsMsg = { stick: { label: 'Mover', icon: 'move' }, btn1: { label: 'Tomar / Soltar', icon: 'grab' }, btn2: { label: 'Picar / Correr', icon: 'chop' } };
 // A future game at the registry's limits: 14-char labels and the "hold" hint on both buttons.
 const LONG: ControlsMsg = { stick: { label: 'Apuntar largo!', icon: 'move' }, btn1: { label: 'Desplazamiento', icon: 'grab', hold: true }, btn2: { label: 'Mmmmmmm Mmmmmm', icon: 'chop', hold: true } };
+// The real registry labels of Obstaculos (shared/games.ts) and the campaign flag the screen puts in phase.match: it makes the phone show the signal pad.
+const OBST: ControlsMsg = { stick: { label: 'Moverse', icon: 'move' }, btn1: { label: 'Saltar', icon: 'jump' }, btn2: { label: 'Agarrar', icon: 'grab' } };
+const CAMPAIGN_MATCH = { match: { gameId: 'obstaculos', modeId: 'coop', mapId: 'campaign', difficulty: 'normal', teams: null, modeOptions: { campaign: true } } };
 const HOWTO = {
   steps: [
     { icon: 'crate', text: 'Toma masa y tomate de las cajas' },
@@ -162,7 +165,7 @@ const puestos = (id: number, list: string[], cheese = true) => ({ cheese, sink: 
 
 export interface Scenario { name: string; portrait?: boolean; fresh?: boolean; msgs: object[]; after?: string; storedName?: boolean }
 const player = (name: string, id = 1, color = '#E63B2E') => ({ t: 'joined', player: { id, name, color, slot: 0 }, room: 'main' });
-const config = (controls: ControlsMsg = PIZZAS, howTo = HOWTO) => ({ t: 'config', game: 'pizzas', difficulty: 'normal', map: 'auto', seed: 1, controls, howTo });
+const config = (controls: ControlsMsg = PIZZAS, howTo = HOWTO) => ({ t: 'config', game: controls === OBST ? 'obstaculos' : 'pizzas', difficulty: 'normal', map: 'auto', seed: 1, controls, howTo });
 const captain = (id: number | null = 1) => ({ t: 'captain', playerId: id }); // the relay's crown message: id 1 is the phone every scenario plays
 const phase = (p: string, extra: object = {}) => ({ t: 'phase', phase: p, ...extra });
 const VS_TEAMS = [{ id: 0, name: 'Picantes', color: '#A8330A', icon: '▲', side: 'izquierda', playerIds: [1] }, { id: 1, name: 'Frescos', color: '#14338A', icon: '●', side: 'derecha', playerIds: [2] }];
@@ -192,6 +195,12 @@ export const SCENARIOS: Scenario[] = [
   { name: 'lobby-other-game', msgs: [player('Nico'), { ...config(), game: 'obstaculos' }, phase('lobby')], after: `document.body.dataset.howto = 'closed'` }, // a game with no use for the switch
   { name: 'lobby-longname', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#2F7DE1'), { ...config(), map: 'random', seed: 4000000000, difficulty: 'hard' }, phase('lobby')], after: `document.body.dataset.howto = 'closed'` },
   { name: 'play', msgs: [player('Nico'), config(), phase('lobby'), phase('playing')] },
+  // the campaign round: the pad plus the 6 signal buttons (a quick match round, `play`, has none)
+  { name: 'play-campaign', msgs: [player('Nico'), config(OBST), phase('lobby'), phase('playing', CAMPAIGN_MATCH)] },
+  { name: 'play-campaign-pressed', msgs: [player('Nico'), config(OBST), phase('lobby'), phase('playing', CAMPAIGN_MATCH)], after: `document.querySelectorAll('.act, .sg').forEach((b) => b.classList.add('down'))` },
+  { name: 'play-campaign-longname', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#8E5CD9'), config(OBST), phase('lobby'), phase('playing', CAMPAIGN_MATCH)] },
+  { name: 'play-campaign-wide-font', msgs: [player('Nico'), config(OBST), phase('lobby'), phase('playing', CAMPAIGN_MATCH)], after: WIDE },
+  { name: 'play-campaign-zoomed', msgs: [player('Nico'), config(OBST), phase('lobby'), phase('playing', CAMPAIGN_MATCH)], after: `document.body.classList.add('zoomed')` },
   { name: 'play-puesto', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) })] },
   { name: 'play-puesto-long', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['prep']) })] },
   { name: 'play-puesto-double', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#FFC21A'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['reparto', 'lavado']) })] },
@@ -244,6 +253,7 @@ export interface Session {
   probe(): Promise<Probe>;
   shot(file: string): Promise<void>;
   tap(x: number, y: number): Promise<void>;
+  hold(x: number, y: number, ms: number): Promise<void>; // touch down, wait, touch up
   eval<T>(expr: string): Promise<T>;
   pageErrors(): string[];
   close(): Promise<void>;
@@ -292,6 +302,12 @@ export async function openSession(): Promise<Session> {
       async tap(x, y) {
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
         await sleep(50);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await sleep(300);
+      },
+      async hold(x, y, ms) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+        await sleep(ms);
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
         await sleep(300);
       },

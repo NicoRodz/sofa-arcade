@@ -16,7 +16,7 @@ export interface ParsedLevel {
   errors: string[];
 }
 
-const emptyMarkers = (): Record<Marker, Cell[]> => ({ spawn: [], checkpoint: [], goal: [], star: [], ring: [], box: [], heavyBox: [], key: [], pickaxe: [] });
+const emptyMarkers = (): Record<Marker, Cell[]> => ({ spawn: [], checkpoint: [], goal: [], star: [], ring: [], box: [], heavyBox: [], key: [], pickaxe: [], lantern: [], bungee: [] });
 
 export function parseLevel(def: LevelDef): ParsedLevel {
   const errors: string[] = [];
@@ -68,6 +68,8 @@ export function parseLevel(def: LevelDef): ParsedLevel {
       const q = params[p.partner];
       if (!q || q.kind !== 'balance' || q.partner !== ch) errors.push(`'${ch}' balance partner '${p.partner}' is not a balance pointing back`);
     }
+    if (p.kind === 'sinker' && !(p.travel > 0)) errors.push(`'${ch}' sinker travel must be > 0`);
+    if (p.kind === 'geyser' && !(p.periodSec > (p.activeSec ?? 0.5) + 1 && (p.activeSec ?? 0.5) > 0)) errors.push(`'${ch}' geyser: want 0 < activeSec and periodSec > activeSec + 1 (the warning second)`);
     if (p.kind === 'plate' && typeof p.weight === 'number' && !(Number.isInteger(p.weight) && p.weight >= 1)) errors.push(`'${ch}' plate weight must be an integer >= 1`);
   }
 

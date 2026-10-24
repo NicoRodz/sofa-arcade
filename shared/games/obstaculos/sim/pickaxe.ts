@@ -9,12 +9,14 @@ import { T } from '../legend';
 import { rectGap, bodyRect, pushBody } from './collide';
 import type { PlayerStep } from './input';
 import { emit, isActive, type PlayerState, type World } from './state';
+import { ownsLantern, passLantern } from './lantern';
 import { boxTouches } from './tiles';
 import { GRAB_RANGE, PICK_ASSIST_STEPS, PICK_HOP, PICK_STRIP, PICK_TAKE_REACH } from './tuning';
 
 const NONE = 255;
 export const ownsPickaxe = (w: World, slot: number): boolean => w.ent.pickaxes.some((k) => k.heldBy === slot);
 
+// (The lantern of dynamic 10 travels with the same B: passTarget / passPickaxe hand over whatever item the hands hold, pickaxe and lantern.)
 // How far B can hand the pickaxe: the length of the rope when the two are tied (it travels along the rope: the climber at the top of a wall passes it down to the partner
 // dangling below), the grab range otherwise.
 const reachTo = (w: World, p: PlayerState, q: PlayerState): number => {
@@ -24,7 +26,7 @@ const reachTo = (w: World, p: PlayerState, q: PlayerState): number => {
 
 // The teammate B would hand the pickaxe to (the nearest within reach), or null.
 export function passTarget(w: World, p: PlayerState): PlayerState | null {
-  if (!w.camp || !ownsPickaxe(w, p.slot)) return null;
+  if (!w.camp || !(ownsPickaxe(w, p.slot) || ownsLantern(w, p.slot))) return null;
   const br = bodyRect(p.body);
   let best: PlayerState | null = null, bd = Infinity;
   for (const q of w.players) {
@@ -35,6 +37,7 @@ export function passTarget(w: World, p: PlayerState): PlayerState | null {
   return best;
 }
 export function passPickaxe(w: World, from: PlayerState, to: PlayerState): void {
+  passLantern(w, from, to);
   const k = w.ent.pickaxes.find((x) => x.heldBy === from.slot);
   if (!k) return;
   k.heldBy = to.slot;

@@ -126,6 +126,18 @@
   #pname { display: block; font: 800 16px/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #phint { display: block; font: 700 13px/1.15 var(--font); color: var(--muted); }
   #pswap { flex: none; min-width: 78px; min-height: 44px; font-size: 15px; padding: 6px 12px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 rgba(43,27,23,.4); }
+  /* ---- campaign signals (Obstaculos, plan §4 #1): a 3x2 pad, bottom centre, only in a campaign round (the screen says so with phase.match.modeOptions.campaign).
+     Free strip of the pad: right of the stick (ring + its plate), left of A, under B and its plate. Every button is >= 44px and follows the short side like the pad. */
+  :root { --sg: max(44px, 14vmin); --sgap: 6px; }
+  #signals { position: absolute; z-index: 2; left: 50%; transform: translateX(-50%); bottom: max(10px, calc(var(--sb) + 6px)); display: none; grid-template: repeat(2, var(--sg)) / repeat(3, var(--sg)); gap: var(--sgap); }
+  body[data-signals=on][data-view=playing] #signals { display: grid; }
+  #signals .sg { min-height: 0; width: var(--sg); height: var(--sg); padding: 0; border-radius: 14px; border-width: 3px; display: flex; align-items: center; justify-content: center; font-size: clamp(16px, 5.4vmin, 24px); line-height: 1; box-shadow: 0 4px 0 rgba(43,27,23,.4); background: linear-gradient(#7A5F52 0 50%, #614A40 50% 100%); }
+  #signals .sg.down { transform: translateY(3px); box-shadow: 0 1px 0 rgba(43,27,23,.4); filter: brightness(1.25); }
+  #signals .sg svg { width: 66%; height: 66%; fill: none; stroke: var(--cream); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+  #signals .l { grid-area: 1 / 1; } #signals .u { grid-area: 1 / 2; } #signals .r { grid-area: 1 / 3; } #signals .d { grid-area: 2 / 2; }
+  #signals .u svg { transform: rotate(0deg); } #signals .r svg { transform: rotate(90deg); } #signals .d svg { transform: rotate(180deg); } #signals .l svg { transform: rotate(270deg); }
+  #signals .w { grid-area: 2 / 1; background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+  #signals .go { grid-area: 2 / 3; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); font-size: clamp(13px, 4.4vmin, 19px); }
   /* ---- Captain's remote: a D-pad on the right of every screen but the round. Touch size follows the short side (44..72px); the
      overlays keep clear of it (padding-right) so nothing they say sits under a button. */
   :root { --dp: clamp(44px, 18vmin, 72px); --dpgap: 6px; --rr: max(10px, calc(var(--sr) + 10px)); --rw: calc(var(--rr) + 3 * var(--dp) + 2 * var(--dpgap) + 12px); }
@@ -170,6 +182,14 @@
   <div id="btnA" class="act"></div><div id="lblA" class="plq"></div>
   <div id="btnB" class="act"></div><div id="lblB" class="plq"></div>
   <div id="hud"></div>
+  <div id="signals" role="group" aria-label="Señales al compañero">
+    <button class="sg l" type="button" data-sig="arrowL" aria-label="Señal: por la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+    <button class="sg u" type="button" data-sig="arrowU" aria-label="Señal: arriba"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+    <button class="sg r" type="button" data-sig="arrowR" aria-label="Señal: por la derecha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+    <button class="sg w" type="button" data-sig="wait" aria-label="Señal: ¡espera!">✋</button>
+    <button class="sg d" type="button" data-sig="arrowD" aria-label="Señal: abajo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7"/></svg></button>
+    <button class="sg go" type="button" data-sig="go" aria-label="Señal: ¡ya! (mantén apretado para la cuenta 3-2-1)">¡Ya!</button>
+  </div>
   <div id="slip">¡Resbalaste!</div>
   <div id="teamchip"><span id="tcicon2"></span><span id="tcname2"></span><small id="tcside2"></small></div>
   <div id="puesto"><span class="pi" id="pico"></span><div class="pt"><b id="pname"></b><span id="phint"></span></div><button id="pswap" type="button">Cambiar</button></div>
