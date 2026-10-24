@@ -377,6 +377,17 @@ describe('landing events and surfaces', () => {
 });
 
 describe('determinism', () => {
+  it('hashBodies reacts to every field of every body', () => {
+    const base = () => [newBody(0, 100, 200), newBody(1, 300, 200)];
+    const h0 = hashBodies(base());
+    expect(hashBodies(base())).toBe(h0);
+    const fields: [keyof Body, number][] = [['id', 5], ['x', 1], ['y', 1], ['vx', 1], ['vy', 1], ['grounded', 1], ['supportId', 3], ['air', 3], ['jumpAge', 3], ['dropFrames', 3], ['facing', -1]];
+    for (const [f, v] of fields) {
+      const bs = base();
+      (bs[1]![f] as number | boolean) = typeof bs[1]![f] === 'boolean' ? true : (f === 'facing' ? v : (bs[1]![f] as number) + v);
+      expect(hashBodies(bs), String(f)).not.toBe(h0);
+    }
+  });
   it('3600 steps of seeded random input give the same hash, and another seed another hash', () => {
     const grid1 = buildGrid(parseLevelStrict(LEVEL_01), 'chain');
     const params = physicsFor('normal');
