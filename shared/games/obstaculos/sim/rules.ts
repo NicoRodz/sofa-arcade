@@ -20,7 +20,7 @@ export function progressField(p: ParsedLevel): Int32Array {
   const dist = new Int32Array(p.w * p.h).fill(-1);
   const goal = p.markers.goal[0];
   if (!goal) return dist.fill(1_000_000);
-  const solid = (i: number) => p.tiles[i] === T.Solid || p.tiles[i] === T.BeltL || p.tiles[i] === T.BeltR || p.tiles[i] === T.FreeSolid;
+  const solid = (i: number) => p.tiles[i] === T.Solid || p.tiles[i] === T.BeltL || p.tiles[i] === T.BeltR || p.tiles[i] === T.FreeSolid || p.tiles[i] === T.Ice;
   const queue: number[] = [goal.y * p.w + goal.x];
   dist[queue[0]!] = 0;
   for (let q = 0; q < queue.length; q++) {
@@ -68,7 +68,7 @@ export function revive(w: World, p: PlayerState, via: 'checkpoint' | 'bubble' | 
   if (at) { p.body.x = at.x; p.body.y = at.y; p.body.vx = 0; p.body.vy = 0; p.body.grounded = false; p.body.supportId = -1; p.body.air = 255; p.body.dx = 0; p.body.dy = 0; }
   else placeAtCell(w, p, respawnCell(w), rankOf(w, p), n);
   p.mode = 'active'; p.bubble = null; p.timer = 0; p.invuln = steps(BUBBLE_INVULN_SEC); p.offCamera = 0; p.crushed = 0; p.ropeJump = true;
-  p.camp.mash = 0; p.camp.mashCool = 0; p.camp.assist = 0; p.camp.jumpTick = -1000;
+  p.camp.mash = 0; p.camp.mashCool = 0; p.camp.assist = 0; p.camp.jumpTick = -1000; p.camp.pick = 0; p.camp.onIce = false;
   emit(w, 'obst.respawn', { player: p.slot, via });
 }
 

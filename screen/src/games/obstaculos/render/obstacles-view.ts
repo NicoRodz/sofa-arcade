@@ -49,6 +49,8 @@ export class ObstaclesView {
   private off: (() => void)[] = [];
   private t = 0;
   private prevInGoal = new Set<number>();
+  private windAcc = 0;
+  private windN = 0;
 
   constructor(private scene: Phaser.Scene, private world: WorldView, bus?: Emitter<AllObstEvents>) {
     const mkLayer = () => { const l = scene.add.layer(); this.layers.push(l); return l; };
@@ -136,6 +138,23 @@ export class ObstaclesView {
     on('obst.countdown', (e) => { this.hud.banner(e.n > 0 ? String(e.n) : '¡YA!', e.n > 0 ? C.cheese : '#7BE08A', e.n > 0 ? 900 : 700, 150); });
     on('obst.superJump', (e) => { for (const id of e.players) { const m = mid(id); this.fx.ring(m.x, m.y, 0xffd23f, 0.4, 2); } const a = mid(e.players[0] ?? 0); this.fx.float(a.x, a.y - 60, '¡Supersalto!', C.cheese, 32); });
     on('obst.edgeAssist', (e) => { const m = mid(e.player); this.fx.float(m.x, m.y - 50, '¡Arriba!', '#7BE08A', 26); });
+    // A5: balance, target, soft enemies, ice, wind, pickaxe (one juice effect each; the sound is audio/recipes.ts CAMPAIGN_HANDLERS)
+    on('obst.balance', (e) => { const p = ent(`obj${e.id}`), q = ent(`obj${e.other}`); for (const v of [p, q]) if (v) { this.fx.puff(v.x + v.w / 2, v.y + 8, 5); this.fx.shake(80, 0.0012); } });
+    on('obst.target', (e) => { const p = ent(`obj${e.id}`); if (!p) return; const x = p.x + p.w / 2, y = p.y + p.h / 2; this.fx.ring(x, y, 0xffd23f, 0.4, 2.2); this.fx.starBurst(x, y, 8); this.fx.float(x, y - 44, '¡Diana!', C.cheese, 30); });
+    on('obst.enemy', (e) => {
+      const en = ent(`enemy${e.enemy}`); if (!en) return;
+      const x = en.x + en.w / 2;
+      if (e.action === 'stun') { this.fx.starBurst(x, en.y, 6); this.fx.float(x, en.y - 26, '¡Aturdido!', C.cheese, 26); } else this.fx.puff(x, en.y + en.h - 4, 4);
+    });
+    on('obst.ice', (e) => { const f = feet(e.player); this.fx.ring(f.x, f.y, 0x9be0ff, 0.2, 1.1); });
+    on('obst.wind', (e) => { if (e.phase === 'warn') this.hud.banner(e.dir > 0 ? '¡Viento! →' : '← ¡Viento!', '#9BE0FF', 900, 56); });
+    on('obst.pickaxe', (e) => {
+      const m = mid(e.player);
+      if (e.action === 'take') this.fx.float(m.x, m.y - 56, '¡Piolet!', '#BFEAFF', 28);
+      else if (e.action === 'pass') this.fx.float(m.x, m.y - 56, '¡Toma!', C.cheese, 28);
+      else if (e.action === 'climb') this.fx.spark(m.x, m.y, 5);
+      else this.fx.puff(m.x, m.y + PLAYER_H / 2, 6);
+    });
     on('obst.runEnd', (e) => this.hud.banner(e.reason === 'complete' ? '¡EXPEDICIÓN COMPLETA!' : 'EXPEDICIÓN TERMINADA', e.reason === 'complete' ? C.cheese : C.danger, 3500, 84));
   }
 
@@ -172,6 +191,18 @@ export class ObstaclesView {
     cam.setScroll(res.state.cx - W / 2, res.state.cy - H / 2);
     const bubbleSec = w.bubbleSec ?? DIFFICULTY_PARAMS[w.difficulty].bubbleSec;
     this.bubbleDue = this.stragglers.update(dtReal, res.offscreen.map((o) => o.id), bubbleSec);
+
+    // wind streaks while a gust blows (dynamic 8): a few white lines across the picture, drifting with the gust
+    const wd = w.wind;
+    if (wd && wd.phase === 'gust') {
+      this.windAcc += dt;
+      while (this.windAcc >= 0.06) {
+        this.windAcc -= 0.06; this.windN++;
+        const st = res.state, hw = W / 2 / st.zoom, hh = H / 2 / st.zoom;
+        const x = st.cx - hw + ((this.windN * 0.618034) % 1) * 2 * hw, y = st.cy - hh + ((this.windN * 0.381966 + 0.3) % 1) * 2 * hh;
+        if (!wd.zone || (x >= wd.zone.x && x <= wd.zone.x + wd.zone.w && y >= wd.zone.y && y <= wd.zone.y + wd.zone.h)) this.fx.streak(x, y, wd.dir);
+      }
+    } else this.windAcc = 0;
 
     // world layers
     this.bg.update(res.state.cx, res.state.cy, res.rect.w, res.rect.h);

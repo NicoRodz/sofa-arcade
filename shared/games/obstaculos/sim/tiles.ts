@@ -1,7 +1,7 @@
 // Tile grid the simulation collides with. Mutable on purpose: F2a overlays doors, gates, crumbling tiles by setting cells.
 import type { ParsedLevel } from '../parse';
 import { T, isHazardKind, isOneWayKind, isSolidKind, type TileKind } from '../legend';
-import { TILE } from '../constants';
+import { PLAYER_H, PLAYER_W, TILE } from '../constants';
 import type { GameMode } from '../types';
 
 export interface TileGrid { w: number; h: number; cells: Uint8Array }
@@ -30,6 +30,12 @@ const EPS = 1e-6;
 export function boxTouches(g: TileGrid, x: number, y: number, w: number, h: number, pred: (k: TileKind) => boolean): boolean {
   const x0 = tileOf(x), x1 = tileOf(x + w - EPS), y0 = tileOf(y), y1 = tileOf(y + h - EPS);
   for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) if (pred(tileAt(g, tx, ty))) return true;
+  return false;
+}
+// Is the body standing on an ice tile ('I')? Feet on a row boundary, any of the columns it covers is ice.
+export function onIce(g: TileGrid, b: { x: number; y: number }): boolean {
+  const row = Math.round((b.y + PLAYER_H) / TILE);
+  for (let tx = tileOf(b.x), end = tileOf(b.x + PLAYER_W - EPS); tx <= end; tx++) if (tileAt(g, tx, row) === T.Ice) return true;
   return false;
 }
 export const boxHitsSolid = (g: TileGrid, x: number, y: number, w: number, h: number): boolean => boxTouches(g, x, y, w, h, isSolidKind);

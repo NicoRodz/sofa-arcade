@@ -1,17 +1,17 @@
 // Glue: subscribes to the obst.* events on the session bus, owns the AudioContext, runs the music scheduler.
 // The game never depends on audio: every path is a no-op until the context runs.
 import { BUS_GAIN, DUCK_GAIN, DUCK_S, masterGain } from '../../../audio/mixer';
-import type { Biome, ObstEvents } from '@party/shared/obstaculos';
+import type { Biome } from '@party/shared/obstaculos';
 import { VoiceLimiter } from './mixer';
 import { LOOKAHEAD_S, TICK_MS, advance, newSched, type MusicState } from './music';
-import { HANDLERS, cuesFor } from './recipes';
+import { SOUND_EVENTS, cuesFor, type SoundEvents } from './recipes';
 import { createChain, playCue, playMusicNote } from './synth';
 
-/** What the scene's bus offers: Emitter<GameEvents & ObstEvents> satisfies it. */
-export interface ObstBus { on<K extends keyof ObstEvents>(type: K, fn: (p: ObstEvents[K]) => void): () => void }
+/** What the scene's bus offers: Emitter<GameEvents & AllObstEvents> satisfies it. */
+export interface ObstBus { on<K extends keyof SoundEvents>(type: K, fn: (p: SoundEvents[K]) => void): () => void }
 export interface ObstAudio { toggleMute(): void; dispose(): void }
 const NOOP: ObstAudio = { toggleMute() {}, dispose() {} };
-const NAMES = Object.keys(HANDLERS) as (keyof ObstEvents)[];
+const NAMES = SOUND_EVENTS;
 
 /** `bus` is the session emitter (typed Emitter<GameEvents & ObstEvents> by the scene); `state` is read every tick. */
 export function initObstAudio(bus: ObstBus, biome: () => Biome, state: () => MusicState): ObstAudio {
@@ -31,10 +31,10 @@ export function initObstAudio(bus: ObstBus, biome: () => Biome, state: () => Mus
     g.setTargetAtTime(BUS_GAIN.music * DUCK_GAIN, t, 0.03);
     g.setTargetAtTime(BUS_GAIN.music, t + DUCK_S, 0.1);
   };
-  const listen = <K extends keyof ObstEvents>(name: K) => bus.on(name, (p) => {
+  const listen = <K extends keyof SoundEvents>(name: K) => bus.on(name, (p) => {
     if (ctx.state !== 'running') return;
     const now = ctx.currentTime;
-    for (const c of cuesFor(name, p, biome())) {
+    for (const c of cuesFor(name as never, p as never, biome())) {
       if (!limiter.allow(c, now)) continue;
       playCue(ctx, chain, c, now);
       if (c.duck) duck(now);

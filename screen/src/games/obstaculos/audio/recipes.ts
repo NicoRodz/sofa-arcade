@@ -1,6 +1,6 @@
 // Pure sound design of "Obstaculos en cadena": which sounds an obst.* event asks for (cuesFor) and what each is made of
 // (voicesFor). No Web Audio here; synth.ts renders the voices. Plan §14.
-import { MAX_FALL, type Biome, type ObstEvents } from '@party/shared/obstaculos';
+import { MAX_FALL, type Biome, type CampaignEvents, type ObstEvents } from '@party/shared/obstaculos';
 import { degreeFreq, slotFreq } from './scales';
 
 export type Src = 'sine' | 'square' | 'sawtooth' | 'triangle' | 'noise' | 'fm' | 'pluck';
@@ -23,7 +23,8 @@ export interface Voice {
 export type RecipeId =
   | 'jump' | 'boing' | 'land' | 'ropeTaut' | 'ropeStrain' | 'grabRing' | 'grabPlayer' | 'grabBox' | 'grabLever' | 'release'
   | 'throw' | 'handCatch' | 'death' | 'bubble' | 'respawn' | 'checkpoint' | 'star' | 'plate' | 'gate' | 'goalEnter'
-  | 'fanfare' | 'runWin' | 'runFail';
+  | 'fanfare' | 'runWin' | 'runFail'
+  | 'balance' | 'target' | 'enemy' | 'ice' | 'wind' | 'pickaxe'; // campaign A5: one per dynamic
 export type Surface = 'sand' | 'wood' | 'metal' | 'ice' | 'stone' | 'thud';
 export interface Params {
   freq?: number; level?: number; surface?: Surface; variant?: string; tension?: number; notes?: number[];
@@ -83,9 +84,28 @@ export const HANDLERS: Handlers = {
     : cue('runFail', 'runEnd', 3, { freq: degreeFreq(b, 1, 1) }, true)],
 };
 
-/** Which sounds an event asks for. Pure and total over the event names. */
-export function cuesFor<K extends keyof ObstEvents>(name: K, payload: ObstEvents[K], biome: Biome): Cue[] {
-  return (HANDLERS[name] as (p: ObstEvents[K], b: Biome) => Cues)(payload, biome).filter((c): c is Cue => c !== null);
+// Campaign A5 (plan §4 #4-#9): ONE effect per dynamic, built from the same voices as the rest. The older campaign events (signal, countdown, superJump, edgeAssist,
+// heartsOut) have no sound yet (the screen shows banners for them), so this map is partial on purpose.
+export type CampaignSound = 'obst.balance' | 'obst.target' | 'obst.enemy' | 'obst.ice' | 'obst.wind' | 'obst.pickaxe';
+type CampaignHandlers = { [K in CampaignSound]: (p: CampaignEvents[K], biome: Biome) => Cues };
+const PICK_FREQ = { take: 1400, pass: 1800, climb: 2200, top: 2800 } as const;
+export const CAMPAIGN_HANDLERS: CampaignHandlers = {
+  'obst.balance': (p) => [cue('balance', `balance:${p.id}`, 1)], // wood creaking as the plates swap
+  'obst.target': (p, b) => [cue('target', `target:${p.id}`, 2, { freq: degreeFreq(b, 8, 2) })], // a bright ting
+  'obst.enemy': (p) => [cue('enemy', `enemy:${p.enemy}`, 1, { variant: p.action })], // squish when stunned, thud when it shoves
+  'obst.ice': (p) => [cue('ice', `ice:${p.player}`, 0)], // glassy tick, the lowest priority: it rings at every step onto ice
+  'obst.wind': (p) => (p.phase === 'calm' ? [] : [cue('wind', 'wind', 1, { variant: p.phase })]), // a whoosh at the warning and a stronger one with the gust
+  'obst.pickaxe': (p) => [cue('pickaxe', `pick:${p.player}`, 1, { freq: PICK_FREQ[p.action], variant: p.action })], // steel tink, higher the further the action goes
+};
+export type SoundEvents = ObstEvents & Pick<CampaignEvents, CampaignSound>;
+const ALL_HANDLERS = { ...HANDLERS, ...CAMPAIGN_HANDLERS } as { [K in keyof SoundEvents]: (p: SoundEvents[K], biome: Biome) => Cues };
+export const SOUND_EVENTS = Object.keys(ALL_HANDLERS) as (keyof SoundEvents)[];
+
+/** Which sounds an event asks for. Pure and total over the event names (the quick match's and the campaign's A5). */
+export function cuesFor<K extends keyof ObstEvents>(name: K, payload: ObstEvents[K], biome: Biome): Cue[];
+export function cuesFor<K extends CampaignSound>(name: K, payload: CampaignEvents[K], biome: Biome): Cue[];
+export function cuesFor(name: keyof SoundEvents, payload: unknown, biome: Biome): Cue[] {
+  return (ALL_HANDLERS[name] as (p: unknown, b: Biome) => Cues)(payload, biome).filter((c): c is Cue => c !== null);
 }
 
 // ---- voices
@@ -172,6 +192,16 @@ export function voicesFor(c: Cue): Voice[] {
         ...[n[2], n[3], n[5]].flatMap((fr) => bell(fr ?? 440, 1.4, 0.18, n.length * 0.11))];
     }
     case 'runFail': return [o('sine', f, 0.8, 0.3, { f1: f / 4, vib: { rate: 5, depth: 8 } }), o('triangle', f * 0.75, 0.8, 0.12, { f1: f / 5 })];
+    case 'balance': return [ // two planks creaking: a saw wobbling down in pitch plus the rub
+      o('sawtooth', 150, 0.45, 0.16, { f1: 95, filter: { type: 'lowpass', f0: 420 }, vib: { rate: 9, depth: 14 }, att: 0.04 }),
+      nz(0.4, 0.14, { type: 'bandpass', f0: 700, f1: 380, q: 3 }, { att: 0.05 })];
+    case 'target': return [nz(0.03, 0.3, { type: 'bandpass', f0: 1800, q: 2 }), ...bell(f, 0.55, 0.3), o('sine', f * 1.5, 0.3, 0.12, { at: 0.04 })];
+    case 'enemy': return p.variant === 'stun'
+      ? [o('sine', 260, 0.2, 0.34, { f1: 70 }), o('triangle', 520, 0.12, 0.2, { f1: 220 }), nz(0.05, 0.18, { type: 'lowpass', f0: 700 })]
+      : [o('sine', 150, 0.07, 0.3, { f1: 90 }), nz(0.05, 0.16, { type: 'lowpass', f0: 500 })];
+    case 'ice': return [o('sine', 2600, 0.1, 0.1, { f1: 3300 }), o('sine', 3900, 0.07, 0.05, { at: 0.02 })];
+    case 'wind': return [nz(p.variant === 'gust' ? 1.0 : 0.8, p.variant === 'gust' ? 0.32 : 0.2, { type: 'bandpass', f0: 300, f1: p.variant === 'gust' ? 1400 : 900, q: 0.8 }, { att: 0.3 })];
+    case 'pickaxe': return [o('square', f, 0.03, 0.13), o('sine', f * 1.5, 0.18, 0.16, { f1: f * 1.4 }), nz(0.04, 0.2, { type: 'bandpass', f0: 3000, q: 4 })];
   }
 }
 export const cueDuration = (c: Cue): number => Math.max(0, ...voicesFor(c).map((v) => v.at + v.dur));

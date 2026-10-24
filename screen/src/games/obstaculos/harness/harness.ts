@@ -9,9 +9,28 @@ import { H, W } from '../../../art/tokens';
 import { ObstaclesScene } from '../render/scene';
 import { FakeWorld, botController, type Controller } from '../render/stub';
 import type { WorldView } from '../render/view';
+import { snapshot } from '@party/shared/obstaculos';
+import { ObstRun } from '../host';
+import { SCENARIOS, type Ctrl } from '../../../../../server/test/obst.dynamics.scenarios';
 
 const bus = new Emitter<ObstEvents>();
 let world: FakeWorld | null = null;
+// campaign A5: the REAL session (ObstRun, the one the screen runs) driven by a scenario's scripted phones (server/test/obst.dynamics.scenarios.ts); null = the FakeWorld above
+let run: ObstRun | null = null;
+let simCtl: Ctrl | null = null;
+let simFrame = 0;
+const simTaps = [[0, 0], [0, 0]];
+const feedSim = () => {
+  if (!run || !simCtl) return;
+  const snap = snapshot(run.session.world);
+  for (const slot of [0, 1]) {
+    const o = simCtl(slot, snap, simFrame);
+    if (o.jump) simTaps[slot]![0]!++;
+    if (o.grab) simTaps[slot]![1]!++;
+    run.receive(slot, { x: o.x, y: o.y, presses: [simTaps[slot]![0]!, simTaps[slot]![1]!] });
+  }
+  simFrame++;
+};
 let idle = new Set<number>();
 let bots = true;
 const keys = new Set<string>();
@@ -36,9 +55,9 @@ const keyboard: Controller = (i, w) => {
 };
 
 const scene = new ObstaclesScene({
-  step: (ms) => { if (!world) return; world.controller = bots ? bot : keyboard; world.advance(ms); justPressed.clear(); },
-  world: () => world as WorldView | null,
-  afterRender: (v) => { world?.requestBubbles(v.bubbleDue); },
+  step: (ms) => { if (run) { feedSim(); run.step(ms); return; } if (!world) return; world.controller = bots ? bot : keyboard; world.advance(ms); justPressed.clear(); },
+  world: () => (run ? run.world() : (world as WorldView | null)),
+  afterRender: (v) => { if (run) run.afterRender(v); else world?.requestBubbles(v.bubbleDue); },
 }, bus);
 
 const origUpdate = scene.update.bind(scene);
@@ -67,13 +86,28 @@ const api = {
       def = { ...def, rows, hints: [] };
     }
     idle = new Set(o.idle ?? []); bots = o.bots ?? true; bot = botCtl();
+    run = null; simCtl = null;
     world = new FakeWorld(def, o.n ?? 4, o.mode ?? 'chain', o.difficulty ?? 'normal', bus);
     return true;
   },
+  // A scenario of the A5 dynamics (balance, target, enemies, ice, wind, pickaxe, throw) on the real session and the real adapter
+  startSim(id: string) {
+    const sc = SCENARIOS[id]!();
+    world = null;
+    simCtl = sc.make(); simFrame = 0; simTaps[0] = [0, 0]; simTaps[1] = [0, 0];
+    run = new ObstRun({ mode: sc.mode, difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [sc.level], ...(sc.world ? { campaign: { world: sc.world } } : {}) }, { names: (s) => `J${s + 1}`, bus, onOver: () => {} });
+    return true;
+  },
+  sim: () => run,
   world: () => world,
   scene, game, bus,
   // fast-forward: steps the world and the view as if frames of 1/60 s went by
   ff(seconds: number) {
+    if (run && scene.view) {
+      const n = Math.round(seconds * 60);
+      for (let i = 0; i < n; i++) { feedSim(); run.step(1000 / 60); scene.view.update(1000 / 60); run.afterRender(scene.view); }
+      return true;
+    }
     if (!world || !scene.view) return false;
     const n = Math.round(seconds * 60);
     for (let i = 0; i < n; i++) { world.controller = bots ? bot : keyboard; world.advance(1000 / 60); scene.view.update(1000 / 60); world.requestBubbles(scene.view.bubbleDue); }

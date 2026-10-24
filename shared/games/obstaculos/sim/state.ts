@@ -52,12 +52,14 @@ export interface PlayerCamp {
   mashCool: number; // steps until a level is lost
   signal: { kind: SignalKind; steps: number } | null; // shown over the head
   goHold: number; // steps "go" has been held
+  pick: -1 | 0 | 1; // pickaxe (dynamic 9): side of the ice wall it clings to (-1 left, 1 right), 0 = not climbing
+  onIce: boolean; // standing on ice last step (the transition rings obst.ice)
 }
 
 // --- dynamic entities (plan §9)
 export interface Activator {
   letter: string;
-  kind: 'plate' | 'lever';
+  kind: 'plate' | 'lever' | 'target';
   rect: PxRect;
   opens: string;
   latch: boolean;
@@ -67,6 +69,7 @@ export interface Activator {
   pressed: boolean; // live state
   latched: boolean; // stays true after the first press when latch
   holders: number[]; // levers: slots holding it
+  timer: number; // target: steps its gate has left open (0 = closed)
 }
 export interface Objective {
   letter: string;
@@ -83,11 +86,16 @@ export interface Objective {
   dx: number; // displacement of the last step (carries whoever stands on it)
   dy: number;
   load: number; // balance: players and boxes standing on it
+  moving: boolean; // balance: it moved in the last step (the start rings obst.balance)
 }
 export interface BoxE { id: number; heavy: boolean; x: number; y: number; vy: number; homeX: number; homeY: number; holders: number[]; dx: number; dy: number; grounded: boolean }
 export interface KeyE { x: number; y: number; homeX: number; homeY: number; heldBy: number; used: boolean }
 export interface CrumbleE { x: number; y: number; state: 0 | 1 | 2; t: number } // 0 solid, 1 falling (0.5 s), 2 gone (3 s)
 export interface HazardE { kind: 'risingLava' | 'tide' | 'avalanche'; speed: number; pos: number; frozen: number; phase: number } // pos: y (lava, tide) or x (avalanche), px
+// Campaign dynamics 6 and 9 (sim/enemies.ts, sim/campaignrules.ts). x/y = top-left, px.
+export interface EnemyE { x: number; y: number; w: number; h: number; homeX: number; range: number; dir: 1 | -1; stun: number; cool: number; vy: number }
+export interface PickE { x: number; y: number; homeX: number; homeY: number; heldBy: number }
+export type WindPhase = 'calm' | 'warn' | 'gust';
 export interface CheckpointE { cell: Cell; activated: boolean }
 export interface StarE { cell: Cell; taken: boolean }
 
@@ -100,6 +108,8 @@ export interface Entities {
   rings: Cell[];
   checkpoints: CheckpointE[];
   stars: StarE[];
+  enemies: EnemyE[]; // campaign only
+  pickaxes: PickE[]; // from the 'p' markers; inert outside a campaign world
   doorCells: Set<number>; // original 'K' cells (index y * w + x): the only ones a key opens
   hazard: HazardE | null;
   lastStarTick: number;
@@ -135,6 +145,7 @@ export interface World {
   heartsLost: number; // campaign: deaths-steps that cost a heart
   refills: number; // campaign: times the hearts ran out
   countdown: { by: number; steps: number } | null; // campaign: a 3-2-1 launched by "go" held
+  wind: { phase: WindPhase; dir: -1 | 1 } | null; // campaign: only in a level with `wind`
 }
 
 export const emit = <K extends ObstEventName>(w: World, name: K, data: AllObstEvents[K]): void => { w.events.push({ name, data } as ObstEvent); };

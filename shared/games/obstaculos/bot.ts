@@ -17,8 +17,8 @@ export interface BotView {
 export interface BotOut { x: number; y: number; jump: boolean; grab: boolean }
 const IDLE: BotOut = { x: 0, y: 0, jump: false, grab: false };
 
-const standable = (k: number) => k === T.Solid || k === T.OneWay || k === T.Crumble || k === T.BeltL || k === T.BeltR || k === T.Trampoline || k === T.Door;
-const blocking = (k: number) => k === T.Solid || k === T.Crumble || k === T.BeltL || k === T.BeltR || k === T.Door;
+const standable = (k: number) => k === T.Solid || k === T.OneWay || k === T.Crumble || k === T.BeltL || k === T.BeltR || k === T.Trampoline || k === T.Door || k === T.Ice;
+const blocking = (k: number) => k === T.Solid || k === T.Crumble || k === T.BeltL || k === T.BeltR || k === T.Door || k === T.Ice;
 const col = (px: number) => Math.floor(px / TILE);
 const HALF_W = PLAYER_W / 2;
 const SOLO_REACH_TILES = JUMP_PEAK_PX / TILE; // 3.6

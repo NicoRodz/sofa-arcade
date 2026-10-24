@@ -11,6 +11,7 @@ import { parseLevel, type ParsedLevel } from '../parse';
 import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode, LevelDef, Weight } from '../types';
 import type { ModeledMechanic } from '../mechanics';
+import { campaignParams } from '../sim/campaign';
 import { buildGraph, can, doorGroupsOf, newSimCache, pathTo, shortest, type Edge, type Env, type Graph, type OpenState, type Seg } from './graph';
 
 export const resolveWeight = (w: Weight, n: number): number =>
@@ -66,9 +67,20 @@ export function lint(p: ParsedLevel): string[] {
       if (x < 0 || y < 0 || x >= wPx || y >= hPx) errors.push(`'${o.char}' ${q.kind} leaves the grid at (${x},${y})`);
       else if (p.tiles[y * wPx + x] === T.Solid) errors.push(`'${o.char}' ${q.kind} runs into a solid at (${x},${y})`);
     }
-    if ((q.kind === 'plate' || q.kind === 'lever') && !isActivator(o.char)) errors.push(`'${o.char}' must be an activator letter`);
+    if ((q.kind === 'plate' || q.kind === 'lever' || q.kind === 'target') && !isActivator(o.char)) errors.push(`'${o.char}' must be an activator letter`);
   }
-  const hasAct = (ch: string) => Object.values(d.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever') && q.opens === ch);
+  const hasAct = (ch: string) => Object.values(d.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever' || q.kind === 'target') && q.opens === ch);
+  // a target's gate closes after targetSec: the run from the target to the gate must fit (straight-line tiles at the run speed, with a quarter of the time in hand)
+  const maxTargetTiles = Math.floor((0.75 * campaignParams(2).targetSec * RUN_SPEED) / TILE);
+  for (const o of Object.values(p.objects)) {
+    const q = o.param;
+    if (q?.kind !== 'target') continue;
+    const gate = p.objects[q.opens];
+    if (!gate) continue;
+    const cx = o.bounds.x + o.bounds.w / 2, cy = o.bounds.y + o.bounds.h / 2;
+    const d2 = Math.min(...gate.cells.map((c) => Math.abs(c.x + 0.5 - cx) + Math.abs(c.y + 0.5 - cy)));
+    if (d2 > maxTargetTiles) errors.push(`target '${o.char}' is ${d2.toFixed(0)} tiles from its gate '${q.opens}': at most ${maxTargetTiles} (the gate stays open ${campaignParams(2).targetSec} s)`);
+  }
   for (const o of Object.values(p.objects)) if (o.param?.kind === 'gate' && !hasAct(o.char)) errors.push(`gate '${o.char}' has no activator: it never opens`);
   if (d.tether === 'freeOnly' && p.markers.ring.length) errors.push('rings only work tied (tether freeOnly has rings)');
   return errors;
@@ -91,7 +103,7 @@ const goalTest = (p: ParsedLevel, g: Graph) => {
 };
 
 function activatorsOf(p: ParsedLevel) {
-  return Object.values(p.objects).filter((o) => o.param && (o.param.kind === 'plate' || o.param.kind === 'lever'));
+  return Object.values(p.objects).filter((o) => o.param && (o.param.kind === 'plate' || o.param.kind === 'lever' || o.param.kind === 'target'));
 }
 
 export function validateState(def: LevelDef, env: Env): ValidationReport {
@@ -129,16 +141,24 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
       if (S.doors.has(i) || keysHeld <= S.doors.size) return;
       if (grp.some((c) => [...reached].some((id) => { const s = g.segs[id]!; return Math.abs(s.row - c.y) <= 1 && c.x >= s.x0 - 1 && c.x <= s.x1 + 1; }))) { S.doors.add(i); routeTo(g, sr, p.markers.key, 3); changed = true; gadgetsUsed.push(`door${i}`); gadgetWeight += 1; bump('key'); }
     });
+    if (!S.pick && can(env, 'pickaxe') && p.markers.pickaxe.some((k) => [...reached].some((id) => touches(g.segs[id]!, k, 3)))) { // the pickaxe: reachable = ice walls can be climbed
+      S.pick = true; routeTo(g, sr, p.markers.pickaxe, 3); changed = true; gadgetsUsed.push('pickaxe'); gadgetWeight += 1;
+    }
     for (const X of acts) {
-      const q = X.param as Extract<NonNullable<typeof X.param>, { kind: 'plate' | 'lever' }>;
+      const q = X.param as Extract<NonNullable<typeof X.param>, { kind: 'plate' | 'lever' | 'target' }>;
       if (S.open.has(q.opens) || !can(env, q.kind)) continue;
+      if (q.kind === 'target') { // hit in flight: any segment from which a jump passes through it; the gate then needs the run to fit in targetSec (lint)
+        if (!X.cells.some((c) => [...reached].some((id) => touches(g.segs[id]!, c, 3)))) continue;
+        S.open.add(q.opens); routeTo(g, sr, X.cells, 3); changed = true; gadgetsUsed.push(X.char); gadgetWeight += 1; bump('target');
+        continue;
+      }
       if (!X.cells.some((c) => [...reached].some((id) => touches(g.segs[id]!, c, 1)))) continue;
       const w = q.kind === 'plate' ? resolveWeight(q.weight, env.n) : 1;
       if (w > env.n) continue;
       if (q.latch) { S.open.add(q.opens); routeTo(g, sr, X.cells, 1); changed = true; gadgetsUsed.push(X.char); gadgetWeight += 1; bump(q.kind); continue; }
       if (w > env.n - 1) continue; // somebody has to be free to pass
       // handoff: with the objective open, a second activator on the far side takes over the hold
-      const S2: OpenState = { open: new Set([...S.open, q.opens]), doors: S.doors };
+      const S2: OpenState = { open: new Set([...S.open, q.opens]), doors: S.doors, pick: S.pick };
       const g2 = buildGraph(p, env, S2, doors, { pioneer: true, cache });
       const sr2 = shortest(g2, startSeg, () => false, edgeOk);
       const reached2 = sr2.reached;
@@ -189,6 +209,7 @@ export function mechanicOf(g: Graph, e: Edge, p?: ParsedLevel): ModeledMechanic 
   switch (e.kind) {
     case 'jump': return g.segs[e.from]?.tramp || g.segs[e.to]?.tramp ? 'spring' : e.plan && e.plan.trigger !== 'walk' ? 'jump' : null;
     case 'tower': case 'hand': case 'throw': case 'swing': case 'ladder': return e.kind;
+    case 'climb': return 'pickaxe';
     case 'ride': return e.obj && p?.objects[e.obj]?.param?.kind === 'balance' ? 'balance' : 'mover';
   }
 }

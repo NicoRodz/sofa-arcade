@@ -162,6 +162,9 @@ export class EntityLayer {
         case 'ladder': this.drawLadderEnt(sp, e); break;
         case 'mover': case 'balance': this.drawMover(sp, e, pal.wood, pal.woodDark); break;
         case 'crumble': this.drawCrumbleEnt(sp, e); break;
+        case 'target': this.drawTarget(sp, e); break;
+        case 'enemy': this.drawEnemy(sp, e); break;
+        case 'pickaxe': this.drawPickaxe(sp, e); break;
       }
     }
     for (const [id, sp] of this.sprites) if (!sp.seen) { sp.objs.forEach((o) => o.destroy()); this.sprites.delete(id); }
@@ -256,6 +259,49 @@ export class EntityLayer {
     g.fillStyle(hexToInt(pal.wood), fade); g.fillRoundedRect(e.x + sh + 2, e.y + 2, e.w - 4, e.h - 4, 4);
     g.lineStyle(2.4, 0x2b1b17, fade); g.lineBetween(e.x + sh + 12, e.y + 2, e.x + sh + 18, e.y + 16); g.lineBetween(e.x + sh + 18, e.y + 16, e.x + sh + 11, e.y + 28);
     void ({} as CellCtx); void drawCrumble; void TILE;
+  }
+
+  // ---- campaign A5 (dynamics 5, 6, 9): Graphics only, redrawn when their signature changes
+  // Diana: bullseye in the colour of its gate's letter; lit with a clock arc (the seconds left of the open gate) while it is on.
+  private drawTarget(sp: Sprite, e: EntityView) {
+    const clock = Math.round(e.value * 24) / 24;
+    const g = this.redraw(sp, `${e.x}|${e.y}|${e.w}|${e.h}|${e.on}|${clock}`); if (!g) return;
+    const cx = e.x + e.w / 2, cy = e.y + e.h / 2, r = Math.min(e.w, e.h) / 2 - 4, col = hexToInt(tagColor(e.tag));
+    g.fillStyle(0x2b1b17, 1); g.fillCircle(cx, cy, r + 4);
+    g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, r);
+    g.fillStyle(e.on ? 0xfff2b0 : col, 1); g.fillCircle(cx, cy, r * 0.72);
+    g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, r * 0.46);
+    g.fillStyle(e.on ? 0xffc21a : 0xe63b2e, 1); g.fillCircle(cx, cy, r * 0.22);
+    if (e.on && clock > 0) { g.lineStyle(5, 0xfff2b0, 1); g.beginPath(); g.arc(cx, cy, r + 10, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clock, false); g.strokePath(); }
+  }
+  // Escarabajo: red-brown dome with six legs that shuffle; stunned = grey, eyes crossed and three stars circling over it.
+  private drawEnemy(sp: Sprite, e: EntityView) {
+    const t = this.t, shuffle = e.on ? 0 : Math.floor(t * 8) % 2, spin = e.on ? Math.floor(t * 12) : 0;
+    const g = this.redraw(sp, `${e.x.toFixed(0)}|${e.y.toFixed(0)}|${e.on}|${e.value}|${shuffle}|${spin}`); if (!g) return;
+    const cx = e.x + e.w / 2, base = e.y + e.h, f = e.value > 0.5 ? 1 : -1;
+    const body = e.on ? 0x9aa7b0 : 0xc0562f, shade = e.on ? 0x77848d : 0x8f3a1e;
+    g.lineStyle(3, 0x2b1b17, 1);
+    for (let i = 0; i < 3; i++) { const lx = cx - 13 + i * 13, sw = (shuffle ^ (i & 1)) ? 4 : -4; g.lineBetween(lx, base - 9, lx + sw, base); }
+    g.fillStyle(0x2b1b17, 1); g.fillEllipse(cx, base - 13, e.w + 4, 28);
+    g.fillStyle(body, 1); g.fillEllipse(cx, base - 14, e.w - 2, 24);
+    g.fillStyle(shade, 1); g.fillEllipse(cx - f * 4, base - 11, e.w - 14, 12);
+    g.lineStyle(2, 0x2b1b17, 0.8); g.lineBetween(cx - f * 2, base - 26, cx - f * 2, base - 3);
+    g.fillStyle(0xffffff, 0.45); g.fillEllipse(cx + f * 6, base - 22, 10, 4);
+    const hx = cx + f * (e.w / 2 - 3), hy = base - 15;
+    g.fillStyle(0x2b1b17, 1); g.fillCircle(hx, hy, 9); g.fillStyle(body, 1); g.fillCircle(hx, hy, 7);
+    if (e.on) { g.lineStyle(2, 0x2b1b17, 1); g.lineBetween(hx - 3, hy - 3, hx + 3, hy + 3); g.lineBetween(hx - 3, hy + 3, hx + 3, hy - 3); for (let k = 0; k < 3; k++) { const a = t * 5 + k * 2.1; g.fillStyle(0xffd23f, 1); g.fillCircle(cx + Math.cos(a) * 14, base - 36 + Math.sin(a) * 4, 3); } }
+    else { g.fillStyle(0xffffff, 1); g.fillCircle(hx + f * 2, hy - 1, 3); g.fillStyle(0x2b1b17, 1); g.fillCircle(hx + f * 3, hy - 1, 1.6); }
+  }
+  // Piolet: a pick with a steel crescent head; on the floor it bobs with a halo, in a player's hands it is smaller and sits over the head.
+  private drawPickaxe(sp: Sprite, e: EntityView) {
+    const bob = e.on ? 0 : Math.round(Math.sin(this.t * 3.4 + e.x) * 3), k = e.on ? 0.75 : 1;
+    const g = this.redraw(sp, `${e.x.toFixed(0)}|${e.y.toFixed(0)}|${bob}|${e.on}`); if (!g) return;
+    const cx = e.x + e.w / 2, cy = e.y + e.h / 2 + bob;
+    if (!e.on) { g.fillStyle(0xc8f0ff, 0.35); g.fillCircle(cx, cy, 20); }
+    g.lineStyle(8 * k, 0x2b1b17, 1); g.lineBetween(cx - 12 * k, cy + 15 * k, cx + 9 * k, cy - 11 * k);
+    g.lineStyle(4.5 * k, 0xb57a3a, 1); g.lineBetween(cx - 12 * k, cy + 15 * k, cx + 9 * k, cy - 11 * k);
+    g.lineStyle(9 * k, 0x2b1b17, 1); g.beginPath(); g.moveTo(cx - 8 * k, cy - 16 * k); g.lineTo(cx + 8 * k, cy - 18 * k); g.lineTo(cx + 22 * k, cy - 6 * k); g.strokePath();
+    g.lineStyle(5 * k, 0xcfe9f5, 1); g.beginPath(); g.moveTo(cx - 8 * k, cy - 16 * k); g.lineTo(cx + 8 * k, cy - 18 * k); g.lineTo(cx + 22 * k, cy - 6 * k); g.strokePath();
   }
 
   destroy() { for (const sp of this.sprites.values()) sp.objs.forEach((o) => o.destroy()); this.sprites.clear(); }

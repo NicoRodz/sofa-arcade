@@ -9,8 +9,9 @@ import { boxHitsSolid, tileAt, tileOf } from './tiles';
 import { emit, isActive, type PlayerState, type World } from './state';
 import { BOX_SIZE, GRAB_RANGE, HAND_LIFT_SEC, RING_HANG_DY, THROWN_MAX_STEPS, THROW_VX, THROW_VY } from './tuning';
 import { DT } from '../constants';
+import { passPickaxe, passTarget } from './pickaxe';
 
-export type BAction = 'anchor' | 'lift' | 'grab' | 'plant' | 'unplant' | 'release' | 'throw' | 'none';
+export type BAction = 'anchor' | 'lift' | 'grab' | 'plant' | 'unplant' | 'release' | 'throw' | 'pass' | 'none'; // 'pass': campaign, hands the pickaxe to a teammate
 export interface BPreview { action: BAction; target: { kind: 'ring' | 'player' | 'box' | 'lever'; id: number } | null }
 const NONE = 255;
 
@@ -55,6 +56,8 @@ export function findTarget(w: World, p: PlayerState): BPreview['target'] {
 // For the HUD icon above the head: what B will do right now.
 export function previewB(w: World, p: PlayerState): BPreview {
   if (p.carriedBy >= 0 || p.lift) return { action: 'none', target: null };
+  const handOver = p.holding ? null : passTarget(w, p); // campaign pickaxe: B hands it over (a ring in reach still wins)
+  if (handOver && findTarget(w, p)?.kind !== 'ring') return { action: 'pass', target: { kind: 'player', id: handOver.slot } };
   if (p.planted) return { action: 'unplant', target: null };
   if (p.holding) return { action: p.holding.kind === 'player' ? 'throw' : 'release', target: p.holding };
   const t = findTarget(w, p);
@@ -78,25 +81,29 @@ export function dropAll(w: World, p: PlayerState): void {
   if (p.holding) releaseHolding(w, p);
   if (p.carriedBy >= 0) { const c = w.players.find((q) => q.slot === p.carriedBy); if (c?.holding?.kind === 'player' && c.holding.id === p.slot) { c.holding = null; emit(w, 'obst.release', { player: c.slot }); } p.carriedBy = -1; }
   for (const q of w.players) if (q.lift?.by === p.slot) q.lift = null;
-  p.lift = null; p.planted = false; p.climbing = false; p.thrown = 0;
+  p.lift = null; p.planted = false; p.climbing = false; p.thrown = 0; p.camp.pick = 0;
   for (const k of w.ent.keys) if (k.heldBy === p.slot) { k.heldBy = -1; k.x = k.homeX; k.y = k.homeY; }
 }
 
 export function applyB(w: World, p: PlayerState): void {
   if (!isActive(p) || p.carriedBy >= 0 || p.lift) return;
   const b = p.body;
+  const handOver = p.holding ? null : passTarget(w, p); // campaign pickaxe (sim/pickaxe.ts): B hands it over (a ring in reach still wins)
+  if (handOver && findTarget(w, p)?.kind !== 'ring') { passPickaxe(w, p, handOver); return; }
   if (p.planted) { p.planted = false; return; }
+  if (p.camp.pick !== 0) { p.camp.pick = 0; return; } // B on the wall with nobody to pass to: let go
   if (p.holding) {
     if (p.holding.kind === 'player') {
       const t = w.players.find((q) => q.slot === p.holding!.id);
       p.holding = null;
       if (t) {
         t.carriedBy = -1;
-        t.body.vx = THROW_VX * b.facing; t.body.vy = THROW_VY; t.body.facing = b.facing;
+        t.body.vx = THROW_VX * (w.camp?.throwVxMult ?? 1) * b.facing; t.body.vy = THROW_VY; t.body.facing = b.facing;
         t.body.grounded = false; t.body.supportId = -1; t.body.air = NONE;
         t.thrown = THROWN_MAX_STEPS;
         p.stats.throws++;
         emit(w, 'obst.throw', { player: p.slot, target: t.slot, vx: t.body.vx, vy: t.body.vy });
+        if (w.camp) slackRope(w, t.slot);
       }
     } else releaseHolding(w, p);
     return;
@@ -128,6 +135,17 @@ export function applyB(w: World, p: PlayerState): void {
   emit(w, 'obst.grab', { player: p.slot, target: t.kind, targetId: t.id });
 }
 
+// Campaign throw niche: the rope of the thrown player is `throwSlack` x longer at the throw and eases back to its length in `throwSlackSec` (the relink easing of
+// sim/rope.ts), so a throw carries past what a jump or a tower can with the tied rope. After it lands the rope tightens again; plant (B) and the thrower is pulled over.
+function slackRope(w: World, slot: number): void {
+  const c = w.camp!;
+  for (const r of w.ropes) for (const l of r.links) {
+    if (l.a !== slot && l.b !== slot) continue;
+    const len = l.base * c.throwSlack;
+    if (len > l.len) { l.len = len; l.shrink = ((len - l.base) * DT) / c.throwSlackSec; }
+  }
+}
+
 // A pressed. Lets go of everything; returns true if A was used up (the player must not also run its normal jump this step).
 export function applyA(w: World, p: PlayerState): boolean {
   const b = p.body;
@@ -145,6 +163,13 @@ export function applyA(w: World, p: PlayerState): boolean {
     b.vy = -JUMP_V0; b.grounded = false; b.air = NONE;
     emit(w, 'obst.release', { player: p.slot });
     emit(w, 'obst.jump', { player: p.slot, kind: 'rope' });
+    return true;
+  }
+  if (p.camp.pick !== 0) { // campaign: jump off the ice wall, away from it
+    const dir = p.camp.pick;
+    p.camp.pick = 0;
+    b.vy = -JUMP_V0 * 0.9; b.vx = -dir * 330 * 0.5; b.grounded = false; b.supportId = -1; b.air = NONE;
+    emit(w, 'obst.jump', { player: p.slot, kind: 'ground' });
     return true;
   }
   if (p.holding) releaseHolding(w, p);
