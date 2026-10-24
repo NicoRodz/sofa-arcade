@@ -215,6 +215,7 @@ describe('ranking', () => {
     expect(rankTeams([r({ teamId: 0, delivered: 6 }), r({ teamId: 1 })]).winner).toBe(0);
     expect(rankTeams([r({ teamId: 0 }), r({ teamId: 1, vip: 2 })]).winner).toBe(1);
     expect(rankTeams([r({ teamId: 0, reachedAt: 150_000 }), r({ teamId: 1, reachedAt: 140_000 })]).winner).toBe(1);
+    expect(rankTeams([r({ teamId: 0, delivered: 6, vip: 0 }), r({ teamId: 1, delivered: 5, vip: 2 })]).winner).toBe(0); // deliveries before VIPs
     expect(rankTeams([r({ teamId: 0, score: 100, delivered: 1 }), r({ teamId: 1, score: 99, delivered: 9, vip: 9, reachedAt: 1 })]).winner).toBe(0); // the score rule comes first
   });
   it('a tie on every rule is a draw; one team always wins', () => {
