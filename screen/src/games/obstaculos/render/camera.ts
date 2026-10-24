@@ -21,7 +21,10 @@ export interface CamPlayer {
   visibleCheck: boolean; // true if an arrow should be shown when it is out of the picture (alive and connected, bubble or not)
 }
 export interface CamState { cx: number; cy: number; zoom: number; vcx: number; vcy: number; vz: number; lead: number }
-export interface CamInput { players: readonly CamPlayer[]; boundsW: number; boundsH: number; zones?: readonly Rect[]; viewW?: number; viewH?: number }
+// Campaign hints (shared `cameraHints(world)`): look toward the goal instead of where the group runs, keep the chasing hazard in the picture
+// ("in the bosses the danger pushes the camera"). Absent = the quick match camera, unchanged.
+export interface CamLook { goalX: number | null; hazard: { kind: 'risingLava' | 'tide' | 'avalanche'; pos: number } | null; padTiles: number }
+export interface CamInput { players: readonly CamPlayer[]; boundsW: number; boundsH: number; zones?: readonly Rect[]; viewW?: number; viewH?: number; look?: CamLook }
 export interface Offscreen { id: number; dirX: number; dirY: number; dist: number } // unit direction from the view centre, distance in px beyond the edge
 export interface CamResult {
   state: CamState;
@@ -85,8 +88,14 @@ export function computeCamera(input: CamInput, prev: CamState | null, dt: number
   let zone = -1;
   if (focus.length) {
     const xs = focus.map((p) => p.x), ys = focus.map((p) => p.y);
-    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    tz = clamp(Math.min(viewW / (x1 - x0 + 2 * FRAME_PAD), viewH / (y1 - y0 + 2 * FRAME_PAD)), ZOOM_MIN, ZOOM_MAX);
+    let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const pad = input.look ? input.look.padTiles * TILE : FRAME_PAD;
+    const hz = input.look?.hazard;
+    if (hz) { // the hazard joins the frame while the group and the hazard still fit at the minimum zoom
+      const hx0 = hz.kind === 'avalanche' ? Math.min(x0, hz.pos) : x0, hy1 = hz.kind === 'avalanche' ? y1 : Math.max(y1, hz.pos);
+      if (Math.min(viewW / (x1 - hx0 + 2 * pad), viewH / (hy1 - y0 + 2 * pad)) >= ZOOM_MIN) { x0 = hx0; y1 = hy1; }
+    }
+    tz = clamp(Math.min(viewW / (x1 - x0 + 2 * pad), viewH / (y1 - y0 + 2 * pad)), ZOOM_MIN, ZOOM_MAX);
     tcx = (x0 + x1) / 2; tcy = (y0 + y1) / 2;
     const anchor = median && focus.length > 2 ? median : { x: tcx, y: tcy };
     const zones = input.zones ?? [];
@@ -99,7 +108,8 @@ export function computeCamera(input: CamInput, prev: CamState | null, dt: number
       tz = clamp(Math.min(viewW / (z.w * TILE), viewH / (z.h * TILE)), ZOOM_MIN, ZOOM_MAX);
       tcx = (z.x + z.w / 2) * TILE; tcy = (z.y + z.h / 2) * TILE;
     } else {
-      const dir = clamp(focus.reduce((s, p) => s + p.vx, 0) / focus.length / RUN_SPEED, -1, 1);
+      const gx = input.look?.goalX;
+      const dir = gx != null ? clamp((gx - tcx) / (6 * TILE), -1, 1) : clamp(focus.reduce((s, p) => s + p.vx, 0) / focus.length / RUN_SPEED, -1, 1); // campaign: toward the goal
       lead += (dir - lead) * (1 - Math.exp(-2.5 * dt));
       tcx += lead * LEAD * (viewW / tz / 2);
     }

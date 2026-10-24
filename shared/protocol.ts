@@ -5,6 +5,7 @@ import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
 import { MAX_TEAMS, teamOf, type TeamInfo } from './teams';
 import { isNavKey, type NavKey } from './captain';
 import { isVersusChoice, type VersusChoice } from './versusMaps';
+import type { PhoneResult, Verdict } from './versusReport';
 
 export { ROUND_MS } from './difficulty';
 export { MAX_TEAMS, type TeamInfo } from './teams';
@@ -13,7 +14,8 @@ export { KEYBOARD_QUIET_MS, NAV_KEYS, NAV_TO_KEY, acceptNav, captainOf, isNavKey
 // 2: teams (modeId, teams and teamsLocked in the lobby config, teamId per player, 'setTeam' and 'you'). A v1 screen or phone never sends
 // those fields and is read as cooperative with no teams assigned.
 // 3: the Captain ('captain' to everyone, 'nav' from the Captain's phone to the screens, stamped with 'from'). Additive: an older screen or phone ignores both.
-export const PROTOCOL_VERSION = 3;
+// 4: the versus result ('phase' results carries `result`: verdict, winner and every team's score). Additive: an older phone ignores it.
+export const PROTOCOL_VERSION = 4;
 export const WS_PATH = '/ws';
 export const DEFAULT_ROOM = 'main';
 export const INPUT_HZ = 30;
@@ -47,7 +49,7 @@ export interface PuestoMsg { cheese: boolean; sink: boolean; assign: PuestoAssig
 // How a round starts (sent with phase 'playing'): the lobby choices frozen. modeOptions is opaque here: each game types its own.
 export type ModeOptions = Record<string, boolean | number | string>;
 export interface MatchStart { gameId: GameId; modeId: ModeId; mapId: string; difficulty: Difficulty; teams: TeamInfo[] | null; modeOptions: ModeOptions }
-export interface PhaseInfo { phase: Phase; scores?: Score[]; puestos?: PuestoMsg; match?: MatchStart }
+export interface PhaseInfo { phase: Phase; scores?: Score[]; puestos?: PuestoMsg; match?: MatchStart; result?: PhoneResult } // result: versus only, with phase 'results'
 
 // R7: a short vibration on one phone (Android); iOS has no vibration API, so the phone flashes its colour instead.
 // The screen decides when (it owns the game events); the phone only plays the pattern, in ms on / off / on...
@@ -142,6 +144,14 @@ export function parseTeams(v: unknown): TeamInfo[] | null | undefined {
   return out;
 }
 
+const VERDICTS: readonly Verdict[] = ['win', 'draw', 'nowinner', 'aborted'];
+export function parsePhoneResult(v: any): PhoneResult | null {
+  if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict) || !(v.winner === null || intIn(v.winner, 0, MAX_TEAMS - 1))) return null;
+  if (!Array.isArray(v.scores) || v.scores.length < 1 || v.scores.length > MAX_TEAMS || !v.scores.every((x: any) => x && intIn(x.team, 0, MAX_TEAMS - 1) && num(x.score))) return null;
+  if (v.verdict === 'win' ? v.winner === null : v.winner !== null) return null; // a win names its team; no other verdict does
+  return { verdict: v.verdict, winner: v.winner, scores: v.scores.map((x: { team: number; score: number }) => ({ team: x.team, score: x.score })) };
+}
+
 export function parseModeOptions(v: unknown): ModeOptions | undefined {
   if (v === undefined || v === null) return {};
   if (typeof v !== 'object' || Array.isArray(v)) return undefined;
@@ -193,6 +203,11 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       if (m.scores !== undefined) {
         if (!Array.isArray(m.scores) || !m.scores.every((x: any) => x && num(x.id) && num(x.score))) return null;
         out.scores = m.scores.map((x: Score) => ({ id: x.id, score: x.score }));
+      }
+      if (m.result !== undefined) {
+        const r = parsePhoneResult(m.result);
+        if (!r) return null;
+        out.result = r;
       }
       if (m.puestos !== undefined) {
         const p = parsePuestoMsg(m.puestos);

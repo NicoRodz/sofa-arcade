@@ -88,7 +88,7 @@ export function attachRelay(server: Server) {
       }
       if (m.t === 'phase') {
         if (!isScreen) return;
-        r.phase = { phase: m.phase, scores: m.scores, puestos: m.puestos, match: m.match };
+        r.phase = { phase: m.phase, scores: m.scores, puestos: m.puestos, match: m.match, result: m.result };
         toPlayers(r, { t: 'phase', ...r.phase });
         return;
       }

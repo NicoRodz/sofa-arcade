@@ -8,6 +8,7 @@ import { foodKey } from './food';
 import { Bar, place } from './stations';
 import { makeText } from './fx';
 import { MAX_TICKETS, TICKET_SHAKE_AT, TICKET_WIDTH, VS_TICKET_MAX_X, clockText, ticketXs } from './layout';
+import { VersusHud } from './versusHud';
 
 const TICKET_W = TICKET_WIDTH;
 
@@ -16,13 +17,13 @@ export interface RoundView { teams: readonly TeamInfo[] | null; hiddenScore: boo
 const NO_VIEW: RoundView = { teams: null, hiddenScore: false };
 // Twin queues share order ids, so a ticket is keyed by team too (team 0 / coop: the order id itself).
 export const ticketKey = (order: number, team = 0) => team * 1_000_000 + order;
-const HIDE_SCORE_MS = 20_000; // versus: the scoreboard shows ??? this long before the end (the results reveal it)
 
 interface Ticket {
   id: number;
   team: number;
   vip: boolean;
   bg: Phaser.GameObjects.Image;
+  frame: Phaser.GameObjects.Graphics; // the golden border of a VIP order
   root: Phaser.GameObjects.Container;
   bar: Bar;
   x: number; // current left edge, smoothed
@@ -49,7 +50,7 @@ export class Hud {
   private t = 0;
   private lastSecond = -1;
   private pulse = 1;
-  private boxes: { g: Phaser.GameObjects.Graphics; name: Phaser.GameObjects.Text; score: Phaser.GameObjects.Text; k: Phaser.GameObjects.Text; shown: number; last: number }[] = [];
+  readonly vs: VersusHud | null; // versus: the scoreboard, the golden order card and the notices
   readonly expired = new Set<number>(); // ticket keys (see ticketKey) of the orders that ran out of patience
 
   constructor(private scene: Phaser.Scene, private game: Game, private view: RoundView = NO_VIEW) {
@@ -66,25 +67,8 @@ export class Hud {
     const label = makeText(scene, 0, -19, 'RACHA', { size: 15, color: C.cream, stroke: 3, depth: 0 });
     this.streakTxt = makeText(scene, 0, 8, 'x2', { size: 40, color: C.cream, stroke: 6, depth: 0 });
     this.streakBox = scene.add.container(1462, 52, [this.streakBg, label, this.streakTxt]).setDepth(D + 1).setVisible(false);
-    if (game.versus) this.buildScoreboard(D);
-  }
-
-  // Versus (minimal, F4 dresses it): the coop score panel gives way to one plate per team on either side of the clock.
-  private buildScoreboard(D: number) {
-    for (const o of [this.panel, this.coin, this.scoreTxt]) o.setVisible(false);
-    for (const t of this.game.teams) {
-      const info = this.view.teams?.[t.id];
-      const cx = t.id === 0 ? 770 : 1150, col = hexNum(info?.color ?? '#888888');
-      const g = this.scene.add.graphics().setDepth(D);
-      g.fillStyle(0x2b1b17, 0.28).fillRoundedRect(cx - 118, 18, 240, 82, 20);
-      g.fillStyle(col, 1).fillRoundedRect(cx - 120, 12, 240, 82, 20);
-      g.lineStyle(5, hexNum(C.ink), 1).strokeRoundedRect(cx - 120, 12, 240, 82, 20);
-      g.fillStyle(0xffffff, 0.28).fillRoundedRect(cx - 104, 17, 208, 7, 3);
-      const name = makeText(this.scene, cx, 32, `${info?.icon ?? ''} ${info?.name ?? `Equipo ${t.id + 1}`}`, { size: 26, color: C.cream, stroke: 5, depth: D + 2 }).setY(36);
-      const score = makeText(this.scene, cx - 12, 71, '0', { size: 50, color: C.cream, stroke: 7, depth: D + 2 });
-      const k = makeText(this.scene, cx + 86, 74, '', { size: 24, color: C.cheese, stroke: 5, depth: D + 2 });
-      this.boxes.push({ g, name, score, k, shown: 0, last: 0 });
-    }
+    this.vs = game.versus ? new VersusHud(scene, game, view) : null;
+    if (this.vs) for (const o of [this.panel, this.coin, this.scoreTxt]) o.setVisible(false); // the coop score panel gives way to one plate per team
   }
 
   // R15: pops when the multiplier goes up, shakes and drops out when the streak is lost.
@@ -126,10 +110,13 @@ export class Hud {
     const knife = place(s, 'knife', 54, 56, 1).setScale(0.3 / R).setAngle(-65);
     const flame = place(s, 'flame_1', -9, 41, 1).setScale(0.34 / R);
     bar.root.setVisible(true);
-    const root = s.add.container(W + 200, 6, [bg, bar.root, pizza, dough, tomato, ...(cheese ? [cheese] : []), knife, flame, num]).setDepth(2100 + id * 0.001);
+    const frame = s.add.graphics().setVisible(vip);
+    frame.lineStyle(7, hexNum(C.cheese2), 1).strokeRoundedRect(-62, 3, 124, 96, 10);
+    frame.lineStyle(3, hexNum(C.cheese), 1).strokeRoundedRect(-62, 3, 124, 96, 10);
+    const root = s.add.container(W + 200, 6, [bg, frame, bar.root, pizza, dough, tomato, ...(cheese ? [cheese] : []), knife, flame, num]).setDepth(2100 + id * 0.001);
     root.setAngle((id % 3) - 1);
     if (vip) bg.setTint(hexNum(C.cheese));
-    const t: Ticket = { id, team, vip, bg, root, bar, x: NaN, enter: { v: 0 }, leaving: false };
+    const t: Ticket = { id, team, vip, bg, frame, root, bar, x: NaN, enter: { v: 0 }, leaving: false };
     s.tweens.add({ targets: t.enter, v: 1, duration: 300, ease: 'back.out' });
     return t;
   }
@@ -194,7 +181,7 @@ export class Hud {
         t.x = Number.isNaN(t.x) ? target : t.x + (target - t.x) * Math.min(1, dtMs / 90);
         const left = (o.expiresAt - g.time) / g.params.orderTtlMs;
         t.bar.set(left, timerColor(left));
-        if (t.vip !== !!o.vip) { t.vip = !!o.vip; if (t.vip) t.bg.setTint(hexNum(C.cheese)); else t.bg.clearTint(); } // the golden order turns normal when the rival wins it
+        if (t.vip !== !!o.vip) { t.vip = !!o.vip; t.frame.setVisible(t.vip); if (t.vip) t.bg.setTint(hexNum(C.cheese)); else t.bg.clearTint(); } // the golden order turns normal when the rival wins it
         const shake = left < TICKET_SHAKE_AT ? Math.sin(this.t / 28 + o.id) * 2.2 : 0;
         const slide = (1 - t.enter.v) * 480 * (vs && q.team === 1 ? -1 : 1);
         t.root.x = t.x + TICKET_W / 2 + slide + shake;
@@ -217,7 +204,7 @@ export class Hud {
       cg.lineStyle(9, hexNum(col), 1); cg.beginPath(); cg.arc(W / 2, 52, 36, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * frac, false); cg.strokePath();
     }
     // score
-    if (vs) this.updateScoreboard(dtMs, left, g.countdown <= 0);
+    if (vs) this.vs!.update(dtMs, left, g.countdown <= 0);
     else if (g.score !== this.lastScore) {
       if (g.score > this.lastScore) {
         const o = { k: 1.25 };
@@ -232,27 +219,10 @@ export class Hud {
     }
   }
 
-  private updateScoreboard(dtMs: number, leftMs: number, running: boolean) {
-    const hide = this.view.hiddenScore && running && leftMs <= HIDE_SCORE_MS;
-    this.game.teams.forEach((t, i) => {
-      const b = this.boxes[i]!;
-      if (t.score > b.last) {
-        const o = { v: 1.25 };
-        this.scene.tweens.add({ targets: o, v: 1, duration: 220, ease: 'back.out', onUpdate: () => b.score.setScale(o.v) });
-      }
-      b.last = t.score;
-      b.shown += (t.score - b.shown) * Math.min(1, dtMs / 160);
-      if (Math.abs(t.score - b.shown) < 0.5) b.shown = t.score;
-      b.score.setText(hide ? '???' : String(Math.round(b.shown)));
-      b.k.setText(t.k > 1 ? `×${t.k}` : '');
-    });
-  }
-
   destroy() {
     for (const t of this.tickets.values()) t.root.destroy();
     this.tickets.clear();
     for (const o of [this.clockG, this.clockImg, this.clockTxt, this.coin, this.scoreTxt, this.panel, this.dim, this.banner, this.streakBox]) o?.destroy();
-    for (const b of this.boxes) { b.g.destroy(); b.name.destroy(); b.score.destroy(); b.k.destroy(); }
-    this.boxes = [];
+    this.vs?.destroy();
   }
 }

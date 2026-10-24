@@ -59,6 +59,28 @@ export const SFX = {
   navPick: { bus: 'ui', voices: [osc('sine', 659, 0.1, 0.35), osc('sine', 988, 0.18, 0.35, { at: 0.07 }), osc('square', 1318, 0.05, 0.08, { at: 0.07 })] },
   navBack: { bus: 'ui', voices: [osc('triangle', 784, 0.07, 0.3, { f1: 700 }), osc('triangle', 523, 0.12, 0.3, { at: 0.06, f1: 440 })] },
   join: { bus: 'ui', voices: [osc('sine', 523, 0.15, 0.4, { f1: 784 })] },
+  // versus (F4). The golden order: a rising shimmer when it shows up, a bright arpeggio for the team that wins it, a dull slide (a beat later) for the other.
+  vipNew: { bus: 'sfx', voices: [...[784, 988, 1319].map((f, i) => osc('triangle', f, 0.14, 0.3, { at: i * 0.09 })), osc('sine', 2637, 0.5, 0.12, { at: 0.2 })] },
+  vipWon: { bus: 'sfx', voices: [...[523, 659, 784, 1047].map((f, i) => osc('square', f, 0.09, 0.2, { at: i * 0.07 })), ...[1047, 1319, 1568].map((f) => osc('sine', f, 0.9, 0.2, { at: 0.28 }))] },
+  vipLost: { bus: 'sfx', voices: [osc('sawtooth', 392, 0.35, 0.22, { at: 0.3, f1: 196, filter: { type: 'lowpass', f0: 900 } })] },
+  // the handicap of a team went up (a chef of its kitchen dropped): two notes climbing
+  advantage: { bus: 'sfx', voices: [osc('sine', 523, 0.12, 0.3), osc('sine', 784, 0.25, 0.3, { at: 0.1 }), osc('triangle', 1047, 0.25, 0.12, { at: 0.1 })] },
+  // the team that was behind took the lead: a sweep up and a stab
+  comeback: { bus: 'sfx', voices: [noise(0.3, 0.3, { type: 'bandpass', f0: 300, f1: 3000, q: 1 }, { att: 0.1 }), ...[659, 880, 1319].map((f) => osc('square', f, 0.2, 0.14, { at: 0.28 }))] },
+  playerDropped: { bus: 'sfx', voices: [osc('triangle', 440, 0.28, 0.3, { f1: 220 })] },
+  playerBack: { bus: 'sfx', voices: [osc('triangle', 330, 0.12, 0.3), osc('triangle', 660, 0.2, 0.3, { at: 0.1 })] },
+  playerGone: { bus: 'sfx', voices: [osc('sawtooth', 300, 0.5, 0.25, { f1: 100, filter: { type: 'lowpass', f0: 700 } })] },
+  paused: { bus: 'ui', voices: [osc('square', 220, 0.14, 0.2), osc('square', 196, 0.2, 0.2, { at: 0.18 })] },
+  resumed: { bus: 'ui', voices: [osc('square', 196, 0.12, 0.2), osc('square', 294, 0.2, 0.2, { at: 0.12 })] },
+  // after the whistle (0.7 s) and the "TIEMPO" beat: a fanfare for the winner, a plain two-note close when nobody won
+  fanfare: {
+    bus: 'ui',
+    voices: [
+      ...[523, 523, 523, 698, 659, 698, 784].map((f, i) => osc('square', f, i === 6 ? 0.7 : i === 3 ? 0.22 : 0.1, 0.2, { at: 1.15 + [0, 0.12, 0.24, 0.36, 0.62, 0.74, 0.86][i]! })),
+      ...[392, 523, 659].map((f) => osc('sine', f, 0.8, 0.18, { at: 2.0 })),
+    ],
+  },
+  tieJingle: { bus: 'ui', voices: [osc('triangle', 523, 0.2, 0.3, { at: 1.15 }), osc('triangle', 523, 0.5, 0.3, { at: 1.4 }), osc('sine', 392, 0.6, 0.15, { at: 1.4 })] },
 } as const satisfies Record<string, Sfx>;
 export type SfxId = keyof typeof SFX;
 
@@ -110,15 +132,18 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   streak: () => [],
   countdownTick: (p) => (p.kind === 'end' ? (p.n >= 1 && p.n <= 10 ? [play('tickEnd')] : []) : [play(p.n > 0 ? 'count' : 'go')]),
   roundStart: () => [], // the music follows the game snapshot; the "go" sound comes with countdown 0
-  roundEnd: () => [{ kind: 'stopLoops' }, play('whistle')],
-  // versus events (F2): silent until F4 gives them their sounds (VIP appears, won or lost; a team's k changes; a chef drops or comes back; pause)
-  vipNew: () => [],
-  vipWon: () => [],
-  vipLost: () => [],
-  teamK: () => [],
-  playerDropped: () => [],
-  playerBack: () => [],
-  playerGone: () => [],
-  matchPaused: () => [],
-  matchResumed: () => [],
+  // versus: after the whistle, a fanfare when a team won and a plain close when it did not (a draw, or the host went on without a winner)
+  roundEnd: (p) => [{ kind: 'stopLoops' }, play('whistle'), ...(p.winner === undefined ? [] : [play(p.winner === null ? 'tieJingle' : 'fanfare')])],
+  // versus events
+  vipNew: () => [play('vipNew')],
+  vipWon: () => [play('vipWon'), { kind: 'duck' }],
+  vipLost: () => [play('vipLost')],
+  comeback: () => [play('comeback')],
+  pantryRefill: () => [play('plink')], // a unit is back in the shared pantry
+  teamK: (p) => (p.k > 1 ? [play('advantage')] : []), // only a handicap that grew is news; it going back to 1 is silent
+  playerDropped: () => [play('playerDropped')],
+  playerBack: () => [play('playerBack')],
+  playerGone: () => [play('playerGone')],
+  matchPaused: () => [play('paused')],
+  matchResumed: () => [play('resumed')],
 };

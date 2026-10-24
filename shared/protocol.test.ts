@@ -196,3 +196,33 @@ describe("the Captain's 'nav' on the wire (protocol v3)", () => {
     for (const bad of ['{"t":"nav"}', '{"t":"nav","key":"start"}', '{"t":"nav","key":"Enter"}', '{"t":"nav","key":1}', '{"t":"nav","key":null}', '{"t":"nav","key":["ok"]}', '{"t":"nav","key":"__proto__"}']) expect(parseClientMessage(bad), bad).toBeNull();
   });
 });
+
+describe('the versus result on the wire (protocol v4)', () => {
+  const res = { verdict: 'win', winner: 0, scores: [{ team: 0, score: 410 }, { team: 1, score: 340 }] };
+  const phase = (result: unknown) => parseClientMessage(JSON.stringify({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result }));
+
+  it('the version was bumped for the result', () => { expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(4); });
+  it('a results phase carries the verdict, the winner and every team\'s score', () => {
+    expect(phase(res)).toEqual({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result: res });
+    for (const [verdict, winner] of [['draw', null], ['nowinner', null], ['aborted', null], ['win', 1]] as const) expect(phase({ ...res, verdict, winner })).toMatchObject({ result: { verdict, winner } });
+  });
+  it('a coop results phase (no result) is the same as ever', () => {
+    expect(parseClientMessage('{"t":"phase","phase":"results","scores":[{"id":1,"score":5}]}')).toEqual({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 5 }] });
+  });
+  it('refuses a verdict it does not know, a win without a winner, a winner without a win, and bad scores', () => {
+    expect(phase({ ...res, verdict: 'tie' })).toBeNull();
+    expect(phase({ ...res, winner: null })).toBeNull(); // a win names its team
+    expect(phase({ ...res, verdict: 'draw', winner: 0 })).toBeNull(); // a draw names nobody
+    expect(phase({ ...res, winner: 9 })).toBeNull();
+    expect(phase({ ...res, scores: [] })).toBeNull();
+    expect(phase({ ...res, scores: [{ team: 0, score: 'x' }] })).toBeNull();
+    expect(phase({ ...res, scores: [{ team: 7, score: 1 }] })).toBeNull();
+    expect(phase({ ...res, scores: Array.from({ length: 5 }, (_v, i) => ({ team: i % 4, score: i })) })).toBeNull();
+    expect(phase(null)).toBeNull();
+    expect(phase('win')).toBeNull();
+  });
+  it('drops anything else a screen puts in the result', () => {
+    expect(phase({ ...res, extra: 1, scores: [{ team: 0, score: 1, name: 'x' }] })).toMatchObject({ result: { verdict: 'win', winner: 0, scores: [{ team: 0, score: 1 }] } });
+    expect(JSON.stringify(phase({ ...res, extra: 1 }))).not.toContain('extra');
+  });
+});

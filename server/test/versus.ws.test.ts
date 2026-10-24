@@ -9,6 +9,7 @@ import { COUNTDOWN_MS, TICK_MS, tick, type Controls, type Game, type Player, typ
 import { summarizeTeam } from '@party/shared/results';
 import { movePlayer, teamOf, type TeamInfo } from '@party/shared/teams';
 import { VERSUS_AUTO, lobbySetup, startVersusRound, syncTeams } from '@party/shared/versusLobby';
+import { outcomeFor, phoneResult, tallyDeliveries, versusReport, type VersusReport } from '@party/shared/versusReport';
 import { Emitter, type GameEvents } from '@party/shared/events';
 import { mulberry32 } from '../../shared/rng';
 import { decide, type Mem } from '../../shared/golden/bot';
@@ -67,6 +68,8 @@ class Screen {
   trackers = new Map<number, PressTracker>();
   latest = new Map<number, { x: number; y: number; btn: number; presses: number[]; seq: number }>();
   game: Game | null = null;
+  bus = new Emitter<GameEvents>();
+  tally = tallyDeliveries(this.bus); // deliveries per chef, as the real screen counts them for the MVP
   constructor(readonly room: string) {
     this.ws = new WebSocket(`ws://127.0.0.1:${srv.port}/ws?role=screen&room=${room}`);
     this.ws.on('message', (d) => this.onMessage(JSON.parse(d.toString()) as ServerMsg));
@@ -88,7 +91,7 @@ class Screen {
   /** Lobby -> round: the same call as the screen's startVersus, then the `phase` the phones get. */
   start(rand = mulberry32(3)) {
     expect(lobbySetup(versus, this.config.teams).ok).toBe(true);
-    const round = startVersusRound({ teams: this.config.teams!, choice: this.config.map, difficulty: 'easy', seed: this.config.seed, modeOptions: this.config.modeOptions, slotOf: (id) => this.slots.get(id) ?? 0, rand, bus: new Emitter<GameEvents>(), countdownMs: COUNTDOWN_MS });
+    const round = startVersusRound({ teams: this.config.teams!, choice: this.config.map, difficulty: 'easy', seed: this.config.seed, modeOptions: this.config.modeOptions, slotOf: (id) => this.slots.get(id) ?? 0, rand, bus: this.bus, countdownMs: COUNTDOWN_MS });
     this.game = round.game;
     this.config = { ...this.config, teams: round.teams, teamsLocked: true };
     this.sendConfig();
@@ -112,7 +115,7 @@ function brain(g: Game, p: Player, rank: number, mem: Mem, t: number): Controls 
   return { ...c, x: cx, y: cy };
 }
 
-interface Played { screen: Screen; phones: Phone[]; game: Game; teams: TeamInfo[]; frames: number }
+interface Played { screen: Screen; phones: Phone[]; game: Game; teams: TeamInfo[]; frames: number; report: VersusReport }
 
 /**
  * n phones on the relay join, get their team, and play a whole round on V1 (frame by frame: every bot sends its input, the screen waits for
@@ -155,9 +158,11 @@ async function playRound(room: string, n: number, o: { lazyMs?: number } = {}): 
     tick(game, controls);
     frames++;
   }
-  screen.send({ t: 'phase', phase: 'results', scores: phones.map((p) => ({ id: p.id, score: game.teams[game.players.get(p.id)!.team]!.score })) });
+  // the end, as the real screen does it: the report of the round (from the sim and the per-chef tally) and what the phones are told of it
+  const report = versusReport(game, round.teams, screen.tally.counts);
+  screen.send({ t: 'phase', phase: 'results', scores: phones.map((p) => ({ id: p.id, score: game.teams[game.players.get(p.id)!.team]!.score })), result: phoneResult(report) });
   await until(() => phones.every((p) => p.phase?.phase === 'results'), 'phase results');
-  return { screen, phones, game, teams: round.teams, frames };
+  return { screen, phones, game, teams: round.teams, frames, report };
 }
 const closeAll = (r: Played) => { r.screen.ws.close(); r.phones.forEach((p) => p.ws.close()); };
 
@@ -186,6 +191,28 @@ describe('versus over the relay: bots on websockets', () => {
         expect(score).toBe(game.teams[mine.id]!.score);
         expect(p.you).toMatchObject({ teamId: mine.id, color: mine.color, icon: mine.icon, sideLabel: mine.id === 0 ? 'izquierda' : 'derecha' });
       }
+      // the results payload (F4): the verdict and every team's score reach each phone, and each one reads its own outcome from its team
+      const { report } = r;
+      const winner = a!.score > b!.score ? 0 : 1;
+      expect([report.verdict, report.winner, report.decidedBy, report.ranked]).toEqual(['win', winner, 'score', winner === 0 ? [0, 1] : [1, 0]]);
+      expect(report.margin).toBe(Math.abs(a!.score - b!.score));
+      for (const p of phones) {
+        expect(p.phase!.result).toEqual({ verdict: 'win', winner, scores: [{ team: 0, score: a!.score }, { team: 1, score: b!.score }] });
+        const mine = r.teams.find((t) => t.playerIds.includes(p.id))!;
+        expect(outcomeFor(p.phase!.result!, p.you!.teamId)).toBe(mine.id === winner ? 'won' : 'lost');
+        expect(p.phase!.result!.scores.find((s) => s.team === p.you!.teamId)!.score).toBe(game.teams[mine.id]!.score); // the phone's own team's score
+      }
+      // the numbers of each team in the report are the sim's, and the MVP tally adds up to the team's deliveries (a chef counted twice or lost would break it)
+      for (const t of report.teams) {
+        const sim = summarizeTeam(game, t.teamId);
+        expect([t.score, t.delivered, t.tips, t.bestStreak, t.vips, t.stars, t.k]).toEqual([sim.score, sim.delivered, sim.tips, sim.bestStreak, sim.vips, sim.stars, sim.k]);
+        const members = r.teams[t.teamId]!.playerIds;
+        expect(members.reduce((n, id) => n + (r.screen.tally.counts.get(id) ?? 0), 0), `team ${t.teamId} tally`).toBe(sim.delivered);
+        expect(t.mvp, `team ${t.teamId} mvp`).not.toBeNull();
+        expect(members).toContain(t.mvp!.playerId);
+        expect(t.mvp!.delivered).toBe(Math.max(...members.map((id) => r.screen.tally.counts.get(id) ?? 0)));
+        expect([t.name, t.icon, t.color]).toEqual([r.teams[t.teamId]!.name, r.teams[t.teamId]!.icon, r.teams[t.teamId]!.color]);
+      }
       closeAll(r);
     }, 180_000);
   }
@@ -203,6 +230,8 @@ describe('versus over the relay: bots on websockets', () => {
     expect(s.score).toBeLessThanOrEqual(Math.ceil(s.gross * 1.22) + s.delivered); // ... by 1.22 and nothing else (rounding per delivery)
     expect(summarizeTeam(game, big.id).score).toBe(summarizeTeam(game, big.id).gross);
     expect(game.result!.order).toHaveLength(2);
+    expect(r.report.teams[small.id]).toMatchObject({ k: 1.22, gross: s.gross, score: s.score }); // the report shows the advantage and what it was applied to
+    expect(r.report.teams[big.id]!.k).toBe(1);
     closeAll(r);
   }, 180_000);
 });

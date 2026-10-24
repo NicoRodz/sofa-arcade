@@ -5,6 +5,7 @@ import { C, OX, OY, TILE, U, hexNum, progressColor } from './tokens';
 import { R, texSize } from './gfx';
 import { CUT_KIND, foodKey, ITEM_KIND, type FoodKind } from './food';
 import { makeText, type Fx } from './fx';
+import { PANTRY_EVERY_MS, PANTRY_MAX } from '@party/shared/versus';
 
 export function place(scene: Phaser.Scene, key: string, x: number, y: number, k = 1): Phaser.GameObjects.Image {
   const t = texSize(key)!;
@@ -70,6 +71,11 @@ export class StationViews {
       v.bar = new Bar(s, 62);
       v.bar.root.setPosition(cx, cy - TILE * 0.36).setDepth(3000);
       v.knife = place(s, 'knife', cx + TILE * 0.2, cy + TILE * 0.24, 0.9).setDepth(d - 2).setRotation(-0.35);
+    } else if (st.kind === 'crate' && st.pantry) {
+      // the shared pantry: the stock both kitchens draw from (a count on each crate) and the clock of the next unit coming back
+      v.badge = makeText(s, cx, cy - TILE * 0.34, '', { size: 34, color: C.cream, depth: 3000 });
+      v.bar = new Bar(s, 62);
+      v.bar.root.setPosition(cx, cy + TILE * 0.38).setDepth(3000);
     } else if (st.kind === 'counter') {
       /* items only */
     } else if (st.kind === 'window') {
@@ -142,6 +148,7 @@ export class StationViews {
     for (const v of this.views) {
       const st = v.st;
       if (st.kind === 'board' || st.kind === 'counter') this.setItem(v, st.item);
+      if (st.pantry) this.updatePantry(v);
       if (st.kind === 'board') {
         const act = chopping.get(v.idx);
         v.chopping = !!act;
@@ -157,6 +164,19 @@ export class StationViews {
       else if (st.kind === 'plates' && v.badge) this.updateCount(v, st.count, 0, true);
       else if (st.kind === 'sink') this.updateSink(v, chopping.has(v.idx));
     }
+  }
+
+  // The shared pantry crate: the stock on its badge (red when empty) and a bar that fills towards the next unit.
+  private updatePantry(v: View) {
+    const p = this.game.pantry;
+    if (!p) return;
+    const b = v.badge!;
+    b.setText(String(p.stock)).setColor(p.stock === 0 ? C.danger : C.cream);
+    if (v.count !== undefined && p.stock > v.count) this.scene.tweens.add({ targets: b, scale: { from: 1.5, to: 1 }, duration: 220, ease: 'back.out' });
+    v.count = p.stock;
+    const full = p.stock >= PANTRY_MAX;
+    v.bar!.root.setVisible(!full);
+    if (!full) v.bar!.set(1 - Math.max(0, p.nextAt - this.game.time) / PANTRY_EVERY_MS, C.cheese);
   }
 
   // Count badge (and the plate pile for the return window). `warnAt`: from this many the badge turns red. `low`: red when empty.
