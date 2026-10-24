@@ -210,7 +210,9 @@ async function main() {
     await key('Enter');
     await waitFor(async () => !readdirSync(dataDir).includes(`${expId}.json`), 'the file left the data folder', 8000);
     check(readdirSync(path.join(dataDir, 'trash')).some((f) => f.startsWith(expId)), 'the reset expedition is in the trash');
+    await waitFor(async () => (await c.eval<number>(`document.querySelectorAll('#campaign [data-hub="continue"]').length`)) === 0, 'the hub drops Continuar', 5000).catch(() => {});
     check((await c.eval<number>(`document.querySelectorAll('#campaign [data-hub="continue"]').length`)) === 0, 'the hub no longer offers Continuar');
+    await c.shot('hub-after-reset');
 
     if (c.errors.length) { console.log('PAGE ERRORS:', c.errors.slice(0, 6).join('\n')); process.exitCode = 1; }
   } catch (e) {

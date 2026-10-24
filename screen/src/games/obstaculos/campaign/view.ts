@@ -35,13 +35,13 @@ export function renderHub(s: CampState, ctx: ViewCtx): string {
   const off = ctx.hub.offline ? '<div class="cwarn">No se pudo hablar con el servidor: el progreso no se guardará hasta que vuelva.</div>' : '';
   const diffs = ctx.difficulties.map((d) => `<button class="pill ${d === ctx.difficulty ? 'sel' : ''}" data-diff="${d}">${esc(ctx.diffLabels[d])}</button>`).join('');
   return `<div class="chead"><h3>Campaña · Obstáculos en cadena</h3><span class="cnote">${esc(s.notice)}</span></div>${off}<div class="chub">${parts.join('')}</div>`
-    + `<div class="cfoot"><span class="cdiff">Dificultad ${diffs}</span><span class="ckeys"><kbd>↑</kbd><kbd>↓</kbd> elegir · <kbd>Enter</kbd> OK · <kbd>?</kbd> reiniciar · <kbd>Esc</kbd> atrás</span></div>${resetBanner(s, ctx)}`;
+    + (s.resetArmedAt !== null ? resetBanner(s, ctx) : `<div class="cfoot"><span class="cdiff">Dificultad ${diffs}</span><span class="ckeys"><kbd>↑</kbd><kbd>↓</kbd> elegir · <kbd>Enter</kbd> OK · <kbd>?</kbd> reiniciar · <kbd>Esc</kbd> atrás</span></div>`);
 }
 
 export function renderPick(s: CampState, ctx: ViewCtx): string {
   const rows = ctx.hub.list.map((x, i) => `<button class="citem row${i === s.pickSel ? ' sel' : ''}" data-pick="${esc(x.id)}"><b>${esc(x.name)}</b><span>${x.stars}★${x.active ? ' · jugando en otra sala' : ''}${x.lastLevelId ? ` · último ${esc(x.lastLevelId)}` : ''}</span></button>`).join('');
   return `<div class="chead"><h3>Elegir expedición</h3><span class="cnote">${esc(s.notice)}</span></div><div class="cpick">${rows}</div>`
-    + `<div class="cfoot"><span class="ckeys"><kbd>↑</kbd><kbd>↓</kbd> elegir · <kbd>Enter</kbd> abrir · <kbd>?</kbd> reiniciar · <kbd>Esc</kbd> atrás</span></div>${resetBanner(s, ctx)}`;
+    + (s.resetArmedAt !== null ? resetBanner(s, ctx) : `<div class="cfoot"><span class="ckeys"><kbd>↑</kbd><kbd>↓</kbd> elegir · <kbd>Enter</kbd> abrir · <kbd>?</kbd> reiniciar · <kbd>Esc</kbd> atrás</span></div>`);
 }
 
 const nodeIcon = (n: MapNode): string => (n.state === 'locked' ? '🔒' : n.state === 'hidden' ? '?' : n.state === 'skipped' ? '»' : '');
@@ -63,7 +63,7 @@ export function renderMap(s: CampState, ctx: ViewCtx): string {
   const path = pts.map((p, i) => `${i ? 'L' : 'M'}${(p.x * 1100).toFixed(1)} ${(p.y * 380).toFixed(1)}`).join(' ');
   const sel = nodes[Math.min(s.node, nodes.length - 1)];
   const info = sel
-    ? `<b>${esc(sel.tag === 'Cumbre' ? 'Cumbre' : sel.tag)} · ${esc(sel.name)}</b> ${sel.state === 'done' || sel.state === 'open' || sel.state === 'skipped' ? `<span class="istars">${starRow(sel.stars)}</span>` : ''}`
+    ? `<b>${sel.kind === 'summit' ? esc(sel.state === 'hidden' ? 'Cumbre' : sel.name) : `${esc(sel.tag)} · ${esc(sel.name)}`}</b> ${sel.state === 'done' || sel.state === 'open' || sel.state === 'skipped' ? `<span class="istars">${starRow(sel.stars)}</span>` : ''}`
       + `${sel.medal ? ' <span class="iclk">⏱ medalla de reloj</span>' : ''}${sel.bestTimeMs !== null ? ` <span class="ibest">mejor ${clock(sel.bestTimeMs)}</span>` : ''}`
       + `${sel.why ? ` <span class="iwhy">${esc(sel.why)}</span>` : sel.state === 'open' || sel.state === 'done' || sel.state === 'skipped' ? ' <span class="igo">Enter · jugar</span>' : ''}`
     : '';
@@ -72,7 +72,7 @@ export function renderMap(s: CampState, ctx: ViewCtx): string {
     + `<div class="ctabs">${tabs}</div>`
     + `<div class="cmap" style="--biome:${biome}"><svg viewBox="0 0 1100 380" preserveAspectRatio="none"><path class="trail" d="${path}"/><path class="trail2" d="${path}"/></svg>${nodes.map((n, i) => nodeHtml(n, i, pts[i]!, i === s.node)).join('')}</div>`
     + `<div class="cinfo">${info}</div>`
-    + `<div class="cfoot"><span class="ckeys"><kbd>←</kbd><kbd>→</kbd> nivel · <kbd>↑</kbd><kbd>↓</kbd> mundo · <kbd>Enter</kbd> jugar · <kbd>?</kbd> reiniciar · <kbd>Esc</kbd> atrás</span></div>${resetBanner(s, ctx)}`;
+    + (s.resetArmedAt !== null ? resetBanner(s, ctx) : `<div class="cfoot"><span class="ckeys"><kbd>←</kbd><kbd>→</kbd> nivel · <kbd>↑</kbd><kbd>↓</kbd> mundo · <kbd>Enter</kbd> jugar · <kbd>?</kbd> reiniciar · <kbd>Esc</kbd> atrás</span></div>`);
 }
 
 // The results panel after a level: stars (the ones earned now pop), the clock medal, what it cost, and the buttons.
