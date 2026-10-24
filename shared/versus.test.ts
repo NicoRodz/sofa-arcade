@@ -165,14 +165,15 @@ describe('twin queues: same seed per team, same recipes at the same instants', (
   it('a full queue does not shift the recipes: the team that skips a slot still draws it, so each recipe arrives when the rival got it', () => {
     const { g, log } = mk([[1, 2, 3], [4, 5, 6]], { seed: 9, difficulty: 'hard' });
     const filler = () => g.teams[0]!.orders.push({ id: g.teams[0]!.orderSeq++, expiresAt: Infinity, warned: true, recipe: 'marinara' });
-    for (let s = 0; s < 178; s++) { // team 1 serves every order as it comes; team 0 has a full queue in the first and last minutes, an empty one in the middle
-      const full = s < 60 || s >= 120;
+    for (let s = 0; s < 178; s++) { // team 1 serves every order as it comes; team 0 has a full queue in the middle minute and an empty one around it
+      const full = s >= 60 && s < 120;
       if (full) while (g.teams[0]!.orders.length < g.params.maxOrders) filler(); else g.teams[0]!.orders = [];
       run(g, 1000);
       if (g.teams[1]!.orders.length) serve(g, 4);
     }
     const a = orderNews(log, 0), b = orderNews(log, 1);
-    expect(a.length).toBeGreaterThanOrEqual(2); // team 0 did admit some...
+    expect(a.length).toBeGreaterThanOrEqual(4); // team 0 did admit some, of both recipes...
+    expect(new Set(a.map((x) => x.split(':')[1])).size).toBe(2);
     expect(b.length).toBeGreaterThan(a.length); // ...and skipped others
     for (const x of a) expect(b).toContain(x); // every order it got is the rival's order of that very instant, same recipe
     expect(new Set(b.map((x) => x.split(':')[1])).size).toBe(2);
