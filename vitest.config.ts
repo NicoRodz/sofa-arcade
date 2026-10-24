@@ -1,2 +1,20 @@
 import { defineConfig } from 'vitest/config';
-export default defineConfig({ test: { testTimeout: 30000, include: ['shared/**/*.test.ts', 'screen/src/**/*.test.ts', 'server/test/**/*.test.ts', 'screen/test/**/*.test.ts', 'controller/src/**/*.test.ts', 'controller/test/**/*.test.ts'] } });
+import { packageProject, slowProject } from './vitest.shared.ts';
+
+// Packages and where their tests live. `npm test` runs everything; `test:fast` skips `slow`.
+const packages = {
+  shared: ['shared'],
+  server: ['server/test', 'server/src'],
+  screen: ['screen/src', 'screen/test'],
+  controller: ['controller/src', 'controller/test'],
+  tools: ['tools'],
+};
+
+export default defineConfig({
+  test: {
+    projects: [
+      ...Object.entries(packages).map(([name, dirs]) => packageProject(name, dirs)),
+      slowProject(Object.values(packages).flat()),
+    ],
+  },
+});
