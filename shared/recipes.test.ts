@@ -15,6 +15,8 @@ import { recipeStarFactor, starsTable } from './recipes/stars';
 import { starThresholds } from './stars';
 import { summarize } from './results';
 import { mulberry32 } from './rng';
+import { chefHint } from './hints';
+import { LABEL_MAX } from './games';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const mk = (map = '9', o: { recipes?: boolean; seed?: number; n?: number; bus?: Emitter<GameEvents> } = {}) => {
@@ -309,5 +311,29 @@ describe('stars: version 1 stays, version 2 follows the card', () => {
     const f = (map: string) => recipeStarFactor(mk(map));
     expect(f('2')).toBeGreaterThan(1); // 40% Marinara, 60% Calzone
     expect(f('14')).toBeLessThan(f('13')); // Marinara + Pepperoni against Marinara + Margarita + Calzone
+  });
+});
+
+describe('the phone: contextual buttons for the new recipes', () => {
+  it('the cheese crate says what it gives (queso, Pepperoni, Champiñón); an oven that can be folded offers Doblar on B, and it greys out once folded', () => {
+    const crate2 = (g: Game) => kind(g, 'crate').find((s) => s.crate === 2)!;
+    const label = (g: Game, s: Station) => { face(g, 1, s); return chefHint(g, g.players.get(1)!); };
+    expect(label(mk('13'), crate2(mk('13'))).a).toBe('Tomar queso');
+    const g = mk('9');
+    expect(label(g, crate2(g)).a).toBe('Pepperoni');
+    expect(label(mk('12'), crate2(mk('12'))).a).toBe('Champiñón');
+    expect(label(mk('9', { recipes: false }), crate2(mk('9', { recipes: false }))).a).toBe('Tomar queso');
+    const o = kind(g, 'pot')[0]!;
+    o.inputs = [0, 1];
+    const h = label(g, o);
+    expect(h.b).toBe('Doblar');
+    expect(h.bOff).toBeUndefined();
+    o.folded = true;
+    expect(label(g, o).b).toBe('Picar');
+    expect(label(g, o).bOff).toBe(true);
+    const p = g.players.get(1)!;
+    p.item = 'dishC';
+    expect(label(g, kind(g, 'window')[0]!).a).toBe('Entregar'); // g has orders from the start
+    for (const l of ['Tomar queso', 'Pepperoni', 'Champiñón', 'Doblar', 'Rebanar']) expect(l.length).toBeLessThanOrEqual(LABEL_MAX);
   });
 });

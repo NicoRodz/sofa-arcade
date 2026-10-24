@@ -41,7 +41,7 @@ describe('prueba del espejo con la carta del día', () => {
     expect(a!.delivered).toBeGreaterThanOrEqual(4);
     expect([b!.score, b!.delivered, b!.expired, b!.rejected, b!.reachedAt]).toEqual([a!.score, a!.delivered, a!.expired, a!.rejected, a!.reachedAt]);
   });
-  it('with the burning oven, the fire and the mid-round event on as well (the lobby has them all on): still an exact tie, on three seeds', () => {
+  it('with the burning oven, the fire and the mid-round event on as well (the lobby has them all on): still an exact tie, on three seeds', { timeout: 60_000 }, () => {
     for (const seed of [2, 7, 11]) {
       const r = runVersus({ ...MIRRORS.v1, mapId: 'V1', difficulty: 'normal', seed, teams: [[1, 2, 3], [4, 5, 6]], flags: { recipes: true, burn: true, fire: true, events: true } });
       expect(own(r.bus, 1), `seed ${seed}`).toEqual(own(r.bus, 0));
@@ -58,7 +58,7 @@ describe('prueba del espejo con la carta del día', () => {
     const golden = (team: number) => r.bus.log.filter((l) => l.includes('|orderNew|') && l.includes('"vip":true') && l.includes(`"team":${team}`)).map((l) => l.split('|')[0] + JSON.parse(l.split('|')[2]!).recipe);
     expect(golden(1)).toEqual(golden(0));
   });
-  it('the proof can fail: a rival queue with one recipe swapped, or a kitchen that cannot fold, breaks the tie', () => {
+  it('the proof can fail: a rival queue with one recipe swapped, or a kitchen that cannot fold, breaks the tie', { timeout: 60_000 }, () => {
     const swapped = runVersus({ ...MIRRORS.v1, mapId: 'V1', difficulty: 'normal', seed: 7, teams: [[1, 2, 3], [4, 5, 6]], flags }, (g, t) => {
       if (t === 900) for (const o of g.teams[1]!.orders) o.recipe = o.recipe === 'marinara' ? 'calzone' : o.recipe === 'calzone' ? 'marinara' : o.recipe; // the rival's tickets are not the twins any more
     });

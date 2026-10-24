@@ -25,6 +25,13 @@ describe('event -> sound mapping', () => {
     expect(ACTIONS.potStart({ station: 2 })).toEqual([{ kind: 'play', id: 'ovenOn' }, { kind: 'loopStart', key: 'oven:2', loop: 'oven' }]);
     expect(ACTIONS.potReady({ station: 2 })).toEqual([{ kind: 'loopStop', key: 'oven:2' }, { kind: 'play', id: 'ready' }]);
   });
+  it('the calzone: a kneading loop per oven while Picar is held, and a whump when it is folded', () => {
+    expect(ACTIONS.foldStart({ player: 1, station: 3 })).toEqual([{ kind: 'loopStart', key: 'fold:3', loop: 'fold' }]);
+    expect(ACTIONS.foldStop({ player: 1, station: 3 })).toEqual([{ kind: 'loopStop', key: 'fold:3' }]);
+    expect(ACTIONS.foldDone({ player: 1, station: 3 })).toEqual([{ kind: 'loopStop', key: 'fold:3' }, { kind: 'play', id: 'folded' }]);
+    expect(LOOPS.fold.sfx).toBe('knead');
+    expect(sfxDuration('folded')).toBeGreaterThan(0.3);
+  });
   it('orders and delivery; only a delivery ducks the music', () => {
     expect(ids(ACTIONS.orderNew({ order: 1, recipe: 'marinara' }))).toEqual(['orderNew']);
     expect(ids(ACTIONS.orderWarning({ order: 1 }))).toEqual(['warn']);

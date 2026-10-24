@@ -40,7 +40,7 @@ describe('the new recipes over the relay', () => {
     }, 90_000);
   }
 
-  it('a phone that holds Picar at an oven with dough and tomato for FOLD_MS folds the calzone, and a tap that is let go early does not', async () => {
+  it('a phone that holds Picar at an oven with dough and tomato for FOLD_MS folds the calzone', async () => {
     let step = 0;
     const r = await playRound('rc-fold', {
       roles: ['idle', 'idle'], seconds: 12, map: '9', seed: 4, flags: { recipes: true },
