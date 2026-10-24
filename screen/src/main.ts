@@ -290,6 +290,8 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   }
 });
 (window as unknown as { __pg: unknown }).__pg = {
+  deliver: (m: ServerMsg) => onMessage(m), // e2e: hand the screen a relay message directly (to prove the screen validates the Captain itself)
+  captain: () => captainId,
   forceLobby: () => { if (phase === 'menu') setPhase('lobby'); }, // capture tool: skip the menu (and its player range)
   menu: () => ({ sel: menuSel, cards: menuCards(connectedCount()).map((c) => `${c.id}:${c.state}`) }),
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
