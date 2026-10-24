@@ -2,7 +2,7 @@ import nipplejs from 'nipplejs';
 import { DIFFICULTY_LABEL } from '@party/shared/difficulty';
 import { fixedMap } from '@party/shared/maps';
 import { gameName, type GameControls, type HowTo } from '@party/shared/games';
-import { controlHtml, howToHtml, iconSvg } from '@party/shared/render';
+import { esc, howToHtml, iconSvg } from '@party/shared/render';
 import { PUESTOS, type PuestoId } from '@party/shared/puestos';
 import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
@@ -71,10 +71,29 @@ store.set('pg.token', token);
 let name = store.get('pg.name') ?? '';
 
 // Labels and icons come from the game registry via the config message: nothing here knows a specific game.
+// The circle (the touch area) carries the icon only; the label goes in a plate underneath, outside the touch area.
+function setControl(circle: HTMLElement, plate: HTMLElement, c: GameControls['stick']) {
+  circle.innerHTML = iconSvg(c.icon);
+  plate.innerHTML = `<div class="pl"><span class="lbl">${esc(c.label)}</span>${c.hold ? '<span class="hold">mantén apretado</span>' : ''}</div>`;
+}
+// A long label shrinks (down to 8px) until it fits its plate instead of spilling over the neighbours.
+function fitLabels() {
+  for (const pl of Array.from(document.querySelectorAll<HTMLElement>('.plq .pl'))) {
+    const spans = Array.from(pl.querySelectorAll<HTMLElement>('.lbl, .hold'));
+    for (const sp of spans) sp.style.fontSize = '';
+    const avail = () => pl.parentElement!.clientWidth + 10 - 16; // plate: control width + 10, minus its side padding
+    for (const sp of spans) {
+      let size = parseFloat(getComputedStyle(sp).fontSize);
+      while (sp.scrollWidth > avail() + 0.5 && size > 8) { size -= 0.5; sp.style.fontSize = `${size}px`; }
+    }
+  }
+}
+window.addEventListener('resize', fitLabels);
 function applyControls(c: GameControls) {
-  $('stickhint').innerHTML = controlHtml(c.stick);
-  $('btnA').innerHTML = controlHtml(c.btn1);
-  $('btnB').innerHTML = controlHtml(c.btn2);
+  setControl($('stickhint'), $('stickLbl'), c.stick);
+  setControl($('btnA'), $('lblA'), c.btn1);
+  setControl($('btnB'), $('lblB'), c.btn2);
+  fitLabels();
 }
 
 // "Cómo se juega": one-view summary, closed with a tap. Opens on join and when the lobby picks a game not shown yet.
