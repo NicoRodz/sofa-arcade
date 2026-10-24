@@ -10,7 +10,34 @@ export interface GameControls { stick: ControlLabel; btn1: ControlLabel; btn2: C
 export interface HowToStep { icon: IconId; text: string }
 export interface HowTo { steps: readonly HowToStep[]; note?: string }
 export interface GameInfo { controls: GameControls; howTo: HowTo }
-export interface GameDef extends GameInfo { id: string; name: string; blurb: string; minPlayers: number; maxPlayers: number } // the range is inclusive; the menu card shows it and disables itself outside it
+
+// Modes (design pizzas-modalidades-coop-versus §4). A game may declare several ways to play; the lobby shows a selector only when
+// it declares more than one. Cooperative = the team mechanism with a single team, so there is one code path for every mode.
+export const MODE_IDS = ['coop', 'versus', 'ffa', 'teams', 'race'] as const;
+export type ModeId = (typeof MODE_IDS)[number];
+export const DEFAULT_MODE: ModeId = 'coop';
+export const isModeId = (v: unknown): v is ModeId => MODE_IDS.includes(v as ModeId);
+export interface TeamStyle { name: string; color: string; icon: string } // icon is a glyph: colour alone must not tell the teams apart
+// count: how many teams (inclusive range). maxRatio: biggest team / smallest team the lobby accepts (1 = even teams only).
+// handicap: what helps the smaller team: 'score-k' multiplies its points, 'game' is the game's own rule, 'none' nothing.
+export interface TeamSpec { count: readonly [min: number, max: number]; maxRatio: number; handicap: 'score-k' | 'none' | 'game'; styles?: readonly TeamStyle[] }
+export interface OptionSpec { id: string; label: string; default: boolean } // lobby toggles of a mode; the values travel as the opaque modeOptions
+export interface ModeSpec {
+  id: ModeId; label: string;
+  players: readonly [min: number, max: number]; // total players the mode admits
+  teams?: TeamSpec; // absent: the mode has no teams (free for all)
+  howTo?: HowTo; controls?: Partial<GameControls>; // override the game's own when the mode changes them
+  options?: readonly OptionSpec[];
+  soon?: boolean; // declared but not selectable yet (the lobby does not offer it)
+}
+export const COOP_STYLE: TeamStyle = { name: 'Equipo', color: '#F4C430', icon: '★' };
+export const VERSUS_STYLES: readonly TeamStyle[] = [
+  { name: 'Picantes', color: '#F26A1B', icon: '▲' }, // orange + triangle against blue + circle: apart for colour-blind players too
+  { name: 'Frescos', color: '#1E6BD6', icon: '●' },
+];
+export const COOP_TEAMS: TeamSpec = { count: [1, 1], maxRatio: 1, handicap: 'none', styles: [COOP_STYLE] };
+
+export interface GameDef extends GameInfo { id: string; name: string; blurb: string; minPlayers: number; maxPlayers: number; modes?: readonly ModeSpec[]; defaultMode?: ModeId } // the range is inclusive; the menu card shows it and disables itself outside it
 
 export const GAMES = [
   {
@@ -29,6 +56,27 @@ export const GAMES = [
       ],
       note: 'Todos cooperan por el puntaje de equipo',
     },
+    modes: [
+      { id: 'coop', label: 'Cooperativo', players: [2, 8], teams: COOP_TEAMS },
+      {
+        id: 'versus', label: 'Duelo de cocinas', players: [2, 8], soon: true, // F1 opens it in the lobby; the sim does not run it yet (F2)
+        teams: { count: [2, 2], maxRatio: 2, handicap: 'score-k', styles: VERSUS_STYLES },
+        howTo: {
+          steps: [
+            { icon: 'crate', text: 'Cada equipo tiene su cocina, con los mismos pedidos' },
+            { icon: 'chop', text: 'Prepara las pizzas más rápido que el otro equipo' },
+            { icon: 'oven', text: 'El pedido dorado es para el primero que lo entregue' },
+            { icon: 'bell', text: 'Gana el equipo con más puntos al acabar el tiempo' },
+          ],
+          note: 'Si los equipos son desiguales, el chico gana un multiplicador',
+        },
+        options: [
+          { id: 'hiddenScore', label: 'Marcador oculto al final', default: true },
+          { id: 'handicap', label: 'Ventaja para el equipo chico', default: true },
+        ],
+      },
+    ],
+    defaultMode: 'coop',
   },
 ] as const satisfies readonly GameDef[];
 
@@ -47,9 +95,23 @@ export const isGameId = (v: unknown): v is GameId => GAME_IDS.includes(v as Game
 export const playersLabel = (g: Pick<GameDef, 'minPlayers' | 'maxPlayers'>): string =>
   g.minPlayers === g.maxPlayers ? `${g.minPlayers} jugadores` : `${g.minPlayers} a ${g.maxPlayers} jugadores`;
 export const gameName = (id: GameId): string => GAMES.find((g) => g.id === id)?.name ?? id;
-export const gameInfo = (id: string, games: readonly GameDef[] = GAMES): GameInfo => {
+// The modes a game plays. A game that declares none gets the single mode its own fields describe: cooperative, one team.
+export const resolveModes = (g: GameDef): readonly ModeSpec[] =>
+  g.modes?.length ? g.modes : [{ id: 'coop', label: 'Cooperativo', players: [g.minPlayers, g.maxPlayers], teams: COOP_TEAMS }];
+export const defaultModeOf = (g: GameDef): ModeId => g.defaultMode ?? resolveModes(g)[0]!.id;
+// The mode with that id; an unknown or missing one falls back to the game's default.
+export const modeOf = (g: GameDef, id?: string): ModeSpec => {
+  const modes = resolveModes(g);
+  return modes.find((m) => m.id === id) ?? modes.find((m) => m.id === defaultModeOf(g)) ?? modes[0]!;
+};
+export const selectableModes = (g: GameDef): ModeSpec[] => resolveModes(g).filter((m) => !m.soon);
+export const hasModeChoice = (g: GameDef): boolean => selectableModes(g).length > 1; // the lobby shows the selector only then
+
+// What the phones get: the game's labels, with the mode's overrides on top.
+export const gameInfo = (id: string, games: readonly GameDef[] = GAMES, modeId?: string): GameInfo => {
   const g: GameDef = games.find((x) => x.id === id) ?? games[0]!;
-  return { controls: g.controls, howTo: g.howTo };
+  const m = g.modes?.find((x) => x.id === modeId);
+  return { controls: m?.controls ? { ...g.controls, ...m.controls } : g.controls, howTo: m?.howTo ?? g.howTo };
 };
 
 export const LABEL_MAX = 14;
@@ -74,5 +136,37 @@ export function gameProblems(g: GameDef): string[] {
     if (s.text.length > STEP_MAX) out.push(`step ${i + 1}: text over ${STEP_MAX} chars`);
     if (!isIconId(s.icon)) out.push(`step ${i + 1}: unknown icon ${String(s.icon)}`);
   });
+  out.push(...modeProblems(g));
+  return out;
+}
+
+// Authoring check for the declared modes (a game with none is inferred and always fine). Empty list = fine.
+function modeProblems(g: GameDef): string[] {
+  const out: string[] = [];
+  const modes = g.modes ?? [];
+  if (g.defaultMode && !modes.some((m) => m.id === g.defaultMode)) out.push(`defaultMode ${g.defaultMode} is not declared`);
+  if (modes.length && modes.every((m) => m.soon)) out.push('modes: none is selectable');
+  if (new Set(modes.map((m) => m.id)).size !== modes.length) out.push('modes: duplicated id');
+  for (const m of modes) {
+    const at = `mode ${m.id}`;
+    if (!isModeId(m.id)) out.push(`${at}: unknown id`);
+    if (!m.label.trim()) out.push(`${at}: empty label`);
+    const [lo, hi] = m.players;
+    if (!Number.isInteger(lo) || !Number.isInteger(hi) || lo < g.minPlayers || hi > g.maxPlayers || hi < lo) out.push(`${at}: players ${lo}-${hi} outside the game's ${g.minPlayers}-${g.maxPlayers}`);
+    if (m.teams) {
+      const [tMin, tMax] = m.teams.count;
+      if (!Number.isInteger(tMin) || !Number.isInteger(tMax) || tMin < 1 || tMax < tMin) out.push(`${at}: bad team count ${tMin}-${tMax}`);
+      if (!(m.teams.maxRatio >= 1)) out.push(`${at}: maxRatio under 1`);
+      if (m.teams.styles && m.teams.styles.length < tMax) out.push(`${at}: ${m.teams.styles.length} styles for up to ${tMax} teams`);
+    }
+    if (m.id === 'coop' && m.teams && (m.teams.count[0] !== 1 || m.teams.count[1] !== 1)) out.push(`${at}: coop is a single team`);
+    if (m.howTo) {
+      const n = m.howTo.steps.length;
+      if (n < HOWTO_MIN_STEPS || n > HOWTO_MAX_STEPS) out.push(`${at}: howTo ${n} steps, want ${HOWTO_MIN_STEPS}-${HOWTO_MAX_STEPS}`);
+      m.howTo.steps.forEach((st, i) => { if (!st.text.trim() || st.text.length > STEP_MAX || !isIconId(st.icon)) out.push(`${at}: howTo step ${i + 1} is not legible`); });
+    }
+    const ids = (m.options ?? []).map((o) => o.id);
+    if (new Set(ids).size !== ids.length) out.push(`${at}: duplicated option id`);
+  }
   return out;
 }
