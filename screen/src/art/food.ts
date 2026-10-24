@@ -6,10 +6,10 @@ import { blob, circle, contactShadow, drawOutlined, ellipse, makeTex, mix, rng, 
 
 export type FoodKind =
   | 'dough_raw' | 'dough_str' | 'tomato' | 'tomato_cut' | 'cheese_raw' | 'cheese_cut' | 'pizza_raw' | 'pizza_raw_q' | 'pizza_done' | 'pizza_done_q'
-  | 'pizza_burnt' | 'tray' | 'tray_dirty' | 'dish' | 'dish_q' | 'box';
+  | 'pizza_burnt' | 'tray' | 'tray_dirty' | 'dish' | 'dish_q' | 'box' | 'peel' | 'bag';
 
 export const ITEM_KIND: Record<Item, FoodKind> = {
-  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dirty: 'tray_dirty', dish: 'dish', dishQ: 'dish_q',
+  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dirty: 'tray_dirty', dish: 'dish', dishQ: 'dish_q', trash: 'peel', trashBag: 'bag',
 };
 export const RAW_KIND: readonly FoodKind[] = ['dough_raw', 'tomato', 'cheese_raw'];
 export const CUT_KIND: readonly FoodKind[] = ['dough_str', 'tomato_cut', 'cheese_cut'];
@@ -192,11 +192,32 @@ function box(c: Ctx) {
   c.fillText('P', 0, 5);
 }
 
+// Sabotage: the banana-skin that makes chefs slip (yellow, three petals around a core, brown tips), and the black bag that is thrown.
+function peel(c: Ctx) {
+  contactShadow(c, 1, 14, 28, 7);
+  for (let i = 0; i < 3; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI * 2) / 3 + 0.25;
+    c.save(); c.rotate(a);
+    drawOutlined(c, () => { c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(8, -6, 26, -14, 34, -3); c.bezierCurveTo(28, 6, 14, 10, 0, 4); c.closePath(); }, vgrad(c, -14, 8, '#FFE45C', '#F2B21B'), { lw: 2.5 });
+    c.fillStyle = '#7A4A1E'; c.beginPath(); c.moveTo(27, -9); c.quadraticCurveTo(36, -5, 33, -2); c.quadraticCurveTo(30, -3, 27, -9); c.fill();
+    c.restore();
+  }
+  drawOutlined(c, circle(c, 0, 0, 7), '#FFF0A0', { lw: 2.2 });
+  shine(c, 0, 0, 5, 0.6, 2);
+}
+function bag(c: Ctx) {
+  contactShadow(c, 1, 26, 26, 6);
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(-8, -18); c.bezierCurveTo(-30, -12, -34, 18, -16, 26); c.quadraticCurveTo(0, 31, 16, 26); c.bezierCurveTo(34, 18, 30, -12, 8, -18); c.closePath(); }, vgrad(c, -18, 28, '#4A4F5C', '#1D2029'), { lw: 3 });
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(-8, -18); c.quadraticCurveTo(-18, -30, -9, -34); c.quadraticCurveTo(-3, -26, 0, -22); c.quadraticCurveTo(3, -26, 9, -34); c.quadraticCurveTo(18, -30, 8, -18); c.closePath(); }, '#2A2E39', { lw: 2.5 });
+  c.strokeStyle = 'rgba(255,255,255,0.28)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-20, -2); c.quadraticCurveTo(-24, 8, -17, 16); c.stroke();
+  c.fillStyle = '#7FBF3A'; c.beginPath(); c.ellipse(8, 6, 6, 4, 0.5, 0, Math.PI * 2); c.fill();
+}
+
 const DRAW: Record<FoodKind, (c: Ctx) => void> = {
   dough_raw: doughRaw, dough_str: (c) => doughStr(c), tomato, tomato_cut: tomatoCut, cheese_raw: cheeseRaw, cheese_cut: cheeseCut,
   pizza_raw: (c) => pizzaRaw(c), pizza_raw_q: (c) => pizzaRaw(c, true, true),
   pizza_done: (c) => pizzaDone(c), pizza_done_q: (c) => pizzaDone(c, true, true), pizza_burnt: (c) => pizzaBurnt(c),
-  tray, tray_dirty: trayDirty, dish: (c) => dish(c), dish_q: (c) => dish(c, true), box,
+  tray, tray_dirty: trayDirty, dish: (c) => dish(c), dish_q: (c) => dish(c, true), box, peel, bag,
 };
 export const drawFood = (c: Ctx, k: FoodKind) => DRAW[k](c);
 
