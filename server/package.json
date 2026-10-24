@@ -1,0 +1,13 @@
+{
+  "name": "server",
+  "private": true,
+  "type": "module",
+  "scripts": { "typecheck": "tsc -p ." },
+  "dependencies": {
+    "@party/shared": "*",
+    "express": "^5.2.0",
+    "qrcode-terminal": "^0.12.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": { "@types/qrcode-terminal": "^0.12.2" }
+}

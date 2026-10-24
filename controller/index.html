@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Controller</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #111; color: #eee; font: 16px system-ui, sans-serif; touch-action: none; overscroll-behavior: none; }
+  #join { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 16px; align-items: center; justify-content: center; }
+  #join input { font-size: 20px; padding: 12px; width: 70%; max-width: 320px; border-radius: 8px; border: 0; -webkit-user-select: text; user-select: text; }
+  button { font-size: 20px; padding: 12px 28px; border-radius: 8px; border: 0; background: #40c4ff; color: #000; }
+  #pad { position: fixed; inset: 0; display: none; }
+  #zone { position: absolute; left: 0; top: 0; width: 55%; height: 100%; touch-action: none; }
+  #fire { position: absolute; right: 8%; top: 50%; width: 34vmin; height: 34vmin; margin-top: -17vmin; border-radius: 50%; background: #ff5252; display: flex; align-items: center; justify-content: center; font-size: 28px; touch-action: none; }
+  #fire.down { background: #ffd740; color: #000; }
+  #hud { position: absolute; top: 6px; left: 8px; font-size: 13px; opacity: .7; pointer-events: none; }
+</style>
+</head>
+<body>
+<form id="join" autocomplete="off">
+  <input id="name" maxlength="16" placeholder="Your name" />
+  <button type="submit">Join</button>
+</form>
+<div id="pad">
+  <div id="zone"></div>
+  <div id="fire">A</div>
+  <div id="hud"></div>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

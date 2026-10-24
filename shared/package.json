@@ -1,0 +1,7 @@
+{
+  "name": "@party/shared",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./protocol.ts", "./stats": "./stats.ts" },
+  "scripts": { "typecheck": "tsc -p ." }
+}

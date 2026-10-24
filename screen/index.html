@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Screen</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #111; color: #eee; font: 13px ui-monospace, Menlo, monospace; }
+  #game { position: fixed; inset: 0; }
+  #debug { position: fixed; top: 8px; right: 8px; background: #000c; padding: 8px 10px; border-radius: 6px; min-width: 420px; }
+  #debug table { border-collapse: collapse; width: 100%; }
+  #debug th, #debug td { text-align: right; padding: 1px 6px; }
+  #debug th:first-child, #debug td:first-child { text-align: left; }
+  #debug button { margin-right: 6px; margin-top: 6px; }
+  #warn { color: #ff5252; font-weight: bold; }
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="debug">
+  <div id="warn"></div>
+  <div id="summary"></div>
+  <table id="table"></table>
+  <button id="csv">Export CSV</button><button id="clear">Clear</button>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

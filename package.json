@@ -1,0 +1,24 @@
+{
+  "name": "party-game",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "workspaces": ["shared", "server", "screen", "controller", "tools/latency-report"],
+  "scripts": {
+    "dev": "tsx server/src/main.ts dev",
+    "start": "tsx server/src/main.ts static",
+    "build": "npm run build -w screen -w controller",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "report": "tsx tools/latency-report/src/index.ts"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "latency-report",
+  "private": true,
+  "type": "module",
+  "scripts": { "typecheck": "tsc -p ." },
+  "dependencies": { "@party/shared": "*" }
+}
