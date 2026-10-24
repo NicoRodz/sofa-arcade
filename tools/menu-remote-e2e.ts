@@ -144,20 +144,19 @@ async function main() {
     for (let i = 0; i < 30 && (await phase()) !== 'menu'; i++) await sleep(100);
     check((await phase()) === 'menu', 'captain Atrás in the lobby goes back to the menu');
     await sleep(500);
-    // the keyboard keeps the last word: Esc on the Mac, then a captain OK within the quiet window is dropped
     cap.nav('ok');
     for (let i = 0; i < 30 && (await phase()) !== 'lobby'; i++) await sleep(100);
-    await sleep(700);
-    await cdp.key('Escape', 'Escape', 27);
-    cap.nav('ok'); // lands inside the 300 ms window after the key: dropped
-    for (let i = 0; i < 30 && (await phase()) !== 'menu'; i++) await sleep(100);
-    await sleep(900);
-    check((await phase()) === 'menu', 'the keyboard Esc wins over a captain OK that arrives right after it');
+    await sleep(1200); // the iris is fully open again
+    check((await phase()) === 'lobby', 'captain OK at the menu: back in the lobby');
+    // the keyboard keeps the last word. H on the Mac opens the card (no iris involved, so nothing else can mask the rule);
+    // a captain OK right behind it would close it: it is dropped inside the quiet window, and works after it
+    await cdp.key('h', 'KeyH', 72);
+    cap.nav('ok');
     await sleep(500);
-    cap.nav('ok');
-    for (let i = 0; i < 30 && (await phase()) !== 'lobby'; i++) await sleep(100);
-    check((await phase()) === 'lobby', 'once the quiet window is over the captain\'s OK works again');
-    await sleep(700);
+    check(await howtoOpen(), 'a captain OK that lands right after a keyboard press is dropped (the keyboard keeps the last word)');
+    cap.nav('ok'); await sleep(400);
+    check(!(await howtoOpen()), 'once the quiet window is over the captain\'s OK works again');
+    await sleep(500);
 
     // 6. start the round: OK in the lobby opens the card, OK skips it (the same Enter, Enter as on the Mac)
     cap.nav('ok');
