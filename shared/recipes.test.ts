@@ -81,6 +81,17 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
     }
     for (const m of VERSUS_MAPS) expect(validateVersus(m, { requireMirror: false }).errors.filter((e) => /recipe|card/i.test(e)), `map ${m.id}`).toEqual([]);
   });
+  it('a bad card on a versus map is reported once per kitchen, with the kitchen named', () => {
+    const v4 = VERSUS_BASE_MAPS.find((m) => m.id === 'V4')!;
+    const cards = CARDS as Record<string, { recipes: readonly Recipe[] }>;
+    const good = cards.V4!;
+    try {
+      cards.V4 = { recipes: ['calzone', 'pepperoni'] };
+      const errors = validateVersus(v4, { requireMirror: false }).errors.filter((e) => /card/i.test(e));
+      expect(errors).toEqual(['kitchen A: the card has no Marinara', 'kitchen B: the card has no Marinara']);
+    } finally { cards.V4 = good; }
+    expect(validateVersus(v4, { requireMirror: false }).errors.filter((e) => /card/i.test(e))).toEqual([]);
+  });
   it('the cards are varied: all five recipes show up, and a map without the cheese crate has Marinara + Calzone', () => {
     const all = new Set(Object.values(CARDS).flatMap((c) => c.recipes));
     expect([...all].sort()).toEqual([...RECIPES].sort());
@@ -154,6 +165,7 @@ describe('a round with the card: the orders, the crate, the plates', () => {
     expect(pickOrder(g, [order(1, 'calzone')], 'dishP')).toBe(-1); // a Pepperoni is not a Calzone
     expect(pickOrder(g, [order(1, 'calzone')], 'dish')).toBe(-1);
     expect(pickOrder(g, [order(1, 'pepperoni')], 'dishC')).toBe(-1);
+    expect(pickOrder(g, [order(1, 'marinara')], 'dishC')).toBe(-1); // nor a Calzone a Marinara
     expect(pickOrder(g, [order(1, 'pepperoni')], 'dish')).toBe(-1);
     expect(pickOrder(g, [order(1, 'marinara'), order(2, 'pepperoni')], 'dishP')).toBe(1); // its own recipe before a Marinara
     expect(pickOrder(g, [order(1, 'marinara')], 'dishP')).toBe(0); // ... and a Marinara when that is all there is
