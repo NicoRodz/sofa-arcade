@@ -231,9 +231,9 @@ describe('the catapult: load, aim, throw', () => {
   it('the gate of the kitchen: a tile of the thrower\'s own kitchen (or a wall) is never a landing, whatever the aim says', () => {
     const { g } = mk();
     expect(adjustLanding(g, 1, [3, 3])).toBeNull(); // (3, 3) is on the left, the kitchen of team 0: the bag cannot be sent there
-    expect(adjustLanding(g, 0, [12, 3])).toBeNull();
+    expect(adjustLanding(g, 0, [12, 2])).toBeNull();
     expect(adjustLanding(g, 1, [0, 0])).toBeNull(); // a wall
-    expect(adjustLanding(g, 1, [12, 3])).toEqual([12, 3]); // and the right tile in the right kitchen is fine
+    expect(adjustLanding(g, 1, [12, 2])).toEqual([12, 2]); // and a free floor tile in the right kitchen is fine
   });
   it('a target that is not valid moves to the nearest valid tile; with rubbish already there, to a neighbour', () => {
     const { g } = mk();
