@@ -101,6 +101,7 @@ export class Chef {
   private tag: Phaser.GameObjects.Image;
   private shadow: Phaser.GameObjects.Image;
   private ring: Phaser.GameObjects.Image;
+  private teamRing?: Phaser.GameObjects.Image;
   private lx = NaN; private ly = NaN;
   private phase = 0; private breath = 0; private hitT = 0; private wasMoving = false; private flip = 1;
   private sx = 0; private sy = 0; private vx = 0; private vy = 0; // scale spring
@@ -137,6 +138,13 @@ export class Chef {
     this.root.setScale(U * CHEF_SCALE);
   }
 
+  // Versus: a second, wider ring in the team's colour under the chef's own (the chef keeps its colour; the team is the ring).
+  setTeam(color: number) {
+    if (this.teamRing) { this.teamRing.setTint(color); return; }
+    const t = texSize('chef_ring')!;
+    this.teamRing = this.scene.add.image(0, 0, 'chef_ring').setOrigin(t.ox / t.w, t.oy / t.h).setScale(1.7 / R, 1.55 / R).setTint(color);
+    this.root.addAt(this.teamRing, 1);
+  }
   setName(name: string) {
     const k = plateKey(this.scene, this.slot, name);
     if (k !== this.tagKey) { this.tagKey = k; this.tag.setTexture(k); }

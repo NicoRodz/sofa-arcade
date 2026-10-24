@@ -119,7 +119,7 @@ export class StationViews {
     this.scene.tweens.add({ targets: v.bell, scaleY: v.bell.scaleY * 0.8, scaleX: v.bell.scaleX * 1.12, duration: 70, yoyo: true, ease: 'sine.out' });
     this.scene.tweens.add({ targets: v.bell, angle: { from: -10, to: 0 }, duration: 380, ease: 'elastic.out' });
   }
-  windowIdx() { return this.views.findIndex((v) => v.st.kind === 'window'); }
+  windowIdx(team?: number) { return this.views.findIndex((v) => v.st.kind === 'window' && (team === undefined || v.st.owner === team)); } // versus: each kitchen has its own window
 
   private setItem(v: View, item: Item | null) {
     const key = item ? foodKey(ITEM_KIND[item]) : '';

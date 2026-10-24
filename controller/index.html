@@ -120,6 +120,16 @@
   #remote .back { grid-area: 1 / 3; font-size: calc(var(--dp) * .23); background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
   #remote .help { grid-area: 1 / 1; color: var(--ink); text-shadow: none; font-size: clamp(20px, 7vmin, 28px); background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); }
   #remote .crown { grid-area: 3 / 1; display: flex; align-items: center; justify-content: center; font-size: clamp(20px, 7vmin, 30px); line-height: 1; pointer-events: none; }
+  /* versus: the phone knows its team. A strip on the pad (top centre, never over the buttons) and a card in the lobby; the chef colour stays the chef's */
+  #teamchip { position: absolute; top: max(4px, calc(var(--st) + 4px)); left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 6px; max-width: 46%; padding: 1px 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--tc, #888); color: #fff; font: 800 14px/20px var(--font); text-shadow: 0 2px 0 rgba(43,27,23,.45); white-space: nowrap; overflow: hidden; pointer-events: none; z-index: 4; }
+  #teamchip small { font: 700 12px/20px var(--font); opacity: .92; overflow: hidden; text-overflow: ellipsis; }
+  body[data-team=on][data-view=playing] #teamchip { display: flex; }
+  #teamcard { display: none; align-items: center; gap: 10px; padding: 6px 16px; border: 4px solid var(--ink); border-radius: 16px; background: var(--tc, #888); color: #fff; font: 800 clamp(20px, 7vmin, 28px) var(--font); text-shadow: 0 3px 0 rgba(43,27,23,.45); box-shadow: 0 5px 0 rgba(43,27,23,.4); }
+  #teamcard small { font: 700 clamp(13px, 4vmin, 16px) var(--font); opacity: .95; }
+  #teamswap { display: none; font-size: 16px; padding: 4px 16px; min-height: 44px; background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); text-shadow: none; }
+  #teamswap:disabled { filter: grayscale(.8); opacity: .6; }
+  body[data-team=on][data-view=lobby] #teamcard { display: flex; }
+  body[data-team=on][data-view=lobby] #teamswap { display: inline-block; }
   #hud { position: absolute; top: max(6px, calc(var(--st) + 6px)); left: var(--gutter); max-width: calc(73% - var(--bsz) - var(--gutter) - 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; line-height: 1.2; color: var(--c); opacity: .9; pointer-events: none; }
 </style>
 </head>
@@ -135,9 +145,10 @@
   <div id="btnA" class="act"></div><div id="lblA" class="plq"></div>
   <div id="btnB" class="act"></div><div id="lblB" class="plq"></div>
   <div id="hud"></div>
+  <div id="teamchip"><span id="tcicon2"></span><span id="tcname2"></span><small id="tcside2"></small></div>
   <div id="puesto"><span class="pi" id="pico"></span><div class="pt"><b id="pname"></b><span id="phint"></span></div><button id="pswap" type="button">Cambiar</button></div>
 </div>
-<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><button id="howtoopen" type="button">Cómo se juega</button></div>
+<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div id="teamcard"><span id="tcicon"></span><span id="tcname"></span><small id="tcside"></small></div><button id="teamswap" type="button">Cambiar de equipo</button><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><button id="howtoopen" type="button">Cómo se juega</button></div>
 <div id="choosing" class="overlay"><h1 class="brand">Pichiclub</h1><div class="big">Eligiendo juego…</div><div style="opacity:.8">La pantalla decide</div><div id="who2" style="opacity:.7"></div></div>
 <div id="results" class="overlay"><div>Fin de la ronda</div><div id="rank" class="big"></div><div id="myscore"></div></div>
 <div id="howto" class="overlay"><div class="hhead"><h2>Cómo se juega</h2><div id="howtogame" class="gname"></div></div><div id="howtobody" style="display:contents"></div><button id="howtoclose" type="button">Entendido</button></div>

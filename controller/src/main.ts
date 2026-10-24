@@ -1,6 +1,7 @@
 import nipplejs from 'nipplejs';
 import { DIFFICULTY_LABEL } from '@party/shared/difficulty';
 import { fixedMap } from '@party/shared/maps';
+import { VERSUS_AUTO, VERSUS_RANDOM, versusMap } from '@party/shared/versusMaps';
 import { gameName, type GameControls, type HowTo } from '@party/shared/games';
 import { esc, howToHtml, iconSvg } from '@party/shared/render';
 import { PUESTOS, type PuestoId } from '@party/shared/puestos';
@@ -8,7 +9,7 @@ import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
   BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
-  type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg,
+  type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg, type TeamInfo,
 } from '@party/shared';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -126,6 +127,37 @@ function buzz(kind: BuzzKind) {
   flashTimer = setTimeout(() => document.body.classList.remove('flash'), 120);
 }
 
+// Versus: the team of this phone (the relay sends `you` after every config), shown as a strip with its colour, name, icon and kitchen side,
+// and a button in the lobby to change team. Coop has no teams: nothing shows.
+let teams: TeamInfo[] | null = null;
+let teamsLocked = false;
+let myTeam: number | null = null;
+function showTeam(you: { teamId: number; color: string; icon: string; sideLabel?: string } | null) {
+  myTeam = you?.teamId ?? null;
+  document.body.dataset.team = you ? 'on' : 'off';
+  if (!you) return;
+  const name = teams?.find((t) => t.id === you.teamId)?.name ?? `Equipo ${you.teamId + 1}`;
+  document.documentElement.style.setProperty('--tc', you.color);
+  for (const k of ['', '2']) {
+    $(`tcicon${k}`).textContent = you.icon;
+    $(`tcname${k}`).textContent = name;
+    $(`tcside${k}`).textContent = you.sideLabel ? `· cocina ${you.sideLabel}` : '';
+  }
+}
+function applyTeams(t: TeamInfo[] | null, locked: boolean) {
+  teams = t && t.length > 1 ? t : null;
+  teamsLocked = locked;
+  if (!teams) showTeam(null);
+  ($('teamswap') as HTMLButtonElement).disabled = locked;
+  $('teamswap').textContent = locked ? 'Equipos bloqueados' : 'Cambiar de equipo';
+}
+$('teamswap').addEventListener('pointerup', (e) => {
+  e.preventDefault();
+  if (!teams || myTeam === null || teamsLocked) return;
+  const next = teams[(teams.findIndex((t) => t.id === myTeam) + 1) % teams.length]!; // two teams: the other one
+  tx({ t: 'setTeam', teamId: next.id });
+});
+
 const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
@@ -214,7 +246,11 @@ function connect() {
       $('game').textContent = gameName(m.game);
       applyControls(m.controls);
       renderHowTo(m.game, gameName(m.game), m.howTo);
-      $('setup').textContent = `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
+      applyTeams(m.teams, m.teamsLocked);
+      const mapName = m.map === 'auto' || m.map === VERSUS_AUTO ? 'Mapa al azar' : m.map === 'random' || m.map === VERSUS_RANDOM ? `Mapa aleatorio ${m.seed}` : (fixedMap(m.map) ?? versusMap(m.map))?.name ?? '';
+      $('setup').textContent = `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}`;
+    } else if (m.t === 'you') {
+      showTeam(m);
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores, m.puestos);
     } else if (m.t === 'captain') {

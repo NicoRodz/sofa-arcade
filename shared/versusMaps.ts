@@ -142,3 +142,11 @@ export const VERSUS_MAP_IDS = VERSUS_MAPS.map((m) => m.id);
 export const versusMap = (id: string): VersusMapDef | undefined => VERSUS_MAPS.find((m) => m.id === id);
 /** Versus maps that accept this many TOTAL players (the lobby filter for the versus mode). */
 export const versusMapsFor = (players: number): VersusMapDef[] => VERSUS_MAPS.filter((m) => m.nMin <= players && players <= m.nMax);
+
+// What the lobby can hold in `config.map` in versus mode: one of the maps above, "auto" (one that fits the teams) or "random" (generated from the seed).
+// Here, not in the lobby module, so the phones can validate it without loading the sim.
+export const VERSUS_AUTO = 'vs-auto';
+export const VERSUS_RANDOM = 'vs-random';
+export const VERSUS_CHOICES = [VERSUS_AUTO, ...VERSUS_MAP_IDS, VERSUS_RANDOM] as const;
+export type VersusChoice = (typeof VERSUS_CHOICES)[number];
+export const isVersusChoice = (v: unknown): v is VersusChoice => VERSUS_CHOICES.includes(v as VersusChoice);
