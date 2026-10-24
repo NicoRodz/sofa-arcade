@@ -43,6 +43,11 @@ describe('game registry', () => {
       const m = configMsg({ ...DEFAULT_CONFIG, game: g.id });
       expect(m).toMatchObject({ t: 'config', game: g.id, controls: g.controls, howTo: g.howTo });
     }
+    // a second game defines its own labels and the message follows the chosen one: no controller change involved
+    const other: GameDef = { ...clone(), id: 'other', controls: { stick: { label: 'Girar', icon: 'move' }, btn1: { label: 'Saltar', icon: 'grab' }, btn2: { label: 'Disparar', icon: 'chop' } } };
+    const two = [pizzas, other];
+    expect(configMsg({ ...DEFAULT_CONFIG, game: 'other' as never }, two).controls.btn1.label).toBe('Saltar');
+    expect(configMsg({ ...DEFAULT_CONFIG, game: 'pizzas' }, two).controls.btn1.label).toBe('Tomar / Soltar');
     expect(isGameId('pizzas')).toBe(true);
     expect(gameInfo('nope' as never).controls).toBe(pizzas.controls); // unknown id falls back to the default game
   });

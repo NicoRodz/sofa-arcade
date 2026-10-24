@@ -40,7 +40,7 @@ export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEF
 
 // What the phones receive: the lobby config plus the chosen game's control labels and how-to steps (from the registry).
 export type ConfigMsg = { t: 'config' } & LobbyConfig & GameInfo;
-export const configMsg = (cfg: LobbyConfig): ConfigMsg => ({ t: 'config', ...cfg, ...gameInfo(cfg.game) });
+export const configMsg = (cfg: LobbyConfig, games?: Parameters<typeof gameInfo>[1]): ConfigMsg => ({ t: 'config', ...cfg, ...gameInfo(cfg.game, games) });
 
 export interface PublicPlayer {
   id: number;

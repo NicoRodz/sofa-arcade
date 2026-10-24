@@ -37,8 +37,8 @@ export const GAME_IDS: readonly GameId[] = GAMES.map((g) => g.id);
 export const DEFAULT_GAME: GameId = GAMES[0].id;
 export const isGameId = (v: unknown): v is GameId => GAME_IDS.includes(v as GameId);
 export const gameName = (id: GameId): string => GAMES.find((g) => g.id === id)?.name ?? id;
-export const gameInfo = (id: GameId): GameInfo => {
-  const g: GameDef = GAMES.find((x) => x.id === id) ?? GAMES[0];
+export const gameInfo = (id: string, games: readonly GameDef[] = GAMES): GameInfo => {
+  const g: GameDef = games.find((x) => x.id === id) ?? games[0]!;
   return { controls: g.controls, howTo: g.howTo };
 };
 
