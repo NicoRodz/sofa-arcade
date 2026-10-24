@@ -1,12 +1,14 @@
 // F1: the lobby side of Versus as pure rules: which N enables the mode, how the connected players are split and kept split,
 // which versus maps fit the teams, and how the lobby choices become a running round (createGame with teams, map, handicap).
 import { describe, expect, it } from 'vitest';
-import { GAMES, modeOf } from './games';
+import { GAMES, choiceVoteSpec, gameProblems, modeOf } from './games';
+import { SABOTAGE_MODES, SABOTAGE_OPTION } from './sabotage-config';
+import { cast, openVote, settle, makeRoster, snapshot, type VoteConfig } from './vote';
 import { mulberry32 } from './rng';
 import type { TeamInfo } from './teams';
 import { VERSUS_MAPS, versusMap } from './versusMaps';
 import {
-  VERSUS_AUTO, VERSUS_RANDOM, createVersusGame, defaultModeOptions, defaultVersusChoice, isVersusChoice, kitchenSides, lobbySetup, resolveVersusMap, syncTeams,
+  VERSUS_AUTO, VERSUS_RANDOM, createVersusGame, defaultModeOptions, defaultVersusChoice, isVersusChoice, kitchenSides, lobbySetup, resolveVersusMap, sabotageNotice, startVersusRound, stepChoice, syncTeams,
   teamSizes, versusAvailability, versusLobbyMaps, versusMapStatus, withSides,
 } from './versusLobby';
 
@@ -195,5 +197,59 @@ describe('createVersusGame: the lobby becomes a round', () => {
       expect(g.players.size).toBe(n);
       expect(g.teams.map((t) => t.n)).toEqual([n / 2, n / 2]);
     }
+  });
+});
+
+describe('the sabotage option in the lobby (Apagado / Suave / Caos)', () => {
+  const choice = versus.choices!.find((c) => c.id === SABOTAGE_OPTION)!;
+  it('the versus mode declares it, with three named values; coop has none; the registry stays valid', () => {
+    expect(choice.values.map((v) => v.label)).toEqual(['Apagado', 'Suave', 'Caos']);
+    expect(choice.values.map((v) => v.id)).toEqual([...SABOTAGE_MODES]);
+    expect(coop.choices).toBeUndefined();
+    expect(gameProblems(GAMES[0])).toEqual([]);
+  });
+  it('the default follows the difficulty: Suave on Fácil and Normal, Caos on Difícil; with no difficulty, the registry default', () => {
+    expect(['easy', 'normal', 'hard'].map((d) => defaultModeOptions(versus, d as 'easy')[SABOTAGE_OPTION])).toEqual(['soft', 'soft', 'chaos']);
+    expect(defaultModeOptions(versus)[SABOTAGE_OPTION]).toBe('soft');
+    expect(defaultModeOptions(versus, 'hard')).toMatchObject({ hiddenScore: true, handicap: true }); // the toggles keep their defaults
+    expect(defaultModeOptions(coop)).toEqual({});
+  });
+  it('Left and Right (the keyboard, and the Captain\'s D-pad that sends the same keys) step through the values and stop at the ends', () => {
+    expect(stepChoice(choice, 'soft', 'ArrowRight')).toBe('chaos');
+    expect(stepChoice(choice, 'soft', 'ArrowLeft')).toBe('off');
+    expect(stepChoice(choice, 'off', 'ArrowLeft')).toBeNull();
+    expect(stepChoice(choice, 'chaos', 'ArrowRight')).toBeNull();
+    expect(stepChoice(choice, 'soft', 'Enter')).toBeNull();
+    expect(stepChoice(choice, 'nope', 'ArrowRight')).toBeNull();
+  });
+  it('the same registry feeds a phone vote (vote.ts): three options, the leader wins when the lobby settles it', () => {
+    const spec = choiceVoteSpec(choice);
+    expect(spec).toMatchObject({ key: 'sabotage', type: 'enum', default: 'soft', votable: true });
+    expect(spec.values.map((v) => v.id)).toEqual(['off', 'soft', 'chaos']);
+    const cfg: VoteConfig = { voteId: 1, kind: 'item', options: spec.values.map((v) => v.id), current: spec.default, windowMs: null };
+    const ctx = { now: 1000, rng: mulberry32(1), roster: makeRoster([1, 2, 3], 0) };
+    let v = openVote(cfg, 0);
+    v = cast(v, ctx, 1, 1, 'chaos'); v = cast(v, { ...ctx, now: 2000 }, 2, 1, 'chaos'); v = cast(v, { ...ctx, now: 3000 }, 3, 1, 'off');
+    expect(snapshot(v, ctx).counts).toEqual({ off: 1, soft: 0, chaos: 2 });
+    expect(settle(v, ctx).result?.winner).toBe('chaos');
+  });
+  it('the notice: a level that is on, on a map with no catapult, says so; off or a map with one says nothing', () => {
+    expect(sabotageNotice('soft', versusMap('V1')!.rows)).toBe('');
+    expect(sabotageNotice('soft', versusMap('11-vs')!.rows)).toMatch(/sin sabotaje/);
+    expect(sabotageNotice('off', versusMap('11-vs')!.rows)).toBe('');
+    expect(sabotageNotice('chaos', null)).toBe('');
+  });
+  describe('startVersusRound turns the option into the sim', () => {
+    const teams = syncTeams(versus, null, ids(4), 4, false)!;
+    const round = (modeOptions: Record<string, boolean | string>, choice = 'V1') => startVersusRound({ teams, choice, difficulty: 'normal', seed: 4, modeOptions, slotOf: (id) => id - 1, rand: mulberry32(1) });
+    it('Suave / Caos on V1: the sim has the sabotage; Apagado or no option at all: it does not, and the hazards stay down', () => {
+      expect(round({ sabotage: 'soft' }).game.sab?.mode).toBe('soft');
+      expect(round({ sabotage: 'chaos' }).game.sab?.mode).toBe('chaos');
+      for (const o of [{ sabotage: 'off' }, {}, { sabotage: 'nonsense' }] as Record<string, string>[]) { const g = round(o).game; expect([g.sab, g.hazards]).toEqual([null, false]); }
+    });
+    it('a map with no catapult plays without it, whatever the option says; so does a generated one', () => {
+      expect(round({ sabotage: 'soft' }, '11-vs').game.sab).toBeNull();
+      expect(round({ sabotage: 'soft' }, VERSUS_RANDOM).game.sab).toBeNull();
+    });
   });
 });

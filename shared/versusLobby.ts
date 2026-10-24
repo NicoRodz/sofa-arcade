@@ -2,7 +2,7 @@
 // picked, how the connected players are split into teams, which versus maps fit the teams, and how the lobby turns into a round.
 // No DOM, no clock, no I/O: the host (the screen) owns the state, this only computes the next one.
 import type { Difficulty } from './difficulty';
-import type { ModeSpec } from './games';
+import type { ChoiceSpec, ModeSpec } from './games';
 import { generateVersus } from './generate';
 import { parseMap, type Pos, type SigmaName } from './maps';
 import { addPlayer, createGame, type Game } from './overcooked';
@@ -11,6 +11,7 @@ import type { Rng } from './rng';
 import type { MatchStart } from './protocol';
 import { balanceTeams, joinSmallestTeam, leaveTeams, makeTeams, modeAvailability, validateTeamSetup, type TeamInfo, type TeamSetup } from './teams';
 import { kitchenRegions } from './versus';
+import { CATAPULT_CHAR, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from './sabotage-config';
 import { VERSUS_AUTO, VERSUS_MAPS, VERSUS_RANDOM, versusMap, type VersusChoice } from './versusMaps';
 
 // --- Map choice ---------------------------------------------------------------------------------------------------------------------
@@ -120,7 +121,7 @@ export function resolveVersusMap(choice: string, seed: number, difficulty: Diffi
 
 /** "izquierda" / "derecha" or "arriba" / "abajo" for each kitchen of a map, from where its floor really is (team 0 = the region met first). */
 export function kitchenSides(rows: readonly string[], spawns: readonly Pos[], teamCount = 2): string[] {
-  const grid = parseMap(rows);
+  const grid = parseMap(rows, true);
   const { comp, regions } = kitchenRegions(grid, teamCount, spawns);
   const centre = regions.map((r) => {
     let sx = 0, sy = 0, n = 0;
@@ -136,7 +137,25 @@ export function kitchenSides(rows: readonly string[], spawns: readonly Pos[], te
 
 // --- Lobby -> round -----------------------------------------------------------------------------------------------------------------
 
-export const defaultModeOptions = (mode: Pick<ModeSpec, 'options'>): Record<string, boolean> => Object.fromEntries((mode.options ?? []).map((o) => [o.id, o.default]));
+// The lobby's options of a mode: its toggles at their defaults and its choices; the sabotage level follows the difficulty (Suave on Fácil and Normal, Caos on Difícil).
+export const defaultModeOptions = (mode: Pick<ModeSpec, 'options' | 'choices'>, difficulty?: Difficulty): Record<string, boolean | string> => ({
+  ...Object.fromEntries((mode.options ?? []).map((o) => [o.id, o.default])),
+  ...Object.fromEntries((mode.choices ?? []).map((c) => [c.id, c.id === SABOTAGE_OPTION && difficulty ? defaultSabotage(difficulty) : c.default])),
+});
+
+/** The value of a choice that a Left / Right key (the keyboard, or the Captain's D-pad) selects: the previous or the next one, and null at the ends (nothing to change). */
+export function stepChoice(c: Pick<ChoiceSpec, 'values'>, current: unknown, key: string): string | null {
+  const i = c.values.findIndex((v) => v.id === current);
+  const to = key === 'ArrowLeft' ? i - 1 : key === 'ArrowRight' ? i + 1 : NaN;
+  if (Number.isNaN(to) || i < 0) return null;
+  return c.values[to]?.id ?? null;
+}
+
+/** Why the chosen sabotage level will not run on this map ('' when it will, or when it is off): the map has no catapult. */
+export function sabotageNotice(mode: unknown, rows: readonly string[] | null): string {
+  if (!isSabotageMode(mode) || mode === 'off' || !rows) return '';
+  return rows.some((r) => r.includes(CATAPULT_CHAR)) ? '' : 'Este mapa no tiene catapulta: se juega sin sabotaje';
+}
 
 export interface VersusStart {
   teams: readonly TeamInfo[]; // frozen at the start, each with the side of its kitchen
@@ -160,6 +179,7 @@ export function createVersusGame(o: VersusStart): Game {
   const game = createGame({
     mapId: o.map.id, difficulty: o.difficulty, rows: o.map.rows, spawns: o.map.spawns, seed: o.seed, countdownMs: o.countdownMs, bus: o.bus,
     teams: o.teams.map((t) => ({ playerIds: t.playerIds })), handicap: o.modeOptions.handicap !== false, shared: o.map.shared,
+    sabotage: sabotageOf(o.modeOptions), sigma: o.map.sigma, // the sim switches it off by itself on a map with no catapult
   });
   for (const t of o.teams) t.playerIds.forEach((id, rank) => addPlayer(game, id, o.slotOf(id), rank));
   return game;

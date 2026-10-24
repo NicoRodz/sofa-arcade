@@ -2,6 +2,7 @@
 import { puestoProblems } from './puestos';
 import { DIRS, MAP_H, MAP_W, floorComponents, isFloor, parseMap, posKey, type Grid, type MapDef, type Pos, type VersusMapDef } from './maps';
 import { SIGMAS, isometryCheck } from './symmetry';
+import { MIN_LANDING_TILES } from './sabotage-config';
 
 export type StationKey = '1' | '2' | '3' | 'K' | 'O' | 'P' | 'E' | 'U' | 'L';
 // 1 -> K, 2 -> K, K -> O (once per ingredient), P -> O, O -> E
@@ -294,6 +295,47 @@ function kitchenCost(g: Grid, spawns: readonly Pos[], shared: readonly Pos[]): K
 }
 const spreadOf = (a: number, b: number) => (a === b ? 0 : Math.abs(a - b) / Math.max(a, b));
 
+// Sabotage (plan versus-sabotaje-basura section 7): a map with catapults ('Y') needs one per kitchen, twins, next to the barrier and reachable from a
+// spawn; every place a bag can land (floor that is not a spawn) must be reachable from that kitchen's bin, there must be MIN_LANDING_TILES of them, and
+// none may be a dead end (fewer than two walkable neighbours: a chef that slid there could not get out). A map with no catapult has no sabotage: fine.
+export const CATAPULT_NEAR = 5; // Manhattan tiles from the catapult to the nearest floor of the rival kitchen ("next to the barrier")
+export function sabotageProblems(g: Grid, lay: VersusLayout, sigma: (x: number, y: number, w: number, h: number) => Pos, spawns: readonly (readonly Pos[])[]): string[] {
+  const ys: Pos[] = [];
+  g.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'station' && t.station === 'catapult') ys.push([x, y]); }));
+  if (!ys.length) return [];
+  const errors: string[] = [];
+  const { comp } = floorComponents(g);
+  const mine = (side: 0 | 1) => ys.filter(([x, y]) => lay.owner[y]![x] === side);
+  const per = [mine(0), mine(1)];
+  if (per[0]!.length !== 1 || per[1]!.length !== 1) { errors.push(`sabotage: each kitchen needs exactly one catapult, found ${per[0]!.length} and ${per[1]!.length}`); return errors; }
+  const [ay, by] = [per[0]![0]!, per[1]![0]!];
+  const tw = sigma(ay[0], ay[1], MAP_W, MAP_H);
+  if (tw[0] !== by[0] || tw[1] !== by[1]) errors.push(`sabotage: the catapults (${ay.join(', ')}) and (${by.join(', ')}) are not twins`);
+  ([0, 1] as const).forEach((side) => {
+    const name = side ? 'B' : 'A';
+    const [cx, cy] = per[side]![0]!;
+    const access = accessTiles(g, cx, cy);
+    const spawnComps = new Set(spawns[side]!.map(([x, y]) => comp[y]![x]!));
+    if (!access.some(([x, y]) => spawnComps.has(comp[y]![x]!))) errors.push(`sabotage: kitchen ${name}: the catapult at (${cx}, ${cy}) cannot be reached from a spawn`);
+    const rival: Pos[] = [];
+    g.forEach((row, y) => row.forEach((_t, x) => { if (isFloor(g, x, y) && lay.owner[y]![x] === 1 - side) rival.push([x, y]); }));
+    const near = rival.reduce((m, [x, y]) => Math.min(m, Math.abs(x - cx) + Math.abs(y - cy)), Infinity);
+    if (near > CATAPULT_NEAR) errors.push(`sabotage: kitchen ${name}: the catapult is ${near} tiles from the rival kitchen (it must be next to the barrier: ${CATAPULT_NEAR} at most)`);
+    const landing: Pos[] = [];
+    g.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'floor' && !t.spawn && lay.owner[y]![x] === side) landing.push([x, y]); }));
+    if (landing.length < MIN_LANDING_TILES) errors.push(`sabotage: kitchen ${name} has ${landing.length} landing tiles (want ${MIN_LANDING_TILES})`);
+    const binComps = new Set<number>();
+    g.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'station' && t.station === 'trash' && lay.owner[y]![x] === side) for (const [ax, ay2] of accessTiles(g, x, y)) binComps.add(comp[ay2]![ax]!); }));
+    if (!binComps.size) errors.push(`sabotage: kitchen ${name} has no bin to clean the rubbish into`);
+    for (const [x, y] of landing) {
+      if (binComps.size && !binComps.has(comp[y]![x]!)) errors.push(`sabotage: kitchen ${name}: rubbish at (${x}, ${y}) could not be carried to the bin`);
+      const open = DIRS.filter(([dx, dy]) => isFloor(g, x + dx, y + dy)).length;
+      if (open < 2) errors.push(`sabotage: kitchen ${name}: landing tile (${x}, ${y}) is a dead end (${open} walkable neighbour)`);
+    }
+  });
+  return errors;
+}
+
 /**
  * A versus map against its own metadata. `requireMirror` (default true) demands the isometry keeps every tile (s = 1); with false a
  * map that is only equivalent (<= 3% apart on every cost metric) passes, but the spawns still have to be twins.
@@ -303,7 +345,7 @@ export function validateVersus(m: VersusMapDef, opts: { requireMirror?: boolean;
   const empty: VersusReport = { ok: false, errors: [], s: 0, kitchens: null, spread: { routeCost: 0, firstStep: 0, interaction: 0, area: 0, shared: 0 } };
   const errors = empty.errors;
   if (m.rows.length !== MAP_H || m.rows.some((r) => r.length !== MAP_W)) { errors.push('bad size'); return empty; }
-  const g = parseMap(m.rows);
+  const g = parseMap(m.rows, true);
   const { sigma: sigmaName, spawns, shared = [] } = m.versus;
   const sigma = SIGMAS[sigmaName];
   // 1. isometry: both kitchens are twins
@@ -324,7 +366,7 @@ export function validateVersus(m: VersusMapDef, opts: { requireMirror?: boolean;
   if (!(m.nMin >= 2 && m.nMin <= m.nMax && m.nMax <= 8)) errors.push(`players ${m.nMin}-${m.nMax} are not within 2..8`);
   const team = teamRange(m.nMin, m.nMax);
   const rowsOfSide = [0, 1].map((i) => sideRows(m.rows, g, lay, i as 0 | 1, sh)) as [string[], string[]];
-  const sides = rowsOfSide.map((r) => parseMap(r)) as [Grid, Grid];
+  const sides = rowsOfSide.map((r) => parseMap(r, true)) as [Grid, Grid];
   sides.forEach((sg, i) => {
     const name = i ? 'B' : 'A';
     for (const e of validate(sg).errors) errors.push(`kitchen ${name}: ${e}`);
@@ -339,10 +381,11 @@ export function validateVersus(m: VersusMapDef, opts: { requireMirror?: boolean;
     if (floorTiles(sg) < FLOOR_PER_PLAYER * team.max) errors.push(`kitchen ${name}: ${floorTiles(sg)} floor tiles for teams of ${team.max} (want ${FLOOR_PER_PLAYER} each)`);
     // a team of one chef plays the table of two (puestos never go below two), so the check starts at 2
     const probe: MapDef = { id: m.id, name: m.name, rows: rowsOfSide[i]!, nMin: Math.max(2, team.min), nMax: Math.max(2, team.max), minDuro: 1, stars: m.stars, spawns: list, puestos: m.puestos };
-    for (const e of puestoProblems(probe)) errors.push(`kitchen ${name}: ${e}`);
+    for (const e of puestoProblems(probe, true)) errors.push(`kitchen ${name}: ${e}`);
   });
   const twins = spawns[0].every((p, i) => { const [tx, ty] = sigma(p[0], p[1], MAP_W, MAP_H); const q = spawns[1][i]; return q !== undefined && q[0] === tx && q[1] === ty; });
   if (!twins || spawns[0].length !== spawns[1].length) errors.push('kitchen B spawns are not sigma of kitchen A spawns, index by index');
+  errors.push(...sabotageProblems(g, lay, sigma, spawns));
   // 4. fairness: the kitchens cost the same
   const costs = sides.map((sg, i) => kitchenCost(sg, spawns[i]!, shared)) as [KitchenCost, KitchenCost];
   empty.kitchens = costs;

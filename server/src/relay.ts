@@ -97,6 +97,11 @@ export function attachRelay(server: Server) {
         if (isScreen && to?.ws) send(to.ws, { t: 'buzz', kind: m.kind });
         return;
       }
+      if (m.t === 'hint') {
+        const to = r.players.get(m.playerId);
+        if (isScreen && to?.ws) send(to.ws, { t: 'hint', a: m.a, b: m.b });
+        return;
+      }
       if (m.t === 'config') {
         if (!isScreen) return;
         const { t: _t, ...cfg } = m;

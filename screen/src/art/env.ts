@@ -262,6 +262,40 @@ function trashCan(c: Ctx, x0: number, y0: number) {
   c.restore();
 }
 
+// Sabotage: the catapult. A wooden cart on two wheels with a post and a throwing arm that ends in a bag-shaped cup (the bag itself is a dynamic sprite
+// that sits in it while the chef aims). Painted warning stripes on the base say "this one throws".
+function catapult(c: Ctx, x0: number, y0: number) {
+  c.save(); c.translate(x0, y0);
+  c.fillStyle = 'rgba(60,30,10,0.28)'; c.beginPath(); c.ellipse(60, 110, 54, 8, 0, 0, Math.PI * 2); c.fill();
+  // base slab with hazard stripes
+  drawOutlined(c, () => rr(c, 8, 74, 104, 30, 8), vgrad(c, 74, 104, '#C98A4B', C.wood2), { lw: 3 });
+  c.save(); rr(c, 8, 74, 104, 30, 8); c.clip();
+  c.fillStyle = C.cheese;
+  for (let i = -2; i < 8; i++) { c.beginPath(); c.moveTo(8 + i * 18, 104); c.lineTo(8 + i * 18 + 9, 104); c.lineTo(8 + i * 18 + 27, 74); c.lineTo(8 + i * 18 + 18, 74); c.closePath(); c.fill(); }
+  c.fillStyle = 'rgba(43,27,23,0.55)'; c.fillRect(8, 74, 104, 5);
+  c.restore();
+  rr(c, 8, 74, 104, 30, 8); c.lineWidth = 3; c.strokeStyle = C.ink; c.stroke();
+  // wheels
+  for (const x of [30, 90]) {
+    drawOutlined(c, circle(c, x, 106, 13), vgrad(c, 93, 119, '#6B4528', '#3C2615'), { lw: 3 });
+    c.strokeStyle = '#B98A55'; c.lineWidth = 2.5;
+    for (let a = 0; a < 3; a++) { c.beginPath(); c.moveTo(x - Math.cos(a * 1.047) * 10, 106 - Math.sin(a * 1.047) * 10); c.lineTo(x + Math.cos(a * 1.047) * 10, 106 + Math.sin(a * 1.047) * 10); c.stroke(); }
+    drawOutlined(c, circle(c, x, 106, 3.5), C.steel, { lw: 2 });
+  }
+  // post and arm
+  drawOutlined(c, () => rr(c, 50, 30, 20, 50, 4), vgrad(c, 30, 80, '#B7803F', C.wood2), { lw: 3 });
+  c.save(); c.translate(60, 38); c.rotate(-0.62);
+  drawOutlined(c, () => rr(c, -22, -7, 84, 14, 5), vgrad(c, -7, 7, '#E0A765', '#B7803F'), { lw: 3 });
+  // the cup at the end of the arm
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(48, -5); c.lineTo(76, -9); c.quadraticCurveTo(72, 16, 54, 14); c.closePath(); }, vgrad(c, -9, 16, '#59606E', '#2A2E39'), { lw: 3 });
+  drawOutlined(c, circle(c, 0, 0, 5.5), C.steel2, { lw: 2.5 });
+  c.restore();
+  // counterweight on the short end
+  drawOutlined(c, () => rr(c, 34, 44, 18, 20, 5), vgrad(c, 44, 64, '#8A96A0', '#4D5963'), { lw: 3 });
+  c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 3; c.beginPath(); c.moveTo(14, 82); c.lineTo(40, 80); c.stroke();
+  c.restore();
+}
+
 // Return window for dirty plates: a grey bus tub with a slot and a "SUCIOS" tag.
 function dirtyReturn(c: Ctx, x0: number, y0: number) {
   c.save(); c.translate(x0, y0);
@@ -336,6 +370,7 @@ export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, see
     else if (t.station === 'plates') plates(c, x0, y0);
     else if (t.station === 'window') windowStation(c, x0, y0);
     else if (t.station === 'trash') trashCan(c, x0, y0);
+    else if (t.station === 'catapult') catapult(c, x0, y0);
     else if (t.station === 'dirty') dirtyReturn(c, x0, y0);
     else if (t.station === 'sink') sinkStation(c, x0, y0);
   }));

@@ -58,6 +58,16 @@ describe('protocol', () => {
     expect(BUZZ_PATTERNS.chop).toEqual([40]);
     for (const p of Object.values(BUZZ_PATTERNS)) expect(p.reduce((a, b) => a + b, 0)).toBeLessThan(200);
   });
+  it('the slip buzz is a single 120 ms pulse (sabotage); the hint message carries two labels of at most 14 characters, or null', () => {
+    expect(BUZZ_PATTERNS.slip).toEqual([120]);
+    expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"slip"}')).toEqual({ t: 'buzz', playerId: 3, kind: 'slip' });
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar bolsa","b":"¡Lanzar!"}')).toEqual({ t: 'hint', playerId: 3, a: 'Tomar bolsa', b: '¡Lanzar!' });
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":null}')).toEqual({ t: 'hint', playerId: 3, a: null, b: null });
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"un rótulo demasiado largo"}')).toBeNull();
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"  "}')).toBeNull();
+    expect(parseClientMessage('{"t":"hint","a":"A"}')).toBeNull();
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":7}')).toBeNull();
+  });
   it('rejects unknown message types', () => {
     expect(parseClientMessage('{"t":"hack"}')).toBeNull();
     expect(parseClientMessage('null')).toBeNull();

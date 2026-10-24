@@ -362,7 +362,7 @@ export function generateVersus(seed: number, diff: Difficulty, nMax: number, max
   }
   const fb = VERSUS_BASE_MAPS.find((m) => m.versus.sigma === sigma && m.nMin <= lo && m.nMax >= hi) ?? VERSUS_BASE_MAPS[0]!;
   return {
-    rows: [...fb.rows], topology: fb.versus.sigma === 'mirrorX' ? 'side' : 'stack', sigma: fb.versus.sigma, archetype: 'fixed', d: metric(parseMap(fb.rows), team.max).D,
+    rows: [...fb.rows], topology: fb.versus.sigma === 'mirrorX' ? 'side' : 'stack', sigma: fb.versus.sigma, archetype: 'fixed', d: metric(parseMap(fb.rows, true), team.max).D,
     attempts: maxAttempts, fallback: true, nMin: fb.nMin, nMax: fb.nMax, mech: { cheese: fb.rows.some((r) => r.includes('3')), sink: false }, spawns: fb.versus.spawns,
   };
 }

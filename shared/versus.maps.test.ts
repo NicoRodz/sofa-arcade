@@ -55,14 +55,15 @@ describe('V1 Duelo clásico, V3 Dos pisos: the design drawings through the real 
   // L (sink) -> C: a sink needs the dirty return U and turns washing on, which coop only does from 5 players.
   const legend: Record<string, string> = { M: '1', T: '2', Q: '3', C: 'K', H: 'O', '=': 'C', B: 'X', a: 'S', b: 'S', '|': '#', L: 'C' };
   const real = (rows: string[]) => rows.map((r) => [...r].map((c) => legend[c] ?? c).join(''));
+  const noCatapult = (rows: readonly string[]) => rows.map((r) => r.replaceAll('Y', 'C')); // sabotage put a catapult 'Y' in place of one counter per kitchen: the rest is the design drawing
   it('V1 is the design drawing translated, with the barrier as walls', () => {
-    expect(get('V1').rows).toEqual(real([
+    expect(noCatapult(get('V1').rows)).toEqual(real([
       '#MTQ#HH||HH#QTM#', '=......||......=', 'C......||......C', 'C..==..||..==..C', '=..==..||..==..=',
       'P.a..a.||.b..b.P', 'L.a..a.||.b..b.L', 'B......||......B', '#==E==#||#==E==#',
     ]));
   });
   it('V3 is the design drawing translated', () => {
-    expect(get('V3').rows).toEqual(real([
+    expect(noCatapult(get('V3').rows)).toEqual(real([
       '#MTQ=HH=CC=PL=B#', '=..............E', '=..a...a...a...=', '#==============#', '||||||||||||||||',
       '#==============#', '=...b...b...b..=', 'E..............=', '#B=LP=CC=HH=QTM#',
     ]));
@@ -86,7 +87,7 @@ describe('validateVersus: one test per map, each with its sabotage', () => {
   it('V2: the pantry crates (7, 4) and (8, 4) are declared shared, one touching each kitchen; without them the cheese is gone', () => {
     const m = get('V2');
     expect(m.versus.shared).toEqual([[7, 4], [8, 4]]);
-    const lay = versusLayout(parseMap(m.rows), 'mirrorX', m.versus.shared);
+    const lay = versusLayout(parseMap(m.rows, true), 'mirrorX', m.versus.shared);
     expect([lay.owner[4]![7], lay.owner[4]![8]]).toEqual([0, 1]);
     // sabotage 1: only one pantry crate is left
     expect(errors(on(m, edit(m.rows, [[8, 4, '#']])))).toMatch(/symmetry/);

@@ -106,3 +106,30 @@ describe('recipes', () => {
     expect(1 / LOOPS.oven.every(0.5)).toBeLessThan(10);
   });
 });
+
+describe('sabotage sounds', () => {
+  it('each sabotage event has its sound: the throw climbs, the impact and the burst are different, the slip is followed by the laugh of the other side', () => {
+    expect(ids(ACTIONS['sabotage:bagReady']({ team: 0, bags: 1 }))).toEqual(['bagReady']);
+    expect(ids(ACTIONS['sabotage:aim']({ team: 0, player: 1, at: [9, 2] }))).toEqual(['aimTick']);
+    expect(ids(ACTIONS['sabotage:launch']({ team: 0, player: 1, from: [5, 8], landAt: [11, 3], ms: 700 }))).toEqual(['launch']);
+    expect(ids(ACTIONS['sabotage:land']({ team: 0, target: 1, tile: [11, 3], double: false, extra: null }))).toEqual(['land']);
+    expect(ids(ACTIONS['sabotage:burst']({ team: 0, at: [5, 8] }))).toEqual(['burst']);
+    expect(ids(ACTIONS['sabotage:caught']({ team: 0, target: 1, chef: 3 }))).toEqual(['caught']);
+    expect(ids(ACTIONS['sabotage:blocked']({ team: 0, player: 1, why: 'cooldown' }))).toEqual(['buzz']);
+    expect(ids(ACTIONS['chef:slip']({ chef: 3, team: 1, at: [11, 3], dir: [1, 0], dist: 2.5, dropped: null }))).toEqual(['slip', 'laugh']);
+    expect(ids(ACTIONS['trash:binned']({ team: 1, desechos: 1, gained: 1, item: 'trash' }))).toEqual(['clean']);
+    expect(ids(ACTIONS['trash:picked']({ player: 3, team: 1, tile: [11, 3], item: 'trash', kind: 'trash' }))).toEqual(['rustle']);
+    expect(ids(ACTIONS['chef:recover']({ chef: 3, team: 1, wall: false }))).toEqual([]);
+    expect(ids(ACTIONS['trash:decayed']({ team: 1, tile: [11, 3] }))).toEqual(['fizz']);
+  });
+  it('the laugh comes after the fall has started, the whoosh of the throw is a rising sweep, the impact is short', () => {
+    expect(Math.min(...SFX.laugh.voices.map((v) => v.at))).toBeGreaterThanOrEqual(0.3);
+    expect(SFX.laugh.voices).toHaveLength(4);
+    const sweep = SFX.launch.voices.find((v) => v.src === 'sine')!;
+    expect(sweep.f1!).toBeGreaterThan(sweep.f0! * 3);
+    const fall = SFX.slip.voices.find((v) => v.src === 'triangle')!;
+    expect(fall.f1!).toBeLessThan(fall.f0! / 4);
+    expect(sfxDuration('land')).toBeLessThan(0.25);
+    expect(sfxDuration('aimTick')).toBeLessThan(0.05);
+  });
+});

@@ -60,6 +60,8 @@
   #btnB .ico { filter: none; }
   #lblB { right: 27%; top: calc(var(--topB) + var(--bsz) + 1.5vmin); width: var(--bsz); }
   body[data-view=playing]::before { content: ''; position: fixed; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 0 1.1vmin var(--c); } /* R25: the phone wears the chef's colour */
+  #slip { position: fixed; left: 0; right: 0; top: 30%; z-index: 4; text-align: center; pointer-events: none; font: 800 clamp(28px, 11vmin, 52px) var(--font); color: var(--cheese); -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; opacity: 0; transform: scale(.6) rotate(-6deg); transition: opacity .12s, transform .25s cubic-bezier(.2,1.6,.4,1); }
+  #slip.on { opacity: 1; transform: scale(1) rotate(-3deg); }
   body.flash::after { content: ''; position: fixed; inset: 0; z-index: 3; pointer-events: none; background: var(--c); opacity: .4; }
   .act.down { transform: translateY(1.2vmin); box-shadow: 0 .5vmin 0 rgba(43,27,23,.4); filter: brightness(1.12); }
 
@@ -152,6 +154,7 @@
   <div id="btnA" class="act"></div><div id="lblA" class="plq"></div>
   <div id="btnB" class="act"></div><div id="lblB" class="plq"></div>
   <div id="hud"></div>
+  <div id="slip">¡Resbalaste!</div>
   <div id="teamchip"><span id="tcicon2"></span><span id="tcname2"></span><small id="tcside2"></small></div>
   <div id="puesto"><span class="pi" id="pico"></span><div class="pt"><b id="pname"></b><span id="phint"></span></div><button id="pswap" type="button">Cambiar</button></div>
 </div>

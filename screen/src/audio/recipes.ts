@@ -81,6 +81,19 @@ export const SFX = {
     ],
   },
   tieJingle: { bus: 'ui', voices: [osc('triangle', 523, 0.2, 0.3, { at: 1.15 }), osc('triangle', 523, 0.5, 0.3, { at: 1.4 }), osc('sine', 392, 0.6, 0.15, { at: 1.4 })] },
+  // sabotage (all synthesised, like the rest). A bag is ready: a crinkle and a blip. The throw: "fiuu", a whoosh that climbs. The impact: "plaf", wet and low.
+  // A bag that bursts on the barrier: "plof". A slip: a falling whistle and a boing. The laugh of the other side: four "ha" that sag, a beat after the slip. Cleaning: "chas".
+  bagReady: { bus: 'sfx', voices: [noise(0.12, 0.3, { type: 'bandpass', f0: 3200, f1: 1800, q: 0.7 }), osc('triangle', 523, 0.1, 0.22, { at: 0.06 }), osc('triangle', 784, 0.16, 0.22, { at: 0.14 })] },
+  aimTick: { bus: 'sfx', voices: [osc('triangle', 1180, 0.025, 0.09, { att: 0.002 })] },
+  launch: { bus: 'sfx', pitchVar: 0.04, voices: [noise(0.34, 0.34, { type: 'bandpass', f0: 500, f1: 3400, q: 1.1 }, { att: 0.05 }), osc('sine', 320, 0.3, 0.22, { f1: 1250 }), osc('triangle', 180, 0.08, 0.3, { f1: 90 })] },
+  land: { bus: 'sfx', pitchVar: 0.06, voices: [noise(0.1, 0.5, { type: 'bandpass', f0: 1000, f1: 260, q: 0.8 }), osc('sine', 170, 0.16, 0.5, { f1: 62 }), noise(0.05, 0.22, { type: 'highpass', f0: 2600 }, { at: 0.03 })] },
+  burst: { bus: 'sfx', voices: [noise(0.14, 0.4, { type: 'lowpass', f0: 900, f1: 200 }), osc('sine', 230, 0.12, 0.35, { f1: 70 })] },
+  caught: { bus: 'sfx', voices: [osc('triangle', 600, 0.05, 0.3, { f1: 900 }), osc('triangle', 988, 0.1, 0.28, { at: 0.06 }), osc('sine', 1480, 0.28, 0.2, { at: 0.12 })] },
+  slip: { bus: 'sfx', voices: [osc('triangle', 1000, 0.45, 0.28, { f1: 160, vib: { rate: 9, depth: 25 } }), osc('sine', 130, 0.14, 0.4, { at: 0.42, f1: 330 }), noise(0.05, 0.25, { type: 'lowpass', f0: 500 }, { at: 0.42 })] },
+  laugh: { bus: 'sfx', voices: [0, 1, 2, 3].map((i) => osc('square', 520 - i * 38, 0.08, 0.13, { at: 0.3 + i * 0.12, f1: 430 - i * 38, filter: { type: 'bandpass', f0: 900, q: 1.6 }, vib: { rate: 14, depth: 14 } })) },
+  clean: { bus: 'sfx', pitchVar: 0.05, voices: [noise(0.05, 0.4, { type: 'bandpass', f0: 2200, q: 1.2 }), osc('sine', 150, 0.1, 0.4, { f1: 66, at: 0.02 }), osc('triangle', 780, 0.04, 0.18, { at: 0.03, f1: 420 })] },
+  rustle: { bus: 'sfx', pitchVar: 0.1, voices: [noise(0.09, 0.28, { type: 'highpass', f0: 2400 }, { att: 0.01 }), noise(0.06, 0.2, { type: 'bandpass', f0: 3600, q: 0.8 }, { at: 0.05 })] },
+  fizz: { bus: 'sfx', voices: [noise(0.18, 0.12, { type: 'highpass', f0: 3800 }, { att: 0.06 })] },
 } as const satisfies Record<string, Sfx>;
 export type SfxId = keyof typeof SFX;
 
@@ -146,4 +159,17 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   playerGone: () => [play('playerGone')],
   matchPaused: () => [play('paused')],
   matchResumed: () => [play('resumed')],
+  // sabotage: a bag is ready, the reticle ticks, the throw, the impact (or the catch, or the burst), the slip and the laugh of the other side, the cleaning
+  'sabotage:bagReady': () => [play('bagReady')],
+  'sabotage:aim': () => [play('aimTick')],
+  'sabotage:launch': () => [play('launch')],
+  'sabotage:land': () => [play('land')],
+  'sabotage:caught': () => [play('caught')],
+  'sabotage:burst': () => [play('burst')],
+  'sabotage:blocked': () => [play('buzz')],
+  'chef:slip': () => [play('slip'), play('laugh')],
+  'chef:recover': () => [],
+  'trash:picked': () => [play('rustle')],
+  'trash:binned': () => [play('clean')],
+  'trash:decayed': () => [play('fizz')],
 };

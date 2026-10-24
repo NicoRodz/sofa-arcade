@@ -2,6 +2,8 @@
 // Each game also declares its controls (what the stick and the two buttons are called) and its quick "how to play" steps:
 // the relay sends both to the phones with the lobby config, so a new game needs no change in the controller.
 import { isIconId, type IconId } from './icons';
+import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_MODES, SABOTAGE_OPTION } from './sabotage-config';
+import type { OptionSpec as VoteOptionSpec } from './vote';
 
 export const PLATFORM = 'Pichiclub';
 
@@ -22,12 +24,19 @@ export interface TeamStyle { name: string; color: string; icon: string } // icon
 // handicap: what helps the smaller team: 'score-k' multiplies its points, 'game' is the game's own rule, 'none' nothing.
 export interface TeamSpec { count: readonly [min: number, max: number]; maxRatio: number; handicap: 'score-k' | 'none' | 'game'; styles?: readonly TeamStyle[] }
 export interface OptionSpec { id: string; label: string; default: boolean } // lobby toggles of a mode; the values travel as the opaque modeOptions
+// A lobby choice among a few named values (the sabotage: Apagado / Suave / Caos). It travels in modeOptions as the value's id, and it is the same shape a
+// phone vote needs (choiceVoteSpec): the lobby changes it with the pills, with Left / Right (the Captain's D-pad sends those keys), and a vote could too.
+export interface ChoiceValue { id: string; label: string; blurb?: string }
+export interface ChoiceSpec { id: string; label: string; values: readonly ChoiceValue[]; default: string }
+/** The choice as a vote.ts option (menus voting engine), so a vote and the lobby read the same registry. */
+export const choiceVoteSpec = (c: ChoiceSpec, votable = true): VoteOptionSpec => ({ key: c.id, label: c.label, type: 'enum', values: c.values.map((v) => ({ id: v.id, label: v.label })), default: c.default, votable });
 export interface ModeSpec {
   id: ModeId; label: string;
   players: readonly [min: number, max: number]; // total players the mode admits
   teams?: TeamSpec; // absent: the mode has no teams (free for all)
   howTo?: HowTo; controls?: Partial<GameControls>; // override the game's own when the mode changes them
   options?: readonly OptionSpec[];
+  choices?: readonly ChoiceSpec[]; // lobby choices among named values (the sabotage level)
   soon?: boolean; // declared but not selectable yet (the lobby does not offer it)
 }
 export const COOP_STYLE: TeamStyle = { name: 'Equipo', color: '#F4C430', icon: '★' };
@@ -70,12 +79,13 @@ export const GAMES = [
             { icon: 'oven', text: 'El pedido dorado es para el primero que lo entregue' },
             { icon: 'bell', text: 'Gana el equipo con más puntos al acabar el tiempo' },
           ],
-          note: 'Si los equipos son desiguales, el chico gana un multiplicador',
+          note: 'Con sabotaje: junta basura en el cubo, lánzala desde la catapulta y limpia la que te caiga. Si los equipos son desiguales, el chico gana un multiplicador',
         },
         options: [
           { id: 'hiddenScore', label: 'Marcador oculto al final', default: true },
           { id: 'handicap', label: 'Ventaja para el equipo chico', default: true },
         ],
+        choices: [{ id: SABOTAGE_OPTION, label: 'Sabotaje', values: SABOTAGE_MODES.map((m) => ({ id: m, label: SABOTAGE_LABEL[m], blurb: SABOTAGE_BLURB[m] })), default: 'soft' }],
       },
     ],
     defaultMode: 'coop',
@@ -183,8 +193,12 @@ function modeProblems(g: GameDef): string[] {
       if (n < HOWTO_MIN_STEPS || n > HOWTO_MAX_STEPS) out.push(`${at}: howTo ${n} steps, want ${HOWTO_MIN_STEPS}-${HOWTO_MAX_STEPS}`);
       m.howTo.steps.forEach((st, i) => { if (!st.text.trim() || st.text.length > STEP_MAX || !isIconId(st.icon)) out.push(`${at}: howTo step ${i + 1} is not legible`); });
     }
-    const ids = (m.options ?? []).map((o) => o.id);
+    const ids = [...(m.options ?? []).map((o) => o.id), ...(m.choices ?? []).map((c) => c.id)];
     if (new Set(ids).size !== ids.length) out.push(`${at}: duplicated option id`);
+    for (const c of m.choices ?? []) {
+      if (!c.label.trim() || c.values.length < 2 || new Set(c.values.map((v) => v.id)).size !== c.values.length || !c.values.some((v) => v.id === c.default)) out.push(`${at}: choice ${c.id} is not valid`);
+      if (c.values.some((v) => !v.label.trim() || v.id.length > 32)) out.push(`${at}: choice ${c.id} has an unreadable value`);
+    }
   }
   return out;
 }

@@ -29,6 +29,24 @@ export function buildFxTextures(scene: Phaser.Scene) {
       c.strokeStyle = 'rgba(120,30,0,0.5)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(-12, -4, -10, -h * 0.55, -2, -h); c.bezierCurveTo(0, -h * 0.6, 10, -h * 0.55, 12, -4); c.stroke();
     });
   }
+  // sabotage: the aiming reticle (a ring with four ticks and a dot, white so it can be tinted with the thrower's colour) and the soft shadow that warns where the bag lands
+  makeTex(scene, 'sab_reticle', { w: 120, h: 120 }, (c) => {
+    c.strokeStyle = C.ink; c.lineWidth = 11; c.beginPath(); c.arc(0, 0, 40, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = '#fff'; c.lineWidth = 6; c.beginPath(); c.arc(0, 0, 40, 0, Math.PI * 2); c.stroke();
+    for (let i = 0; i < 4; i++) {
+      c.save(); c.rotate((i * Math.PI) / 2);
+      c.strokeStyle = C.ink; c.lineWidth = 11; c.beginPath(); c.moveTo(24, 0); c.lineTo(56, 0); c.stroke();
+      c.strokeStyle = '#fff'; c.lineWidth = 6; c.beginPath(); c.moveTo(25, 0); c.lineTo(55, 0); c.stroke();
+      c.restore();
+    }
+    c.fillStyle = C.ink; c.beginPath(); c.arc(0, 0, 9, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, 5.5, 0, Math.PI * 2); c.fill();
+  });
+  makeTex(scene, 'sab_shadow', { w: 120, h: 120 }, (c) => {
+    const g = c.createRadialGradient(0, 0, 4, 0, 0, 54);
+    g.addColorStop(0, 'rgba(20,10,6,0.75)'); g.addColorStop(0.65, 'rgba(20,10,6,0.45)'); g.addColorStop(1, 'rgba(20,10,6,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, 54, 0, Math.PI * 2); c.fill();
+  });
   makeTex(scene, 'knife', { w: 64, h: 24 }, (c) => {
     drawOutlined(c, () => { c.beginPath(); c.moveTo(-8, -7); c.lineTo(22, -6); c.quadraticCurveTo(30, -2, 26, 4); c.lineTo(-8, 5); c.closePath(); }, vgrad(c, -7, 5, '#F2F6F8', C.steel2), { lw: 2.2, shadow: [0, 9, 22, 3] });
     drawOutlined(c, () => rr(c, -26, -6, 20, 11, 4), '#6B3F22', { lw: 2.2 });

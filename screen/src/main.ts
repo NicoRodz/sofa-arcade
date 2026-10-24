@@ -7,9 +7,10 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty
 import { summarize } from '@party/shared/results';
 import { DECIDED_TEXT, NO_LEAD, nextLead, phoneResult, recordRound, scoreHidden, seriesLine, tallyDeliveries, versusReport, type LeadState, type Series, type VersusReport } from '@party/shared/versusReport';
 import { GAMES, PLATFORM, gameInfo, gameName, hasModeChoice, modeOf, selectableModes, type GameDef, type ModeId } from '@party/shared/games';
+import { SABOTAGE_BLURB, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '@party/shared/sabotage-config';
 import { movePlayer, reshuffleTeams, teamOf } from '@party/shared/teams';
 import {
-  VERSUS_AUTO, VERSUS_RANDOM, defaultModeOptions, defaultVersusChoice, isVersusChoice, lobbySetup, resolveVersusMap, startVersusRound, syncTeams, teamSizes,
+  VERSUS_AUTO, VERSUS_RANDOM, defaultModeOptions, defaultVersusChoice, isVersusChoice, lobbySetup, resolveVersusMap, sabotageNotice, startVersusRound, stepChoice, syncTeams, teamSizes,
   versusAvailability, versusLobbyMaps, versusMapStatus,
 } from '@party/shared/versusLobby';
 import { versusMap } from '@party/shared/versusMaps';
@@ -45,9 +46,11 @@ import { assignPuestos, featuresOf, type PuestoId } from '@party/shared/puestos'
 import { C, H, W } from './art/tokens';
 import { percentile } from '@party/shared/stats';
 import {
-  COUNTDOWN_MS, TICK_MS, addPlayer, createGame, dropPlayer, rejoinPlayer, removePlayer, resolvePause, tick,
+  COUNTDOWN_MS, TICK_MS, addPlayer, createGame, dropPlayer, floorItemNear, rejoinPlayer, removePlayer, resolvePause, targetStation, tick,
   type Controls,
 } from '@party/shared/game';
+import { sabotageAimPress, sabotageHint, sabotageLoad } from '@party/shared/sabotage';
+import { addFloorItem } from '@party/shared/floor';
 import type { RoundView } from './art/hud';
 
 interface P {
@@ -89,6 +92,7 @@ let report: VersusReport | null = null; // versus: the verdict of the round that
 let lead: LeadState = NO_LEAD; // versus: who led last, for the comeback cue
 let series: Series | null = null; // versus: who has won how many rounds of this group in this session
 let mapTouched = false; // the host picked a map by hand: stop proposing defaults
+let sabotageTouched = false; // the host picked a sabotage level by hand: the difficulty stops proposing one
 let mapNotice = '';
 const puestoOf = new Map<number, PuestoView>(); // suggested stations of the running round, by player id
 let puestoStamp = 0;
@@ -288,9 +292,9 @@ function setMode(id: ModeId) {
     const av = versusAvailability(mode, connectedCount());
     if (!av.ok) { teamNotice = av.reason; renderUi(); return; }
   }
-  teamNotice = ''; teamsTouched = false; mapTouched = false; mapNotice = ''; series = null; // another mode: the series starts over
+  teamNotice = ''; teamsTouched = false; mapTouched = false; sabotageTouched = false; mapNotice = ''; series = null; // another mode: the series starts over
   const teams = syncTeams(mode, null, connectedIds(), config.seed, false);
-  setConfig({ modeId: id, teams, teamsLocked: false, modeOptions: id === 'versus' ? defaultModeOptions(mode) : {}, map: id === 'versus' ? defaultVersusChoice(teamSizes(teams), played) : defaultMap(connectedN(), played).id });
+  setConfig({ modeId: id, teams, teamsLocked: false, modeOptions: id === 'versus' ? defaultModeOptions(mode, config.difficulty) : {}, map: id === 'versus' ? defaultVersusChoice(teamSizes(teams), played) : defaultMap(connectedN(), played).id });
 }
 // A phone ("Cambiar de equipo") or the host (click on a chip) moves a player; the lobby decides (locked teams, unknown team, a player that is not here).
 function moveToTeam(playerId: number, teamId: number) {
@@ -305,6 +309,12 @@ function shuffleTeams() {
   if (config.teamsLocked) { teamNotice = 'Los equipos están bloqueados'; renderUi(); return; }
   teamNotice = ''; teamsTouched = false;
   setConfig({ teams: reshuffleTeams(config.teams, (Math.random() * 2 ** 32) >>> 0) });
+}
+function setSabotage(v: string) {
+  if (phase !== 'lobby' || !isVersus() || config.modeOptions[SABOTAGE_OPTION] === v) return;
+  sabotageTouched = true;
+  audio.ui(NAV_SFX.move);
+  setConfig({ modeOptions: { ...config.modeOptions, [SABOTAGE_OPTION]: v } });
 }
 // Why the round cannot start yet ('' when it can). Versus also needs a legal split.
 function startProblem(): string {
@@ -562,6 +572,23 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   setDelivered: (id: number, n: number) => { tally.counts.set(id, n); }, // capture tool: deliveries of a chef (the MVP of the results)
   setPantry: (stock: number, nextInMs: number) => { if (game.pantry) { game.pantry.stock = stock; game.pantry.nextAt = game.time + nextInMs; } }, // capture tool: the shared pantry's stock and the time to the next unit
   dropChef: (id: number) => dropPlayer(game, id), // capture tool: a chef's phone drops (versus)
+  // capture tool (sabotage): drive the sim by hand to frame a shot (a bag, a loaded catapult, a throw, rubbish on the floor, a chef put somewhere)
+  sab: {
+    give: (team: number, n = 1) => { game.sab!.teams[team]!.bags += n; },
+    place: (id: number, x: number, y: number, fx = 1, fy = 0) => { const p = game.players.get(id); if (p) Object.assign(p, { x, y, fx, fy, vx: 0, vy: 0 }); },
+    item: (id: number, item: string | null) => { const p = game.players.get(id); if (p) p.item = item as never; },
+    aim: (team: number) => { // the first chef of the team carries a bag to its catapult and loads it
+      const p = [...game.players.values()].find((q) => q.team === team && !q.ghost)!;
+      const s = game.stations.find((x) => x.kind === 'catapult' && x.owner === team)!;
+      const [dx, dy] = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).find(([a, b]) => game.grid[s.ty + b]?.[s.tx + a]?.kind === 'floor')!;
+      Object.assign(p, { x: s.tx + dx + 0.5, y: s.ty + dy + 0.5, fx: -dx, fy: -dy, vx: 0, vy: 0, item: 'trashBag' });
+      sabotageLoad(game, p, s);
+      return p.id;
+    },
+    throw: (id: number) => { const p = game.players.get(id); return !!p && sabotageAimPress(game, p); },
+    trash: (team: number, tx: number, ty: number, by: number, ttlMs?: number) => { addFloorItem(game, { tx, ty, item: 'trash', kind: 'trash', team, by, ttlMs }); },
+    state: () => JSON.parse(JSON.stringify({ sab: game.sab && { teams: game.sab.teams }, floor: game.floor, hazards: game.hazards })),
+  },
   snapshot: () => ({ versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
@@ -676,6 +703,19 @@ function syncMap(n: number) {
     mapNotice = `${cur.name} no sirve con ${n} ${n === 1 ? 'jugador' : 'jugadores'}: se cambió a ${r.name}`;
     patch(r.id);
   } else if (!cur) mapNotice = '';
+}
+// The sabotage choice of the versus lobby: three pills (Apagado / Suave / Caos), the blurb of the level, and a warning when the map has no catapult.
+function renderSabotage(vs: boolean) {
+  $('sabbox').classList.toggle('off', !vs);
+  const info = $('sabinfo');
+  const c = vs ? modeNow().choices?.find((x) => x.id === SABOTAGE_OPTION) : undefined;
+  if (!c) return;
+  const cur = sabotageOf(config.modeOptions);
+  setHtml('sabs', c.values.map((v) => `<button class="pill ${v.id === cur ? 'sel' : ''}" data-sab="${v.id}" title="${esc(v.blurb ?? '')}">${esc(v.label)}</button>`).join(''));
+  const shown = config.map === VERSUS_RANDOM ? [] : versusMap(config.map)?.rows ?? null; // a generated map has no catapult
+  const warn = sabotageNotice(cur, shown);
+  info.classList.toggle('notice', !!warn);
+  setHtml('sabinfo', warn ? esc(warn) : `${esc(SABOTAGE_BLURB[cur])} · <kbd>←</kbd><kbd>→</kbd>`);
 }
 // Start menu: one persistent card per registry game (plus the announced ones), so the art is drawn once and the idle state never restarts.
 let menuSel = 0;
@@ -795,6 +835,7 @@ function renderUi() {
   }).join(''));
   showTeams(vs);
   if (vs) renderTeams();
+  renderSabotage(vs);
   const sizes = teamSizes(config.teams);
   const rows = vs ? versusLobbyMaps(sizes).map(({ map, status }) => ({ map, status: status.state === 'recommended' ? { state: 'recommended' as const } : status })) : lobbyMaps(n);
   const cards = rows.map(({ map, status }) => {
@@ -841,6 +882,22 @@ gameBus.on('washDone', (e) => buzz(e.player, 'chop'));
 gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
 gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
 gameBus.on('dash', (e) => buzz(e.player, 'dash'));
+gameBus.on('chef:slip', (e) => buzz(e.chef, 'slip')); // sabotage: the phone of the chef that slipped vibrates and says "¡Resbalaste!"
+// Sabotage: A and B keep their two buttons, only their names follow what the chef can do ("Tomar bolsa", "Cargar", "¡Lanzar!", "Recoger").
+const sentHint = new Map<number, string>();
+function syncHints() {
+  const on = phase === 'playing' && activeGame === 'pizzas' && !!game.sab;
+  for (const [id, key] of [...sentHint]) if (!on || !game.players.has(id)) { if (key !== '|') sendMsg({ t: 'hint', playerId: id, a: null, b: null }); sentHint.delete(id); } // round over or chef gone: its labels go back
+  if (!on) return;
+  for (const p of game.players.values()) {
+    const h = sabotageHint(game, p, targetStation(game, p), !!floorItemNear(game, p));
+    const key = `${h.a ?? ''}|${h.b ?? ''}`;
+    if ((sentHint.get(p.id) ?? '|') === key) continue;
+    sentHint.set(p.id, key);
+    sendMsg({ t: 'hint', playerId: p.id, a: h.a, b: h.b });
+  }
+}
+setInterval(syncHints, 100);
 
 // round stats for the results screen: deliveries per chef (the podium, and the MVP of each team)
 const tally = tallyDeliveries(gameBus);
@@ -1046,7 +1103,14 @@ $('back').addEventListener('click', goBack);
 $('diffs').addEventListener('click', (e) => {
   const d = (e.target as HTMLElement).closest<HTMLElement>('[data-diff]')?.dataset.diff;
   const diff = DIFFICULTIES.find((x) => x === d);
-  if (diff) setConfig({ difficulty: diff });
+  if (!diff) return;
+  // the sabotage level follows the difficulty until the host picks one by hand
+  if (isVersus() && !sabotageTouched) setConfig({ difficulty: diff, modeOptions: { ...config.modeOptions, [SABOTAGE_OPTION]: defaultSabotage(diff) } });
+  else setConfig({ difficulty: diff });
+});
+$('sabs').addEventListener('click', (e) => {
+  const v = (e.target as HTMLElement).closest<HTMLElement>('[data-sab]')?.dataset.sab;
+  if (isVersus() && isSabotageMode(v)) setSabotage(v);
 });
 $('maps').addEventListener('click', (e) => {
   const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map;
@@ -1124,6 +1188,12 @@ function onKey(key: string, repeat: boolean) {
   if (act === 'skip') { beginRound(); return; }
   if (howTo || starting) return; // the card swallows Enter and the iris swallows everything
   if (phase === 'menu') { menuAct(menuOnKey(menuCards(connectedCount()), menuSel, key)); return; }
+  if (phase === 'lobby' && isVersus() && (key === 'ArrowLeft' || key === 'ArrowRight')) { // the sabotage level: the keyboard arrows, and the Captain's D-pad sends the same keys
+    const c = modeNow().choices?.find((x) => x.id === SABOTAGE_OPTION);
+    const v = c ? stepChoice(c, config.modeOptions[SABOTAGE_OPTION], key) : null;
+    if (v) setSabotage(v);
+    return;
+  }
   if (lobbyEscGoesBack(phase, key, !!howTo, starting)) { goBack(); return; }
   if (key === 'Enter' && repeat) return; // a held Enter that picked the game must not also start the round
   if (key === 'Enter' && phase === 'lobby') startRound();
