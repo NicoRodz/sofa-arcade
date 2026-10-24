@@ -74,7 +74,6 @@
   .pill.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); color: var(--cream); text-shadow: 0 2px 0 rgba(43,27,23,.4); }
   .hint { font: 600 22px var(--font); color: var(--muted); margin-top: 8px; min-height: 28px; }
   #setup .row { display: flex; gap: 40px; }
-  #gamepill { background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); color: #fff; text-shadow: 0 2px 0 rgba(43,27,23,.4); }
   #maps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
   .mc { height: 100px; padding: 6px 10px; border: 3px solid var(--ink); border-radius: 14px; background: #F1E3C6; color: var(--ink); text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 2px; transition: transform .1s; min-width: 0; }
   .mc:hover { transform: scale(1.03); }
@@ -101,6 +100,35 @@
   #seedrow { margin-top: 8px; font: 600 22px var(--font); color: var(--muted); }
   #seedrow b { color: var(--ink); }
   #again-seed { height: 40px; font-size: 20px; padding: 0 16px; margin-left: 10px; }
+
+
+  /* start menu: the game cards live on the dark background, under the connected players */
+  #menuui h3 { position: absolute; left: 650px; top: 470px; margin: 0; font: 800 24px var(--font); letter-spacing: 4px; text-transform: uppercase; color: rgba(255,244,224,.7); }
+  #menucards { position: absolute; left: 650px; top: 512px; width: 1190px; height: 538px; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 22px; }
+  .gc { position: relative; display: flex; flex-direction: column; min-height: 0; padding: 0; text-align: left; border: 4px solid var(--ink); border-radius: 20px; background: var(--cream); color: var(--ink); box-shadow: 0 8px 0 rgba(43,27,23,.35); overflow: hidden; transition: transform .12s, box-shadow .12s, filter .12s; }
+  .gc .art { flex: 1; min-height: 0; width: 100%; object-fit: cover; display: block; border-bottom: 4px solid var(--ink); }
+  .gc .body { flex: none; padding: 12px 18px 14px; }
+  .gc .nm { font: 800 32px/1.05 var(--font); }
+  .gc .bl { font: 600 20px/1.2 var(--font); color: var(--muted); margin-top: 4px; min-height: 48px; }
+  .gc .pl { display: inline-block; margin-top: 8px; padding: 2px 14px; border: 3px solid var(--ink); border-radius: 16px; background: var(--cheese); font: 800 20px var(--font); }
+  .gc .tag { position: absolute; left: 12px; top: 12px; right: 12px; padding: 6px 12px; border: 3px solid var(--ink); border-radius: 12px; background: var(--cream); font: 800 19px/1.15 var(--font); box-shadow: 0 4px 0 rgba(43,27,23,.3); display: none; }
+  .gc.few .tag, .gc.many .tag { display: block; color: var(--tomato2); }
+  .gc.few .art, .gc.many .art, .gc.few .body, .gc.many .body { filter: grayscale(.85); opacity: .55; }
+  .gc.few, .gc.many { cursor: not-allowed; }
+  .gc.soon { cursor: default; box-shadow: 0 6px 0 rgba(43,27,23,.25); background: #E9DBBD; }
+  .gc.soon .art { filter: grayscale(.9) brightness(.8); opacity: .8; }
+  .gc.soon .nm { color: var(--muted); }
+  .gc.soon .tag { display: block; left: auto; right: -2px; top: 22px; border-radius: 12px 0 0 12px; background: var(--cheese); color: var(--ink); letter-spacing: 2px; text-transform: uppercase; }
+  .gc.ready:hover, .gc.sel.ready { transform: translateY(-6px) scale(1.02); }
+  .gc.sel { border-color: var(--cheese); outline: 6px solid var(--ink); box-shadow: 0 0 0 6px var(--cheese), 0 14px 0 rgba(43,27,23,.4); z-index: 2; }
+  .gc.sel.ready .nm { color: var(--tomato2); }
+  .gc.nope { animation: nope .35s; }
+  @keyframes nope { 20% { transform: translateX(-10px); } 40% { transform: translateX(9px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(4px); } }
+  #menuhint { position: absolute; left: 80px; top: 872px; width: 520px; text-align: center; font: 700 28px/1.5 var(--font); color: var(--cream); }
+  #menuhint span { margin: 0 10px; white-space: nowrap; }
+  #menuhint small { font: 600 20px var(--font); color: rgba(255,244,224,.6); }
+  kbd { display: inline-block; min-width: 38px; margin: 0 2px; padding: 0 8px; border: 3px solid var(--ink); border-radius: 9px; background: var(--cream); color: var(--ink); font: 800 22px/32px var(--font); text-align: center; box-shadow: 0 3px 0 rgba(43,27,23,.5); }
+  #back { position: absolute; left: 1380px; top: 70px; height: 60px; font-size: 26px; padding: 0 28px; background: #F1E3C6; }
 
   #results { position: fixed; inset: 0; background: rgba(28,16,12,.62); backdrop-filter: blur(5px); }
   #resultsInner { position: absolute; inset: 0; margin: auto; width: 1060px; height: max-content; padding: 26px 40px 32px; text-align: center; animation: slideup .6s cubic-bezier(.2,1.2,.3,1) both; }
@@ -166,8 +194,8 @@
 <div id="stage" class="stage">
   <section id="lobby">
     <canvas id="logo" width="208" height="228"></canvas>
-    <h1 class="title">¡Que salgan las pizzas!</h1>
-    <div class="platform">Pichiclub</div>
+    <h1 class="title" id="title">Pichiclub</h1>
+    <div class="platform" id="platform">Elige un juego</div>
     <div id="joincard" class="panel">
       <div class="lbl">Escanea y únete</div>
       <div id="qr"></div>
@@ -175,19 +203,26 @@
       <div id="joinurl"></div>
     </div>
     <div id="chips"></div>
-    <div id="setup" class="panel">
-      <div class="row">
-        <div><h3>Juego</h3><div id="games" class="seg"></div></div>
-        <div><h3>Dificultad</h3><div id="diffs" class="seg"></div></div>
-      </div>
-      <h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
-      <div id="maps"></div>
-      <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
-      <canvas id="minimap" width="232" height="130"></canvas>
-      <div id="hints"><div id="diffinfo" class="hint"></div><div id="mapinfo" class="hint"></div></div>
+    <div id="menuui">
+      <h3 id="menuh">Juegos</h3>
+      <div id="menucards"></div>
+      <div id="menuhint"><span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> elegir</span><span><kbd>Enter</kbd> jugar</span><br><small>M sonido · los celulares esperan: decide la pantalla</small></div>
     </div>
-    <button id="start" class="btn" disabled>¡A cocinar!</button>
-    <div id="starthint">Enter para empezar<br><button id="howtobtn" class="pill">H · Cómo se juega</button><br><small>M sonido · S sacudida de pantalla</small></div>
+    <div id="lobbyui">
+      <button id="back" class="pill">‹ Elegir otro juego · Esc</button>
+      <div id="setup" class="panel">
+        <div class="row">
+          <div><h3>Dificultad</h3><div id="diffs" class="seg"></div></div>
+        </div>
+        <h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
+        <div id="maps"></div>
+        <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
+        <canvas id="minimap" width="232" height="130"></canvas>
+        <div id="hints"><div id="diffinfo" class="hint"></div><div id="mapinfo" class="hint"></div></div>
+      </div>
+      <button id="start" class="btn" disabled>¡A cocinar!</button>
+      <div id="starthint">Enter para empezar<br><button id="howtobtn" class="pill">H · Cómo se juega</button><br><small>M sonido · S sacudida de pantalla</small></div>
+    </div>
   </section>
 </div>
   <section id="results" class="off">

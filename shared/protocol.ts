@@ -28,7 +28,8 @@ export interface InputState {
   ts: number; // sender Date.now()
 }
 
-export const PHASES = ['lobby', 'playing', 'results'] as const;
+// menu: the Pichiclub start screen, where the screen picks the game (phones wait). lobby: that game's setup.
+export const PHASES = ['menu', 'lobby', 'playing', 'results'] as const;
 export type Phase = (typeof PHASES)[number];
 export interface Score { id: number; score: number }
 // Suggested stations for the round (see puestos.ts): the screen assigns them, the phones show them. Never enforced.
@@ -154,8 +155,10 @@ export function parseClientMessage(raw: string): ClientMsg | null {
   }
 }
 
-export type PhaseEvent = 'start' | 'timeout' | 'again';
+export type PhaseEvent = 'pick' | 'back' | 'start' | 'timeout' | 'again';
 export function nextPhase(phase: Phase, ev: PhaseEvent): Phase {
+  if (phase === 'menu' && ev === 'pick') return 'lobby';
+  if (phase === 'lobby' && ev === 'back') return 'menu';
   if (phase === 'lobby' && ev === 'start') return 'playing';
   if (phase === 'playing' && ev === 'timeout') return 'results';
   if (phase === 'results' && ev === 'again') return 'lobby';

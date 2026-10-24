@@ -50,6 +50,17 @@ describe('protocol', () => {
 });
 
 describe('phases', () => {
+  it('the menu hands over to the lobby of the picked game and back, and nothing else leaves the menu', () => {
+    expect(nextPhase('menu', 'pick')).toBe('lobby');
+    expect(nextPhase('lobby', 'back')).toBe('menu');
+    for (const ev of ['start', 'timeout', 'again', 'back'] as const) expect(nextPhase('menu', ev)).toBe('menu');
+    for (const ph of ['playing', 'results'] as const) for (const ev of ['pick', 'back'] as const) expect(nextPhase(ph, ev)).toBe(ph);
+    expect(nextPhase('lobby', 'pick')).toBe('lobby');
+  });
+  it('a phone message cannot invent a phase, and menu is a known one', () => {
+    expect(parseClientMessage('{"t":"phase","phase":"menu"}')).toEqual({ t: 'phase', phase: 'menu' });
+    expect(parseClientMessage('{"t":"phase","phase":"arena"}')).toBeNull();
+  });
   it('walks lobby -> playing -> results -> lobby', () => {
     expect(nextPhase('lobby', 'start')).toBe('playing');
     expect(nextPhase('playing', 'timeout')).toBe('results');

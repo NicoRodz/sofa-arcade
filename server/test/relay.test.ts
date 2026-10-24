@@ -99,7 +99,7 @@ describe('phases', () => {
     await Promise.all([screen.open(), a.open(), b.open()]);
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     await a.next('joined');
-    expect((await a.next('phase')).phase).toBe('lobby'); // phase right after joining
+    expect((await a.next('phase')).phase).toBe('menu'); // phase right after joining: the screen is still choosing the game
 
     screen.send({ t: 'phase', phase: 'playing' });
     expect((await a.next('phase')).phase).toBe('playing');
@@ -147,7 +147,7 @@ describe('puestos', () => {
     a.send({ t: 'puesto', puestos: ['corte'] }); // before joining: dropped
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     await a.next('joined');
-    await a.next('phase'); // lobby, right after joining
+    await a.next('phase'); // menu, right after joining
     screen.send({ t: 'phase', phase: 'playing', puestos });
     expect(await a.next('phase')).toMatchObject({ phase: 'playing', puestos });
     a.send({ t: 'puesto', puestos: ['corte'] });
@@ -224,6 +224,41 @@ describe('lobby config', () => {
     expect(next).toMatchObject({ difficulty: 'easy', controls: GAMES[0].controls, howTo: GAMES[0].howTo });
     expect(srv.relay.rooms.get('c2')!.config).not.toHaveProperty('controls'); // the room keeps only the lobby config
     [screen.ws, a.ws].forEach((w) => w.close());
+  });
+});
+
+describe('game choice (menu -> lobby)', () => {
+  it('a phone in the menu waits; the chosen game reaches it as config before the lobby phase; a late phone joins into the lobby with that game', async () => {
+    const screen = new Client('?role=screen&room=m1');
+    const a = new Client('?room=m1');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined');
+    expect((await a.next('phase')).phase).toBe('menu');
+
+    a.send({ t: 'phase', phase: 'lobby' }); // a phone does not choose: ignored
+    a.send({ t: 'config', game: 'pizzas', difficulty: 'hard', map: '3', seed: 1 });
+    await settle();
+    expect(a.msgs.filter((m) => m.t === 'phase' || m.t === 'config' && m.difficulty === 'hard')).toEqual([]);
+    expect(srv.relay.rooms.get('m1')!.phase.phase).toBe('menu');
+
+    screen.send({ t: 'config', game: 'pizzas', difficulty: 'normal', map: 'auto', seed: 1 }); // what the screen sends when a card is picked
+    screen.send({ t: 'phase', phase: 'lobby' });
+    const order = ['config', 'phase'];
+    const seen: string[] = [];
+    while (seen.length < 2) { const m = a.msgs.find((x) => order.includes(x.t) && !seen.includes(x.t)); if (m) { seen.push(m.t); a.msgs.splice(a.msgs.indexOf(m), 1); } else await new Promise((r) => setImmediate(r)); }
+    expect(seen).toEqual(['config', 'phase']); // the phone knows the game before it leaves the menu
+    expect(srv.relay.rooms.get('m1')!.phase.phase).toBe('lobby');
+
+    const b = new Client('?room=m1');
+    await b.open();
+    b.send({ t: 'join', name: 'Bo', token: 'b' });
+    expect(await b.next('config')).toMatchObject({ game: 'pizzas', controls: GAMES[0].controls });
+    expect((await b.next('phase')).phase).toBe('lobby');
+    screen.send({ t: 'phase', phase: 'menu' }); // back to the menu: every phone goes back to waiting
+    expect((await a.next('phase')).phase).toBe('menu');
+    expect((await b.next('phase')).phase).toBe('menu');
+    [screen.ws, a.ws, b.ws].forEach((w) => w.close());
   });
 });
 

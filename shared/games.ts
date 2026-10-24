@@ -10,11 +10,11 @@ export interface GameControls { stick: ControlLabel; btn1: ControlLabel; btn2: C
 export interface HowToStep { icon: IconId; text: string }
 export interface HowTo { steps: readonly HowToStep[]; note?: string }
 export interface GameInfo { controls: GameControls; howTo: HowTo }
-export interface GameDef extends GameInfo { id: string; name: string; blurb: string; players: string }
+export interface GameDef extends GameInfo { id: string; name: string; blurb: string; minPlayers: number; maxPlayers: number } // the range is inclusive; the menu card shows it and disables itself outside it
 
 export const GAMES = [
   {
-    id: 'pizzas', name: '¡Que salgan las pizzas!', blurb: 'Estira la masa, corta, hornea y entrega antes de que se acabe la paciencia.', players: '2 a 8 jugadores',
+    id: 'pizzas', name: '¡Que salgan las pizzas!', blurb: 'Estira la masa, corta, hornea y entrega antes de que se acabe la paciencia.', minPlayers: 2, maxPlayers: 8,
     controls: {
       stick: { label: 'Mover', icon: 'move' },
       btn1: { label: 'Tomar / Soltar', icon: 'grab' },
@@ -32,10 +32,20 @@ export const GAMES = [
   },
 ] as const satisfies readonly GameDef[];
 
+// Announced games: the menu shows them as a "Próximamente" card (not selectable). Not in GAMES, so config and phones never see them.
+// Once a game with the same id is published in GAMES, its announcement stops showing by itself.
+export interface SoonDef { id: string; name: string; blurb: string }
+export const COMING_SOON: readonly SoonDef[] = [
+  { id: 'obstaculos', name: 'Obstáculos en cadena', blurb: 'Cruzan juntos cinco paisajes, subiéndose unos sobre otros.' },
+  { id: 'arena', name: 'Arena de empujones', blurb: 'Empuja a tus rivales fuera de la plataforma.' },
+];
+
 export type GameId = (typeof GAMES)[number]['id'];
 export const GAME_IDS: readonly GameId[] = GAMES.map((g) => g.id);
 export const DEFAULT_GAME: GameId = GAMES[0].id;
 export const isGameId = (v: unknown): v is GameId => GAME_IDS.includes(v as GameId);
+export const playersLabel = (g: Pick<GameDef, 'minPlayers' | 'maxPlayers'>): string =>
+  g.minPlayers === g.maxPlayers ? `${g.minPlayers} jugadores` : `${g.minPlayers} a ${g.maxPlayers} jugadores`;
 export const gameName = (id: GameId): string => GAMES.find((g) => g.id === id)?.name ?? id;
 export const gameInfo = (id: string, games: readonly GameDef[] = GAMES): GameInfo => {
   const g: GameDef = games.find((x) => x.id === id) ?? games[0]!;
@@ -56,6 +66,7 @@ export function gameProblems(g: GameDef): string[] {
     if (!isIconId(c.icon)) out.push(`${name}: unknown icon ${String(c.icon)}`);
   };
   label('stick', g.controls.stick); label('btn1', g.controls.btn1); label('btn2', g.controls.btn2);
+  if (!Number.isInteger(g.minPlayers) || !Number.isInteger(g.maxPlayers) || g.minPlayers < 1 || g.maxPlayers < g.minPlayers) out.push(`players: bad range ${g.minPlayers}-${g.maxPlayers}`);
   const n = g.howTo.steps.length;
   if (n < HOWTO_MIN_STEPS || n > HOWTO_MAX_STEPS) out.push(`howTo: ${n} steps, want ${HOWTO_MIN_STEPS}-${HOWTO_MAX_STEPS}`);
   g.howTo.steps.forEach((s, i) => {
