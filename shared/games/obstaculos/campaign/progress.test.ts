@@ -21,11 +21,14 @@ function clearWorld(e: Expedition, w: string, upTo = 7, perfect = true): Expedit
 }
 
 describe('S2\'s catalog adapted to the interface', () => {
-  it('has the built levels only (Playa 1-1..1-7), one boss, the world order of the plan and the practice stations', () => {
+  it('has the built levels only (Playa, Bosque and Glaciar, 1-1..3-7), one boss each, the world order of the plan and the practice stations', () => {
     const c = CAMPAIGN_CATALOG;
-    expect(c.worlds.map((w) => w.biome)).toEqual(['beach']); // the other worlds appear as their levels get built
+    expect(c.worlds.map((w) => w.biome)).toEqual(['beach', 'forest', 'glacier']); // Mina and Volcán appear as their levels get built (A6)
     expect(pathOf(c, '1').map((l) => l.id)).toEqual(['1-1', '1-2', '1-3', '1-4', '1-5', '1-6', '1-7']);
-    expect(pathOf(c, '1').filter((l) => l.kind === 'boss').map((l) => l.id)).toEqual(['1-7']);
+    expect(pathOf(c, '2').map((l) => l.id)).toEqual(['2-1', '2-2', '2-3', '2-4', '2-5', '2-6', '2-7']);
+    expect(pathOf(c, '3').map((l) => l.id)).toEqual(['3-1', '3-2', '3-3', '3-4', '3-5', '3-6', '3-7']);
+    for (const w of ['1', '2', '3']) expect(pathOf(c, w).filter((l) => l.kind === 'boss').map((l) => l.id)).toEqual([`${w}-7`]);
+    expect(levelById(c, '2-6')?.mode).toBe('free'); // Escarabajos is Libres, 2-5 (E/L) plays Encadenados
     expect(new Set(c.levels.map((l) => l.id)).size).toBe(c.levels.length);
     expect(c.levels.every((l) => l.validatedFor.includes(2) && l.collectibles === 3 && l.botMs! > 0)).toBe(true);
     expect(levelById(c, '1-1')?.mode).toBe('free'); // plan: 1-1 is Libres

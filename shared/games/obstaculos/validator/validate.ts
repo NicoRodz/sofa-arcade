@@ -210,6 +210,7 @@ export function mechanicOf(g: Graph, e: Edge, p?: ParsedLevel): ModeledMechanic 
     case 'jump': return g.segs[e.from]?.tramp || g.segs[e.to]?.tramp ? 'spring' : e.plan && e.plan.trigger !== 'walk' ? 'jump' : null;
     case 'tower': case 'hand': case 'throw': case 'swing': case 'ladder': return e.kind;
     case 'climb': return 'pickaxe';
+    case 'superjump': return 'superjump';
     case 'ride': return e.obj && p?.objects[e.obj]?.param?.kind === 'balance' ? 'balance' : 'mover';
   }
 }

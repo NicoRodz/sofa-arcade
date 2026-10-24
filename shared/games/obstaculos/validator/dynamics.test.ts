@@ -1,4 +1,4 @@
-// What the validator models of the A5 dynamics (sim/campaign.ts header lists it): the throw niche, balance with 2, target, pickaxe climbs and ice friction in trajectories.
+// What the validator models of the A5 dynamics (sim/campaign.ts header lists it): the throw niche, balance with 2, target, pickaxe climbs, ice friction in trajectories and (A5 part S2) the super jump.
 // Wind and soft enemies are NOT modelled on purpose (see the header of sim/campaign.ts): there is no test here that pretends they are.
 import { describe, expect, it } from 'vitest';
 import { TILE } from '../constants';
@@ -173,5 +173,52 @@ describe('ice in the validator: the trajectories run with the campaign friction'
     expect(legacy.params.iceFriction).toBeUndefined();
     const c = buildGraph(p, { n: 2, mode: 'chain', diff: 'hard', world: 'forest' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
     expect(c.params.iceFriction).toBe(0.15);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------
+// Super jump (A5 part S2): modelled for the partner that jumped FIRST (its boost arrives `window` steps after its jump), both jump, so followers get the edge too.
+describe('super jump: a gap and a ledge that no jump, tower, hand or throw reaches', () => {
+  // low floor (standing row 17) to col 14, a `gap`-wide pit (liquid at the bottom), a floor `rise` rows higher
+  const ledge = (gap: number, rise: number): LevelDef => {
+    const rows = Array.from({ length: 24 }, (_, y) => {
+      const cs = '.'.repeat(60).split('');
+      for (let x = 0; x < 60; x++) {
+        if (x < 15) { if (y >= 18) cs[x] = '#'; }
+        else if (x < 15 + gap) { if (y >= 22) cs[x] = '~'; }
+        else if (y >= 18 - rise) cs[x] = '#';
+      }
+      if (y === 17) cs[3] = 'S';
+      if (y === 17 - rise) cs[55] = 'G';
+      return cs.join('');
+    });
+    return def(rows, { tether: 'chainOnly', biome: 'forest' });
+  };
+  const tools = only('jump', 'tower', 'hand', 'throw');
+  it('rise 4, gap 4: everything else fails, the super jump crosses it for the pair and the record shows the use', () => {
+    const d = ledge(4, 4);
+    expect(validateState(d, camp('chain', tools)).errors.join()).toMatch(/pioneer cannot reach G/);
+    const r = validateState(d, camp('chain', only('jump', 'tower', 'hand', 'throw', 'superjump')));
+    expect(r.ok).toBe(true);
+    expect(r.uses.superjump).toBeGreaterThanOrEqual(1);
+    expect(r.path.some((e) => e.kind === 'superjump')).toBe(true);
+    expect(r.followPath.some((e) => e.kind === 'superjump')).toBe(true); // both jump: the follower rides the same edge
+  });
+  it('rise 3, gap 5 is also only theirs; rise 4, gap 5 is out of reach even for the pessimistic partner (jumped 150 ms earlier)', () => {
+    expect(validateState(ledge(5, 3), camp('chain', tools)).ok).toBe(false);
+    expect(validateState(ledge(5, 3), camp('chain', only('jump', 'superjump'))).ok).toBe(true);
+    expect(validateState(ledge(5, 4), camp('chain')).ok).toBe(false);
+  });
+  it('free mode gets it too; outside a campaign world, or with other than 2 players, it is not modelled', () => {
+    expect(validateState({ ...ledge(4, 4), tether: 'freeOnly' }, camp('free', only('jump', 'superjump'))).ok).toBe(true);
+    expect(validateState(ledge(4, 4), { n: 2, mode: 'chain', diff: 'hard' }).ok).toBe(false);
+    expect(validateState({ ...ledge(4, 4), players: { min: 3, max: 3 } }, { n: 3, mode: 'chain', diff: 'hard', world: 'forest' }).ok).toBe(false);
+  });
+  it('every super jump plan carries the pessimistic delay (the 150 ms window = 9 steps), needs a partner and is a timing edge', () => {
+    // delaying the boost lowers the peak, so the validator's reach is the safe one: the real sim's simultaneous pair is at least that good (campaign/realsim.test.ts runs it)
+    const g = buildGraph(parseLevel(ledge(4, 4)), { n: 2, mode: 'chain', diff: 'hard', world: 'forest' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
+    const sj = g.adj.flat().filter((e) => e.kind === 'superjump');
+    expect(sj.length).toBeGreaterThan(0);
+    expect(sj.every((e) => e.plan!.boost! > 0 && e.plan!.boostDelay === 9 && e.coop && e.timing)).toBe(true);
   });
 });
