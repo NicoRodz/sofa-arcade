@@ -75,9 +75,9 @@ export class StationViews {
     } else if (st.kind === 'pot') {
       v.glow = s.add.image(cx, cy + TILE * 0.25, 'fx_glow').setScale((U * 1.6) / R * 2).setDepth(d - 3).setAlpha(0.2).setBlendMode(Phaser.BlendModes.ADD);
       v.flames = [0, 1, 2].map((i) => place(s, `flame_${i}`, cx + (i - 1) * TILE * 0.17, cy + TILE * (i === 1 ? 0.2 : 0.27), 0.7).setDepth(d - 2.5).setAlpha(0.65));
-      v.rawPizza = place(s, foodKey('pizza_raw'), cx, cy + TILE * 0.3, 0.62).setDepth(d - 2).setVisible(false);
-      v.donePizza = place(s, foodKey('pizza_done'), cx, cy + TILE * 0.3, 0.62).setDepth(d - 2).setVisible(false);
-      v.mini = place(s, foodKey('dough_str'), cx, cy + TILE * 0.3, 0.5).setDepth(d - 2).setVisible(false);
+      v.rawPizza = place(s, foodKey('pizza_raw'), cx, cy + TILE * 0.2, 0.78).setDepth(d - 2).setVisible(false);
+      v.donePizza = place(s, foodKey('pizza_done'), cx, cy + TILE * 0.2, 0.78).setDepth(d - 2).setVisible(false);
+      v.mini = place(s, foodKey('dough_str'), cx, cy + TILE * 0.22, 0.62).setDepth(d - 2).setVisible(false);
       v.ring = s.add.graphics().setDepth(3000);
     }
     return v;
@@ -142,7 +142,7 @@ export class StationViews {
     if (v.flick <= 0) {
       v.flick = 90;
       const base = (0.7 * U) / R;
-      v.flames!.forEach((f) => f.setScale(base * (cooking ? 1.1 : 0.85), base * (0.9 + Math.random() * 0.2) * (cooking ? 1.3 : lit ? 1 : 0.75)).setAlpha(lit ? 0.95 : 0.55));
+      v.flames!.forEach((f) => f.setScale(base * (cooking ? 1.1 : 0.85), base * (0.9 + Math.random() * 0.2) * (cooking ? 1.3 : lit ? 1 : 0.75)).setAlpha(lit ? 0.95 : 0.8));
     }
     v.glow!.setAlpha(lit ? 0.55 + Math.sin(this.t / 90) * 0.08 : 0.2);
     // contents
@@ -156,13 +156,13 @@ export class StationViews {
     // ring around the icon: amber arc while cooking, solid green when ready
     const g = v.ring!; g.clear();
     if (cooking || st.done) {
-      const r = TILE * 0.3, y = v.cy + TILE * 0.3 - TILE * 0.0;
+      const r = TILE * 0.22, y = v.cy + TILE * 0.2 + 2;
       g.lineStyle(7, 0x2b1b17, 0.9).strokeCircle(v.cx, y - 2, r + 2);
       if (st.done) g.lineStyle(6, hexNum(C.basil), 1).strokeCircle(v.cx, y - 2, r + 2);
       else { g.lineStyle(6, hexNum(progressColor(st.progress)), 1); g.beginPath(); g.arc(v.cx, y - 2, r + 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * st.progress, false); g.strokePath(); }
     }
     if (st.done && !v.wasDone) {
-      this.fx.ring(v.cx, v.cy + TILE * 0.28, hexNum(C.basil), 0.5, 1.8);
+      this.fx.ring(v.cx, v.cy + TILE * 0.2, hexNum(C.basil), 0.4, 1.4);
       const d = v.donePizza!, k = d.scaleX;
       this.scene.tweens.add({ targets: d, scaleX: k * 1.3, scaleY: k * 1.3, duration: 120, yoyo: true, ease: 'sine.out' });
     }
