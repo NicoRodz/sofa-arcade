@@ -6,7 +6,7 @@ import {
 import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/difficulty';
 import { GAMES } from '@party/shared/games';
 import { generate, resolveMap } from '@party/shared/generate';
-import { MAP_IDS, fixedMap, type MapChoice } from '@party/shared/maps';
+import { MAP_IDS, fixedMap, isMapChoice, type MapChoice } from '@party/shared/maps';
 import { gameBus } from './bus';
 import { percentile } from '@party/shared/stats';
 import {
@@ -342,7 +342,7 @@ $('diffs').addEventListener('click', (e) => {
 });
 $('maps').addEventListener('click', (e) => {
   const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map as MapChoice | undefined;
-  if (m && (m === 'auto' || MAP_IDS.includes(m))) setConfig({ map: m });
+  if (isMapChoice(m)) setConfig({ map: m });
 });
 $('again-seed').addEventListener('click', () => setConfig({ seed: (config.seed + 1) % 2 ** 32 }));
 $('start').addEventListener('click', () => dispatch('start'));
