@@ -7,7 +7,7 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/dif
 import { GAMES } from '@party/shared/games';
 import { howToHtml } from '@party/shared/render';
 import { generate, resolveMap } from '@party/shared/generate';
-import { FIXED_MAPS, MAP_IDS, fixedMap, isMapChoice, type MapChoice } from '@party/shared/maps';
+import { defaultMap, fixedMap, isMapChoice, lobbyMaps, lobbyN, mapFeatures, mapStatus, replacementMap, type MapChoice } from '@party/shared/maps';
 import { initAudio } from './audio';
 import { gameBus } from './bus';
 import { chefCanvas } from './art/chef';
@@ -37,6 +37,7 @@ const pendingLag: { id: number; sendServerTime: number }[] = [];
 const csv: string[] = [];
 const sync = new ClockSync();
 const $ = (id: string) => document.getElementById(id)!;
+const connectedN = () => lobbyN([...players.values()].filter((p) => p.info.connected).length);
 const room = (() => {
   const q = new URLSearchParams(location.search).get('room');
   try {
@@ -48,6 +49,9 @@ const room = (() => {
 let phase: Phase = 'lobby';
 let config: LobbyConfig = { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 };
 let game = createGame();
+const played = new Set<string>(); // fixed maps already played in this session: the lobby proposes a new one by default
+let mapTouched = false; // the host picked a map by hand: stop proposing defaults
+let mapNotice = '';
 let debugOverride = false;
 let screenRtt = NaN;
 let totalPkts = 0;
@@ -91,12 +95,14 @@ function setPhase(next: Phase) {
   if (next === phase) return;
   phase = next;
   if (phase === 'playing') {
-    const map = resolveMap(config.map, config.seed, config.difficulty, players.size, Math.random);
-    game = createGame({ difficulty: config.difficulty, n: players.size, rows: map.rows, countdownMs: COUNTDOWN_MS, bus: gameBus });
+    const n = connectedN();
+    const map = resolveMap(config.map, config.seed, config.difficulty, n, Math.random);
+    game = createGame({ difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
+    played.add(map.id);
     for (const p of players.values()) { addPlayer(game, p.info.id, p.info.slot); p.pendA = 0; }
     overAt = null;
     stats.delivered.clear(); stats.expired = 0;
-    scene.startRound(game, FIXED_MAPS.find((m) => m.rows === map.rows)?.id ?? 'random', config.seed);
+    scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
   else if (phase === 'lobby') scene.endRound();
   // cooperative: every player carries the team score
@@ -304,6 +310,22 @@ function renderChips() {
 }
 
 let lastMapKey = '';
+// Keeps the selection useful for the people connected: proposes a default until the host picks by hand, and moves off a map
+// that got blocked because someone joined or left (saying so).
+function syncMap(n: number) {
+  const patch = (map: MapChoice) => { config = { ...config, map }; sendMsg({ t: 'config', ...config }); };
+  if (!mapTouched) {
+    const d = defaultMap(n, played).id;
+    if (config.map !== d) patch(d);
+    return;
+  }
+  const cur = isMapChoice(config.map) && config.map !== 'auto' && config.map !== 'random' ? fixedMap(config.map) : undefined;
+  if (cur && mapStatus(cur, n).state === 'blocked') {
+    const r = replacementMap(cur, n);
+    mapNotice = `${cur.name} no sirve con ${n} ${n === 1 ? 'jugador' : 'jugadores'}: se cambió a ${r.name}`;
+    patch(r.id);
+  } else if (!cur) mapNotice = '';
+}
 function renderUi() {
   const lobby = phase === 'lobby';
   $('lobbybg').classList.toggle('off', !lobby);
@@ -313,14 +335,23 @@ function renderUi() {
   if (!lobby) return;
   setHtml('games', GAMES.map((g) => `<button class="pill ${g.id === config.game ? 'sel' : ''}" id="gamepill" data-game="${g.id}" title="${esc(g.blurb)}">${g.name}</button>`).join(''));
   setHtml('diffs', DIFFICULTIES.map((d) => `<button class="pill ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join(''));
-  const mapLabel = (id: string) => `${id} ${fixedMap(id)!.name}`;
-  setHtml('maps', [['auto', 'Al azar'], ...MAP_IDS.map((id) => [id, mapLabel(id)]), ['random', 'Mapa aleatorio']]
-    .map(([id, label]) => `<button class="pill ${id === config.map ? 'sel' : ''}" data-map="${id}">${label}</button>`).join(''));
   const list = [...players.values()];
+  const n = connectedN();
+  syncMap(n);
+  const cards = lobbyMaps(n).map(({ map, status }) => {
+    const f = mapFeatures(map.rows);
+    const cls = `mc ${status.state === 'recommended' ? 'rec' : status.state === 'warn' ? 'warn' : 'blk'} ${map.id === config.map ? 'sel' : ''}`;
+    const tags = `${f.cheese ? '<i class="tag" title="Queso: Margarita">Q</i>' : ''}${f.sink ? '<i class="tag l" title="Lavado de platos">L</i>' : ''}`;
+    return `<button class="${cls}" data-map="${map.id}"><span class="t"><b>${map.id}</b>${esc(map.name)}</span><span class="m">${map.nMin}-${map.nMax}<span class="st">${'★'.repeat(map.stars)}</span>${tags}</span>${status.state === 'recommended' ? '' : `<span class="why">${status.reason}</span>`}</button>`;
+  });
+  const special = [['auto', 'Aleatorio', 'entre los recomendados'], ['random', 'Mapa generado', 'semilla nueva']]
+    .map(([id, label, sub]) => `<button class="mc special ${id === config.map ? 'sel' : ''}" data-map="${id}"><span class="t">${label}</span><span class="m">${sub}</span></button>`);
+  setHtml('maps', [...cards, ...special].join(''));
+  $('mapfor').textContent = `· para ${n} ${n === 1 ? 'jugador' : 'jugadores'}`;
   const rand = config.map === 'random';
   $('seedrow').classList.toggle('off', !rand);
   $('seed').textContent = String(config.seed);
-  const gen = rand ? generate(config.seed, config.difficulty, list.length) : null;
+  const gen = rand ? generate(config.seed, config.difficulty, n) : null;
   const shown = gen ? { rows: gen.rows } : config.map === 'auto' ? null : fixedMap(config.map);
   const key = shown ? shown.rows.join('') : 'none';
   if (key !== lastMapKey) {
@@ -328,9 +359,13 @@ function renderUi() {
     const cv = $('minimap') as HTMLCanvasElement;
     if (shown) drawMiniMap(cv, shown.rows); else { const c = cv.getContext('2d')!; c.fillStyle = '#3A2A24'; c.fillRect(0, 0, cv.width, cv.height); c.fillStyle = '#FFF4E0'; c.font = '800 54px ui-rounded, system-ui'; c.textAlign = 'center'; c.fillText('?', cv.width / 2, cv.height / 2 + 18); }
   }
-  $('mapinfo').textContent = gen && !gen.inBand ? 'Esta semilla no cae en la banda de la dificultad: se usa el mapa válido más cercano'
-    : list.length > 4 && !rand ? 'Mapa pensado para 2 a 4: los extra aparecen junto a un punto de inicio' : '';
-  const pr = params(config.difficulty, list.length);
+  const sel = config.map === 'auto' || config.map === 'random' ? null : fixedMap(config.map);
+  const selStatus = sel ? mapStatus(sel, n) : null;
+  const info = $('mapinfo');
+  info.textContent = mapNotice || (gen && !gen.inBand ? 'Esta semilla no cae en la banda de la dificultad: se usa el mapa válido más cercano'
+    : selStatus?.state === 'warn' ? `${sel!.name}: ${selStatus.reason}. Con ${n} se puede, pero cuesta` : '');
+  info.classList.toggle('notice', !!mapNotice);
+  const pr = params(config.difficulty, n);
   $('diffinfo').textContent = `Pedido cada ${(pr.orderEveryMs / 1000).toFixed(0)} s, paciencia ${pr.orderTtlMs / 1000} s, hasta ${pr.maxOrders} pedidos`;
   renderChips();
   ($('start') as HTMLButtonElement).disabled = !canStart(list.map((p) => p.info));
@@ -393,7 +428,11 @@ $('diffs').addEventListener('click', (e) => {
 });
 $('maps').addEventListener('click', (e) => {
   const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map as MapChoice | undefined;
-  if (isMapChoice(m)) setConfig({ map: m });
+  if (!isMapChoice(m)) return;
+  const f = m === 'auto' || m === 'random' ? null : fixedMap(m);
+  if (f && mapStatus(f, connectedN()).state === 'blocked') return;
+  mapTouched = true; mapNotice = '';
+  setConfig({ map: m });
 });
 $('again-seed').addEventListener('click', () => setConfig({ seed: (config.seed + 1) % 2 ** 32 }));
 $('start').addEventListener('click', () => startRound());

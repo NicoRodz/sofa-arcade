@@ -50,23 +50,23 @@
   #start { position: absolute; left: 80px; top: 872px; width: 520px; height: 96px; font-size: 44px; }
   #starthint { position: absolute; left: 80px; top: 976px; width: 520px; text-align: center; font: 600 22px var(--font); color: rgba(255,244,224,.7); }
 
-  #chips { position: absolute; left: 650px; top: 200px; width: 1190px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
-  .chip { height: 112px; border: 4px solid var(--c, var(--muted)); border-radius: 16px; background: var(--cream); box-shadow: 0 6px 0 rgba(43,27,23,.25); position: relative; display: flex; align-items: center; padding-left: 12px; gap: 14px; overflow: hidden; }
+  #chips { position: absolute; left: 650px; top: 200px; width: 1190px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .chip { height: 112px; border: 4px solid var(--c, var(--muted)); border-radius: 16px; background: var(--cream); box-shadow: 0 6px 0 rgba(43,27,23,.25); position: relative; display: flex; align-items: center; padding-left: 8px; gap: 8px; overflow: hidden; }
   .chip .av { width: 74px; height: 102px; flex: none; position: relative; }
   .chip .av canvas { position: absolute; left: 0; bottom: 0; width: 72px; height: 102px; transform-origin: 50% 100%; animation: breathe .9s ease-in-out infinite alternate; }
   @keyframes breathe { from { transform: scaleY(1) translateY(0); } to { transform: scaleY(1.03) translateY(-1px); } }
-  .chip .nm { font: 800 40px/1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
-  .chip .sub { font: 600 22px var(--font); color: var(--muted); margin-top: 4px; }
-  .chip .num { position: absolute; right: 14px; top: 10px; width: 44px; height: 44px; border-radius: 50%; background: var(--c); border: 3px solid var(--ink); color: #fff; font: 800 26px/38px var(--font); text-align: center; text-shadow: 0 2px 0 rgba(0,0,0,.35); }
+  .chip .nm { font: 800 30px/1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+  .chip .sub { font: 600 18px var(--font); color: var(--muted); margin-top: 4px; }
+  .chip .num { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px; border-radius: 50%; background: var(--c); border: 3px solid var(--ink); color: #fff; font: 800 20px/28px var(--font); text-align: center; text-shadow: 0 2px 0 rgba(0,0,0,.35); }
   .chip.empty { background: rgba(255,244,224,.08); border-style: dashed; border-color: rgba(255,244,224,.28); box-shadow: none; }
   .chip.empty .av canvas { display: none; }
-  .chip.empty .nm { color: rgba(255,244,224,.55); font-size: 30px; }
+  .chip.empty .nm { color: rgba(255,244,224,.55); font-size: 24px; }
   .chip.empty .num { background: transparent; border: 3px dashed rgba(255,244,224,.28); color: rgba(255,244,224,.4); text-shadow: none; }
   .chip.gone { filter: grayscale(.8); opacity: .6; }
   .chip.pop { animation: chippop .45s cubic-bezier(.2,1.6,.4,1); }
   @keyframes chippop { from { transform: scale(.85) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
 
-  #setup { position: absolute; left: 650px; top: 716px; width: 1190px; height: 334px; padding: 14px 26px; }
+  #setup { position: absolute; left: 650px; top: 470px; width: 1190px; height: 580px; padding: 14px 26px; }
   #setup h3 { margin: 0 0 8px; font: 800 22px var(--font); letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
   .seg { display: flex; flex-wrap: wrap; gap: 8px; }
   .pill { height: 52px; padding: 0 20px; border: 3px solid var(--ink); border-radius: 26px; background: #F1E3C6; color: var(--ink); font: 800 24px var(--font); transition: transform .1s; }
@@ -75,8 +75,28 @@
   .hint { font: 600 22px var(--font); color: var(--muted); margin-top: 8px; min-height: 28px; }
   #setup .row { display: flex; gap: 40px; }
   #gamepill { background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); color: #fff; text-shadow: 0 2px 0 rgba(43,27,23,.4); }
-  #minimap { position: absolute; right: 26px; top: 96px; border: 4px solid var(--ink); border-radius: 10px; background: #2b1b17; width: 232px; height: 130px; }
+  #maps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .mc { height: 92px; padding: 6px 10px; border: 3px solid var(--ink); border-radius: 14px; background: #F1E3C6; color: var(--ink); text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 2px; transition: transform .1s; min-width: 0; }
+  .mc:hover { transform: scale(1.03); }
+  .mc .t { font: 800 21px/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc .t b { color: var(--tomato2); margin-right: 6px; }
+  .mc .m { font: 700 17px/1.1 var(--font); color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .mc .st { color: #B9770E; letter-spacing: 1px; }
+  .mc .tag { font: 800 13px/18px var(--font); font-style: normal; padding: 0 6px; border-radius: 9px; border: 2px solid var(--ink); background: var(--cheese); color: var(--ink); }
+  .mc .tag.l { background: #9AD0EE; }
+  .mc .why { font: 700 15px/1.1 var(--font); color: #B9770E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc.rec { background: #F6E8CB; }
+  .mc.warn { border-style: dashed; }
+  .mc.blk { opacity: .45; filter: grayscale(.85); cursor: not-allowed; }
+  .mc.blk:hover { transform: none; }
+  .mc.blk .why { color: var(--muted); }
+  .mc.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); color: var(--cream); text-shadow: 0 2px 0 rgba(43,27,23,.4); }
+  .mc.sel .t b, .mc.sel .m, .mc.sel .st, .mc.sel .why { color: var(--cream); }
+  .mc.special { background: #E6D5AF; justify-content: center; }
+  .mc.special.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+  #minimap { position: absolute; right: 26px; top: 12px; border: 4px solid var(--ink); border-radius: 10px; background: #2b1b17; width: 232px; height: 130px; }
   #hints { position: absolute; left: 26px; right: 26px; bottom: 10px; }
+  #hints .hint.notice { color: var(--tomato2); }
   #hints .hint { margin: 0; min-height: 30px; }
   #seedrow { margin-top: 8px; font: 600 22px var(--font); color: var(--muted); }
   #seedrow b { color: var(--ink); }
@@ -158,8 +178,8 @@
         <div><h3>Juego</h3><div id="games" class="seg"></div></div>
         <div><h3>Dificultad</h3><div id="diffs" class="seg"></div></div>
       </div>
-      <h3 style="margin-top:10px">Mapa</h3>
-      <div id="maps" class="seg" style="width: 880px"></div>
+      <h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
+      <div id="maps"></div>
       <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
       <canvas id="minimap" width="232" height="130"></canvas>
       <div id="hints"><div id="diffinfo" class="hint"></div><div id="mapinfo" class="hint"></div></div>

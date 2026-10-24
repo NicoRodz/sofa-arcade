@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FIXED_MAPS, fixedMap, parseMap } from './maps';
-import { analyze, validate } from './validate';
+import { analyze, minPlayers, validate, validateMap } from './validate';
 
 const rowsOf = (id: string) => [...fixedMap(id)!.rows];
 const edit = (rows: string[], cells: [number, number, string][]) => {
@@ -44,5 +44,39 @@ describe('validate', () => {
   it('the corridor map is one connected region, the river map has two', () => {
     expect(analyze(parseMap(rowsOf('4'))).count).toBe(1);
     expect(analyze(parseMap(rowsOf('3'))).count).toBe(2);
+  });
+});
+
+describe('validateMap: one test per fixed map', () => {
+  it('map 1 Cocina abierta: valid, one region, 4 spawns for its max of 4', () => {
+    const m = fixedMap('1')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    // sabotage: without its only delivery counter the map is unsolvable
+    const rows = edit([...m.rows], [[15, 4, 'C']]);
+    expect(validateMap({ ...m, rows }).errors.join()).toMatch(/missing station E/);
+  });
+  it('map 2 Isla central: valid with 5 spawns for its max of 5', () => {
+    const m = fixedMap('2')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(validateMap({ ...m, rows: edit([...m.rows], [[8, 6, '.']]) }).errors.join()).toMatch(/4 spawns for up to 5/);
+  });
+  it('map 3 El río: valid, needs one player per bank; no ford = no recipe', () => {
+    const m = fixedMap('3')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(minPlayers(parseMap([...m.rows]))).toBe(2);
+    const cut = edit([...m.rows], [[7, 2, '~'], [7, 4, '~'], [7, 6, '~']]);
+    expect(validateMap({ ...m, rows: cut }).errors.join()).toMatch(/no route K -> O/);
+  });
+  it('map 4 Pasillo: valid; walling the only gap splits the kitchen', () => {
+    const m = fixedMap('4')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    const walled = edit([...m.rows], [[6, 4, '#'], [7, 4, '#'], [8, 4, '#'], [9, 4, '#']]);
+    expect(validateMap({ ...m, rows: walled }).ok).toBe(false);
+  });
+  it('map 5 Cinta: valid with 6 spawns; its minDuro is 2 because the belt is two counters over water', () => {
+    const m = fixedMap('5')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(validateMap({ ...m, minDuro: 1 }).errors.join()).toMatch(/minDuro is 1 but the recipe needs 2/);
+    expect(validateMap({ ...m, rows: edit([...m.rows], [[7, 2, '~'], [7, 6, '~']]) }).errors.join()).toMatch(/no route/);
   });
 });

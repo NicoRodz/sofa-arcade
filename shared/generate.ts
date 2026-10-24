@@ -163,7 +163,8 @@ export function generate(seed: number, diff: Difficulty, n: number, maxAttempts 
 }
 
 // The map a lobby choice stands for. "random" is generated from the lobby seed; the rest are fixed maps.
-export function resolveMap(choice: MapChoice, seed: number, diff: Difficulty, n: number, rand: Rng): { name: string; rows: readonly string[] } {
-  if (choice === 'random') return { name: `Aleatorio ${seed}`, rows: generate(seed, diff, n).rows };
-  return pickFixedMap(choice, diff, rand);
+export function resolveMap(choice: MapChoice, seed: number, diff: Difficulty, n: number, rand: Rng): { id: string; name: string; rows: readonly string[]; spawns?: readonly Pos[] } {
+  if (choice === 'random') return { id: 'random', name: `Aleatorio ${seed}`, rows: generate(seed, diff, n).rows };
+  const m = pickFixedMap(choice, diff, rand, n);
+  return { id: m.id, name: m.name, rows: m.rows, spawns: m.spawns };
 }

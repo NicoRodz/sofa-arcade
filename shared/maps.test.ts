@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTIES } from './difficulty';
-import { FIXED_MAPS, MAPS_BY_DIFFICULTY, MAP_H, MAP_W, fixedMap, isFloor, parseMap, pickFixedMap, spawnPoints } from './maps';
+import { FIXED_MAPS, MAPS_BY_DIFFICULTY, MAP_H, MAP_W, defaultMap, fixedMap, isFloor, lobbyMaps, lobbyN, mapStatus, parseMap, pickFixedMap, recommendedMaps, replacementMap, spawnPoints } from './maps';
 
 describe('fixed maps', () => {
   it('are five 16x9 grids with known characters only', () => {
@@ -56,5 +56,41 @@ describe('spawnPoints', () => {
     expect(new Set(pts.map(([x, y]) => `${x},${y}`)).size).toBe(5);
     const [sx, sy] = pts[0]!;
     for (const [x, y] of pts.slice(1)) expect(Math.abs(x - sx) + Math.abs(y - sy)).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('lobby: map status by connected players', () => {
+  const st = (id: string, n: number) => mapStatus(fixedMap(id)!, n);
+  it('recommended inside nMin..nMax, warned between minDuro and nMin, blocked outside', () => {
+    expect(st('1', 3).state).toBe('recommended');
+    expect(st('5', 2)).toEqual({ state: 'warn', reason: 'pensado para 3+' });
+    expect(st('3', 1)).toEqual({ state: 'blocked', reason: 'necesita 2+ jugadores' });
+    expect(st('1', 1)).toEqual({ state: 'warn', reason: 'pensado para 2+' });
+    expect(st('1', 5)).toEqual({ state: 'blocked', reason: 'hasta 4 jugadores' });
+  });
+  it('orders recommended first (fewer stars first, then nearest to the middle of the range), then warned, then blocked', () => {
+    const l = lobbyMaps(4);
+    expect(l.map((x) => x.map.id)).toEqual(['2', '1', '5', '3', '4']);
+    const states = l.map((x) => x.status.state);
+    expect(states).toEqual([...states].sort((a, b) => ({ recommended: 0, warn: 1, blocked: 2 })[a] - ({ recommended: 0, warn: 1, blocked: 2 })[b]));
+    expect(recommendedMaps(4).map((m) => m.id)).toEqual(['2', '1', '5', '3', '4']);
+    expect(recommendedMaps(6).map((m) => m.id)).toEqual(['5']);
+  });
+  it('the default is the first recommended map not played yet; once all were played, the first recommended', () => {
+    expect(defaultMap(4, new Set()).id).toBe('2');
+    expect(defaultMap(4, new Set(['1', '2'])).id).toBe('5');
+    expect(defaultMap(4, new Set(['1', '2', '3', '4', '5'])).id).toBe('2');
+  });
+  it('a blocked selection is replaced by the recommended map of closest complexity', () => {
+    expect(replacementMap(fixedMap('3')!, 6).id).toBe('5'); // 3 tops out at 4 players
+    expect(replacementMap(fixedMap('1')!, 5).id).toBe('2');
+  });
+  it('"auto" draws among the maps recommended for N', () => {
+    expect(pickFixedMap('auto', 'easy', () => 0, 6).id).toBe('5');
+    expect(pickFixedMap('auto', 'easy', () => 0.99, 5).id).toBe('5');
+  });
+  it('zero players count as two', () => {
+    expect(lobbyN(0)).toBe(2);
+    expect(lobbyN(1)).toBe(1);
   });
 });

@@ -74,15 +74,16 @@ export function floorComponents(g: Grid, skip?: string): { comp: number[][]; cou
 
 // One spawn tile per slot: the S tiles in reading order, taking turns between floor regions so split maps get
 // players on both sides, then the free floor nearest to a spawn (BFS) for extra players.
-export function spawnPoints(g: Grid, count: number): [number, number][] {
+export function spawnPoints(g: Grid, count: number, order?: readonly Pos[]): [number, number][] {
   const { comp } = floorComponents(g);
   const groups = new Map<number, [number, number][]>();
   g.forEach((row, y) => row.forEach((t, x) => {
     if (t.kind === 'floor' && t.spawn) groups.set(comp[y]![x]!, [...(groups.get(comp[y]![x]!) ?? []), [x, y]]);
   }));
   const lists = [...groups.entries()].sort((p, q) => p[0] - q[0]).map(([, l]) => l);
-  const base: [number, number][] = [];
+  let base: [number, number][] = [];
   for (let i = 0; base.length < lists.reduce((n, l) => n + l.length, 0); i++) for (const l of lists) if (l[i]) base.push(l[i]!);
+  if (order) base = order.filter(([x, y]) => g[y]?.[x]?.kind === 'floor').map(([x, y]): [number, number] => [x, y]);
   if (!base.length) return [];
   const used = new Set(base.map(([x, y]) => `${x},${y}`));
   const out = base.slice(0, count);
@@ -112,13 +113,20 @@ export interface MapDef {
   id: string;
   name: string;
   rows: readonly string[];
+  nMin: number; // recommended team size range (a validator test pins nMax <= number of S)
+  nMax: number;
+  minDuro: number; // fewest players that can still finish the recipe (a test derives it from the floor regions)
+  stars: 1 | 2 | 3; // the map's own complexity, independent of the Fácil/Normal/Difícil selector
+  spawns?: readonly Pos[]; // explicit spawn order when reading order is not the order the author wants
 }
 
+// Spawns: the 'S' tiles are the spawn slots; slot i goes to the i-th chef (see puestos: spawn i sits next to puesto i).
+// minDuro is derived (validate.minPlayers): the river maps 3 and 5 need one player per bank (the design guessed 1 for map 5).
 // Map 5 is drawn with the conveyor belt (design section 2) in the design doc; the belt is not implemented,
 // so this uses the documented fallback: the belt becomes a second passing counter at (7, 2).
 export const FIXED_MAPS: readonly MapDef[] = [
   {
-    id: '1', name: 'Cocina abierta',
+    id: '1', name: 'Cocina abierta', nMin: 2, nMax: 4, minDuro: 1, stars: 1,
     rows: [
       '##C1C2CKCKCOCOC#',
       '#..............#',
@@ -132,7 +140,7 @@ export const FIXED_MAPS: readonly MapDef[] = [
     ],
   },
   {
-    id: '2', name: 'Isla central',
+    id: '2', name: 'Isla central', nMin: 2, nMax: 5, minDuro: 1, stars: 1,
     rows: [
       '##CCCKCCKCCCCC##',
       '#..............#',
@@ -140,13 +148,13 @@ export const FIXED_MAPS: readonly MapDef[] = [
       'C...CCCCCCC....C',
       '2...CCCCCCC....O',
       'C..............C',
-      'P..S.S....S.S..C',
+      'P..S.S..S.S.S..C',
       '#..............#',
       '##CCCCCCCCCCCE##',
     ],
   },
   {
-    id: '3', name: 'El río',
+    id: '3', name: 'El río', nMin: 2, nMax: 4, minDuro: 2, stars: 2,
     rows: [
       '##1C2CK~CCOCOC##',
       '#......~.......#',
@@ -160,7 +168,7 @@ export const FIXED_MAPS: readonly MapDef[] = [
     ],
   },
   {
-    id: '4', name: 'Pasillo',
+    id: '4', name: 'Pasillo', nMin: 2, nMax: 4, minDuro: 1, stars: 2,
     rows: [
       '#1C2CK####COCOC#',
       '#.....####.....#',
@@ -174,11 +182,11 @@ export const FIXED_MAPS: readonly MapDef[] = [
     ],
   },
   {
-    id: '5', name: 'Cinta',
+    id: '5', name: 'Cinta', nMin: 3, nMax: 6, minDuro: 2, stars: 2,
     rows: [
       '##1C2CK~COCOCP##',
       '#......~.......#',
-      'C......C.......C',
+      'C..S...C...S...C',
       'C......~.......C',
       'E..S...~...S...C',
       'C......~.......C',
@@ -188,6 +196,9 @@ export const FIXED_MAPS: readonly MapDef[] = [
     ],
   },
 ];
+
+// Mechanics a map brings: a cheese crate ('3') makes Margarita orders, a sink ('L') turns on plate washing.
+export const mapFeatures = (rows: readonly string[]) => ({ cheese: rows.some((r) => r.includes('3')), sink: rows.some((r) => r.includes('L')) });
 
 export const MAP_IDS = FIXED_MAPS.map((m) => m.id);
 export const fixedMap = (id: string): MapDef | undefined => FIXED_MAPS.find((m) => m.id === id);
@@ -200,9 +211,46 @@ export type MapChoice = (typeof MAP_CHOICES)[number];
 export const DEFAULT_MAP: MapChoice = 'auto';
 export const isMapChoice = (v: unknown): v is MapChoice => MAP_CHOICES.includes(v as MapChoice);
 
-// "auto" draws one of the maps listed for the difficulty; rand is injected so the logic stays deterministic.
-export function pickFixedMap(choice: MapChoice, d: Difficulty, rand: () => number): MapDef {
+// Lobby: with N connected players every map is recommended (nMin <= N <= nMax), warned (minDuro <= N < nMin: playable but
+// meant for more) or blocked (N < minDuro or N > nMax). 0 players count as 2 so an empty lobby still shows a sensible list.
+export type MapStatus = { state: 'recommended' } | { state: 'warn'; reason: string } | { state: 'blocked'; reason: string };
+export const lobbyN = (connected: number) => Math.max(connected, 0) || 2;
+
+export function mapStatus(m: MapDef, n: number): MapStatus {
+  if (n > m.nMax) return { state: 'blocked', reason: `hasta ${m.nMax} jugadores` };
+  if (n < m.minDuro) return { state: 'blocked', reason: `necesita ${m.minDuro}+ jugadores` };
+  if (n < m.nMin) return { state: 'warn', reason: `pensado para ${m.nMin}+` };
+  return { state: 'recommended' };
+}
+const centre = (m: MapDef) => (m.nMin + m.nMax) / 2;
+const byFit = (n: number) => (a: MapDef, b: MapDef) => a.stars - b.stars || Math.abs(centre(a) - n) - Math.abs(centre(b) - n) || Number(a.id) - Number(b.id);
+
+// Recommended maps first (fewer stars first, then nearest to the middle of their range), then warned, then blocked.
+export function lobbyMaps(n: number, maps: readonly MapDef[] = FIXED_MAPS): { map: MapDef; status: MapStatus }[] {
+  const rank = { recommended: 0, warn: 1, blocked: 2 };
+  return maps
+    .map((map) => ({ map, status: mapStatus(map, n) }))
+    .sort((a, b) => rank[a.status.state] - rank[b.status.state] || byFit(n)(a.map, b.map));
+}
+export const recommendedMaps = (n: number, maps: readonly MapDef[] = FIXED_MAPS) => lobbyMaps(n, maps).filter((x) => x.status.state === 'recommended').map((x) => x.map);
+
+// What the lobby selects by default: the first recommended map not yet played in this session (any recommended one once all were).
+export function defaultMap(n: number, played: ReadonlySet<string>, maps: readonly MapDef[] = FIXED_MAPS): MapDef {
+  const rec = recommendedMaps(n, maps);
+  return rec.find((m) => !played.has(m.id)) ?? rec[0] ?? lobbyMaps(n, maps).find((x) => x.status.state === 'warn')?.map ?? maps[0]!;
+}
+// The selected map got blocked (someone joined or left): the recommended map with the closest complexity, then closest range.
+export function replacementMap(current: MapDef, n: number, maps: readonly MapDef[] = FIXED_MAPS): MapDef {
+  const rec = recommendedMaps(n, maps);
+  return [...rec].sort((a, b) => Math.abs(a.stars - current.stars) - Math.abs(b.stars - current.stars) || byFit(n)(a, b))[0] ?? defaultMap(n, new Set(), maps);
+}
+
+// "auto" (Aleatorio) draws among the maps recommended for N; rand is injected so the logic stays deterministic.
+// Without N it falls back to the per-difficulty list.
+export function pickFixedMap(choice: MapChoice, d: Difficulty, rand: () => number, n?: number): MapDef {
   if (choice !== 'auto') return fixedMap(choice) ?? fixedMap(MAPS_BY_DIFFICULTY[d][0]!)!;
+  const rec = n === undefined ? [] : recommendedMaps(n);
+  if (rec.length) return rec[Math.floor(rand() * rec.length)]!;
   const ids = MAPS_BY_DIFFICULTY[d];
   return fixedMap(ids[Math.floor(rand() * ids.length)]!)!;
 }

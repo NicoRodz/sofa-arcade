@@ -74,7 +74,7 @@ const spawnOrder = (g: Game) => {
   }
 };
 
-export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: readonly string[]; countdownMs?: number; bus?: Emitter<GameEvents> } = {}): Game {
+export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; countdownMs?: number; bus?: Emitter<GameEvents> } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows);
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const p = difficultyParams(difficulty, opts.n ?? 2);
@@ -82,7 +82,7 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
   grid.forEach((row, ty) => row.forEach((t, tx) => {
     if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false });
   }));
-  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
+  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
   for (let i = 0; i < p.initialOrders; i++) spawnOrder(g);
   return g;
 }

@@ -1,5 +1,5 @@
 // Map solvability: floor components, zone graph over passing counters, recipe legs, spawns per zone.
-import { DIRS, floorComponents, isFloor, posKey, type Grid, type Pos } from './maps';
+import { DIRS, MAP_H, MAP_W, floorComponents, isFloor, parseMap, posKey, type Grid, type MapDef, type Pos } from './maps';
 
 export type StationKey = '1' | '2' | 'K' | 'O' | 'P' | 'E';
 // 1 -> K, 2 -> K, K -> O (once per ingredient), P -> O, O -> E
@@ -73,5 +73,55 @@ export function validate(g: Grid): { ok: boolean; errors: string[] } {
     const zs = new Set((comps.get(to) ?? []).map((c) => a.zone[c]));
     if (!(comps.get(from) ?? []).some((c) => zs.has(a.zone[c]))) errors.push(`no route ${from} -> ${to}`);
   }
+  return { ok: !errors.length, errors };
+}
+
+// Fewest players that can still finish the recipe: the smallest set of floor regions whose stations cover every recipe
+// station kind (items cross regions through counters, but somebody has to stand at each station).
+export function minPlayers(g: Grid): number {
+  const a = analyze(g);
+  const regions: Set<StationKey>[] = Array.from({ length: a.count }, () => new Set());
+  const needed = new Set<StationKey>();
+  for (const key of STATION_KEYS) for (const [x, y] of stationsOf(g, key)) {
+    needed.add(key);
+    for (const [ax, ay] of accessTiles(g, x, y)) regions[a.comp[ay]![ax]!]!.add(key);
+  }
+  const ids = regions.map((_r, i) => i).filter((i) => regions[i]!.size);
+  let best = ids.length;
+  for (let mask = 1; mask < 1 << ids.length; mask++) {
+    const size = ids.filter((_v, k) => mask & (1 << k)).length;
+    if (size >= best) continue;
+    const got = new Set<StationKey>();
+    ids.forEach((id, k) => { if (mask & (1 << k)) regions[id]!.forEach((key) => got.add(key)); });
+    if ([...needed].every((k) => got.has(k))) best = size;
+  }
+  return Math.max(1, best);
+}
+
+export const floorTiles = (g: Grid) => g.reduce((n, row) => n + row.filter((t) => t.kind === 'floor').length, 0);
+export const spawnTiles = (g: Grid): Pos[] => {
+  const out: Pos[] = [];
+  g.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'floor' && t.spawn) out.push([x, y]); }));
+  return out;
+};
+export const FLOOR_PER_PLAYER = 7; // design: at least 7 floor tiles per player at the map's maximum
+
+// A fixed map against its own metadata: solvable, one spawn per player of its maximum, range and minDuro consistent.
+export function validateMap(m: MapDef): { ok: boolean; errors: string[] } {
+  if (m.rows.length !== MAP_H || m.rows.some((r) => r.length !== MAP_W)) return { ok: false, errors: ['bad size'] };
+  const g = parseMap(m.rows);
+  const errors = [...validate(g).errors];
+  if (!(m.nMin >= 2 && m.nMin <= m.nMax && m.nMax <= 8)) errors.push(`range ${m.nMin}-${m.nMax} is not within 2..8`);
+  if (m.minDuro > m.nMin) errors.push(`minDuro ${m.minDuro} is above nMin ${m.nMin}`);
+  const mp = minPlayers(g);
+  if (mp !== m.minDuro) errors.push(`minDuro is ${m.minDuro} but the recipe needs ${mp} floor regions`);
+  const s = spawnTiles(g);
+  if (s.length < m.nMax) errors.push(`${s.length} spawns for up to ${m.nMax} players`);
+  if (m.spawns) {
+    const key = (p: Pos) => posKey(...p);
+    const set = new Set(s.map(key));
+    if (!m.spawns.every((p) => set.has(key(p))) || new Set(m.spawns.map(key)).size !== m.spawns.length) errors.push('explicit spawn order does not match the S tiles');
+  }
+  if (floorTiles(g) < FLOOR_PER_PLAYER * m.nMax) errors.push(`${floorTiles(g)} floor tiles for ${m.nMax} players (want ${FLOOR_PER_PLAYER} each)`);
   return { ok: !errors.length, errors };
 }
