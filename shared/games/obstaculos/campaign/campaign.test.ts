@@ -214,6 +214,10 @@ describe('what "Continuar" and "Siguiente" offer', () => {
     expect(e.lastLevelId).toBe('1-1');
     expect(continueLevel(e, plan)?.id).toBe('1-4');
   });
+  it('a skipped level is passed: Continuar moves on to the next one', () => {
+    const e = skipLevel(fresh(), plan, '1-1', ++clock);
+    expect(continueLevel(e, plan)?.id).toBe('1-2');
+  });
   it('Siguiente is the following level only when it is open', () => {
     const e = play(fresh(), res('1-1'));
     expect(nextLevel(e, plan, '1-1')?.id).toBe('1-2');
