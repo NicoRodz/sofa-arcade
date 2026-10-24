@@ -295,6 +295,24 @@ export function drawIce(c: Ctx, k: CellCtx) {
   outlineOpen(c, px, py, mask, r);
 }
 
+// Crystals ('Y', campaign dynamic 10). Dark = a faint violet ghost you walk through; lit (CrystalLit, solid) = a bright faceted block with a glow. Cell-sized, no autotile.
+export function drawCrystal(c: Ctx, k: CellCtx, lit: boolean) {
+  const { px, py } = k;
+  if (!lit) {
+    shape(c, px + 8, py + 6, TILE - 16, TILE - 12, [6, 6, 6, 6]);
+    c.fillStyle = 'rgba(150,110,255,0.14)'; c.fill(); c.lineWidth = 2.4; c.setLineDash([5, 5]); c.strokeStyle = 'rgba(190,160,255,0.7)'; c.stroke(); c.setLineDash([]);
+    return;
+  }
+  const g = c.createLinearGradient(0, py, 0, py + TILE); g.addColorStop(0, '#F1E6FF'); g.addColorStop(0.5, '#B58CFF'); g.addColorStop(1, '#6F4BD8');
+  shape(c, px + 1.5, py + 1.5, TILE - 3, TILE - 3, [8, 8, 8, 8]);
+  c.fillStyle = g; c.fill();
+  c.save(); shape(c, px + 1.5, py + 1.5, TILE - 3, TILE - 3, [8, 8, 8, 8]); c.clip();
+  c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.moveTo(px + 6, py + 4); c.lineTo(px + 20, py + 4); c.lineTo(px + 8, py + 30); c.lineTo(px + 6, py + 30); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(70,35,160,0.55)'; c.lineWidth = 2; c.beginPath(); c.moveTo(px + 24, py + 2); c.lineTo(px + 34, py + 24); c.lineTo(px + 22, py + 46); c.moveTo(px + 34, py + 24); c.lineTo(px + 46, py + 18); c.stroke();
+  c.restore();
+  shape(c, px + 1.5, py + 1.5, TILE - 3, TILE - 3, [8, 8, 8, 8]); c.lineWidth = 3; c.strokeStyle = INK; c.stroke();
+}
+
 export function drawCell(c: Ctx, g: TileGrid, x: number, y: number, px: number, py: number, biome: Biome, seed: number) {
   const kind = tileAt(g, x, y);
   if (kind === T.Empty || kind === T.Liquid || kind === T.Object) return;
@@ -310,5 +328,7 @@ export function drawCell(c: Ctx, g: TileGrid, x: number, y: number, px: number, 
     case T.Trampoline: drawTrampoline(c, k); break;
     case T.Door: drawDoor(c, k); break;
     case T.Ice: drawIce(c, k); break;
+    case T.Crystal: drawCrystal(c, k, false); break;
+    case T.CrystalLit: drawCrystal(c, k, true); break;
   }
 }

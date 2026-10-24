@@ -8,6 +8,7 @@ export const SLOT_COUNT = 8;
 export const BOX_ID0 = 100;
 export const MOVER_ID0 = 200;
 export const BALANCE_ID0 = 300;
+export const SINKER_ID0 = 400; // campaign dynamic 12
 
 // --- grabbing (plan §5)
 export const GRAB_RANGE = 0.9 * TILE; // distance from the body box to the target

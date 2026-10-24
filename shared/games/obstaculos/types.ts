@@ -10,7 +10,13 @@ export type EntityParam =
   | { kind: 'gate' }
   | { kind: 'ladder' }
   | { kind: 'mover'; dx: number; dy: number; periodSec: number }
-  | { kind: 'balance'; partner: string; travel: number; speed: number };
+  | { kind: 'balance'; partner: string; travel: number; speed: number }
+  // Campaign dynamic 12. An objective letter A-F whose cells are the rock (a one-way platform like a balance plate): it sinks CampaignParams.sinkTilesPerSec per character
+  // standing on it, down to `travel` tiles, and floats back up when nobody is on it. Needs a campaign world (inert in a quick match).
+  | { kind: 'sinker'; travel: number }
+  // Campaign dynamic 12. An objective letter A-F whose cells are the vent (open air standing on a floor): every `periodSec` it bubbles for geyserWarnSec, then erupts for
+  // `activeSec` (default 0.5 s, the last part of the period) and launches whoever is inside the vent at CampaignParams.geyserLaunchMult x the jump speed.
+  | { kind: 'geyser'; periodSec: number; activeSec?: number };
 
 export interface Rect { x: number; y: number; w: number; h: number }
 export type Tether = 'any' | 'chainOnly' | 'freeOnly';

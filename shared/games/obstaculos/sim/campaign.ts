@@ -111,6 +111,15 @@ export interface CampaignParams {
   throwVxMult: number; // throw niche: horizontal launch speed x this (the throw reaches farther than a jump or a tower)
   throwSlack: number; // throw niche: the rope of a thrown player is this much longer (x base) at the throw...
   throwSlackSec: number; // ...and eases back to its length over this long
+  // --- A6 (plan §4 #10-#12). New in A6: nothing above changed.
+  lanternRadiusTiles: number; // #10 lantern: crystals within this radius (tiles, centre to centre) of the lantern are solid; also the radius of the lit circle of a dark level
+  bungeeMaxMult: number; // #11 bungee: the rope of a body hanging from an elastic ring stretches up to this x its length (a hard stop beyond it)
+  bungeeStiffness: number; // #11: spring constant (1/s^2): acceleration = k x stretch(px). 40: a 4-tile fall stretches the rope to ~1.47x (the hard stop is 1.6x) and pulls back up at ~150 px/s, then it hangs at ~1.15x (sweep in tools/s1-bungee.ts)
+  bungeeDamping: number; // #11: 1/s, braking of the speed along the stretched link. 7 kills the bounce in ~2 s. Less does not: the player's gravity is asymmetric (rising 2396, falling 3594 px/s^2) and pumps a spring into a steady 15-90 px swing (damping 2-6)
+  sinkTilesPerSec: number; // #12 sinkers: a rock sinks this fast per character standing on it...
+  sinkRiseTilesPerSec: number; // ...and floats back up this fast when it is empty
+  geyserWarnSec: number; // #12 geyser: bubbles this long before it erupts
+  geyserLaunchMult: number; // #12: launch speed of whoever is in the vent when it erupts, x JUMP_V0 (the trampoline is 1.45)
 }
 
 // N=2 is frozen by campaign.test.ts (snapshot). N>2 only adds what the plan's §5.2 table says; everything else stays as at N=2.
@@ -133,6 +142,7 @@ export function campaignParams(n: number, world: WorldId = 'forest'): CampaignPa
     camPadTiles: 3, camLookAtGoal: true,
     balanceTilesPerSec: 2, targetSec: 4 + Math.floor(extra / 2), enemyStunSec: 3, enemyExtra: Math.floor(extra / 2), enemyTilesPerSec: 1.5, enemyPushPxPerSec: 360,
     iceFriction: 0.15, windPxPerSec: N <= 2 ? 140 : 112, windWarnSec: 1, pickTilesPerSec: 1, throwVxMult: 1.3, throwSlack: 1.5, throwSlackSec: 1.2,
+    lanternRadiusTiles: 4, bungeeMaxMult: 1.6, bungeeStiffness: 40, bungeeDamping: 7, sinkTilesPerSec: 0.5, sinkRiseTilesPerSec: 0.5, geyserWarnSec: 1, geyserLaunchMult: 1.65,
   };
 }
 

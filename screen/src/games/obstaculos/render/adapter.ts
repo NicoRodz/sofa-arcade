@@ -1,7 +1,7 @@
 // SimWorldView: the real world of F2a (inside an ObstSession) seen through the WorldView the renderer draws (view.ts). The renderer never imports
 // the simulation: this file maps it once per render frame. FakeWorld (stub.ts) stays for the harness and the renderer's own tests.
 import {
-  CRUMBLE_FALL_SEC, DT, TILE, cameraHints, hangingOnRope, previewB, type BPreview, type Body, type ObstSession, type PlayerState, type World,
+  CRUMBLE_FALL_SEC, DT, TILE, cameraHints, darkView, hangingOnRope, previewB, type BPreview, type Body, type ObstSession, type PlayerState, type World,
 } from '@party/shared/obstaculos';
 import type { Difficulty } from '@party/shared/difficulty';
 import type { GameMode, ParsedLevel, TileGrid } from '@party/shared/obstaculos';
@@ -25,6 +25,7 @@ export class SimWorldView implements WorldView {
   bubbleSec: number;
   camp: WorldView['camp'] = null;
   wind: WorldView['wind'] = null;
+  dark: WorldView['dark'] = null;
   private statics: EntityView[];
   private byId = new Map<string, EntityView>();
   private bubbleSince = new Map<number, number>();
@@ -58,6 +59,7 @@ export class SimWorldView implements WorldView {
     this.look = cameraHints(w);
     this.bubbleSec = w.dparams.bubbleSec;
     this.camp = w.camp ? { countdown: w.countdown ? Math.ceil(w.countdown.steps / 60) : null, refills: w.refills } : null;
+    this.dark = darkView(w);
     const wd = w.level.def.wind;
     this.wind = w.wind && wd ? { phase: w.wind.phase, dir: w.wind.dir, zone: wd.zone ? { x: wd.zone.x * TILE, y: wd.zone.y * TILE, w: wd.zone.w * TILE, h: wd.zone.h * TILE } : null } : null;
   }
@@ -97,7 +99,7 @@ export class SimWorldView implements WorldView {
   }
 
   private syncRopes(w: World): void {
-    this.ropes = w.ropes.map((r) => ({ id: r.id, cordada: r.id, base: r.links[0]?.base, links: r.links.map((l) => ({ a: l.a, b: l.b, tension: l.tension, active: l.active })) }));
+    this.ropes = w.ropes.map((r) => ({ id: r.id, cordada: r.id, base: r.links[0]?.base, links: r.links.map((l) => ({ a: l.a, b: l.b, tension: l.tension, active: l.active, elastic: l.elastic })) }));
   }
 
   private syncEntities(w: World): void {
@@ -113,7 +115,12 @@ export class SimWorldView implements WorldView {
     e.keys.forEach((k, i) => set(`key${i}`, (v) => { v.x = k.x - TILE / 2; v.y = k.y - TILE / 2; v.on = k.used || k.heldBy >= 0; v.holder = k.heldBy; }));
     for (const a of e.activators) set(`obj${a.letter}`, (v) => { v.on = a.pressed || a.latched; v.value = a.kind === 'target' ? Math.min(1, (a.timer * DT) / (w.camp?.targetSec ?? 4)) : a.required > 0 ? Math.min(1, a.load / a.required) : 0; });
     e.pickaxes.forEach((k, i) => set(`pick${i}`, (v) => { v.x = k.x - TILE / 2; v.y = k.y - TILE / 2; v.on = k.heldBy >= 0; v.holder = k.heldBy; }));
-    for (const o of e.objectives) set(`obj${o.letter}`, (v) => { v.on = o.open; v.x = o.rect.x + o.ox; v.y = o.rect.y + o.oy; });
+    e.lanterns.forEach((k, i) => set(`lantern${i}`, (v) => { v.x = k.x - TILE / 2; v.y = k.y - TILE / 2; v.on = k.heldBy >= 0; v.holder = k.heldBy; }));
+    for (const o of e.objectives) set(`obj${o.letter}`, (v) => {
+      v.on = o.open; v.x = o.rect.x + o.ox; v.y = o.rect.y + o.oy;
+      if (o.kind === 'geyser') v.value = o.phase / 2; // 0 calm, 0.5 bubbling, 1 erupting
+      else if (o.kind === 'sinker') v.value = Math.min(1, o.oy / Math.max(1, (o.param as { travel: number }).travel * TILE));
+    });
     // crumbling tiles: only the ones that are shaking or gone get a sprite
     const live: EntityView[] = [];
     for (const v of this.statics) live.push(v);

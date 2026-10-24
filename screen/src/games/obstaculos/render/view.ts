@@ -55,13 +55,13 @@ export interface PlayerView {
   signal?: SignalKind | null; // campaign: the signal shown over the head (arrow, wait, go); also from the bubble
 }
 
-export interface RopeLink { a: number; b: number; tension: number; active: boolean } // a, b = player ids; tension = distance / ROPE_LEN; inactive = bubble valve
+export interface RopeLink { a: number; b: number; tension: number; active: boolean; elastic?: boolean } // elastic: hanging from a bungee ring (campaign A6, drawn as a spring, never red). a, b = player ids; tension = distance / ROPE_LEN; inactive = bubble valve
 export interface RopeView { id: number; cordada: number; links: RopeLink[]; base?: number } // base: rest length in px (the campaign's rope is longer than ROPE_LEN)
 
 export type EntityKind =
   | 'star' | 'checkpoint' | 'goal' | 'ring' | 'box' | 'heavyBox' | 'key'
   | 'plate' | 'lever' | 'gate' | 'ladder' | 'mover' | 'balance' | 'crumble' | 'rock' | 'saw'
-  | 'target' | 'enemy' | 'pickaxe'; // campaign A5: target = diana (on = its gate is open, value = clock left 0..1), enemy = soft beetle (on = stunned, value = 1 walking right / 0 left), pickaxe = the item (on = held, holder = who)
+  | 'target' | 'enemy' | 'pickaxe' | 'lantern' | 'sinker' | 'geyser'; // campaign A6: lantern = the item (on = held, holder = who), sinker = a rock that sinks (value = how far down, 0..1), geyser = a vent (value = 0 calm, 0.5 bubbling, 1 erupting). A5: target = diana (on = its gate is open, value = clock left 0..1), enemy = soft beetle (on = stunned, value = 1 walking right / 0 left), pickaxe = the item (on = held, holder = who)
 export interface EntityView {
   id: string; // stable across frames
   kind: EntityKind;
@@ -100,6 +100,7 @@ export interface WorldView {
   bubbleSec?: number;
   camp?: { countdown: number | null; refills: number } | null;
   wind?: { phase: 'calm' | 'warn' | 'gust'; dir: -1 | 1; zone: { x: number; y: number; w: number; h: number } | null } | null; // campaign dynamic 8: the renderer draws the streaks
+  dark?: { radius: number; lights: { x: number; y: number }[] } | null; // campaign dynamic 10: a level with a lantern is dark; the renderer shows a circle of `radius` px around each light (world px) and a faint one around each player
 }
 
 export const BIOME_NAME = { beach: 'Playa', forest: 'Bosque valdiviano', mine: 'Mina del norte', glacier: 'Glaciar', volcano: 'Volcán' } as const;

@@ -30,10 +30,12 @@ export function entitiesFromLevel(p: ParsedLevel): EntityView[] {
   p.markers.heavyBox.forEach((c, i) => e(`hbox${i}`, 'heavyBox', c.x * TILE, c.y * TILE, TILE, TILE, '', '2'));
   p.markers.key.forEach((c, i) => e(`key${i}`, 'key', c.x * TILE, c.y * TILE));
   p.markers.pickaxe.forEach((c, i) => e(`pick${i}`, 'pickaxe', c.x * TILE, c.y * TILE));
+  p.markers.lantern.forEach((c, i) => e(`lantern${i}`, 'lantern', c.x * TILE, c.y * TILE));
+  p.markers.bungee.forEach((c, i) => e(`ring${p.markers.ring.length + i}`, 'ring', c.x * TILE, c.y * TILE, TILE, TILE, '', 'elastic')); // the elastic rings follow the plain ones (the sim's ring order)
   for (const o of Object.values(p.objects)) {
     const b = o.bounds, prm = o.param;
     if (!prm) continue;
-    const kind = prm.kind === 'plate' ? 'plate' : prm.kind === 'lever' ? 'lever' : prm.kind === 'target' ? 'target' : prm.kind === 'gate' ? 'gate' : prm.kind === 'ladder' ? 'ladder' : prm.kind === 'mover' ? 'mover' : 'balance';
+    const kind = prm.kind === 'plate' ? 'plate' : prm.kind === 'lever' ? 'lever' : prm.kind === 'target' ? 'target' : prm.kind === 'gate' ? 'gate' : prm.kind === 'ladder' ? 'ladder' : prm.kind === 'mover' ? 'mover' : prm.kind === 'sinker' ? 'sinker' : prm.kind === 'geyser' ? 'geyser' : 'balance';
     const label = prm.kind === 'plate' ? (typeof prm.weight === 'number' ? String(prm.weight) : prm.weight === 'half-up' ? '½↑' : prm.weight === 'half-down' ? '½↓' : prm.weight === 'all' ? 'todos' : 'n-1') : '';
     e(`obj${o.char}`, kind, b.x * TILE, b.y * TILE, b.w * TILE, b.h * TILE, o.char, label);
   }

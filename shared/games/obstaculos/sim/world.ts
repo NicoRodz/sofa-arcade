@@ -23,8 +23,11 @@ import { campaignParams, dparamsForCampaign, physicsOfWorld, type WorldId } from
 import { applySlides, edgeAssist, prepareAnchors, registerGroundJump, stepCampaignInputs, stepIce, stepWind, throwArc } from './campaignrules';
 import { stepEnemies } from './enemies';
 import { stepPick, stepPickaxes } from './pickaxe';
+import { elasticOf, markElastic, stretchedEnd } from './bungee';
+import { darkView, stepLanterns } from './lantern';
+import { stepGeysers, stepSinkers } from './floaters';
 import { dropCrumbs, goalZone, placeAtCell, progressField, progressOf, revive, sendToBubble, stepBubbles, stepCheckpoints, stepDeaths, stepGoal, stepStars, stepStragglers } from './rules';
-import { emit, isActive, playerOf, type LevelResult, type ObstEvent, type PlayerState, type WindPhase, type World, type WorldStatus } from './state';
+import { emit, isActive, playerOf, type LevelResult, type Objective, type ObstEvent, type PlayerState, type WindPhase, type World, type WorldStatus } from './state';
 import { hashBodies, headPlatform, newBody, physicsFor, stepPlayer, type Body, type Platform } from './player';
 import { buildGrid, boxTouches } from './tiles';
 import { CLIMB_SIDE_MULT, CLIMB_SPEED, PLANT_AIR_STEPS, SLOT_COUNT, THROW_VX } from './tuning';
@@ -50,7 +53,7 @@ function newPlayer(slot: number, connected = true): PlayerState {
     slot, connected, mode: 'active', body: newBody(slot, 0, 0), planted: false, plantAir: 0, holding: null, carriedBy: -1, thrown: 0, lift: null, climbing: false, ropeJump: true,
     invuln: 0, timer: 0, bubble: null, inGoal: false, offCamera: 0, crumbs: [], crumbCool: 0, crushed: 0, deathGroup: -1,
     stats: { deaths: 0, stars: 0, anchoredSteps: 0, throws: 0, catches: 0, offCameraSteps: 0 },
-    camp: { assist: 0, assistDir: 0, jumpTick: -1000, mash: 0, mashCool: 0, signal: null, goHold: 0, pick: 0, onIce: false },
+    camp: { assist: 0, assistDir: 0, jumpTick: -1000, mash: 0, mashCool: 0, signal: null, goHold: 0, pick: 0, onIce: false, geyserCool: 0 },
   };
 }
 
@@ -111,6 +114,7 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
 
   // 1. Moving things.
   stepMovers(w);
+  if (w.camp) { stepSinkers(w); stepGeysers(w); } // campaign dynamic 12: rocks sink, geysers erupt (they act before the players move)
   stepHazard(w);
   stepCrumbles(w);
 
@@ -186,7 +190,7 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
   handCatchStep(w, w.dparams.handZoneTiles);
   stepBoxes(w, (p) => releaseHolding(w, p));
   stepKeys(w);
-  if (w.camp) { stepPickaxes(w); stepEnemies(w); } // campaign: the pickaxe follows its holder; soft enemies patrol and shove
+  if (w.camp) { stepPickaxes(w); stepLanterns(w); stepEnemies(w); } // campaign: the pickaxe follows its holder; the lantern lights the crystals; soft enemies patrol and shove
 
   // 5. Rope: PBD, separating velocity removed, ground recomputed (plan §4 steps 3-5).
   if (w.ropes.length) {
@@ -196,9 +200,11 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
       nodes[p.slot] = { body: p.body, active: isActive(p), w: invMassOf(anchored ? 'anchored' : p.planted ? 'planted' : p.body.grounded ? 'ground' : 'air') };
     }
     const slides = w.camp ? prepareAnchors(w, nodes) : [];
+    if (w.camp) markElastic(w); // campaign dynamic 11: links hanging from an elastic ring are springs
     const behind = (a: number, c: number) => (progressOf(w, playerOf(w, a)!) >= progressOf(w, playerOf(w, c)!) ? a : c);
-    for (const e of solveRopes(w.ropes, nodes, w.grid, behind)) {
-      if (e.kind === 'taut') emit(w, 'obst.ropeTaut', { rope: e.rope, link: e.link, tension: e.tension });
+    for (const e of solveRopes(w.ropes, nodes, w.grid, behind, w.camp ? elasticOf(w.camp) : undefined)) {
+      if (e.kind === 'bounce') { const l = w.ropes[e.rope]!.links[e.link]!; emit(w, 'obst.bungee', { player: stretchedEnd(w, l.a, l.b), stretch: e.stretch }); }
+      else if (e.kind === 'taut') emit(w, 'obst.ropeTaut', { rope: e.rope, link: e.link, tension: e.tension });
       else if (e.kind === 'strain') emit(w, 'obst.ropeStrain', { rope: e.rope, link: e.link, tension: e.tension });
       else { const p = playerOf(w, e.behind); if (p && isActive(p)) sendToBubble(w, p, 'rope'); }
     }
@@ -250,10 +256,12 @@ export function hashState(w: World): number {
   if (e.hazard) { mix(e.hazard.pos); mix(e.hazard.frozen); }
   if (w.camp) { // the campaign layer's own state (a quick-match hash stays what it always was)
     mix(w.heartsLost); mix(w.refills); mix(w.countdown ? w.countdown.steps : -1);
-    for (const p of w.players) for (const v of [p.camp.assist, p.camp.assistDir, p.camp.jumpTick, p.camp.mash, p.camp.mashCool, p.camp.goHold, p.camp.signal ? p.camp.signal.steps : -1, p.camp.pick, p.camp.onIce ? 1 : 0]) mix(v);
+    for (const p of w.players) for (const v of [p.camp.assist, p.camp.assistDir, p.camp.jumpTick, p.camp.mash, p.camp.mashCool, p.camp.goHold, p.camp.signal ? p.camp.signal.steps : -1, p.camp.pick, p.camp.onIce ? 1 : 0, p.camp.geyserCool]) mix(v);
     for (const a of e.activators) mix(a.timer);
     for (const en of e.enemies) for (const v of [en.x, en.y, en.dir, en.stun]) mix(v);
     for (const k of e.pickaxes) for (const v of [k.x, k.y, k.heldBy]) mix(v);
+    for (const k of e.lanterns) for (const v of [k.x, k.y, k.heldBy]) mix(v);
+    for (const r of w.ropes) for (const l of r.links) { mix(l.elastic ? 1 : 0); mix(l.boing); }
     if (w.wind) mix(w.wind.phase === 'calm' ? 0 : w.wind.phase === 'warn' ? 1 : 2);
   }
   return h >>> 0;
@@ -272,15 +280,15 @@ export interface WorldSnap {
   tick: number; timeSec: number; status: WorldStatus; mode: GameMode; lives: number; deaths: number; result: LevelResult | null; tilesVersion: number;
   grid: World['grid'];
   players: PlayerSnap[];
-  ropes: { id: number; members: number[]; links: { a: number; b: number; len: number; base: number; tension: number; taut: boolean; active: boolean }[] }[];
+  ropes: { id: number; members: number[]; links: { a: number; b: number; len: number; base: number; tension: number; taut: boolean; active: boolean; elastic: boolean }[] }[];
   plates: { letter: string; kind: 'plate' | 'lever' | 'target'; rect: PxRect; required: number; load: number; pressed: boolean; latched: boolean; leftSec: number }[]; // leftSec: target's gate clock
-  objects: { letter: string; kind: 'gate' | 'ladder' | 'mover' | 'balance'; rect: PxRect; open: boolean }[]; // rect = current position (movers and balance move)
+  objects: { letter: string; kind: Objective['kind']; rect: PxRect; open: boolean; phase: number }[]; // rect = current position (movers, balance and sinkers move); phase: geyser 0 calm / 1 warning / 2 erupting, else 0
   boxes: { id: number; heavy: boolean; x: number; y: number; held: boolean }[];
   keys: { x: number; y: number; heldBy: number; used: boolean }[];
   crumbles: { x: number; y: number; state: 0 | 1 | 2 }[];
   stars: { x: number; y: number; taken: boolean }[];
   checkpoints: { x: number; y: number; activated: boolean; active: boolean }[];
-  rings: { x: number; y: number }[];
+  rings: { x: number; y: number; elastic: boolean }[]; // elastic: a 'u' ring (dynamic 11)
   hazard: { kind: 'risingLava' | 'tide' | 'avalanche'; pos: number; frozen: boolean } | null;
   goal: PxRect | null;
   // campaign layer (null / 0 in a quick match)
@@ -288,6 +296,8 @@ export interface WorldSnap {
   enemies: { x: number; y: number; w: number; h: number; dir: 1 | -1; stunned: boolean; stunLeftSec: number }[]; // dynamic 6
   pickaxes: { x: number; y: number; heldBy: number }[]; // dynamic 9 (centre of the item, px)
   wind: { phase: WindPhase; dir: -1 | 1; zone: PxRect | null } | null; // dynamic 8
+  lanterns: { x: number; y: number; heldBy: number }[]; // dynamic 10 (centre of the item, px)
+  dark: { radius: number; lights: { x: number; y: number }[] } | null; // dynamic 10: a level with a lantern is dark; radius and light centres in px (a player's own faint light is the renderer's)
 }
 
 export function snapshot(w: World): WorldSnap {
@@ -301,20 +311,22 @@ export function snapshot(w: World): WorldSnap {
       b: isActive(p) ? previewBPlayer(w, p).action : 'none',
       arc: w.camp ? throwArc(w, p) : null, signal: p.camp.signal?.kind ?? null, bubbleBoost: p.camp.mash,
     })),
-    ropes: w.ropes.map((r) => ({ id: r.id, members: [...r.members], links: r.links.map((l) => ({ a: l.a, b: l.b, len: l.len, base: l.base, tension: l.tension, taut: l.taut, active: l.active })) })),
+    ropes: w.ropes.map((r) => ({ id: r.id, members: [...r.members], links: r.links.map((l) => ({ a: l.a, b: l.b, len: l.len, base: l.base, tension: l.tension, taut: l.taut, active: l.active, elastic: l.elastic })) })),
     plates: e.activators.map((a) => ({ letter: a.letter, kind: a.kind, rect: { ...a.rect }, required: a.required, load: a.load, pressed: a.pressed, latched: a.latched, leftSec: a.timer * DT })),
-    objects: e.objectives.map((o) => ({ letter: o.letter, kind: o.kind, rect: objRect(o), open: o.open })),
+    objects: e.objectives.map((o) => ({ letter: o.letter, kind: o.kind, rect: objRect(o), open: o.open, phase: o.kind === 'geyser' ? o.phase : 0 })),
     boxes: e.boxes.map((b) => ({ id: b.id, heavy: b.heavy, x: b.x, y: b.y, held: b.holders.length > 0 })),
     keys: e.keys.map((k) => ({ x: k.x, y: k.y, heldBy: k.heldBy, used: k.used })),
     crumbles: e.crumbles.map((c) => ({ x: c.x, y: c.y, state: c.state })),
     stars: e.stars.map((s) => ({ x: s.cell.x, y: s.cell.y, taken: s.taken })),
     checkpoints: e.checkpoints.map((c, i) => ({ x: c.cell.x, y: c.cell.y, activated: c.activated, active: i === w.activeCheckpoint })),
-    rings: e.rings.map((r) => ({ x: r.x, y: r.y })),
+    rings: e.rings.map((r, i) => ({ x: r.x, y: r.y, elastic: !!w.camp && i >= e.bungeeFrom })),
     hazard: e.hazard ? { kind: e.hazard.kind, pos: e.hazard.pos, frozen: e.hazard.frozen > 0 } : null,
     goal: goalZone(w.level),
     camp: w.camp, heartsLost: w.heartsLost, refills: w.refills, countdown: w.countdown ? { by: w.countdown.by, n: Math.ceil(w.countdown.steps / 60) } : null,
     enemies: e.enemies.map((en) => ({ x: en.x, y: en.y, w: en.w, h: en.h, dir: en.dir, stunned: en.stun > 0, stunLeftSec: en.stun * DT })),
     pickaxes: e.pickaxes.map((k) => ({ x: k.x, y: k.y, heldBy: k.heldBy })),
+    lanterns: e.lanterns.map((k) => ({ x: k.x, y: k.y, heldBy: k.heldBy })),
+    dark: darkView(w),
     wind: w.wind && w.level.def.wind ? { phase: w.wind.phase, dir: w.wind.dir, zone: w.level.def.wind.zone ? { x: w.level.def.wind.zone.x * TILE, y: w.level.def.wind.zone.y * TILE, w: w.level.def.wind.zone.w * TILE, h: w.level.def.wind.zone.h * TILE } : null } : null,
   };
 }
