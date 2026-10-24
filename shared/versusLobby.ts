@@ -8,6 +8,7 @@ import { parseMap, type Pos, type SigmaName } from './maps';
 import { addPlayer, createGame, type Game } from './overcooked';
 import type { Emitter, GameEvents } from './events';
 import type { Rng } from './rng';
+import type { MatchStart } from './protocol';
 import { balanceTeams, joinSmallestTeam, leaveTeams, makeTeams, modeAvailability, validateTeamSetup, type TeamInfo, type TeamSetup } from './teams';
 import { kitchenRegions } from './versus';
 import { VERSUS_AUTO, VERSUS_MAPS, VERSUS_RANDOM, versusMap, type VersusChoice } from './versusMaps';
@@ -162,4 +163,25 @@ export function createVersusGame(o: VersusStart): Game {
   });
   for (const t of o.teams) t.playerIds.forEach((id, rank) => addPlayer(game, id, o.slotOf(id), rank));
   return game;
+}
+
+export interface VersusRound { game: Game; teams: TeamInfo[]; map: ResolvedVersusMap; match: MatchStart }
+export interface VersusRoundOpts {
+  teams: readonly TeamInfo[]; // the lobby's teams (frozen here)
+  choice: string; // config.map: V1.., vs-auto or vs-random
+  difficulty: Difficulty; seed: number;
+  modeOptions: Record<string, boolean | number | string>;
+  slotOf: (playerId: number) => number;
+  rand: Rng;
+  bus?: Emitter<GameEvents>; countdownMs?: number;
+}
+/**
+ * The whole step from the lobby to a running round, for the screen and for the tests: resolves the map for the team sizes, writes the
+ * kitchen side into each team, builds the game and the `match` the phones are told. Same teams + map choice + seed = same round.
+ */
+export function startVersusRound(o: VersusRoundOpts): VersusRound {
+  const map = resolveVersusMap(o.choice, o.seed, o.difficulty, teamSizes(o.teams), o.rand);
+  const teams = withSides(o.teams, map);
+  const game = createVersusGame({ teams, map, difficulty: o.difficulty, seed: o.seed, modeOptions: o.modeOptions, slotOf: o.slotOf, bus: o.bus, countdownMs: o.countdownMs });
+  return { game, teams, map, match: { gameId: 'pizzas', modeId: 'versus', mapId: map.id, difficulty: o.difficulty, teams, modeOptions: o.modeOptions } };
 }

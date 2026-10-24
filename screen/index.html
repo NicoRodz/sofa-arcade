@@ -197,7 +197,7 @@
   .teams-locked .tlist .chip { cursor: default; } .teams-locked .tlist .chip:hover { transform: none; } .teams-locked .tlist .chip .mv { display: none; }
   .tlist .empty-note { grid-column: 1 / -1; align-self: center; text-align: center; font: 700 22px var(--font); color: rgba(255,244,224,.5); padding-top: 50px; }
   #teambar { position: absolute; left: 650px; top: 428px; width: 1190px; height: 38px; display: flex; align-items: center; gap: 10px; }
-  #teambar .pill { height: 38px; padding: 0 14px; font-size: 19px; border-width: 3px; }
+  #teambar .pill { height: 38px; padding: 0 14px; font-size: 19px; border-width: 3px; white-space: nowrap; flex: none; }
   #teambar .pill.on::before { content: "✓ "; }
   #teamhint { margin-left: auto; font: 700 20px var(--font); color: rgba(255,244,224,.75); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #teamhint.bad { color: #FFB020; }

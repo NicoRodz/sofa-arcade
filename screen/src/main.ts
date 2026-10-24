@@ -8,8 +8,8 @@ import { summarize, summarizeTeam } from '@party/shared/results';
 import { GAMES, PLATFORM, gameInfo, gameName, hasModeChoice, modeOf, selectableModes, type GameDef, type ModeId } from '@party/shared/games';
 import { movePlayer, reshuffleTeams, teamOf } from '@party/shared/teams';
 import {
-  VERSUS_AUTO, VERSUS_RANDOM, createVersusGame, defaultModeOptions, defaultVersusChoice, isVersusChoice, kitchenSides, lobbySetup, resolveVersusMap, syncTeams, teamSizes,
-  versusAvailability, versusLobbyMaps, versusMapStatus, withSides,
+  VERSUS_AUTO, VERSUS_RANDOM, defaultModeOptions, defaultVersusChoice, isVersusChoice, lobbySetup, resolveVersusMap, startVersusRound, syncTeams, teamSizes,
+  versusAvailability, versusLobbyMaps, versusMapStatus,
 } from '@party/shared/versusLobby';
 import { versusMap } from '@party/shared/versusMaps';
 import { howToHtml } from '@party/shared/render';
@@ -155,12 +155,10 @@ function setPhase(next: Phase) {
 
 // Versus: the lobby's frozen teams and map become the round (createVersusGame), with the puestos dealt inside each kitchen.
 function startVersus(): MatchStart {
-  const teams0 = config.teams!;
-  const sizes = teamSizes(teams0);
-  const map = resolveVersusMap(config.map, config.seed, config.difficulty, sizes, Math.random);
-  const teams = withSides(teams0, map);
   const slotOf = (id: number) => players.get(id)?.info.slot ?? 0;
-  game = createVersusGame({ teams, map, difficulty: config.difficulty, seed: config.seed, modeOptions: config.modeOptions, slotOf, bus: gameBus, countdownMs: COUNTDOWN_MS });
+  const round = startVersusRound({ teams: config.teams!, choice: config.map, difficulty: config.difficulty, seed: config.seed, modeOptions: config.modeOptions, slotOf, rand: Math.random, bus: gameBus, countdownMs: COUNTDOWN_MS });
+  const { map, teams } = round;
+  game = round.game;
   played.add(map.id);
   for (const p of players.values()) { p.pendA = 0; p.pendB = 0; }
   puestoOf.clear();
@@ -175,7 +173,7 @@ function startVersus(): MatchStart {
   sendMsg({ t: 'config', ...config });
   roundView = { teams, hiddenScore: config.modeOptions.hiddenScore === true };
   scene.startRound(game, map.id, config.seed, roundView);
-  return { gameId: config.game, modeId: 'versus', mapId: map.id, difficulty: config.difficulty, teams, modeOptions: config.modeOptions };
+  return round.match;
 }
 const setConfig = (patch: Partial<LobbyConfig>) => {
   config = { ...config, ...patch };
@@ -189,6 +187,7 @@ const modeNow = () => modeOf(gameDef(), config.modeId);
 const isVersus = () => config.modeId === 'versus';
 const connectedIds = () => [...players.values()].filter((p) => p.info.connected).sort((a, b) => a.info.slot - b.info.slot).map((p) => p.info.id);
 const MODE_PILL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
+const OPTION_PILL: Record<string, string> = { hiddenScore: 'Marcador oculto', handicap: 'Ventaja equipo chico' }; // the registry labels are sentences; the pills need short ones
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 function setMode(id: ModeId) {
@@ -506,12 +505,14 @@ function renderTeams() {
   $('lock').classList.toggle('sel', config.teamsLocked);
   for (const o of modeNow().options ?? []) {
     const el = $(`opt-${o.id}`);
-    el.textContent = o.label;
+    el.textContent = OPTION_PILL[o.id] ?? o.label;
     el.classList.toggle('on', config.modeOptions[o.id] === true);
     el.classList.toggle('sel', config.modeOptions[o.id] === true);
   }
   const th = $('teamhint');
-  th.textContent = teamNotice || (setup.ok ? 'Clic en un jugador para pasarlo al otro equipo' : setup.problems[0]!);
+  const sizes = teamSizes(config.teams), big = Math.max(...sizes), small = Math.min(...sizes);
+  const uneven = setup.ok && big !== small;
+  th.textContent = teamNotice || (!setup.ok ? setup.problems[0]! : uneven ? (config.modeOptions.handicap !== false ? `${big} contra ${small}: el equipo de ${small} gana ×${Math.max(...setup.k)}` : `${big} contra ${small}, sin ventaja para el equipo chico`) : 'Clic en un jugador: cambia de equipo');
   th.classList.toggle('bad', !!teamNotice || !setup.ok);
 }
 // The generated versus map of a seed is expensive enough (bounded attempts, each one validated) not to redo it on every render.

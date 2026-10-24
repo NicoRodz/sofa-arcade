@@ -40,14 +40,18 @@ export class World {
     const g = this.scene.add.graphics().setDepth(1);
     view.teams!.forEach((team, i) => {
       const region = k.regions[i];
-      let sx = 0, sy = 0, n = 0;
+      const tiles: [number, number][] = [];
       g.fillStyle(hexNum(team.color), 0.17);
       k.comp.forEach((row, y) => row.forEach((c, x) => {
         if (c !== region) return;
         g.fillRect(OX + x * TILE, OY + y * TILE, TILE, TILE);
-        sx += x + 0.5; sy += y + 0.5; n++;
+        tiles.push([x + 0.5, y + 0.5]);
       }));
-      if (n) makeText(this.scene, OX + (sx / n) * TILE, OY + (sy / n) * TILE, team.icon, { size: 170, color: team.color, stroke: 0, depth: 2 }).setAlpha(0.2);
+      if (!tiles.length) return;
+      // the glyph sits on the floor tile closest to the middle of the kitchen (never over a counter island)
+      const mx = tiles.reduce((a, t) => a + t[0], 0) / tiles.length, my = tiles.reduce((a, t) => a + t[1], 0) / tiles.length;
+      const [gx, gy] = tiles.reduce((a, t) => (Math.hypot(t[0] - mx, t[1] - my) < Math.hypot(a[0] - mx, a[1] - my) ? t : a));
+      makeText(this.scene, OX + gx * TILE, OY + gy * TILE, team.icon, { size: 150, color: team.color, stroke: 0, depth: 2 }).setAlpha(0.22);
     });
   }
   private feet(gp: { x: number; y: number }) { return { x: OX + gp.x * TILE, y: OY + (gp.y + 0.3) * TILE }; }

@@ -80,8 +80,8 @@ export class Hud {
       g.fillStyle(col, 1).fillRoundedRect(cx - 120, 12, 240, 82, 20);
       g.lineStyle(5, hexNum(C.ink), 1).strokeRoundedRect(cx - 120, 12, 240, 82, 20);
       g.fillStyle(0xffffff, 0.28).fillRoundedRect(cx - 104, 17, 208, 7, 3);
-      const name = makeText(this.scene, cx, 32, `${info?.icon ?? ''} ${info?.name ?? `Equipo ${t.id + 1}`}`, { size: 26, color: C.cream, stroke: 5, depth: D + 2 });
-      const score = makeText(this.scene, cx - 12, 70, '0', { size: 50, color: C.cream, stroke: 7, depth: D + 2 });
+      const name = makeText(this.scene, cx, 32, `${info?.icon ?? ''} ${info?.name ?? `Equipo ${t.id + 1}`}`, { size: 26, color: C.cream, stroke: 5, depth: D + 2 }).setY(36);
+      const score = makeText(this.scene, cx - 12, 71, '0', { size: 50, color: C.cream, stroke: 7, depth: D + 2 });
       const k = makeText(this.scene, cx + 86, 74, '', { size: 24, color: C.cheese, stroke: 5, depth: D + 2 });
       this.boxes.push({ g, name, score, k, shown: 0, last: 0 });
     }
