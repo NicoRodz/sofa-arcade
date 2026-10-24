@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<title>Controller</title>
+<title>Pichiclub</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #111; color: #eee; font: 16px system-ui, sans-serif; touch-action: none; overscroll-behavior: none; }
@@ -24,13 +24,15 @@
   #btnA { right: 5%; top: 54%; }
   #btnB { right: 27%; top: 16%; background: #40c4ff; }
   .act.down { background: #ffd740 !important; }
+  .brand { font: bold 40px system-ui, sans-serif; letter-spacing: 1px; margin: 0; color: var(--c, #40c4ff); }
   #hud { position: absolute; top: 6px; left: 8px; font-size: 13px; opacity: .7; pointer-events: none; }
 </style>
 </head>
 <body>
 <form id="join" autocomplete="off">
-  <input id="name" maxlength="16" placeholder="Your name" />
-  <button type="submit">Join</button>
+  <h1 class="brand">Pichiclub</h1>
+  <input id="name" maxlength="16" placeholder="Tu nombre" />
+  <button type="submit">Entrar</button>
 </form>
 <div id="pad">
   <div id="zone"></div>
@@ -38,7 +40,7 @@
   <div id="btnB" class="act">B</div>
   <div id="hud"></div>
 </div>
-<div id="wait" class="overlay"><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div></div>
+<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game" style="font-weight:bold"></div><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div></div>
 <div id="results" class="overlay"><div>Fin de la ronda</div><div id="rank" class="big"></div><div id="myscore"></div></div>
 <div id="rotate" class="overlay"><div class="big">&#8635;</div><div>Gira tu teléfono</div></div>
 <script type="module" src="/src/main.ts"></script>

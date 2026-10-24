@@ -1,4 +1,5 @@
 import nipplejs from 'nipplejs';
+import { gameName } from '@party/shared/games';
 import {
   ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
   type ClientMsg, type Phase, type ServerMsg,
@@ -71,6 +72,8 @@ function connect() {
       $('btnA').style.background = m.player.color;
       $('who').textContent = m.player.name;
       hud(`${m.player.name} #${m.player.slot + 1}`);
+    } else if (m.t === 'config') {
+      $('game').textContent = gameName(m.game);
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores);
     } else if (m.t === 'pong') {

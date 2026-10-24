@@ -1,8 +1,8 @@
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  COLORS, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage,
-  type PhaseInfo, type PublicPlayer, type ServerMsg,
+  COLORS, DEFAULT_CONFIG, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage,
+  type LobbyConfig, type PhaseInfo, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 
 interface Player {
@@ -18,6 +18,7 @@ interface Room {
   screens: Set<WebSocket>;
   nextId: number;
   phase: PhaseInfo;
+  config: LobbyConfig;
 }
 
 const send = (ws: WebSocket, m: ServerMsg) => {
@@ -31,7 +32,7 @@ export function attachRelay(server: Server) {
   const rooms = new Map<string, Room>();
   const room = (code: string) => {
     let r = rooms.get(code);
-    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'lobby' } }));
+    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'lobby' }, config: DEFAULT_CONFIG }));
     return r;
   };
   const toScreens = (r: Room, m: ServerMsg) => {
@@ -71,6 +72,13 @@ export function attachRelay(server: Server) {
         toPlayers(r, { t: 'phase', ...r.phase });
         return;
       }
+      if (m.t === 'config') {
+        if (!isScreen) return;
+        const { t: _t, ...cfg } = m;
+        r.config = cfg;
+        toPlayers(r, { t: 'config', ...r.config });
+        return;
+      }
       if (isScreen) return;
       if (m.t === 'join') {
         let p = [...r.players.values()].find((x) => x.token === m.token);
@@ -93,6 +101,7 @@ export function attachRelay(server: Server) {
         p.ws = ws;
         me = p;
         send(ws, { t: 'joined', player: pub(p), room: url.searchParams.get('room') || DEFAULT_ROOM });
+        send(ws, { t: 'config', ...r.config });
         send(ws, { t: 'phase', ...r.phase });
         toScreens(r, { t: 'player_joined', player: pub(p) });
         return;

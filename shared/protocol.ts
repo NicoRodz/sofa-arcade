@@ -1,3 +1,5 @@
+import { DEFAULT_GAME, isGameId, type GameId } from './games';
+
 export const WS_PATH = '/ws';
 export const DEFAULT_ROOM = 'main';
 export const INPUT_HZ = 30;
@@ -26,6 +28,10 @@ export type Phase = (typeof PHASES)[number];
 export interface Score { id: number; score: number }
 export interface PhaseInfo { phase: Phase; scores?: Score[] }
 
+// What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
+export interface LobbyConfig { game: GameId }
+export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME };
+
 export interface PublicPlayer {
   id: number;
   name: string;
@@ -38,7 +44,8 @@ export type ClientMsg =
   | { t: 'join'; name: string; token: string }
   | ({ t: 'input' } & InputState)
   | { t: 'ping'; id: number; t0: number; rtt?: number; off?: number }
-  | ({ t: 'phase' } & PhaseInfo); // screen only
+  | ({ t: 'phase' } & PhaseInfo) // screen only
+  | ({ t: 'config' } & LobbyConfig); // screen only
 
 export type ServerMsg =
   | { t: 'joined'; player: PublicPlayer; room: string }
@@ -49,6 +56,7 @@ export type ServerMsg =
   | { t: 'player_left'; playerId: number } // disconnected, slot still held
   | { t: 'player_removed'; playerId: number } // grace expired, slot freed
   | ({ t: 'phase' } & PhaseInfo)
+  | ({ t: 'config' } & LobbyConfig)
   | ({ t: 'input'; playerId: number } & InputState)
   | { t: 'rtt'; playerId: number; rtt: number; off: number };
 
@@ -88,6 +96,9 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       if (!Array.isArray(m.scores) || !m.scores.every((x: any) => x && num(x.id) && num(x.score))) return null;
       return { t: 'phase', phase: m.phase, scores: m.scores.map((x: Score) => ({ id: x.id, score: x.score })) };
     }
+    case 'config':
+      if (!isGameId(m.game)) return null;
+      return { t: 'config', game: m.game };
     default:
       return null;
   }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Screen</title>
+<title>Pichiclub</title>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #111; color: #eee; font: 13px ui-monospace, Menlo, monospace; }
   #game { position: fixed; inset: 0; }
@@ -16,7 +16,7 @@
   #debug.off { display: none; }
   .panel { position: fixed; background: #000c; border-radius: 12px; font: 16px system-ui, sans-serif; }
   #lobby { left: 24px; top: 24px; padding: 20px; width: 300px; text-align: center; }
-  #lobby.off, #hud.off, #results.off { display: none; }
+  #lobby.off, #setup.off, #hud.off, #results.off { display: none; }
   #code { font: bold 56px ui-monospace, Menlo, monospace; letter-spacing: 10px; margin: 4px 0 12px; }
   #qr { width: 220px; height: 220px; background: #fff; border-radius: 6px; margin: 0 auto; }
   #qr svg { width: 100%; height: 100%; display: block; }
@@ -28,6 +28,14 @@
   #plist li.gone .dot { opacity: .3; }
   button.big { font: bold 20px system-ui, sans-serif; padding: 10px 28px; border-radius: 8px; border: 0; background: #69f0ae; color: #000; }
   button.big:disabled { opacity: .35; }
+  #lobby h1 { margin: 0 0 8px; font: bold 34px system-ui, sans-serif; letter-spacing: 1px; }
+  #setup { left: 372px; top: 24px; width: 420px; padding: 20px; }
+  #setup.off { display: none; }
+  #setup h3 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: #aaa; }
+  .card { display: block; width: 100%; text-align: left; font: 16px system-ui, sans-serif; color: #eee; background: #ffffff14; border: 2px solid transparent; border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+  .card b { display: block; font-size: 20px; margin-bottom: 4px; }
+  .card small { color: #bbb; }
+  .card.sel { border-color: #69f0ae; background: #69f0ae22; }
   #hud { right: 16px; top: 14px; padding: 6px 20px; text-align: center; }
   #timer { font: bold 40px ui-monospace, Menlo, monospace; }
   #scores { display: flex; gap: 16px; font-size: 18px; }
@@ -40,12 +48,17 @@
 <body>
 <div id="game"></div>
 <div id="lobby" class="panel">
+  <h1>Pichiclub</h1>
   <div>Código de sala</div>
   <div id="code"></div>
   <div id="qr"></div>
   <div id="joinurl"></div>
   <ul id="plist"></ul>
   <button id="start" class="big" disabled>Iniciar (Enter)</button>
+</div>
+<div id="setup" class="panel">
+  <h3>Juego</h3>
+  <div id="games"></div>
 </div>
 <div id="hud" class="panel off">
   <div id="timer"></div>

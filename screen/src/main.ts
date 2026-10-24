@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import {
-  ClockSync, PING_MS, ROUND_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
-  type ClientMsg, type Phase, type PublicPlayer, type ServerMsg,
+  ClockSync, DEFAULT_CONFIG, PING_MS, ROUND_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
+  type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
+import { GAMES } from '@party/shared/games';
 import { percentile } from '@party/shared/stats';
 import {
   COLS, MAP, ORDER_TTL_MS, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
@@ -33,6 +34,7 @@ const room = (() => {
   } catch { return q || newRoomCode(); }
 })();
 let phase: Phase = 'lobby';
+let config: LobbyConfig = { ...DEFAULT_CONFIG };
 let game = createGame();
 let debugOverride: boolean | null = null;
 let screenRtt = NaN;
@@ -81,6 +83,11 @@ function setPhase(next: Phase) {
   sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: game.score })) : undefined });
   renderUi();
 }
+const setConfig = (patch: Partial<LobbyConfig>) => {
+  config = { ...config, ...patch };
+  sendMsg({ t: 'config', ...config });
+  renderUi();
+};
 const dispatch = (ev: Parameters<typeof nextPhase>[1]) => {
   if (ev === 'start' && !canStart([...players.values()].map((p) => p.info))) return;
   setPhase(nextPhase(phase, ev));
@@ -129,7 +136,7 @@ function onMessage(m: ServerMsg) {
 let ws: WebSocket;
 function connect() {
   ws = new WebSocket(`ws://${location.host}${WS_PATH}?role=screen&room=${encodeURIComponent(room)}`);
-  ws.onopen = () => sendMsg({ t: 'phase', phase });
+  ws.onopen = () => { sendMsg({ t: 'config', ...config }); sendMsg({ t: 'phase', phase }); };
   ws.onmessage = (ev) => onMessage(JSON.parse(ev.data));
   ws.onclose = () => setTimeout(connect, 500);
 }
@@ -140,9 +147,9 @@ setInterval(() => {
   ws.send(JSON.stringify({ t: 'ping', id: performance.now(), t0: Date.now() }));
 }, PING_MS);
 
-const COL_ITEM = [0xff5252, 0x9ccc65];
+const COL_ITEM = [0xf2d49b, 0xe53935]; // masa, tomate/queso
 const COL_STATION: Record<Station['kind'], number> = {
-  crate: 0x8d6e63, board: 0xd7b98e, pot: 0x546e7a, plates: 0xcfd8dc, window: 0x7e57c2, counter: 0x5c5c6e, trash: 0x37474f,
+  crate: 0x8d6e63, board: 0xd7b98e, pot: 0xbf5b2c, plates: 0xcfd8dc, window: 0x7e57c2, counter: 0x5c5c6e, trash: 0x37474f,
 };
 const HUD_H = 96;
 
@@ -181,9 +188,9 @@ class Main extends Phaser.Scene {
   private item(it: Item, x: number, y: number, s: number) {
     const g = this.gfx;
     if (it === 'plate' || it === 'dish') {
-      g.fillStyle(0xffffff).fillCircle(x, y, s * 0.3);
-      g.fillStyle(0xcfd8dc).fillCircle(x, y, s * 0.2);
-      if (it === 'dish') g.fillStyle(COL_ITEM[0]!).fillCircle(x - s * 0.08, y, s * 0.1).fillStyle(COL_ITEM[1]!).fillCircle(x + s * 0.08, y, s * 0.1);
+      g.fillStyle(0xffffff).fillRect(x - s * 0.3, y - s * 0.3, s * 0.6, s * 0.6); // tray / box
+      g.fillStyle(0xcfd8dc).fillRect(x - s * 0.24, y - s * 0.24, s * 0.48, s * 0.48);
+      if (it === 'dish') g.fillStyle(COL_ITEM[0]!).fillCircle(x, y, s * 0.2).fillStyle(COL_ITEM[1]!).fillCircle(x - s * 0.06, y - s * 0.04, s * 0.07).fillCircle(x + s * 0.07, y + s * 0.05, s * 0.07);
       return;
     }
     const type = it.endsWith('1') ? 1 : 0;
@@ -282,9 +289,12 @@ const esc = (t: string) => t.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 function renderUi() {
   $('lobby').classList.toggle('off', phase !== 'lobby');
+  $('setup').classList.toggle('off', phase !== 'lobby');
   $('hud').classList.toggle('off', phase !== 'playing');
   $('results').classList.toggle('off', phase !== 'results');
   $('debug').classList.toggle('off', !(debugOverride ?? phase !== 'playing'));
+  $('games').innerHTML = GAMES.map((g) =>
+    `<button class="card ${g.id === config.game ? 'sel' : ''}" data-game="${g.id}"><b>${g.name}</b><small>${g.blurb}<br>${g.players}</small></button>`).join('');
   const list = [...players.values()];
   $('plist').innerHTML = list
     .map((p) => `<li class="${p.info.connected ? '' : 'gone'}"><span class="dot" style="background:${p.info.color}"></span>${esc(p.info.name)}</li>`)
@@ -295,6 +305,11 @@ function renderUi() {
 }
 renderUi();
 
+$('games').addEventListener('click', (e) => {
+  const id = (e.target as HTMLElement).closest<HTMLElement>('[data-game]')?.dataset.game;
+  const game = GAMES.find((g) => g.id === id);
+  if (game) setConfig({ game: game.id });
+});
 $('start').addEventListener('click', () => dispatch('start'));
 $('again').addEventListener('click', () => dispatch('again'));
 window.addEventListener('keydown', (e) => {

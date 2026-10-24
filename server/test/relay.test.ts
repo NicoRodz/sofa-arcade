@@ -136,6 +136,26 @@ describe('phases', () => {
   });
 });
 
+describe('lobby config', () => {
+  it('screen config reaches players and late joiners; players cannot set it', async () => {
+    const screen = new Client('?role=screen&room=c1');
+    const a = new Client('?room=c1');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined');
+    expect((await a.next('config')).game).toBe('pizzas'); // default right after joining
+
+    a.send({ t: 'config', game: 'pizzas' }); // not a screen: ignored
+    await settle();
+    expect(a.msgs.filter((m) => m.t === 'config')).toEqual([]);
+
+    screen.send({ t: 'config', game: 'pizzas' });
+    expect((await a.next('config')).game).toBe('pizzas');
+    expect(srv.relay.rooms.get('c1')!.config).toEqual({ game: 'pizzas' });
+    [screen.ws, a.ws].forEach((w) => w.close());
+  });
+});
+
 describe('slot expiry', () => {
   afterEach(() => { vi.useRealTimers(); });
 
