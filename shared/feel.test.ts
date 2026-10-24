@@ -273,7 +273,7 @@ describe('R4 soft collision', () => {
     expect(worst).toBeLessThanOrEqual(3000);
     expect(trips).toBeGreaterThan(30);
   });
-  it('same with 8 bots all going the same way and a slow one: they queue and do not jam', () => {
+  it('8 bots that start on the same side and go the same way queue up and do not jam', () => {
     const g = lane(8, [[1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [8, 4]]);
     const { worst } = corridor(g, 30_000);
     expect(worst).toBeLessThanOrEqual(3000);

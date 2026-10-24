@@ -70,7 +70,7 @@ export const LOOPS = {
 export type LoopId = keyof typeof LOOPS;
 
 export type Action =
-  | { kind: 'play'; id: SfxId }
+  | { kind: 'play'; id: SfxId; semis?: number } // semis: pitch shift in semitones
   | { kind: 'loopStart'; key: string; loop: LoopId }
   | { kind: 'loopStop'; key: string }
   | { kind: 'stopLoops' }
@@ -100,7 +100,10 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   orderNew: () => [play('orderNew')],
   orderWarning: () => [play('warn')],
   orderExpired: () => [play('expired')],
-  delivered: () => [play('deliver'), { kind: 'duck' }],
+  // R7: the delivery chime climbs a whole tone per step of the tip multiplier (x1 plain, x4 six semitones up)
+  delivered: (p) => [{ kind: 'play', id: 'deliver', semis: (p.mult - 1) * 2 }, { kind: 'duck' }],
+  dishRejected: () => [play('expired')],
+  streak: () => [],
   countdownTick: (p) => (p.kind === 'end' ? (p.n >= 1 && p.n <= 10 ? [play('tickEnd')] : []) : [play(p.n > 0 ? 'count' : 'go')]),
   roundStart: () => [], // the music follows the game snapshot; the "go" sound comes with countdown 0
   roundEnd: () => [{ kind: 'stopLoops' }, play('whistle')],

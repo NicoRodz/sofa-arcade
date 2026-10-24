@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIFFICULTIES, maxOrders, orderEveryMs, params, starThresholds, stars } from './difficulty';
+import { DIFFICULTIES, maxOrders, orderEveryMs, params } from './difficulty';
 
 describe('order flow by team size', () => {
   it('Normal interval is 40 s / (0.6 + 0.2 N): 40, 28.6, 22.2 and 18.2 s for 2, 4, 6 and 8 players', () => {
@@ -20,14 +20,13 @@ describe('order flow by team size', () => {
 });
 
 describe('params', () => {
-  it('keeps the base table for patience, cutting, cooking, tip and penalty', () => {
+  it('keeps the base table for patience, cutting, cooking and penalty', () => {
     const [e, n, h] = DIFFICULTIES.map((d) => params(d, 2));
     expect([e!.orderTtlMs, n!.orderTtlMs, h!.orderTtlMs]).toEqual([90_000, 70_000, 55_000]);
     expect([e!.cutMs, n!.cutMs, h!.cutMs]).toEqual([1500, 2000, 2500]);
     expect([e!.cookMs, n!.cookMs, h!.cookMs]).toEqual([6000, 8000, 10_000]);
-    expect([e!.tipMax, n!.tipMax, h!.tipMax]).toEqual([10, 8, 6]);
     expect([e!.penalty, n!.penalty, h!.penalty]).toEqual([0, -10, -20]);
-    expect([e!.roundMs, e!.reward]).toEqual([180_000, 20]);
+    expect(e!.roundMs).toBe(180_000);
   });
 
   it('does not scale patience, cutting, cooking or penalty with the team', () => {
@@ -40,14 +39,5 @@ describe('params', () => {
   it('clamps the team size to 2..8', () => {
     expect(params('normal', 1)).toEqual(params('normal', 2));
     expect(params('normal', 20)).toEqual(params('normal', 8));
-  });
-});
-
-describe('stars', () => {
-  it('thresholds follow k * 25 * (180 / interval)', () => {
-    expect(starThresholds('normal', 2)).toEqual([45, 73, 96]); // 25 * 180/40 = 112.5
-    expect(stars('normal', 2, 44)).toBe(0);
-    expect(stars('normal', 2, 45)).toBe(1);
-    expect(stars('normal', 2, 100)).toBe(3);
   });
 });

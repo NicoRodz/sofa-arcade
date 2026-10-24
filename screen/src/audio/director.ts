@@ -58,7 +58,7 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
     if (ctx.state !== 'running') return; // the game never depends on audio
     const now = ctx.currentTime;
     for (const a of actions) {
-      if (a.kind === 'play') { if (limiter.allow(a.id, now)) playSfx(ctx, chain, a.id, now, rateFor(a.id, Math.random())); }
+      if (a.kind === 'play') { if (limiter.allow(a.id, now)) playSfx(ctx, chain, a.id, now, rateFor(a.id, Math.random()) * 2 ** ((a.semis ?? 0) / 12)); }
       else if (a.kind === 'duck') duck(now);
       else loops.apply(a, now);
     }

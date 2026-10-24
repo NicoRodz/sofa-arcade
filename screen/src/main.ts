@@ -3,7 +3,8 @@ import {
   ClockSync, DEFAULT_CONFIG, PING_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
   type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
-import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/difficulty';
+import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
+import { summarize } from '@party/shared/results';
 import { GAMES } from '@party/shared/games';
 import { howToHtml } from '@party/shared/render';
 import { generate, resolveMap } from '@party/shared/generate';
@@ -103,7 +104,7 @@ function setPhase(next: Phase) {
   if (phase === 'playing') {
     const n = connectedN();
     const map = resolveMap(config.map, config.seed, config.difficulty, n, Math.random);
-    game = createGame({ difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
+    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
     played.add(map.id);
     // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
     const order = [...players.values()].sort((a, b) => Number(b.info.connected) - Number(a.info.connected) || a.info.slot - b.info.slot);
@@ -116,7 +117,7 @@ function setPhase(next: Phase) {
       puestoMsg = pm;
     } else puestoMsg = undefined;
     overAt = null;
-    stats.delivered.clear(); stats.expired = 0;
+    stats.delivered.clear();
     scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
   else if (phase === 'lobby') scene.endRound();
@@ -394,15 +395,15 @@ function renderUi() {
 renderUi();
 
 // round stats for the results screen
-const stats = { delivered: new Map<number, number>(), expired: 0 };
+const stats = { delivered: new Map<number, number>() };
 gameBus.on('delivered', (e) => stats.delivered.set(e.player, (stats.delivered.get(e.player) ?? 0) + 1));
-gameBus.on('orderExpired', () => { stats.expired++; });
 
 let resultsTimers: ReturnType<typeof setTimeout>[] = [];
 function renderResults() {
   resultsTimers.forEach(clearTimeout);
   resultsTimers = [];
-  const st = stars(game.difficulty, game.n, game.score);
+  const sum = summarize(game);
+  const st = sum.stars;
   const starsEl = $('stars');
   starsEl.replaceChildren();
   for (let i = 0; i < 3; i++) {
@@ -419,7 +420,11 @@ function renderResults() {
     if (k < 1 && phase === 'results') requestAnimationFrame(step);
   };
   step();
-  $('stats').innerHTML = `<div class="stat good"><b>${game.delivered}</b><span>Entregadas</span></div><div class="stat bad"><b>${stats.expired}</b><span>Falladas</span></div>`;
+  const [t1, t2, t3] = sum.thresholds;
+  $('starline').innerHTML = sum.next === null ? '¡Tres estrellas!' : `Próxima estrella a <b>${sum.thresholds[st]}</b> · te faltaron <b>${sum.next}</b>`;
+  $('starline').title = `★ ${t1} · ★★ ${t2} · ★★★ ${t3}`;
+  const stat = (cls: string, v: number | string, label: string) => `<div class="stat ${cls}"><b>${v}</b><span>${label}</span></div>`;
+  $('stats').innerHTML = stat('good', sum.delivered, 'Entregadas') + stat('gold', sum.bestStreak, 'Mejor racha') + stat('gold', sum.tips, 'En propinas') + stat('bad', sum.expired + sum.rejected, 'Falladas');
   const ranked = [...players.values()].map((p) => ({ p, n: stats.delivered.get(p.info.id) ?? 0 })).sort((a, b) => b.n - a.n || a.p.info.slot - b.p.info.slot);
   const top = ranked.filter((r) => r.n > 0).slice(0, 3);
   const order = top.length === 3 ? [1, 0, 2] : top.length === 2 ? [1, 0] : [0];

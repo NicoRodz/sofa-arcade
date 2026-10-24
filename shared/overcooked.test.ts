@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLS, ROWS, TICK_MS, addPlayer, createGame, isSolid, spawnOrder, tick, type Controls, type Game, type Station } from './overcooked';
+import { COLS, ROWS, TICK_MS, addPlayer, createGame, isSolid, recipeBase, spawnOrder, tick, type Controls, type Game, type Station } from './overcooked';
 import { DIRS, fixedMap, isFloor } from './maps';
 import { params, type Difficulty } from './difficulty';
 import { ROUND_MS } from './protocol';
@@ -215,9 +215,10 @@ describe('orders and score', () => {
     const order = g.orders[0]!;
     face(g, 1, station(g, 'window'));
     press(g, 1);
-    const tip = Math.round((P.tipMax * (order.expiresAt - g.time)) / P.orderTtlMs);
+    const base = recipeBase('marinara', P.tune);
+    const tip = Math.round((base * P.tune.tipPct * (order.expiresAt - g.time)) / P.orderTtlMs); // first delivery: streak multiplier x1
     expect(tip).toBeGreaterThan(0);
-    expect(g.score).toBe(P.reward + tip);
+    expect(g.score).toBe(base + tip);
     expect(g.delivered).toBe(1);
     expect(g.orders.length).toBe(0);
     expect(g.players.get(1)!.item).toBeNull();
@@ -390,8 +391,9 @@ describe('cheese and Margarita', () => {
     expect(g.orders.map((o) => o.id)).toEqual([50]); // the Marinara went to the Marinara order
     p.item = 'dish';
     press(g, 1);
-    expect(p.item).toBe('dish'); // only a Margarita order is left: refused
+    expect(p.item).toBeNull(); // only a Margarita order is left: the wrong plate is refused (R16: it goes back dirty, pays nothing)
     expect(g.delivered).toBe(1);
+    expect(g.rejected).toBe(1);
     p.item = 'dishQ';
     press(g, 1);
     expect(g.orders).toEqual([]);

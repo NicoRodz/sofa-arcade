@@ -31,6 +31,10 @@ export class Hud {
   private panel: Phaser.GameObjects.Image;
   private dim: Phaser.GameObjects.Rectangle;
   private banner?: Phaser.GameObjects.Text;
+  private streakBox: Phaser.GameObjects.Container;
+  private streakBg: Phaser.GameObjects.Graphics;
+  private streakTxt: Phaser.GameObjects.Text;
+  private streakMult = 1;
   private t = 0;
   private lastSecond = -1;
   private pulse = 1;
@@ -45,6 +49,34 @@ export class Hud {
     this.coin = scene.add.image(1600, 52, 'coin').setScale(84 / 96 / R).setDepth(D + 1);
     this.scoreTxt = makeText(scene, 1770, 54, '0', { size: 56, color: C.ink, stroke: 0, depth: D + 2 });
     this.dim = scene.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.35).setDepth(1900).setVisible(false);
+    // R15: the tip multiplier, left of the score. Hidden at x1.
+    this.streakBg = scene.add.graphics();
+    const label = makeText(scene, 0, -19, 'RACHA', { size: 15, color: C.cream, stroke: 3, depth: 0 });
+    this.streakTxt = makeText(scene, 0, 8, 'x2', { size: 40, color: C.cream, stroke: 6, depth: 0 });
+    this.streakBox = scene.add.container(1462, 52, [this.streakBg, label, this.streakTxt]).setDepth(D + 1).setVisible(false);
+  }
+
+  // R15: pops when the multiplier goes up, shakes and drops out when the streak is lost.
+  streak(n: number, mult: number) {
+    const was = this.streakMult;
+    this.streakMult = mult;
+    const box = this.streakBox;
+    this.scene.tweens.killTweensOf(box);
+    if (n === 0) {
+      if (was > 1) this.scene.tweens.add({ targets: box, angle: { from: -9, to: 9 }, duration: 60, yoyo: true, repeat: 3, onComplete: () => { box.setVisible(false).setAngle(0); } });
+      return;
+    }
+    if (mult < 2) { box.setVisible(false); return; }
+    const col = mult >= 4 ? C.tomato : mult === 3 ? C.fire : C.cheese2;
+    this.streakTxt.setText(`x${mult}`);
+    const g = this.streakBg;
+    g.clear();
+    g.fillStyle(0x2b1b17, 0.28).fillRoundedRect(-62, -26, 128, 60, 28);
+    g.fillStyle(hexNum(col), 1).fillRoundedRect(-64, -30, 128, 60, 28);
+    g.lineStyle(5, hexNum(C.ink), 1).strokeRoundedRect(-64, -30, 128, 60, 28);
+    g.fillStyle(0xffffff, 0.3).fillRoundedRect(-52, -25, 104, 7, 3);
+    box.setVisible(true).setAngle(0).setScale(1.5);
+    this.scene.tweens.add({ targets: box, scale: 1, duration: 260, ease: 'back.out' });
   }
 
   private makeTicket(id: number, recipe: 'marinara' | 'margarita'): Ticket {
@@ -152,6 +184,6 @@ export class Hud {
   destroy() {
     for (const t of this.tickets.values()) t.root.destroy();
     this.tickets.clear();
-    for (const o of [this.clockG, this.clockImg, this.clockTxt, this.coin, this.scoreTxt, this.panel, this.dim, this.banner]) o?.destroy();
+    for (const o of [this.clockG, this.clockImg, this.clockTxt, this.coin, this.scoreTxt, this.panel, this.dim, this.banner, this.streakBox]) o?.destroy();
   }
 }

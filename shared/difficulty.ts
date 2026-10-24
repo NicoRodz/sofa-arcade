@@ -47,8 +47,6 @@ export interface Params {
   plates: number; // plates in circulation (only used on maps with a sink)
   cutMs: number;
   cookMs: number;
-  reward: number;
-  tipMax: number;
   penalty: number; // applied per expired order, negative or 0
   tune: Tuning;
 }
@@ -56,9 +54,9 @@ export interface Params {
 // Order interval, queue and starting orders do not live here: they come from the team size (see params).
 type Base = Omit<Params, 'orderEveryMs' | 'maxOrders' | 'initialOrders' | 'cheesePct' | 'plates' | 'tune'>;
 const BASE: Record<Difficulty, Base> = {
-  easy: { roundMs: ROUND_MS, orderTtlMs: 90_000, cutMs: 1500, cookMs: 6000, reward: 20, tipMax: 10, penalty: 0 },
-  normal: { roundMs: ROUND_MS, orderTtlMs: 70_000, cutMs: 2000, cookMs: 8000, reward: 20, tipMax: 8, penalty: -10 },
-  hard: { roundMs: ROUND_MS, orderTtlMs: 55_000, cutMs: 2500, cookMs: 10_000, reward: 20, tipMax: 6, penalty: -20 },
+  easy: { roundMs: ROUND_MS, orderTtlMs: 90_000, cutMs: 1500, cookMs: 6000, penalty: 0 },
+  normal: { roundMs: ROUND_MS, orderTtlMs: 70_000, cutMs: 2000, cookMs: 8000, penalty: -10 },
+  hard: { roundMs: ROUND_MS, orderTtlMs: 55_000, cutMs: 2500, cookMs: 10_000, penalty: -20 },
 };
 export const ORDER_BASE_MS = 40_000; // Normal: interval = 40 s / (0.6 + 0.2 N)
 const INTERVAL_K: Record<Difficulty, number> = { easy: 1.25, normal: 1, hard: 0.8 };
@@ -82,11 +80,3 @@ export function params(d: Difficulty, n: number): Params {
     plates: band(n, [3, 4, 5, 6]),
   };
 }
-
-// Score needed for 1, 2 and 3 stars: k * 25 * (180 / order interval in s), k = 0.40 / 0.65 / 0.85.
-export function starThresholds(d: Difficulty, n: number): [number, number, number] {
-  const p = params(d, n);
-  const base = 25 * (p.roundMs / p.orderEveryMs);
-  return [Math.round(0.4 * base), Math.round(0.65 * base), Math.round(0.85 * base)];
-}
-export const stars = (d: Difficulty, n: number, score: number) => starThresholds(d, n).filter((t) => score >= t).length;

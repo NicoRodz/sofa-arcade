@@ -64,11 +64,19 @@ export class World {
       if (ch) {
         this.fx.starBurst(ch.root.x, ch.root.y - TILE * 0.5, 5);
         this.fx.float(ch.root.x, ch.root.y - TILE * 1.15, `+${e.points}`, C.cheese, 52);
+        if (e.mult > 1) this.fx.float(ch.root.x, ch.root.y - TILE * 1.55, `propina x${e.mult}`, e.mult >= 4 ? C.tomato : C.fire, 30);
       }
       this.fx.ring(w.x, w.y, 0xffc93c, 0.5, 2);
       const box = place(this.scene, foodKey('box'), w.x, w.y - TILE * 0.1, 1.0).setDepth(1300);
       this.scene.tweens.add({ targets: box, y: box.y - 90, alpha: 0, duration: 800, ease: 'cubic.out', onComplete: () => box.destroy() });
     });
+    on('dishRejected', (e) => {
+      const w = this.stations.pos(this.stations.windowIdx());
+      this.fx.float(w.x, w.y - TILE * 0.4, '¡Pedido equivocado!', C.danger, 38);
+      this.chefOf(e.player)?.fail();
+      this.fx.shake(90, 0.003);
+    });
+    on('streak', (e) => this.hud.streak(e.n, e.mult));
     on('countdownTick', (e) => { if (e.kind === 'start') this.hud.countdown(e.n); else this.hud.clockPulse(); });
     on('roundEnd', () => { this.hud.timeUp(); this.fx.shake(250, 0.006); });
   }

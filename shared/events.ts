@@ -20,7 +20,9 @@ export interface GameEvents {
   orderNew: { order: number; recipe: Recipe };
   orderWarning: { order: number };
   orderExpired: { order: number };
-  delivered: { player: number; points: number; tip: number };
+  delivered: { player: number; points: number; tip: number; base: number; mult: number }; // points = base + tip, the tip already times the streak multiplier
+  dishRejected: { player: number }; // R16: the wrong plate at the window
+  streak: { n: number; mult: number }; // R15: deliveries in a row (0 = lost) and the multiplier the next one gets
   countdownTick: { n: number; kind: 'start' | 'end' }; // start: 3, 2, 1, 0 = go; end: last seconds of the round
   roundStart: Record<string, never>;
   roundEnd: { score: number; delivered: number };

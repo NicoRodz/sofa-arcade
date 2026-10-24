@@ -113,11 +113,13 @@
   #stars canvas.off2 { filter: grayscale(1) brightness(.75); }
   #bigscore { font: 800 100px/1 var(--font); color: var(--ink); margin-top: 0; }
   #bigscore small { display: block; font: 800 22px var(--font); letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
-  #stats { display: flex; justify-content: center; gap: 48px; margin: 18px 0 8px; }
-  .stat { min-width: 200px; padding: 10px 0; border-radius: 14px; border: 3px solid var(--ink); background: #F6E8CB; }
+  #starline { font: 700 24px var(--font); color: var(--muted); margin-top: 6px; }
+  #starline b { color: var(--ink); }
+  #stats { display: flex; justify-content: center; gap: 24px; margin: 14px 0 8px; }
+  .stat { min-width: 190px; padding: 10px 0; border-radius: 14px; border: 3px solid var(--ink); background: #F6E8CB; }
   .stat b { display: block; font: 800 56px/1.05 var(--font); }
   .stat span { font: 800 20px var(--font); letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
-  .stat.good b { color: var(--basil2); } .stat.bad b { color: var(--danger); }
+  .stat.good b { color: var(--basil2); } .stat.bad b { color: var(--danger); } .stat.gold b { color: #B07A0A; }
   #podium { display: flex; justify-content: center; align-items: flex-end; gap: 14px; height: 330px; margin-top: 8px; }
   .pod { width: 200px; text-align: center; position: relative; }
   .pod canvas { width: 130px; height: 184px; display: block; margin: 0 auto -14px; position: relative; z-index: 2; animation: breathe .9s ease-in-out infinite alternate; transform-origin: 50% 100%; }
@@ -193,6 +195,7 @@
       <h2>¡Fin de la ronda!</h2>
       <div id="stars"></div>
       <div id="bigscore"><small>Puntaje del equipo</small><span id="finalscore">0</span></div>
+      <div id="starline"></div>
       <div id="stats"></div>
       <div id="podium"></div>
       <button id="again" class="btn">Volver al lobby</button>

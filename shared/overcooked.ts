@@ -1,7 +1,7 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
 import { Emitter, type GameEvents } from './events';
 import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type StationKind } from './maps';
-import { DEFAULT_DIFFICULTY, DIRTY_MS, WASH_MS, params as difficultyParams, teamSize, type Difficulty, type Params } from './difficulty';
+import { DEFAULT_DIFFICULTY, DIRTY_MS, WASH_MS, params as difficultyParams, teamSize, type Difficulty, type Params, type Tuning } from './difficulty';
 import { mulberry32, type Rng } from './rng';
 
 export const TICK_HZ = 60;
@@ -16,6 +16,13 @@ export type { StationKind } from './maps';
 export type Item = 'raw0' | 'raw1' | 'raw2' | 'cut0' | 'cut1' | 'cut2' | 'plate' | 'dish' | 'dishQ' | 'dirty';
 export type Recipe = 'marinara' | 'margarita';
 export const RAW_OF: readonly Item[] = ['raw0', 'raw1', 'raw2'];
+
+// R13: what a recipe is worth before the tip: points per ingredient plus points per process (stretch or cut each one, then bake).
+// Marinara = dough, tomato (2 ingredients) + stretch, cut, bake (3 processes). Margarita adds cheese and grating.
+export const RECIPE_PARTS: Record<Recipe, { components: number; processes: number }> = { marinara: { components: 2, processes: 3 }, margarita: { components: 3, processes: 4 } };
+export const recipeBase = (r: Recipe, t: Tuning) => RECIPE_PARTS[r].components * t.baseComponent + RECIPE_PARTS[r].processes * t.baseProcess;
+// R15: the tip multiplier for a delivery made after `streak` correct ones in a row.
+export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax, 1 + Math.max(0, streak));
 
 export interface Station {
   kind: StationKind;
@@ -79,6 +86,12 @@ export interface Game {
   over: boolean;
   score: number;
   delivered: number;
+  mapId?: string; // fixed map id, for the star table (undefined: generated map)
+  streak: number; // R15: correct deliveries in a row; an expired order or a rejected dish resets it
+  bestStreak: number;
+  tips: number; // points earned as tips, for the results
+  expired: number;
+  rejected: number;
   players: Map<number, Player>;
   stations: Station[];
   orders: Order[];
@@ -102,7 +115,7 @@ export const spawnOrder = (g: Game) => {
   }
 };
 
-export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents> } = {}): Game {
+export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents> } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows);
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const p = difficultyParams(difficulty, opts.n ?? 2);
@@ -110,7 +123,7 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
   grid.forEach((row, ty) => row.forEach((t, tx) => {
     if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false, count: 0, clean: 0 });
   }));
-  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], rng: mulberry32(opts.seed ?? 1), hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(), dirtyDue: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
+  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, mapId: opts.mapId, streak: 0, bestStreak: 0, tips: 0, expired: 0, rejected: 0, players: new Map(), stations, orders: [], rng: mulberry32(opts.seed ?? 1), hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(), dirtyDue: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
   if (g.finitePlates) {
     const piles = stations.filter((s) => s.kind === 'plates');
     for (let i = 0; i < p.plates && piles.length; i++) piles[i % piles.length]!.count++;
@@ -296,25 +309,45 @@ function interact(g: Game, p: Player, s: Station) {
         const want: Recipe = p.item === 'dishQ' ? 'margarita' : 'marinara';
         let at = g.orders.findIndex((o) => o.recipe === want);
         if (at < 0 && p.item === 'dishQ') at = 0;
-        if (at < 0) break;
+        if (at < 0) { // R16: the wrong plate is refused, goes back dirty and pays nothing
+          if (g.finitePlates) g.dirtyDue.push(g.time + DIRTY_MS);
+          p.item = null;
+          g.rejected++;
+          resetStreak(g);
+          g.bus.emit('dishRejected', { player: p.id });
+          break;
+        }
         const o = g.orders.splice(at, 1)[0]!;
-        const { reward, tipMax, orderTtlMs } = g.params;
-        const tip = Math.round((tipMax * Math.max(0, o.expiresAt - g.time)) / orderTtlMs);
-        g.score += reward + tip;
+        const { tune, orderTtlMs } = g.params;
+        const base = recipeBase(o.recipe, tune); // R13
+        const left = Math.min(1, Math.max(0, o.expiresAt - g.time) / orderTtlMs);
+        const mult = tipMultiplier(g.streak, tune); // R15: the streak multiplies only the tip
+        const tip = Math.round(base * tune.tipPct * left) * mult; // R14: up to +50% of the base, by the patience left
+        g.score += base + tip;
+        g.tips += tip;
         g.delivered++;
+        g.streak++;
+        g.bestStreak = Math.max(g.bestStreak, g.streak);
         if (g.finitePlates) g.dirtyDue.push(g.time + DIRTY_MS);
         p.item = null;
-        g.bus.emit('delivered', { player: p.id, points: reward + tip, tip });
+        g.bus.emit('delivered', { player: p.id, points: base + tip, tip, base, mult });
+        g.bus.emit('streak', { n: g.streak, mult: tipMultiplier(g.streak, tune) });
       }
       break;
   }
 }
 
+function resetStreak(g: Game) {
+  if (g.streak === 0) return;
+  g.streak = 0;
+  g.bus.emit('streak', { n: 0, mult: 1 });
+}
+
 // Runs one A press and reports what happened as events.
 function act(g: Game, p: Player, s: Station) {
-  const before = { held: p.item, shelf: s.item, baked: baked(s), done: s.done, delivered: g.delivered };
+  const before = { held: p.item, shelf: s.item, baked: baked(s), done: s.done, delivered: g.delivered, rejected: g.rejected };
   interact(g, p, s);
-  if (g.delivered !== before.delivered) return; // 'delivered' already emitted
+  if (g.delivered !== before.delivered || g.rejected !== before.rejected) return; // 'delivered' or 'dishRejected' already emitted
   if (!before.held && p.item) g.bus.emit('itemPicked', { player: p.id, item: p.item, from: s.kind });
   else if (before.held && !p.item) g.bus.emit('itemDropped', { player: p.id, item: before.held, at: s.kind });
   else g.bus.emit('interactInvalid', { player: p.id });
@@ -424,7 +457,9 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   }
   const alive = g.orders.filter((o) => o.expiresAt > g.time);
   for (const o of g.orders) if (!alive.includes(o)) g.bus.emit('orderExpired', { order: o.id });
-  g.score = Math.max(0, g.score + (g.orders.length - alive.length) * g.params.penalty);
+  const lost = g.orders.length - alive.length;
+  g.score = Math.max(0, g.score + lost * g.params.penalty);
+  if (lost) { g.expired += lost; resetStreak(g); }
   g.orders = alive;
   for (const o of alive) if (!o.warned && o.expiresAt - g.time < WARNING_MS) { o.warned = true; g.bus.emit('orderWarning', { order: o.id }); }
 
