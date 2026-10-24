@@ -345,13 +345,13 @@ describe('cheese and Margarita', () => {
     const g = trattoria();
     const pot = station(g, 'pot');
     pot.inputs = [0, 1];
-    run(g, 10);
+    run(g, 3000);
     const progress = pot.progress;
-    expect(progress).toBeGreaterThan(0);
+    expect(progress).toBeGreaterThan(0.3);
     g.players.get(1)!.item = 'cut2';
     face(g, 1, pot); press(g, 1);
     expect(pot.inputs).toEqual([0, 1, 2]);
-    expect(pot.progress).toBeGreaterThanOrEqual(progress); // not reset
+    expect(pot.progress).toBeGreaterThanOrEqual(progress); // not reset: cheese joins mid-cook
     run(g, g.params.cookMs + 100);
     expect(pot.done).toBe(true);
     g.players.get(1)!.item = 'plate';
