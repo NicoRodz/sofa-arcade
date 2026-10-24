@@ -182,6 +182,10 @@ describe('teams on the wire (protocol v2)', () => {
     expect(parseClientMessage('{"t":"setTeam","teamId":"a"}')).toBeNull();
     expect(parseClientMessage('{"t":"setTeam"}')).toBeNull();
   });
+  it('a campaign round announces itself in phase.match (obstaculos, coop, modeOptions.campaign) and the parser keeps the flag: it is what makes the phone show the signal pad', () => {
+    const match = { gameId: 'obstaculos', modeId: 'coop', mapId: 'campaign', difficulty: 'normal', teams: null, modeOptions: { campaign: true } };
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match }))).toEqual({ t: 'phase', phase: 'playing', match });
+  });
   it('a phase message may carry the match start; an incomplete or foreign one is rejected', () => {
     const match = { gameId: 'pizzas', modeId: 'versus', mapId: '8', difficulty: 'hard', teams, modeOptions: { hiddenScore: false } };
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match }))).toEqual({ t: 'phase', phase: 'playing', match });

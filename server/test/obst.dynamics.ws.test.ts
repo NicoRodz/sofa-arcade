@@ -155,3 +155,52 @@ describe('campaign dynamics 4-9 over the relay: two bots on websockets', () => {
     expect(data(r.events, 'obst.throw')[0]!.vx).toBe(420);
   }, 120_000);
 });
+
+describe('campaign dynamics 10-12 over the relay (A6): two bots on websockets', () => {
+  it('10 lantern: slot 0 takes the lantern and carries the light over a 6-tile pit bridged by crystals, slot 1 right behind it; the crystals light up (obst.lantern) and the level is cleared with no deaths', async () => {
+    const r = await play('obe1', sc('lantern'));
+    const w = r.s.world;
+    const acts = data(r.events, 'obst.lantern').map((e) => e.action);
+    expect(acts[0]).toBe('take');
+    expect(acts).toContain('light'); // (a few lights and dims ring: the crystals change a column at a time as the circle moves)
+    expect(acts.indexOf('dim')).toBeGreaterThan(acts.indexOf('light')); // behind them the bridge goes dark again
+    expect(data(r.events, 'obst.lantern').filter((e) => e.action === 'light').every((e) => e.player === 0)).toBe(true);
+    expect(w.status).toBe('cleared');
+    expect(w.deaths).toBe(0);
+    expect(w.players.every((p) => p.inGoal)).toBe(true);
+  }, 90_000);
+
+  it('10 lantern, quick match twin: no lantern, no light, no dark; the crystals are air, so the same bots walk into the pit and die', async () => {
+    const r = await play('obe1b', sc('lantern'), { campaign: false, maxSec: 20 });
+    expect(names(r.events).filter((n) => n === 'obst.lantern')).toEqual([]);
+    expect(r.s.world.ent.lanterns).toEqual([]);
+    expect(data(r.events, 'obst.death').some((d) => d.cause === 'liquid')).toBe(true);
+  }, 60_000);
+
+  it('11 bungee: slot 0 anchors to the elastic ring, slot 1 walks off the edge: the rope stretches past 1.3x its length (up to 1.6x), obst.bungee rings, and slot 1 is never sent to a bubble', async () => {
+    let max = 0;
+    const r = await play('obe2', sc('bungee'), { stop: (s) => { const [a, b] = s.world.players; max = Math.max(max, Math.hypot(a!.body.x - b!.body.x, a!.body.y - b!.body.y)); return s.world.tick > 600; } });
+    const rope = 3.5 * TILE * 1.2;
+    expect(max).toBeGreaterThan(1.3 * rope);
+    expect(max).toBeLessThan(1.6 * rope + 8);
+    expect(data(r.events, 'obst.bubble')).toEqual([]);
+    expect(data(r.events, 'obst.bungee').length).toBeGreaterThanOrEqual(1);
+    expect(data(r.events, 'obst.bungee')[0]!.player).toBe(1);
+  }, 90_000);
+
+  it('12 sinkers: both spawn on rock D, which sinks 1 tile/s (2 characters) down to its 3 tiles; one obst.sinker with load 2', async () => {
+    const r = await play('obe3', sc('sinkers'), { stop: (s) => s.world.tick > 360 });
+    const D = r.s.world.ent.objectives.find((o) => o.letter === 'D')!;
+    expect(D.oy).toBeCloseTo(3 * TILE, 6);
+    expect(data(r.events, 'obst.sinker')).toEqual([{ id: 'D', load: 2 }]);
+    expect(r.s.world.ent.objectives.find((o) => o.letter === 'E')!.oy).toBe(0);
+  }, 60_000);
+
+  it('12 geyser: the vent bubbles, erupts and throws the players that wait in it high above the floor (more than a jump), every 4 s: warn, gush, calm', async () => {
+    let top = Infinity;
+    const r = await play('obe4', sc('geyser'), { stop: (s) => { for (const p of s.world.players) top = Math.min(top, p.body.y); return s.world.tick > 720; } });
+    const ph = data(r.events, 'obst.geyser').map((e) => e.phase);
+    expect(ph.slice(0, 3)).toEqual(['warn', 'gush', 'calm']);
+    expect(15 * TILE + 2 - top).toBeGreaterThan(300); // a normal jump lifts the head 173 px
+  }, 90_000);
+});

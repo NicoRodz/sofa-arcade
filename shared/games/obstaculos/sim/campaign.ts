@@ -16,7 +16,32 @@
 //   Throw niche (no new id, 'throw' keeps its name): in a campaign the thrown player's rope stretches x1.5 for 1.2 s and the launch is x1.3 faster, so a TIED throw crosses a
 //   5-tile pit that no jump (4) or tower (3) does. The validator models it (kind 'throw' edges also for followers, see below). The learning test still pairs tower/throw (see
 //   campaign/learning.ts EQUIVALENT): drop the pair once a level built with the 5-tile pit debuts the throw.
-//   Later phases (A6) add ids here: lantern, bungee, sinkers, geyser.
+//   lantern     dynamic 10 debut 4-1   SIM_ONLY  marker 'l' (item, one carrier, B passes it like the pickaxe) + tile 'Y' (crystal): a level with an 'l' is DARK; crystals within lanternRadiusTiles (4) of the lantern are solid (T.CrystalLit), the rest are air; obst.lantern
+//   bungee      dynamic 11 debut 4-4   SIM_ONLY  marker 'u' (elastic ring, anchored with B like an 'o'): the rope hanging from it is a spring, stretches up to bungeeMaxMult (1.6) x and bounces; obst.bungee
+//   sinkers     dynamic 12 debut 5-1   SIM_ONLY  objective A-F {kind:'sinker', travel}: a one-way rock that sinks sinkTilesPerSec (0.5) PER CHARACTER down to `travel` tiles and floats back up when empty; obst.sinker
+//   geyser      dynamic 12 debut 5-2   SIM_ONLY  objective A-F {kind:'geyser', periodSec, activeSec?}: a vent that bubbles geyserWarnSec (1 s) then erupts and launches whoever is in it at geyserLaunchMult (1.65) x v0; obst.geyser
+//
+// ===== A6 INTERFACE FOR S2 (levels and validator for the dynamics above; nothing below builds a level) =====
+//   LevelDef authoring (all additive; a level without them is the old one. A quick-match world ignores 'l', 'Y' (air), sinkers (still platform) and geysers (air); a 'u' is a plain ring there):
+//     'l' lantern marker (cell of the item; one per cordada), 'Y' crystal tile, 'u' elastic ring (counts as a ring: B anchors to it), objective letters A-F with
+//     params {kind:'sinker', travel: tiles} or {kind:'geyser', periodSec, activeSec?}. The vent's cells are open air ON a floor (lint: solid floor under every cell); the rock's cells
+//     are where it floats at rest (lint: it may not leave the grid / run into a solid when sunk).
+//   WHAT THE VALIDATOR MODELS (validator/graph.ts buildTerrain, validate.ts lint; tests in validator/dynamics6.test.ts):
+//     crystals   every 'Y' counts as SOLID when the level has an 'l' (the lantern is assumed to be where it is needed); lint: crystals with no lantern is an error.
+//     bungee     a 'u' is a plain ring for the swing model (ringsOf): its extra reach (1.6x) is not modelled.
+//     sinkers    the rock is a still one-way platform at its resting height (the sinking is not modelled: a route that needs the rock to be LOW, or to stay high with a load, is S2's to prove with the bot).
+//     geyser     the vent is a spring: the floor tile under each vent cell is a trampoline (1.45 x v0 in the model, 1.65 x v0 in the sim: the model is pessimistic) and the eruption's timing (4 s
+//                period, 0.5 s window) is NOT modelled. Tied with 2 players the rope (4.2 tiles) caps any rise above it, spring or not (same as a boya).
+//   WHAT IT DOES NOT MODEL (S2: verify with the real-sim bots and keep a margin):
+//     lantern    who carries it and where the circle is: a lit crystal is solid only within 4 tiles of the carrier, so a bridge longer than 8 tiles or a follower farther than 4 tiles behind
+//                the light falls (the scenario 'lantern' of server/test/obst.dynamics.scenarios.ts is a 6-tile bridge with the follower within 3 tiles). A crystal never turns solid around a body.
+//     bungee     the stretch and the rebound (a body hangs ~1.15 x below a 'u' and a fall of 4 tiles stretches to ~1.5 x, hard stop 1.6 x): never put a hazard within 1.6 x the rope under an elastic ring.
+//     sinkers    the rock sinks into whatever is below: liquid or spikes under its path kill whoever is on it (hazards do not care that it is a rock): leave `travel` + 1 tiles of air under it.
+//                Boxes do not ride platforms in this sim (they fall through a rock), so no box puzzles on a sinker.
+//     geyser     launches whoever overlaps the vent cells during the 0.5 s eruption (once every 0.5 s per player): 1.65 x v0 = ~9 tiles of rise; keep the ceiling and the landing in mind.
+//     darkness   is a view effect only (render/dark.ts): the sim does not hide anything; hints and the goal are drawn in the dark too.
+//   MINIMAL EDITS A6 MADE OUTSIDE ITS LANE (S2: expect them when you merge): validator/graph.ts (ringsOf, buildTerrain: crystals, sinker, geyser; swing uses ringsOf), validator/validate.ts (lint:
+//     sinker shift, crystals/geyser errors; the freeOnly-ring check uses ringsOf), types.ts / parse.ts / legend.ts (the new params, markers 'l' 'u', tile 'Y'). Nothing in the levels.
 //
 // ===== A5 INTERFACE FOR S2 (levels and validator for the dynamics above; nothing below builds a level) =====
 //   LevelDef authoring (all additive; a level without them is the old one):
@@ -114,7 +139,7 @@ export interface CampaignParams {
   // --- A6 (plan §4 #10-#12). New in A6: nothing above changed.
   lanternRadiusTiles: number; // #10 lantern: crystals within this radius (tiles, centre to centre) of the lantern are solid; also the radius of the lit circle of a dark level
   bungeeMaxMult: number; // #11 bungee: the rope of a body hanging from an elastic ring stretches up to this x its length (a hard stop beyond it)
-  bungeeStiffness: number; // #11: spring constant (1/s^2): acceleration = k x stretch(px). 40: a 4-tile fall stretches the rope to ~1.47x (the hard stop is 1.6x) and pulls back up at ~150 px/s, then it hangs at ~1.15x (sweep in tools/s1-bungee.ts)
+  bungeeStiffness: number; // #11: spring constant (1/s^2): acceleration = k x stretch(px). 40: a 4-tile fall stretches the rope to ~1.47x (the hard stop is 1.6x) and pulls back up at ~150 px/s, then it hangs at ~1.15x (sweep of stiffness 30-60 and damping 2-9 done on the real sim; see tuning.ts)
   bungeeDamping: number; // #11: 1/s, braking of the speed along the stretched link. 7 kills the bounce in ~2 s. Less does not: the player's gravity is asymmetric (rising 2396, falling 3594 px/s^2) and pumps a spring into a steady 15-90 px swing (damping 2-6)
   sinkTilesPerSec: number; // #12 sinkers: a rock sinks this fast per character standing on it...
   sinkRiseTilesPerSec: number; // ...and floats back up this fast when it is empty

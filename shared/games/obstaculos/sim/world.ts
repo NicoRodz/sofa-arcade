@@ -256,12 +256,14 @@ export function hashState(w: World): number {
   if (e.hazard) { mix(e.hazard.pos); mix(e.hazard.frozen); }
   if (w.camp) { // the campaign layer's own state (a quick-match hash stays what it always was)
     mix(w.heartsLost); mix(w.refills); mix(w.countdown ? w.countdown.steps : -1);
-    for (const p of w.players) for (const v of [p.camp.assist, p.camp.assistDir, p.camp.jumpTick, p.camp.mash, p.camp.mashCool, p.camp.goHold, p.camp.signal ? p.camp.signal.steps : -1, p.camp.pick, p.camp.onIce ? 1 : 0, p.camp.geyserCool]) mix(v);
+    for (const p of w.players) for (const v of [p.camp.assist, p.camp.assistDir, p.camp.jumpTick, p.camp.mash, p.camp.mashCool, p.camp.goHold, p.camp.signal ? p.camp.signal.steps : -1, p.camp.pick, p.camp.onIce ? 1 : 0]) mix(v);
+    // A6 state is mixed only when it is not at rest: a world that never meets a lantern, an elastic ring or a geyser hashes exactly as it did in A5 (the Mundo 1 hashes are frozen)
+    for (const p of w.players) if (p.camp.geyserCool) mix(p.camp.geyserCool);
     for (const a of e.activators) mix(a.timer);
     for (const en of e.enemies) for (const v of [en.x, en.y, en.dir, en.stun]) mix(v);
     for (const k of e.pickaxes) for (const v of [k.x, k.y, k.heldBy]) mix(v);
     for (const k of e.lanterns) for (const v of [k.x, k.y, k.heldBy]) mix(v);
-    for (const r of w.ropes) for (const l of r.links) { mix(l.elastic ? 1 : 0); mix(l.boing); }
+    for (const r of w.ropes) for (const l of r.links) if (l.elastic || l.boing) { mix(l.elastic ? 1 : 0); mix(l.boing); }
     if (w.wind) mix(w.wind.phase === 'calm' ? 0 : w.wind.phase === 'warn' ? 1 : 2);
   }
   return h >>> 0;

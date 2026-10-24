@@ -348,14 +348,15 @@ export class EntityLayer {
     const ph = e.value >= 1 ? 2 : e.value > 0 ? 1 : 0, tt = Math.floor(this.t * 12);
     const g = this.redraw(sp, `${e.x}|${e.y}|${ph}|${ph ? tt : 0}`); if (!g) return;
     const cx = e.x + e.w / 2, base = e.y + e.h, w = e.w;
-    g.fillStyle(0x2b1b17, 1); g.fillEllipse(cx, base - 2, w + 6, 14);
-    g.fillStyle(0x59636b, 1); g.fillEllipse(cx, base - 3, w, 10);
-    g.fillStyle(ph === 2 ? 0xdff6ff : 0x6fb3d6, 1); g.fillEllipse(cx, base - 4, w - 12, 6);
+    g.fillStyle(0x2b1b17, 1); g.fillEllipse(cx, base - 3, w + 10, 20);
+    g.fillStyle(0x59636b, 1); g.fillEllipse(cx, base - 4, w + 2, 15);
+    g.fillStyle(0x1d2a33, 1); g.fillEllipse(cx, base - 5, w - 12, 9);
+    g.fillStyle(ph === 2 ? 0xdff6ff : 0x6fb3d6, 1); g.fillEllipse(cx, base - 5, w - 20, 5);
     if (ph === 1) for (let i = 0; i < 5; i++) { const u = ((tt * 0.13 + i * 0.21) % 1), bx = cx + Math.sin(i * 2.3 + tt * 0.3) * (w / 3); g.fillStyle(0xbfe9ff, 0.85 * (1 - u)); g.fillCircle(bx, base - 8 - u * 46, 3 + (i % 2) * 1.5); }
     if (ph === 2) {
       const h = 2.6 * TILE;
-      g.fillStyle(0x9be0ff, 0.8); g.fillRoundedRect(cx - 14, base - h, 28, h - 4, 12);
-      g.fillStyle(0xffffff, 0.75); g.fillRoundedRect(cx - 6, base - h + 4, 8, h - 14, 4);
+      g.fillStyle(0x9be0ff, 0.8); g.fillRoundedRect(cx - 19, base - h, 38, h - 4, 15);
+      g.fillStyle(0xffffff, 0.75); g.fillRoundedRect(cx - 8, base - h + 4, 10, h - 14, 5);
       for (let i = 0; i < 7; i++) { const a = (tt * 0.37 + i * 0.9) % 1; g.fillStyle(0xdff6ff, 1 - a); g.fillCircle(cx + (i % 2 ? 1 : -1) * (12 + a * 26), base - h + 10 + a * 34, 4 - a * 2); }
     }
   }

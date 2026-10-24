@@ -53,6 +53,7 @@ export class ObstaclesView {
   private prevInGoal = new Set<number>();
   private windAcc = 0;
   private windN = 0;
+  private lastLight = -9;
 
   constructor(private scene: Phaser.Scene, private world: WorldView, bus?: Emitter<AllObstEvents>) {
     const mkLayer = () => { const l = scene.add.layer(); this.layers.push(l); return l; };
@@ -163,7 +164,7 @@ export class ObstaclesView {
       const m = e.player >= 0 ? mid(e.player) : null;
       if (e.action === 'take') { if (m) this.fx.float(m.x, m.y - 56, '¡Farol!', '#FFE9A0', 28); }
       else if (e.action === 'pass') { if (m) this.fx.float(m.x, m.y - 56, '¡Toma!', C.cheese, 28); }
-      else if (e.action === 'light') { if (m) { this.fx.ring(m.x, m.y, 0xffe9a0, 0.6, 3.4); this.fx.starBurst(m.x, m.y, 6); } }
+      else if (e.action === 'light') { if (m && this.t - this.lastLight > 0.9) { this.lastLight = this.t; this.fx.ring(m.x, m.y, 0xffe9a0, 0.6, 3.4); } } // (the crystals change a column at a time as the circle moves: one ring per second at most)
     });
     on('obst.bungee', (e) => { const m = mid(e.player); this.fx.ring(m.x, m.y, 0xff9a2e, 0.3, 1.8); this.fx.float(m.x, m.y - 52, '¡Boing!', '#FFB45A', 28); });
     on('obst.sinker', (e) => { const p = ent(`obj${e.id}`); if (p) { this.fx.puff(p.x + p.w / 2, p.y + 6, 5); this.fx.float(p.x + p.w / 2, p.y - 14, '¡Se hunde!', '#BFEAFF', 24); } });
