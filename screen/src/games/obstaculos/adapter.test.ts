@@ -54,10 +54,10 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
     const s = mk([def(1)], 2);
     const v = new SimWorldView(s);
     play(s, 3300);
-    s.receive(0, { x: 1, y: 0, presses: [0, 0] });
-    play(s, 400);
+    const hold = () => s.receive(0, { x: 1, y: 0, presses: [0, 0] }); // the phone keeps sending: the stick of a quiet one decays after 300 ms
+    play(s, 400, hold);
     const x0 = s.world.players[0]!.body.x;
-    s.receive(0, { x: 1, y: 0, presses: [0, 0] }); // a fresh packet: the stick of a quiet phone decays after 300 ms
+    hold();
     s.advance(FRAME);
     v.sync();
     const p = v.players[0]!;
