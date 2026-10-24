@@ -42,9 +42,21 @@ export interface Player {
   item: Item | null;
   cutting: boolean;
   chopAt: number; // station index being chopped, -1 if none
+  bHeld: boolean; // B as of the previous tick: a rising edge with empty hands and no station in front is a dash (R2)
+  dashMs: number; // time left in the running dash
+  dashCd: number; // time until the next dash
+  dashDx: number; // dash direction (unit vector)
+  dashDy: number;
+  dashHit: number[]; // chefs this dash already pushed (R5): one push each
+  kx: number; // R5: knock velocity from a dash that hit this chef, tiles/s, fades out
+  ky: number;
+  buffA: number; // R6: A presses waiting for a station to show up in front
+  buffAge: number; // ms since the newest of them
+  buffB: number; // R6: ms left of a dash press that found nothing to do yet
 }
 export interface Order { id: number; expiresAt: number; warned: boolean; recipe: Recipe }
-export interface Controls { x: number; y: number; a: number; b: boolean } // a = new A presses since last tick
+// a = new A presses since last tick; bTaps = new B presses since last tick (a quick tap can start and end between two ticks)
+export interface Controls { x: number; y: number; a: number; b: boolean; bTaps?: number }
 export const COLS = MAP_W;
 export const ROWS = MAP_H;
 export const MAX_SLOTS = 8;
@@ -110,7 +122,7 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
 export function addPlayer(g: Game, id: number, slot: number, spawn = slot) {
   if (g.players.has(id)) return;
   const [sx, sy] = g.spawns[spawn % g.spawns.length] ?? [1, 1];
-  g.players.set(id, { id, slot, spawn: spawn % g.spawns.length, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, vx: 0, vy: 0, item: null, cutting: false, chopAt: -1 });
+  g.players.set(id, { id, slot, spawn: spawn % g.spawns.length, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, vx: 0, vy: 0, item: null, cutting: false, chopAt: -1, bHeld: false, dashMs: 0, dashCd: 0, dashDx: 0, dashDy: 0, dashHit: [], kx: 0, ky: 0, buffA: 0, buffAge: 0, buffB: 0 });
 }
 export const removePlayer = (g: Game, id: number) => { g.players.delete(id); };
 
@@ -123,6 +135,29 @@ function steer(p: Player, c: Controls, g: Game, dtMs: number) {
   p.vx += (c.x * SPEED - p.vx) * k;
   p.vy += (c.y * SPEED - p.vy) * k;
   if (!moving && Math.hypot(p.vx, p.vy) < 0.02) { p.vx = 0; p.vy = 0; } // the tail of the exponential is a stop
+}
+
+const KNOCK_FADE_MS = 90; // R5: the push a dash gives fades with this time constant
+const idleControls: Controls = { x: 0, y: 0, a: 0, b: false };
+const unit = (x: number, y: number): [number, number] => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
+
+// R2 (phase 1: no third button): B pressed with empty hands and no station in front. Returns true when the dash started.
+function startDash(g: Game, p: Player, c: Controls) {
+  const [dx, dy] = unit(c.x || c.y ? c.x : p.fx, c.x || c.y ? c.y : p.fy);
+  const { dashMs, dashCdMs } = g.params.tune;
+  p.dashMs = dashMs; p.dashCd = dashCdMs; p.dashDx = dx; p.dashDy = dy; p.dashHit = [];
+  p.fx = dx; p.fy = dy;
+  g.bus.emit('dash', { player: p.id, dx, dy });
+}
+
+// R5: a dash that touches another chef gives it a short push; it never makes it drop what it carries.
+function pushNeighbours(g: Game, p: Player) {
+  for (const o of g.players.values()) {
+    if (o.id === p.id || p.dashHit.includes(o.id) || Math.hypot(o.x - p.x, o.y - p.y) > 2 * RADIUS + 0.1) continue;
+    p.dashHit.push(o.id);
+    if (!o.cutting) { o.kx += p.dashDx * g.params.tune.pushSpeed; o.ky += p.dashDy * g.params.tune.pushSpeed; }
+    g.bus.emit('bump', { player: p.id, other: o.id });
+  }
 }
 
 const blocked = (g: Game, x: number, y: number) => {
@@ -241,8 +276,12 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   g.time += dtMs;
 
   for (const p of g.players.values()) {
-    const c = controls.get(p.id) ?? { x: 0, y: 0, a: 0, b: false };
+    const c = controls.get(p.id) ?? idleControls;
+    const tune = g.params.tune;
     const target = targetStation(g, p);
+    p.dashCd = Math.max(0, p.dashCd - dtMs);
+    const bEdge = (c.b && !p.bHeld) || (c.bTaps ?? 0) > 0;
+    p.bHeld = c.b;
     const wasCutting = p.cutting;
     // B held: cut / grate / stretch on a board with a raw item, or scrub plates at a sink with dirty ones
     p.cutting = !!(c.b && target && ((target.kind === 'board' && target.item && cutOf(target.item)) || (target.kind === 'sink' && target.count > 0)));
@@ -251,7 +290,14 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     if (wasCutting && (!p.cutting || at !== wasAt)) g.bus.emit(g.stations[wasAt]?.kind === 'sink' ? 'washStop' : 'chopStop', { player: p.id, station: wasAt });
     if (p.cutting && (!wasCutting || at !== wasAt)) g.bus.emit(target!.kind === 'sink' ? 'washStart' : 'chopStart', { player: p.id, station: at });
     p.chopAt = p.cutting ? at : -1;
-    if (p.cutting) { p.vx = 0; p.vy = 0; }
+    if (p.cutting) { p.vx = 0; p.vy = 0; p.kx = 0; p.ky = 0; p.dashMs = 0; }
+    // R2 + R6: a B press with free hands and nothing in front is a dash; if the cooldown ends within bufferMs it still goes
+    if (bEdge && !p.item && !target) p.buffB = tune.bufferMs;
+    if (p.buffB > 0) {
+      if (p.item || target || p.cutting) p.buffB = 0;
+      else if (p.dashMs <= 0 && p.dashCd <= 0) { startDash(g, p, c); p.buffB = 0; }
+      else p.buffB -= dtMs;
+    }
     if (p.cutting && target?.kind === 'sink') {
       target.progress += dtMs / WASH_MS;
       if (target.progress >= 1) {
@@ -268,16 +314,30 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
       }
     } else {
       if (c.x || c.y) { p.fx = c.x; p.fy = c.y; }
-      steer(p, c, g, dtMs);
-      const nx = p.x + p.vx * dt;
-      if (!blocked(g, nx, p.y)) p.x = nx; else p.vx = 0;
-      const ny = p.y + p.vy * dt;
-      if (!blocked(g, p.x, ny)) p.y = ny; else p.vy = 0;
+      if (p.dashMs > 0) {
+        const v = SPEED * g.params.tune.dashMult;
+        p.vx = p.dashDx * v; p.vy = p.dashDy * v;
+        p.dashMs = Math.max(0, p.dashMs - dtMs);
+        if (p.dashMs <= 0) { p.vx = p.dashDx * SPEED; p.vy = p.dashDy * SPEED; } // back to walking pace; R1 takes it from there
+      } else steer(p, c, g, dtMs);
+      const nx = p.x + (p.vx + p.kx) * dt;
+      if (!blocked(g, nx, p.y)) p.x = nx; else { p.vx = 0; p.kx = 0; }
+      const ny = p.y + (p.vy + p.ky) * dt;
+      if (!blocked(g, p.x, ny)) p.y = ny; else { p.vy = 0; p.ky = 0; }
+      const fade = Math.exp(-dtMs / KNOCK_FADE_MS);
+      p.kx = Math.abs(p.kx) < 0.02 ? 0 : p.kx * fade;
+      p.ky = Math.abs(p.ky) < 0.02 ? 0 : p.ky * fade;
+      if (p.dashMs > 0) pushNeighbours(g, p);
     }
-    for (let i = 0; i < c.a; i++) {
+    // R6: an A press with no station in front waits bufferMs for one to show up
+    if (c.a > 0) { p.buffA += c.a; p.buffAge = 0; }
+    while (p.buffA > 0) {
       const s = targetStation(g, p);
-      if (s) act(g, p, s);
+      if (!s) break;
+      p.buffA--;
+      act(g, p, s);
     }
+    if (p.buffA > 0) { p.buffAge += dtMs; if (p.buffAge > tune.bufferMs) p.buffA = 0; }
   }
 
   for (const s of g.stations) {

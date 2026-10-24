@@ -6,6 +6,8 @@ export interface GameEvents {
   itemPicked: { player: number; item: Item; from: StationKind };
   itemDropped: { player: number; item: Item; at: StationKind };
   interactInvalid: { player: number };
+  dash: { player: number; dx: number; dy: number }; // R2: unit direction
+  bump: { player: number; other: number }; // R5: a dash hit another chef
   chopStart: { player: number; station: number }; // station = index in game.stations
   chopStop: { player: number; station: number };
   chopDone: { player: number; station: number };

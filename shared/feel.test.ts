@@ -54,3 +54,179 @@ describe('R1 integrator (Normal)', () => {
     }
   });
 });
+
+// A phone with `lagMs` of latency: what the user does at time t reaches the engine at t + lagMs.
+type UserEvent = { t: number; ctl: Partial<Controls> }; // stick and B are state, a and bTaps are one-shot counts
+function playLagged(g: Game, id: number, events: UserEvent[], lagMs: number, untilMs: number, onTick?: (tMs: number) => void) {
+  let state: Partial<Controls> = {};
+  let i = 0;
+  const sorted = [...events].sort((a, b) => a.t - b.t);
+  for (let t = 0; t < untilMs; t += TICK_MS) {
+    let a = 0, bTaps = 0;
+    while (i < sorted.length && sorted[i]!.t + lagMs < t + TICK_MS) {
+      const { a: ea, bTaps: eb, ...rest } = sorted[i]!.ctl;
+      state = { ...state, ...rest };
+      a += ea ?? 0; bTaps += eb ?? 0;
+      i++;
+    }
+    step(g, { [id]: { ...state, a, bTaps } });
+    onTick?.(t);
+  }
+}
+
+describe('R2 dash (phase 1: B with empty hands and nothing in front)', () => {
+  const fresh = () => { const g = open(); addPlayer(g, 1, 0); const p = g.players.get(1)!; put(p, 3.5, 4.5); return { g, p }; };
+  const dist = (p: Player, x0: number, y0: number) => Math.hypot(p.x - x0, p.y - y0);
+
+  it('covers about 2.6 x walking speed for 0.18 s (2.1 tiles) and then goes back to walking pace', () => {
+    const { g, p } = fresh();
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    expect(p.dashMs).toBeGreaterThan(0);
+    walk(g, 400, { 1: { x: 1 } });
+    // a dash alone is 2.1 tiles; the 400 ms of walking in the same direction add 4.5 * (0.4 - 0.18) on top
+    expect(p.x - 3.5).toBeGreaterThan(2.1 + 4.5 * 0.2 - 0.3);
+    expect(p.x - 3.5).toBeLessThan(2.1 + 4.5 * 0.25 + 0.4);
+    expect(Math.hypot(p.vx, p.vy)).toBeLessThanOrEqual(SPEED + 1e-6);
+  });
+  it('dash distance from rest is 2.1 tiles (+- 0.25) and it ends in 180 ms', () => {
+    const { g, p } = fresh();
+    step(g, { 1: { bTaps: 1, x: 1 } });
+    let ticks = 1;
+    while (p.dashMs > 0) { step(g, { 1: { x: 0 } }); ticks++; }
+    expect(ticks * TICK_MS).toBeGreaterThanOrEqual(180);
+    expect(ticks * TICK_MS).toBeLessThan(180 + 2 * TICK_MS);
+    expect(dist(p, 3.5, 4.5)).toBeGreaterThan(1.85);
+    expect(dist(p, 3.5, 4.5)).toBeLessThan(2.35);
+  });
+  it('cooldown 0.6 s: a second tap too soon is ignored, one after the cooldown dashes again', () => {
+    const { g, p } = fresh();
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    walk(g, 200, { 1: { x: 1 } });
+    expect(p.dashMs).toBe(0);
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    expect(p.dashMs).toBe(0); // 217 ms since the first dash: cooldown running (and 383 ms left, more than the 150 ms buffer)
+    walk(g, 600, { 1: { x: 1 } });
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    expect(p.dashMs).toBeGreaterThan(0);
+  });
+  it('R6: a tap up to 150 ms before the cooldown ends goes through when it ends', () => {
+    const { g, p } = fresh();
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    walk(g, 440, { 1: { x: 1 } }); // 600 - 150 = 450 ms: just inside the buffer
+    const x0 = p.x;
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    expect(p.dashMs).toBe(0);
+    walk(g, 160, { 1: { x: 1 } });
+    expect(p.dashMs).toBeGreaterThan(0);
+    expect(p.x - x0).toBeGreaterThan(0.5);
+  });
+  it('needs empty hands and nothing in front: with an item B does not dash, and in front of a board it cuts', () => {
+    const { g, p } = fresh();
+    p.item = 'raw0';
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    expect(p.dashMs).toBe(0);
+    p.item = null;
+    const board = g.stations.find((s) => s.kind === 'board')!;
+    put(p, board.tx + 0.5, board.ty + 1.5, 0, -1);
+    step(g, { 1: { bTaps: 1, b: true } });
+    expect(p.dashMs).toBe(0);
+  });
+  it('works the same on Easy and Hard (the table row is shared)', () => {
+    for (const d of ['easy', 'hard'] as const) {
+      const g = open(d); addPlayer(g, 1, 0); const p = g.players.get(1)!; put(p, 3.5, 4.5);
+      step(g, { 1: { x: 1, bTaps: 1 } });
+      expect(p.dashMs).toBeGreaterThan(0);
+    }
+  });
+  it('with 150 ms of lag the dash is the same length and the cooldown is counted from when it started on the screen', () => {
+    for (const lag of [0, 150]) {
+      const { g, p } = fresh();
+      const starts: number[] = [];
+      let was = 0;
+      playLagged(g, 1, [{ t: 0, ctl: { x: 1, bTaps: 1 } }, { t: 20, ctl: { x: 0 } }, { t: 500, ctl: { bTaps: 1, x: 1 } }], lag, 1500, (t) => { if (p.dashMs > was) starts.push(Math.round(t)); was = p.dashMs; });
+      expect(starts.length, `lag ${lag}`).toBe(2);
+      // the second tap (user t=500) reaches the screen 100 ms (lag 150) or 100 ms... before the cooldown ends: always inside the buffer
+      expect(starts[1]! - starts[0]!, `lag ${lag}`).toBeGreaterThanOrEqual(600 - 17);
+      expect(starts[1]! - starts[0]!, `lag ${lag}`).toBeLessThanOrEqual(600 + 17);
+    }
+  });
+});
+
+describe('R5 push', () => {
+  it('a dash that hits another chef pushes it 1.5 tiles/s for a moment and never makes it drop its item', () => {
+    const g = open();
+    addPlayer(g, 1, 0); addPlayer(g, 2, 1);
+    const a = g.players.get(1)!, b = g.players.get(2)!;
+    put(a, 3.5, 4.5); put(b, 5.0, 4.5); b.item = 'cut1';
+    const bumps: number[] = [];
+    g.bus.on('bump', (e) => bumps.push(e.other));
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    walk(g, 100, { 1: { x: 1 } });
+    expect(bumps).toEqual([2]); // once per dash, even though the chefs overlap for several ticks
+    expect(b.x).toBeGreaterThan(5.0);
+    expect(b.item).toBe('cut1');
+  });
+  it('a chef who is cutting is not moved', () => {
+    const g = open();
+    addPlayer(g, 1, 0); addPlayer(g, 2, 1);
+    const a = g.players.get(1)!, b = g.players.get(2)!;
+    put(a, 3.5, 4.5); put(b, 5.0, 4.5); b.cutting = true;
+    step(g, { 1: { x: 1, bTaps: 1 } });
+    expect(b.kx).toBe(0);
+  });
+});
+
+describe('R6 input buffer: a press made a little early still counts', () => {
+  const crate0 = (g: Game) => g.stations.find((s) => s.kind === 'crate' && s.crate === 0)!;
+  /** Time at which a chef walking straight up reaches the crate (found with a dry run). */
+  const arrival = () => {
+    const g = open(); addPlayer(g, 1, 0); put(g.players.get(1)!, crate0(g).tx + 0.5, 4.5, 0, -1);
+    const s = crate0(g);
+    for (let t = 0; t < 3000; t += TICK_MS) {
+      step(g, { 1: { y: -1 } });
+      const p = g.players.get(1)!;
+      if (Math.hypot(p.x - (s.tx + 0.5), p.y - (s.ty + 1.5)) < 1 && Math.abs(p.y - 2.1) < 0.1) return t;
+    }
+    throw new Error('never arrived');
+  };
+  const run = (leadMs: number, lagMs: number) => {
+    const g = open(); addPlayer(g, 1, 0);
+    const s = crate0(g), p = g.players.get(1)!;
+    put(p, s.tx + 0.5, 4.5, 0, -1);
+    const tArrive = arrival();
+    let pickedAt = -1;
+    g.bus.on('itemPicked', () => { pickedAt = g.time; });
+    // The phone stream is delayed by lagMs: the stick event is sent lagMs early so the chef moves as in the dry run, and the press
+    // is sent so that it reaches the screen leadMs before the chef gets to the crate.
+    playLagged(g, 1, [{ t: -lagMs, ctl: { y: -1 } }, { t: tArrive - leadMs - lagMs, ctl: { a: 1 } }], lagMs, tArrive + 800);
+    return { item: p.item, pickedAt };
+  };
+  it('0 ms of lag: a press 100 ms early is picked up, 400 ms early is not', () => {
+    expect(run(100, 0).item).toBe('raw0');
+    expect(run(400, 0).item).toBeNull();
+  });
+  it('150 ms of lag: the phone press arrives 100 ms before the chef reaches the crate and still picks it up; 400 ms is too early', () => {
+    expect(run(100, 150).item).toBe('raw0');
+    expect(run(400, 150).item).toBeNull();
+  });
+  it('an expired press does not fire later: after bufferMs it is gone', () => {
+    const g = open(); addPlayer(g, 1, 0);
+    const s = crate0(g), p = g.players.get(1)!;
+    put(p, s.tx + 0.5, 4.5, 0, -1);
+    step(g, { 1: { a: 1 } });
+    expect(p.buffA).toBe(1);
+    walk(g, 200, {});
+    expect(p.buffA).toBe(0);
+    put(p, s.tx + 0.5, 1.6, 0, -1);
+    walk(g, 100, {});
+    expect(p.item).toBeNull();
+  });
+  it('a press with a station already in front acts at once and is not kept', () => {
+    const g = open(); addPlayer(g, 1, 0);
+    const s = crate0(g), p = g.players.get(1)!;
+    put(p, s.tx + 0.5, 1.6, 0, -1);
+    step(g, { 1: { a: 1 } });
+    expect(p.item).toBe('raw0');
+    expect(p.buffA).toBe(0);
+  });
+});
