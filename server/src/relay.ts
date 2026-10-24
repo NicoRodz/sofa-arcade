@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  COLORS, DEFAULT_CONFIG, configMsg, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage,
+  COLORS, DEFAULT_CONFIG, PROTOCOL_VERSION, configMsg, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage, youMsg,
   type LobbyConfig, type PhaseInfo, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 
@@ -24,8 +24,10 @@ interface Room {
 const send = (ws: WebSocket, m: ServerMsg) => {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
 };
-const pub = (p: Player): PublicPlayer => ({
-  id: p.id, name: p.name, color: COLORS[p.slot % COLORS.length]!, slot: p.slot, connected: p.ws !== null,
+// The team comes from the lobby teams the screen sent (it owns them), so a phone that reconnects with its token keeps it.
+const teamIdOf = (r: Room, id: number) => r.config.teams?.find((t) => t.playerIds.includes(id))?.id ?? null;
+const pub = (p: Player, r: Room): PublicPlayer => ({
+  id: p.id, name: p.name, color: COLORS[p.slot % COLORS.length]!, slot: p.slot, connected: p.ws !== null, teamId: teamIdOf(r, p.id),
 });
 
 export function attachRelay(server: Server) {
@@ -44,6 +46,11 @@ export function attachRelay(server: Server) {
     for (const p of r.players.values()) if (p.ws) send(p.ws, m);
   };
 
+  const sendYou = (r: Room, p: Player) => {
+    const you = youMsg(r.config.teams, p.id);
+    if (you && p.ws) send(p.ws, you);
+  };
+
   const wss = new WebSocketServer({ server, path: WS_PATH });
   wss.on('connection', (ws, req) => {
     const url = new URL(req.url ?? '', 'http://x');
@@ -53,7 +60,7 @@ export function attachRelay(server: Server) {
 
     if (isScreen) {
       r.screens.add(ws);
-      send(ws, { t: 'state', players: [...r.players.values()].map(pub) });
+      send(ws, { t: 'state', players: [...r.players.values()].map((p) => pub(p, r)) });
     }
 
     ws.on('message', (data) => {
@@ -68,7 +75,7 @@ export function attachRelay(server: Server) {
       }
       if (m.t === 'phase') {
         if (!isScreen) return;
-        r.phase = { phase: m.phase, scores: m.scores, puestos: m.puestos };
+        r.phase = { phase: m.phase, scores: m.scores, puestos: m.puestos, match: m.match };
         toPlayers(r, { t: 'phase', ...r.phase });
         return;
       }
@@ -80,8 +87,9 @@ export function attachRelay(server: Server) {
       if (m.t === 'config') {
         if (!isScreen) return;
         const { t: _t, ...cfg } = m;
-        r.config = cfg;
+        r.config = { ...DEFAULT_CONFIG, ...cfg }; // the parser already filled the team fields; the spread only satisfies the type
         toPlayers(r, configMsg(r.config));
+        for (const p of r.players.values()) sendYou(r, p);
         return;
       }
       if (isScreen) return;
@@ -105,10 +113,15 @@ export function attachRelay(server: Server) {
         clearTimeout(p.expiry);
         p.ws = ws;
         me = p;
-        send(ws, { t: 'joined', player: pub(p), room: url.searchParams.get('room') || DEFAULT_ROOM });
+        send(ws, { t: 'joined', player: pub(p, r), room: url.searchParams.get('room') || DEFAULT_ROOM, v: PROTOCOL_VERSION });
         send(ws, configMsg(r.config));
+        sendYou(r, p);
         send(ws, { t: 'phase', ...r.phase });
-        toScreens(r, { t: 'player_joined', player: pub(p) });
+        toScreens(r, { t: 'player_joined', player: pub(p, r) });
+        return;
+      }
+      if (m.t === 'setTeam' && me) {
+        toScreens(r, { t: 'setTeam', playerId: me.id, teamId: m.teamId });
         return;
       }
       if (m.t === 'puesto' && me) {

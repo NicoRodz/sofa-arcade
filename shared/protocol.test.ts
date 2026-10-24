@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BUZZ_PATTERNS, ClockSync, applyDeadzone, canStart, newRoomCode, nextPhase, parseClientMessage } from './protocol';
+import { BUZZ_PATTERNS, ClockSync, DEFAULT_CONFIG, PROTOCOL_VERSION, applyDeadzone, canStart, configMsg, newRoomCode, nextPhase, parseClientMessage, parseTeams, youMsg } from './protocol';
+import { GAMES } from './games';
 import { assignPuestos } from './puestos';
 
 describe('protocol', () => {
@@ -86,7 +87,7 @@ describe('phases', () => {
 
 describe('lobby config', () => {
   it('parses a known game and rejects unknown or missing ones', () => {
-    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"3","seed":7}')).toEqual({ t: 'config', game: 'pizzas', difficulty: 'hard', map: '3', seed: 7 });
+    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"3","seed":7}')).toEqual({ t: 'config', game: 'pizzas', difficulty: 'hard', map: '3', seed: 7, modeId: 'coop', teams: null, teamsLocked: false, modeOptions: {} }); // v1 screen: no team fields, so cooperative
     expect(parseClientMessage('{"t":"config","game":"nope","difficulty":"hard","map":"3","seed":1}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"insane","map":"3","seed":1}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"99","seed":7}')).toBeNull();
@@ -120,5 +121,65 @@ describe('puestos on the wire', () => {
     expect(parseClientMessage('{"t":"puesto","puestos":[]}')).toBeNull();
     expect(parseClientMessage('{"t":"puesto","puestos":["boss"]}')).toBeNull();
     expect(parseClientMessage('{"t":"puesto"}')).toBeNull();
+  });
+});
+
+describe('teams on the wire (protocol v2)', () => {
+  const base = { t: 'config', game: 'pizzas', difficulty: 'normal', map: 'auto', seed: 5 };
+  const teams = [
+    { id: 0, name: 'Picantes', color: '#F26A1B', icon: '▲', side: 'izquierda', playerIds: [1, 3] },
+    { id: 1, name: 'Frescos', color: '#1E6BD6', icon: '●', playerIds: [2, 4] },
+  ];
+  const parse = (extra: object) => parseClientMessage(JSON.stringify({ ...base, ...extra }));
+
+  it('the version was bumped', () => { expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(2); });
+  it('a config with a declared mode, teams, the lock and the options round-trips', () => {
+    const m = parse({ modeId: 'versus', teams, teamsLocked: true, modeOptions: { hiddenScore: true, rounds: 3, tag: 'x' } });
+    expect(m).toEqual({ ...base, modeId: 'versus', teams, teamsLocked: true, modeOptions: { hiddenScore: true, rounds: 3, tag: 'x' } });
+  });
+  it('rejects a mode the game does not declare, an unknown mode, and malformed team data', () => {
+    expect(parse({ modeId: 'ffa' })).toBeNull(); // a real mode id, but pizzas does not play it
+    expect(parse({ modeId: 'nope' })).toBeNull();
+    expect(parse({ teamsLocked: 'yes' })).toBeNull();
+    expect(parse({ modeOptions: { a: { b: 1 } } })).toBeNull();
+    expect(parse({ modeOptions: [1] })).toBeNull();
+    expect(parse({ teams: 'x' })).toBeNull();
+    expect(parse({ teams: [] })).toBeNull();
+    expect(parse({ teams: [{ ...teams[0], color: 'orange' }] })).toBeNull();
+    expect(parse({ teams: [{ ...teams[0], id: 7 }] })).toBeNull();
+    expect(parse({ teams: [teams[0], { ...teams[1], id: 0 }] })).toBeNull(); // duplicated team id
+    expect(parse({ teams: [teams[0], { ...teams[1], playerIds: [3] }] })).toBeNull(); // a player in two teams
+    expect(parse({ teams: Array.from({ length: 5 }, (_v, i) => ({ ...teams[0], id: i, playerIds: [i] })) })).toBeNull();
+    expect(parseTeams(undefined)).toBeNull();
+  });
+  it('"Cambiar de equipo" is a phone message with a valid team id', () => {
+    expect(parseClientMessage('{"t":"setTeam","teamId":1}')).toEqual({ t: 'setTeam', teamId: 1 });
+    expect(parseClientMessage('{"t":"setTeam","teamId":9}')).toBeNull();
+    expect(parseClientMessage('{"t":"setTeam","teamId":"a"}')).toBeNull();
+    expect(parseClientMessage('{"t":"setTeam"}')).toBeNull();
+  });
+  it('a phase message may carry the match start; an incomplete or foreign one is rejected', () => {
+    const match = { gameId: 'pizzas', modeId: 'versus', mapId: '8', difficulty: 'hard', teams, modeOptions: { hiddenScore: false } };
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match }))).toEqual({ t: 'phase', phase: 'playing', match });
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, teams: null } }))).toMatchObject({ match: { teams: null } });
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, gameId: 'nope' } }))).toBeNull();
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, modeId: 'nope' } }))).toBeNull();
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, mapId: undefined } }))).toBeNull();
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: 3 }))).toBeNull();
+  });
+  it('the phones get the labels of the chosen mode: versus brings its own how-to, coop keeps the game one', () => {
+    const coop = configMsg({ ...DEFAULT_CONFIG, modeId: 'coop' });
+    const versus = configMsg({ ...DEFAULT_CONFIG, modeId: 'versus' });
+    expect(coop.howTo).toBe(GAMES[0].howTo);
+    expect(versus.howTo).not.toBe(GAMES[0].howTo);
+    expect(versus.howTo.steps.length).toBeGreaterThanOrEqual(3);
+    expect(versus.controls).toEqual(GAMES[0].controls);
+    expect(versus).toMatchObject({ modeId: 'versus', teams: null, teamsLocked: false });
+  });
+  it('youMsg tells a phone its team (and nothing when it has none)', () => {
+    expect(youMsg(teams, 3)).toEqual({ t: 'you', teamId: 0, color: '#F26A1B', icon: '▲', sideLabel: 'izquierda' });
+    expect(youMsg(teams, 2)).toEqual({ t: 'you', teamId: 1, color: '#1E6BD6', icon: '●' });
+    expect(youMsg(teams, 99)).toBeNull();
+    expect(youMsg(null, 1)).toBeNull();
   });
 });

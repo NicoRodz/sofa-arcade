@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMING_SOON, GAMES, GAME_IDS, HOWTO_MAX_STEPS, HOWTO_MIN_STEPS, LABEL_MAX, gameInfo, gameProblems, isGameId, playersLabel, type GameDef } from './games';
+import { COMING_SOON, GAMES, GAME_IDS, HOWTO_MAX_STEPS, HOWTO_MIN_STEPS, LABEL_MAX, defaultModeOf, gameInfo, gameProblems, hasModeChoice, isGameId, modeOf, playersLabel, resolveModes, selectableModes, type GameDef, type ModeSpec } from './games';
 import { ICON_IDS, isIconId } from './icons';
 import { configMsg, DEFAULT_CONFIG } from './protocol';
 
@@ -63,5 +63,63 @@ describe('game registry', () => {
     expect(configMsg({ ...DEFAULT_CONFIG, game: 'pizzas' }, two).controls.btn1.label).toBe('Tomar / Soltar');
     expect(isGameId('pizzas')).toBe(true);
     expect(gameInfo('nope' as never).controls).toBe(pizzas.controls); // unknown id falls back to the default game
+  });
+});
+
+describe('game modes', () => {
+  const versus = () => pizzas.modes!.find((m) => m.id === 'versus')!;
+  it('pizzas declares coop (the default, one team) and versus (two teams, k handicap, not selectable yet)', () => {
+    expect(pizzas.modes!.map((m) => m.id)).toEqual(['coop', 'versus']);
+    expect(defaultModeOf(pizzas)).toBe('coop');
+    expect(modeOf(pizzas).id).toBe('coop');
+    expect(modeOf(pizzas, 'nope').id).toBe('coop');
+    expect(modeOf(pizzas, 'versus').id).toBe('versus');
+    const coop = modeOf(pizzas, 'coop');
+    expect(coop.teams).toMatchObject({ count: [1, 1], handicap: 'none' });
+    expect(coop.soon).toBeUndefined();
+    expect(versus()).toMatchObject({ players: [2, 8], soon: true, teams: { count: [2, 2], maxRatio: 2, handicap: 'score-k' } });
+    expect(versus().teams!.styles!.map((s) => s.name)).toEqual(['Picantes', 'Frescos']);
+    expect(new Set(versus().teams!.styles!.map((s) => s.icon)).size).toBe(2); // colour is never the only difference
+    expect(versus().options!.map((o) => o.id)).toEqual(['hiddenScore', 'handicap']);
+  });
+  it('the lobby offers versus only once it is no longer "soon": until then there is no mode selector', () => {
+    expect(selectableModes(pizzas).map((m) => m.id)).toEqual(['coop']);
+    expect(hasModeChoice(pizzas)).toBe(false);
+    const open: GameDef = { ...clone(), modes: pizzas.modes!.map((m) => ({ ...m, soon: undefined })) };
+    expect(hasModeChoice(open)).toBe(true);
+  });
+  it('a game that declares no modes gets one cooperative mode from its own fields', () => {
+    const plain: GameDef = { ...clone(), modes: undefined, defaultMode: undefined, minPlayers: 3, maxPlayers: 5 };
+    const modes = resolveModes(plain);
+    expect(modes).toHaveLength(1);
+    expect(modes[0]).toMatchObject({ id: 'coop', players: [3, 5], teams: { count: [1, 1] } });
+    expect(defaultModeOf(plain)).toBe('coop');
+    expect(hasModeChoice(plain)).toBe(false);
+    expect(gameProblems(plain)).toEqual([]);
+  });
+  it('gameInfo overlays the mode controls and how-to on the game ones', () => {
+    const custom: GameDef = { ...clone(), modes: [{ id: 'coop', label: 'C', players: [2, 8], controls: { btn2: { label: 'Dash', icon: 'chop' } } } as ModeSpec] };
+    expect(gameInfo('pizzas', [custom], 'coop').controls.btn2.label).toBe('Dash');
+    expect(gameInfo('pizzas', [custom], 'coop').controls.btn1.label).toBe('Tomar / Soltar'); // untouched ones stay
+    expect(gameInfo('pizzas', [custom]).controls.btn2.label).toBe('Picar / Correr'); // no mode: the game's own
+    expect(gameInfo('pizzas', [custom], 'nope').howTo).toBe(custom.howTo);
+  });
+  it('the authoring check rejects broken modes', () => {
+    const bad = (f: (m: ModeSpec[]) => void, defaultMode?: GameDef['defaultMode']): string[] => {
+      const g = clone(); const modes = structuredClone(g.modes!) as ModeSpec[]; f(modes);
+      return gameProblems({ ...g, modes, defaultMode: defaultMode ?? g.defaultMode });
+    };
+    expect(gameProblems(pizzas)).toEqual([]);
+    expect(bad(() => {}, 'race')).toContain('defaultMode race is not declared');
+    expect(bad((m) => { m[1] = { ...m[0]!, soon: true }; })).toContain('modes: duplicated id');
+    expect(bad((m) => m.forEach((x) => { x.soon = true; }))).toContain('modes: none is selectable');
+    expect(bad((m) => { m[1]!.players = [1, 12]; }).some((p) => p.includes('outside the game'))).toBe(true);
+    expect(bad((m) => { (m[1]!.teams as unknown as { count: [number, number] }).count = [3, 2]; }).some((p) => p.includes('bad team count'))).toBe(true);
+    expect(bad((m) => { (m[1]!.teams as unknown as { count: [number, number] }).count = [2, 4]; }).some((p) => p.includes('styles for up to 4'))).toBe(true);
+    expect(bad((m) => { m[1]!.teams!.maxRatio = 0.5; }).some((p) => p.includes('maxRatio'))).toBe(true);
+    expect(bad((m) => { (m[0]!.teams as unknown as { count: [number, number] }).count = [2, 2]; }).some((p) => p.includes('coop is a single team'))).toBe(true);
+    expect(bad((m) => { m[1]!.howTo!.steps = m[1]!.howTo!.steps.slice(0, 1); }).some((p) => p.includes('howTo 1 steps'))).toBe(true);
+    expect(bad((m) => { m[1]!.options = [...m[1]!.options!, m[1]!.options![0]!]; })).toContain('mode versus: duplicated option id');
+    expect(bad((m) => { m[0]!.label = ' '; })).toContain('mode coop: empty label');
   });
 });
