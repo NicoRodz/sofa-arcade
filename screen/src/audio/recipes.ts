@@ -146,4 +146,7 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   playerGone: () => [play('playerGone')],
   matchPaused: () => [play('paused')],
   matchResumed: () => [play('resumed')],
+  // sabotage (S0 contract; the sounds come in S4)
+  'sabotage:bagReady': () => [], 'sabotage:aim': () => [], 'sabotage:launch': () => [], 'sabotage:land': () => [], 'sabotage:caught': () => [], 'sabotage:burst': () => [],
+  'sabotage:blocked': () => [], 'chef:slip': () => [], 'chef:recover': () => [], 'trash:picked': () => [], 'trash:binned': () => [], 'trash:decayed': () => [],
 };

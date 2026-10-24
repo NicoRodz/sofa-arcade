@@ -2,11 +2,12 @@
 // the logic knows nothing about who listens.
 import type { Item, Recipe, StationKind } from './overcooked';
 import type { TeamResult } from './teams';
+import type { SabotageEvents } from './sabotage-config';
 
 // `team` (optional, on the team-level events): the id of the team the event belongs to, for the HUD and the sounds. It is present
 // only in versus (two or more teams); a cooperative round is one team and its events carry no team, exactly as before the teams refactor.
 
-export interface GameEvents {
+export interface GameEvents extends SabotageEvents {
   itemPicked: { player: number; item: Item; from: StationKind };
   itemDropped: { player: number; item: Item; at: StationKind };
   interactInvalid: { player: number };
