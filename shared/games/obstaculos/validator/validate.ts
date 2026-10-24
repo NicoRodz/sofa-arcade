@@ -10,7 +10,8 @@ import { MARKER_CHARS, T, isActivator } from '../legend';
 import { parseLevel, type ParsedLevel } from '../parse';
 import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode, LevelDef, Weight } from '../types';
-import { buildGraph, doorGroupsOf, newSimCache, pathTo, shortest, type Edge, type Env, type Graph, type OpenState, type Seg } from './graph';
+import type { ModeledMechanic } from '../mechanics';
+import { buildGraph, can, doorGroupsOf, newSimCache, pathTo, shortest, type Edge, type Env, type Graph, type OpenState, type Seg } from './graph';
 
 export const resolveWeight = (w: Weight, n: number): number =>
   typeof w === 'number' ? w : w === 'half-up' ? Math.ceil(n / 2) : w === 'half-down' ? Math.floor(n / 2) : w === 'all' ? n : Math.max(1, n - 1);
@@ -39,9 +40,11 @@ export interface ValidationReport {
   graph?: Graph; // final follower graph (the metric re-simulates its jumps)
   extra: { graph: Graph; edges: Edge[] }[]; // routes the pioneer took to reach the plates, levers, keys and rings it needed
   stars: { found: number; total: number };
+  uses: Uses; // what the route (pioneer, followers, and the gadgets the pioneer had to reach) actually did, by mechanic: the learning test's record
 }
+export type Uses = Partial<Record<ModeledMechanic, number>>;
 
-const failed = (env: Env, errors: string[]): ValidationReport => ({ ok: false, errors, env, startSeg: -1, path: [], followPath: [], opened: [], gadgetCount: 0, gadgetWeight: 0, handoffs: 0, extra: [], pathSeconds: 0, cols: 0, stars: { found: 0, total: 0 } });
+const failed = (env: Env, errors: string[]): ValidationReport => ({ ok: false, errors, env, startSeg: -1, path: [], followPath: [], opened: [], gadgetCount: 0, gadgetWeight: 0, handoffs: 0, extra: [], pathSeconds: 0, cols: 0, stars: { found: 0, total: 0 }, uses: {} });
 
 export function lint(p: ParsedLevel): string[] {
   const errors = [...p.errors];
@@ -108,6 +111,8 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
     if (best >= 0) extra.push({ graph: g, edges: pathTo(sr.prev, best) });
   };
   const gadgetsUsed: string[] = [];
+  const gadgetUses: Uses = {};
+  const bump = (m: ModeledMechanic) => { gadgetUses[m] = (gadgetUses[m] ?? 0) + 1; };
   let gadgetWeight = 0, handoffs = 0;
   let g = buildGraph(p, env, S, doors, { pioneer: true, cache });
   let startSeg = startSegOf(p, g);
@@ -117,19 +122,19 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
 
   for (let iter = 0; iter < 40; iter++) {
     let changed = false;
-    p.markers.ring.forEach((r, i) => { if (!rings.has(i) && [...reached].some((id) => touches(g.segs[id]!, r, 2))) { rings.add(i); routeTo(g, sr, [r], 2); changed = true; gadgetsUsed.push(`ring${i}`); gadgetWeight += 1; } });
-    const keysHeld = p.markers.key.filter((k) => [...reached].some((id) => touches(g.segs[id]!, k, 3))).length;
+    p.markers.ring.forEach((r, i) => { if (!rings.has(i) && can(env, 'swing') && [...reached].some((id) => touches(g.segs[id]!, r, 2))) { rings.add(i); routeTo(g, sr, [r], 2); changed = true; gadgetsUsed.push(`ring${i}`); gadgetWeight += 1; } });
+    const keysHeld = !can(env, 'key') ? 0 : p.markers.key.filter((k) => [...reached].some((id) => touches(g.segs[id]!, k, 3))).length;
     doors.forEach((grp, i) => {
       if (S.doors.has(i) || keysHeld <= S.doors.size) return;
-      if (grp.some((c) => [...reached].some((id) => { const s = g.segs[id]!; return Math.abs(s.row - c.y) <= 1 && c.x >= s.x0 - 1 && c.x <= s.x1 + 1; }))) { S.doors.add(i); routeTo(g, sr, p.markers.key, 3); changed = true; gadgetsUsed.push(`door${i}`); gadgetWeight += 1; }
+      if (grp.some((c) => [...reached].some((id) => { const s = g.segs[id]!; return Math.abs(s.row - c.y) <= 1 && c.x >= s.x0 - 1 && c.x <= s.x1 + 1; }))) { S.doors.add(i); routeTo(g, sr, p.markers.key, 3); changed = true; gadgetsUsed.push(`door${i}`); gadgetWeight += 1; bump('key'); }
     });
     for (const X of acts) {
       const q = X.param as Extract<NonNullable<typeof X.param>, { kind: 'plate' | 'lever' }>;
-      if (S.open.has(q.opens)) continue;
+      if (S.open.has(q.opens) || !can(env, q.kind)) continue;
       if (!X.cells.some((c) => [...reached].some((id) => touches(g.segs[id]!, c, 1)))) continue;
       const w = q.kind === 'plate' ? resolveWeight(q.weight, env.n) : 1;
       if (w > env.n) continue;
-      if (q.latch) { S.open.add(q.opens); routeTo(g, sr, X.cells, 1); changed = true; gadgetsUsed.push(X.char); gadgetWeight += 1; continue; }
+      if (q.latch) { S.open.add(q.opens); routeTo(g, sr, X.cells, 1); changed = true; gadgetsUsed.push(X.char); gadgetWeight += 1; bump(q.kind); continue; }
       if (w > env.n - 1) continue; // somebody has to be free to pass
       // handoff: with the objective open, a second activator on the far side takes over the hold
       const S2: OpenState = { open: new Set([...S.open, q.opens]), doors: S.doors };
@@ -145,7 +150,7 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
         const wy = qy.kind === 'plate' ? resolveWeight(qy.weight, env.n) : 1;
         return wy <= env.n - w && Y.cells.some((c) => far2.some((id) => touches(g2.segs[id]!, c, 1)));
       });
-      if (ok) { S.open.add(q.opens); routeTo(g, sr, X.cells, 1); for (const Y of acts) if (Y !== X && (Y.param as typeof q).opens === q.opens) routeTo(g2, sr2, Y.cells, 1); changed = true; gadgetsUsed.push(`${X.char}~`); gadgetWeight += 2; handoffs++; }
+      if (ok) { S.open.add(q.opens); routeTo(g, sr, X.cells, 1); for (const Y of acts) if (Y !== X && (Y.param as typeof q).opens === q.opens) routeTo(g2, sr2, Y.cells, 1); changed = true; gadgetsUsed.push(`${X.char}~`); gadgetWeight += 2; handoffs++; bump(q.kind); }
     }
     if (!changed) break;
     g = buildGraph(p, env, S, doors, { pioneer: true, cache });
@@ -162,7 +167,7 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
   // followers: first with plain moves only; the planted partner's hand (a second batch of simulations) only when that is not enough
   let g2 = buildGraph(p, env, S, doors, { pioneer: false, cache });
   let fr = shortest(g2, startSegOf(p, g2), goalTest(p, g2), edgeOk);
-  if (fr.hit < 0) {
+  if (fr.hit < 0 && can(env, 'hand')) {
     g2 = buildGraph(p, env, S, doors, { pioneer: false, catchTargets: reached, cache });
     fr = shortest(g2, startSegOf(p, g2), goalTest(p, g2), edgeOk);
   }
@@ -172,10 +177,34 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
   const errors: string[] = [];
   const seconds = pathSeconds(p, path, S.open.size + S.doors.size + rings.size);
   hazardCheck(p, g, path, seconds, env.diff, errors);
+  const uses = usesOf(p, g, g2, path, followPath, extra, gadgetUses);
   const starsFound = p.markers.star.filter((c) => [...fr.reached].some((id) => touches(g2.segs[id]!, c, 3))).length;
-  return { ok: errors.length === 0, errors, env, startSeg: startSegOf(p, g2), path, followPath, opened: [...S.open], gadgetCount: gadgetsUsed.length, gadgetWeight, handoffs, pathSeconds: seconds.total, cols: p.w, graph: g2, extra, stars: { found: starsFound, total: p.markers.star.length } };
+  return { ok: errors.length === 0, errors, env, startSeg: startSegOf(p, g2), path, followPath, opened: [...S.open], gadgetCount: gadgetsUsed.length, gadgetWeight, handoffs, pathSeconds: seconds.total, cols: p.w, graph: g2, extra, stars: { found: starsFound, total: p.markers.star.length }, uses };
 }
 
+// Which mechanic an edge is. A plain walk-off or fall is not a mechanic; a jump from or onto a boya is a spring.
+export function mechanicOf(g: Graph, e: Edge, p?: ParsedLevel): ModeledMechanic | null {
+  switch (e.kind) {
+    case 'jump': return g.segs[e.from]?.tramp || g.segs[e.to]?.tramp ? 'spring' : e.plan && e.plan.trigger !== 'walk' ? 'jump' : null;
+    case 'tower': case 'hand': case 'throw': case 'swing': case 'ladder': return e.kind;
+    case 'ride': return e.obj && p?.objects[e.obj]?.param?.kind === 'balance' ? 'balance' : 'mover';
+  }
+}
+function usesOf(p: ParsedLevel, g: Graph, g2: Graph, path: Edge[], followPath: Edge[], extra: { graph: Graph; edges: Edge[] }[], gadgets: Uses): Uses {
+  const seen = new Set<string>();
+  const uses: Uses = { ...gadgets };
+  const add = (gr: Graph, e: Edge) => {
+    const key = `${e.kind}:${e.takeoffX}:${e.landCell.x},${e.landCell.y}:${e.rise}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const m = mechanicOf(gr, e, p);
+    if (m) uses[m] = (uses[m] ?? 0) + 1;
+  };
+  for (const e of path) add(g, e);
+  for (const e of followPath) add(g2, e);
+  for (const x of extra) for (const e of x.edges) add(x.graph, e);
+  return uses;
+}
 interface Timeline { total: number; at: { edge: Edge; t: number }[] }
 function pathSeconds(p: ParsedLevel, path: Edge[], gadgets: number): Timeline {
   let t = 0;

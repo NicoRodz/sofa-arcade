@@ -3,6 +3,7 @@ import { Canvas } from '../modules/dsl';
 import { flatCap, toLevel } from '../generate/assemble';
 import type { EntityParam, LevelDef, Tether } from '../types';
 import { LEVEL_14 } from '../levels';
+import type { Mechanic } from '../mechanics';
 import { validateLevel, validateState } from './validate';
 
 // Level = flat cap with S + the canvas + flat cap with G. Standing row 14, floor top row 15.
@@ -132,5 +133,53 @@ describe('validateLevel: every mode and the player range', () => {
     expect(v.reports).toHaveLength(4); // chain + free, n = 2 and 3
     expect(v.ok).toBe(false);
     expect(v.errors.join()).toMatch(/n=2/);
+  });
+});
+
+describe('allow: an explorer that only knows some mechanics (the learning test\'s bot) and the record of what it used', () => {
+  const only = (...m: Mechanic[]) => new Set<Mechanic>(m);
+  const run = (def: LevelDef, allow: Set<Mechanic>, n = 2, mode: 'chain' | 'free' = 'free') => validateState(def, { n, mode, diff: 'hard', allow });
+  it('no jump, no gap: a 2-tile hole stops a walker, a jumper crosses it and the record shows a jump', () => {
+    expect(run(gapLevel(2), only()).ok).toBe(false);
+    const r = run(gapLevel(2), only('jump'));
+    expect(r.ok).toBe(true);
+    expect(r.uses.jump).toBeGreaterThanOrEqual(1);
+  });
+  it('a 4-tile wall needs the tower for the pioneer and the hand for the rest: take either away and it fails; with both the record shows both', () => {
+    expect(run(wallLevel(4), only('jump', 'hand')).ok).toBe(false);
+    expect(run(wallLevel(4), only('jump', 'tower')).ok).toBe(false);
+    const r = run(wallLevel(4), only('jump', 'tower', 'hand'));
+    expect(r.ok).toBe(true);
+    expect(r.uses.tower).toBeGreaterThanOrEqual(1);
+    expect(r.uses.hand).toBeGreaterThanOrEqual(1);
+  });
+  it('a ring bridges the abyss only for a bot that knows how to swing; the record shows the swing', () => {
+    const abyss = new Canvas(18).pit(4, 10, '~').set(4, 12, 'o');
+    expect(run(wrap(abyss, undefined, 'chainOnly'), only('jump', 'tower', 'hand'), 2, 'chain').ok).toBe(false);
+    const r = run(wrap(abyss, undefined, 'chainOnly'), only('jump', 'swing'), 2, 'chain');
+    expect(r.ok).toBe(true);
+    expect(r.uses.swing).toBeGreaterThanOrEqual(1);
+  });
+  it('boyas are springs: without the spring the water between them is a wall, with it the record shows it', () => {
+    const boyas = wrap(new Canvas(18).pit(4, 13, '~').set(7, 15, 'T').set(11, 15, 'T'));
+    expect(run(boyas, only('jump')).ok).toBe(false);
+    const r = run(boyas, only('jump', 'spring'));
+    expect(r.ok).toBe(true);
+    expect(r.uses.spring).toBeGreaterThanOrEqual(1);
+  });
+  it('a latch plate and a key are gadgets of their own: not known, not pressed; known, and the record counts them', () => {
+    const plate = wrap(new Canvas(20).rect(10, 0, 10, 11, '#').rect(10, 12, 10, 14, 'A').rect(4, 14, 6, 14, 'a'), { a: { kind: 'plate', weight: 1, opens: 'A', latch: true }, A: { kind: 'gate' } });
+    expect(run(plate, only('jump', 'tower', 'hand')).ok).toBe(false);
+    const r = run(plate, only('jump', 'plate'));
+    expect(r.ok).toBe(true);
+    expect(r.uses.plate).toBe(1);
+    const door = wrap(new Canvas(22).rect(14, 0, 14, 11, '#').rect(14, 12, 14, 14, 'K').rect(3, 11, 7, 14, '#').set(5, 10, 'k'));
+    expect(run(door, only('jump', 'tower', 'hand')).ok).toBe(false);
+    expect(run(door, only('jump', 'tower', 'hand', 'key')).uses.key).toBe(1);
+  });
+  it('no allow list means everything is allowed: same verdict as before', () => {
+    expect(validateState(wallLevel(4), { n: 2, mode: 'free', diff: 'hard' }).ok).toBe(true);
+    const u = validateState(wallLevel(4), { n: 2, mode: 'free', diff: 'hard' }).uses;
+    expect((u.tower ?? 0) + (u.throw ?? 0)).toBeGreaterThanOrEqual(1); // the pioneer goes up by tower or by throw, whichever is cheaper
   });
 });
