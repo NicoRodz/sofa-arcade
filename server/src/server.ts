@@ -5,18 +5,23 @@ import express from 'express';
 import QRCode from 'qrcode';
 import { attachRelay } from './relay.js';
 import { lanIp } from './lan.js';
+import { ExpeditionStore } from './expeditions.js';
+import { mountExpeditions } from './expeditionsApi.js';
 
 export type Mode = 'none' | 'dev' | 'static';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const area = (p: string) => (req: express.Request) => req.path === p || req.path.startsWith(p + '/');
 
-export async function startServer(opts: { port: number; mode: Mode }) {
+export async function startServer(opts: { port: number; mode: Mode; dataDir?: string }) {
   const app = express();
   const server = createServer(app);
   const relay = attachRelay(server);
   const closers: (() => Promise<unknown>)[] = [];
 
   app.get('/', (_req, res) => res.redirect('/screen'));
+  // Campaign progress of "Obstaculos en cadena": one JSON per expedition under data/ (override with PG_DATA_DIR or opts.dataDir).
+  let expeditions: ExpeditionStore | undefined;
+  mountExpeditions(app, () => (expeditions ??= new ExpeditionStore({ dir: opts.dataDir ?? process.env.PG_DATA_DIR ?? path.join(root, 'data', 'expeditions') })));
 
   app.get('/api/info', async (req, res) => {
     const port = req.socket.localPort ?? opts.port;
