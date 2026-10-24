@@ -143,16 +143,20 @@ describe('lobby config', () => {
     await Promise.all([screen.open(), a.open()]);
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     await a.next('joined');
-    expect((await a.next('config')).game).toBe('pizzas'); // default right after joining
+    expect(await a.next('config')).toMatchObject({ game: 'pizzas', difficulty: 'normal' }); // default right after joining
 
-    a.send({ t: 'config', game: 'pizzas' }); // not a screen: ignored
+    a.send({ t: 'config', game: 'pizzas', difficulty: 'hard' }); // not a screen: ignored
     await settle();
     expect(a.msgs.filter((m) => m.t === 'config')).toEqual([]);
 
-    screen.send({ t: 'config', game: 'pizzas' });
-    expect((await a.next('config')).game).toBe('pizzas');
-    expect(srv.relay.rooms.get('c1')!.config).toEqual({ game: 'pizzas' });
-    [screen.ws, a.ws].forEach((w) => w.close());
+    screen.send({ t: 'config', game: 'pizzas', difficulty: 'hard' });
+    expect((await a.next('config')).difficulty).toBe('hard');
+    expect(srv.relay.rooms.get('c1')!.config).toEqual({ game: 'pizzas', difficulty: 'hard' });
+    const b = new Client('?room=c1');
+    await b.open();
+    b.send({ t: 'join', name: 'Bo', token: 'b' });
+    expect((await b.next('config')).difficulty).toBe('hard'); // late joiner
+    [screen.ws, a.ws, b.ws].forEach((w) => w.close());
   });
 });
 

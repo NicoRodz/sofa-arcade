@@ -1,4 +1,5 @@
 import nipplejs from 'nipplejs';
+import { DIFFICULTY_LABEL } from '@party/shared/difficulty';
 import { gameName } from '@party/shared/games';
 import {
   ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
@@ -74,6 +75,7 @@ function connect() {
       hud(`${m.player.name} #${m.player.slot + 1}`);
     } else if (m.t === 'config') {
       $('game').textContent = gameName(m.game);
+      $('setup').textContent = DIFFICULTY_LABEL[m.difficulty];
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores);
     } else if (m.t === 'pong') {

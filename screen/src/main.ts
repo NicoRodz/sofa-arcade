@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import {
-  ClockSync, DEFAULT_CONFIG, PING_MS, ROUND_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
+  ClockSync, DEFAULT_CONFIG, PING_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
   type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
+import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/difficulty';
 import { GAMES } from '@party/shared/games';
 import { percentile } from '@party/shared/stats';
 import {
-  COLS, MAP, ORDER_TTL_MS, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
+  COLS, MAP, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
   type Controls, type Item, type Station,
 } from '@party/shared/game';
 
@@ -76,7 +77,7 @@ function setPhase(next: Phase) {
   if (next === phase) return;
   phase = next;
   if (phase === 'playing') {
-    game = createGame();
+    game = createGame({ difficulty: config.difficulty, n: players.size });
     for (const p of players.values()) { addPlayer(game, p.info.id, p.info.slot); p.pendA = 0; }
   }
   // cooperative: every player carries the team score
@@ -260,7 +261,7 @@ class Main extends Phaser.Scene {
       this.item('cut0', x + 28, y + 26, 56);
       this.item('cut1', x + 56, y + 26, 56);
       this.item('dish', x + 88, y + 26, 56);
-      const left = (o.expiresAt - game.time) / ORDER_TTL_MS;
+      const left = (o.expiresAt - game.time) / game.params.orderTtlMs;
       this.bar(x + 8, y + 50, w - 16, left, left > 0.5 ? 0x69f0ae : left > 0.25 ? 0xffd740 : 0xff5252);
     });
   }
@@ -295,12 +296,18 @@ function renderUi() {
   $('debug').classList.toggle('off', !(debugOverride ?? phase !== 'playing'));
   $('games').innerHTML = GAMES.map((g) =>
     `<button class="card ${g.id === config.game ? 'sel' : ''}" data-game="${g.id}"><b>${g.name}</b><small>${g.blurb}<br>${g.players}</small></button>`).join('');
+  $('diffs').innerHTML = DIFFICULTIES.map((d) =>
+    `<button class="chip ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join('');
   const list = [...players.values()];
+  const pr = params(config.difficulty, list.length);
+  $('diffinfo').textContent = `Pedido cada ${(pr.orderEveryMs / 1000).toFixed(0)} s, paciencia ${pr.orderTtlMs / 1000} s, hasta ${pr.maxOrders} pedidos`;
   $('plist').innerHTML = list
     .map((p) => `<li class="${p.info.connected ? '' : 'gone'}"><span class="dot" style="background:${p.info.color}"></span>${esc(p.info.name)}</li>`)
     .join('') || '<li style="color:#888">Esperando jugadores...</li>';
   ($('start') as HTMLButtonElement).disabled = !canStart(list.map((p) => p.info));
-  $('rank').innerHTML = `<li><span>Equipo</span><b>${game.score}</b></li><li><span>Entregas</span><b>${game.delivered}</b></li>`;
+  const st = stars(game.difficulty, game.n, game.score);
+  $('rank').innerHTML = `<li><span>Equipo</span><b>${game.score}</b></li><li><span>Entregas</span><b>${game.delivered}</b></li>` +
+    `<li><span>${DIFFICULTY_LABEL[game.difficulty]}</span><b>${'★'.repeat(st)}${'☆'.repeat(3 - st)}</b></li>`;
   $('scores').innerHTML = `<span>Equipo ${game.score}</span>`;
 }
 renderUi();
@@ -309,6 +316,11 @@ $('games').addEventListener('click', (e) => {
   const id = (e.target as HTMLElement).closest<HTMLElement>('[data-game]')?.dataset.game;
   const game = GAMES.find((g) => g.id === id);
   if (game) setConfig({ game: game.id });
+});
+$('diffs').addEventListener('click', (e) => {
+  const d = (e.target as HTMLElement).closest<HTMLElement>('[data-diff]')?.dataset.diff;
+  const diff = DIFFICULTIES.find((x) => x === d);
+  if (diff) setConfig({ difficulty: diff });
 });
 $('start').addEventListener('click', () => dispatch('start'));
 $('again').addEventListener('click', () => dispatch('again'));
@@ -332,7 +344,7 @@ setInterval(() => {
   $('table').innerHTML = rows.join('');
   $('summary').textContent = `total ${pktsRate} pkt/s | screen<->server RTT ${f(screenRtt)} ms | clock offset ${f(sync.offset ?? NaN)} ms`;
   if (phase === 'playing') {
-    const left = ROUND_MS - game.time;
+    const left = game.params.roundMs - game.time;
     $('timer').textContent = String(Math.max(0, Math.ceil(left / 1000)));
     renderUi();
   }

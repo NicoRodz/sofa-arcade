@@ -65,8 +65,9 @@ describe('phases', () => {
 
 describe('lobby config', () => {
   it('parses a known game and rejects unknown or missing ones', () => {
-    expect(parseClientMessage('{"t":"config","game":"pizzas"}')).toEqual({ t: 'config', game: 'pizzas' });
-    expect(parseClientMessage('{"t":"config","game":"nope"}')).toBeNull();
+    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard"}')).toEqual({ t: 'config', game: 'pizzas', difficulty: 'hard' });
+    expect(parseClientMessage('{"t":"config","game":"nope","difficulty":"hard"}')).toBeNull();
+    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"insane"}')).toBeNull();
     expect(parseClientMessage('{"t":"config"}')).toBeNull();
   });
 });

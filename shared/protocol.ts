@@ -1,4 +1,7 @@
+import { DEFAULT_DIFFICULTY, isDifficulty, type Difficulty } from './difficulty';
 import { DEFAULT_GAME, isGameId, type GameId } from './games';
+
+export { ROUND_MS } from './difficulty';
 
 export const WS_PATH = '/ws';
 export const DEFAULT_ROOM = 'main';
@@ -8,7 +11,6 @@ export const DEADZONE = 0.15;
 export const MAX_PLAYERS = 8;
 export const BUTTON_COUNT = 2; // btn bitmask: bit 0 = A, bit 1 = B
 export const SLOT_GRACE_MS = 60_000; // a dropped phone keeps its slot this long
-export const ROUND_MS = 180_000;
 export const ROOM_CODE_LEN = 4;
 export const PRESS_MOD = 65536;
 export const COLORS = ['#ff5252', '#40c4ff', '#ffd740', '#69f0ae', '#e040fb', '#ff9100', '#b2ff59', '#18ffff'];
@@ -29,8 +31,8 @@ export interface Score { id: number; score: number }
 export interface PhaseInfo { phase: Phase; scores?: Score[] }
 
 // What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
-export interface LobbyConfig { game: GameId }
-export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME };
+export interface LobbyConfig { game: GameId; difficulty: Difficulty }
+export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY };
 
 export interface PublicPlayer {
   id: number;
@@ -97,8 +99,8 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       return { t: 'phase', phase: m.phase, scores: m.scores.map((x: Score) => ({ id: x.id, score: x.score })) };
     }
     case 'config':
-      if (!isGameId(m.game)) return null;
-      return { t: 'config', game: m.game };
+      if (!isGameId(m.game) || !isDifficulty(m.difficulty)) return null;
+      return { t: 'config', game: m.game, difficulty: m.difficulty };
     default:
       return null;
   }

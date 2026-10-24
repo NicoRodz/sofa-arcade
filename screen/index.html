@@ -36,6 +36,10 @@
   .card b { display: block; font-size: 20px; margin-bottom: 4px; }
   .card small { color: #bbb; }
   .card.sel { border-color: #69f0ae; background: #69f0ae22; }
+  .chips { display: flex; gap: 8px; margin-bottom: 8px; }
+  .chip { flex: 1; font: bold 16px system-ui, sans-serif; color: #eee; background: #ffffff14; border: 2px solid transparent; border-radius: 8px; padding: 8px 6px; cursor: pointer; }
+  .chip.sel { border-color: #69f0ae; background: #69f0ae22; }
+  .hint { color: #aaa; font-size: 13px; margin-bottom: 16px; }
   #hud { right: 16px; top: 14px; padding: 6px 20px; text-align: center; }
   #timer { font: bold 40px ui-monospace, Menlo, monospace; }
   #scores { display: flex; gap: 16px; font-size: 18px; }
@@ -58,7 +62,10 @@
 </div>
 <div id="setup" class="panel">
   <h3>Juego</h3>
-  <div id="games"></div>
+  <div id="games" style="margin-bottom:16px"></div>
+  <h3>Dificultad</h3>
+  <div id="diffs" class="chips"></div>
+  <div id="diffinfo" class="hint"></div>
 </div>
 <div id="hud" class="panel off">
   <div id="timer"></div>

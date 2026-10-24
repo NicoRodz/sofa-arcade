@@ -1,5 +1,5 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
-import { ROUND_MS } from './protocol';
+import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficulty, type Params } from './difficulty';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -7,13 +7,6 @@ export const SPEED = 4.5; // tiles/s at full deflection
 export const RADIUS = 0.35;
 export const REACH = 0.8; // probe distance from the player centre along the facing direction
 export const REACH_SLACK = 0.3; // max gap between probe and a station tile
-export const CUT_MS = 2500;
-export const COOK_MS = 6000;
-export const ORDER_TTL_MS = 70_000;
-export const ORDER_EVERY_MS = 25_000;
-export const MAX_ORDERS = 4;
-export const REWARD = 100;
-export const PENALTY = -50;
 
 // # wall, . floor, A/B ingredient crates, K cutting board, P pot, D plate pile, W delivery window, T counter, X trash
 export const MAP = [
@@ -55,6 +48,9 @@ export interface Player {
 export interface Order { id: number; expiresAt: number }
 export interface Controls { x: number; y: number; a: number; b: boolean } // a = new A presses since last tick
 export interface Game {
+  difficulty: Difficulty;
+  n: number; // team size the parameters were scaled for
+  params: Params;
   time: number;
   over: boolean;
   score: number;
@@ -68,13 +64,21 @@ export interface Game {
 
 export const isSolid = (tx: number, ty: number) => (MAP[ty]?.[tx] ?? '#') !== '.';
 
-export function createGame(): Game {
+const spawnOrder = (g: Game) => {
+  if (g.orders.length < g.params.maxOrders) g.orders.push({ id: g.orderSeq++, expiresAt: g.time + g.params.orderTtlMs });
+};
+
+export function createGame(opts: { difficulty?: Difficulty; n?: number } = {}): Game {
+  const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
+  const p = difficultyParams(difficulty, opts.n ?? 2);
   const stations: Station[] = [];
   MAP.forEach((row, ty) => [...row].forEach((c, tx) => {
     const kind = KINDS[c];
     if (kind) stations.push({ kind, tx, ty, crate: c === 'B' ? 1 : 0, item: null, progress: 0, inputs: [], done: false });
   }));
-  return { time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: 0, orderSeq: 0 };
+  const g: Game = { difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
+  for (let i = 0; i < p.initialOrders; i++) spawnOrder(g);
+  return g;
 }
 
 export function addPlayer(g: Game, id: number, slot: number) {
@@ -137,8 +141,9 @@ function interact(g: Game, p: Player, s: Station) {
     }
     case 'window':
       if (p.item === 'dish' && g.orders.length) {
-        g.orders.shift();
-        g.score += REWARD;
+        const o = g.orders.shift()!;
+        const { reward, tipMax, orderTtlMs } = g.params;
+        g.score += reward + Math.round((tipMax * Math.max(0, o.expiresAt - g.time)) / orderTtlMs);
         g.delivered++;
         p.item = null;
       }
@@ -159,7 +164,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     const target = targetStation(g, p);
     p.cutting = !!(c.b && target?.kind === 'board' && target.item && cutOf(target.item));
     if (p.cutting && target) {
-      target.progress += dtMs / CUT_MS;
+      target.progress += dtMs / g.params.cutMs;
       if (target.progress >= 1) { target.item = cutOf(target.item!); target.progress = 0; }
     } else {
       if (c.x || c.y) { p.fx = c.x; p.fy = c.y; }
@@ -176,18 +181,18 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
 
   for (const s of g.stations) {
     if (s.kind === 'pot' && !s.done && s.inputs.length === 2) {
-      s.progress += dtMs / COOK_MS;
+      s.progress += dtMs / g.params.cookMs;
       if (s.progress >= 1) { s.progress = 1; s.done = true; }
     }
   }
 
   if (g.time >= g.nextOrderAt) {
-    if (g.orders.length < MAX_ORDERS) g.orders.push({ id: g.orderSeq++, expiresAt: g.time + ORDER_TTL_MS });
-    g.nextOrderAt += ORDER_EVERY_MS;
+    spawnOrder(g);
+    g.nextOrderAt += g.params.orderEveryMs;
   }
   const alive = g.orders.filter((o) => o.expiresAt > g.time);
-  g.score += (g.orders.length - alive.length) * PENALTY;
+  g.score = Math.max(0, g.score + (g.orders.length - alive.length) * g.params.penalty);
   g.orders = alive;
 
-  if (g.time >= ROUND_MS) g.over = true;
+  if (g.time >= g.params.roundMs) g.over = true;
 }

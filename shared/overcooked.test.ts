@@ -1,16 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import {
-  COOK_MS, CUT_MS, ORDER_EVERY_MS, ORDER_TTL_MS, PENALTY, REWARD, TICK_MS, addPlayer, createGame, tick,
-  type Controls, type Game, type Station,
-} from './overcooked';
+import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
+import { params, type Difficulty } from './difficulty';
 import { ROUND_MS } from './protocol';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const station = (g: Game, kind: string, n = 0) => g.stations.filter((s) => s.kind === kind)[n]!;
 const crate = (g: Game, type: number) => g.stations.find((s) => s.kind === 'crate' && s.crate === type)!;
 
-function setup() {
-  const g = createGame();
+const P = params('normal', 2);
+function setup(difficulty: Difficulty = 'normal') {
+  const g = createGame({ difficulty });
   addPlayer(g, 1, 0);
   addPlayer(g, 2, 1);
   return g;
@@ -39,7 +38,7 @@ function cutAndCook(g: Game) {
     press(g, 1);
     face(g, 1, board);
     press(g, 1);
-    run(g, CUT_MS + 100, hold(1));
+    run(g, P.cutMs + 100, hold(1));
     press(g, 1);
     face(g, 1, pot);
     press(g, 1);
@@ -118,15 +117,15 @@ describe('cutting', () => {
     face(g, 1, board);
     press(g, 1);
     expect(board.item).toBe('raw0');
-    run(g, CUT_MS * 2); // B up
+    run(g, P.cutMs * 2); // B up
     expect(board.item).toBe('raw0');
     expect(board.progress).toBe(0);
-    run(g, CUT_MS / 2, hold(1));
+    run(g, P.cutMs / 2, hold(1));
     expect(board.item).toBe('raw0');
     expect(board.progress).toBeGreaterThan(0.45);
-    run(g, CUT_MS, new Map()); // released: no progress
+    run(g, P.cutMs, new Map()); // released: no progress
     expect(board.progress).toBeLessThan(0.55);
-    run(g, CUT_MS / 2 + 100, hold(1));
+    run(g, P.cutMs / 2 + 100, hold(1));
     expect(board.item).toBe('cut0');
   });
 
@@ -162,7 +161,7 @@ describe('pot', () => {
     const pot = cutAndCook(g);
     expect(pot.inputs.sort()).toEqual([0, 1]);
     expect(pot.done).toBe(false);
-    run(g, COOK_MS - 500);
+    run(g, P.cookMs - 500);
     expect(pot.done).toBe(false);
     run(g, 700);
     expect(pot.done).toBe(true);
@@ -180,7 +179,7 @@ describe('pot', () => {
     expect(p.item).toBe('raw0');
     p.item = 'cut0';
     press(g, 1);
-    run(g, COOK_MS * 2);
+    run(g, P.cookMs * 2);
     expect(pot.inputs).toEqual([0]);
     expect(pot.done).toBe(false);
   });
@@ -188,7 +187,7 @@ describe('pot', () => {
   it('the dish needs a plate', () => {
     const g = setup();
     const pot = cutAndCook(g);
-    run(g, COOK_MS + 100);
+    run(g, P.cookMs + 100);
     const p = g.players.get(1)!;
     press(g, 1);
     expect(p.item).toBeNull();
@@ -207,15 +206,18 @@ describe('orders and score', () => {
   it('full recipe delivered adds points and consumes the order', () => {
     const g = setup();
     const pot = cutAndCook(g);
-    run(g, COOK_MS + 100);
+    run(g, P.cookMs + 100);
     face(g, 1, station(g, 'plates'));
     press(g, 1);
     face(g, 1, pot);
     press(g, 1);
     expect(g.orders.length).toBe(1);
+    const order = g.orders[0]!;
     face(g, 1, station(g, 'window'));
     press(g, 1);
-    expect(g.score).toBe(REWARD);
+    const tip = Math.round((P.tipMax * (order.expiresAt - g.time)) / P.orderTtlMs);
+    expect(tip).toBeGreaterThan(0);
+    expect(g.score).toBe(P.reward + tip);
     expect(g.delivered).toBe(1);
     expect(g.orders.length).toBe(0);
     expect(g.players.get(1)!.item).toBeNull();
@@ -238,22 +240,69 @@ describe('orders and score', () => {
     expect(g.score).toBe(0);
   });
 
-  it('an expired order subtracts points', () => {
+  it('an expired order subtracts the difficulty penalty', () => {
     const g = setup();
-    run(g, ORDER_TTL_MS - 500);
-    expect(g.score).toBe(0);
+    g.score = 30;
+    run(g, P.orderTtlMs - 500);
+    expect(g.score).toBe(30);
     run(g, 1000);
-    expect(g.score).toBe(PENALTY);
-    expect(g.orders.length).toBe(2); // spawned at 0, 25 and 50 s; the first expired
+    expect(g.score).toBe(30 + P.penalty);
+    expect(g.orders.length).toBe(3); // spawned at 0, 22, 44 and 66 s; the first expired
   });
 
-  it('spawns orders on a schedule capped at the queue size', () => {
+  it('the score never drops below zero, and easy has no penalty', () => {
     const g = setup();
-    expect(g.orders.length).toBe(0);
+    run(g, P.orderTtlMs + 1000);
+    expect(g.score).toBe(0);
+    const e = setup('easy');
+    e.score = 30;
+    run(e, params('easy', 2).orderTtlMs + 1000);
+    expect(e.score).toBe(30);
+  });
+
+  it('starts with the difficulty initial orders and then spawns on a schedule', () => {
+    const g = setup();
+    expect(g.orders.length).toBe(1);
     run(g, 1);
     expect(g.orders.length).toBe(1);
-    run(g, ORDER_EVERY_MS);
+    run(g, P.orderEveryMs);
     expect(g.orders.length).toBe(2);
+    expect(setup('hard').orders.length).toBe(2);
+  });
+
+  it('the order queue is capped at the difficulty maximum', () => {
+    const g = setup('easy');
+    run(g, params('easy', 2).orderEveryMs * 5);
+    expect(g.orders.length).toBeLessThanOrEqual(3);
+    expect(createGame({ difficulty: 'normal', n: 6 }).params.maxOrders).toBe(6);
+  });
+});
+
+describe('difficulty applies to the stations', () => {
+  const chop = (d: Difficulty, ms: number) => {
+    const g = setup(d);
+    const board = station(g, 'board');
+    face(g, 1, crate(g, 0));
+    press(g, 1);
+    face(g, 1, board);
+    press(g, 1);
+    run(g, ms, hold(1));
+    return board.item;
+  };
+  it('cutting time: easy 1.5 s, hard 2.5 s', () => {
+    expect(chop('easy', 1600)).toBe('cut0');
+    expect(chop('hard', 1600)).toBe('raw0');
+    expect(chop('hard', 2600)).toBe('cut0');
+  });
+  it('cooking time follows the difficulty', () => {
+    const g = setup('easy');
+    const pot = cutAndCook(g);
+    run(g, params('easy', 2).cookMs + 100);
+    expect(pot.done).toBe(true);
+    const h = setup('hard');
+    const hp = cutAndCook(h);
+    run(h, params('easy', 2).cookMs + 100);
+    expect(hp.done).toBe(false);
   });
 });
 
