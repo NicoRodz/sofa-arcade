@@ -53,9 +53,9 @@ describe('computeCamera: focus', () => {
   });
 
   it('the median is by progress (BFS from the goal), not by slot order', () => {
-    const ps = [P(0, 100, 50), P(1, 200, 10), P(2, 300, 30), P(3, 400, 40), P(4, 500, 20)];
+    const ps = [P(0, 100, 50), P(1, 200, 10), P(2, 300, 60), P(3, 400, 40), P(4, 500, 20)];
     const r = computeCamera(input(ps), null, 0);
-    expect(r.median).toBe(2); // progress order: 1(10) 4(20) 2(30) 3(40) 0(50)
+    expect(r.median).toBe(3); // progress order: 1(10) 4(20) 3(40) 0(50) 2(60); by slot order it would be 2
   });
 
   it('players that are in a bubble or dead do not pull the camera', () => {

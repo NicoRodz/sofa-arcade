@@ -82,6 +82,14 @@ describe('FakeWorld honours the WorldView contract', () => {
     expect(w.players[1]!.bubble).not.toBeNull();
     expect(w.ropes[0]!.links[0]!.active).toBe(false);
   });
+  it('the stub rope holds a pair together: one runs away, the other is dragged and the tension stays near 1', () => {
+    const w = new FakeWorld(LEVEL_01, 2, 'chain', 'normal');
+    w.controller = (i) => ({ move: i === 1 ? 1 : 0, down: false, jump: false });
+    let maxT = 0;
+    for (let i = 0; i < 100; i++) { w.step(); maxT = Math.max(maxT, w.ropes[0]!.links[0]!.tension); }
+    expect(maxT).toBeLessThan(1.12);
+    expect(w.players[0]!.x).toBeGreaterThan(3 * TILE + 100); // dragged along
+  });
   it('a bubble flies to the others, pops after 0.4 s and leaves a second of invulnerability', () => {
     const w = new FakeWorld(LEVEL_01, 3, 'free', 'normal');
     w.teleport(2, 20, 11);
