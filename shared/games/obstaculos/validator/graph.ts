@@ -6,6 +6,7 @@ import { T, isHazardKind, isSolidKind } from '../legend';
 import type { ParsedLevel, LevelObject } from '../parse';
 import { buildGrid, boxHitsSolid, tileAt, tileOf, type TileGrid } from '../sim/tiles';
 import { physicsFor, type PhysicsParams } from '../sim/player';
+import { THROW_VX, THROW_VY } from '../sim/tuning';
 import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode } from '../types';
 import type { Mechanic } from '../mechanics';
@@ -290,7 +291,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
       // throw: the thrower lifts a partner and launches him at (420, -950) px/s (plan §2)
       for (const dir of [-1, 1] as const) {
         const x = dir === 1 ? (s.x1 + 1) * TILE - PLAYER_W : s.x0 * TILE;
-        const plan: Plan = { x, feetY: feetOfRow(s.row) - PLAYER_H, dir, trigger: 'launch', k: 0, air: 'hold', f: 1, vx0: dir * 420 * f, vy0: -950 * f };
+        const plan: Plan = { x, feetY: feetOfRow(s.row) - PLAYER_H, dir, trigger: 'launch', k: 0, air: 'hold', f: 1, vx0: dir * THROW_VX * f, vy0: THROW_VY * f };
         const l = simCached(grid, params, s, plan, bucket);
         if (l) { const e = toEdge(s, l, 'throw', plan, true); if (e) addEdge(e); }
       }

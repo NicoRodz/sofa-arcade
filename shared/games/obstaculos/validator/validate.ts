@@ -40,11 +40,12 @@ export interface ValidationReport {
   graph?: Graph; // final follower graph (the metric re-simulates its jumps)
   extra: { graph: Graph; edges: Edge[] }[]; // routes the pioneer took to reach the plates, levers, keys and rings it needed
   stars: { found: number; total: number };
+  checkpoints: { found: number; total: number }; // P markers a follower can stand at (every checkpoint must be reachable)
   uses: Uses; // what the route (pioneer, followers, and the gadgets the pioneer had to reach) actually did, by mechanic: the learning test's record
 }
 export type Uses = Partial<Record<ModeledMechanic, number>>;
 
-const failed = (env: Env, errors: string[]): ValidationReport => ({ ok: false, errors, env, startSeg: -1, path: [], followPath: [], opened: [], gadgetCount: 0, gadgetWeight: 0, handoffs: 0, extra: [], pathSeconds: 0, cols: 0, stars: { found: 0, total: 0 }, uses: {} });
+const failed = (env: Env, errors: string[]): ValidationReport => ({ ok: false, errors, env, startSeg: -1, path: [], followPath: [], opened: [], gadgetCount: 0, gadgetWeight: 0, handoffs: 0, extra: [], pathSeconds: 0, cols: 0, stars: { found: 0, total: 0 }, checkpoints: { found: 0, total: 0 }, uses: {} });
 
 export function lint(p: ParsedLevel): string[] {
   const errors = [...p.errors];
@@ -178,8 +179,9 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
   const seconds = pathSeconds(p, path, S.open.size + S.doors.size + rings.size);
   hazardCheck(p, g, path, seconds, env.diff, errors);
   const uses = usesOf(p, g, g2, path, followPath, extra, gadgetUses);
+  const cpFound = p.markers.checkpoint.filter((c) => [...fr.reached].some((id) => touches(g2.segs[id]!, c, 1))).length;
   const starsFound = p.markers.star.filter((c) => [...fr.reached].some((id) => touches(g2.segs[id]!, c, 3))).length;
-  return { ok: errors.length === 0, errors, env, startSeg: startSegOf(p, g2), path, followPath, opened: [...S.open], gadgetCount: gadgetsUsed.length, gadgetWeight, handoffs, pathSeconds: seconds.total, cols: p.w, graph: g2, extra, stars: { found: starsFound, total: p.markers.star.length }, uses };
+  return { ok: errors.length === 0, errors, env, startSeg: startSegOf(p, g2), path, followPath, opened: [...S.open], gadgetCount: gadgetsUsed.length, gadgetWeight, handoffs, pathSeconds: seconds.total, cols: p.w, graph: g2, extra, stars: { found: starsFound, total: p.markers.star.length }, checkpoints: { found: cpFound, total: p.markers.checkpoint.length }, uses };
 }
 
 // Which mechanic an edge is. A plain walk-off or fall is not a mechanic; a jump from or onto a boya is a spring.
