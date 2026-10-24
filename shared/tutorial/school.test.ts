@@ -46,6 +46,36 @@ describe('a chef alone goes through the four steps, in order', () => {
   });
 });
 
+describe('the hands and the wire', () => {
+  it('the chopped tomato is in the chef\'s hands the very moment the chop is done, and the board is free again', () => {
+    let seen = false;
+    runSchool(chefs(1), { limitMs: 30_000, every: (_ms, sch) => {
+      const p = sch.game.players.get(1)!;
+      if (!seen && sch.progressOf(1)!.step === 2) { seen = true; expect(p.item).toBe('cut1'); expect(sch.game.stations.filter((x) => x.kind === 'board').every((b) => b.item === null)).toBe(true); }
+    } });
+    expect(seen).toBe(true);
+  });
+  it('a chef that does nothing is told its step again every second (a phone that came back is right within a second), not every frame', () => {
+    const r = runSchool(chefs(1), { idle: [1], limitMs: 5000, until: () => false });
+    const n = schoolMsgs(r.sent, 1).length;
+    expect(n).toBeGreaterThanOrEqual(4);
+    expect(n).toBeLessThanOrEqual(7);
+  });
+  it('a change reaches the phone at most every 50 ms (walking along a counter flaps the buttons)', () => {
+    const r = runSchool(chefs(1), { limitMs: 30_000 });
+    expect(hintMsgs(r.sent, 1).length).toBeLessThan(30_000 / 50);
+  });
+  it('when the school ends every phone gets the game\'s own button labels back', () => {
+    const sent: ClientMsg[] = [];
+    const s = createSchool({ bus: new Emitter<GameEvents>(), send: (m) => sent.push(m) });
+    for (let i = 0; i < 90; i++) s.step(TICK_MS, chefs(2), () => idle);
+    expect(hintMsgs(sent, 1).length).toBeGreaterThan(0);
+    sent.length = 0;
+    s.dispose();
+    for (const id of [1, 2]) expect(hintMsgs(sent, id)).toEqual([{ t: 'hint', playerId: id, a: null, b: null }]);
+  });
+});
+
 describe('no clock, no score at stake', () => {
   it('five minutes of nobody doing anything: the round never ends and no order expires', () => {
     const events: string[] = [];

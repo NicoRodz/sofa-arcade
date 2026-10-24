@@ -72,6 +72,16 @@ describe('what the room remembers', () => {
     expect(r.state.sfx, 'the fanfare of "todos listos" rang once').toContain('fanfare');
     expect(r.state.hidden).toBeGreaterThan(0);
   });
+  it('"todos listos" stays on screen for about two seconds before it ends (a beat to cheer, not a flash)', () => {
+    const r = rig();
+    r.host.offer();
+    for (const id of r.players.keys()) r.host.skip(id);
+    r.frames(1500);
+    expect(r.host.debug().on, 'still showing it').toBe(true);
+    expect(r.state.views.at(-1)!.allDone).toBe(true);
+    r.frames(1400);
+    expect(r.host.debug().on).toBe(false);
+  });
   it('Enter skips it for everybody at once, and that counts as done for the session too', () => {
     const r = rig();
     r.host.offer();
