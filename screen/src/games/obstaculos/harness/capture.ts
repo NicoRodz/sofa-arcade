@@ -170,7 +170,7 @@ async function main() {
     for (const set of ['a6', 'layer'] as const) if (run(set)) {
       const shots: [string, number, string, string?][] = set === 'a6'
         ? [['lantern', 4.2, 'a6-lantern-take'], ['lantern', 6.2, 'a6-lantern-bridge'], ['lantern', 7.6, 'a6-lantern-cross'], ['bungee', 5.3, 'a6-bungee-stretch'], ['bungee', 6.6, 'a6-bungee-bounce'],
-          ['sinkers', 5.4, 'a6-sinker'], ['geyser', 5.9, 'a6-geyser-warn'], ['geyser', 6.7, 'a6-geyser-gush'], ['geyser', 7.2, 'a6-geyser-air']]
+          ['sinkers', 5.4, 'a6-sinker'], ['geyser', 5.2, 'a6-geyser-warn'], ['geyser', 5.85, 'a6-geyser-gush'], ['geyser', 6.4, 'a6-geyser-air']]
         : [['layer', 4, 'layer-rope'], ['layer', 4.4, 'layer-signal', `(() => { const r = window.obst.sim(); r.receive(0, { x: 0, y: 0, presses: [0, 0], signal: { kind: 'arrowR', seq: 0 } }); r.receive(0, { x: 0, y: 0, presses: [0, 0], signal: { kind: 'arrowR', seq: 1 } }); })()`],
           ['layer', 4.9, 'layer-signal-wait', `(() => { const r = window.obst.sim(); r.receive(1, { x: 0, y: 0, presses: [0, 0], signal: { kind: 'wait', seq: 0 } }); r.receive(1, { x: 0, y: 0, presses: [0, 0], signal: { kind: 'wait', seq: 1 } }); })()`],
           ['layer', 8.6, 'layer-death-bubble'], ['layer', 10.2, 'layer-hearts-after']];
