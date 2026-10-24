@@ -129,6 +129,7 @@
   /* Cocina escuela (shared/tutorial): the card sits where the station card does; the button of the step pulses */
   #school { position: absolute; left: var(--gutter); right: calc(var(--ar) + var(--bsz) + 12px); bottom: max(8px, var(--sb)); margin-inline: auto; width: min(460px, calc(100% - var(--gutter) - var(--ar) - var(--bsz) - 12px)); display: none; flex-direction: column; gap: 4px; padding: 6px 10px 8px; border: 3px solid var(--ink); border-radius: 16px; background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 rgba(43,27,23,.35); }
   body[data-school=on] #school { display: flex; }
+  body[data-school=on] #stickLbl { display: none; } /* the card takes the strip under the stick; the ring says what it is */
   #school .sh { display: flex; align-items: center; gap: 8px; font: 800 13px/1 var(--font); letter-spacing: 1px; text-transform: uppercase; color: var(--tomato2); }
   #schooldots { display: flex; gap: 4px; margin-left: auto; }
   #schooldots i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink); background: #F6E8CB; }

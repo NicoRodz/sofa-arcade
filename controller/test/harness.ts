@@ -104,7 +104,7 @@ export const SELECTORS = [
   '#zone', '#stickhint', '#stickhint .ico', '#stickhint .lbl',
   '#btnA', '#btnA .ico', '#btnA .lbl', '#btnA .hold', '#btnB', '#btnB .ico', '#btnB .lbl', '#btnB .hold',
   '#stickLbl .pl', '#stickLbl .lbl', '#stickLbl .hold', '#lblA .pl', '#lblA .lbl', '#lblA .hold', '#lblB .pl', '#lblB .lbl', '#lblB .hold',
-  '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap',
+  '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap', '#school', '#schoolstep', '#schooltext', '#schoolskip', '#schoolall',
   '#wait > *', '#howtoopen', '#assist', '#assist svg', '#assistlbl', '#choosing > *', '#results > *',
   '#howto h2', '#howtogame', '#howto .steps', '#howto .steps li', '#howto .steps .n', '#howto .steps .ic', '#howto .steps .tx', '#howto .note', '#howtoclose',
   '#rotate > *', '#zoomfix', '#remote .rb', '#remote .crown',
