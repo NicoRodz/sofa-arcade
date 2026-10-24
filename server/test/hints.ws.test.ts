@@ -76,7 +76,11 @@ async function playCoop(room: string, o: { frames: number; dropAt?: number; drop
     if (o.dropAt !== undefined && frame === o.dropAt + (o.dropFor ?? 0)) { phones[0]!.connect(); dropped.back = g.time; await until(() => phones[0]!.ws.readyState === WebSocket.OPEN, 'the phone is back'); }
     const away = o.dropAt !== undefined && frame >= o.dropAt && frame < o.dropAt + (o.dropFor ?? 0);
     const sending = phones.filter((p) => !(away && p === phones[0]));
-    for (const p of sending) { p.frame = frame; p.sendControls(decide(g, g.players.get(p.id)!, phones.indexOf(p), mem.get(p.id)!, frame)); }
+    for (const p of sending) {
+      p.frame = frame;
+      const still = o.dropAt !== undefined && p === phones[0] && frame >= o.dropAt; // after the drop Ana stands still: her state never changes, so only the refresh can tell her phone anything
+      p.sendControls(still ? { x: 0, y: 0, a: 0, b: false } : decide(g, g.players.get(p.id)!, phones.indexOf(p), mem.get(p.id)!, frame));
+    }
     await until(() => sending.every((p) => latest.get(p.id)!.seq >= p.seq - 1), `inputs of frame ${frame}`, 3000);
     const controls = new Map<number, Controls>();
     for (const p of phones) {
