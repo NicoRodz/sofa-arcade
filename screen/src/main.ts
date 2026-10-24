@@ -25,7 +25,6 @@ import { assistBadgeCanvas, chefCanvas } from './art/chef';
 import { chefOf } from './art/tokens';
 import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
 import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from './art/flags';
-import { domCanvas } from './art/gfx';
 import { drawCardArt } from './art/cards';
 import { NAV_SFX, clampSel, lobbyEscGoesBack, menuCards, menuOnKey, menuPick, soundFor, type MenuAction } from './menu';
 import { iris } from './art/iris';
@@ -53,6 +52,7 @@ import {
 } from '@party/shared/game';
 import { sabotageAimPress, sabotageLoad } from '@party/shared/sabotage';
 import { createHintSync } from '@party/shared/hints';
+import { createSchoolHost } from './tutorial/host';
 import { addFloorItem } from '@party/shared/floor';
 import type { RoundView } from './art/hud';
 
@@ -198,7 +198,7 @@ function setPhase(next: Phase) {
     tally.reset(); kitchen.reset();
     roundView = { teams: null, hiddenScore: false };
     scene.startRound(game, map.id, config.seed);
-  } else if (phase === 'results') renderResults();
+  } else if (phase === 'results') renderResults(); else if (phase === 'school') school.begin();
   else if (phase === 'lobby') {
     scene.endRound(); endObst();
     if (config.modeId === 'versus' && config.teamsLocked !== lockBeforeStart) setConfig({ teamsLocked: lockBeforeStart }); // the match is over: the host's own lock again
@@ -379,7 +379,7 @@ function syncVersusMap() {
 // Starting a round: iris closes, the "how to play" card shows for ~10 s (Enter skips), iris again, then the countdown.
 function startRound() {
   if (phase !== 'lobby' || starting || howTo || !canStart([...players.values()].map((p) => p.info))) return;
-  campRun = null;
+  campRun = null; if (school.offer()) return;
   starting = true;
   iris(() => openHowTo('start'), () => { starting = false; });
 }
@@ -420,6 +420,7 @@ const dispatch = (ev: Parameters<typeof nextPhase>[1]) => {
   if (ev === 'start' && !canStart([...players.values()].map((p) => p.info))) return;
   setPhase(nextPhase(phase, ev));
 };
+const school = createSchoolHost({ players, room, send: sendMsg, bus: gameBus, scene: () => scene, sfx: (id) => audio.ui(id), phase: () => phase, dispatch: (ev) => dispatch(ev), transition, busy: () => starting || !!howTo, pizzas: () => config.game !== OBST_ID, versus: isVersus, prepare: () => { puestoOf.clear(); puestoMsg = undefined; activeGame = 'pizzas'; showScene('main'); }, continueToRound: () => openHowTo('start') }); // Cocina escuela (shared/tutorial, screen/src/tutorial): the guided practice before the first match; what it needs from this file is handed over here
 
 function onMessage(m: ServerMsg) {
   switch (m.t) {
@@ -441,7 +442,7 @@ function onMessage(m: ServerMsg) {
       break;
     }
     case 'setTeam': moveToTeam(m.playerId, m.teamId); break; // a phone asked to change team
-    case 'player_removed': remove(m.playerId); break;
+    case 'player_removed': remove(m.playerId); break; case 'schoolDone': { const q = players.get(m.playerId); if (q) q.info = { ...q.info, school: true }; if (m.skip) school.skip(m.playerId); break; } // a phone knows the school (or pressed Saltar in it)
     case 'assist': { // a phone switched Ayudante on or off in the lobby
       const p = players.get(m.playerId);
       if (p) { p.info = m.on ? { ...p.info, assist: true } : (({ assist: _a, ...rest }) => rest)(p.info); renderUi(); }
@@ -507,7 +508,7 @@ const host: Host = {
   puestos: () => puestoOf,
   step(delta) {
     syncPauseBar();
-    if (phase !== 'playing' || activeGame !== 'pizzas' || performance.now() < gateUntil) { acc = 0; syncHints(); return; }
+    if (phase !== 'playing' || activeGame !== 'pizzas' || performance.now() < gateUntil) { acc = 0; syncHints(); school.step(delta); return; }
     acc += Math.min(delta, 100);
     while (acc >= TICK_MS) {
       acc -= TICK_MS;
@@ -583,7 +584,7 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   obstFail: () => { if (!obstRun) return; for (const p of obstRun.session.world.players) p.body.y = 100_000; },
   obstSkip: (ms: number) => { if (!obstRun) return; for (let t = 0; t < ms; t += 1000 / 60) obstRun.step(1000 / 60); },
   deliver: (m: ServerMsg) => onMessage(m), // e2e: hand the screen a relay message directly (to prove the screen validates the Captain itself)
-  captain: () => captainId,
+  captain: () => captainId, school: () => school.debug(),
   camp: () => ({ on: camp.on, resultOn: camp.resultOn, state: camp.state, expId: camp.flow.exp?.id ?? null, outcome: camp.flow.outcome, run: campRun, starting, howTo: !!howTo, busy: camp.isBusy }), // e2e: what the campaign believes
   forceLobby: () => { if (phase === 'menu') setPhase('lobby'); }, // capture tool: skip the menu (and its player range)
   menu: () => ({ sel: menuSel, cards: menuCards(connectedCount()).map((c) => `${c.id}:${c.state}`) }),
@@ -867,7 +868,6 @@ function renderUi() {
   $('pizzaops').classList.toggle('off', isObst); $('obstops').classList.toggle('off', !isObst); $('obstmodewrap').classList.toggle('off', !isObst);
   $('start').textContent = isObst ? '¡A cruzar!' : '¡A cocinar!';
   if (isObst) { showTeams(false); $('modebox').classList.add('off'); if (camp.on) { camp.render(); return; } renderObstLobby(); return; }
-  const list = [...players.values()];
   const n = connectedN();
   const vs = syncLobby(n);
   const def = gameDef();
@@ -1227,7 +1227,7 @@ $('howtobtn').addEventListener('click', () => { if (!howTo && !starting && phase
 $('howto').addEventListener('click', () => { if (howTo?.mode === 'preview') closeHowTo(); });
 // One handler for the Mac keyboard and for the Captain's D-pad (which arrives as the key it replaces).
 function onKey(key: string, repeat: boolean) {
-  if (camp.shows(phase) && !starting && !howTo && camp.key(key, repeat)) return; // the campaign owns the arrows, Enter, Esc and "?" in its screens
+  if (school.key(key, repeat) || (camp.shows(phase) && !starting && !howTo && camp.key(key, repeat))) return; // the school owns every key while it runs (and P in the lobby); the campaign owns the arrows, Enter, Esc and "?" in its screens
   const act = starting ? 'none' : howToOnKey(howTo, phase, key);
   if (act === 'open-preview') { openHowTo('preview'); return; }
   if (act === 'close') { closeHowTo(); return; }

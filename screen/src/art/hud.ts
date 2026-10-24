@@ -13,7 +13,8 @@ import { VersusHud } from './versusHud';
 const TICKET_W = TICKET_WIDTH;
 
 // Versus: who plays for whom and the host's options for the round (the sim does not need them, the HUD does).
-export interface RoundView { teams: readonly TeamInfo[] | null; hiddenScore: boolean }
+// school: the Cocina escuela (no clock, no score, no order strip: the TV overlay of screen/src/tutorial draws the checks instead)
+export interface RoundView { teams: readonly TeamInfo[] | null; hiddenScore: boolean; school?: true }
 const NO_VIEW: RoundView = { teams: null, hiddenScore: false };
 // Twin queues share order ids, so a ticket is keyed by team too (team 0 / coop: the order id itself).
 export const ticketKey = (order: number, team = 0) => team * 1_000_000 + order;
@@ -69,6 +70,7 @@ export class Hud {
     this.streakBox = scene.add.container(1462, 52, [this.streakBg, label, this.streakTxt]).setDepth(D + 1).setVisible(false);
     this.vs = game.versus ? new VersusHud(scene, game, view) : null;
     if (this.vs) for (const o of [this.panel, this.coin, this.scoreTxt]) o.setVisible(false); // the coop score panel gives way to one plate per team
+    if (view.school) for (const o of [this.clockImg, this.clockG, this.clockTxt, this.panel, this.coin, this.scoreTxt]) o.setVisible(false); // the school has no clock and no score
   }
 
   // R15: pops when the multiplier goes up, shakes and drops out when the streak is lost.
@@ -166,6 +168,7 @@ export class Hud {
 
   update(dtMs: number) {
     this.t += dtMs;
+    if (this.view.school) return; // no tickets, no clock, no score
     const g = this.game;
     // tickets: one strip in coop; versus has one per team (the right one mirrored), each with its own queue
     const vs = g.versus;

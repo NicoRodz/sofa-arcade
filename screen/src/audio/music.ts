@@ -87,7 +87,7 @@ function resultsEvents(step: number): Note[] {
 
 export interface Snapshot { phase: Phase; started: boolean; timeLeftMs: number | null }
 export function modeFor(s: Snapshot): Mode {
-  if (s.phase === 'menu' || s.phase === 'lobby') return 'lobby'; // the start menu shares the lobby's music
+  if (s.phase === 'menu' || s.phase === 'lobby' || s.phase === 'school') return 'lobby'; // the start menu and the Cocina escuela share the lobby's calm music
   if (s.phase === 'results') return 'results';
   if (!s.started) return 'silent'; // the 3-2-1 countdown is heard on its own
   return s.timeLeftMs !== null && s.timeLeftMs <= RUSH_MS ? 'rush' : 'game';

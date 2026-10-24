@@ -134,8 +134,8 @@ export class World {
       this.stations.ding(wi);
       if (ch) {
         this.fx.starBurst(ch.root.x, ch.root.y - TILE * 0.5, 5);
-        this.fx.float(ch.root.x, ch.root.y - TILE * 1.15, `+${e.points}`, C.cheese, 52);
-        if (e.mult > 1) this.fx.float(ch.root.x, ch.root.y - TILE * 1.55, `propina x${e.mult}`, e.mult >= 4 ? C.tomato : C.fire, 30);
+        this.fx.float(ch.root.x, ch.root.y - TILE * 1.15, this.view?.school ? '¡Bien!' : `+${e.points}`, C.cheese, this.view?.school ? 60 : 52); // the school pays no points
+        if (e.mult > 1 && !this.view?.school) this.fx.float(ch.root.x, ch.root.y - TILE * 1.55, `propina x${e.mult}`, e.mult >= 4 ? C.tomato : C.fire, 30);
       }
       this.fx.ring(w.x, w.y, 0xffc93c, 0.5, 2);
       const box = place(this.scene, foodKey('box'), w.x, w.y - TILE * 0.1, 1.0).setDepth(1300);
@@ -147,7 +147,7 @@ export class World {
       this.chefOf(e.player)?.fail();
       this.fx.shake(90, 0.003);
     });
-    on('streak', (e) => { if (!g.versus) this.hud.streak(e.n, e.mult); }); // versus: each plate reads its team's streak from the sim
+    on('streak', (e) => { if (!g.versus && !this.view?.school) this.hud.streak(e.n, e.mult); }); // versus: each plate reads its team's streak from the sim
     on('countdownTick', (e) => { if (e.kind === 'start') this.hud.countdown(e.n); else this.hud.clockPulse(); });
     on('roundEnd', (e) => {
       this.hud.timeUp();
