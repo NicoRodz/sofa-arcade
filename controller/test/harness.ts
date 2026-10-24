@@ -165,6 +165,10 @@ const player = (name: string, id = 1, color = '#E63B2E') => ({ t: 'joined', play
 const config = (controls: ControlsMsg = PIZZAS, howTo = HOWTO) => ({ t: 'config', game: 'pizzas', difficulty: 'normal', map: 'auto', seed: 1, controls, howTo });
 const captain = (id: number | null = 1) => ({ t: 'captain', playerId: id }); // the relay's crown message: id 1 is the phone every scenario plays
 const phase = (p: string, extra: object = {}) => ({ t: 'phase', phase: p, ...extra });
+const VS_TEAMS = [{ id: 0, name: 'Picantes', color: '#A8330A', icon: '▲', side: 'izquierda', playerIds: [1] }, { id: 1, name: 'Frescos', color: '#14338A', icon: '●', side: 'derecha', playerIds: [2] }];
+const vsConfig = () => ({ ...config(), modeId: 'versus', teams: VS_TEAMS, teamsLocked: true, modeOptions: { hiddenScore: true, handicap: true } });
+const you = (team: number) => ({ t: 'you', teamId: team, color: VS_TEAMS[team]!.color, icon: VS_TEAMS[team]!.icon, sideLabel: VS_TEAMS[team]!.side });
+const vsResult = (verdict: string, winner: number | null) => ({ verdict, winner, scores: [{ team: 0, score: 410 }, { team: 1, score: 340 }] });
 
 const WIDE = `document.documentElement.style.setProperty('--font', 'Verdana, sans-serif'); window.dispatchEvent(new Event('resize'))`;
 
@@ -194,6 +198,11 @@ export const SCENARIOS: Scenario[] = [
   { name: 'lobby-zoomed', msgs: [player('Nico'), config(), phase('lobby')], after: `document.body.dataset.howto = 'closed'; document.body.classList.add('zoomed')` },
   { name: 'results', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1240 }] })] },
   { name: 'results-big', msgs: [player('Nico'), config(), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1234567 }] })] },
+  // versus: the phone knows its team and gets the verdict with the results (won / lost / a draw / no winner), each inside a frame in the team colour
+  { name: 'vs-results-won', msgs: [player('Nico'), vsConfig(), you(0), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 410 }], result: vsResult('win', 0) })] },
+  { name: 'vs-results-lost', msgs: [player('Nico'), vsConfig(), you(1), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 340 }], result: vsResult('win', 0) })] },
+  { name: 'vs-results-draw', msgs: [player('Nico'), vsConfig(), you(0), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 1234567 }], result: vsResult('draw', null) })] },
+  { name: 'vs-results-none', msgs: [player('WWWWWWWWWWWWWWWW'), vsConfig(), you(1), phase('lobby'), phase('playing'), phase('results', { scores: [{ id: 1, score: 340 }], result: vsResult('nowinner', null) })], after: WIDE },
   // the Captain's D-pad (id 1 holds the crown): every screen but the round, and the others do not get it
   { name: 'captain-menu', msgs: [player('Nico'), config(), phase('menu'), captain()] },
   { name: 'captain-menu-longname', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#8E5CD9'), config(), phase('menu'), captain()] },

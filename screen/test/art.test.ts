@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { COLORS } from '@party/shared';
 import { COLS, ROWS } from '@party/shared/game';
 import { CHEFS, FLOORS, H, HUD_H, OX, OY, SKINS, TILE, W, chefOf, floorPair, hairOf, progressColor, skinOf, timerColor, C } from '../src/art/tokens';
-import { MAX_TICKETS, TICKET_SHAKE_AT, TICKET_WIDTH, clockText, ticketXs } from '../src/art/layout';
+import { MAX_TICKETS, TICKET_SHAKE_AT, TICKET_WIDTH, VS_CLOCK_HALF, VS_PLATE, VS_STAGE_W, VS_TICKET_MAX_X, clockText, ticketXs, vipCardAt } from '../src/art/layout';
+import { FLAG_H, FLAG_W } from '../src/art/flags';
+import { isVersusMapId, VERSUS_FLOOR } from '../src/art/tokens';
+import { VERSUS_MAP_IDS } from '@party/shared/versusMaps';
 import { CUT_KIND, ITEM_KIND, RAW_KIND } from '../src/art/food';
 import { maxOrders } from '@party/shared/difficulty';
 
@@ -82,5 +85,38 @@ describe('R23 tickets and R24 item state', () => {
     expect(RAW_KIND.every((k) => !CUT_KIND.includes(k))).toBe(true);
     expect(ITEM_KIND.dish).not.toBe(ITEM_KIND.dishQ);
     expect(ITEM_KIND.plate).not.toBe(ITEM_KIND.dirty);
+  });
+});
+
+describe('versus HUD layout (F4)', () => {
+  const mid = VS_STAGE_W / 2;
+  it('each scoreboard plate sits between its ticket strip and the clock, and the two are mirror images', () => {
+    const [left, right] = VS_PLATE.x;
+    expect(left).toBeGreaterThan(VS_TICKET_MAX_X); // the tickets of team 0 end where the plate begins
+    expect(left + VS_PLATE.w).toBeLessThanOrEqual(mid - VS_CLOCK_HALF); // and the plate ends before the clock
+    expect(right).toBeGreaterThanOrEqual(mid + VS_CLOCK_HALF);
+    expect(right + VS_PLATE.w).toBeLessThanOrEqual(VS_STAGE_W - VS_TICKET_MAX_X);
+    expect(mid - (left + VS_PLATE.w)).toBe(right - mid); // equal gap either side of the clock
+    expect(left).toBe(VS_STAGE_W - right - VS_PLATE.w);
+  });
+  it('the plates fit under the top of the stage and above the map', () => {
+    expect(VS_PLATE.y).toBeGreaterThanOrEqual(0);
+    expect(VS_PLATE.y + VS_PLATE.h).toBeLessThanOrEqual(HUD_H);
+  });
+  it('the golden order card sits in the middle of the barrier: upper part of a vertical one (the pantry may fill its middle row), middle of a horizontal one', () => {
+    expect(vipCardAt([{ x: 3.5, y: 4.5 }, { x: 12.5, y: 4.5 }], COLS, ROWS)).toEqual({ x: 8, y: 2.5 }); // V1, V2, V4, V5: kitchens side by side
+    expect(vipCardAt([{ x: 8, y: 2 }, { x: 8, y: 7 }], COLS, ROWS)).toEqual({ x: 8, y: 4.5 }); // V3: one above the other
+    const card = { x: OX + 8 * TILE, y: OY + 2.5 * TILE };
+    expect(card.x).toBe(W / 2); // dead centre of the stage: the barrier is symmetric
+  });
+  it('a flag is drawn in a box with room for the pole and the pennant', () => {
+    expect(FLAG_W).toBeGreaterThan(100);
+    expect(FLAG_H).toBeGreaterThan(FLAG_W);
+  });
+  it('every versus map gets the same neutral floor (the team colour does the rest), and coop maps keep theirs', () => {
+    expect(VERSUS_MAP_IDS.length).toBeGreaterThanOrEqual(5);
+    for (const id of VERSUS_MAP_IDS) { expect(isVersusMapId(id), id).toBe(true); expect(floorPair(id, 7)).toBe(VERSUS_FLOOR); }
+    expect(isVersusMapId('vs-gen')).toBe(true);
+    for (const id of Object.keys(FLOORS)) { expect(isVersusMapId(id), id).toBe(false); expect(floorPair(id)).toEqual(FLOORS[id]); }
   });
 });

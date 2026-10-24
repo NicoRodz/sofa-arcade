@@ -298,6 +298,27 @@ describe('teams', () => {
     [screen.ws, a.ws, b.ws, late.ws, s2.ws].forEach((w) => w.close());
   });
 
+  it('the results phase carries the versus result to every phone, and a phone that reconnects at the results still gets it', async () => {
+    const screen = new Client('?role=screen&room=tm4');
+    const a = new Client('?room=tm4');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined'); await a.next('phase');
+    const result = { verdict: 'win' as const, winner: 1, scores: [{ team: 0, score: 340 }, { team: 1, score: 410 }] };
+    screen.send({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result });
+    expect(await a.next('phase')).toEqual({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result });
+    a.ws.close();
+    await screen.next('player_left');
+    const a2 = new Client('?room=tm4');
+    await a2.open();
+    a2.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a2.next('joined');
+    expect(await a2.next('phase')).toMatchObject({ phase: 'results', result });
+    screen.send({ t: 'phase', phase: 'lobby' }); // the next phase drops it
+    expect((await a2.next('phase')).result).toBeUndefined();
+    [screen.ws, a2.ws].forEach((w) => w.close());
+  });
+
   it('a phone that drops and comes back with its token keeps its team and gets told again', async () => {
     const screen = new Client('?role=screen&room=tm2');
     const a = new Client('?room=tm2');

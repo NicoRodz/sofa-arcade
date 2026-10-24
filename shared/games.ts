@@ -32,8 +32,10 @@ export interface ModeSpec {
 }
 export const COOP_STYLE: TeamStyle = { name: 'Equipo', color: '#F4C430', icon: '★' };
 export const VERSUS_STYLES: readonly TeamStyle[] = [
-  { name: 'Picantes', color: '#F26A1B', icon: '▲' }, // orange + triangle against blue + circle: apart for colour-blind players too
-  { name: 'Frescos', color: '#1E6BD6', icon: '●' },
+  // chili red-orange + triangle against navy + circle: apart for colour-blind players too. Both are darker than every chef colour (palette in
+  // protocol.ts COLORS): the first draft (#F26A1B, #1E6BD6) sat at a perceptual distance of 7 and 9 from the orange and blue chefs, these at 22 and 31.
+  { name: 'Picantes', color: '#A8330A', icon: '▲' },
+  { name: 'Frescos', color: '#14338A', icon: '●' },
 ];
 export const COOP_TEAMS: TeamSpec = { count: [1, 1], maxRatio: 1, handicap: 'none', styles: [COOP_STYLE] };
 

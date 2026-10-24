@@ -13,7 +13,7 @@ for (const name of ['check', 'smoke']) {
   writeFileSync(join(out, `${name}.html`), `<!doctype html><meta charset=utf-8><body><pre id=out></pre><script src="${name}.js"></script></body>`);
 }
 
-const PORT = 3300;
+const PORT = Number(process.env.PG_CDP ?? 3300);
 const profile = join(out, 'profile');
 rmSync(profile, { recursive: true, force: true }); // a stale profile keeps the saved mute flag
 const chrome = spawn(process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',

@@ -60,6 +60,29 @@ describe('phone layout', () => {
     }
   }, 60_000);
 
+  it("versus results: the phone shows how its team ended and the score of its OWN team, framed in the team's colour; coop shows neither", async () => {
+    const read = async (name: string) => {
+      await s.load(SCENARIOS.find((x) => x.name === name)!);
+      await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!);
+      return s.eval<{ verdict: string; shown: boolean; rank: string; score: string; outcome: string | undefined; frame: string }>(`(() => {
+        const v = document.getElementById('verdict');
+        return { verdict: v.textContent, shown: getComputedStyle(v).display !== 'none', rank: document.getElementById('rank').textContent, score: document.getElementById('myscore').textContent, outcome: document.body.dataset.outcome, frame: getComputedStyle(document.getElementById('results')).boxShadow };
+      })()`);
+    };
+    const won = await read('vs-results-won');
+    expect([won.verdict, won.shown, won.rank, won.score, won.outcome]).toEqual(['¡Ganaron!', true, '410', 'puntos de tu equipo', 'won']);
+    expect(won.frame).toContain('168, 51, 10'); // Picantes #A8330A
+    const lost = await read('vs-results-lost');
+    expect([lost.verdict, lost.rank, lost.outcome]).toEqual(['Perdieron', '340', 'lost']); // team 1 reads ITS 340 from the scores of both teams, not the winner's 410
+    expect(lost.frame).toContain('20, 51, 138'); // Frescos #14338A
+    const draw = await read('vs-results-draw');
+    expect([draw.verdict, draw.rank, draw.outcome]).toEqual(['¡Empate!', '410', 'draw']);
+    const none = await read('vs-results-none');
+    expect([none.verdict, none.outcome]).toEqual(['Sin ganador', 'none']);
+    const coop = await read('results');
+    expect([coop.shown, coop.outcome, coop.rank, coop.score]).toEqual([false, undefined, '1240', 'puntos de equipo']);
+  }, 90_000);
+
   it("the Captain's D-pad shows its 7 buttons on every screen but the round, and only on the Captain's phone", async () => {
     const count = async (name: string) => { await s.load(SCENARIOS.find((x) => x.name === name)!); await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!); return (await s.probe()).items.filter((i) => i.sel === '#remote .rb').length; };
     for (const n of ['captain-menu', 'captain-lobby', 'captain-howto', 'captain-results']) expect(await count(n), n).toBe(7);

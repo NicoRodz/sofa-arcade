@@ -12,6 +12,7 @@ import {
   BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
   type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg, type TeamInfo,
 } from '@party/shared';
+import { outcomeFor, type Outcome, type PhoneResult } from '@party/shared/versusReport';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const store = {
@@ -212,7 +213,8 @@ $('pswap').addEventListener('pointerup', (e) => {
   tx({ t: 'puesto', puestos: [next] });
 });
 
-function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg) {
+const VERDICT_TEXT: Record<Outcome, string> = { won: '¡Ganaron!', lost: 'Perdieron', draw: '¡Empate!', none: 'Sin ganador' };
+function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg, result?: PhoneResult) {
   phase = p;
   seenGame = seenAfterPhase(seenGame, p);
   if (p === 'menu') setHowTo(false);
@@ -224,7 +226,12 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
     const mine = scores.find((s) => s.id === myId) ?? scores[0]; // cooperative: every entry carries the team score
     $('rank').textContent = mine ? String(mine.score) : '-';
     $('myscore').textContent = mine ? 'puntos de equipo' : '';
-  }
+    // versus: the verdict and the score of this phone's own team (the screen sends every team's; the phone picks its own)
+    const outcome = result ? outcomeFor(result, myTeam) : null;
+    const own = result && myTeam !== null ? result.scores.find((x) => x.team === myTeam) : undefined;
+    if (outcome && own) { $('rank').textContent = String(own.score); $('myscore').textContent = 'puntos de tu equipo'; $('verdict').textContent = VERDICT_TEXT[outcome]; document.body.dataset.outcome = outcome; }
+    else delete document.body.dataset.outcome;
+  } else delete document.body.dataset.outcome;
   view(p);
   renderCaptain();
 }
@@ -255,7 +262,7 @@ function connect() {
     } else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {
-      showPhase(m.phase, m.scores, m.puestos);
+      showPhase(m.phase, m.scores, m.puestos, m.result);
     } else if (m.t === 'captain') {
       captainId = m.playerId;
       renderCaptain();

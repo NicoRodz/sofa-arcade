@@ -3,8 +3,8 @@ import type { Difficulty } from '../../../difficulty';
 import type { EntityParam, GameMode, LevelDef } from '../types';
 import { TILE } from '../constants';
 import type { PlayerStep } from './input';
-import { createWorld, step, type World } from './world';
-import type { ObstEventName, ObstEvents } from '../events';
+import { createWorld, step, type World, type WorldOptions } from './world';
+import type { AllObstEvents, ObstEventName } from '../events';
 import type { ObstEvent } from './state';
 
 export const IDLE: PlayerStep = { move: 0, down: false, jump: false, up: false, grab: false };
@@ -28,9 +28,9 @@ export function hall(w = 60, h = 14, extra: Record<number, string> = {}): string
 }
 export const put = (row: string, col: number, s: string): string => row.slice(0, col) + s + row.slice(col + s.length);
 
-export interface Opts { mode?: GameMode; difficulty?: Difficulty; slots?: number[] }
+export interface Opts { mode?: GameMode; difficulty?: Difficulty; slots?: number[]; campaign?: WorldOptions['campaign'] }
 export function world(def: LevelDef, o: Opts = {}): World {
-  return createWorld({ level: def, mode: o.mode ?? 'chain', difficulty: o.difficulty ?? 'normal', slots: o.slots ?? [0, 1] });
+  return createWorld({ level: def, mode: o.mode ?? 'chain', difficulty: o.difficulty ?? 'normal', slots: o.slots ?? [0, 1], campaign: o.campaign });
 }
 
 export type InputFn = (slot: number, tick: number) => PlayerStep | undefined;
@@ -46,7 +46,7 @@ export function run(w: World, steps: number, f: InputFn = () => undefined, onSte
   return all;
 }
 export const names = (ev: ObstEvent[]): string[] => ev.map((e) => e.name);
-export const of = <K extends ObstEventName>(ev: ObstEvent[], name: K): ObstEvents[K][] => ev.filter((e) => e.name === name).map((e) => e.data as ObstEvents[K]);
+export const of = <K extends ObstEventName>(ev: ObstEvent[], name: K): AllObstEvents[K][] => ev.filter((e) => e.name === name).map((e) => e.data as AllObstEvents[K]);
 export const pl = (w: World, slot: number) => w.players.find((p) => p.slot === slot)!;
 export const feetOnFloor = (w: World, slot: number, floorRow: number) => Math.abs(pl(w, slot).body.y + 46 - floorRow * TILE) < 0.7;
 // Put a player at tile coords (feet on the bottom of the cell row), for set-ups.
