@@ -3,6 +3,8 @@ import { Emitter, type GameEvents } from './events';
 import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type StationKind } from './maps';
 import { DEFAULT_DIFFICULTY, DIRTY_MS, WASH_MS, params as difficultyParams, teamSize, type Difficulty, type Params, type Tuning } from './difficulty';
 import { mulberry32, type Rng } from './rng';
+import { holdsPlace, matchStatus, rankTeams, teamMultipliers, type PauseChoice, type RosterEntry, type TeamId, type TeamResult } from './teams';
+import { VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS, kitchenRegions, stationOwner, teamStarts, type Kitchens } from './versus';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -35,6 +37,7 @@ export interface Station {
   done: boolean; // pot: dish ready
   count: number; // plates: clean stock (finite-plate maps); dirty (return): dirty plates waiting; sink: dirty plates to wash
   clean: number; // sink: washed plates ready to take
+  owner: TeamId | null; // the team whose kitchen it is: chefs of another team cannot use it. null: shared (nobody owns it)
 }
 export interface Player {
   id: number;
@@ -61,8 +64,10 @@ export interface Player {
   buffAge: number; // ms since the newest of them
   buffB: number; // R6: ms left of a dash press that found nothing to do yet
   crossing: boolean; // R4: in a pair that is crossing through each other (slower, drawn see-through)
+  team: TeamId; // the team this chef plays for (0 in a cooperative round)
+  ghost: boolean; // a dropped chef: no collision, no input, no interaction, until it reconnects (GHOST_MS) or is removed
 }
-export interface Order { id: number; expiresAt: number; warned: boolean; recipe: Recipe }
+export interface Order { id: number; expiresAt: number; warned: boolean; recipe: Recipe; vip?: boolean }
 // a = new A presses since last tick; bTaps = new B presses since last tick (a quick tap can start and end between two ticks)
 export interface Controls { x: number; y: number; a: number; b: boolean; bTaps?: number }
 export const COLS = MAP_W;
@@ -84,63 +89,179 @@ export interface Game {
   params: Params;
   time: number;
   over: boolean;
-  score: number;
-  delivered: number;
   mapId?: string; // fixed map id, for the star table (undefined: generated map)
+  players: Map<number, Player>;
+  stations: Station[];
+  hasCheese: boolean;
+  finitePlates: boolean; // the map has a dirty-plate return and a sink: plates run out unless somebody washes
+  crowd: Map<string, { ms: number; ghost: boolean }>; // R4: per pair of chefs, ms of opposed pushing and whether they are crossing
+  // Teams: the per-team state (queue, score, streak, plates). A cooperative round is ONE team, so there is a single code path.
+  teams: TeamState[];
+  versus: boolean; // two or more teams: separate kitchens, twin queues, VIP, handicap, ghosts
+  roster: RosterEntry[]; // who plays for which team and since when a phone is down (see dropPlayer)
+  paused: { teams: TeamId[] } | null; // an empty team stopped the clock: resolvePause
+  noWinner: boolean; // the host chose to go on without a winner after a team emptied
+  result: MatchResult | null; // set when the round ends
+  vip: { nextAt: number; rng: Rng; round: VipRound | null };
+  // legacy single-team view: the fields of team 0 (the whole round in coop)
+  score: number; // points of team 0 (versus: times k)
+  delivered: number;
   streak: number; // R15: correct deliveries in a row; an expired order or a rejected dish resets it
   bestStreak: number;
   tips: number; // points earned as tips, for the results
   expired: number;
   rejected: number;
-  players: Map<number, Player>;
-  stations: Station[];
   orders: Order[];
   rng: Rng; // seeded: which orders are Margarita
-  hasCheese: boolean;
-  finitePlates: boolean; // the map has a dirty-plate return and a sink: plates run out unless somebody washes
-  crowd: Map<string, { ms: number; ghost: boolean }>; // R4: per pair of chefs, ms of opposed pushing and whether they are crossing
   dirtyDue: number[]; // game times at which a delivered plate comes back dirty
   nextOrderAt: number;
   orderSeq: number;
+  // private to the sim
+  teamIds: number[][]; // declared players per team ([] playerIds + open when the round is cooperative without a roster)
+  open: boolean; // coop without a declared roster: every chef joins team 0
+  handicap: boolean; // apply the k of the smaller team (the host's option)
+  pauseDismissed: boolean;
+  kitchens: Kitchens | null;
+  teamSpawns: [number, number][][]; // versus: start tiles of each kitchen
 }
+
+/** One team's side of the round. */
+export interface TeamState {
+  id: TeamId;
+  n: number; // chefs the team started with (the star table reads it)
+  score: number; // points, already times k and the VIP bonus
+  gross: number; // the same before k (the results show both)
+  delivered: number;
+  streak: number;
+  bestStreak: number;
+  tips: number;
+  expired: number;
+  rejected: number;
+  vips: number; // VIP orders won
+  reachedAt: number; // match time of the last change of `score` (the fourth tie-break)
+  k: number; // handicap multiplier now (1 in coop)
+  orders: Order[];
+  orderSeq: number;
+  nextOrderAt: number;
+  rng: Rng; // the team's own stream: the same seed for every team, so the queues are twins
+  dirtyDue: number[];
+}
+export interface VipRound { recipe: Recipe; winners: { team: TeamId; at: number }[]; settled: boolean }
+export interface MatchResult { order: TeamResult[]; winner: TeamId | null; aborted: boolean } // aborted: the host ended it from the pause
+
+const LEGACY = ['score', 'delivered', 'streak', 'bestStreak', 'tips', 'expired', 'rejected', 'orders', 'rng', 'dirtyDue', 'nextOrderAt', 'orderSeq'] as const;
 
 export const isSolid = (g: Game, tx: number, ty: number) => !isFloor(g.grid, tx, ty);
 
-export const spawnOrder = (g: Game) => {
-  if (g.orders.length < g.params.maxOrders) {
-    const recipe: Recipe = g.hasCheese && g.rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
-    const o: Order = { id: g.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe };
-    g.orders.push(o);
-    g.bus.emit('orderNew', { order: o.id, recipe });
-  }
+// {} in coop (one team): the events keep their old shape. Versus adds the team.
+const tag = (g: Game, team: TeamId | null): { team?: number } => (g.versus && team !== null ? { team } : {});
+
+// A new order for the team. In versus the recipe is drawn at EVERY slot, admitted or not, so both queues see the same recipe at the
+// same instant whatever each team has delivered; coop draws only when the order is admitted (the golden rounds pin that).
+export const spawnOrder = (g: Game, team: TeamState = g.teams[0]!) => {
+  const room = team.orders.length < g.params.maxOrders;
+  if (!room && !g.versus) return;
+  const recipe: Recipe = g.hasCheese && team.rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
+  if (!room) return;
+  const o: Order = { id: team.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe };
+  team.orders.push(o);
+  g.bus.emit('orderNew', { order: o.id, recipe, ...tag(g, team.id) });
 };
 
-export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents> } = {}): Game {
+// The golden order: the same recipe in every queue (one draw from its own stream), 30 s of patience, whatever the queue holds.
+function spawnVip(g: Game) {
+  const recipe: Recipe = g.hasCheese && g.vip.rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
+  g.vip.round = { recipe, winners: [], settled: false };
+  g.vip.nextAt += VIP_EVERY_MS[g.difficulty];
+  for (const t of g.teams) {
+    const o: Order = { id: t.orderSeq++, expiresAt: g.time + VIP_TTL_MS, warned: false, recipe, vip: true };
+    t.orders.push(o);
+    g.bus.emit('orderNew', { order: o.id, recipe, team: t.id, vip: true });
+  }
+  g.bus.emit('vipNew', { recipe });
+}
+
+// End of the tick: the VIP has a winner, so the rival's golden order turns into a normal one (it keeps its pizza and its patience).
+function settleVip(g: Game) {
+  const r = g.vip.round;
+  if (!r || r.settled || !r.winners.length) return;
+  r.settled = true;
+  for (const t of g.teams) {
+    if (r.winners.some((w) => w.team === t.id)) continue;
+    const o = t.orders.find((x) => x.vip);
+    if (o) { delete o.vip; g.bus.emit('vipLost', { team: t.id }); }
+  }
+}
+
+export interface TeamSeat { playerIds: readonly number[] } // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
+
+export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows);
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
-  const p = difficultyParams(difficulty, opts.n ?? 2);
+  const seats = opts.teams;
+  if (seats && !seats.length) throw new RangeError('a round needs at least one team');
+  const teamCount = seats?.length ?? 1;
+  const versus = teamCount > 1;
+  // the order flow is sized for the average team (versus: round((nA + nB) / 2), 3v2 plays at 3); coop keeps its own team size
+  const n = opts.n ?? (seats ? Math.round(seats.reduce((a, t) => a + t.playerIds.length, 0) / teamCount) : 2);
+  const p = difficultyParams(difficulty, n);
+  const seed = opts.seed ?? 1;
+  const kitchens = versus ? kitchenRegions(grid, teamCount, opts.spawns) : null;
   const stations: Station[] = [];
   grid.forEach((row, ty) => row.forEach((t, tx) => {
-    if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false, count: 0, clean: 0 });
+    if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false, count: 0, clean: 0, owner: kitchens ? stationOwner(grid, kitchens, tx, ty) : 0 });
   }));
-  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, mapId: opts.mapId, streak: 0, bestStreak: 0, tips: 0, expired: 0, rejected: 0, players: new Map(), stations, orders: [], rng: mulberry32(opts.seed ?? 1), hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(), dirtyDue: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
-  if (g.finitePlates) {
-    const piles = stations.filter((s) => s.kind === 'plates');
+  const handicap = versus && (opts.handicap ?? true);
+  const ks = handicap ? teamMultipliers(seats!.map((t) => t.playerIds.length), Infinity) : null; // null: an empty team, or no handicap
+  const teams: TeamState[] = Array.from({ length: teamCount }, (_v, id) => ({
+    id, n: seats ? seats[id]!.playerIds.length : teamSize(n), score: 0, gross: 0, delivered: 0, streak: 0, bestStreak: 0, tips: 0, expired: 0, rejected: 0, vips: 0, reachedAt: 0,
+    k: ks?.[id] ?? 1, orders: [], orderSeq: 0, nextOrderAt: p.orderEveryMs, rng: mulberry32(seed), dirtyDue: [],
+  }));
+  const g = {
+    bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(n), params: p, time: 0, over: false, mapId: opts.mapId, players: new Map(), stations,
+    hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(),
+    teams, versus, roster: [], paused: null, noWinner: false, result: null, vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null },
+    teamIds: seats ? seats.map((t) => [...t.playerIds]) : [], open: !seats, handicap, pauseDismissed: false, kitchens, teamSpawns: [],
+  } as unknown as Game;
+  // the legacy single-team fields are live views of team 0
+  for (const key of LEGACY) Object.defineProperty(g, key, { get: () => teams[0]![key], set: (v) => { (teams[0] as unknown as Record<string, unknown>)[key] = v; }, enumerable: true, configurable: true });
+  if (kitchens) g.teamSpawns = teams.map((t) => {
+    const starts = teamStarts(grid, kitchens, t.id, opts.spawns);
+    if (!starts.length) throw new Error(`team ${t.id} has no start tile in its kitchen`);
+    return spawnPoints(grid, MAX_SLOTS, starts);
+  });
+  if (g.finitePlates) for (const t of teams) {
+    const piles = stations.filter((s) => s.kind === 'plates' && s.owner === t.id);
     for (let i = 0; i < p.plates && piles.length; i++) piles[i % piles.length]!.count++;
   }
-  for (let i = 0; i < p.initialOrders; i++) spawnOrder(g);
+  for (const t of teams) for (let i = 0; i < p.initialOrders; i++) spawnOrder(g, t);
   return g;
 }
 
 // `slot` picks the chef (colour); `spawn` the start tile (default: the same index). The screen passes the chef's rank so
 // spawn i always holds the i-th chef and the puesto table (spawn i = puesto i) lines up even when slots have gaps.
-export function addPlayer(g: Game, id: number, slot: number, spawn = slot) {
-  if (g.players.has(id)) return;
-  const [sx, sy] = g.spawns[spawn % g.spawns.length] ?? [1, 1];
-  g.players.set(id, { id, slot, spawn: spawn % g.spawns.length, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, vx: 0, vy: 0, item: null, cutting: false, chopAt: -1, bHeld: false, dashMs: 0, dashCd: 0, dashDx: 0, dashDy: 0, dashHit: [], kx: 0, ky: 0, buffA: 0, buffAge: 0, buffB: 0, crossing: false });
+// Versus: the chef goes to its declared team (the roster given to createGame) and starts in that team's kitchen, on the tile of its
+// rank inside the team; `spawn` is ignored. Returns false when nobody is added: already in, or not on any team (a spectator).
+export function addPlayer(g: Game, id: number, slot: number, spawn = slot): boolean {
+  if (g.players.has(id)) return false;
+  const team = g.open ? 0 : g.teamIds.findIndex((ids) => ids.includes(id));
+  if (team < 0) return false;
+  let at = spawn % g.spawns.length;
+  let [sx, sy] = g.spawns[at] ?? [1, 1];
+  if (g.versus) {
+    const rank = Math.max(0, g.teamIds[team]!.indexOf(id));
+    const list = g.teamSpawns[team]!;
+    [sx, sy] = list[rank % list.length]!;
+    const found = g.spawns.findIndex(([x, y]) => x === sx && y === sy);
+    at = found >= 0 ? found : rank;
+  }
+  g.players.set(id, { id, slot, spawn: at, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, vx: 0, vy: 0, item: null, cutting: false, chopAt: -1, bHeld: false, dashMs: 0, dashCd: 0, dashDx: 0, dashDy: 0, dashHit: [], kx: 0, ky: 0, buffA: 0, buffAge: 0, buffB: 0, crossing: false, team, ghost: false });
+  g.roster.push({ id, teamId: team, droppedAt: null });
+  return true;
 }
 export const removePlayer = (g: Game, id: number) => {
   g.players.delete(id);
+  g.roster = g.roster.filter((e) => e.id !== id);
   for (const k of [...g.crowd.keys()]) if (k.split(':').includes(String(id))) g.crowd.delete(k);
 };
 
@@ -171,7 +292,7 @@ function startDash(g: Game, p: Player, c: Controls) {
 // R5: a dash that touches another chef gives it a short push; it never makes it drop what it carries.
 function pushNeighbours(g: Game, p: Player) {
   for (const o of g.players.values()) {
-    if (o.id === p.id || p.dashHit.includes(o.id) || Math.hypot(o.x - p.x, o.y - p.y) > 2 * RADIUS + 0.1) continue;
+    if (o.id === p.id || o.ghost || p.dashHit.includes(o.id) || Math.hypot(o.x - p.x, o.y - p.y) > 2 * RADIUS + 0.1) continue;
     p.dashHit.push(o.id);
     if (!o.cutting) { o.kx += p.dashDx * g.params.tune.pushSpeed; o.ky += p.dashDy * g.params.tune.pushSpeed; }
     g.bus.emit('bump', { player: p.id, other: o.id });
@@ -197,8 +318,8 @@ const pushing = (a: Player, b: Player, c: Controls) => {
 // If two push against each other, or one pushes one who cannot give way, for yieldAfterMs, the pair crosses through each
 // other at yieldSpeed until they are clear: with 8 chefs in a one-tile corridor nobody stays stuck.
 function separate(g: Game, controls: Map<number, Controls>, dtMs: number) {
-  const list = [...g.players.values()];
-  for (const p of list) p.crossing = false;
+  const list = [...g.players.values()].filter((p) => !p.ghost); // a ghost has no body
+  for (const p of g.players.values()) p.crossing = false;
   const { yieldAfterMs } = g.params.tune;
   for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
     const a = list[i]!, b = list[j]!;
@@ -240,6 +361,7 @@ const blocked = (g: Game, x: number, y: number) => {
   return false;
 };
 
+// The station in front of the chef, among the ones it may use (its own team's, or shared).
 export function targetStation(g: Game, p: Player): Station | null {
   const len = Math.hypot(p.fx, p.fy) || 1;
   const px = p.x + (p.fx / len) * REACH;
@@ -247,6 +369,7 @@ export function targetStation(g: Game, p: Player): Station | null {
   let best: Station | null = null;
   let bestD = REACH_SLACK;
   for (const s of g.stations) {
+    if (s.owner !== null && s.owner !== p.team) continue; // another team's kitchen: its stations are not there for this chef
     const d = Math.hypot(px - Math.max(s.tx, Math.min(px, s.tx + 1)), py - Math.max(s.ty, Math.min(py, s.ty + 1)));
     if (d < bestD) { best = s; bestD = d; }
   }
@@ -300,58 +423,72 @@ function interact(g: Game, p: Player, s: Station) {
     }
     case 'trash':
       if (g.finitePlates && (p.item === 'plate' || p.item === 'dirty')) break; // plates are not rubbish: they would be lost for good
-      if (g.finitePlates && (p.item === 'dish' || p.item === 'dishQ')) g.dirtyDue.push(g.time + DIRTY_MS); // the plate under the pizza comes back
+      if (g.finitePlates && (p.item === 'dish' || p.item === 'dishQ')) g.teams[p.team]!.dirtyDue.push(g.time + DIRTY_MS); // the plate under the pizza comes back
       p.item = null;
       break;
     case 'window':
-      if ((p.item === 'dish' || p.item === 'dishQ') && g.orders.length) {
-        // the order that asked for this pizza; a Margarita also satisfies a Marinara order, never the other way round
+      if ((p.item === 'dish' || p.item === 'dishQ') && g.teams[p.team]!.orders.length) {
+        const team = g.teams[p.team]!;
+        // the VIP first (a Margarita fits any VIP); else the order that asked for this pizza; a Margarita also satisfies a Marinara order, never the other way round
         const want: Recipe = p.item === 'dishQ' ? 'margarita' : 'marinara';
-        let at = g.orders.findIndex((o) => o.recipe === want);
+        let at = team.orders.findIndex((o) => o.vip && (o.recipe === want || p.item === 'dishQ'));
+        if (at < 0) at = team.orders.findIndex((o) => o.recipe === want);
         if (at < 0 && p.item === 'dishQ') at = 0;
         if (at < 0) { // R16: the wrong plate is refused, goes back dirty and pays nothing
-          if (g.finitePlates) g.dirtyDue.push(g.time + DIRTY_MS);
+          if (g.finitePlates) team.dirtyDue.push(g.time + DIRTY_MS);
           p.item = null;
-          g.rejected++;
-          resetStreak(g);
-          g.bus.emit('dishRejected', { player: p.id });
+          team.rejected++;
+          resetStreak(g, team);
+          g.bus.emit('dishRejected', { player: p.id, ...tag(g, team.id) });
           break;
         }
-        const o = g.orders.splice(at, 1)[0]!;
+        const o = team.orders.splice(at, 1)[0]!;
         const { tune, orderTtlMs } = g.params;
         const base = recipeBase(o.recipe, tune); // R13
         const left = Math.min(1, Math.max(0, o.expiresAt - g.time) / orderTtlMs);
-        const mult = tipMultiplier(g.streak, tune); // R15: the streak multiplies only the tip
+        const mult = tipMultiplier(team.streak, tune); // R15: the streak multiplies only the tip
         const tip = Math.round(base * tune.tipPct * left) * mult; // R14: up to +50% of the base, by the patience left
-        g.score += base + tip;
-        g.tips += tip;
-        g.delivered++;
-        g.streak++;
-        g.bestStreak = Math.max(g.bestStreak, g.streak);
-        if (g.finitePlates) g.dirtyDue.push(g.time + DIRTY_MS);
+        const vip = !!o.vip; // won the golden order: x2. Another team delivering it in this same tick wins it too (settleVip runs at the end of the tick)
+        const raw = (base + tip) * (vip ? VIP_MULT : 1);
+        const gain = Math.round(raw * team.k); // the handicap k of this instant
+        team.score += gain;
+        team.gross += raw;
+        team.reachedAt = g.time;
+        team.tips += tip;
+        team.delivered++;
+        team.streak++;
+        team.bestStreak = Math.max(team.bestStreak, team.streak);
+        if (g.finitePlates) team.dirtyDue.push(g.time + DIRTY_MS);
         p.item = null;
-        g.bus.emit('delivered', { player: p.id, points: base + tip, tip, base, mult });
-        g.bus.emit('streak', { n: g.streak, mult: tipMultiplier(g.streak, tune) });
+        g.bus.emit('delivered', { player: p.id, points: gain, tip, base, mult, ...(g.versus ? { team: team.id, k: team.k, ...(vip ? { vip: true as const } : {}) } : {}) });
+        g.bus.emit('streak', { n: team.streak, mult: tipMultiplier(team.streak, tune), ...tag(g, team.id) });
+        if (vip) {
+          const round = g.vip.round!;
+          team.vips++;
+          round.winners.push({ team: team.id, at: g.time });
+          g.bus.emit('vipWon', { team: team.id, player: p.id, tie: round.winners.length > 1 });
+        }
       }
       break;
   }
 }
 
-function resetStreak(g: Game) {
-  if (g.streak === 0) return;
-  g.streak = 0;
-  g.bus.emit('streak', { n: 0, mult: 1 });
+function resetStreak(g: Game, team: TeamState) {
+  if (team.streak === 0) return;
+  team.streak = 0;
+  g.bus.emit('streak', { n: 0, mult: 1, ...tag(g, team.id) });
 }
 
 // Runs one A press and reports what happened as events.
 function act(g: Game, p: Player, s: Station) {
-  const before = { held: p.item, shelf: s.item, baked: baked(s), done: s.done, delivered: g.delivered, rejected: g.rejected };
+  const team = g.teams[p.team]!;
+  const before = { held: p.item, shelf: s.item, baked: baked(s), done: s.done, delivered: team.delivered, rejected: team.rejected };
   interact(g, p, s);
-  if (g.delivered !== before.delivered || g.rejected !== before.rejected) return; // 'delivered' or 'dishRejected' already emitted
+  if (team.delivered !== before.delivered || team.rejected !== before.rejected) return; // 'delivered' or 'dishRejected' already emitted
   if (!before.held && p.item) g.bus.emit('itemPicked', { player: p.id, item: p.item, from: s.kind });
   else if (before.held && !p.item) g.bus.emit('itemDropped', { player: p.id, item: before.held, at: s.kind });
   else g.bus.emit('interactInvalid', { player: p.id });
-  if (s.kind === 'pot' && !before.baked && baked(s)) g.bus.emit('potStart', { station: g.stations.indexOf(s) });
+  if (s.kind === 'pot' && !before.baked && baked(s)) g.bus.emit('potStart', { station: g.stations.indexOf(s), ...tag(g, s.owner) });
 }
 
 function countdown(g: Game, dtMs: number) {
@@ -366,10 +503,12 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   if (g.over) return;
   if (g.countdown > 0) { countdown(g, dtMs); return; }
   if (!g.started) { g.started = true; g.bus.emit('roundStart', {}); }
+  if (g.versus && !refreshRoster(g)) return; // an empty team stopped the clock
   const dt = dtMs / 1000;
   g.time += dtMs;
 
   for (const p of g.players.values()) {
+    if (p.ghost) continue;
     const c = controls.get(p.id) ?? idleControls;
     const tune = g.params.tune;
     const target = targetStation(g, p);
@@ -437,6 +576,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   }
 
   separate(g, controls, dtMs);
+  settleVip(g);
 
   for (const s of g.stations) {
     if (s.kind === 'pot' && !s.done && baked(s)) {
@@ -445,25 +585,109 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     }
   }
 
-  while (g.dirtyDue.length && g.dirtyDue[0]! <= g.time) { // delivered plates come back dirty
-    g.dirtyDue.shift();
-    const back = g.stations.filter((s) => s.kind === 'dirty').sort((a, b) => a.count - b.count)[0];
-    if (back) { back.count++; g.bus.emit('dirtyNew', { station: g.stations.indexOf(back) }); }
+  for (const team of g.teams) while (team.dirtyDue.length && team.dirtyDue[0]! <= g.time) { // delivered plates come back dirty, to the team's own return
+    team.dirtyDue.shift();
+    const back = g.stations.filter((s) => s.kind === 'dirty' && s.owner === team.id).sort((a, b) => a.count - b.count)[0];
+    if (back) { back.count++; g.bus.emit('dirtyNew', { station: g.stations.indexOf(back), ...tag(g, team.id) }); }
   }
 
-  if (g.time >= g.nextOrderAt) {
-    spawnOrder(g);
-    g.nextOrderAt += g.params.orderEveryMs;
+  if (g.versus && g.time >= g.vip.nextAt) spawnVip(g);
+  for (const team of g.teams) {
+    if (g.time >= team.nextOrderAt) {
+      spawnOrder(g, team);
+      team.nextOrderAt += g.params.orderEveryMs;
+    }
+    const alive = team.orders.filter((o) => o.expiresAt > g.time);
+    for (const o of team.orders) if (!alive.includes(o)) g.bus.emit('orderExpired', { order: o.id, ...tag(g, team.id) });
+    const lost = team.orders.length - alive.length;
+    const before = team.score;
+    team.score = Math.max(0, team.score + lost * g.params.penalty); // the penalty is not multiplied by k
+    if (team.score !== before) team.reachedAt = g.time;
+    if (lost) { team.expired += lost; resetStreak(g, team); }
+    team.orders = alive;
+    for (const o of alive) if (!o.warned && o.expiresAt - g.time < WARNING_MS) { o.warned = true; g.bus.emit('orderWarning', { order: o.id, ...tag(g, team.id) }); }
   }
-  const alive = g.orders.filter((o) => o.expiresAt > g.time);
-  for (const o of g.orders) if (!alive.includes(o)) g.bus.emit('orderExpired', { order: o.id });
-  const lost = g.orders.length - alive.length;
-  g.score = Math.max(0, g.score + lost * g.params.penalty);
-  if (lost) { g.expired += lost; resetStreak(g); }
-  g.orders = alive;
-  for (const o of alive) if (!o.warned && o.expiresAt - g.time < WARNING_MS) { o.warned = true; g.bus.emit('orderWarning', { order: o.id }); }
 
   const left = Math.ceil((g.params.roundMs - g.time) / 1000);
   if (left <= 10 && left > 0 && left < g.endTick) { g.endTick = left; g.bus.emit('countdownTick', { n: left, kind: 'end' }); }
-  if (g.time >= g.params.roundMs) { g.over = true; g.bus.emit('roundEnd', { score: g.score, delivered: g.delivered }); }
+  if (g.time >= g.params.roundMs) finish(g, false);
+}
+
+const resultOf = (t: TeamState): TeamResult => ({ teamId: t.id, score: t.score, delivered: t.delivered, vip: t.vips, reachedAt: t.reachedAt });
+
+// Ends the round: ranks the teams (score, deliveries, VIPs, who got there first; a draw has no winner). `aborted`: the host ended it from the pause.
+function finish(g: Game, aborted: boolean) {
+  g.over = true;
+  const { order, winner } = rankTeams(g.teams.map(resultOf));
+  g.result = { order, winner: aborted || g.noWinner ? null : winner, aborted };
+  if (!g.versus) { g.bus.emit('roundEnd', { score: g.score, delivered: g.delivered }); return; }
+  const lead = order[0]!;
+  g.bus.emit('roundEnd', { score: lead.score, delivered: lead.delivered, winner: g.result.winner, results: order });
+}
+
+// --- Chefs that drop (versus; teams.ts has the policy) -------------------------------------------------------------------------
+// Each tick before the clock moves: a chef whose grace time ran out leaves the kitchen, k follows the chefs that still hold a place,
+// and a team with nobody stops the clock until the host picks. Returns false while the match is paused.
+function refreshRoster(g: Game): boolean {
+  if (g.paused) return false;
+  for (const e of g.roster) {
+    if (e.droppedAt === null || holdsPlace(e, g.time) || !g.players.has(e.id)) continue;
+    g.players.delete(e.id);
+    for (const k of [...g.crowd.keys()]) if (k.split(':').includes(String(e.id))) g.crowd.delete(k);
+    g.bus.emit('playerGone', { player: e.id, team: e.teamId });
+  }
+  const st = matchStatus(g.teams.map((t) => t.id), g.roster, g.time, g.handicap ? 'score-k' : 'none');
+  if (st.paused && !g.pauseDismissed) {
+    g.paused = { teams: st.emptyTeams };
+    g.bus.emit('matchPaused', { teams: st.emptyTeams });
+    return false;
+  }
+  g.teams.forEach((t, i) => {
+    if (st.k[i] === t.k) return;
+    t.k = st.k[i]!;
+    g.bus.emit('teamK', { team: t.id, k: t.k });
+  });
+  return true;
+}
+
+/**
+ * The chef's phone dropped. It stays as a ghost (no body, no input, no interaction) for GHOST_MS of match time; what it held goes to the
+ * nearest free counter of its kitchen (it keeps it when none is free). False when it was not playing or was already down.
+ */
+export function dropPlayer(g: Game, id: number): boolean {
+  const p = g.players.get(id);
+  const e = g.roster.find((r) => r.id === id);
+  if (!p || !e || e.droppedAt !== null) return false;
+  if (p.cutting) g.bus.emit(g.stations[p.chopAt]?.kind === 'sink' ? 'washStop' : 'chopStop', { player: id, station: p.chopAt });
+  e.droppedAt = g.time;
+  Object.assign(p, { ghost: true, cutting: false, chopAt: -1, vx: 0, vy: 0, kx: 0, ky: 0, dashMs: 0, buffA: 0, buffB: 0, crossing: false });
+  for (const k of [...g.crowd.keys()]) if (k.split(':').includes(String(id))) g.crowd.delete(k);
+  if (p.item) {
+    const free = g.stations.filter((s) => s.kind === 'counter' && !s.item && (s.owner === null || s.owner === p.team));
+    const near = free.sort((a, b) => Math.hypot(a.tx + 0.5 - p.x, a.ty + 0.5 - p.y) - Math.hypot(b.tx + 0.5 - p.x, b.ty + 0.5 - p.y))[0];
+    if (near) { near.item = p.item; p.item = null; }
+  }
+  g.bus.emit('playerDropped', { player: id, team: p.team });
+  return true;
+}
+
+/** The phone is back. True when the chef is still in the match (within GHOST_MS): same team, same chef. False: too late, it watches. */
+export function rejoinPlayer(g: Game, id: number): boolean {
+  const p = g.players.get(id);
+  const e = g.roster.find((r) => r.id === id);
+  if (!p || !e || e.droppedAt === null || !holdsPlace(e, g.time)) return false;
+  e.droppedAt = null;
+  p.ghost = false;
+  g.bus.emit('playerBack', { player: id, team: p.team });
+  return true;
+}
+
+/** The host's answer to an empty team: carry on without a winner, or end the round now (also without one). */
+export function resolvePause(g: Game, choice: PauseChoice) {
+  if (!g.paused) return;
+  g.paused = null;
+  if (choice === 'end') { finish(g, true); return; }
+  g.noWinner = true;
+  g.pauseDismissed = true;
+  g.bus.emit('matchResumed', {});
 }

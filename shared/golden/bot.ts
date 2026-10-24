@@ -6,7 +6,7 @@ import { Emitter, type GameEvents } from '../events';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player, type Station } from '../overcooked';
 import type { Difficulty } from '../difficulty';
 
-export interface Scenario { name: string; mapId: string; difficulty: Difficulty; n: number; seed: number }
+export interface Scenario { name: string; mapId: string; difficulty: Difficulty; n: number; seed: number; teams?: readonly { playerIds: readonly number[] }[] } // teams: declared roster (a single team must play exactly like none)
 export const SCENARIOS: readonly Scenario[] = [
   { name: 'coop-n2-map2-normal', mapId: '2', difficulty: 'normal', n: 2, seed: 11 },
   { name: 'coop-n4-map9-hard', mapId: '9', difficulty: 'hard', n: 4, seed: 22 },
@@ -21,7 +21,7 @@ export interface GoldenRun {
 }
 
 // Recording bus: the same Emitter the game uses, plus a log of every event in order.
-class RecBus extends Emitter<GameEvents> {
+export class RecBus extends Emitter<GameEvents> {
   log: string[] = [];
   tick = 0;
   override emit<K extends keyof GameEvents>(type: K, payload: GameEvents[K]) {
@@ -78,9 +78,9 @@ function route(g: Game, p: Player, s: Station): { arrived: boolean; next: [numbe
   return { arrived: false, next: null };
 }
 
-interface Mem { step: number; since: number; lastPress: number; bin: boolean }
+export interface Mem { step: number; since: number; lastPress: number; bin: boolean }
 
-function decide(g: Game, p: Player, rank: number, m: Mem, tickNo: number): Controls {
+export function decide(g: Game, p: Player, rank: number, m: Mem, tickNo: number): Controls {
   const idle: Controls = { x: 0, y: 0, a: 0, b: false };
   const step = RECIPE[m.step]!;
   const bins = g.stations.filter((x) => x.kind === 'trash' || x.kind === 'counter');
@@ -119,7 +119,7 @@ function decide(g: Game, p: Player, rank: number, m: Mem, tickNo: number): Contr
 export function runGolden(sc: Scenario): GoldenRun {
   const map = fixedMap(sc.mapId)!;
   const bus = new RecBus();
-  const g = createGame({ mapId: map.id, difficulty: sc.difficulty, n: sc.n, rows: map.rows, spawns: map.spawns, seed: sc.seed, countdownMs: COUNTDOWN_MS, bus });
+  const g = createGame({ mapId: map.id, difficulty: sc.difficulty, n: sc.n, rows: map.rows, spawns: map.spawns, seed: sc.seed, countdownMs: COUNTDOWN_MS, bus, teams: sc.teams });
   const ids = Array.from({ length: sc.n }, (_v, i) => i + 1);
   ids.forEach((id, rank) => addPlayer(g, id, rank, rank));
   const mem = new Map(ids.map((id) => [id, { step: 0, since: 0, lastPress: -99, bin: false } as Mem]));

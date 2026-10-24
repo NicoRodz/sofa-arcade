@@ -111,4 +111,14 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   countdownTick: (p) => (p.kind === 'end' ? (p.n >= 1 && p.n <= 10 ? [play('tickEnd')] : []) : [play(p.n > 0 ? 'count' : 'go')]),
   roundStart: () => [], // the music follows the game snapshot; the "go" sound comes with countdown 0
   roundEnd: () => [{ kind: 'stopLoops' }, play('whistle')],
+  // versus events (F2): silent until F4 gives them their sounds (VIP appears, won or lost; a team's k changes; a chef drops or comes back; pause)
+  vipNew: () => [],
+  vipWon: () => [],
+  vipLost: () => [],
+  teamK: () => [],
+  playerDropped: () => [],
+  playerBack: () => [],
+  playerGone: () => [],
+  matchPaused: () => [],
+  matchResumed: () => [],
 };
