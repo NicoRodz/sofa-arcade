@@ -1,7 +1,30 @@
 // WorldView: the read-only picture of a running level that the renderer draws (plan §14/§16, F2c).
-// F2a's world implements it (or an adapter in F3 maps the real world onto it); render/stub.ts feeds it with a fake world for tests.
-// Units: pixels of the simulation (TILE = 48), y grows downward. Positions of players are the hitbox top-left, like Body.x/Body.y.
-// Nothing here imports Phaser: it can be used from Node tests and from the sim adapter.
+//
+// ADAPTER GUIDE (F3). Folder: screen/src/games/obstaculos/render/ (this renderer), .../harness/ (headless captures), shared/games/obstaculos/ (pure game).
+// The simulation (F2a's world) is not imported by the renderer: an adapter maps it onto this interface once per render frame.
+//
+//   host loop (ObstaclesScene.update does this when you give it an ObstHost):
+//     1. world.step(dtMs)          fixed 60 Hz inside; publish every obst.* event of the step on the bus (gameBus) as it happens
+//     2. view.alpha = acc / STEP_MS   fraction of a step the render frame is past the last one (players are drawn interpolated)
+//     3. ObstaclesView.update(dtMs)   draws; sets view.bubbleDue and view.hitstopMs
+//     4. afterRender: world.requestBubble(ids of view.bubbleDue) ; skip step 1 while view.hitstopMs > 0 (50 ms after a death)
+//
+//   players   one PlayerView per connected or recently connected player, stable id and slot. x/y are the hitbox top-left (Body.x/Body.y), prevX/prevY the
+//             same one step earlier. A jump of more than 3 tiles between them (respawn) is not interpolated. bubble = null | {phase 'fly'|'pop', t sec}.
+//             hint = what B would do now ('none' hides the icon; 'plant' is drawn quiet: send it only for an idle grounded player, not every frame of life).
+//   ropes     one RopeView per cordada; links in slot order; tension = distance / ROPE_LEN (> 1 is drawn red); active = false while the valve/bubble has it off.
+//             obst.ropeTaut / obst.ropeStrain carry rope = RopeView.id and link = index inside links.
+//   entities  stars, checkpoints, goal, rings, boxes, keys, plates, levers, gates, ladders, movers, balances, crumbling tiles. Stable ids; x/y/w/h in px
+//             (moving things change x/y every step). tag = letter a-f / A-F pairing activators and objectives by colour. entitiesFromLevel (stub.ts)
+//             builds the static ones from a ParsedLevel: reuse it and update `on`/`value`/x/y.
+//   grid      the live TileGrid the physics uses. Doors, gates, crumbling and '%' resolved by mode are just cells you change: the renderer diffs the grid
+//             every frame and repaints the chunks that changed (cost: one pass over w*h bytes). Cells of letters a-f/A-F draw nothing (entities do).
+//   hazard    risingLava / tide: pos = surface y in px; avalanche: pos = front x. frozen = checkpoint freeze.
+//   camera    camera.ts is pure and also runs in the renderer; if the sim needs the same camera to decide bubbles deterministically, import computeCamera /
+//             StragglerTracker from there (or move the file to shared/.../rules/camera-logic.ts). The renderer's own copy only drives what is drawn.
+//   check     call checkWorldView(world) in the adapter's tests: it lists every contract violation (NaN, duplicate ids, rope links to nobody...).
+//
+// Units: pixels of the simulation (TILE = 48), y grows downward. Nothing here imports Phaser: it can be used from Node tests and from the sim adapter.
 import type { GameMode, ParsedLevel, TileGrid } from '@party/shared/obstaculos';
 import type { Difficulty } from '@party/shared/difficulty';
 

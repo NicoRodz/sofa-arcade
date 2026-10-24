@@ -63,6 +63,7 @@ export class FakeWorld implements WorldView {
   private tautPrev = new Map<string, number>();
   controller: Controller = () => ({ move: 0, down: false, jump: false });
   pendingBubbles: number[] = [];
+  forced: Partial<PlayerView>[] = []; // harness: poses to hold (applied after every sync), e.g. forced[3] = { hanging: true }
 
   constructor(def: LevelDef, readonly n: number, readonly mode: GameMode, readonly difficulty: Difficulty, private bus?: Emitter<ObstEvents>) {
     this.level = parseLevelStrict(def);
@@ -247,6 +248,7 @@ export class FakeWorld implements WorldView {
       else if (b.grounded && this.slots.some((o) => o !== s && !o.view.dead && !o.view.bubble && Math.abs(o.body.x - b.x) < 40 && Math.abs(o.body.y - b.y) < 40)) hint = 'lift';
       else if (b.grounded) hint = 'plant';
       v.hint = hint;
+      Object.assign(v, this.forced[v.id] ?? {});
     }
     this.refreshRopes();
   }

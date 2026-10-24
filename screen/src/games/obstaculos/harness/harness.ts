@@ -15,7 +15,7 @@ let world: FakeWorld | null = null;
 let idle = new Set<number>();
 let bots = true;
 const keys = new Set<string>();
-const frameStats = { frames: 0, cpuMs: 0, dts: [] as number[], last: 0 };
+const frameStats = { frames: 0, cpuMs: 0, updMs: 0, dts: [] as number[], last: 0 };
 addEventListener('keydown', (e) => { keys.add(e.code); });
 addEventListener('keyup', (e) => { keys.delete(e.code); });
 const justPressed = new Set<string>();
@@ -41,6 +41,8 @@ const scene = new ObstaclesScene({
   afterRender: (v) => { world?.requestBubbles(v.bubbleDue); },
 }, bus);
 
+const origUpdate = scene.update.bind(scene);
+scene.update = (t: number, d: number) => { const a = performance.now(); origUpdate(t, d); frameStats.updMs += performance.now() - a; };
 const game = new Phaser.Game({
   type: Phaser.AUTO, parent: 'game', backgroundColor: '#3A2A24',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: W, height: H },
@@ -77,8 +79,8 @@ const api = {
     for (let i = 0; i < n; i++) { world.controller = bots ? bot : keyboard; world.advance(1000 / 60); scene.view.update(1000 / 60); world.requestBubbles(scene.view.bubbleDue); }
     return true;
   },
-  stats: () => ({ frames: frameStats.frames, cpuMs: frameStats.cpuMs }),
-  resetStats() { frameStats.frames = 0; frameStats.cpuMs = 0; frameStats.dts = []; (frameStats as unknown as { prev?: number }).prev = undefined; },
+  stats: () => ({ frames: frameStats.frames, cpuMs: frameStats.cpuMs, updMs: frameStats.updMs }),
+  resetStats() { frameStats.frames = 0; frameStats.cpuMs = 0; frameStats.updMs = 0; frameStats.dts = []; (frameStats as unknown as { prev?: number }).prev = undefined; },
   frameDts: () => frameStats.dts.slice(),
   setIdle(ids: number[]) { idle = new Set(ids); bot = botCtl(); },
 };

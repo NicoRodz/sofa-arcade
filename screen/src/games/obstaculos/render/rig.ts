@@ -234,7 +234,10 @@ export class Explorer {
     const sxT = 1 + this.sx + stretchX + this.crouch * 0.12, syT = 1 + this.sy + stretchY - this.crouch * 0.12;
     const bob = bubble ? Math.sin(this.t * 3) * 3 : p.inGoal ? Math.abs(Math.sin(this.t * 7)) * 4 : 0;
     const lift = p.hanging ? 6 : 0;
-    this.rig.setPosition(0, -bounce * 2 - bob - lift + this.crouch * 4);
+    // a thrown body tumbles around its centre, not around its feet
+    const cy = -50;
+    const px = p.thrown ? cy * Math.sin(rot) : 0, py = p.thrown ? cy * (1 - Math.cos(rot)) : 0; // offset = c - R(rot) c
+    this.rig.setPosition(px, -bounce * 2 - bob - lift + this.crouch * 4 + py);
     this.rig.setRotation(rot);
     this.rig.setScale(p.facing * sxT, syT);
     this.shadow.setVisible(p.grounded && !bubble).setScale(1 / R * 1.1, 1 / R);
@@ -267,9 +270,11 @@ export class Explorer {
     const inv = Math.min(1.7, 1 / f.zoom);
     const counter = (1 / RIG_SCALE);
     this.badge.setScale((1 / R) * counter * 0.95 * inv).setPosition(0, -(56 + 16 * inv) * counter);
-    if (p.hint !== 'none' && !bubble) {
+    // the idle "plant" hint is quiet (small, translucent, gone when zoomed far out); the others are what the player should notice
+    const quiet = p.hint === 'plant';
+    if (p.hint !== 'none' && !bubble && !(quiet && f.zoom < 0.75)) {
       if (p.hint !== this.lastIcon) { this.icon.setTexture(`ex_icon_${p.hint}`); this.lastIcon = p.hint; }
-      this.icon.setVisible(true).setScale((1 / R) * counter * 0.9 * inv).setPosition(0, -(56 + 36 * inv) * counter - Math.sin(this.t * 5) * 2);
+      this.icon.setVisible(true).setAlpha(quiet ? 0.55 : 1).setScale((1 / R) * counter * (quiet ? 0.62 : 0.9) * inv).setPosition(0, -(56 + (quiet ? 30 : 36) * inv) * counter - Math.sin(this.t * 5) * 2);
     } else this.icon.setVisible(false);
 
     // blink while invulnerable, dim if disconnected

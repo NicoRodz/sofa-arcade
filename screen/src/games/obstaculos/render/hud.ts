@@ -5,13 +5,12 @@ import { SILVER_PAR_MULT } from '@party/shared/obstaculos';
 import { C, CHEFS, FONT, H, W, hexNum } from '../../../art/tokens';
 import { BIOME_NAME, type WorldView } from './view';
 import { arrowPoint, VIEW_H, VIEW_W } from './camera';
+import { MEDAL_COLORS, clockText, medalFor } from './hudlogic';
 
 const INK = 0x2b1b17, CREAM = 0xfff4e0;
 export interface ArrowInfo { id: number; slot: number; dirX: number; dirY: number; seconds: number; limit: number }
 
-export const clockText = (sec: number) => { const s = Math.max(0, Math.floor(sec)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
-export const medalFor = (timeSec: number, parSec: number): 'gold' | 'silver' | 'bronze' => (timeSec <= parSec ? 'gold' : timeSec <= parSec * SILVER_PAR_MULT ? 'silver' : 'bronze');
-export const MEDAL_COLORS = { gold: 0xffc21a, silver: 0xc9d3da, bronze: 0xcd7f32 } as const;
+export { clockText, medalFor, MEDAL_COLORS };
 
 export class ObstHud {
   private text: Record<string, Phaser.GameObjects.Text> = {};
