@@ -1,12 +1,13 @@
 // Screenshots of every phone state x viewport x safe-area inset, plus a contact sheet per state.
-// usage: npx tsx controller/test/capture.ts [outDir] [scenarioFilter]
+// usage: npx tsx controller/test/capture.ts [outDir] [scenarioFilter] [landscape|portrait|both]
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { PORTRAIT, SCENARIOS, VIEWPORTS, insetsName, openSession } from './harness';
+import { ORIENTATIONS, SCENARIOS, insetsName, openSession } from './harness';
 
 const out = path.resolve(process.argv[2] ?? 'docs/phone-layout');
-const only = process.argv[3];
+const only = process.argv[3] && process.argv[3] !== '-' ? process.argv[3] : undefined;
+const orient = process.argv[4] ?? 'both';
 mkdirSync(out, { recursive: true });
 const dog = setTimeout(() => { console.error('watchdog fired'); process.exit(2); }, 280_000);
 const s = await openSession();
@@ -14,8 +15,7 @@ try {
   for (const sc of SCENARIOS) {
     if (only && !sc.name.includes(only)) continue;
     await s.load(sc);
-    const vps = sc.portrait ? [PORTRAIT] : VIEWPORTS;
-    for (const v of vps) for (const ins of v.insets) {
+    for (const v of Object.entries(ORIENTATIONS).filter(([o]) => orient === 'both' || o === orient).flatMap(([, x]) => x)) for (const ins of v.insets) {
       await s.setViewport(v, ins);
       await s.shot(path.join(out, `${sc.name}__${v.name}__${insetsName(ins)}.png`));
     }

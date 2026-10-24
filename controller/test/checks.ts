@@ -1,5 +1,5 @@
 // Layout rules for the phone page, checked on a Probe (see harness.ts). Each returns human-readable violations.
-import type { Box, Insets, Item, Probe } from './harness';
+import { TOUCH_SELECTORS, type Box, type Insets, type Item, type Probe } from './harness';
 
 export const MIN_TOUCH = 44; // CSS px: Apple's HIG minimum; Android recommends 48 dp
 const EPS = 0.75;
@@ -19,7 +19,7 @@ const fmt = (b: Box) => `[${b.x.toFixed(0)},${b.y.toFixed(0)} ${b.w.toFixed(0)}x
 const nm = (i: Item) => `${i.sel}#${i.i}`;
 
 // 1. Everything you press is at least 44x44 CSS px.
-const TOUCH = ['#remote .rb', '#signals .sg', '#btnA', '#btnB', '#pswap', '#schoolskip', '#schoolall', '#howtoopen', '#assist', '#howtoclose', '#zoomfix', '#join button', '#name'];
+const TOUCH = TOUCH_SELECTORS;
 export function touchSize(p: Probe): string[] {
   const out: string[] = [];
   for (const sel of TOUCH) for (const i of all(p, sel)) if (i.box.w < MIN_TOUCH - 0.5 || i.box.h < MIN_TOUCH - 0.5) out.push(`touch target ${nm(i)} is ${i.box.w.toFixed(0)}x${i.box.h.toFixed(0)} (< ${MIN_TOUCH})`);
@@ -66,7 +66,7 @@ export function textInBox(p: Probe): string[] {
 }
 
 // 4. Controls and text stay inside the safe area (notch, rounded corners, home indicator).
-const SAFE_BOXES = ['#remote .rb', '#remote .crown', '#signals', '#signals .sg', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#school', '#zoomfix', '#join button', '#name', '#howtoopen', '#assist', '#howtoclose', '#howto .steps li', '#howto .note'];
+const SAFE_BOXES = ['#remote .rb', '#remote .crown', '#signals', '#signals .sg', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#school', '#zoomfix', '#join button', '#name', '#howtoopen', '#assist', '#howtoclose', '#howto .steps li', '#howto .note', '#teamswap'];
 export function safeArea(p: Probe): string[] {
   const out: string[] = [];
   const safe = safeRect(p), full: Box = { x: 0, y: 0, w: p.vw, h: p.vh };
@@ -155,9 +155,35 @@ export function remoteClear(p: Probe): string[] {
   return out;
 }
 
+// 9. Portrait (phone held upright). The pad needs the wide screen, so ONLY the round asks to turn the phone (and then nothing else
+// of the pad is measurable or pressable); every other screen is usable as it is: nothing blankets it, nothing pressable is covered, text
+// is legible (>= 12px), and what the screen says stays inside the safe area and clear of the D-pad.
+const MIN_FONT = 12;
+export function portraitScreens(p: Probe): string[] {
+  if (p.vh <= p.vw) return [];
+  const out: string[] = [];
+  const rotate = all(p, '#rotate > *');
+  if (p.view === 'playing') {
+    if (!rotate.length) out.push('the round in portrait shows no "gira tu teléfono" notice');
+    for (const i of p.items) if (i.sel.startsWith('#btn') || i.sel === '#stickhint' || i.sel === '#signals .sg' || i.sel === '#puesto') out.push(`${nm(i)} is measurable under the rotate notice (the pad should be gone in portrait)`);
+  } else if (rotate.length) out.push('"gira tu teléfono" blankets a screen that works upright');
+  const safe = safeRect(p);
+  for (const i of p.items) {
+    if (i.text && i.fs < MIN_FONT && !i.sel.startsWith('#rotate')) out.push(`${nm(i)} text is ${i.fs.toFixed(1)}px, want >= ${MIN_FONT}px`);
+    if (i.sel.match(/^#(wait|choosing|results) > \*$/) && !inside(i.text ?? i.box, safe)) out.push(`${nm(i)} ${fmt(i.text ?? i.box)} leaves the safe area ${fmt(safe)}`);
+  }
+  return out;
+}
+
+// 10. Nothing you press has something else on top of its centre (an overlay blanketing the D-pad, a button under a card).
+export function notCovered(p: Probe): string[] {
+  return p.items.filter((i) => i.covered).map((i) => `${nm(i)} ${fmt(i.box)} is covered by another element at its centre`);
+}
+
 export const RULES: [string, (p: Probe) => string[]][] = [
   ['touch size >= 44px', touchSize], ['labels inside their control', insideControl], ['text inside its box', textInBox],
   ['safe area', safeArea], ['pad parts do not overlap', padOverlaps], ['stacked text does not collide', stacked], ['touch zones unchanged', touchZones], ["Captain's D-pad is clear", remoteClear],
+  ['portrait screens', portraitScreens], ['touch targets are not covered', notCovered],
 ];
 export const violations = (p: Probe): string[] => RULES.flatMap(([n, f]) => f(p).map((v) => `${n}: ${v}`));
 export type { Insets };

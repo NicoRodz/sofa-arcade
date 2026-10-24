@@ -1,0 +1,52 @@
+/* Phone held upright. The pad (stick + A/B) needs the wide screen, so only the round asks to turn the phone; every other screen
+   (join, "Eligiendo juego", lobby, "Cómo se juega", results) has its own upright layout, with the Captain's D-pad under the text. */
+@media (orientation: portrait) {
+  :root { --dp: clamp(46px, 15vw, 62px); --dpgap: 6px; --rb: max(10px, calc(var(--sb) + 6px)); }
+  /* D-pad height + its distance from the bottom: what the screens above it must leave free. Resolved on body so the how-to card's smaller D-pad counts. */
+  body { --rh: calc(3 * var(--dp) + 2 * var(--dpgap)); --below: calc(var(--rh) + var(--rb) + 10px); }
+  body[data-remote=on][data-howto=open] { --dp: clamp(46px, 13vw, 54px); --dpgap: 4px; }
+
+  /* the round: the pad is gone (nothing of it is shown or pressable), the notice takes the whole screen */
+  body[data-view=playing] #pad { visibility: hidden; }
+  #rotate { background: var(--cocoa); gap: 12px; font-size: 22px; }
+  #rotate .big { font-size: clamp(72px, 26vw, 110px); }
+  #rank { font-size: clamp(44px, 16vw, 88px); white-space: nowrap; }
+
+  /* the Captain's D-pad: centred at the bottom, above the home indicator */
+  #remote { top: auto; bottom: var(--rb); right: auto; left: 50%; transform: translateX(-50%); }
+  #remote .back { font-size: 12px; letter-spacing: -.2px; }
+  body[data-remote=on]:not([data-view=playing]) .overlay:not(#rotate) { padding-right: max(16px, var(--sr)); padding-bottom: var(--below); }
+  body[data-remote=on] #zoomfix { bottom: auto; top: max(10px, calc(var(--st) + 10px)); }
+
+  /* join: the name field takes the width the phone has (16 wide letters fit) */
+  #join input { width: min(100%, 360px); font-size: 18px; padding: 8px 10px; }
+
+  /* lobby / choosing / results: content stays in the column, never wider than the phone */
+  .overlay { gap: clamp(6px, 1.6vh, 12px); }
+  #setup { max-width: 100%; font-size: 16px; }
+  #lobbybtns { width: min(100%, 320px); flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 8px; }
+  #lobbybtns button { width: 100%; justify-content: center; }
+  #assist { display: none; }
+  body[data-game=pizzas] #assist { display: inline-flex; }
+  #teamcard { max-width: 100%; flex-wrap: wrap; justify-content: center; }
+  @media (max-height: 700px) { body[data-remote=on] .overlay .brand, body[data-team=on] #wait .brand { display: none; } }
+  /* the shortest phones (SE 1): the busiest lobby (team card, switch, how-to, D-pad) gets tighter spacing, a smaller D-pad and a one-line setup */
+  @media (max-height: 600px) {
+    :root { --dp: 44px; --dpgap: 4px; }
+    .overlay { gap: 4px; font-size: 16px; }
+    #setup { font-size: 13px; }
+    #teamcard { padding: 4px 12px; }
+    #lobbybtns { gap: 6px; margin-top: 2px; }
+  }
+
+  /* "Cómo se juega": one column of tiles, the note and the close button below; the D-pad (Captain) sits under them */
+  body[data-view][data-howto=open] #howto { grid-template: "head" auto "steps" minmax(0, 1fr) "note" auto "btn" auto / minmax(0, 1fr); gap: 8px; padding-top: max(10px, var(--st)); }
+  body[data-remote=on][data-howto=open] #howto { padding-bottom: var(--below); }
+  #howto .steps, body[data-remote=on][data-howto=open] #howto .steps { grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 0; max-width: 480px; grid-auto-rows: minmax(0, 92px); align-content: center; }
+  #howto .steps li { padding: 4px 10px 4px 16px; }
+  #howto .steps .tx, body[data-remote=on][data-howto=open] #howto .steps .tx { font-size: clamp(13px, 3.9vw, 17px); }
+  body[data-remote=on][data-howto=open] #howto .steps .ic { width: 36px; height: 36px; }
+  #howto .gname { font-size: 12px; }
+  #howto .note { justify-self: center; font-size: clamp(13px, 3.8vw, 16px); }
+  #howtoclose, #howto:not(:has(.note)) #howtoclose { grid-column: 1; grid-area: btn; width: min(100%, 320px); }
+}
