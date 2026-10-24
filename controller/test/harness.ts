@@ -105,7 +105,7 @@ export const SELECTORS = [
   '#btnA', '#btnA .ico', '#btnA .lbl', '#btnA .hold', '#btnB', '#btnB .ico', '#btnB .lbl', '#btnB .hold',
   '#stickLbl .pl', '#stickLbl .lbl', '#stickLbl .hold', '#lblA .pl', '#lblA .lbl', '#lblA .hold', '#lblB .pl', '#lblB .lbl', '#lblB .hold',
   '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap',
-  '#wait > *', '#howtoopen', '#choosing > *', '#results > *',
+  '#wait > *', '#howtoopen', '#assist', '#assist svg', '#assistlbl', '#choosing > *', '#results > *',
   '#howto h2', '#howtogame', '#howto .steps', '#howto .steps li', '#howto .steps .n', '#howto .steps .ic', '#howto .steps .tx', '#howto .note', '#howtoclose',
   '#rotate > *', '#zoomfix', '#remote .rb', '#remote .crown',
 ];
@@ -170,6 +170,10 @@ const vsConfig = () => ({ ...config(), modeId: 'versus', teams: VS_TEAMS, teamsL
 const you = (team: number) => ({ t: 'you', teamId: team, color: VS_TEAMS[team]!.color, icon: VS_TEAMS[team]!.icon, sideLabel: VS_TEAMS[team]!.side });
 const vsResult = (verdict: string, winner: number | null) => ({ verdict, winner, scores: [{ team: 0, score: 410 }, { team: 1, score: 340 }] });
 
+// contextual buttons: the screen sends the label, the glyph and the greyed state of A and B with the state of every tick
+const hint = (h: object) => ({ t: 'hint', ...h });
+const PLAYING = [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) })];
+
 const WIDE = `document.documentElement.style.setProperty('--font', 'Verdana, sans-serif'); window.dispatchEvent(new Event('resize'))`;
 
 export const SCENARIOS: Scenario[] = [
@@ -180,11 +184,23 @@ export const SCENARIOS: Scenario[] = [
   { name: 'howto', msgs: [player('Nico'), config(), phase('lobby')] }, // joining opens the "Cómo se juega" card
   { name: 'howto-long', msgs: [player('Nico'), config(PIZZAS, HOWTO_LONG), phase('lobby')] },
   { name: 'lobby', msgs: [player('Nico'), config(), phase('lobby')], after: `document.body.dataset.howto = 'closed'` },
+  // Ayudante: the switch next to "Cómo se juega", off and on; in versus (the busiest lobby: team card + swap + the switch) and with the Captain's D-pad
+  { name: 'lobby-assist', msgs: [player('Nico'), config(), phase('lobby'), { t: 'assist', playerId: 1, on: true }], after: `document.body.dataset.howto = 'closed'` },
+  { name: 'lobby-assist-versus', msgs: [player('WWWWWWWWWWWWWWWW'), vsConfig(), you(0), phase('lobby'), { t: 'assist', playerId: 1, on: true }], after: `document.body.dataset.howto = 'closed'` },
+  { name: 'captain-lobby-assist', msgs: [player('Nico'), vsConfig(), you(1), phase('lobby'), captain(), { t: 'assist', playerId: 1, on: true }], after: `document.body.dataset.howto = 'closed'` },
+  { name: 'lobby-assist-wide-font', msgs: [player('WWWWWWWWWWWWWWWW'), { ...vsConfig(), map: 'V1' }, you(1), phase('lobby'), captain(), { t: 'assist', playerId: 1, on: true }], after: `${WIDE}; document.body.dataset.howto = 'closed'` },
+  { name: 'lobby-other-game', msgs: [player('Nico'), { ...config(), game: 'obstaculos' }, phase('lobby')], after: `document.body.dataset.howto = 'closed'` }, // a game with no use for the switch
   { name: 'lobby-longname', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#2F7DE1'), { ...config(), map: 'random', seed: 4000000000, difficulty: 'hard' }, phase('lobby')], after: `document.body.dataset.howto = 'closed'` },
   { name: 'play', msgs: [player('Nico'), config(), phase('lobby'), phase('playing')] },
   { name: 'play-puesto', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) })] },
   { name: 'play-puesto-long', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['prep']) })] },
   { name: 'play-puesto-double', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#FFC21A'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['reparto', 'lavado']) })] },
+  { name: 'play-hint', msgs: [...PLAYING, hint({ a: 'Al horno', b: 'Estirar', aIcon: 'oven', bIcon: 'chop' })] },
+  { name: 'play-hint-off', msgs: [...PLAYING, hint({ a: 'Tomar', b: 'Correr', aIcon: 'grab', bIcon: 'move', aOff: true, bOff: true })] },
+  { name: 'play-hint-mixed', msgs: [...PLAYING, hint({ a: 'Entregar', b: 'Picar', aIcon: 'bell', bIcon: 'chop', bOff: true })] },
+  { name: 'play-hint-long', msgs: [...PLAYING, hint({ a: 'Devolver plato', b: 'Poner en tabla', aIcon: 'plate', bIcon: 'chop' })] },
+  { name: 'play-hint-long-off', msgs: [...PLAYING, hint({ a: 'Despensa vacía', b: 'Sin control', aIcon: 'crate', bIcon: 'chop', aOff: true, bOff: true })] },
+  { name: 'play-hint-wide-font', msgs: [player('WWWWWWWWWWWWWWWW', 1, '#1FB5A8'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['prep', 'lavado']) }), hint({ a: 'Devolver plato', b: 'Poner en tabla', aIcon: 'plate', bIcon: 'chop' })], after: WIDE },
   { name: 'play-pressed', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['masa']) })], after: `document.querySelectorAll('.act').forEach((b) => b.classList.add('down'))` },
   { name: 'play-hold-labels', msgs: [player('Nico'), config(LONG), phase('lobby'), phase('playing', { puestos: puestos(1, ['corte']) })] },
   { name: 'play-reconnecting', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['masa', 'horno']) })], after: `window.__closeSocket()` },

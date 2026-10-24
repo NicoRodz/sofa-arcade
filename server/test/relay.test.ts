@@ -210,6 +210,88 @@ describe('hint (the label of A and B, sabotage)', () => {
     expect(b.msgs.filter((m) => m.t === 'hint')).toEqual([]);
     [screen.ws, a.ws, b.ws].forEach((w) => w.close());
   });
+  it('the glyph and the greyed state travel with the labels (contextual buttons), and nothing else from the payload', async () => {
+    const screen = new Client('?role=screen&room=ht2');
+    const a = new Client('?room=ht2');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    const idA = (await a.next('joined')).player.id;
+    await a.next('phase');
+    screen.ws.send(JSON.stringify({ t: 'hint', playerId: idA, a: 'Al horno', b: 'Picar', aIcon: 'oven', bIcon: 'chop', bOff: true, evil: 'x' }));
+    expect(await a.next('hint')).toEqual({ t: 'hint', a: 'Al horno', b: 'Picar', aIcon: 'oven', bIcon: 'chop', bOff: true });
+    [screen.ws, a.ws].forEach((w) => w.close());
+  });
+});
+
+describe('assist (Ayudante, chosen from the phone in the lobby)', () => {
+  const join = async (room: string) => {
+    const screen = new Client(`?role=screen&room=${room}`);
+    const a = new Client(`?room=${room}`);
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    const id = (await a.next('joined')).player.id;
+    await a.next('phase'); await screen.next('player_joined');
+    return { screen, a, id };
+  };
+  it('a phone switches it on and off: the screen and the phone itself hear the whole choice, once per change', async () => {
+    const { screen, a, id } = await join('as1');
+    a.send({ t: 'assist', on: true });
+    expect(await screen.next('assist')).toEqual({ t: 'assist', playerId: id, on: true });
+    expect(await a.next('assist')).toEqual({ t: 'assist', playerId: id, on: true });
+    a.send({ t: 'assist', on: true }); // already on: nothing new to say
+    a.send({ t: 'assist', on: false });
+    expect(await screen.next('assist')).toEqual({ t: 'assist', playerId: id, on: false });
+    expect(screen.msgs.filter((m) => m.t === 'assist')).toEqual([]);
+    [screen.ws, a.ws].forEach((w) => w.close());
+  });
+  it('it stays with the slot: a screen that connects later sees it in the player list, and a phone that reconnects with its token is told', async () => {
+    const { screen, a, id } = await join('as2');
+    a.send({ t: 'assist', on: true });
+    await screen.next('assist');
+    const late = new Client('?role=screen&room=as2');
+    await late.open();
+    expect((await late.next('state')).players).toEqual([expect.objectContaining({ id, assist: true })]);
+    a.ws.close();
+    const back = new Client('?room=as2');
+    await back.open();
+    back.send({ t: 'join', name: 'Ana', token: 'a' });
+    expect((await back.next('joined')).player).toMatchObject({ id, assist: true });
+    expect(await back.next('assist')).toEqual({ t: 'assist', playerId: id, on: true });
+    [screen.ws, late.ws, back.ws].forEach((w) => w.close());
+  });
+  it('a player that never chose it has no flag in the list, and the screen cannot switch it for a phone', async () => {
+    const { screen, a, id } = await join('as3');
+    const late = new Client('?role=screen&room=as3');
+    await late.open();
+    expect((await late.next('state')).players[0]).not.toHaveProperty('assist');
+    screen.ws.send(JSON.stringify({ t: 'assist', on: true, playerId: id }));
+    a.send({ t: 'assist', on: false });
+    await new Promise((r) => setTimeout(r, 80));
+    expect(a.msgs.filter((m) => m.t === 'assist')).toEqual([]);
+    expect(screen.msgs.filter((m) => m.t === 'assist')).toEqual([]);
+    [screen.ws, a.ws, late.ws].forEach((w) => w.close());
+  });
+  it('once the round has started the choice is frozen: the relay ignores it until the lobby is back', async () => {
+    const { screen, a, id } = await join('as4');
+    screen.send({ t: 'phase', phase: 'playing' });
+    await a.next('phase');
+    a.send({ t: 'assist', on: true });
+    await new Promise((r) => setTimeout(r, 80));
+    expect(screen.msgs.filter((m) => m.t === 'assist')).toEqual([]);
+    screen.send({ t: 'phase', phase: 'lobby' });
+    await a.next('phase');
+    a.send({ t: 'assist', on: true });
+    expect(await screen.next('assist')).toEqual({ t: 'assist', playerId: id, on: true });
+    [screen.ws, a.ws].forEach((w) => w.close());
+  });
+  it('anything but a boolean is refused', async () => {
+    const { screen, a } = await join('as5');
+    a.send('{"t":"assist","on":"yes"}');
+    a.send('{"t":"assist"}');
+    await new Promise((r) => setTimeout(r, 80));
+    expect(screen.msgs.filter((m) => m.t === 'assist')).toEqual([]);
+    [screen.ws, a.ws].forEach((w) => w.close());
+  });
 });
 
 describe('lobby config', () => {

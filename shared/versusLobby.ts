@@ -71,9 +71,9 @@ export function syncTeams(mode: Pick<ModeSpec, 'teams'>, teams: readonly TeamInf
 export const teamSizes = (teams: readonly Pick<TeamInfo, 'playerIds'>[] | null | undefined): number[] => (teams ?? []).map((t) => t.playerIds.length);
 
 /** Is the lobby's current split a legal start? Problems are lobby texts. A lobby without teams is not a versus lobby: not ok. */
-export function lobbySetup(mode: Pick<ModeSpec, 'players' | 'teams'>, teams: readonly Pick<TeamInfo, 'playerIds'>[] | null): TeamSetup {
+export function lobbySetup(mode: Pick<ModeSpec, 'players' | 'teams'>, teams: readonly Pick<TeamInfo, 'playerIds'>[] | null, assist?: ReadonlySet<number>): TeamSetup {
   if (!teams) return { ok: false, problems: ['Faltan los equipos'], k: [] };
-  return validateTeamSetup(mode, teams.map((t) => t.playerIds));
+  return validateTeamSetup(mode, teams.map((t) => t.playerIds), assist); // `assist`: the players on Ayudante (they weigh 0.7 in k, see assist.ts)
 }
 
 // --- Versus maps that fit -----------------------------------------------------------------------------------------------------------
@@ -166,6 +166,7 @@ export interface VersusStart {
   slotOf: (playerId: number) => number; // the chef (colour) of a player
   bus?: Emitter<GameEvents>;
   countdownMs?: number;
+  assist?: readonly number[]; // the players on Ayudante (assist.ts)
 }
 
 /** The teams with `side` set from the map's real kitchens. */
@@ -180,6 +181,7 @@ export function createVersusGame(o: VersusStart): Game {
     mapId: o.map.id, difficulty: o.difficulty, rows: o.map.rows, spawns: o.map.spawns, seed: o.seed, countdownMs: o.countdownMs, bus: o.bus,
     teams: o.teams.map((t) => ({ playerIds: t.playerIds })), handicap: o.modeOptions.handicap !== false, shared: o.map.shared,
     sabotage: sabotageOf(o.modeOptions), sigma: o.map.sigma, // the sim switches it off by itself on a map with no catapult
+    assist: o.assist,
   });
   for (const t of o.teams) t.playerIds.forEach((id, rank) => addPlayer(game, id, o.slotOf(id), rank));
   return game;
@@ -194,6 +196,7 @@ export interface VersusRoundOpts {
   slotOf: (playerId: number) => number;
   rand: Rng;
   bus?: Emitter<GameEvents>; countdownMs?: number;
+  assist?: readonly number[]; // the players on Ayudante
 }
 /**
  * The whole step from the lobby to a running round, for the screen and for the tests: resolves the map for the team sizes, writes the
@@ -202,6 +205,6 @@ export interface VersusRoundOpts {
 export function startVersusRound(o: VersusRoundOpts): VersusRound {
   const map = resolveVersusMap(o.choice, o.seed, o.difficulty, teamSizes(o.teams), o.rand);
   const teams = withSides(o.teams, map);
-  const game = createVersusGame({ teams, map, difficulty: o.difficulty, seed: o.seed, modeOptions: o.modeOptions, slotOf: o.slotOf, bus: o.bus, countdownMs: o.countdownMs });
+  const game = createVersusGame({ teams, map, difficulty: o.difficulty, seed: o.seed, modeOptions: o.modeOptions, slotOf: o.slotOf, bus: o.bus, countdownMs: o.countdownMs, assist: o.assist });
   return { game, teams, map, match: { gameId: 'pizzas', modeId: 'versus', mapId: map.id, difficulty: o.difficulty, teams, modeOptions: o.modeOptions } };
 }

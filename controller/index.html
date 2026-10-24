@@ -63,6 +63,12 @@
   #slip { position: fixed; left: 0; right: 0; top: 30%; z-index: 4; text-align: center; pointer-events: none; font: 800 clamp(28px, 11vmin, 52px) var(--font); color: var(--cheese); -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; opacity: 0; transform: scale(.6) rotate(-6deg); transition: opacity .12s, transform .25s cubic-bezier(.2,1.6,.4,1); }
   #slip.on { opacity: 1; transform: scale(1) rotate(-3deg); }
   body.flash::after { content: ''; position: fixed; inset: 0; z-index: 3; pointer-events: none; background: var(--c); opacity: .4; }
+  /* contextual buttons: nothing to do with what is in front now. Both buttons go to the SAME flat grey (a red and a yellow one greyed by a filter would read as two different things), glyph and
+     plate dimmed; still pressable: it is only a hint, and the sim buffers an early press for a station that shows up. */
+  .act { transition: opacity .12s; }
+  #btnA.off, #btnB.off { --btn: #8A857F; --btn2: #6B6661; color: #E9E1D5; text-shadow: 0 2px 0 rgba(43,27,23,.35); opacity: .8; }
+  #btnA.off .ico, #btnB.off .ico { filter: none; }
+  .plq.off .pl { background: rgba(43,27,23,.5); color: rgba(255,244,224,.6); }
   .act.down { transform: translateY(1.2vmin); box-shadow: 0 .5vmin 0 rgba(43,27,23,.4); filter: brightness(1.12); }
 
   .brand { font: 800 clamp(30px, 11vmin, 44px) var(--font); letter-spacing: 1px; margin: 0; color: var(--c); -webkit-text-stroke: 9px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(43,27,23,.35); }
@@ -95,6 +101,16 @@
   #howtoclose { grid-area: btn; font-size: 18px; padding: 6px 24px; }
   #howto:not(:has(.note)) #howtoclose { grid-column: 1 / -1; }
   #howtoopen { margin-top: 6px; font-size: 16px; padding: 6px 18px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+  /* Ayudante (assist.ts): a per-player switch in the lobby, next to "Cómo se juega"; pizzas only (the other game has no use for it) */
+  #lobbybtns { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 12px; margin-top: 6px; }
+  #lobbybtns #howtoopen { margin-top: 0; }
+  #assist { display: none; align-items: center; gap: 8px; font-size: 16px; padding: 6px 16px; min-height: 44px; background: linear-gradient(#6B5A50 0 50%, #54463E 50% 100%); }
+  #assist svg { width: 22px; height: 22px; fill: none; stroke: var(--cream); stroke-width: 3.4; stroke-linecap: round; }
+  #assist.on { background: linear-gradient(#35D0FF 0 50%, #1AA8DC 50% 100%); color: var(--ink); text-shadow: 0 2px 0 rgba(255,255,255,.35); }
+  #assist.on svg { stroke: var(--ink); fill: #FFE14A; }
+  body[data-game=pizzas] #assist { display: inline-flex; }
+  /* the versus lobby is the tallest screen (team card + swap + the switch): on a short phone the logo and the game name give way, the room is better spent on what can be pressed */
+  @media (max-height: 440px) { body[data-team=on][data-view=lobby] #wait .brand, body[data-team=on][data-view=lobby] #wait #game { display: none; } #lobbybtns { flex-wrap: nowrap; gap: 8px; } #lobbybtns button { font-size: 15px; padding: 4px 12px; } #assist { gap: 6px; } #assist svg { width: 20px; height: 20px; } }
 
   /* zoom banner: on the pad it sits top-left under the HUD (nothing else lives there); on the other screens, bottom centre */
   #zoomfix { display: none; position: fixed; left: 50%; bottom: max(10px, var(--sb)); transform: translateX(-50%); z-index: 30; font-size: 15px; line-height: 1.15; padding: 6px 14px; width: max-content; max-width: calc(100% - 2 * var(--gutter)); background: var(--cream); color: var(--ink); text-shadow: none; }
@@ -158,7 +174,7 @@
   <div id="teamchip"><span id="tcicon2"></span><span id="tcname2"></span><small id="tcside2"></small></div>
   <div id="puesto"><span class="pi" id="pico"></span><div class="pt"><b id="pname"></b><span id="phint"></span></div><button id="pswap" type="button">Cambiar</button></div>
 </div>
-<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div id="teamcard"><span id="tcicon"></span><span id="tcname"></span><small id="tcside"></small></div><button id="teamswap" type="button">Cambiar de equipo</button><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><button id="howtoopen" type="button">Cómo se juega</button></div>
+<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div id="teamcard"><span id="tcicon"></span><span id="tcname"></span><small id="tcside"></small></div><button id="teamswap" type="button">Cambiar de equipo</button><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><div id="lobbybtns"><button id="assist" type="button" aria-pressed="false"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 40V22"/><ellipse cx="14" cy="18" rx="11" ry="4.5"/><ellipse cx="34" cy="18" rx="11" ry="4.5"/><circle cx="24" cy="19" r="3.4"/></svg><span id="assistlbl">Ayudante: no</span></button><button id="howtoopen" type="button">Cómo se juega</button></div></div>
 <div id="choosing" class="overlay"><h1 class="brand">Pichiclub</h1><div class="big">Eligiendo juego…</div><div style="opacity:.8">La pantalla decide</div><div id="who2" style="opacity:.7"></div></div>
 <div id="results" class="overlay"><div>Fin de la ronda</div><div id="verdict" class="big"></div><div id="rank" class="big"></div><div id="myscore"></div></div>
 <div id="howto" class="overlay"><div class="hhead"><h2>Cómo se juega</h2><div id="howtogame" class="gname"></div></div><div id="howtobody" style="display:contents"></div><button id="howtoclose" type="button">Entendido</button></div>

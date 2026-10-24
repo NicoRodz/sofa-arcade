@@ -2,6 +2,7 @@
 // Cooperative is the same mechanism with one team, so everything here works for 1..MAX_TEAMS teams.
 import { COOP_STYLE, type ModeSpec, type TeamSpec, type TeamStyle } from './games';
 import { mulberry32, type Rng } from './rng';
+import { ASSIST_IMMUNITY_K, effectiveChefs } from './assist';
 
 // What the repo says about the design's open questions (resolved in F0):
 //  1-2. Maps are 16x9 strings (maps.ts, 15 FIXED_MAPS). Legend: # wall . floor S spawn ~ water C counter 1/2/3 dough/tomato/cheese crate
@@ -74,11 +75,19 @@ export function handicapK(nOwn: number, nRival: number, maxRatio = HANDICAP_MAX_
   return Math.max(1, round2(Math.sqrt(nRival / nOwn)));
 }
 
-/** k per team, in the order of `counts`: every team is measured against the biggest one. Null when any team is refused (see handicapK). */
-export function teamMultipliers(counts: readonly number[], maxRatio = HANDICAP_MAX_RATIO): number[] | null {
+/**
+ * k per team, in the order of `counts`: every team is measured against the biggest one. Null when any team is refused (see handicapK).
+ * `assists` (Ayudante chefs per team, same order; absent = none): each one weighs ASSIST_WEIGHT of a chef, and its team gives up ASSIST_IMMUNITY_K of k per
+ * Ayudante for the immunity to sabotage. The legal split is still judged on the real counts. With no Ayudantes every number is what it always was.
+ */
+export function teamMultipliers(counts: readonly number[], maxRatio = HANDICAP_MAX_RATIO, assists?: readonly number[]): number[] | null {
   const top = Math.max(...counts);
   const ks = counts.map((c) => handicapK(c, top, maxRatio));
-  return ks.every((k): k is number => k !== null) ? ks : null;
+  if (!ks.every((k): k is number => k !== null)) return null;
+  if (!assists?.some((a) => a > 0)) return ks as number[];
+  const eff = counts.map((c, i) => effectiveChefs(c, assists[i] ?? 0));
+  const best = Math.max(...eff);
+  return eff.map((e, i) => Math.max(1, round2(round2(Math.sqrt(best / e)) - ASSIST_IMMUNITY_K * (assists[i] ?? 0))));
 }
 
 // --- Lobby checks ------------------------------------------------------------------------------------------------
@@ -97,7 +106,7 @@ export function modeAvailability(mode: Pick<ModeSpec, 'players'>, n: number): Ve
 export interface TeamSetup { ok: boolean; problems: string[]; k: number[] } // k: multiplier per team (all 1 when the mode has no score-k handicap)
 
 /** Is this split of players into teams a legal start for the mode? Problems are lobby texts. */
-export function validateTeamSetup(mode: Pick<ModeSpec, 'players' | 'teams'>, teams: readonly (readonly number[])[]): TeamSetup {
+export function validateTeamSetup(mode: Pick<ModeSpec, 'players' | 'teams'>, teams: readonly (readonly number[])[], assist?: ReadonlySet<number>): TeamSetup {
   const problems: string[] = [];
   const spec = mode.teams;
   const counts = teams.map((t) => t.length);
@@ -114,7 +123,7 @@ export function validateTeamSetup(mode: Pick<ModeSpec, 'players' | 'teams'>, tea
   if (new Set(all).size !== all.length) problems.push('Un jugador está en dos equipos');
   const avail = modeAvailability(mode, total);
   if (!avail.ok) problems.push(avail.reason);
-  const ks = !problems.length && spec?.handicap === 'score-k' ? teamMultipliers(counts, spec.maxRatio) : null;
+  const ks = !problems.length && spec?.handicap === 'score-k' ? teamMultipliers(counts, spec.maxRatio, assist ? teams.map((t) => t.filter((id) => assist.has(id)).length) : undefined) : null;
   return { ok: problems.length === 0, problems, k: ks ?? counts.map(() => 1) };
 }
 
@@ -171,7 +180,7 @@ export function reshuffleTeams(teams: readonly TeamInfo[], seed: number): TeamIn
 // back in time = same team and chef; later, k is recomputed from that instant and the player comes back as a spectator.
 // A team left without anybody pauses the match: "Seguir sin ganador" or "Terminar".
 
-export interface RosterEntry { id: number; teamId: TeamId; droppedAt: number | null } // droppedAt: match time (ms) when the phone dropped, null while connected
+export interface RosterEntry { id: number; teamId: TeamId; droppedAt: number | null; assist?: true } // droppedAt: match time (ms) when the phone dropped, null while connected; assist: the chef plays on Ayudante (absent otherwise)
 
 /** Does the chef still hold its place at `now`? True while connected and during the grace window (the boundary counts as in time). */
 export const holdsPlace = (e: RosterEntry, now: number, graceMs = GHOST_MS): boolean => e.droppedAt === null || now - e.droppedAt <= graceMs;
@@ -186,7 +195,8 @@ export function matchStatus(teamIds: readonly TeamId[], roster: readonly RosterE
   const counts = teamIds.map((t) => roster.filter((e) => e.teamId === t && holdsPlace(e, now, graceMs)).length);
   const emptyTeams = teamIds.filter((_t, i) => counts[i] === 0);
   const paused = emptyTeams.length > 0;
-  const k = !paused && handicap === 'score-k' ? teamMultipliers(counts, Infinity)! : counts.map(() => 1);
+  const assists = teamIds.map((t) => roster.filter((e) => e.teamId === t && e.assist && holdsPlace(e, now, graceMs)).length);
+  const k = !paused && handicap === 'score-k' ? teamMultipliers(counts, Infinity, assists)! : counts.map(() => 1);
   return { counts, k, emptyTeams, paused };
 }
 
