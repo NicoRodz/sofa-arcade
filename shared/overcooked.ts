@@ -11,6 +11,8 @@ import { addFloorItem, removeFloorItem } from './floor';
 import { burnTick, clearPot, createBurn, douse, fireAllowed, isDark, type Burn } from './burn';
 import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, createMid, midTick, type Mid, type MidFx } from './midround';
 import { ASSIST_FACING_BONUS, ASSIST_REACH_MULT, ASSIST_STICK_CANCEL } from './assist';
+import { RAW_OF, RECIPE_PARTS, cutOf, cutType, dishFor, isDish, recipeBase, type Recipe } from './recipes/defs';
+import { canFold, cookMsOf, crateItem, createRec, cutMsOf, foldStep, pickOrder, pickRecipe, type Rec } from './recipes/sim';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -20,17 +22,11 @@ export const REACH = 0.8; // probe distance from the player centre along the fac
 export const REACH_SLACK = 0.3; // max gap between probe and a station tile
 
 export type { StationKind } from './maps';
-// raw2/cut2 = cheese (Margarita). dishQ = a pizza that baked with cheese.
+// raw2/cut2 = cheese (Margarita), raw3/cut3 = pepperoni, raw4/cut4 = mushroom (a round with a Carta del día: the cheese crate gives the card's topping). dishQ / dishP / dishM = a pizza that baked with cheese / pepperoni / mushroom, dishC = a folded calzone.
 // trash / trashBag exist only in a round with hazards on (sabotage): rubbish picked off the floor, and the bag a team throws.
 // burnt: a pizza that burnt in the oven (a round with `burn` on), taken on a plate: it cannot be delivered, it goes to the bin.
-export type Item = 'raw0' | 'raw1' | 'raw2' | 'cut0' | 'cut1' | 'cut2' | 'plate' | 'dish' | 'dishQ' | 'dirty' | 'trash' | 'trashBag' | 'burnt';
-export type Recipe = 'marinara' | 'margarita';
-export const RAW_OF: readonly Item[] = ['raw0', 'raw1', 'raw2'];
-
-// R13: what a recipe is worth before the tip: points per ingredient plus points per process (stretch or cut each one, then bake).
-// Marinara = dough, tomato (2 ingredients) + stretch, cut, bake (3 processes). Margarita adds cheese and grating.
-export const RECIPE_PARTS: Record<Recipe, { components: number; processes: number }> = { marinara: { components: 2, processes: 3 }, margarita: { components: 3, processes: 4 } };
-export const recipeBase = (r: Recipe, t: Tuning) => RECIPE_PARTS[r].components * t.baseComponent + RECIPE_PARTS[r].processes * t.baseProcess;
+export type Item = 'raw0' | 'raw1' | 'raw2' | 'raw3' | 'raw4' | 'cut0' | 'cut1' | 'cut2' | 'cut3' | 'cut4' | 'plate' | 'dish' | 'dishQ' | 'dishP' | 'dishM' | 'dishC' | 'dirty' | 'trash' | 'trashBag' | 'burnt';
+export { RAW_OF, RECIPE_PARTS, recipeBase, type Recipe }; // recipes/defs.ts: the five recipes (marinara, margarita; a Carta del día adds pepperoni, champiñón and calzone) and what each is worth (R13)
 // R15: the tip multiplier for a delivery made after `streak` correct ones in a row.
 export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax, 1 + Math.max(0, streak));
 
@@ -52,6 +48,7 @@ export interface Station {
   warned?: true; // pot: the warning beep sounded
   burnt?: true; // pot: the ready pizza burnt (smoke): it only serves for the bin
   fire?: number; // on fire: the ms of Picar already spent putting it out (present = burning, the station is out of use)
+  fold?: number; folded?: true; // a round with a Carta del día, pot only: 0..1 of Picar folding the dough and tomato; folded = a calzone (it bakes longer)
 }
 export interface Player {
   id: number;
@@ -155,6 +152,7 @@ export interface Game {
   sab: Sabotage | null; // versus sabotage (sabotage.ts): the bags, the catapults, the throws
   burn: Burn | null; // the oven that burns and the fire (burn.ts): null (the default, and every golden round) = the oven never burns
   mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none
+  rec: Rec | null; // the Carta del día of the round (recipes/sim.ts): null (the default) = the old recipes (Marinara, Margarita)
   assist: ReadonlySet<number>; // ids of the chefs that play on Ayudante (assist.ts); empty in a round that has none
 }
 
@@ -196,7 +194,7 @@ const tag = (g: Game, team: TeamId | null): { team?: number } => (g.versus && te
 export const spawnOrder = (g: Game, team: TeamState = g.teams[0]!, force = false) => {
   const room = team.orders.length < (force ? EVENT_MAX_QUEUE : g.params.maxOrders); // force: the rush event, which may fill the strip beyond the usual queue
   if (!room && !g.versus && !force) return;
-  const recipe: Recipe = g.hasCheese && team.rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
+  const recipe = pickRecipe(g, team.rng);
   if (!room) return;
   const o: Order = { id: team.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe };
   team.orders.push(o);
@@ -205,7 +203,7 @@ export const spawnOrder = (g: Game, team: TeamState = g.teams[0]!, force = false
 
 // The golden order: the same recipe in every queue (one draw from its own stream), 30 s of patience, whatever the queue holds.
 function spawnVip(g: Game) {
-  const recipe: Recipe = g.hasCheese && g.vip.rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
+  const recipe = pickRecipe(g, g.vip.rng);
   g.vip.round = { recipe, winners: [], settled: false };
   g.vip.nextAt += VIP_EVERY_MS[g.difficulty];
   for (const t of g.teams) {
@@ -230,7 +228,7 @@ function settleVip(g: Game) {
 
 export interface TeamSeat { playerIds: readonly number[] } // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
 
-export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName; assist?: readonly number[]; burn?: boolean; fire?: boolean; events?: boolean; eventsSeed?: number } = {}): Game {
+export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName; assist?: readonly number[]; burn?: boolean; fire?: boolean; events?: boolean; eventsSeed?: number; recipes?: boolean } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
@@ -261,7 +259,7 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
     hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(),
     teams, versus, roster: [], paused: null, noWinner: false, result: null, vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null }, pantry: stations.some((s) => s.pantry) ? { stock: PANTRY_MAX, nextAt: Infinity } : null,
     teamIds: seats ? seats.map((t) => [...t.playerIds]) : [], open: !seats, handicap, pauseDismissed: false, kitchens, teamSpawns: [],
-    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null, burn: null, mid: null, assist,
+    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null, burn: null, mid: null, rec: opts.recipes ? createRec(stations, opts.mapId) : null, assist, // rec: before the first orders are drawn
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0
   for (const key of LEGACY) Object.defineProperty(g, key, { get: () => teams[0]![key], set: (v) => { (teams[0] as unknown as Record<string, unknown>)[key] = v; }, enumerable: true, configurable: true });
@@ -412,7 +410,7 @@ const blocked = (g: Game, x: number, y: number) => {
 // `immuneMs` after getting up, and the rubbish stays where it was: it does not chain, it does not punish in a loop.
 const onTile = (p: Player): [number, number] => [Math.floor(p.x), Math.floor(p.y)];
 // The event that ends what a chef's Picar was doing: putting a fire out, scrubbing plates at a sink, or chopping.
-const stopKind = (g: Game, p: Player) => (p.dousing ? 'douseStop' : g.stations[p.chopAt]?.kind === 'sink' ? 'washStop' : 'chopStop');
+const stopKind = (g: Game, p: Player) => (p.dousing ? 'douseStop' : g.stations[p.chopAt]?.kind === 'sink' ? 'washStop' : g.stations[p.chopAt]?.kind === 'pot' ? 'foldStop' : 'chopStop');
 
 function startSlip(g: Game, p: Player) {
   const sp = SLIP[g.difficulty];
@@ -568,8 +566,6 @@ function faceStation(p: Player, s: Station) {
   if (Math.hypot(dx, dy) > 1e-6) { const [ux, uy] = unit(dx, dy); p.fx = ux; p.fy = uy; }
 }
 
-const cutOf = (i: Item): Item | null => (i === 'raw0' ? 'cut0' : i === 'raw1' ? 'cut1' : i === 'raw2' ? 'cut2' : null);
-const cutType = (i: Item | null) => (i === 'cut0' ? 0 : i === 'cut1' ? 1 : i === 'cut2' ? 2 : -1);
 // A pizza cooks once it has dough and tomato; cheese can still go on until it is done (then it is a Margarita).
 const baked = (s: Station) => s.inputs.includes(0) && s.inputs.includes(1);
 
@@ -584,7 +580,7 @@ function interact(g: Game, p: Player, s: Station) {
         if (pantry.stock === PANTRY_MAX) pantry.nextAt = g.time + PANTRY_EVERY_MS; // the refill clock starts when the stock leaves the maximum
         pantry.stock--;
       }
-      p.item = RAW_OF[s.crate] ?? 'raw1';
+      p.item = crateItem(g, s.crate);
       break;
     case 'plates':
       if (!g.finitePlates) { if (!p.item) p.item = 'plate'; }
@@ -609,13 +605,13 @@ function interact(g: Game, p: Player, s: Station) {
       break;
     case 'pot': {
       const t = cutType(p.item);
-      if (t >= 0 && !s.done && !s.inputs.includes(t) && s.inputs.length < 3) {
+      if (t >= 0 && !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < 3) {
         s.inputs.push(t);
         if (!baked(s)) s.progress = 0;
         p.item = null;
       } else if (p.item === 'plate' && s.done) {
         if (g.burn && s.warned && !s.burnt) g.bus.emit('oven:rescued', { player: p.id, station: g.stations.indexOf(s), ...tag(g, s.owner) }); // out of the oven after the warning, before it burnt
-        p.item = s.burnt ? 'burnt' : s.inputs.includes(2) ? 'dishQ' : 'dish';
+        p.item = s.burnt ? 'burnt' : dishFor(s.inputs, !!s.folded);
         clearPot(s);
       }
       break;
@@ -623,7 +619,7 @@ function interact(g: Game, p: Player, s: Station) {
     case 'trash':
       if (g.sab && !p.item) { sabotageTakeBag(g, p); break; } // sabotage: empty hands take the bag that is waiting
       if (g.finitePlates && (p.item === 'plate' || p.item === 'dirty')) break; // plates are not rubbish: they would be lost for good
-      if (g.finitePlates && (p.item === 'dish' || p.item === 'dishQ' || p.item === 'burnt')) g.teams[p.team]!.dirtyDue.push(g.time + DIRTY_MS); // the plate under the pizza comes back
+      if (g.finitePlates && (isDish(p.item) || p.item === 'burnt')) g.teams[p.team]!.dirtyDue.push(g.time + DIRTY_MS); // the plate under the pizza comes back
       if (g.sab && p.item) sabotageBinned(g, p, p.item); // what is binned feeds the team's catapult
       p.item = null;
       break;
@@ -631,14 +627,9 @@ function interact(g: Game, p: Player, s: Station) {
       if (g.sab) sabotageLoad(g, p, s);
       break;
     case 'window':
-      if ((p.item === 'dish' || p.item === 'dishQ') && g.teams[p.team]!.orders.length) {
+      if (isDish(p.item) && g.teams[p.team]!.orders.length) {
         const team = g.teams[p.team]!;
-        // the VIP first (a Margarita fits any VIP); else the order that asked for this pizza; a Margarita also satisfies a Marinara order, never the other way round
-        const want: Recipe = p.item === 'dishQ' ? 'margarita' : 'marinara';
-        let at = team.orders.findIndex((o) => o.vip && (o.recipe === want || p.item === 'dishQ'));
-        if (at < 0) at = team.orders.findIndex((o) => o.birthday && (o.recipe === want || p.item === 'dishQ')); // the birthday order is the second to be served
-        if (at < 0) at = team.orders.findIndex((o) => o.recipe === want);
-        if (at < 0 && p.item === 'dishQ') at = 0;
+        const at = pickOrder(g, team.orders, p.item!); // recipes/sim.ts: the golden order first, then the birthday one, then the order that asked for this plate (a Margarita also satisfies a Marinara order, never the other way round)
         if (at < 0) { // R16: the wrong plate is refused, goes back dirty and pays nothing
           if (g.finitePlates) team.dirtyDue.push(g.time + DIRTY_MS);
           p.item = null;
@@ -739,7 +730,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     const wasCutting = p.cutting, wasDousing = !!p.dousing;
     // B held: cut / grate / stretch on a board with a raw item, or scrub plates at a sink with dirty ones; with a fire in front (burn only), put it out
     const burning = !!(g.burn && target && target.fire !== undefined);
-    const cuttable = !!(target && ((target.kind === 'board' && target.item && cutOf(target.item)) || (target.kind === 'sink' && target.count > 0) || burning));
+    const cuttable = !!(target && ((target.kind === 'board' && target.item && cutOf(target.item)) || (target.kind === 'sink' && target.count > 0) || burning || canFold(g, target)));
     if (p.assist) { // Ayudante: a tap of B starts the chop (or the extinguisher: the same latch, it goes on until the fire is out) and it goes on while the chef stays and there is something to do; the stick (or the item being done) ends it
       if (bEdge && cuttable) p.chopLatch = true;
       else if (p.chopLatch && (!cuttable || (Math.hypot(c.x, c.y) > ASSIST_STICK_CANCEL && !pushesInto(p, target!, c)))) p.chopLatch = false;
@@ -748,8 +739,8 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     if (g.burn) p.dousing = p.cutting && burning;
     const at = target ? g.stations.indexOf(target) : -1;
     const wasAt = p.chopAt;
-    if (wasCutting && (!p.cutting || at !== wasAt)) g.bus.emit(wasDousing ? 'douseStop' : g.stations[wasAt]?.kind === 'sink' ? 'washStop' : 'chopStop', { player: p.id, station: wasAt });
-    if (p.cutting && (!wasCutting || at !== wasAt)) g.bus.emit(p.dousing ? 'douseStart' : target!.kind === 'sink' ? 'washStart' : 'chopStart', { player: p.id, station: at });
+    if (wasCutting && (!p.cutting || at !== wasAt)) g.bus.emit(wasDousing ? 'douseStop' : g.stations[wasAt]?.kind === 'sink' ? 'washStop' : g.stations[wasAt]?.kind === 'pot' ? 'foldStop' : 'chopStop', { player: p.id, station: wasAt });
+    if (p.cutting && (!wasCutting || at !== wasAt)) g.bus.emit(p.dousing ? 'douseStart' : target!.kind === 'sink' ? 'washStart' : target!.kind === 'pot' ? 'foldStart' : 'chopStart', { player: p.id, station: at });
     p.chopAt = p.cutting ? at : -1;
     if (p.cutting) { p.vx = 0; p.vy = 0; p.kx = 0; p.ky = 0; p.dashMs = 0; }
     // R2 + R6: a B press with free hands and nothing in front is a dash; if the cooldown ends within bufferMs it still goes
@@ -769,8 +760,9 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
       }
     } else if (p.cutting && target && p.dousing) {
       douse(g, p.id, target, dtMs); // the fire is out when the Picar of the chefs in front of it adds up to DOUSE_MS
+    } else if (p.cutting && target?.kind === 'pot') { foldStep(g, p.id, target, dtMs); // recipes/sim.ts: Picar at an oven with dough and tomato folds the calzone
     } else if (p.cutting && target) {
-      target.progress += dtMs / g.params.cutMs;
+      target.progress += dtMs / cutMsOf(g, target.item);
       if (target.progress >= 1) {
         target.item = cutOf(target.item!);
         target.progress = 0;
@@ -816,7 +808,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   const dark = isDark(g); // the "Corte de luz" event: the ovens do not cook
   for (const s of g.stations) {
     if (s.kind === 'pot' && !s.done && baked(s) && !dark) {
-      s.progress += dtMs / g.params.cookMs;
+      s.progress += dtMs / cookMsOf(g, s);
       if (s.progress >= 1) { s.progress = 1; s.done = true; if (g.burn) s.readyAt = g.time; g.bus.emit('potReady', { station: g.stations.indexOf(s) }); }
     }
   }

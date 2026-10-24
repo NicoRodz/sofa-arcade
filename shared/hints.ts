@@ -7,12 +7,14 @@ import type { IconId } from './icons';
 import type { ClientMsg, HintLabels } from './protocol';
 import { floorItemNear, targetStation, type Game, type Item, type Player, type Station } from './overcooked';
 import { isAiming, sabotageHint } from './sabotage';
+import { RAW_OF, cutType, isDish } from './recipes/defs';
+import { canFold } from './recipes/sim';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
+const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
 const CRATE_ICON: readonly IconId[] = ['dough', 'crate', 'cheese'];
-const CUT_VERB: Record<string, string> = { raw0: 'Estirar', raw1: 'Picar', raw2: 'Rallar' }; // what B does to each raw ingredient (stretch the dough, cut the tomato, grate the cheese)
-const RAW = new Set<Item>(['raw0', 'raw1', 'raw2']);
-const cutType = (i: Item | null) => (i === 'cut0' ? 0 : i === 'cut1' ? 1 : i === 'cut2' ? 2 : -1);
+const CUT_VERB: Record<string, string> = { raw0: 'Estirar', raw1: 'Picar', raw2: 'Rallar', raw3: 'Rebanar', raw4: 'Picar' }; // what B does to each raw ingredient (stretch the dough, cut the tomato, grate the cheese, slice the pepperoni, cut the mushroom)
+const RAW = new Set<Item>(RAW_OF);
 
 type Btn = { label: string; icon: IconId; off?: boolean };
 const on = (label: string, icon: IconId): Btn => ({ label, icon });
@@ -28,7 +30,7 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
   if (s.fire !== undefined) return off('En llamas', 'oven'); // burn: nothing works on a station on fire until it is put out (B does that)
   switch (s.kind) {
     case 'crate': {
-      const verb = CRATE_VERB[s.crate] ?? 'Tomar', icon = CRATE_ICON[s.crate] ?? 'crate';
+      const verb = (s.crate === 2 && g.rec ? TOPPING_VERB[g.rec.topping - 2] : CRATE_VERB[s.crate]) ?? 'Tomar', icon = CRATE_ICON[s.crate] ?? 'crate';
       if (full) return off('Manos llenas', icon);
       if (s.pantry && g.pantry!.stock <= 0) return off('Despensa vacía', icon); // 14 chars
       return on(verb, icon);
@@ -54,7 +56,7 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       return off(full ? 'Ocupado' : 'Tabla vacía', 'chop');
     case 'pot': {
       const t = cutType(p.item);
-      if (t >= 0) return !s.done && !s.inputs.includes(t) && s.inputs.length < 3 ? on('Al horno', 'oven') : off(s.done ? 'Aún no listo' : 'Ya lleva eso', 'oven');
+      if (t >= 0) return !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < 3 ? on('Al horno', 'oven') : off(s.done ? 'Aún no listo' : 'Ya lleva eso', 'oven');
       if (p.item === 'plate') return s.done ? on(s.burnt ? 'Sacar quemada' : 'Sacar pizza', 'oven') : off('Aún no listo', 'oven'); // burn: a burnt pizza comes out too, to go to the bin
       if (full) return RAW.has(p.item!) ? off('Pica primero', 'oven') : off('Manos llenas', 'oven');
       return off(s.done ? 'Falta plato' : s.inputs.length ? 'Cocinando' : 'Horno', 'oven');
@@ -66,16 +68,17 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
     case 'catapult':
       return off('Catapulta', 'grab'); // the sabotage hint names it when there is something to load
     case 'window':
-      if (p.item === 'dish' || p.item === 'dishQ') return g.teams[p.team]!.orders.length ? on('Entregar', 'bell') : off('Sin pedidos', 'bell');
+      if (isDish(p.item)) return g.teams[p.team]!.orders.length ? on('Entregar', 'bell') : off('Sin pedidos', 'bell');
       return off(full ? 'Solo pizzas' : 'Entregar', 'bell');
   }
 }
 
 /** What B does: hold on a board with a raw ingredient or at a sink with dirty plates; a tap with free hands and nothing in front is the dash. */
-function buttonB(p: Player, s: Station | null): Btn {
+function buttonB(g: Game, p: Player, s: Station | null): Btn {
   if (s?.kind === 'board' && s.item && RAW.has(s.item)) return on(CUT_VERB[s.item]!, 'chop');
   if (s?.fire !== undefined) return on('Apagar', 'oven'); // burn: Picar puts the fire out (an Ayudante taps it once and it goes on)
   if (s?.kind === 'sink' && s.count > 0) return on('Lavar', 'wash');
+  if (s && canFold(g, s)) return on('Doblar', 'oven'); // a Carta del día with a calzone: Picar at the oven with dough and tomato folds it
   if (!p.item && !s) return p.dashMs <= 0 && p.dashCd <= 0 ? on('Correr', 'move') : off('Correr', 'move');
   return off('Picar', 'chop');
 }
@@ -88,7 +91,7 @@ export function chefHint(g: Game, p: Player): HintLabels {
   const aiming = isAiming(g, p);
   const sab = sabotageHint(g, p, s, near); // the catapult and the bags: it names what only versus has
   const a = aiming ? off('Apuntando', 'grab') : sab.a ? on(sab.a, sab.a === 'Cargar' || sab.a === 'Recoger' ? 'grab' : 'trash') : buttonA(g, p, s, near);
-  const b = aiming ? on('¡Lanzar!', 'star') : buttonB(p, s);
+  const b = aiming ? on('¡Lanzar!', 'star') : buttonB(g, p, s);
   return { a: a.label, b: b.label, aIcon: a.icon, bIcon: b.icon, ...(a.off ? { aOff: true } : {}), ...(b.off ? { bOff: true } : {}) };
 }
 

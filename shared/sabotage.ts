@@ -10,6 +10,7 @@
 // kitchen (the "canonical" one, team 1's) and mapped back through sigma, so a team-1 script reflected by sigma gets the reflected outcome.
 import { DIRS, MAP_H, MAP_W, isFloor, type Pos, type SigmaName } from './maps';
 import { SIGMAS } from './symmetry';
+import { isDish } from './recipes/defs';
 import { addFloorItem, pilesIn } from './floor';
 import type { Game, Item, Player, Station } from './overcooked';
 import {
@@ -131,7 +132,7 @@ function addDesechos(g: Game, team: number, n: number) {
   if (st.bags >= sab.rules.stock) st.desechos = Math.min(st.desechos, DESECHOS_PER_BAG - 1);
   return st.desechos + st.bags * DESECHOS_PER_BAG - before;
 }
-const worth = (item: Item) => (item === 'trashBag' ? DESECHOS_OF.bag : item === 'dish' || item === 'dishQ' || item === 'burnt' ? DESECHOS_OF.pizza : item === 'trash' ? DESECHOS_OF.trash : DESECHOS_OF.item);
+const worth = (item: Item) => (item === 'trashBag' ? DESECHOS_OF.bag : isDish(item) || item === 'burnt' ? DESECHOS_OF.pizza : item === 'trash' ? DESECHOS_OF.trash : DESECHOS_OF.item);
 
 /** A chef bins an item at X: it feeds the team's desechos (an item 1, a baked pizza 2, rubbish 1, a caught bag 3). */
 export function sabotageBinned(g: Game, p: Player, item: Item) {
