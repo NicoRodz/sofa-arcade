@@ -60,6 +60,76 @@ describe('phone layout', () => {
     }
   }, 60_000);
 
+  it('contextual buttons: label, glyph and greyed state follow the hint; a later hint replaces the earlier one whole; leaving the round gives the game its labels back', async () => {
+    const read = async () => { await new Promise((r) => setTimeout(r, 250)); return readNow(); }; // the greying is a 120 ms transition: read the settled style
+    const readNow = () => s.eval<{ a: string; b: string; ia: string; ib: string; offA: boolean; offB: boolean; fa: string; fb: string; plateA: boolean; plateB: boolean }>(`(() => {
+      const q = (sel) => document.querySelector(sel);
+      return { a: q('#lblA .lbl').textContent, b: q('#lblB .lbl').textContent, ia: q('#btnA svg').innerHTML.slice(0, 40), ib: q('#btnB svg').innerHTML.slice(0, 40),
+        offA: q('#btnA').classList.contains('off'), offB: q('#btnB').classList.contains('off'), fa: getComputedStyle(q('#btnA')).backgroundImage, fb: getComputedStyle(q('#btnB')).backgroundImage,
+        plateA: q('#lblA').classList.contains('off'), plateB: q('#lblB').classList.contains('off') };
+    })()`);
+    const push = (m: object) => s.eval(`window.__push(${JSON.stringify(m)})`);
+    await s.load(SCENARIOS.find((x) => x.name === 'play-puesto')!);
+    await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!);
+    const own = await read();
+    expect([own.a, own.b, own.offA, own.offB]).toEqual(['Tomar / Soltar', 'Picar / Correr', false, false]);
+    await push({ t: 'hint', a: 'Al horno', b: 'Estirar', aIcon: 'oven', bIcon: 'chop' });
+    const lit = await read();
+    expect([lit.a, lit.b, lit.offA, lit.offB]).toEqual(['Al horno', 'Estirar', false, false]);
+    expect(lit.ia).not.toBe(own.ia); // the glyph changed with the label (grab -> oven)
+    expect(lit.ib).toBe(own.ib); // chop stays chop
+    expect(lit.fa).not.toBe(lit.fb); // lit: A is red, B is yellow
+    await push({ t: 'hint', a: 'Tomar', b: 'Correr', aIcon: 'grab', bIcon: 'move', aOff: true, bOff: true });
+    const grey = await read();
+    expect([grey.a, grey.b, grey.offA, grey.offB, grey.plateA, grey.plateB]).toEqual(['Tomar', 'Correr', true, true, true, true]);
+    expect(grey.fa, 'both greyed buttons wear the same flat grey').toBe(grey.fb);
+    expect(grey.fa).not.toBe(lit.fa);
+    await push({ t: 'hint', a: 'Entregar', b: 'Picar', aIcon: 'bell', bIcon: 'chop', bOff: true }); // the whole state: A is lit again, only B stays grey
+    const mixed = await read();
+    expect([mixed.a, mixed.offA, mixed.offB, mixed.fa]).toEqual(['Entregar', false, true, lit.fa]); // A lit again (red), only B stays grey
+    await push({ t: 'hint', a: null, b: null }); // back to the game's own labels
+    const back = await read();
+    expect([back.a, back.b, back.offA, back.offB, back.ia]).toEqual(['Tomar / Soltar', 'Picar / Correr', false, false, own.ia]);
+    await push({ t: 'hint', a: 'Al horno', b: 'Picar', aIcon: 'oven', bIcon: 'chop', aOff: true });
+    await push({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 5 }] }); // the round ends: the labels go with it
+    await push({ t: 'phase', phase: 'playing' });
+    const after = await read();
+    expect([after.a, after.b, after.offA, after.offB]).toEqual(['Tomar / Soltar', 'Picar / Correr', false, false]);
+  }, 60_000);
+
+  it('a greyed button still takes the press (it is only a hint, and the sim buffers an early press for a station that shows up)', async () => {
+    await s.load(SCENARIOS.find((x) => x.name === 'play-hint-off')!);
+    await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!);
+    await s.eval(`window.__sent = []`);
+    const [ax, ay] = await s.eval<[number, number]>(`(() => { const r = document.querySelector('#btnA').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    await s.tap(ax, ay);
+    expect((await s.eval<{ t: string; presses?: number[] }[]>(`window.__sent`)).some((m) => m.t === 'input' && (m.presses?.[0] ?? 0) >= 1)).toBe(true);
+  }, 60_000);
+
+  it('Ayudante: the switch is in the pizzas lobby only; a tap sends the whole choice, the label and aria follow, and the relay settles it (also for a reconnect)', async () => {
+    const state = () => s.eval<{ label: string; on: boolean; aria: string; shown: boolean }>(`(() => { const b = document.getElementById('assist'); return { label: document.getElementById('assistlbl').textContent, on: b.classList.contains('on'), aria: b.getAttribute('aria-pressed'), shown: getComputedStyle(b).display !== 'none' && b.getBoundingClientRect().width > 0 }; })()`);
+    const centre = () => s.eval<[number, number]>(`(() => { const r = document.getElementById('assist').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    const sentAssist = async () => (await s.eval<{ t: string; on?: boolean }[]>(`window.__sent`)).filter((m) => m.t === 'assist');
+    await s.load(SCENARIOS.find((x) => x.name === 'lobby')!);
+    await s.setViewport(VIEWPORTS[3]!, VIEWPORTS[3]!.insets[0]!);
+    expect(await state()).toEqual({ label: 'Ayudante: no', on: false, aria: 'false', shown: true });
+    await s.eval(`window.__sent = []`);
+    await s.tap(...(await centre()));
+    expect(await sentAssist()).toEqual([{ t: 'assist', on: true }]);
+    expect(await state()).toEqual({ label: 'Ayudante: sí', on: true, aria: 'true', shown: true });
+    await s.tap(...(await centre()));
+    expect(await sentAssist()).toEqual([{ t: 'assist', on: true }, { t: 'assist', on: false }]);
+    expect((await state()).label).toBe('Ayudante: no');
+    await s.eval(`window.__push({ t: 'assist', playerId: 1, on: true })`); // the relay: this phone had it on (a reconnect)
+    expect(await state()).toEqual({ label: 'Ayudante: sí', on: true, aria: 'true', shown: true });
+    await s.eval(`window.__push({ t: 'assist', playerId: 7, on: false })`); // somebody else's: ignored
+    expect((await state()).on).toBe(true);
+    await s.eval(`window.__push({ t: 'phase', phase: 'playing' })`); // in the round the overlay is gone: no switch to press
+    expect((await state()).shown).toBe(false);
+    await s.load(SCENARIOS.find((x) => x.name === 'lobby-other-game')!);
+    expect((await state()).shown, 'another game has no Ayudante').toBe(false);
+  }, 60_000);
+
   it("versus results: the phone shows how its team ended and the score of its OWN team, framed in the team's colour; coop shows neither", async () => {
     const read = async (name: string) => {
       await s.load(SCENARIOS.find((x) => x.name === name)!);

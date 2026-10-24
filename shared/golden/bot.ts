@@ -6,11 +6,23 @@ import { Emitter, type GameEvents } from '../events';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player, type Station } from '../overcooked';
 import type { Difficulty } from '../difficulty';
 
-export interface Scenario { name: string; mapId: string; difficulty: Difficulty; n: number; seed: number; teams?: readonly { playerIds: readonly number[] }[] } // teams: declared roster (a single team must play exactly like none)
+export interface RuleFlags { burn?: boolean; fire?: boolean; events?: boolean } // the new rules of the sim, all off by default: the three original goldens never set them
+export interface Scenario { name: string; mapId: string; difficulty: Difficulty; n: number; seed: number; teams?: readonly { playerIds: readonly number[] }[]; assist?: readonly number[]; flags?: RuleFlags } // teams: declared roster (a single team must play exactly like none)
 export const SCENARIOS: readonly Scenario[] = [
   { name: 'coop-n2-map2-normal', mapId: '2', difficulty: 'normal', n: 2, seed: 11 },
   { name: 'coop-n4-map9-hard', mapId: '9', difficulty: 'hard', n: 4, seed: 22 },
   { name: 'coop-n6-map11-easy', mapId: '11', difficulty: 'easy', n: 6, seed: 33 },
+];
+
+// Rounds with the new rules switched on (the oven that burns, the fire, the mid-round event), fixtures of their own, re-recorded on purpose with
+// tools/record-golden.ts. The three above stay byte for byte what they were: they never set a flag. These were picked by scanning (map, difficulty, n, seed)
+// for scripted chefs that leave pizzas in the oven: map 2 on Hard with 4 chefs (seed 2: Hora punta) burns one, the fire jumps to a counter and a pizza is rescued;
+// map 11 on Normal with 6 chefs (seed 1: Corte de luz) burns one and the fire jumps four times; the 2-chef round (seed 11) is the quiet one and has the rat steal a dish.
+const FLAGS: RuleFlags = { burn: true, fire: true, events: true };
+export const RULES_SCENARIOS: readonly Scenario[] = [
+  { name: 'coop-n2-map2-normal-rules', mapId: '2', difficulty: 'normal', n: 2, seed: 11, flags: FLAGS },
+  { name: 'coop-n4-map2-hard-rules', mapId: '2', difficulty: 'hard', n: 4, seed: 2, flags: FLAGS },
+  { name: 'coop-n6-map11-normal-rules', mapId: '11', difficulty: 'normal', n: 6, seed: 1, flags: FLAGS },
 ];
 
 export interface GoldenRun {
@@ -119,7 +131,7 @@ export function decide(g: Game, p: Player, rank: number, m: Mem, tickNo: number)
 export function runGolden(sc: Scenario): GoldenRun {
   const map = fixedMap(sc.mapId)!;
   const bus = new RecBus();
-  const g = createGame({ mapId: map.id, difficulty: sc.difficulty, n: sc.n, rows: map.rows, spawns: map.spawns, seed: sc.seed, countdownMs: COUNTDOWN_MS, bus, teams: sc.teams });
+  const g = createGame({ mapId: map.id, difficulty: sc.difficulty, n: sc.n, rows: map.rows, spawns: map.spawns, seed: sc.seed, countdownMs: COUNTDOWN_MS, bus, teams: sc.teams, assist: sc.assist, ...sc.flags });
   const ids = Array.from({ length: sc.n }, (_v, i) => i + 1);
   ids.forEach((id, rank) => addPlayer(g, id, rank, rank));
   const mem = new Map(ids.map((id) => [id, { step: 0, since: 0, lastPress: -99, bin: false } as Mem]));

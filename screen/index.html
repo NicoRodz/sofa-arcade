@@ -62,6 +62,9 @@
   .chip.empty .av canvas { display: none; }
   .chip.empty .nm { color: rgba(255,244,224,.55); font-size: 24px; }
   .chip.empty .num { background: transparent; border: 3px dashed rgba(255,244,224,.28); color: rgba(255,244,224,.4); text-shadow: none; }
+  .chip.helper .sub { color: #0B7FA6; }
+  .chip .av canvas.hbadge { position: absolute; left: auto; right: -6px; top: auto; bottom: 0; width: 34px; height: 34px; animation: none; transform: none; }
+  .tlist .chip .av canvas.hbadge { width: 26px; height: 26px; right: -4px; }
   .chip.gone { filter: grayscale(.8); opacity: .6; }
   .chip.pop { animation: chippop .45s cubic-bezier(.2,1.6,.4,1); }
   @keyframes chippop { from { transform: scale(.85) translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -105,8 +108,14 @@
   #sabs .pill { height: 44px; padding: 0 16px; font-size: 22px; }
   #sabinfo { margin: 0; min-height: 0; flex: 1; min-width: 0; font-size: 19px; line-height: 1.15; }
   #sabinfo.notice { color: var(--tomato2); }
-  #sabinfo b { color: var(--ink); }
-  #sabinfo kbd { font-size: 14px; min-width: 0; line-height: 20px; padding: 0 5px; }
+  /* the mid-round events option: label, Sí / No, on the line of the map heading (both modes of the pizza game) */
+  #maprow { display: flex; align-items: flex-end; justify-content: space-between; }
+  #evbox { display: flex; align-items: center; gap: 12px; margin-bottom: 2px; margin-right: 262px; } /* left of the minimap */
+  #evbox.off { display: none; }
+  #evbox h3 { margin: 0; flex: none; }
+  #evbox kbd { font-size: 13px; min-width: 0; line-height: 18px; padding: 0 5px; letter-spacing: 0; }
+  #evs { flex-wrap: nowrap; flex: none; }
+  #evs .pill { height: 38px; padding: 0 18px; font-size: 20px; }
   #seedrow { margin-top: 8px; font: 600 22px var(--font); color: var(--muted); }
   #seedrow b { color: var(--ink); }
   #again-seed { height: 40px; font-size: 20px; padding: 0 16px; margin-left: 10px; }
@@ -154,6 +163,10 @@
   #starline { font: 700 24px var(--font); color: var(--muted); margin-top: 6px; }
   #starline b { color: var(--ink); }
   #stats { display: flex; justify-content: center; gap: 24px; margin: 14px 0 8px; }
+  /* the extra results lines (rescued pizzas, fires put out): a small plaque under the podium / the versus cards */
+  #kudos { margin: 10px auto 0; width: max-content; max-width: 92%; padding: 8px 26px; border: 4px solid var(--ink); border-radius: 18px; background: #FFE9B8; font: 800 26px var(--font); color: var(--ink); text-align: center; }
+  #kudos.off { display: none; }
+  #kudos div + div { margin-top: 2px; }
   .stat { min-width: 190px; padding: 10px 0; border-radius: 14px; border: 3px solid var(--ink); background: #F6E8CB; }
   .stat b { display: block; font: 800 56px/1.05 var(--font); }
   .stat span { font: 800 19px var(--font); letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
@@ -418,7 +431,8 @@
         </div>
         <div id="sabbox" class="off"><h3>Sabotaje</h3><div id="sabs" class="seg"></div><div id="sabinfo" class="hint"></div></div>
         <div id="pizzaops">
-          <h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
+          <div id="maprow"><h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
+            <div id="evbox"><h3 title="Un evento por ronda, entre el 1:00 y el 2:00">Eventos <kbd>E</kbd></h3><div id="evs" class="seg"></div></div></div>
           <div id="maps"></div>
           <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
           <canvas id="minimap" width="232" height="130"></canvas>
@@ -451,6 +465,7 @@
         <div id="stats"></div>
         <div id="podium"></div>
       </div>
+      <div id="kudos" class="off"></div>
       <div id="campres" class="off"></div>
       <div id="obstres" class="off">
         <div id="ostars"></div>

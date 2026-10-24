@@ -47,6 +47,17 @@ export function buildFxTextures(scene: Phaser.Scene) {
     g.addColorStop(0, 'rgba(20,10,6,0.75)'); g.addColorStop(0.65, 'rgba(20,10,6,0.45)'); g.addColorStop(1, 'rgba(20,10,6,0)');
     c.fillStyle = g; c.beginPath(); c.arc(0, 0, 54, 0, Math.PI * 2); c.fill();
   });
+  // the fire extinguisher (burn.ts): a red cylinder with a white band, a black valve, a hose that ends in a nozzle pointing right. Drawn upright with the nozzle at (30, -26).
+  makeTex(scene, 'extinguisher', { w: 84, h: 100, ox: 36, oy: 50 }, (c) => {
+    c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.ellipse(0, 46, 20, 5, 0, 0, Math.PI * 2); c.fill();
+    drawOutlined(c, () => { c.beginPath(); c.moveTo(6, -24); c.bezierCurveTo(22, -24, 26, -34, 32, -30); c.lineTo(38, -22); c.lineTo(32, -17); c.lineTo(28, -21); c.bezierCurveTo(22, -16, 14, -16, 6, -17); c.closePath(); }, '#2B2B33', { lw: 2.6 }); // hose and nozzle
+    drawOutlined(c, () => rr(c, -17, -28, 34, 76, 14), vgrad(c, -28, 48, '#F4533F', '#B5281F'), { lw: 3.2 });
+    drawOutlined(c, () => rr(c, -17, -2, 34, 20, 2), '#FFF4E0', { lw: 2.4 }); // the label band
+    c.fillStyle = C.tomato2; c.beginPath(); c.moveTo(-5, 12); c.bezierCurveTo(-8, 5, 0, 3, 0, -1); c.bezierCurveTo(4, 4, 6, 8, 5, 12); c.bezierCurveTo(3, 16, -3, 16, -5, 12); c.fill(); // a flame on it
+    drawOutlined(c, () => rr(c, -9, -38, 18, 14, 4), '#2B2B33', { lw: 2.6 }); // valve
+    drawOutlined(c, () => { c.beginPath(); c.moveTo(-14, -42); c.lineTo(12, -42); c.lineTo(8, -35); c.lineTo(-10, -35); c.closePath(); }, '#7D8B95', { lw: 2.4 }); // handle
+    c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-10, -18); c.lineTo(-10, 36); c.stroke(); // highlight
+  });
   makeTex(scene, 'knife', { w: 64, h: 24 }, (c) => {
     drawOutlined(c, () => { c.beginPath(); c.moveTo(-8, -7); c.lineTo(22, -6); c.quadraticCurveTo(30, -2, 26, 4); c.lineTo(-8, 5); c.closePath(); }, vgrad(c, -7, 5, '#F2F6F8', C.steel2), { lw: 2.2, shadow: [0, 9, 22, 3] });
     drawOutlined(c, () => rr(c, -26, -6, 20, 11, 4), '#6B3F22', { lw: 2.2 });
@@ -129,6 +140,8 @@ export class Fx {
   private foam: Phaser.GameObjects.Particles.ParticleEmitter;
   private sparks: Phaser.GameObjects.Particles.ParticleEmitter;
   private puff: Phaser.GameObjects.Particles.ParticleEmitter;
+  private soot: Phaser.GameObjects.Particles.ParticleEmitter;
+  private steam: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(private scene: Phaser.Scene) {
     const mk = (key: string, cfg: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig, depth = 1200) =>
@@ -147,6 +160,9 @@ export class Fx {
     this.stars = mk('fx_star', { lifespan: 700, speed: { min: 90, max: 200 }, angle: { min: -150, max: -30 }, gravityY: 300, rotate: { start: 0, end: 200 }, scale: { start: 0.9, end: 0.2 }, alpha: { start: 1, end: 0 } });
     this.smoke = mk('fx_smoke', { lifespan: 1400, speedY: { min: -50, max: -28 }, speedX: { min: -10, max: 10 }, scale: { start: 0.6, end: 1.6 }, alpha: { start: 0.6, end: 0 } }, 1100);
     this.puff = mk('fx_smoke', { lifespan: 480, speed: { min: 20, max: 60 }, angle: { min: 180, max: 360 }, scale: { start: 0.55, end: 1.2 }, alpha: { start: 0.75, end: 0 }, tint: 0xa88d68 }, 90);
+    // burn.ts: soot from a burnt pizza (dark, slow, tall), the steam when a fire goes out
+    this.soot = mk('fx_smoke', { lifespan: 1900, speedY: { min: -80, max: -40 }, speedX: { min: -18, max: 18 }, scale: { start: 0.8, end: 2.4 }, alpha: { start: 0.95, end: 0 }, tint: [0x2b221f, 0x1c1614, 0x3a2f2a] }, 1500);
+    this.steam = mk('fx_smoke', { lifespan: 1100, speedY: { min: -90, max: -50 }, speedX: { min: -30, max: 30 }, scale: { start: 0.5, end: 1.7 }, alpha: { start: 0.8, end: 0 }, tint: 0xffffff }, 1195);
     this.sparks = mk('fx_dot', { lifespan: 900, speedY: { min: -60, max: -30 }, speedX: { min: -14, max: 14 }, scale: { start: 0.8, end: 0 }, alpha: { start: 1, end: 0 }, tint: [0xff8a1f, 0xffc93c] });
   }
 
@@ -158,6 +174,14 @@ export class Fx {
   starBurst(x: number, y: number, n = 5) { this.stars.explode(n, x, y); }
   smokePuff(x: number, y: number) { this.smoke.explode(1, x, y); }
   ember(x: number, y: number) { this.sparks.explode(1, x, y); }
+  sootPuff(x: number, y: number, n = 1) { this.soot.explode(n, x, y); }
+  steamPuff(x: number, y: number, n = 6) { this.steam.explode(n, x, y); }
+  /** One puff of extinguisher foam flying from (x, y) to (tx, ty), growing and fading: the stream is a few of these a frame apart. */
+  spray(x: number, y: number, tx: number, ty: number) {
+    const p = this.scene.add.image(x, y, 'fx_smoke').setTint(Phaser.Math.RND.pick([0xffffff, 0xd6f0ff, 0x9fdcf5])).setDepth(2450).setScale(0.45).setAlpha(1);
+    const jx = (Math.random() - 0.5) * 26, jy = (Math.random() - 0.5) * 26;
+    this.scene.tweens.add({ targets: p, x: tx + jx, y: ty + jy, scale: 1.2 + Math.random() * 0.5, alpha: 0, duration: 380, ease: 'cubic.out', onComplete: () => p.destroy() });
+  }
 
   ring(x: number, y: number, color: number, from = 0.4, to = 1.6) {
     const r = this.scene.add.image(x, y, 'fx_ring').setTint(color).setDepth(1150).setScale(from);

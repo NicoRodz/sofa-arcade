@@ -5,6 +5,8 @@ import {
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
 import { summarize } from '@party/shared/results';
+import { kudosLines, tallyKitchen } from '@party/shared/kudos';
+import { EVENTS_OPTION, eventsOf, roundRules } from '@party/shared/midround';
 import { DECIDED_TEXT, NO_LEAD, nextLead, phoneResult, recordRound, scoreHidden, seriesLine, tallyDeliveries, versusReport, type LeadState, type Series, type VersusReport } from '@party/shared/versusReport';
 import { GAMES, PLATFORM, gameInfo, gameName, hasModeChoice, modeOf, selectableModes, type GameDef, type ModeId } from '@party/shared/games';
 import { SABOTAGE_BLURB, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '@party/shared/sabotage-config';
@@ -19,7 +21,7 @@ import { generate, resolveMap } from '@party/shared/generate';
 import { defaultMap, fixedMap, isMapChoice, lobbyMaps, lobbyN, mapFeatures, mapStatus, replacementMap, type MapChoice } from '@party/shared/maps';
 import { initAudio } from './audio';
 import { gameBus } from './bus';
-import { chefCanvas } from './art/chef';
+import { assistBadgeCanvas, chefCanvas } from './art/chef';
 import { chefOf } from './art/tokens';
 import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
 import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from './art/flags';
@@ -49,7 +51,8 @@ import {
   COUNTDOWN_MS, TICK_MS, addPlayer, createGame, dropPlayer, floorItemNear, rejoinPlayer, removePlayer, resolvePause, targetStation, tick,
   type Controls,
 } from '@party/shared/game';
-import { sabotageAimPress, sabotageHint, sabotageLoad } from '@party/shared/sabotage';
+import { sabotageAimPress, sabotageLoad } from '@party/shared/sabotage';
+import { createHintSync } from '@party/shared/hints';
 import { addFloorItem } from '@party/shared/floor';
 import type { RoundView } from './art/hud';
 
@@ -83,6 +86,8 @@ let lastKeyAt: number | null = null; // when the Mac keyboard last pressed somet
 let phase: Phase = 'menu'; // Pichiclub start: the screen picks the game, then that game's lobby
 let config: LobbyConfig = { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 };
 let game = createGame();
+let roundNo = 0; // rounds started in this session: the mid-round event of each one comes from the lobby seed plus this, so a rematch (same orders, same seed) gets another event
+const nextEventsSeed = () => (config.seed + roundNo++) >>> 0;
 const played = new Set<string>(); // maps already played in this session (coop and versus ids): the lobby proposes a new one by default
 let teamsTouched = false; // somebody moved a player by hand: the lobby stops rebalancing the teams on its own
 let lockBeforeStart = false; // the teams lock while a match runs; this is what the host had set
@@ -180,7 +185,7 @@ function setPhase(next: Phase) {
     showScene('main');
     const n = connectedN();
     const map = resolveMap(config.map as MapChoice, config.seed, config.difficulty, n, Math.random);
-    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
+    game = createGame({ mapId: map.id, difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus, eventsSeed: nextEventsSeed(), ...roundRules(config.modeOptions, config.difficulty), assist: assistIds() }); // the lobby turns the new rules on: the oven burns (and, from Normal up, catches fire), the event by its option
     played.add(map.id);
     // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
     const order = [...players.values()].sort((a, b) => Number(b.info.connected) - Number(a.info.connected) || a.info.slot - b.info.slot);
@@ -193,7 +198,7 @@ function setPhase(next: Phase) {
       puestoMsg = pm;
     } else puestoMsg = undefined;
     overAt = null;
-    tally.reset();
+    tally.reset(); kitchen.reset();
     roundView = { teams: null, hiddenScore: false };
     scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
@@ -253,7 +258,7 @@ const obstFrameMs: number[] = []; // ms a whole scene update took (simulation + 
 // Versus: the lobby's frozen teams and map become the round (createVersusGame), with the puestos dealt inside each kitchen.
 function startVersus(): MatchStart {
   const slotOf = (id: number) => players.get(id)?.info.slot ?? 0;
-  const round = startVersusRound({ teams: config.teams!, choice: config.map, difficulty: config.difficulty, seed: config.seed, modeOptions: config.modeOptions, slotOf, rand: Math.random, bus: gameBus, countdownMs: COUNTDOWN_MS });
+  const round = startVersusRound({ teams: config.teams!, choice: config.map, difficulty: config.difficulty, seed: config.seed, eventsSeed: nextEventsSeed(), modeOptions: config.modeOptions, slotOf, rand: Math.random, bus: gameBus, countdownMs: COUNTDOWN_MS, assist: assistIds() });
   const { map, teams } = round;
   game = round.game;
   played.add(map.id);
@@ -264,7 +269,7 @@ function startVersus(): MatchStart {
   puestoMsg = { cheese: f.cheese, sink: f.sink, assign };
   assign.forEach((a) => puestoOf.set(a.id, { ids: a.puestos, stamp: ++puestoStamp }));
   overAt = null;
-  tally.reset();
+  tally.reset(); kitchen.reset();
   lockBeforeStart = config.teamsLocked;
   config = { ...config, teams, teamsLocked: true }; // frozen for the match; the phones get their kitchen side with `you`
   sendMsg({ t: 'config', ...config });
@@ -283,6 +288,8 @@ const setConfig = (patch: Partial<LobbyConfig>) => {
 const gameDef = (): GameDef => GAMES.find((x) => x.id === config.game) ?? GAMES[0];
 const modeNow = () => modeOf(gameDef(), config.modeId);
 const isVersus = () => config.modeId === 'versus';
+// Ayudante (assist.ts): the players that chose it from their phones. The round reads them once, at the start; a change mid-round waits for the next one.
+const assistIds = () => [...players.values()].filter((p) => p.info.assist).map((p) => p.info.id);
 const connectedIds = () => [...players.values()].filter((p) => p.info.connected).sort((a, b) => a.info.slot - b.info.slot).map((p) => p.info.id);
 const MODE_PILL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
 const OPTION_PILL: Record<string, string> = { hiddenScore: 'Marcador oculto', handicap: 'Ventaja equipo chico' }; // the registry labels are sentences; the pills need short ones
@@ -319,10 +326,20 @@ function setSabotage(v: string) {
   audio.ui(NAV_SFX.move);
   setConfig({ modeOptions: { ...config.modeOptions, [SABOTAGE_OPTION]: v } });
 }
+// The mid-round events option (Sí / No, both modes of the pizza game): Sí on Normal and Difícil, No on Fácil, until the host picks. Pills and the E key.
+function setEvents(on: boolean) {
+  if (phase !== 'lobby' || config.game === OBST_ID) return;
+  audio.ui(NAV_SFX.move);
+  setConfig({ modeOptions: { ...config.modeOptions, [EVENTS_OPTION]: on } });
+}
+function renderEvents() {
+  const on = eventsOf(config.modeOptions, config.difficulty);
+  setHtml('evs', [true, false].map((v) => `<button class="pill ${v === on ? 'sel' : ''}" data-ev="${v}" title="${v ? 'Un evento por ronda, entre el 1:00 y el 2:00' : 'Sin eventos'}">${v ? 'Sí' : 'No'}</button>`).join(''));
+}
 // Why the round cannot start yet ('' when it can). Versus also needs a legal split.
 function startProblem(): string {
   if (!canStart([...players.values()].map((p) => p.info))) return 'Esperando jugadores';
-  if (isVersus()) { const s = lobbySetup(modeNow(), config.teams); if (!s.ok) return s.problems[0]!; }
+  if (isVersus()) { const s = lobbySetup(modeNow(), config.teams, new Set(assistIds())); if (!s.ok) return s.problems[0]!; }
   return '';
 }
 
@@ -428,6 +445,11 @@ function onMessage(m: ServerMsg) {
     }
     case 'setTeam': moveToTeam(m.playerId, m.teamId); break; // a phone asked to change team
     case 'player_removed': remove(m.playerId); break;
+    case 'assist': { // a phone switched Ayudante on or off in the lobby
+      const p = players.get(m.playerId);
+      if (p) { p.info = m.on ? { ...p.info, assist: true } : (({ assist: _a, ...rest }) => rest)(p.info); renderUi(); }
+      break;
+    }
     case 'captain': captainId = m.playerId; renderUi(); break;
     case 'nav': { // the Captain's D-pad: the same handler as the keyboard, fed with the key that intent stands for
       if (!acceptNav(captainId, m.from) || remoteBlocked(lastKeyAt, performance.now())) break;
@@ -488,7 +510,7 @@ const host: Host = {
   puestos: () => puestoOf,
   step(delta) {
     syncPauseBar();
-    if (phase !== 'playing' || activeGame !== 'pizzas' || performance.now() < gateUntil) { acc = 0; return; }
+    if (phase !== 'playing' || activeGame !== 'pizzas' || performance.now() < gateUntil) { acc = 0; syncHints(); return; }
     acc += Math.min(delta, 100);
     while (acc >= TICK_MS) {
       acc -= TICK_MS;
@@ -505,6 +527,7 @@ const host: Host = {
       }
       if (game.over) { overAt ??= performance.now(); break; }
     }
+    syncHints(); // the labels of the state this frame ends in
     // "¡TIEMPO!" stays on screen for a beat before the results
     if (game.over && overAt !== null && performance.now() - overAt > 1100) { overAt = null; dispatch('timeout'); }
   },
@@ -592,7 +615,24 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
     trash: (team: number, tx: number, ty: number, by: number, ttlMs?: number) => { addFloorItem(game, { tx, ty, item: 'trash', kind: 'trash', team, by, ttlMs }); },
     state: () => JSON.parse(JSON.stringify({ sab: game.sab && { teams: game.sab.teams }, floor: game.floor, hazards: game.hazards })),
   },
-  snapshot: () => ({ versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
+  // capture tool (burn): put an oven at a stage of its life, stand a chef in front of a station
+  kit: {
+    bake: (i: number) => { const s = game.stations[i]!; s.inputs = [0, 1]; s.progress = 1; s.done = true; s.readyAt = game.time; },
+    age: (i: number, ms: number) => { const s = game.stations[i]!; if (s.readyAt !== undefined) s.readyAt = game.time - ms; }, // as if the pizza had been ready for `ms`
+    stand: (id: number, i: number, k = 0) => { // the chef on the k-th open tile of the station, facing it
+      const p = game.players.get(id), s = game.stations[i]!;
+      const open = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).filter(([a, b]) => game.grid[s.ty + b]?.[s.tx + a]?.kind === 'floor');
+      const [dx, dy] = open[k % open.length]!;
+      if (p) Object.assign(p, { x: s.tx + dx + 0.5, y: s.ty + dy + 0.5, fx: -dx, fy: -dy, vx: 0, vy: 0 });
+    },
+    item: (id: number, item: string | null) => { const p = game.players.get(id); if (p) p.item = item as never; },
+    // mid-round events: make this round's event `kind`, announced now and starting in `startInMs`; put an item on a station; a dirty-plate count on a station
+    event: (kind: string, startInMs = 3100) => { const m = game.mid; if (!m) return false; Object.assign(m, { kind, phase: 'wait', announceAt: game.time + 100, startAt: game.time + startInMs, endAt: Infinity, dark: false, rat: null }); return true; },
+    setItem: (i: number, item: string | null) => { game.stations[i]!.item = item as never; },
+    setCount: (i: number, n: number) => { game.stations[i]!.count = n; },
+    counters: () => game.stations.map((s, i) => ({ i, kind: s.kind, tx: s.tx, ty: s.ty, fire: s.fire, burnt: !!s.burnt, done: s.done })).filter((s) => s.kind === 'pot' || s.kind === 'counter'),
+  },
+  snapshot: () => ({ mid: game.mid && { kind: game.mid.kind, phase: game.mid.phase, dark: game.mid.dark, rat: !!game.mid.rat }, versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
 $('code').textContent = room;
@@ -639,8 +679,11 @@ function renderChips() {
       c.av.replaceChildren(chefCanvas(i, 'idle', true));
       c.el.classList.remove('pop'); void c.el.offsetWidth; c.el.classList.add('pop');
     }
+    const helper = !!info.assist, badge = c.av.querySelector('.hbadge');
+    if (helper && !badge) { const b = assistBadgeCanvas(); b.className = 'hbadge'; c.av.appendChild(b); } else if (!helper && badge) badge.remove();
+    c.el.classList.toggle('helper', helper);
     c.nm.textContent = (info.id === captainId ? '👑 ' : '') + info.name;
-    c.sub.textContent = info.connected ? `${chefOf(i).name} · listo` : 'Desconectado';
+    c.sub.textContent = info.connected ? `${chefOf(i).name} · ${helper ? 'Ayudante' : 'listo'}` : 'Desconectado';
   });
 }
 
@@ -655,7 +698,7 @@ function showTeams(on: boolean) {
 function renderTeams() {
   chipsInTeams = true;
   const teams = config.teams ?? [];
-  const setup = lobbySetup(modeNow(), config.teams);
+  const setup = lobbySetup(modeNow(), config.teams, new Set(assistIds()));
   $('teams').classList.toggle('teams-locked', config.teamsLocked);
   teams.forEach((t, i) => {
     const col = $(`tc${i}`);
@@ -679,7 +722,7 @@ function renderTeams() {
   const th = $('teamhint');
   const sizes = teamSizes(config.teams), big = Math.max(...sizes), small = Math.min(...sizes);
   const uneven = setup.ok && big !== small;
-  th.textContent = teamNotice || (!setup.ok ? setup.problems[0]! : uneven ? (config.modeOptions.handicap !== false ? `${big} contra ${small}: el equipo de ${small} gana ×${Math.max(...setup.k)}` : `${big} contra ${small}, sin ventaja para el equipo chico`) : 'Clic en un jugador: cambia de equipo');
+  th.textContent = teamNotice || (!setup.ok ? setup.problems[0]! : uneven ? (config.modeOptions.handicap !== false ? `${big} contra ${small}: el equipo de ${small} gana ×${Math.max(...setup.k)}` : `${big} contra ${small}, sin ventaja para el equipo chico`) : setup.ok && config.modeOptions.handicap !== false && Math.max(...setup.k) > 1 ? `Con Ayudante pesa 0,7: el equipo con más ayuda gana ×${Math.max(...setup.k)}` : 'Clic en un jugador: cambia de equipo');
   th.classList.toggle('bad', !!teamNotice || !setup.ok);
 }
 // The generated versus map of a seed is expensive enough (bounded attempts, each one validated) not to redo it on every render.
@@ -839,6 +882,7 @@ function renderUi() {
   showTeams(vs);
   if (vs) renderTeams();
   renderSabotage(vs);
+  renderEvents();
   const sizes = teamSizes(config.teams);
   const rows = vs ? versusLobbyMaps(sizes).map(({ map, status }) => ({ map, status: status.state === 'recommended' ? { state: 'recommended' as const } : status })) : lobbyMaps(n);
   const cards = rows.map(({ map, status }) => {
@@ -886,25 +930,21 @@ gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
 gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
 gameBus.on('dash', (e) => buzz(e.player, 'dash'));
 gameBus.on('chef:slip', (e) => buzz(e.chef, 'slip')); // sabotage: the phone of the chef that slipped vibrates and says "¡Resbalaste!"
-// Sabotage: A and B keep their two buttons, only their names follow what the chef can do ("Tomar bolsa", "Cargar", "¡Lanzar!", "Recoger").
-const sentHint = new Map<number, string>();
-function syncHints() {
-  const on = phase === 'playing' && activeGame === 'pizzas' && !!game.sab;
-  for (const [id, key] of [...sentHint]) if (!on || !game.players.has(id)) { if (key !== '|') sendMsg({ t: 'hint', playerId: id, a: null, b: null }); sentHint.delete(id); } // round over or chef gone: its labels go back
-  if (!on) return;
-  for (const p of game.players.values()) {
-    const h = sabotageHint(game, p, targetStation(game, p), !!floorItemNear(game, p));
-    const key = `${h.a ?? ''}|${h.b ?? ''}`;
-    if ((sentHint.get(p.id) ?? '|') === key) continue;
-    sentHint.set(p.id, key);
-    sendMsg({ t: 'hint', playerId: p.id, a: h.a, b: h.b });
-  }
-}
-setInterval(syncHints, 100);
+// Contextual buttons: A and B keep their two buttons, only their names, glyphs and greying follow what the chef has in front ("Tomar masa", "Picar", "Al horno",
+// "Entregar", grey when nothing can be done). The label is the STATE of the sim after the last tick, recomputed every frame and sent whole when it changes (at most one
+// message per chef every HINT_MIN_MS), plus a refresh every HINT_REFRESH_MS: a late, lost or missed packet (a phone that reconnects) is replaced by the next, never an event the phone has to catch (hints.ts).
+const hints = createHintSync(sendMsg);
+const syncHints = (now = performance.now()) => hints.sync(phase === 'playing' && activeGame === 'pizzas' ? game : null, now);
 
 // round stats for the results screen: deliveries per chef (the podium, and the MVP of each team)
 const tally = tallyDeliveries(gameBus);
 const stats = { delivered: tally.counts };
+const kitchen = tallyKitchen(gameBus); // pizzas rescued from the oven and fires put out, for the results
+function renderKudos() { // the extra lines of the results: empty (and hidden) when the round had no burn rules or nobody did any of it
+  const lines = kudosLines(kitchen, (id) => players.get(id)?.info.name ?? 'Un chef');
+  setHtml('kudos', lines.map((l) => `<div>${esc(l)}</div>`).join(''));
+  $('kudos').classList.toggle('off', !lines.length);
+}
 
 let resultsTimers: ReturnType<typeof setTimeout>[] = [];
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
@@ -1039,12 +1079,14 @@ function renderResults() {
   resultsTimers = [];
   cancelAnimationFrame(flagLoop);
   const campResults = activeGame === OBST_ID && camp.resultOn;
+  $('kudos').classList.add('off'); // the pizza results turn it on when there is something to say
   $('campres').classList.toggle('off', !campResults); $('resh').classList.toggle('off', campResults); $('again').classList.toggle('off', campResults);
   if (campResults) { $('resultsInner').classList.remove('vs'); $('pizzares').classList.add('off'); $('obstres').classList.add('off'); $('vsres').replaceChildren(); $('vsnote').textContent = ''; camp.renderResults(); return; }
   if (activeGame === OBST_ID) { $('resultsInner').classList.remove('vs'); renderObstResults(); return; }
   $('pizzares').classList.remove('off'); $('obstres').classList.add('off');
   $('resultsInner').classList.toggle('vs', game.versus);
   if (!game.versus) report = null;
+  renderKudos();
   $('resh').className = '';
   $('resultsInner').classList.remove('revealed');
   if (game.versus) { renderVersusResults(); return; }
@@ -1110,6 +1152,10 @@ $('diffs').addEventListener('click', (e) => {
   // the sabotage level follows the difficulty until the host picks one by hand
   if (isVersus() && !sabotageTouched) setConfig({ difficulty: diff, modeOptions: { ...config.modeOptions, [SABOTAGE_OPTION]: defaultSabotage(diff) } });
   else setConfig({ difficulty: diff });
+});
+$('evs').addEventListener('click', (e) => {
+  const v = (e.target as HTMLElement).closest<HTMLElement>('[data-ev]')?.dataset.ev;
+  if (v === 'true' || v === 'false') setEvents(v === 'true');
 });
 $('sabs').addEventListener('click', (e) => {
   const v = (e.target as HTMLElement).closest<HTMLElement>('[data-sab]')?.dataset.sab;
@@ -1191,6 +1237,7 @@ function onKey(key: string, repeat: boolean) {
   if (act === 'skip') { beginRound(); return; }
   if (howTo || starting) return; // the card swallows Enter and the iris swallows everything
   if (phase === 'menu') { menuAct(menuOnKey(menuCards(connectedCount()), menuSel, key)); return; }
+  if (phase === 'lobby' && config.game !== OBST_ID && (key === 'e' || key === 'E') && !repeat) { setEvents(!eventsOf(config.modeOptions, config.difficulty)); return; }
   if (phase === 'lobby' && isVersus() && (key === 'ArrowLeft' || key === 'ArrowRight')) { // the sabotage level: the keyboard arrows, and the Captain's D-pad sends the same keys
     const c = modeNow().choices?.find((x) => x.id === SABOTAGE_OPTION);
     const v = c ? stepChoice(c, config.modeOptions[SABOTAGE_OPTION], key) : null;

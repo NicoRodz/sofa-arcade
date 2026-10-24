@@ -4,7 +4,7 @@ import type { Item } from '@party/shared/game';
 import { C, TILE, U, chefOf, hexNum, SKINS } from './tokens';
 import { R, domCanvas, makeTex, rr, texSize, type Ctx } from './gfx';
 import {
-  HEAD_Y, MOUTH_DY, drawArm, drawBody, drawBodyBack, drawChefStatic, drawDrop, drawEye, drawFaceA, drawFaceB, drawHat,
+  HEAD_Y, MOUTH_DY, PROP_Y, drawAssistBadge, drawPropBlades, drawPropStem, hatTop, drawArm, drawBody, drawBodyBack, drawChefStatic, drawDrop, drawEye, drawFaceA, drawFaceB, drawHat,
   drawHead, drawHeadBack, drawMouth, drawShadow, drawShoe,
 } from './chefdraw';
 import { foodKey, ITEM_KIND } from './food';
@@ -30,13 +30,17 @@ export function buildChefTextures(scene: Phaser.Scene) {
     makeTex(scene, `chef_fa_${i}`, BOX, (c) => drawFaceA(c, i));
     makeTex(scene, `chef_fb_${i}`, BOX, (c) => drawFaceB(c, i));
     makeTex(scene, `chef_hat_${i}`, BOX, (c) => drawHat(c, i));
+    makeTex(scene, `chef_prop_${i}`, { w: 120, h: 250, ox: 60, oy: 230 }, (c) => drawPropStem(c, i)); // Ayudante (taller than the chef box: the beanie rides above the hat)
   }
+  makeTex(scene, 'chef_blades', { w: 84, h: 30 }, drawPropBlades);
   for (const k of ['open', 'happy', 'x'] as const) makeTex(scene, `chef_eye_${k}`, { w: 16, h: 16 }, (c) => drawEye(c, k));
   for (const k of ['smile', 'open', 'worry'] as const) makeTex(scene, `chef_mouth_${k}`, { w: 24, h: 20 }, (c) => drawMouth(c, k));
   makeTex(scene, 'chef_drop', { w: 16, h: 20 }, drawDrop);
 }
 
 // Portrait for DOM: chef from the waist up (or whole), as a canvas element.
+/** The Ayudante sticker for the lobby chips (a 44 px round badge with the propeller). */
+export const assistBadgeCanvas = (): HTMLCanvasElement => domCanvas(44, 44, 22, 22, drawAssistBadge, 2);
 export function chefCanvas(slot: number, mood: 'idle' | 'happy' = 'idle', whole = true): HTMLCanvasElement {
   return whole
     ? domCanvas(120, 170, 60, 150, (c) => drawChefStatic(c, slot, mood), 2)
@@ -79,6 +83,7 @@ export interface ChefState {
   slipT?: number; // sabotage: ms since the chef slipped (-1 / absent: it is not slipping)
   slideMs?: number; // ... and how long the slide lasts (the spin follows it)
   immune?: boolean; // sabotage: rubbish cannot make it slip now (it blinks)
+  assist?: boolean; // Ayudante: wears the propeller
 }
 
 type Face = 'down' | 'side' | 'up';
@@ -112,6 +117,8 @@ export class Chef {
   private face: Face = 'down';
   private tagKey: string;
   private spinStars: Phaser.GameObjects.Image[]; // sabotage: three stars circling the head while the chef slips
+  private prop: Phaser.GameObjects.Image; // Ayudante: the stalk on the hat
+  private blades: Phaser.GameObjects.Image; // ... and the blades that spin
   private clock = 0;
 
   constructor(private scene: Phaser.Scene, readonly slot: number, name: string) {
@@ -135,7 +142,9 @@ export class Chef {
     this.fb = at(`chef_fb_${slot % 8}`);
     this.drop = at('chef_drop', 17, HEAD_Y - 6).setVisible(false);
     const hat = at(`chef_hat_${slot % 8}`);
-    this.head = scene.add.container(0, 0, [this.headB, this.headF, this.fa, ...this.eyes, this.mouth, this.fb, this.drop, hat]);
+    this.prop = at(`chef_prop_${slot % 8}`).setVisible(false);
+    this.blades = at('chef_blades', 0, hatTop(slot) - PROP_Y).setVisible(false);
+    this.head = scene.add.container(0, 0, [this.headB, this.headF, this.fa, ...this.eyes, this.mouth, this.fb, this.drop, hat, this.prop, this.blades]);
     this.rig = scene.add.container(0, 0, [...this.feet, this.torsoB, this.torso, ...this.arms, this.itemImg, this.head]);
     this.tagKey = plateKey(scene, slot, name);
     this.tag = at(this.tagKey, 0, 20);
@@ -267,6 +276,10 @@ export class Chef {
       const side = this.face === 'side';
       this.itemImg.setPosition(side ? 21 : up ? 20 : 0, up ? -46 : -43);
     } else this.itemImg.setVisible(false);
+
+    // Ayudante: the propeller spins (the blades squash in x, as a disc seen from the front)
+    this.prop.setVisible(!!s.assist); this.blades.setVisible(!!s.assist);
+    if (s.assist) this.blades.setScale((0.3 + 0.7 * Math.abs(Math.cos(this.clock / 60))) / R, 1 / R);
 
     // head: bob and shake
     let headDx = 0;

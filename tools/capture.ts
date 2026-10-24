@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn|events|events-vs|assist> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -70,12 +70,13 @@ class Bot {
   ws: WebSocket;
   id = 0;
   seq = 0; a = 0; b = 0;
+  hints: any[] = []; // every `hint` message this phone heard (contextual buttons)
   vec = { x: 0, y: 0 }; btn = 0;
   private waitUntil = 0; private lastPress = 0; private stable = 0; private nextCrate = 0; private hadItem = false;
   constructor(private slot: number, name: string, room: string, private rows: readonly string[]) {
     this.ws = new WebSocket(`ws://127.0.0.1:${PORT}/ws?room=${room}`);
     this.ws.on('open', () => this.ws.send(JSON.stringify({ t: 'join', name, token: `bot-${room}-${slot}` })));
-    this.ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'joined') this.id = m.player.id; });
+    this.ws.on('message', (d) => { const m = JSON.parse(d.toString()); if (m.t === 'joined') this.id = m.player.id; else if (m.t === 'hint') this.hints.push(m); });
     this.nextCrate = slot % 2;
   }
   startSending() {
@@ -428,6 +429,41 @@ async function main() {
       console.log('teams after the drop:', JSON.stringify((await snap() as any).teams));
       bots.splice(0).forEach((b) => b.close());
     }
+    if (what === 'assist') {
+      // Ayudante on the REAL screen and relay: 4 bot phones, two of them switch it on from their lobby. The lobby lists them (badge + "Ayudante"), versus shows the k it
+      // costs, the round gives them the propeller, the sim flags exactly those chefs, and every phone hears its contextual buttons (labels + glyphs) through the relay.
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('6')!.rows;
+      await open('ASST'); await join('ASST', 4, rows);
+      for (const i of [0, 2]) bots[i]!.ws.send(JSON.stringify({ t: 'assist', on: true }));
+      await sleep(700);
+      await cdp.shot('assist-lobby');
+      bots[2]!.ws.send(JSON.stringify({ t: 'assist', on: false })); await sleep(400); // one Ayudante only: its team is the one that gets the k
+      await click('[data-mode="versus"]'); await sleep(900);
+      await cdp.shot('assist-lobby-versus');
+      console.log('versus team headers:', JSON.stringify(await cdp.eval(`[0, 1].map((i) => document.getElementById('th' + i).textContent)`)), '| hint:', JSON.stringify(await cdp.eval(`document.getElementById('teamhint').textContent`)));
+      bots[2]!.ws.send(JSON.stringify({ t: 'assist', on: true })); await sleep(400);
+      await click('[data-mode="coop"]'); await sleep(500);
+      await click('[data-map="6"]'); await click('[data-diff="easy"]'); await sleep(300);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1000, 20_000);
+      bots.forEach((b) => b.startSending());
+      timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+      await waitFor((s) => s.time > 12_000, 40_000);
+      const sn: any = await snap();
+      console.log('chefs on Ayudante in the sim:', JSON.stringify(sn.players.map((p: any) => [p.id, !!p.assist])), '| bot ids', JSON.stringify(bots.map((b) => b.id)));
+      await cdp.shot('assist-play');
+      for (const p of sn.players.filter((q: any) => q.assist).slice(0, 2)) {
+        const cx = 96 + p.x * 108, cy = 106 + p.y * 108;
+        await cdp.shot(`assist-chef-${p.id}`, { x: cx - 150, y: cy - 230, width: 300, height: 300, scale: 2 });
+      }
+      for (const b of bots) {
+        const labels = [...new Set(b.hints.map((h: any) => `${h.a ?? '-'}|${h.b ?? '-'}`))];
+        console.log(`phone ${b.id}: ${b.hints.length} hint messages, ${labels.length} different; icons seen: ${[...new Set(b.hints.flatMap((h: any) => [h.aIcon, h.bIcon]).filter(Boolean))].join(',')}; some greyed: ${b.hints.some((h: any) => h.aOff || h.bOff)}; sample: ${labels.slice(0, 6).join(' ; ')}`);
+      }
+      timers.splice(0).forEach(clearInterval);
+      bots.splice(0).forEach((b) => b.close());
+    }
     if (what === 'sabotage') {
       // Sabotage: a round on V1 (Suave, Normal) with 6 chefs; the sim is driven by hand (window.__pg.sab) to frame the throw: the loaded catapult with its reticle,
       // the bag in the air with its shadow, the impact, a rival chef slipping on the rubbish, and the cleaning. The chefs of team 1 are moved and pushed by their bots.
@@ -467,6 +503,112 @@ async function main() {
       if (dropped) { await pg(`place(${helper}, ${dropped.tx + 0.5 - dir * 0.9}, ${dropped.ty + 0.5}, ${dir}, 0)`); await sleep(150); bh.a++; await sleep(350); }
       await cdp.shot('sab-clean');
       console.log('final state:', JSON.stringify((await pg('state()')).floor));
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'burn') {
+      // The oven that burns: map 1 (open kitchen, ovens with counters beside them), Normal, 2 chefs. The sim is driven by hand (window.__pg.kit) to frame each stage:
+      // a ready pizza with its grace ring, the warning, the burnt pizza smoking, the fire, the fire jumping, a chef putting it out with the extinguisher, and the results.
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('1')!.rows;
+      await open('BURN'); await join('BURN', 2, rows);
+      await click('[data-diff="normal"]'); await click('[data-map="1"]'); await sleep(400);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      const kit = (expr: string) => cdp.eval<any>(`window.__pg.kit.${expr}`);
+      const cs = await kit('counters()');
+      const ovens = cs.filter((c: any) => c.kind === 'pot');
+      const [o1, o2] = [ovens[0].i, ovens[1].i];
+      const ids = (await snap()).players.map((p) => p.id);
+      await kit(`bake(${o1})`); await kit(`bake(${o2})`);
+      await sleep(900); await cdp.shot('burn-1-ready');
+      await kit(`age(${o1}, 5300)`); await kit(`age(${o2}, 3000)`);
+      await sleep(400); await cdp.shot('burn-2-warn');
+      await kit(`age(${o1}, 8200)`); await kit(`age(${o2}, 8200)`);
+      await sleep(900); await cdp.shot('burn-3-burnt');
+      await kit(`age(${o1}, 13100)`);
+      await sleep(700); await cdp.shot('burn-4-fire');
+      await sleep(3200); await cdp.shot('burn-5-spread');
+      // chef 1 puts the oven out: stands in front of it and holds B (the bot sends the button; the sim does the rest)
+      const b1 = bots.find((b) => b.id === ids[0])!;
+      b1.startSending();
+      await kit(`stand(${ids[0]}, ${o1})`);
+      const st = (await snap()).stations[o1]!;
+      const face = (await snap()).players.find((p) => p.id === ids[0])!;
+      b1.vec = { x: st.tx + 0.5 - face.x, y: st.ty + 0.5 - face.y }; b1.btn = 2;
+      await sleep(1500); await cdp.shot('burn-6-extinguish');
+      await sleep(1900); await cdp.shot('burn-7-out');
+      b1.btn = 0; b1.vec = { x: 0, y: 0 };
+      // results with the kudos line
+      await cdp.eval('window.__pg.fastForward(800)');
+      await waitFor((s) => (s as any).over === true, 8000);
+      await sleep(3500); await cdp.shot('burn-8-results');
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'events') {
+      // The mid-round events on map 13 (it has plates to wash, so the inspector can come), Normal, 6 chefs (the map asks for 5 or more): the lobby option, and for each event the banner (3 s before), the start and
+      // the event itself. The sim is driven by hand (window.__pg.kit.event forces the kind and the instant).
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('13')!.rows;
+      await open('EVTS'); await join('EVTS', 6, rows);
+      await click('[data-diff="normal"]'); await click('[data-map="13"]'); await sleep(500);
+      await cdp.shot('ev-0-lobby');
+      await click('[data-ev="false"]'); await sleep(300);
+      console.log('events option after clicking No: selected =', await cdp.eval(`document.querySelector('#evs .sel').textContent`));
+      await cdp.shot('ev-0-lobby-off');
+      await click('#evs [data-ev="true"]'); await sleep(200);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      const kit = (expr: string) => cdp.eval<any>(`window.__pg.kit.${expr}`);
+      const cs = await kit('counters()');
+      const counters = cs.filter((c: any) => c.kind === 'counter'), ovens = cs.filter((c: any) => c.kind === 'pot');
+      const stations = (await snap()).stations;
+      const sinkIdx = stations.findIndex((s) => s.kind === 'sink'), dirtyIdx = stations.findIndex((s) => s.kind === 'dirty');
+      const ids = (await snap()).players.map((p) => p.id);
+      const phaseOf = async () => ((await snap()) as any).mid?.phase as string;
+      const untilDone = async (ms: number) => { const end = Date.now() + ms; while (Date.now() < end && (await phaseOf()) !== 'done') await sleep(200); };
+      // Hora punta
+      await kit(`event('rush')`); await sleep(1300); await cdp.shot('ev-rush-1-announce');
+      await sleep(2000); await cdp.shot('ev-rush-2-start'); await sleep(700); await cdp.shot('ev-rush-3-tickets'); await untilDone(8000);
+      // Cumpleaños
+      await kit(`event('birthday')`); await sleep(1300); await cdp.shot('ev-birthday-1-announce');
+      await sleep(2000); await cdp.shot('ev-birthday-2-start'); await sleep(800); await cdp.shot('ev-birthday-3-balloons'); await untilDone(8000);
+      // Corte de luz: an oven cooking and a ready one
+      await kit(`bake(${ovens[0].i})`);
+      await kit(`event('blackout')`); await sleep(1300); await cdp.shot('ev-blackout-1-announce');
+      await sleep(2000); await cdp.shot('ev-blackout-2-start'); await sleep(2500); await cdp.shot('ev-blackout-3-dark'); await untilDone(14_000); await sleep(600); await cdp.shot('ev-blackout-4-back');
+      // Inspector: two dirty plates (one in the sink, one at the return), then clean
+      await kit(`setCount(${sinkIdx}, 1)`); await kit(`setCount(${dirtyIdx}, 1)`);
+      await kit(`event('inspector')`); await sleep(1300); await cdp.shot('ev-inspector-1-announce');
+      await sleep(2200); await cdp.shot('ev-inspector-2-dirty');
+      await kit(`setCount(${sinkIdx}, 0)`); await kit(`setCount(${dirtyIdx}, 0)`); await sleep(900); await cdp.shot('ev-inspector-3-clean');
+      await untilDone(30_000); await sleep(500); await cdp.shot('ev-inspector-4-verdict');
+      // Rata: something to steal on a counter; one chef runs at it
+      await sleep(4000);
+      await kit(`setItem(${counters[3].i}, 'raw1')`); await kit(`setItem(${counters[9].i}, 'cut0')`);
+      await kit(`event('rat')`); await sleep(1300); await cdp.shot('ev-rat-1-announce');
+      await sleep(2300); await cdp.shot('ev-rat-2-appears');
+      for (let i = 0; i < 12 && !((await snap()) as any).mid?.rat; i++) await sleep(200);
+      await sleep(1500); await cdp.shot('ev-rat-3-running');
+      await untilDone(12_000); await cdp.shot('ev-rat-4-gone');
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'events-vs') {
+      // Versus on V3 (rotation, ovens with counters beside them): the burning oven and a blackout reach both kitchens. Hard + Caos (the sabotage level that allows fire).
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      await open('EVVS'); await join('EVVS', 4, versusMap('V3')!.rows);
+      await click('[data-mode="versus"]'); await click('[data-map="V3"]'); await click('[data-diff="hard"]'); await sleep(500);
+      await cdp.shot('evvs-0-lobby');
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      const kit = (expr: string) => cdp.eval<any>(`window.__pg.kit.${expr}`);
+      const ovens = (await kit('counters()')).filter((c: any) => c.kind === 'pot');
+      for (const o of ovens) await kit(`bake(${o.i})`);
+      for (const o of ovens) await kit(`age(${o.i}, 5500)`);
+      await sleep(500); await cdp.shot('evvs-1-warn');
+      for (const o of ovens) await kit(`age(${o.i}, 13100)`);
+      await kit(`event('blackout')`);
+      await sleep(1500); await cdp.shot('evvs-2-fire-banner');
+      await sleep(3500); await cdp.shot('evvs-3-dark');
       bots.splice(0).forEach((b) => b.close());
     }
     if (what === 'vs-pantry') {

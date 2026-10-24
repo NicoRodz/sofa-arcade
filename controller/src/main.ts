@@ -11,8 +11,9 @@ import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
   BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
-  type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg, type SignalKind, type TeamInfo,
+  type BuzzKind, type ClientMsg, type HintLabels, type Phase, type PuestoMsg, type ServerMsg, type SignalKind, type TeamInfo,
 } from '@party/shared';
+import type { IconId } from '@party/shared/icons';
 import { outcomeFor, type Outcome, type PhoneResult } from '@party/shared/versusReport';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -101,16 +102,21 @@ function fitLabels() {
 }
 window.addEventListener('resize', fitLabels);
 let controls: GameControls | null = null;
-let hint: { a: string | null; b: string | null } = { a: null, b: null };
+const NO_HINT: HintLabels = { a: null, b: null };
+let hint: HintLabels = NO_HINT;
+// A hint with a label also brings its icon and whether there is anything to do; the "mantén apretado" line only belongs to the game's own B.
+const hinted = (base: GameControls['btn1'], label: string | null, icon: IconId | undefined, hold: boolean): GameControls['btn1'] => (label ? { ...base, label, ...(icon ? { icon } : {}), hold } : base);
 function applyControls(c: GameControls | null = controls) {
   if (!c) return;
   controls = c;
   setControl($('stickhint'), $('stickLbl'), c.stick);
-  setControl($('btnA'), $('lblA'), hint.a ? { ...c.btn1, label: hint.a } : c.btn1);
-  setControl($('btnB'), $('lblB'), hint.b ? { ...c.btn2, label: hint.b, hold: false } : c.btn2);
+  setControl($('btnA'), $('lblA'), hinted(c.btn1, hint.a, hint.aIcon, !!c.btn1.hold));
+  setControl($('btnB'), $('lblB'), hinted(c.btn2, hint.b, hint.bIcon, false));
+  for (const [id, lbl, isOff] of [['btnA', 'lblA', hint.aOff], ['btnB', 'lblB', hint.bOff]] as const) { $(id).classList.toggle('off', !!isOff); $(lbl).classList.toggle('off', !!isOff); }
   fitLabels();
 }
-const setHint = (a: string | null, b: string | null) => { if (hint.a === a && hint.b === b) return; hint = { a, b }; applyControls(); };
+const sameHint = (x: HintLabels, y: HintLabels) => x.a === y.a && x.b === y.b && x.aIcon === y.aIcon && x.bIcon === y.bIcon && !!x.aOff === !!y.aOff && !!x.bOff === !!y.bOff;
+const setHint = (h: HintLabels) => { if (sameHint(hint, h)) return; hint = h; applyControls(); }; // every hint is a whole state, so the latest one is the truth
 
 // "Cómo se juega": one-view summary, closed with a tap. Opens on join and when the lobby picks a game not shown yet.
 let seenGame: string | null = null;
@@ -177,6 +183,22 @@ $('teamswap').addEventListener('pointerup', (e) => {
   tx({ t: 'setTeam', teamId: next.id });
 });
 
+// Ayudante (assist.ts): one switch for this player, in the lobby. The phone shows what it asked for at once and the relay's echo ('assist' with this id) confirms it,
+// also after a reconnect (the relay keeps the choice with the slot).
+let assist = false;
+function showAssist(on: boolean) {
+  assist = on;
+  $('assist').classList.toggle('on', on);
+  $('assist').setAttribute('aria-pressed', String(on));
+  $('assistlbl').textContent = on ? 'Ayudante: sí' : 'Ayudante: no';
+}
+$('assist').addEventListener('pointerup', (e) => {
+  e.preventDefault();
+  if (phase !== 'lobby') return;
+  showAssist(!assist);
+  tx({ t: 'assist', on: assist });
+});
+
 const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
@@ -234,7 +256,7 @@ const VERDICT_TEXT: Record<Outcome, string> = { won: '¡Ganaron!', lost: 'Perdie
 function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg, result?: PhoneResult, campaign = false) {
   phase = p;
   setSignals(p === 'playing' && campaign);
-  if (p !== 'playing') setHint(null, null); // the labels the round gave go with it
+  if (p !== 'playing') setHint(NO_HINT); // the labels the round gave go with it
   seenGame = seenAfterPhase(seenGame, p);
   if (p === 'menu') setHowTo(false);
   else maybeShowHowTo(); // the screen just entered a game: show its summary
@@ -267,9 +289,11 @@ function connect() {
       myId = m.player.id;
       document.documentElement.style.setProperty('--c', m.player.color);
       myName = m.player.name;
+      showAssist(false); // the relay tells a phone that comes back what it had chosen (after this message)
       hud(`${m.player.name} #${m.player.slot + 1}`);
       renderCaptain();
     } else if (m.t === 'config') {
+      document.body.dataset.game = m.game; // CSS: the Ayudante switch is a pizzas thing
       $('game').textContent = gameName(m.game);
       applyControls(m.controls);
       renderHowTo(m.game, gameName(m.game), m.howTo);
@@ -278,6 +302,8 @@ function connect() {
       $('setup').textContent = m.game === 'obstaculos'
         ? setupLabel(parseObstOptions(m.modeOptions), m.difficulty, m.seed, DIFFICULTY_LABEL)
         : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}${m.modeId === 'versus' ? ` · Sabotaje ${SABOTAGE_LABEL[sabotageOf(m.modeOptions)]}` : ''}`;
+    } else if (m.t === 'assist') {
+      if (m.playerId === myId) showAssist(m.on);
     } else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {
@@ -288,7 +314,8 @@ function connect() {
     } else if (m.t === 'buzz') {
       buzz(m.kind);
     } else if (m.t === 'hint') {
-      setHint(m.a, m.b);
+      const { t: _t, ...h } = m;
+      setHint(h);
     } else if (m.t === 'pong') {
       lastPong = Date.now();
       const s = sent.get(m.id);

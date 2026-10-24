@@ -13,6 +13,8 @@ import { foodKey } from './food';
 import { PuestoMarks, type PuestoView } from './puestos';
 import { FlagView } from './flagView';
 import { SabotageView } from './sabotage';
+import { BurnView } from './burn';
+import { EventsView } from './events';
 import { kText } from '@party/shared/versusReport';
 
 export class World {
@@ -28,6 +30,8 @@ export class World {
   private dims: Phaser.GameObjects.Graphics[] = [];
   private finale: { winner: number | null; ms: number; next: number } | null = null; // versus: the end-of-round celebration
   private sabotage: SabotageView | null = null; // versus with sabotage: reticle, bags in the air, rubbish on the floor, catapult rings
+  private events: EventsView | null = null; // the mid-round event: banner, pill, blackout, balloons, the rat (only when the round has one)
+  private burn: BurnView | null = null; // the oven that burns: warning bubble, flames, extinguisher (only when the round has it)
 
   constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, private puestos: () => Map<number, PuestoView>, bus: Emitter<GameEvents>, mapId: string, seed: number, private view?: RoundView) {
     this.bg = buildBackground(scene, game.grid, mapId, seed);
@@ -36,6 +40,8 @@ export class World {
     this.stations = new StationViews(scene, game, this.fx);
     this.hud = new Hud(scene, game, view);
     if (game.sab) this.sabotage = new SabotageView(scene, game, view, this.fx, bus);
+    if (game.burn) this.burn = new BurnView(scene, game, this.fx, bus);
+    if (game.mid) this.events = new EventsView(scene, game, view, this.fx, bus);
     this.marks = new PuestoMarks(scene, game, puestos);
     this.wire(bus);
   }
@@ -234,14 +240,14 @@ export class World {
       }
       chef.setName(info.name);
       let action: 'none' | 'chop' | 'stretch' = 'none';
-      if (gp.cutting && gp.chopAt >= 0) {
+      if (gp.cutting && gp.chopAt >= 0 && !gp.dousing) { // (a chef putting a fire out holds the extinguisher: BurnView draws it, the knife stays put)
         const at = g.stations[gp.chopAt];
         action = at?.kind === 'sink' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough
         chop.set(gp.chopAt, action);
       }
       const f = this.feet(gp);
       chef.update(dtMs, {
-        x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected && !gp.ghost, ghost: gp.crossing,
+        x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected && !gp.ghost, ghost: gp.crossing, ...(gp.assist ? { assist: true } : {}),
         ...(gp.slip ? { slipT: g.time - gp.slip.t0, slideMs: gp.slip.slideMs } : {}), ...(g.hazards && !gp.slip && (gp.immuneUntil ?? 0) > g.time ? { immune: true } : {}),
       });
     }
@@ -249,6 +255,8 @@ export class World {
     this.stations.update(dtMs, chop);
     this.marks.update(dtMs, this.chefs);
     this.sabotage?.update(dtMs);
+    this.burn?.update(dtMs);
+    this.events?.update(dtMs);
     this.hud.update(dtMs);
   }
 
@@ -261,6 +269,8 @@ export class World {
     this.marks.destroy();
     this.hud.destroy();
     this.sabotage?.destroy();
+    this.burn?.destroy();
+    this.events?.destroy();
     for (const f of this.flags) f.destroy();
     this.flags = [];
     this.dims = [];

@@ -62,7 +62,7 @@ export const GAMES = [
       steps: [
         { icon: 'crate', text: 'Toma masa y tomate de las cajas' },
         { icon: 'chop', text: 'Pícalos en la tabla manteniendo el botón' },
-        { icon: 'oven', text: 'Llévalos al horno y espera' },
+        { icon: 'oven', text: 'Llévalos al horno y sácala a tiempo: si se pasa, se quema' },
         { icon: 'bell', text: 'Entrega la pizza en el mostrador antes de que venza el pedido' },
       ],
       note: 'Todos cooperan por el puntaje de equipo',

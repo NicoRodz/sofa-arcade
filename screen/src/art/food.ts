@@ -6,10 +6,10 @@ import { blob, circle, contactShadow, drawOutlined, ellipse, makeTex, mix, rng, 
 
 export type FoodKind =
   | 'dough_raw' | 'dough_str' | 'tomato' | 'tomato_cut' | 'cheese_raw' | 'cheese_cut' | 'pizza_raw' | 'pizza_raw_q' | 'pizza_done' | 'pizza_done_q'
-  | 'pizza_burnt' | 'tray' | 'tray_dirty' | 'dish' | 'dish_q' | 'box' | 'peel' | 'bag';
+  | 'pizza_burnt' | 'tray' | 'tray_dirty' | 'dish' | 'dish_q' | 'dish_burnt' | 'box' | 'peel' | 'bag';
 
 export const ITEM_KIND: Record<Item, FoodKind> = {
-  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dirty: 'tray_dirty', dish: 'dish', dishQ: 'dish_q', trash: 'peel', trashBag: 'bag',
+  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dirty: 'tray_dirty', dish: 'dish', dishQ: 'dish_q', burnt: 'dish_burnt', trash: 'peel', trashBag: 'bag',
 };
 export const RAW_KIND: readonly FoodKind[] = ['dough_raw', 'tomato', 'cheese_raw'];
 export const CUT_KIND: readonly FoodKind[] = ['dough_str', 'tomato_cut', 'cheese_cut'];
@@ -115,10 +115,16 @@ function pizzaDone(c: Ctx, shadow = true, cheese = false) {
 function pizzaBurnt(c: Ctx, shadow = true) {
   drawOutlined(c, () => blob(c, 0, 0, 28, 14, 1, 3), C.burnt, { lw: 2.5, shadow: shadow ? [2, 26, 26, 6] : undefined });
   c.fillStyle = C.burnt2; blob(c, 0, 0, 22, 12, 1.5, 8); c.fill();
+  // charred patches, a few embers still glowing in the cracks, and the cracks themselves
+  c.fillStyle = '#1B1210';
+  for (const [x, y, rx, ry] of [[-9, -5, 7, 4.5], [8, 6, 8, 5], [3, -11, 5, 3.4], [-6, 10, 5.5, 3.4]] as const) { c.beginPath(); c.ellipse(x, y, rx, ry, 0.4, 0, Math.PI * 2); c.fill(); }
   c.strokeStyle = C.ink; c.lineWidth = 2;
   for (const [a, b, d, e] of [[-14, -6, -2, 2], [-4, 10, 8, 2], [4, -12, 12, -2]] as const) {
     c.beginPath(); c.moveTo(a, b); c.lineTo(d, e); c.lineTo(d + 4, e + 8); c.stroke();
   }
+  c.strokeStyle = 'rgba(255,120,40,0.85)'; c.lineWidth = 1.2;
+  for (const [a, b, d, e] of [[-2, 2, 8, 2], [8, 2, 12, 10]] as const) { c.beginPath(); c.moveTo(a, b); c.lineTo(d, e); c.stroke(); }
+  c.fillStyle = 'rgba(255,255,255,0.12)'; c.beginPath(); c.ellipse(-6, -8, 8, 3, -0.5, 0, Math.PI * 2); c.fill();
 }
 
 function tray(c: Ctx) {
@@ -147,6 +153,12 @@ function trayDirty(c: Ctx) {
 function dish(c: Ctx, cheese = false) {
   tray(c);
   c.save(); c.scale(0.82, 0.82); pizzaDone(c, false, cheese); c.restore();
+}
+
+// A burnt pizza on its tray (what a chef carries to the bin).
+function dishBurnt(c: Ctx) {
+  tray(c);
+  c.save(); c.scale(0.82, 0.82); pizzaBurnt(c, false); c.restore();
 }
 
 // Cheese: a yellow wedge with holes (raw) and a mound of shreds (grated on the board).
@@ -223,7 +235,7 @@ const DRAW: Record<FoodKind, (c: Ctx) => void> = {
   dough_raw: doughRaw, dough_str: (c) => doughStr(c), tomato, tomato_cut: tomatoCut, cheese_raw: cheeseRaw, cheese_cut: cheeseCut,
   pizza_raw: (c) => pizzaRaw(c), pizza_raw_q: (c) => pizzaRaw(c, true, true),
   pizza_done: (c) => pizzaDone(c), pizza_done_q: (c) => pizzaDone(c, true, true), pizza_burnt: (c) => pizzaBurnt(c),
-  tray, tray_dirty: trayDirty, dish: (c) => dish(c), dish_q: (c) => dish(c, true), box, peel, bag,
+  tray, tray_dirty: trayDirty, dish: (c) => dish(c), dish_q: (c) => dish(c, true), dish_burnt: dishBurnt, box, peel, bag,
 };
 export const drawFood = (c: Ctx, k: FoodKind) => DRAW[k](c);
 

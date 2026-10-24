@@ -3,6 +3,7 @@
 import type { Item, Recipe, StationKind } from './overcooked';
 import type { TeamResult } from './teams';
 import type { SabotageEvents } from './sabotage-config';
+import type { EventKind } from './midround';
 
 // `team` (optional, on the team-level events): the id of the team the event belongs to, for the HUD and the sounds. It is present
 // only in versus (two or more teams); a cooperative round is one team and its events carry no team, exactly as before the teams refactor.
@@ -22,7 +23,7 @@ export interface GameEvents extends SabotageEvents {
   dirtyNew: { station: number; team?: number }; // a dirty plate showed up at the return
   potStart: { station: number; team?: number };
   potReady: { station: number; team?: number };
-  orderNew: { order: number; recipe: Recipe; team?: number; vip?: true };
+  orderNew: { order: number; recipe: Recipe; team?: number; vip?: true; birthday?: true }; // birthday: the "Pedido de cumpleaños" event (worth 150 flat)
   orderWarning: { order: number; team?: number };
   orderExpired: { order: number; team?: number };
   delivered: { player: number; points: number; tip: number; base: number; mult: number; team?: number; k?: number; vip?: true }; // coop: points = base + tip (the tip already times the streak multiplier). Versus: points = what the team scored, (base + tip) x2 if it won the VIP, times k
@@ -43,6 +44,25 @@ export interface GameEvents extends SabotageEvents {
   playerGone: { player: number; team: number }; // the grace time ran out: the chef left the kitchen
   matchPaused: { teams: number[] }; // these teams are empty: the host picks 'continue' or 'end' (resolvePause)
   matchResumed: Record<string, never>;
+  // the oven that burns and the fire (burn.ts; only in a round whose config switched it on). `team` only in versus, as everywhere; `station` is an index in game.stations
+  'oven:warn': { station: number; msLeft: number; team?: number }; // a ready pizza is about to burn: the warning beep
+  'oven:burnt': { station: number; team?: number }; // it burnt: smoke, it cannot be delivered, it goes to the bin
+  'oven:rescued': { player: number; station: number; team?: number }; // a chef took the pizza out after the warning, in time
+  'fire:start': { station: number; team?: number }; // the oven caught fire
+  'fire:spread': { station: number; team?: number }; // the fire jumped to this counter
+  'fire:out': { player: number; station: number; team?: number }; // a chef put this station out
+  'fire:end': { team?: number }; // the last flame of the kitchen is out
+  douseStart: { player: number; station: number }; // a chef holds Picar in front of a station on fire (the extinguisher)
+  douseStop: { player: number; station: number };
+  // events in the middle of the round (midround.ts). The global ones carry no team.
+  'event:announce': { kind: EventKind; inMs: number }; // the banner: it starts in `inMs`
+  'event:start': { kind: EventKind; durationMs: number };
+  'event:end': { kind: EventKind };
+  'event:inspector': { passed: boolean; points: number; team?: number }; // the verdict for a team when the inspector leaves
+  'rat:appear': { at: [number, number] }; // coop only
+  'rat:steal': { station: number; item: Item };
+  'rat:scared': { player: number; returned: boolean }; // a dash scared it; returned: it dropped the item back on its counter
+  'rat:gone': { stolen: boolean }; // it left (stolen: with an item)
 }
 
 export class Emitter<M extends object> {

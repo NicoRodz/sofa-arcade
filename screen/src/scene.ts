@@ -9,6 +9,7 @@ import { buildFxTextures } from './art/fx';
 import { World } from './art/world';
 import type { RoundView } from './art/hud';
 import { buildPuestoIcons, type PuestoView } from './art/puestos';
+import { buildEventTextures } from './art/events';
 
 export interface Host {
   step(deltaMs: number): void; // advances the game logic
@@ -26,6 +27,7 @@ export class MainScene extends Phaser.Scene {
     buildChefTextures(this);
     buildFxTextures(this);
     buildPuestoIcons(this);
+    buildEventTextures(this);
     this.cameras.main.setBackgroundColor(C.cocoa);
     if (this.pending) { const p = this.pending; this.pending = null; this.startRound(p.game, p.mapId, p.seed, p.view); }
   }
