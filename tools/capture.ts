@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <lobby|game|results|all|phone> [outDir]
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone> [outDir]
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -207,10 +207,12 @@ async function main() {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
 
     const open = async (room: string) => { await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${room}` }); await sleep(2500); };
-    const join = async (room: string, n: number, rows: readonly string[]) => {
+    // bots i..n-1 join; by default the screen then skips the start menu (its player range included) so the older modes keep working
+    const join = async (room: string, n: number, rows: readonly string[], opts: { from?: number; menu?: boolean } = {}) => {
       const names = ['Nico', 'Angi', 'Pablo', 'Mati', 'Coni', 'Rafa', 'Vale', 'Tomás'];
-      for (let i = 0; i < n; i++) { const b = new Bot(i, names[i]!, room, rows); bots.push(b); await sleep(150); }
+      for (let i = opts.from ?? 0; i < n; i++) { const b = new Bot(i, names[i]!, room, rows); bots.push(b); await sleep(150); }
       await sleep(600);
+      if (!opts.menu) await cdp.eval('window.__pg.forceLobby()');
     };
     const click = (sel: string) => cdp.eval(`document.querySelector(${JSON.stringify(sel)}).click()`);
     const snap = () => cdp.eval<Snap>('JSON.parse(JSON.stringify(window.__pg.snapshot()))');
@@ -231,7 +233,7 @@ async function main() {
       const fake = new WebSocket(`ws://127.0.0.1:${PORT}/ws?role=screen&room=${room}`);
       await new Promise((r) => fake.once('open', r));
       const cfg = { t: 'config', game: 'pizzas', difficulty: 'normal', map: '1', seed: 1 };
-      fake.send(JSON.stringify(cfg)); fake.send(JSON.stringify({ t: 'phase', phase: 'lobby' }));
+      fake.send(JSON.stringify(cfg)); fake.send(JSON.stringify({ t: 'phase', phase: 'menu' })); // the screen is still on the Pichiclub start
       await cdp.send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
       await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
       await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=${room}` });
@@ -239,6 +241,9 @@ async function main() {
       await cdp.shot('phone-join');
       await cdp.eval(`document.getElementById('name').value = 'Nico'; document.getElementById('join').requestSubmit()`);
       await sleep(1200);
+      await cdp.shot('phone-menu');
+      console.log('in the menu: view =', await cdp.eval(`document.body.dataset.view`), ', how-to card =', await cdp.eval(`document.body.dataset.howto`), ', text =', JSON.stringify(await cdp.eval(`document.querySelector('#choosing .big').textContent`)));
+      fake.send(JSON.stringify({ t: 'phase', phase: 'lobby' })); await sleep(600); // the screen picked the game
       await cdp.shot('phone-lobby');
       console.log('how-to card open after joining:', await cdp.eval(`document.body.dataset.howto`));
       const tap = async (x: number, y: number) => {
@@ -324,6 +329,33 @@ async function main() {
       let ph = 'lobby';
       while (Date.now() - t0 < 20_000 && ph !== 'playing') { await sleep(100); ph = await cdp.eval<string>('window.__pg.snapshot().phase'); }
       console.log('howto-timeout: reached playing after', Date.now() - t0, 'ms (expect ~11 s: iris half + card 10 s + iris half)');
+    }
+    if (what === 'menu') {
+      // Pichiclub start: 0, 2 and 8 players, keyboard selection, then the step into the game's lobby (and back with Esc)
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('1')!.rows;
+      await open('MENU'); await sleep(500);
+      await cdp.shot('menu-0');
+      await join('MENU', 1, rows, { menu: true }); await sleep(500);
+      await cdp.shot('menu-1');
+      console.log('menu with 1 player:', JSON.stringify(await cdp.eval('window.__pg.menu()')));
+      await key('Enter'); await sleep(300);
+      console.log('Enter on a disabled card -> phase', await cdp.eval('window.__pg.snapshot().phase'));
+      await join('MENU', 2, rows, { from: 1, menu: true }); await sleep(500);
+      await cdp.shot('menu-2');
+      console.log('menu with 2 players:', JSON.stringify(await cdp.eval('window.__pg.menu()')));
+      await join('MENU', 8, rows, { from: 2, menu: true }); await sleep(600);
+      await cdp.shot('menu-8');
+      await key('ArrowRight'); await key('ArrowDown'); await sleep(200);
+      console.log('after arrows (nothing to move to):', JSON.stringify(await cdp.eval('window.__pg.menu()')));
+      await key('Enter'); await sleep(550); await cdp.shot('menu-to-lobby-iris');
+      await sleep(1000);
+      console.log('after Enter -> phase', await cdp.eval('window.__pg.snapshot().phase'));
+      await cdp.shot('menu-lobby');
+      await key('Escape'); await sleep(1700);
+      console.log('after Esc -> phase', await cdp.eval('window.__pg.snapshot().phase'));
+      await cdp.shot('menu-back');
+      bots.splice(0).forEach((b) => b.close());
     }
     if (what === 'lobby' || what === 'all') {
       await open('LOBY');
