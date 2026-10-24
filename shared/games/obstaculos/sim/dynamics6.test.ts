@@ -149,7 +149,7 @@ describe('dynamic 11: elastic ring (the rope that hangs from a "u" ring stretche
     expect(b[0]!.stretch).toBeGreaterThanOrEqual(1.25);
     expect(names(f.ev)).not.toContain('obst.ropeStrain'); // a spring does not complain like a rope
   });
-  it('the bounce dies out: after a few seconds it hangs steady under the ring, stretched about 0.2 of the rope, and the valve never sends it to a bubble', () => {
+  it('the bounce dies out: after a few seconds it hangs steady under the ring, stretched about 0.2 of the rope, and it is never sent to a bubble', () => {
     const w = mk();
     run(w, 600);
     const d = dist(w);
@@ -272,14 +272,13 @@ describe('dynamic 12b: geyser (a timed spring: 1 s of bubbling, then 0.5 s of er
     run(w, 205, undefined, () => { top = Math.min(top, pl(w, 0).body.y); });
     expect(f0 - top).toBeLessThan(1);
   });
-  it('one launch per eruption (it does not keep hurling the one that lands back in the vent within the same 0.5 s)', () => {
+  it('one launch per eruption: the body is still inside the vent for the first steps of the climb and must not be hurled again (the apex stays at ~9.8 tiles: 1.65 x v0, not a held jet)', () => {
     const w = mk();
     teleport(w, 0, 20, FLOOR);
     run(w, 209);
-    run(w, 1);
-    let launches = 0, prevVy = 0;
-    run(w, 60, undefined, () => { const v = pl(w, 0).body.vy; if (v < -JUMP_V0 * 1.5 && prevVy >= -JUMP_V0 * 1.5) launches++; prevVy = v; });
-    expect(launches).toBeLessThanOrEqual(1);
+    const f0 = pl(w, 0).body.y + PLAYER_H; let top = f0;
+    run(w, 120, undefined, () => { top = Math.min(top, pl(w, 0).body.y + PLAYER_H); });
+    expect(f0 - top).toBeGreaterThan(9.5 * TILE); expect(f0 - top).toBeLessThan(10.1 * TILE);
   });
   it('quick match: the vent is air, nobody is launched, no event', () => {
     const w = mk({ campaign: false });

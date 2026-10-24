@@ -61,7 +61,8 @@ export type RopeEvent =
   | { kind: 'valve'; rope: number; link: number; behind: number } // slot that must go to a bubble
   | { kind: 'bounce'; rope: number; link: number; stretch: number }; // an elastic link stretched past BOUNCE_AT x its length (campaign dynamic 11)
 
-// Campaign dynamic 11 (sim/bungee.ts): a link with `elastic` set is a spring between its rest length and `max` x it (a hard stop beyond), and it does not feed the valve.
+// Campaign dynamic 11 (sim/bungee.ts): a link with `elastic` set is a spring between its rest length and `max` x it (a hard stop beyond). The valve (1.6 x for 1 s) still applies:
+// with max = 1.6 the spring's own speed keeps a body short of it (a 4-tile fall peaks at ~1.47 x); a designer who raises max above 1.6 must raise the valve too.
 export interface ElasticParams { max: number; stiffness: number; damping: number }
 export const BOUNCE_AT = 1.25; // stretch (d / len) that rings the bounce
 const BOUNCE_COOLDOWN = 40; // steps
@@ -138,7 +139,7 @@ export function solveRopes(ropes: readonly Rope[], nodes: readonly (RopeNode | u
       const A = nodes[l.a]!, B = nodes[l.b]!;
       const dx = cx(B.body) - cx(A.body), dy = cy(B.body) - cy(A.body);
       const d = Math.hypot(dx, dy);
-      if (d >= ROPE_VALVE_RATIO * l.base && !(el && l.elastic)) { if (++l.valve >= ROPE_VALVE_SEC / DT) { l.valve = 0; events.push({ kind: 'valve', rope: rope.id, link: li, behind: behind(l.a, l.b) }); } }
+      if (d >= ROPE_VALVE_RATIO * l.base) { if (++l.valve >= ROPE_VALVE_SEC / DT) { l.valve = 0; events.push({ kind: 'valve', rope: rope.id, link: li, behind: behind(l.a, l.b) }); } }
       else l.valve = 0;
       const ws = A.w + B.w;
       if (ws === 0 || d < hardOf(l) - 0.5 || d === 0) return; // slack link (an elastic one: short of its hard stop): nothing to remove
