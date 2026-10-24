@@ -3,7 +3,7 @@ import type { Difficulty } from '../../../difficulty';
 import type { EntityParam, GameMode, LevelDef } from '../types';
 import { TILE } from '../constants';
 import type { PlayerStep } from './input';
-import { createWorld, step, type World } from './world';
+import { createWorld, step, type World, type WorldOptions } from './world';
 import type { ObstEventName, ObstEvents } from '../events';
 import type { ObstEvent } from './state';
 
@@ -28,9 +28,9 @@ export function hall(w = 60, h = 14, extra: Record<number, string> = {}): string
 }
 export const put = (row: string, col: number, s: string): string => row.slice(0, col) + s + row.slice(col + s.length);
 
-export interface Opts { mode?: GameMode; difficulty?: Difficulty; slots?: number[] }
+export interface Opts { mode?: GameMode; difficulty?: Difficulty; slots?: number[]; campaign?: WorldOptions['campaign'] }
 export function world(def: LevelDef, o: Opts = {}): World {
-  return createWorld({ level: def, mode: o.mode ?? 'chain', difficulty: o.difficulty ?? 'normal', slots: o.slots ?? [0, 1] });
+  return createWorld({ level: def, mode: o.mode ?? 'chain', difficulty: o.difficulty ?? 'normal', slots: o.slots ?? [0, 1], campaign: o.campaign });
 }
 
 export type InputFn = (slot: number, tick: number) => PlayerStep | undefined;

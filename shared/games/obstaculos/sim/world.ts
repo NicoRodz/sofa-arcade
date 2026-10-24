@@ -8,7 +8,7 @@
 //   hashState(world)             -> number
 //   setConnected(world, slot, connected)          join / leave in the middle of a level
 //   previewB(world, player)      -> BPreview      what B would do now (icon above the head)
-import { DIFFICULTY_PARAMS, DT, JUMP_V0, PLAYER_H, PLAYER_W, ROPE_JUMP_MULT, RUN_SPEED, TILE } from '../constants';
+import { DIFFICULTY_PARAMS, DT, JUMP_V0, PLAYER_H, PLAYER_W, ROPE_JUMP_MULT, ROPE_LEN, RUN_SPEED, TILE } from '../constants';
 import type { Difficulty } from '../../../difficulty';
 import { T } from '../legend';
 import { parseLevel } from '../parse';
@@ -18,6 +18,9 @@ import { moveXLedge, pushBody, supportBelow, type PxRect } from './collide';
 import { beltDx, computeLoads, createEntities, extraPlatforms, objRect, stepActivation, stepBoxes, stepCrumbles, stepHazard, stepKeys, stepMovers } from './entities';
 import type { PlayerStep } from './input';
 import { hangingOnRope, hashRopes, buildRopes, invMassOf, solveRopes, type RopeNode } from './rope';
+import type { CampaignParams, SignalKind } from './campaign';
+import { campaignParams, dparamsForCampaign, physicsForCampaign, type WorldId } from './campaign';
+import { applySlides, edgeAssist, prepareAnchors, registerGroundJump, stepCampaignInputs, throwArc } from './campaignrules';
 import { dropCrumbs, goalZone, placeAtCell, progressField, progressOf, revive, sendToBubble, stepBubbles, stepCheckpoints, stepDeaths, stepGoal, stepStars, stepStragglers } from './rules';
 import { emit, isActive, playerOf, type LevelResult, type ObstEvent, type PlayerState, type World, type WorldStatus } from './state';
 import { hashBodies, headPlatform, newBody, physicsFor, stepPlayer, type Body, type Platform } from './player';
@@ -33,6 +36,7 @@ export interface WorldOptions {
   difficulty?: Difficulty; // default 'normal'
   slots: readonly number[]; // connected player slots (0..7)
   p90LatencyMs?: number; // adaptive coyote (plan §2)
+  campaign?: { world: WorldId; n?: number }; // campaign layer for 2 (sim/campaign.ts): lives, forgiveness, hazards and rope come from the world; `difficulty` is ignored
 }
 export interface StepOptions { offCamera?: readonly boolean[] } // slot -> out of the camera frame (from computeCamera), drives the bubble
 
@@ -44,6 +48,7 @@ function newPlayer(slot: number, connected = true): PlayerState {
     slot, connected, mode: 'active', body: newBody(slot, 0, 0), planted: false, plantAir: 0, holding: null, carriedBy: -1, thrown: 0, lift: null, climbing: false, ropeJump: true,
     invuln: 0, timer: 0, bubble: null, inGoal: false, offCamera: 0, crumbs: [], crumbCool: 0, crushed: 0, deathGroup: -1,
     stats: { deaths: 0, stars: 0, anchoredSteps: 0, throws: 0, catches: 0, offCameraSteps: 0 },
+    camp: { assist: 0, assistDir: 0, jumpTick: -1000, mash: 0, mashCool: 0, signal: null, goHold: 0 },
   };
 }
 
@@ -51,19 +56,21 @@ export function createWorld(o: WorldOptions): World {
   const level = parseLevel(o.level);
   if (level.errors.length) throw new Error(`level ${o.level.id}: ${level.errors.join('; ')}`);
   const difficulty = o.difficulty ?? 'normal';
-  const dparams = DIFFICULTY_PARAMS[difficulty];
+  const slots = [...new Set(o.slots)].filter((s) => s >= 0 && s < SLOT_COUNT).sort((a, b) => a - b);
+  const camp = o.campaign ? campaignParams(o.campaign.n ?? slots.length, o.campaign.world) : null;
+  const dparams = camp ? dparamsForCampaign(camp) : DIFFICULTY_PARAMS[difficulty];
   const tether = o.level.tether;
   const mode: GameMode = tether === 'freeOnly' ? 'free' : tether === 'chainOnly' ? 'chain' : (o.mode ?? 'chain');
   const grid = buildGrid(level, mode);
   const ent = createEntities(level, grid, dparams.hazardSpeed);
-  const slots = [...new Set(o.slots)].filter((s) => s >= 0 && s < SLOT_COUNT).sort((a, b) => a - b);
   const w: World = {
-    level, mode, difficulty, dparams, params: physicsFor(difficulty, o.p90LatencyMs ?? 0), grid, tilesVersion: 0, tick: 0, status: 'playing',
+    level, mode, difficulty, dparams, params: camp ? physicsForCampaign(camp, o.p90LatencyMs ?? 0) : physicsFor(difficulty, o.p90LatencyMs ?? 0), grid, tilesVersion: 0, tick: 0, status: 'playing',
     players: slots.map((s) => newPlayer(s)), ropes: [], ent, lives: dparams.lives, deaths: 0, progress: progressField(level), activeCheckpoint: -1, result: null, events: [],
+    camp, heartsLost: 0, refills: 0, countdown: null,
   };
   const spawn = level.markers.spawn[0]!;
   w.players.forEach((p, i) => placeAtCell(w, p, spawn, i, w.players.length));
-  w.ropes = mode === 'chain' ? buildRopes(slots, o.level.cordadaMax) : [];
+  w.ropes = mode === 'chain' ? buildRopes(slots, o.level.cordadaMax, [], undefined, camp?.ropeLen ?? ROPE_LEN) : [];
   return w;
 }
 
@@ -86,7 +93,7 @@ export function setConnected(w: World, slot: number, connected: boolean): void {
   if (w.mode === 'chain') {
     const by = new Map(w.players.map((q) => [q.slot, q.body]));
     const dist = (a: number, b: number) => { const A = by.get(a)!, B = by.get(b)!; return Math.hypot(A.x - B.x, A.y - B.y); };
-    w.ropes = buildRopes(w.players.filter((q) => q.connected).map((q) => q.slot), w.level.def.cordadaMax, w.ropes, dist);
+    w.ropes = buildRopes(w.players.filter((q) => q.connected).map((q) => q.slot), w.level.def.cordadaMax, w.ropes, dist, w.camp?.ropeLen ?? ROPE_LEN);
   }
 }
 
@@ -104,6 +111,8 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
   stepMovers(w);
   stepHazard(w);
   stepCrumbles(w);
+
+  if (w.camp) stepCampaignInputs(w, inputs); // signals, countdown, bubble mash
 
   // 2. B and A, in slot order.
   const jumps = new Map<number, boolean>();
@@ -147,12 +156,15 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
       b.vy = -JUMP_V0 * ROPE_JUMP_MULT; b.air = NONE; p.ropeJump = false; jump = false;
       emit(w, 'obst.jump', { player: p.slot, kind: 'rope' });
     }
+    if (w.camp) edgeAssist(w, p, bySlot);
     let move = p.planted ? 0 : inp.move;
+    if (p.camp.assist > 0) { move = p.camp.assistDir; p.camp.assist--; } // edge assist: pushed into the wall until it is on the ledge
     if (p.thrown > 0) { move = (b.facing * THROW_VX) / RUN_SPEED; p.thrown--; } // no control until it lands; keeps the throw speed (target 420 px/s)
     const bd = beltDx(w, p);
     if (bd !== 0) pushBody(b, bd, 0, w.grid);
     const ev = stepPlayer(b, { move, down: inp.down, jump }, { grid: w.grid, platforms, params: w.params });
     if (ev.jump) emit(w, 'obst.jump', { player: p.slot, kind: ev.jump });
+    if (w.camp && (ev.jump === 'ground' || ev.jump === 'coyote')) registerGroundJump(w, p);
     if (ev.land > 0) emit(w, 'obst.land', { player: p.slot, impact: ev.land, on: ev.landOn });
     if (b.grounded) { p.ropeJump = true; p.thrown = 0; }
   }
@@ -174,15 +186,17 @@ export function step(w: World, inputs: readonly (PlayerStep | undefined)[], opts
   if (w.ropes.length) {
     const nodes: (RopeNode | undefined)[] = [];
     for (const p of w.players) {
-      const anchored = p.holding?.kind === 'ring' || p.carriedBy >= 0 || !!p.lift;
+      const anchored = p.holding?.kind === 'ring' || p.carriedBy >= 0 || !!p.lift || (!!w.camp && p.planted); // campaign: planted = anchor, infinite mass
       nodes[p.slot] = { body: p.body, active: isActive(p), w: invMassOf(anchored ? 'anchored' : p.planted ? 'planted' : p.body.grounded ? 'ground' : 'air') };
     }
+    const slides = w.camp ? prepareAnchors(w, nodes) : [];
     const behind = (a: number, c: number) => (progressOf(w, playerOf(w, a)!) >= progressOf(w, playerOf(w, c)!) ? a : c);
     for (const e of solveRopes(w.ropes, nodes, w.grid, behind)) {
       if (e.kind === 'taut') emit(w, 'obst.ropeTaut', { rope: e.rope, link: e.link, tension: e.tension });
       else if (e.kind === 'strain') emit(w, 'obst.ropeStrain', { rope: e.rope, link: e.link, tension: e.tension });
       else { const p = playerOf(w, e.behind); if (p && isActive(p)) sendToBubble(w, p, 'rope'); }
     }
+    if (w.camp) applySlides(w, slides);
   }
   const after = [...headsOf(w), ...extraPlatforms(w)];
   for (const p of w.players) {
@@ -226,6 +240,10 @@ export function hashState(w: World): number {
   for (const s of e.stars) mix(s.taken ? 1 : 0);
   for (const c of e.checkpoints) mix(c.activated ? 1 : 0);
   if (e.hazard) { mix(e.hazard.pos); mix(e.hazard.frozen); }
+  if (w.camp) { // the campaign layer's own state (a quick-match hash stays what it always was)
+    mix(w.heartsLost); mix(w.refills); mix(w.countdown ? w.countdown.steps : -1);
+    for (const p of w.players) for (const v of [p.camp.assist, p.camp.assistDir, p.camp.jumpTick, p.camp.mash, p.camp.mashCool, p.camp.goHold, p.camp.signal ? p.camp.signal.steps : -1]) mix(v);
+  }
   return h >>> 0;
 }
 
@@ -234,12 +252,15 @@ export interface PlayerSnap {
   slot: number; connected: boolean; mode: PlayerState['mode']; x: number; y: number; vx: number; vy: number; facing: 1 | -1; grounded: boolean;
   planted: boolean; climbing: boolean; anchored: boolean; carriedBy: number; holding: PlayerState['holding']; thrown: boolean; lifted: boolean;
   invulnerable: boolean; inGoal: boolean; offCameraSec: number; bubbleTarget: { x: number; y: number; arrived: boolean } | null; b: BPreview['action'];
+  // campaign layer (null / 0 in a quick match)
+  arc: { x: number; y: number }[] | null; // throw arc (centres, px) while this player carries a teammate
+  signal: SignalKind | null; bubbleBoost: number;
 }
 export interface WorldSnap {
   tick: number; timeSec: number; status: WorldStatus; mode: GameMode; lives: number; deaths: number; result: LevelResult | null; tilesVersion: number;
   grid: World['grid'];
   players: PlayerSnap[];
-  ropes: { id: number; members: number[]; links: { a: number; b: number; len: number; tension: number; taut: boolean; active: boolean }[] }[];
+  ropes: { id: number; members: number[]; links: { a: number; b: number; len: number; base: number; tension: number; taut: boolean; active: boolean }[] }[];
   plates: { letter: string; kind: 'plate' | 'lever'; rect: PxRect; required: number; load: number; pressed: boolean; latched: boolean }[];
   objects: { letter: string; kind: 'gate' | 'ladder' | 'mover' | 'balance'; rect: PxRect; open: boolean }[]; // rect = current position (movers and balance move)
   boxes: { id: number; heavy: boolean; x: number; y: number; held: boolean }[];
@@ -250,6 +271,8 @@ export interface WorldSnap {
   rings: { x: number; y: number }[];
   hazard: { kind: 'risingLava' | 'tide' | 'avalanche'; pos: number; frozen: boolean } | null;
   goal: PxRect | null;
+  // campaign layer (null / 0 in a quick match)
+  camp: CampaignParams | null; heartsLost: number; refills: number; countdown: { by: number; n: number } | null; // n = the number on screen: 3, 2, 1
 }
 
 export function snapshot(w: World): WorldSnap {
@@ -261,8 +284,9 @@ export function snapshot(w: World): WorldSnap {
       planted: p.planted, climbing: p.climbing, anchored: p.holding?.kind === 'ring', carriedBy: p.carriedBy, holding: p.holding ? { ...p.holding } : null, thrown: p.thrown > 0, lifted: !!p.lift,
       invulnerable: p.invuln > 0, inGoal: p.inGoal, offCameraSec: p.offCamera * DT, bubbleTarget: p.bubble ? { x: p.bubble.tx, y: p.bubble.ty, arrived: p.bubble.arrived } : null,
       b: isActive(p) ? previewBPlayer(w, p).action : 'none',
+      arc: w.camp ? throwArc(w, p) : null, signal: p.camp.signal?.kind ?? null, bubbleBoost: p.camp.mash,
     })),
-    ropes: w.ropes.map((r) => ({ id: r.id, members: [...r.members], links: r.links.map((l) => ({ a: l.a, b: l.b, len: l.len, tension: l.tension, taut: l.taut, active: l.active })) })),
+    ropes: w.ropes.map((r) => ({ id: r.id, members: [...r.members], links: r.links.map((l) => ({ a: l.a, b: l.b, len: l.len, base: l.base, tension: l.tension, taut: l.taut, active: l.active })) })),
     plates: e.activators.map((a) => ({ letter: a.letter, kind: a.kind, rect: { ...a.rect }, required: a.required, load: a.load, pressed: a.pressed, latched: a.latched })),
     objects: e.objectives.map((o) => ({ letter: o.letter, kind: o.kind, rect: objRect(o), open: o.open })),
     boxes: e.boxes.map((b) => ({ id: b.id, heavy: b.heavy, x: b.x, y: b.y, held: b.holders.length > 0 })),
@@ -273,6 +297,7 @@ export function snapshot(w: World): WorldSnap {
     rings: e.rings.map((r) => ({ x: r.x, y: r.y })),
     hazard: e.hazard ? { kind: e.hazard.kind, pos: e.hazard.pos, frozen: e.hazard.frozen > 0 } : null,
     goal: goalZone(w.level),
+    camp: w.camp, heartsLost: w.heartsLost, refills: w.refills, countdown: w.countdown ? { by: w.countdown.by, n: Math.ceil(w.countdown.steps / 60) } : null,
   };
 }
 

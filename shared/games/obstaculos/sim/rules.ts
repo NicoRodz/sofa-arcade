@@ -11,7 +11,7 @@ import { bodyRect, cellRect, overlaps } from './collide';
 import { freezeHazard, hazardKills } from './entities';
 import { emit, isActive, type LevelResult, type ObstEvent, type PlayerState, type PlayerStats, type World } from './state';
 import { boxHitsSolid, boxTouches, tileAt } from './tiles';
-import { CRUMB_KEEP, CRUSH_STEPS, GOAL_PAD_X, GOAL_PAD_Y, REUNION_TILES, RESPAWN_DELAY_SEC, SPAWN_SPREAD, STAR_STREAK_SEC, VOID_MARGIN } from './tuning';
+import { AVALANCHE_START_TILES, CRUMB_KEEP, CRUSH_STEPS, GOAL_PAD_X, GOAL_PAD_Y, REUNION_TILES, RESPAWN_DELAY_SEC, SPAWN_SPREAD, STAR_STREAK_SEC, VOID_MARGIN } from './tuning';
 
 const steps = (sec: number) => Math.round(sec / DT);
 
@@ -68,6 +68,7 @@ export function revive(w: World, p: PlayerState, via: 'checkpoint' | 'bubble' | 
   if (at) { p.body.x = at.x; p.body.y = at.y; p.body.vx = 0; p.body.vy = 0; p.body.grounded = false; p.body.supportId = -1; p.body.air = 255; p.body.dx = 0; p.body.dy = 0; }
   else placeAtCell(w, p, respawnCell(w), rankOf(w, p), n);
   p.mode = 'active'; p.bubble = null; p.timer = 0; p.invuln = steps(BUBBLE_INVULN_SEC); p.offCamera = 0; p.crushed = 0; p.ropeJump = true;
+  p.camp.mash = 0; p.camp.mashCool = 0; p.camp.assist = 0; p.camp.jumpTick = -1000;
   emit(w, 'obst.respawn', { player: p.slot, via });
 }
 
@@ -82,7 +83,29 @@ export function killPlayer(w: World, p: PlayerState, cause: 'spikes' | 'liquid' 
   p.deathGroup = w.tick;
   emit(w, 'obst.death', { player: p.slot, cause });
 }
-const spendLife = (w: World): void => { if (Number.isFinite(w.lives)) { w.lives = Math.max(0, w.lives - 1); if (w.lives === 0 && w.status === 'playing') w.status = 'failed'; } };
+const spendLife = (w: World): void => {
+  if (w.camp) { // campaign (plan §5.1): the hearts are shared; at 0 they refill and the team goes back, the level never "fails"
+    w.heartsLost++;
+    if (Number.isFinite(w.lives)) { w.lives = Math.max(0, w.lives - 1); if (w.lives === 0) heartsOut(w); }
+    return;
+  }
+  if (Number.isFinite(w.lives)) { w.lives = Math.max(0, w.lives - 1); if (w.lives === 0 && w.status === 'playing') w.status = 'failed'; }
+};
+
+// Campaign, 0 hearts: full hearts, everybody back at the checkpoint (Summit: at the start, checkpoints and hazard reset). The caller scores no third star (refills > 0).
+function heartsOut(w: World): void {
+  const c = w.camp!;
+  w.refills++;
+  w.lives = c.hearts;
+  if (c.restartAtStart) {
+    w.activeCheckpoint = -1;
+    for (const k of w.ent.checkpoints) k.activated = false;
+    const h = w.ent.hazard;
+    if (h) { h.pos = h.kind === 'avalanche' ? -AVALANCHE_START_TILES * TILE : w.level.h * TILE; h.phase = 0; h.frozen = 0; }
+  }
+  emit(w, 'obst.heartsOut', { toStart: c.restartAtStart });
+  for (const p of w.players) if (p.connected) { dropAll(w, p); revive(w, p, 'team'); }
+}
 
 function hazardCause(w: World, p: PlayerState): 'spikes' | 'liquid' | 'crush' | 'fall' | 'hazard' | null {
   const b = p.body;
@@ -106,6 +129,9 @@ export function stepDeaths(w: World): void {
     if (c) { killPlayer(w, p, c); died++; }
   }
   if (died) spendLife(w);
+  if (w.camp && w.players.some(isActive)) { // campaign: the fallen one comes back in a bubble beside the partner (if both fell, the team path below takes them to the checkpoint)
+    for (const p of w.players) if (p.connected && p.mode === 'dead') sendToBubble(w, p, 'death');
+  }
   for (const p of w.players) if (p.connected && p.mode === 'dead' && p.timer > 0) p.timer--;
   const anyActive = w.players.some(isActive);
   const anyPending = w.players.some((p) => p.connected && p.mode !== 'active');
@@ -117,11 +143,11 @@ export function stepDeaths(w: World): void {
 }
 
 // --- stragglers and bubbles
-export function sendToBubble(w: World, p: PlayerState, reason: 'offscreen' | 'stray' | 'rope'): void {
+export function sendToBubble(w: World, p: PlayerState, reason: 'offscreen' | 'stray' | 'rope' | 'death'): void {
   dropAll(w, p);
   p.mode = 'bubble';
   p.bubble = { tx: p.body.x, ty: p.body.y, arrived: false };
-  p.timer = 0;
+  p.timer = 0; p.camp.mash = 0; p.camp.mashCool = 0;
   p.body.vx = 0; p.body.vy = 0; p.body.grounded = false; p.body.supportId = -1;
   emit(w, 'obst.bubble', { player: p.slot, reason });
   if (w.dparams.bubbleCostsLife) spendLife(w);
@@ -169,9 +195,10 @@ function bubbleTarget(w: World, p: PlayerState): { x: number; y: number } {
 
 // Bubbles fly through everything at 9 tiles/s to the median's latest safe crumb, pop 0.4 s after arriving and leave 1 s of invulnerability.
 export function stepBubbles(w: World): void {
-  const speed = BUBBLE_SPEED_TILES * TILE * DT;
+  const base = BUBBLE_SPEED_TILES * TILE * DT;
   for (const p of w.players) {
     if (!p.connected || p.mode !== 'bubble' || !p.bubble) continue;
+    const speed = w.camp ? base * (1 + w.camp.bubbleMashGain * p.camp.mash) : base; // bubble v2: mashing A speeds it up
     if (!p.bubble.arrived) {
       const t = bubbleTarget(w, p);
       p.bubble.tx = t.x; p.bubble.ty = t.y;
@@ -246,6 +273,7 @@ export function stepGoal(w: World): void {
     const timeSec = w.tick * DT;
     const stars = w.ent.stars.filter((s) => s.taken).length;
     const result: LevelResult = { timeSec, medal: medalFor(timeSec, w.level.def.parSec), stars, deaths: w.deaths, livesLeft: w.lives };
+    if (w.camp) result.campaign = { heartsLost: w.heartsLost, refills: w.refills, perfect: w.heartsLost === 0 && w.refills === 0 };
     w.result = result;
     w.status = 'cleared';
     emit(w, 'obst.levelClear', { level: w.level.def.id, timeSec, medal: result.medal, stars, deaths: w.deaths });

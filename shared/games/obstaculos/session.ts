@@ -16,6 +16,7 @@ import { advanceRun, awardsOf, newRun, type Awards, type RunState } from './sim/
 import { SLOT_COUNT } from './sim/tuning';
 import type { ObstEvent, PlayerStats, World } from './sim/state';
 import { createWorld, setConnected, step } from './sim/world';
+import type { WorldId } from './sim/campaign';
 import type { GameMode, LevelDef } from './types';
 
 export const COUNTDOWN_MS = 3000; // 3-2-1 before the first level
@@ -34,6 +35,7 @@ export interface SessionOpts {
   slots: readonly number[]; // connected phones at the start
   p90LatencyMs?: number;
   levels?: readonly LevelDef[]; // tests and tools: an explicit list of levels (skips the lobby's choice)
+  campaign?: { world: WorldId; n?: number }; // campaign layer for 2 (sim/campaign.ts); absent = quick match, unchanged
 }
 
 export interface LevelSummary {
@@ -97,7 +99,7 @@ export class ObstSession {
   get connectedSlots(): number[] { return [...this.connected].sort((a, b) => a - b); }
 
   private build(index: number): World {
-    const w = createWorld({ level: this.levels[Math.min(index, this.levels.length - 1)]!, mode: this.opts.mode, difficulty: this.opts.difficulty, slots: this.connectedSlots, p90LatencyMs: this.opts.p90LatencyMs });
+    const w = createWorld({ level: this.levels[Math.min(index, this.levels.length - 1)]!, mode: this.opts.mode, difficulty: this.opts.difficulty, slots: this.connectedSlots, p90LatencyMs: this.opts.p90LatencyMs, campaign: this.opts.campaign });
     this.prev = Array.from({ length: SLOT_COUNT }, () => ({ x: 0, y: 0 }));
     for (const p of w.players) this.prev[p.slot] = { x: p.body.x, y: p.body.y };
     return w;

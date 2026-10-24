@@ -8,12 +8,13 @@ import type { TileGrid } from './tiles';
 export interface RopeLink {
   a: number; // slot
   b: number; // slot
-  len: number; // current rest length: ROPE_LEN, or longer while a new link eases back (relink)
-  shrink: number; // px per step that len loses while it is above ROPE_LEN (so it takes ROPE_RELINK_SEC from the start)
+  base: number; // rest length of a settled link: ROPE_LEN (quick match) or the campaign's longer rope
+  len: number; // current rest length: `base`, or longer while a new link eases back (relink)
+  shrink: number; // px per step that len loses while it is above `base` (so it takes ROPE_RELINK_SEC from the start)
   active: boolean; // both ends are in play
   valve: number; // steps beyond the valve ratio
   taut: boolean;
-  tension: number; // d / ROPE_LEN before the correction of the last step
+  tension: number; // d / base before the correction of the last step
   strainCool: number;
 }
 export interface Rope { id: number; members: number[]; links: RopeLink[] }
@@ -31,7 +32,7 @@ const keyOf = (a: number, b: number) => `${a}-${b}`;
 
 // Ropes for the connected slots in slot order. Links that already existed keep their state; a new link (someone connected or
 // left and the neighbours hooked up) starts at the current distance and eases down to ROPE_LEN in ROPE_RELINK_SEC.
-export function buildRopes(slots: readonly number[], max: number | undefined, prev: readonly Rope[] = [], dist: (a: number, b: number) => number = () => ROPE_LEN): Rope[] {
+export function buildRopes(slots: readonly number[], max: number | undefined, prev: readonly Rope[] = [], dist: (a: number, b: number) => number = () => baseLen, baseLen: number = ROPE_LEN): Rope[] {
   const old = new Map<string, RopeLink>();
   for (const r of prev) for (const l of r.links) old.set(keyOf(l.a, l.b), l);
   const sorted = [...slots].sort((x, y) => x - y);
@@ -43,8 +44,8 @@ export function buildRopes(slots: readonly number[], max: number | undefined, pr
     const links: RopeLink[] = [];
     for (let i = 0; i + 1 < members.length; i++) {
       const a = members[i]!, b = members[i + 1]!;
-      const len = prev.length ? Math.max(ROPE_LEN, dist(a, b)) : ROPE_LEN;
-      links.push(old.get(keyOf(a, b)) ?? { a, b, len, shrink: ((len - ROPE_LEN) * DT) / ROPE_RELINK_SEC, active: true, valve: 0, taut: false, tension: 0, strainCool: 0 });
+      const len = prev.length ? Math.max(baseLen, dist(a, b)) : baseLen;
+      links.push(old.get(keyOf(a, b)) ?? { a, b, base: baseLen, len, shrink: ((len - baseLen) * DT) / ROPE_RELINK_SEC, active: true, valve: 0, taut: false, tension: 0, strainCool: 0 });
     }
     ropes.push({ id: ropes.length, members, links });
   }
@@ -77,12 +78,12 @@ export function solveRopes(ropes: readonly Rope[], nodes: readonly (RopeNode | u
       if (!l.active) { l.valve = 0; l.taut = false; l.tension = 0; return; }
       if (!was) { // an end came back from a bubble or a respawn: hook up again from wherever it is, easing to ROPE_LEN
         const far = Math.hypot(cx(B!.body) - cx(A!.body), cy(B!.body) - cy(A!.body));
-        l.len = Math.max(ROPE_LEN, far);
-        l.shrink = ((l.len - ROPE_LEN) * DT) / ROPE_RELINK_SEC;
+        l.len = Math.max(l.base, far);
+        l.shrink = ((l.len - l.base) * DT) / ROPE_RELINK_SEC;
       }
-      if (l.len > ROPE_LEN) l.len = Math.max(ROPE_LEN, l.len - l.shrink);
+      if (l.len > l.base) l.len = Math.max(l.base, l.len - l.shrink);
       const d = Math.hypot(cx(B!.body) - cx(A!.body), cy(B!.body) - cy(A!.body));
-      l.tension = d / ROPE_LEN;
+      l.tension = d / l.base;
       const t = d / l.len;
       if (t >= TAUT_AT && !l.taut) { l.taut = true; events.push({ kind: 'taut', rope: rope.id, link: li, tension: l.tension }); }
       else if (t < TAUT_AT - 0.08) l.taut = false;
@@ -111,7 +112,7 @@ export function solveRopes(ropes: readonly Rope[], nodes: readonly (RopeNode | u
       const A = nodes[l.a]!, B = nodes[l.b]!;
       const dx = cx(B.body) - cx(A.body), dy = cy(B.body) - cy(A.body);
       const d = Math.hypot(dx, dy);
-      if (d >= ROPE_VALVE_RATIO * ROPE_LEN) { if (++l.valve >= ROPE_VALVE_SEC / DT) { l.valve = 0; events.push({ kind: 'valve', rope: rope.id, link: li, behind: behind(l.a, l.b) }); } }
+      if (d >= ROPE_VALVE_RATIO * l.base) { if (++l.valve >= ROPE_VALVE_SEC / DT) { l.valve = 0; events.push({ kind: 'valve', rope: rope.id, link: li, behind: behind(l.a, l.b) }); } }
       else l.valve = 0;
       const ws = A.w + B.w;
       if (ws === 0 || d < l.len - 0.5 || d === 0) return; // slack link: nothing to remove
