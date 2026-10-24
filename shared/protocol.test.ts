@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ClockSync, applyDeadzone, canStart, newRoomCode, nextPhase, parseClientMessage } from './protocol';
+import { BUZZ_PATTERNS, ClockSync, applyDeadzone, canStart, newRoomCode, nextPhase, parseClientMessage } from './protocol';
 import { assignPuestos } from './puestos';
 
 describe('protocol', () => {
@@ -33,6 +33,15 @@ describe('protocol', () => {
     expect(parseClientMessage('{"t":"phase","phase":"boom"}')).toBeNull();
     expect(parseClientMessage('{"t":"phase","phase":"results","scores":[{"id":1}]}')).toBeNull();
     expect(parseClientMessage('{"t":"phase","phase":"results","scores":"no"}')).toBeNull();
+  });
+  it('parses buzz (screen to one phone): needs a player and a known kind, and each pattern is a short on/off list', () => {
+    expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"pick"}')).toEqual({ t: 'buzz', playerId: 3, kind: 'pick' });
+    expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"earthquake"}')).toBeNull();
+    expect(parseClientMessage('{"t":"buzz","kind":"pick"}')).toBeNull();
+    expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"constructor"}')).toBeNull();
+    expect(BUZZ_PATTERNS.pick).toEqual([20]);
+    expect(BUZZ_PATTERNS.chop).toEqual([40]);
+    for (const p of Object.values(BUZZ_PATTERNS)) expect(p.reduce((a, b) => a + b, 0)).toBeLessThan(200);
   });
   it('rejects unknown message types', () => {
     expect(parseClientMessage('{"t":"hack"}')).toBeNull();

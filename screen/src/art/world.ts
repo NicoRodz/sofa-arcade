@@ -38,6 +38,21 @@ export class World {
     const g = this.game;
     on('itemPicked', (e) => this.chefOf(e.player)?.bump());
     on('interactInvalid', (e) => this.chefOf(e.player)?.fail());
+    on('dash', (e) => {
+      this.chefOf(e.player)?.dash();
+      const puff = () => { const q = g.players.get(e.player); if (q) { const f = this.feet(q); this.fx.dashDust(f.x, f.y); } };
+      puff();
+      for (const ms of [45, 90, 135]) this.scene.time.delayedCall(ms, puff);
+    });
+    on('bump', (e) => {
+      const o = g.players.get(e.other);
+      if (!o) return;
+      const f = this.feet(o);
+      this.fx.starBurst(f.x, f.y - TILE * 0.45, 4);
+      this.fx.ring(f.x, f.y, 0xffffff, 0.3, 1.1);
+      this.fx.shake(70, 0.002);
+      this.chefOf(e.other)?.bump();
+    });
     on('chopDone', (e) => {
       const p = this.stations.pos(e.station);
       this.fx.dustPoof(p.x, p.y);
@@ -108,7 +123,7 @@ export class World {
         chop.set(gp.chopAt, action);
       }
       const f = this.feet(gp);
-      chef.update(dtMs, { x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected });
+      chef.update(dtMs, { x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected, ghost: gp.crossing });
     }
     for (const [id, c] of this.chefs) if (!g.players.has(id)) { c.destroy(); this.chefs.delete(id); }
     this.stations.update(dtMs, chop);

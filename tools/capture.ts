@@ -59,7 +59,7 @@ class Cdp {
 }
 
 interface Snap {
-  phase: string; fps: number; time: number; score: number; countdown: number;
+  phase: string; fps: number; time: number; score: number; countdown: number; streak: number; bestStreak: number; crowd: string[];
   players: { id: number; x: number; y: number; item: string | null; cutting: boolean }[];
   stations: { kind: string; tx: number; ty: number; crate: number; item: string | null; progress: number; inputs: number[]; done: boolean; count: number; clean: number }[];
   orders: { recipe: string }[];
@@ -68,7 +68,7 @@ interface Snap {
 class Bot {
   ws: WebSocket;
   id = 0;
-  seq = 0; a = 0;
+  seq = 0; a = 0; b = 0;
   vec = { x: 0, y: 0 }; btn = 0;
   private waitUntil = 0; private lastPress = 0; private stable = 0; private nextCrate = 0; private hadItem = false;
   constructor(private slot: number, name: string, room: string, private rows: readonly string[]) {
@@ -80,7 +80,7 @@ class Bot {
   startSending() {
     setInterval(() => {
       if (this.ws.readyState !== WebSocket.OPEN) return;
-      this.ws.send(JSON.stringify({ t: 'input', seq: this.seq++, x: this.vec.x, y: this.vec.y, btn: this.btn, presses: [this.a, 0], ts: Date.now() }));
+      this.ws.send(JSON.stringify({ t: 'input', seq: this.seq++, x: this.vec.x, y: this.vec.y, btn: this.btn, presses: [this.a, this.b], ts: Date.now() }));
     }, 33).unref();
   }
   private floor(x: number, y: number) { const c = this.rows[y]?.[x]; return c === '.' || c === 'S'; }
@@ -257,6 +257,18 @@ async function main() {
       fake.send(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { cheese: true, sink: true, assign: [{ id: 1, puestos: ['horno', 'reparto'], pool: ['masa', 'corte', 'queso', 'horno', 'reparto', 'lavado', 'apoyo'] }] } }));
       await sleep(800);
       await cdp.shot('phone-play');
+      // R7: buzz from the screen. Android path (vibrate exists and works) and the iOS path (no vibration: the phone flashes its colour)
+      await cdp.eval(`Object.defineProperty(navigator, 'vibrate', { value: (p) => { window.__vib = p; return true; }, configurable: true })`);
+      fake.send(JSON.stringify({ t: 'buzz', playerId: 1, kind: 'pick' })); await sleep(300);
+      console.log('vibrate called with:', JSON.stringify(await cdp.eval('window.__vib')));
+      fake.send(JSON.stringify({ t: 'buzz', playerId: 1, kind: 'chop' })); await sleep(300);
+      console.log('vibrate called with:', JSON.stringify(await cdp.eval('window.__vib')));
+      await cdp.eval(`Object.defineProperty(navigator, 'vibrate', { value: undefined, configurable: true })`);
+      fake.send(JSON.stringify({ t: 'buzz', playerId: 1, kind: 'pick' })); await sleep(40);
+      console.log('no vibrate API: flash class on body =', await cdp.eval(`document.body.classList.contains('flash')`));
+      await cdp.shot('phone-flash');
+      await sleep(300);
+      console.log('flash gone after 300 ms =', await cdp.eval(`!document.body.classList.contains('flash')`));
       const r = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('btnB').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
       const sw = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('pswap').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
       await tap(sw.x, sw.y);
@@ -390,6 +402,72 @@ async function main() {
         bots.splice(0).forEach((b) => b.close());
         await sleep(400);
       }
+    }
+    if (what === 'fase1') {
+      // phase 1 of the overcooked-2 plan: 4 chefs (streak badge, dash, results with stars) and 8 chefs on a map for 4-8
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      await open('F1AA'); await join('F1AA', 4, fixedMap('1')!.rows);
+      await click('[data-map="1"]'); await sleep(300);
+      await cdp.shot('f1-lobby');
+      await click('#start'); await sleep(1500); await key('Enter');
+      await sleep(2100); await cdp.shot('f1-4-countdown');
+      bots.forEach((b) => b.startSending());
+      timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+      const hot = await waitFor((s) => s.streak >= 2, Number(process.env.WAIT_MS ?? 110_000));
+      console.log('streak >= 2 reached:', !!hot, hot ? `streak ${hot.streak} score ${hot.score}` : '');
+      await sleep(250); await cdp.shot('f1-4-streak');
+      timers.splice(0).forEach(clearInterval);
+      // the dash: bot 0 runs to the right with B tapped; the screenshots fall inside the 180 ms and the dust after it
+      const b0 = bots[0]!;
+      for (const b of bots) { b.vec = { x: 0, y: 0 }; b.btn = 0; }
+      await sleep(500);
+      const s0 = await snap(); const me = s0.players.find((p) => p.id === b0.id)!;
+      b0.vec = { x: 1, y: 0 }; await sleep(200); b0.b++;
+      await sleep(60);
+      const s1 = await snap(); const p1 = s1.players.find((p) => p.id === b0.id)!;
+      const cx = 96 + p1.x * 108, cy = 106 + p1.y * 108;
+      await cdp.shot('f1-4-dash', { x: Math.max(0, cx - 260), y: Math.max(0, cy - 230), width: 520, height: 330, scale: 2 });
+      console.log('dash: x before', me.x.toFixed(2), 'x 60 ms after the tap', p1.x.toFixed(2));
+      await sleep(900); b0.vec = { x: 0, y: 0 };
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
+      await cdp.eval('window.__pg.setScore(400)'); await cdp.eval('window.__pg.fastForward(1200)');
+      await sleep(1700); await cdp.shot('f1-4-timeup');
+      await sleep(5200); await cdp.shot('f1-4-results-2star');
+      bots.splice(0).forEach((b) => b.close());
+      await click('#again'); await sleep(800);
+      // 8 chefs
+      await open('F1BB'); await join('F1BB', 8, fixedMap('11')!.rows);
+      await click('[data-map="11"]'); await sleep(300);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await sleep(2100); await cdp.shot('f1-8-countdown');
+      bots.forEach((b) => b.startSending());
+      timers.push(setInterval(async () => { try { const s = await snap(); bots.forEach((b) => b.decide(s)); } catch { /* page navigating */ } }, 100));
+      await waitFor((s) => s.countdown <= 0 && s.time > 25_000, 60_000);
+      await cdp.shot('f1-8-play');
+      const s8 = await snap();
+      console.log('8 chefs: score', s8.score, 'streak', s8.streak, 'pairs crossing', s8.crowd.length, 'fps', s8.fps.toFixed(0));
+      await cdp.eval('window.__pg.setScore(760)'); await cdp.eval('window.__pg.fastForward(1200)');
+      timers.splice(0).forEach(clearInterval);
+      await sleep(1700); await cdp.shot('f1-8-timeup'); await sleep(5200); await cdp.shot('f1-8-results-3star');
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'dash') {
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      await open('DASH'); await join('DASH', 2, fixedMap('1')!.rows);
+      await click('[data-map="1"]'); await sleep(300); await click('#start'); await sleep(1500); await key('Enter');
+      bots.forEach((b) => b.startSending());
+      await waitFor((s) => s.countdown <= 0 && s.time > 500, 15_000);
+      const b0 = bots[0]!;
+      b0.vec = { x: -1, y: 0 }; await sleep(900); b0.vec = { x: 0, y: 0 }; await sleep(400);
+      b0.vec = { x: 1, y: 0 }; await sleep(120); b0.b++;
+      for (let i = 0; i < 4; i++) {
+        await sleep(i === 0 ? 40 : 60);
+        const s = await snap(); const p = s.players.find((q) => q.id === b0.id)!;
+        const cx = 96 + p.x * 108, cy = 106 + p.y * 108;
+        await cdp.shot(`dash-${i}`, { x: Math.max(0, cx - 360), y: Math.max(0, cy - 200), width: 520, height: 330, scale: 2 });
+        console.log('frame', i, 'x', p.x.toFixed(2));
+      }
+      b0.vec = { x: 0, y: 0 };
     }
     if (what === 'maps') {
       for (const id of ['2', '4', '5']) {

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import {
   ClockSync, DEFAULT_CONFIG, PING_MS, PressTracker, WS_PATH, canStart, newRoomCode, nextPhase,
-  type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
+  type BuzzKind, type ClientMsg, type LobbyConfig, type Phase, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params } from '@party/shared/difficulty';
 import { summarize } from '@party/shared/results';
@@ -15,6 +15,7 @@ import { chefCanvas } from './art/chef';
 import { chefOf } from './art/tokens';
 import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
 import { iris } from './art/iris';
+import { toggleShake } from './art/fx';
 import { HOWTO_MS, howToOnKey, isExpired, progress, secondsLeft, type HowToState } from './howto';
 import { MainScene, type Host } from './scene';
 import type { PuestoView } from './art/puestos';
@@ -279,7 +280,8 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
 (window as unknown as { __pg: unknown }).__pg = {
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
   fastForward: (ms: number) => { game.params.roundMs = game.time + ms; },
-  snapshot: () => ({ fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown }),
+  setScore: (n: number) => { game.score = n; }, // capture tool: results screen with stars
+  snapshot: () => ({ fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
 $('code').textContent = room;
@@ -394,6 +396,15 @@ function renderUi() {
 }
 renderUi();
 
+// R7: a short vibration on the phone of the chef the event belongs to (the phone falls back to a colour flash)
+const buzz = (player: number, kind: BuzzKind) => sendMsg({ t: 'buzz', playerId: player, kind });
+gameBus.on('itemPicked', (e) => buzz(e.player, 'pick'));
+gameBus.on('chopDone', (e) => buzz(e.player, 'chop'));
+gameBus.on('washDone', (e) => buzz(e.player, 'chop'));
+gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
+gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
+gameBus.on('dash', (e) => buzz(e.player, 'dash'));
+
 // round stats for the results screen
 const stats = { delivered: new Map<number, number>() };
 gameBus.on('delivered', (e) => stats.delivered.set(e.player, (stats.delivered.get(e.player) ?? 0) + 1));
@@ -467,6 +478,7 @@ $('howtobtn').addEventListener('click', () => { if (!howTo && !starting && phase
 $('howto').addEventListener('click', () => { if (howTo?.mode === 'preview') closeHowTo(); });
 window.addEventListener('keydown', (e) => {
   if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); return; }
+  if ((e.key === 's' || e.key === 'S') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { toggleShake(); return; }
   const act = starting ? 'none' : howToOnKey(howTo, phase, e.key);
   if (act === 'open-preview') { openHowTo('preview'); return; }
   if (act === 'close') { closeHowTo(); return; }

@@ -7,8 +7,8 @@ import { PUESTOS, type PuestoId } from '@party/shared/puestos';
 import { shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
-  ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
-  type ClientMsg, type Phase, type PuestoMsg, type ServerMsg,
+  BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
+  type BuzzKind, type ClientMsg, type Phase, type PuestoMsg, type ServerMsg,
 } from '@party/shared';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -89,6 +89,17 @@ function renderHowTo(game: string, name: string, h: HowTo) {
 $('howto').addEventListener('pointerup', () => setHowTo(false));
 $('howtoopen').addEventListener('pointerup', () => setHowTo(true));
 
+// R7: vibrate where the browser can (Android), flash the phone's colour where it cannot (iOS Safari has no vibration API).
+let flashTimer: ReturnType<typeof setTimeout> | undefined;
+function buzz(kind: BuzzKind) {
+  if (phase !== 'playing') return;
+  const pattern = BUZZ_PATTERNS[kind];
+  try { if (typeof navigator.vibrate === 'function' && navigator.vibrate([...pattern])) return; } catch { /* blocked: fall back to the flash */ }
+  document.body.classList.add('flash');
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => document.body.classList.remove('flash'), 120);
+}
+
 const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
@@ -153,6 +164,8 @@ function connect() {
       $('setup').textContent = `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores, m.puestos);
+    } else if (m.t === 'buzz') {
+      buzz(m.kind);
     } else if (m.t === 'pong') {
       lastPong = Date.now();
       const s = sent.get(m.id);

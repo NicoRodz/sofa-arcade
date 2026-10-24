@@ -8,8 +8,9 @@ describe('render', () => {
   });
   it('control: icon + label, and the hold hint only for hold buttons', () => {
     const c = GAMES[0].controls;
-    expect(controlHtml(c.btn2)).toContain('Picar');
-    expect(controlHtml(c.btn2)).toContain('mantén apretado');
+    expect(controlHtml(c.btn2)).toContain('Picar / Correr');
+    expect(controlHtml({ ...c.btn2, hold: true })).toContain('mantén apretado');
+    expect(controlHtml(c.btn2)).not.toContain('mantén');
     expect(controlHtml(c.btn2)).toContain('<svg');
     expect(controlHtml(c.btn1)).toContain('Tomar / Soltar');
     expect(controlHtml(c.btn1)).not.toContain('mantén');

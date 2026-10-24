@@ -36,6 +36,12 @@ export interface PuestoAssign { id: number; puestos: PuestoId[]; pool: PuestoId[
 export interface PuestoMsg { cheese: boolean; sink: boolean; assign: PuestoAssign[] }
 export interface PhaseInfo { phase: Phase; scores?: Score[]; puestos?: PuestoMsg }
 
+// R7: a short vibration on one phone (Android); iOS has no vibration API, so the phone flashes its colour instead.
+// The screen decides when (it owns the game events); the phone only plays the pattern, in ms on / off / on...
+export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15] } as const satisfies Record<string, readonly number[]>;
+export type BuzzKind = keyof typeof BUZZ_PATTERNS;
+export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.prototype.hasOwnProperty.call(BUZZ_PATTERNS, v);
+
 // What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
 export const SEED_MAX = 2 ** 32;
 export const isSeed = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) < SEED_MAX;
@@ -60,7 +66,8 @@ export type ClientMsg =
   | { t: 'ping'; id: number; t0: number; rtt?: number; off?: number }
   | ({ t: 'phase' } & PhaseInfo) // screen only
   | ({ t: 'config' } & LobbyConfig) // screen only
-  | { t: 'puesto'; puestos: PuestoId[] }; // phone: "Cambiar" picked another puesto
+  | { t: 'puesto'; puestos: PuestoId[] } // phone: "Cambiar" picked another puesto
+  | { t: 'buzz'; playerId: number; kind: BuzzKind }; // screen only: vibrate that phone
 
 export type ServerMsg =
   | { t: 'joined'; player: PublicPlayer; room: string }
@@ -74,7 +81,8 @@ export type ServerMsg =
   | ConfigMsg
   | ({ t: 'input'; playerId: number } & InputState)
   | { t: 'rtt'; playerId: number; rtt: number; off: number }
-  | { t: 'puesto'; playerId: number; puestos: PuestoId[] };
+  | { t: 'puesto'; playerId: number; puestos: PuestoId[] }
+  | { t: 'buzz'; kind: BuzzKind };
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
@@ -136,6 +144,8 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       const ids = parsePuestoIds(m.puestos);
       return ids?.length ? { t: 'puesto', puestos: ids } : null;
     }
+    case 'buzz':
+      return num(m.playerId) && isBuzzKind(m.kind) ? { t: 'buzz', playerId: m.playerId, kind: m.kind } : null;
     case 'config':
       if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map) || !isSeed(m.seed)) return null;
       return { t: 'config', game: m.game, difficulty: m.difficulty, map: m.map, seed: m.seed };

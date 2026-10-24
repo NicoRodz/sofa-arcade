@@ -14,7 +14,7 @@ describe('game registry', () => {
   it('pizzas declares the agreed labels and four how-to steps', () => {
     expect(pizzas.controls.stick).toMatchObject({ label: 'Mover' });
     expect(pizzas.controls.btn1).toMatchObject({ label: 'Tomar / Soltar' });
-    expect(pizzas.controls.btn2).toMatchObject({ label: 'Picar', hold: true });
+    expect(pizzas.controls.btn2).toMatchObject({ label: 'Picar / Correr' });
     expect(pizzas.controls.btn1.hold).toBeUndefined();
     expect(pizzas.howTo.steps).toHaveLength(4);
     expect(pizzas.howTo.note).toMatch(/equipo/);

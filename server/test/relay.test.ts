@@ -165,6 +165,28 @@ describe('puestos', () => {
   });
 });
 
+describe('buzz', () => {
+  it('only the screen can make a phone vibrate, and only the phone it names gets it', async () => {
+    const screen = new Client('?role=screen&room=bz1');
+    const a = new Client('?room=bz1');
+    const b = new Client('?room=bz1');
+    await Promise.all([screen.open(), a.open(), b.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    b.send({ t: 'join', name: 'Beto', token: 'b' });
+    const idA = (await a.next('joined')).player.id, idB = (await b.next('joined')).player.id;
+    await a.next('phase'); await b.next('phase');
+    a.send({ t: 'buzz', playerId: idB, kind: 'pick' }); // a phone cannot buzz another one
+    screen.send({ t: 'buzz', playerId: idA, kind: 'chop' });
+    expect(await a.next('buzz')).toEqual({ t: 'buzz', kind: 'chop' });
+    screen.send({ t: 'buzz', playerId: 999, kind: 'chop' }); // unknown player: dropped
+    screen.send({ t: 'buzz', playerId: idB, kind: 'pick' });
+    expect(await b.next('buzz')).toEqual({ t: 'buzz', kind: 'pick' }); // b got only the screen's message
+    expect(a.msgs.filter((m) => m.t === 'buzz')).toEqual([]);
+    expect(b.msgs.filter((m) => m.t === 'buzz')).toEqual([]);
+    [screen.ws, a.ws, b.ws].forEach((w) => w.close());
+  });
+});
+
 describe('lobby config', () => {
   it('screen config reaches players and late joiners; players cannot set it', async () => {
     const screen = new Client('?role=screen&room=c1');

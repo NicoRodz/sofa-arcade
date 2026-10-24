@@ -18,7 +18,7 @@ export const GAMES = [
     controls: {
       stick: { label: 'Mover', icon: 'move' },
       btn1: { label: 'Tomar / Soltar', icon: 'grab' },
-      btn2: { label: 'Picar', icon: 'chop', hold: true },
+      btn2: { label: 'Picar / Correr', icon: 'chop' }, // held to chop; a tap with empty hands and no station in front dashes (R2). No "hold" hint: it would not fit under the longer label
     },
     howTo: {
       steps: [
