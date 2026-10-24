@@ -4,9 +4,9 @@ export const INPUT_HZ = 30;
 export const PING_MS = 1000;
 export const DEADZONE = 0.15;
 export const MAX_PLAYERS = 8;
-export const BUTTON_COUNT = 1;
+export const BUTTON_COUNT = 2; // btn bitmask: bit 0 = A, bit 1 = B
 export const SLOT_GRACE_MS = 60_000; // a dropped phone keeps its slot this long
-export const ROUND_MS = 60_000;
+export const ROUND_MS = 180_000;
 export const ROOM_CODE_LEN = 4;
 export const PRESS_MOD = 65536;
 export const COLORS = ['#ff5252', '#40c4ff', '#ffd740', '#69f0ae', '#e040fb', '#ff9100', '#b2ff59', '#18ffff'];

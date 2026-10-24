@@ -19,9 +19,11 @@
   #rotate { z-index: 10; background: #111; }
   @media (orientation: portrait) { body[data-view] #rotate { display: flex; } }
   .big { font-size: 56px; font-weight: bold; }
-  #zone { position: absolute; left: 0; top: 0; width: 55%; height: 100%; touch-action: none; }
-  #fire { position: absolute; right: 8%; top: 50%; width: 34vmin; height: 34vmin; margin-top: -17vmin; border-radius: 50%; background: #ff5252; display: flex; align-items: center; justify-content: center; font-size: 28px; touch-action: none; }
-  #fire.down { background: #ffd740; color: #000; }
+  #zone { position: absolute; left: 0; top: 0; width: 50%; height: 100%; touch-action: none; }
+  .act { position: absolute; width: 28vmin; height: 28vmin; border-radius: 50%; background: #ff5252; color: #000; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; touch-action: none; }
+  #btnA { right: 5%; top: 54%; }
+  #btnB { right: 27%; top: 16%; background: #40c4ff; }
+  .act.down { background: #ffd740 !important; }
   #hud { position: absolute; top: 6px; left: 8px; font-size: 13px; opacity: .7; pointer-events: none; }
 </style>
 </head>
@@ -32,7 +34,8 @@
 </form>
 <div id="pad">
   <div id="zone"></div>
-  <div id="fire">A</div>
+  <div id="btnA" class="act">A</div>
+  <div id="btnB" class="act">B</div>
   <div id="hud"></div>
 </div>
 <div id="wait" class="overlay"><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div></div>

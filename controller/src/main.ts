@@ -23,7 +23,7 @@ document.addEventListener('touchend', (e) => {
   lastEnd = now;
 }, { passive: false });
 
-const state = { x: 0, y: 0, btn: 0, presses: 0, seq: 0 };
+const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0 };
 const sync = new ClockSync();
 let lastRtt: number | undefined;
 let ws: WebSocket | null = null;
@@ -48,11 +48,11 @@ const hud = (s: string) => { label = s; $('hud').textContent = s; };
 
 function showPhase(p: Phase, scores?: { id: number; score: number }[]) {
   phase = p;
-  if (p !== 'playing') { state.x = 0; state.y = 0; state.btn = 0; $('fire').classList.remove('down'); }
+  if (p !== 'playing') { state.x = 0; state.y = 0; state.btn = 0; document.querySelectorAll('.act').forEach((b) => b.classList.remove('down')); }
   if (p === 'results' && scores) {
-    const i = scores.findIndex((s) => s.id === myId);
-    $('rank').textContent = i >= 0 ? `#${i + 1}` : '-';
-    $('myscore').textContent = i >= 0 ? `${scores[i]!.score} puntos` : '';
+    const mine = scores.find((s) => s.id === myId) ?? scores[0]; // cooperative: every entry carries the team score
+    $('rank').textContent = mine ? String(mine.score) : '-';
+    $('myscore').textContent = mine ? 'puntos de equipo' : '';
   }
   view(p);
 }
@@ -68,7 +68,7 @@ function connect() {
       joined = true;
       myId = m.player.id;
       document.documentElement.style.setProperty('--c', m.player.color);
-      $('fire').style.background = m.player.color;
+      $('btnA').style.background = m.player.color;
       $('who').textContent = m.player.name;
       hud(`${m.player.name} #${m.player.slot + 1}`);
     } else if (m.t === 'phase') {
@@ -96,7 +96,7 @@ function connect() {
 
 function sendInput() {
   if (!joined || phase !== 'playing') return;
-  tx({ t: 'input', seq: state.seq++, x: state.x, y: state.y, btn: state.btn, presses: [state.presses], ts: Date.now() });
+  tx({ t: 'input', seq: state.seq++, x: state.x, y: state.y, btn: state.btn, presses: state.presses, ts: Date.now() });
 }
 
 function startPad() {
@@ -111,27 +111,30 @@ function startPad() {
   });
   stick.on('end', () => { state.x = 0; state.y = 0; });
 
-  const fire = $('fire');
-  let activePointer: number | null = null;
-  const release = (e: PointerEvent) => {
-    if (e.pointerId !== activePointer) return;
-    activePointer = null;
-    state.btn = 0;
-    fire.classList.remove('down');
-    sendInput();
+  const bindButton = (el: HTMLElement, i: number) => {
+    let activePointer: number | null = null;
+    const release = (e: PointerEvent) => {
+      if (e.pointerId !== activePointer) return;
+      activePointer = null;
+      state.btn &= ~(1 << i);
+      el.classList.remove('down');
+      sendInput();
+    };
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (activePointer !== null) return;
+      activePointer = e.pointerId;
+      el.setPointerCapture(e.pointerId);
+      state.btn |= 1 << i;
+      state.presses[i] = (state.presses[i]! + 1) % PRESS_MOD;
+      el.classList.add('down');
+      sendInput();
+    });
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointercancel', release);
   };
-  fire.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    if (activePointer !== null) return;
-    activePointer = e.pointerId;
-    fire.setPointerCapture(e.pointerId);
-    state.btn = 1;
-    state.presses = (state.presses + 1) % PRESS_MOD;
-    fire.classList.add('down');
-    sendInput();
-  });
-  fire.addEventListener('pointerup', release);
-  fire.addEventListener('pointercancel', release);
+  bindButton($('btnA'), 0);
+  bindButton($('btnB'), 1);
 
   setInterval(sendInput, 1000 / INPUT_HZ);
   setInterval(() => {

@@ -2,6 +2,6 @@
   "name": "@party/shared",
   "private": true,
   "type": "module",
-  "exports": { ".": "./protocol.ts", "./stats": "./stats.ts" },
+  "exports": { ".": "./protocol.ts", "./stats": "./stats.ts", "./game": "./overcooked.ts" },
   "scripts": { "typecheck": "tsc -p ." }
 }
