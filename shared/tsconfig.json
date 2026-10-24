@@ -1,1 +1,1 @@
-{ "extends": "../tsconfig.base.json", "compilerOptions": { "types": [] }, "include": ["*.ts", "games/**/*.ts"] }
+{ "extends": "../tsconfig.base.json", "compilerOptions": { "types": [] }, "include": ["*.ts", "games/**/*.ts", "feel/**/*.ts"] }
