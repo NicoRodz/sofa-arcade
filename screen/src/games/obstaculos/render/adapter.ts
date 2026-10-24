@@ -1,7 +1,7 @@
 // SimWorldView: the real world of F2a (inside an ObstSession) seen through the WorldView the renderer draws (view.ts). The renderer never imports
 // the simulation: this file maps it once per render frame. FakeWorld (stub.ts) stays for the harness and the renderer's own tests.
 import {
-  CRUMBLE_FALL_SEC, DIFFICULTY_PARAMS, DT, TILE, hangingOnRope, previewB, type BPreview, type Body, type ObstSession, type PlayerState, type World,
+  CRUMBLE_FALL_SEC, DT, TILE, cameraHints, hangingOnRope, previewB, type BPreview, type Body, type ObstSession, type PlayerState, type World,
 } from '@party/shared/obstaculos';
 import type { Difficulty } from '@party/shared/difficulty';
 import type { GameMode, ParsedLevel, TileGrid } from '@party/shared/obstaculos';
@@ -21,6 +21,9 @@ export class SimWorldView implements WorldView {
   entities: EntityView[] = [];
   hazard: HazardView | null = null;
   hud: HudView;
+  look: WorldView['look'] = null;
+  bubbleSec: number;
+  camp: WorldView['camp'] = null;
   private statics: EntityView[];
   private byId = new Map<string, EntityView>();
   private bubbleSince = new Map<number, number>();
@@ -31,9 +34,10 @@ export class SimWorldView implements WorldView {
     this.grid = world.grid;
     this.mode = world.mode;
     this.difficulty = world.difficulty;
+    this.bubbleSec = world.dparams.bubbleSec;
     this.statics = entitiesFromLevel(world.level);
     for (const e of this.statics) this.byId.set(e.id, e);
-    this.hud = { timeSec: 0, lives: world.lives, livesMax: DIFFICULTY_PARAMS[world.difficulty].lives, starsTaken: 0, levelIndex: session.levelIndex, levelCount: session.levelCount };
+    this.hud = { timeSec: 0, lives: world.lives, livesMax: world.dparams.lives, starsTaken: 0, levelIndex: session.levelIndex, levelCount: session.levelCount };
     this.sync();
   }
 
@@ -50,6 +54,9 @@ export class SimWorldView implements WorldView {
     h.timeSec = w.result ? w.result.timeSec : w.tick * DT;
     h.lives = w.lives; h.starsTaken = w.ent.stars.reduce((n, s) => n + (s.taken ? 1 : 0), 0);
     h.levelIndex = this.session.levelIndex; h.levelCount = this.session.levelCount;
+    this.look = cameraHints(w);
+    this.bubbleSec = w.dparams.bubbleSec;
+    this.camp = w.camp ? { countdown: w.countdown ? Math.ceil(w.countdown.steps / 60) : null, refills: w.refills } : null;
   }
 
   private syncPlayers(w: World): void {
@@ -68,7 +75,7 @@ export class SimWorldView implements WorldView {
       out.push({
         id: p.slot, slot: p.slot, name: this.names(p.slot), connected: p.connected,
         x: b.x, y: b.y, prevX: prev.x, prevY: prev.y, vx: b.vx, vy: b.vy, facing: b.facing, grounded: b.grounded,
-        dead: p.mode === 'dead', bubble, invulnSec: p.invuln * DT, planted: p.planted,
+        signal: p.camp.signal?.kind ?? null, dead: p.mode === 'dead', bubble, invulnSec: p.invuln * DT, planted: p.planted,
         hanging: active && !b.grounded && (anchored || hangingOnRope(w.ropes, p.slot, bodies)),
         anchored, holding: !p.holding || anchored ? 'none' : p.holding.kind === 'ring' ? 'none' : p.holding.kind,
         carriedBy: p.carriedBy, thrown: p.thrown > 0, inGoal: p.inGoal, cordada: cordada.get(p.slot) ?? -1,
@@ -87,7 +94,7 @@ export class SimWorldView implements WorldView {
   }
 
   private syncRopes(w: World): void {
-    this.ropes = w.ropes.map((r) => ({ id: r.id, cordada: r.id, links: r.links.map((l) => ({ a: l.a, b: l.b, tension: l.tension, active: l.active })) }));
+    this.ropes = w.ropes.map((r) => ({ id: r.id, cordada: r.id, base: r.links[0]?.base, links: r.links.map((l) => ({ a: l.a, b: l.b, tension: l.tension, active: l.active })) }));
   }
 
   private syncEntities(w: World): void {

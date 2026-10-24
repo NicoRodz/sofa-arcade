@@ -112,6 +112,7 @@ const approach = (v: number, t: number, k: number) => v + (t - v) * Math.min(1, 
 
 export interface RigFrame { x: number; y: number; zoom: number; dt: number } // x, y: feet centre in world px (interpolated)
 
+const SIGNAL_TEXT: Record<string, string> = { arrowL: '←', arrowR: '→', arrowU: '↑', arrowD: '↓', wait: '¡espera!', go: '¡ya!' };
 export class Explorer {
   readonly root: Phaser.GameObjects.Container;
   private rig: Phaser.GameObjects.Container;
@@ -130,6 +131,7 @@ export class Explorer {
   private bubble: Phaser.GameObjects.Image;
   private badge: Phaser.GameObjects.Image;
   private icon: Phaser.GameObjects.Image;
+  private sig: Phaser.GameObjects.Text;
   private shadow: Phaser.GameObjects.Image;
   // animation state
   private phase = 0; private sx = 0; private sy = 0; private vsx = 0; private vsy = 0; private lean = 0; private armsUp = 0;
@@ -156,10 +158,11 @@ export class Explorer {
     this.bubble = at('ex_bubble', 0, -50).setVisible(false);
     this.badge = at(`ex_badge_${i}`, 0, -122);
     this.icon = at('ex_icon_grab', 0, -158).setVisible(false);
+    this.sig = scene.add.text(0, -170, '', { fontFamily: 'ui-rounded, system-ui, sans-serif', fontSize: '40px', fontStyle: '800', color: '#FFF4E0', stroke: '#2B1B17', strokeThickness: 8 }).setOrigin(0.5, 1).setVisible(false); // campaign signals
     this.root = scene.add.container(0, 0, [this.shadow, this.rig]);
     this.root.setScale(RIG_SCALE);
     // badge, icon and bubble live outside the scaled rig so they keep a constant on-screen size
-    this.root.add([this.bubble, this.badge, this.icon]);
+    this.root.add([this.bubble, this.badge, this.icon, this.sig]);
     layer.add(this.root);
   }
 
@@ -276,6 +279,14 @@ export class Explorer {
       if (p.hint !== this.lastIcon) { this.icon.setTexture(`ex_icon_${p.hint}`); this.lastIcon = p.hint; }
       this.icon.setVisible(true).setAlpha(quiet ? 0.55 : 1).setScale((1 / R) * counter * (quiet ? 0.62 : 0.9) * inv).setPosition(0, -(56 + (quiet ? 30 : 36) * inv) * counter - Math.sin(this.t * 5) * 2);
     } else this.icon.setVisible(false);
+
+    // campaign signal (arrow, wait, go) above the head, on-screen size like the badge; it replaces the hint icon while it shows
+    const sigText = p.signal ? SIGNAL_TEXT[p.signal] : '';
+    if (sigText) {
+      if (this.sig.text !== sigText) this.sig.setText(sigText);
+      this.sig.setVisible(true).setColor(p.signal === 'go' ? '#7BE08A' : p.signal === 'wait' ? '#FFD23F' : '#FFF4E0').setScale((1 / R) * counter * 0.9 * inv * (1 + Math.sin(this.t * 14) * 0.04)).setPosition(0, -(64 + 44 * inv) * counter);
+      this.icon.setVisible(false);
+    } else this.sig.setVisible(false);
 
     // blink while invulnerable, dim if disconnected
     const inv2 = p.invulnSec > 0 && Math.floor(this.t * 14) % 2 === 0;

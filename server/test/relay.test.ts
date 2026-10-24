@@ -49,6 +49,9 @@ describe('relay', () => {
     const fwd = await screen.next('input');
     expect(fwd).toMatchObject({ playerId: 1, seq: 7, x: 0.5, y: -1, presses: [2] });
 
+    a.send({ ...input(9, 3), sig: { kind: 'go', seq: 4 }, go: true } as ClientMsg);
+    expect(await screen.next('input')).toMatchObject({ playerId: 1, seq: 9, sig: { kind: 'go', seq: 4 }, go: true }); // the campaign's signals reach the screen
+
     a.send({ t: 'ping', id: 5, t0: 123, rtt: 12.5, off: -40 });
     const pong = await a.next('pong');
     expect(pong).toMatchObject({ id: 5, t0: 123 });

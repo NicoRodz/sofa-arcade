@@ -4,7 +4,8 @@ import {
   applyResult, canOfferSkip, continueLevel, levelById, nextLevel, openWorld, playableWith, progressOf, skipLevel, isUnlocked,
   type Catalog, type CatalogLevel, type Expedition, type LevelProgress,
 } from '@party/shared/obstaculos/campaign';
-import type { GameMode, LevelDef } from '@party/shared/obstaculos';
+import { worldForDifficulty, type GameMode, type LevelDef, type WorldId } from '@party/shared/obstaculos';
+import type { Difficulty } from '@party/shared/difficulty';
 import { lastExpedition, type CampaignApi, type ExpeditionSummary, type KV } from './api';
 
 export type ApiLike = Pick<CampaignApi, 'list' | 'get' | 'create' | 'merge' | 'claim' | 'release' | 'reset'>;
@@ -31,7 +32,8 @@ export interface Hub {
   offline: boolean;
 }
 
-export interface RunSpec { level: CatalogLevel; def: LevelDef; mode: GameMode }
+// world: the sim's campaign layer for this level (its biome, or the summit's), moved one world down or up by the lobby's Easy / Hard (plan §3)
+export interface RunSpec { level: CatalogLevel; def: LevelDef; mode: GameMode; world: WorldId }
 export type Refusal = { ok: false; reason: string };
 
 export interface FlowDeps { api: ApiLike; catalog: Catalog; room: string; kv: KV | null; now?: () => number }
@@ -107,12 +109,12 @@ export class CampaignFlow {
 
   // ---- playing a level
   // What the session needs to run `levelId` (the level's own tilemap and mode), or why it cannot: closed, or not validated for this many players.
-  spec(levelId: string, n: number): RunSpec | Refusal {
+  spec(levelId: string, n: number, difficulty: Difficulty = 'normal'): RunSpec | Refusal {
     const e = this.exp, level = levelById(this.catalog, levelId);
     if (!e || !level) return { ok: false, reason: 'Nivel desconocido' };
     if (!isUnlocked(e, this.catalog, levelId)) return { ok: false, reason: 'Todavía está cerrado' };
     if (!playableWith(level, n)) return { ok: false, reason: `Este nivel no está validado para ${n} ${n === 1 ? 'jugador' : 'jugadores'}` };
-    return { level, def: level.def, mode: level.mode };
+    return { level, def: level.def, mode: level.mode, world: worldForDifficulty(level.kind === 'summit' ? 'summit' : level.def.biome, difficulty) };
   }
   begin(levelId: string): void { this.current = { levelId, deaths: 0 }; this.outcome = null; }
 

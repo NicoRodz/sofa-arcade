@@ -91,6 +91,12 @@ describe('what a level asks and what it gives back', () => {
     expect(flow.spec('1-1', 9)).toEqual({ ok: false, reason: 'Este nivel no está validado para 9 jugadores' });
     expect(flow.spec('nope', 2)).toEqual({ ok: false, reason: 'Nivel desconocido' });
   });
+  it('the sim world of a level is its biome, one world down for Fácil and one up for Difícil, clamped at the ends', async () => {
+    const { flow } = mk();
+    await flow.create(['A', 'B']);
+    const w = (d: 'easy' | 'normal' | 'hard') => { const s = flow.spec('1-1', 2, d); return 'ok' in s ? null : s.world; };
+    expect([w('easy'), w('normal'), w('hard')]).toEqual(['beach', 'beach', 'forest']);
+  });
   it('a clear is saved on the server at once and offers Siguiente', async () => {
     const { api, flow } = mk();
     await flow.create(['A', 'B']);

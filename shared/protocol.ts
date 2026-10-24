@@ -5,6 +5,7 @@ import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
 import { MAX_TEAMS, teamOf, type TeamInfo } from './teams';
 import { isNavKey, type NavKey } from './captain';
 import { isVersusChoice, type VersusChoice } from './versusMaps';
+import { SIGNAL_KINDS, type SignalKind } from './games/obstaculos/sim/campaign';
 import type { PhoneResult, Verdict } from './versusReport';
 
 export { ROUND_MS } from './difficulty';
@@ -37,6 +38,10 @@ export interface InputState {
   btn: number;
   presses: number[];
   ts: number; // sender Date.now()
+  // Campaign signals of "Obstaculos en cadena" (plan §4 #1). Additive: a phone that never sends them is read as before. `sig` is a monotonic counter
+  // like the presses (a new seq = one signal of that kind; the first sample is the baseline), `go` is a state (holding "¡ya!" starts the 3-2-1).
+  sig?: { kind: SignalKind; seq: number };
+  go?: boolean;
 }
 
 // menu: the Pichiclub start screen, where the screen picks the game (phones wait). lobby: that game's setup.
@@ -180,6 +185,7 @@ export function parseClientMessage(raw: string): ClientMsg | null {
     case 'input':
       if (!num(m.seq) || !num(m.x) || !num(m.y) || !num(m.btn) || !num(m.ts)) return null;
       if (!Array.isArray(m.presses) || !m.presses.every(num)) return null;
+      const sig = m.sig && typeof m.sig === 'object' && (SIGNAL_KINDS as readonly string[]).includes(m.sig.kind) && Number.isInteger(m.sig.seq) ? { kind: m.sig.kind as SignalKind, seq: ((m.sig.seq % PRESS_MOD) + PRESS_MOD) % PRESS_MOD } : undefined; // a malformed signal is dropped, never the whole input
       return {
         t: 'input',
         seq: m.seq,
@@ -188,6 +194,8 @@ export function parseClientMessage(raw: string): ClientMsg | null {
         btn: m.btn | 0,
         presses: m.presses.slice(0, BUTTON_COUNT).map((p: number) => ((p % PRESS_MOD) + PRESS_MOD) % PRESS_MOD),
         ts: m.ts,
+        ...(sig ? { sig } : {}),
+        ...(m.go === true ? { go: true } : {}),
       };
     case 'ping':
       if (!num(m.id) || !num(m.t0)) return null;

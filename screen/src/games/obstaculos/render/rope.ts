@@ -42,7 +42,8 @@ export class RopeDrawer {
         // cull chains far away from the view
         const minX = Math.min(A.x, B.x), maxX = Math.max(A.x, B.x), minY = Math.min(A.y, B.y) - 200, maxY = Math.max(A.y, B.y) + 200;
         if (maxX < view.x - 100 || minX > view.x + view.w + 100 || maxY < view.y || minY > view.y + view.h) { ch.seeded = false; continue; }
-        const seg = ROPE_LEN / (N - 1);
+        const baseLen = rope.base ?? ROPE_LEN; // the campaign's rope is longer
+        const seg = baseLen / (N - 1);
         const taut = Math.max(0, Math.min(1.25, link.tension));
         // integrate
         const gScale = 1 - Math.max(0, Math.min(1, (taut - 0.7) / 0.3)) * 0.92; // taut rope barely sags
@@ -55,7 +56,7 @@ export class RopeDrawer {
         if (ch.twang > 0) { const m = N >> 1; ch.y[m] = ch.y[m]! + Math.sin(t * 60) * 6 * ch.twang; ch.twang = Math.max(0, ch.twang - dt * 3); }
         // a slack rope hangs as a short loop: the visual length follows the distance (1.2x) between a third of L and L
         const dist = Math.hypot(B.x - A.x, B.y - A.y);
-        const len = Math.min(seg, Math.max(ROPE_LEN * 0.3, dist * 1.2) / (N - 1));
+        const len = Math.min(seg, Math.max(baseLen * 0.3, dist * 1.2) / (N - 1));
         for (let it = 0; it < ITER; it++) {
           for (let i = 0; i < N - 1; i++) {
             const dx = ch.x[i + 1]! - ch.x[i]!, dy = ch.y[i + 1]! - ch.y[i]!;

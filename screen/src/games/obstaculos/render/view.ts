@@ -25,7 +25,7 @@
 //   check     call checkWorldView(world) in the adapter's tests: it lists every contract violation (NaN, duplicate ids, rope links to nobody...).
 //
 // Units: pixels of the simulation (TILE = 48), y grows downward. Nothing here imports Phaser: it can be used from Node tests and from the sim adapter.
-import type { GameMode, ParsedLevel, TileGrid } from '@party/shared/obstaculos';
+import type { GameMode, ParsedLevel, SignalKind, TileGrid } from '@party/shared/obstaculos';
 import type { Difficulty } from '@party/shared/difficulty';
 
 export type HandAction = 'none' | 'anchor' | 'lift' | 'grab' | 'plant' | 'throw' | 'release'; // what B would do now (icon above the head)
@@ -52,10 +52,11 @@ export interface PlayerView {
   inGoal: boolean;
   cordada: number; // rope group index, -1 when free (Libres mode or alone)
   hint: HandAction;
+  signal?: SignalKind | null; // campaign: the signal shown over the head (arrow, wait, go); also from the bubble
 }
 
 export interface RopeLink { a: number; b: number; tension: number; active: boolean } // a, b = player ids; tension = distance / ROPE_LEN; inactive = bubble valve
-export interface RopeView { id: number; cordada: number; links: RopeLink[] }
+export interface RopeView { id: number; cordada: number; links: RopeLink[]; base?: number } // base: rest length in px (the campaign's rope is longer than ROPE_LEN)
 
 export type EntityKind =
   | 'star' | 'checkpoint' | 'goal' | 'ring' | 'box' | 'heavyBox' | 'key'
@@ -93,6 +94,10 @@ export interface WorldView {
   entities: readonly EntityView[];
   hazard: HazardView | null;
   hud: HudView;
+  // campaign layer (absent in a quick match): camera hints, seconds out of the picture before the bubble, the 3-2-1 and the refill counter
+  look?: { goalX: number | null; hazard: { kind: 'risingLava' | 'tide' | 'avalanche'; pos: number } | null; padTiles: number } | null;
+  bubbleSec?: number;
+  camp?: { countdown: number | null; refills: number } | null;
 }
 
 export const BIOME_NAME = { beach: 'Playa', forest: 'Bosque valdiviano', mine: 'Mina del norte', glacier: 'Glaciar', volcano: 'Volcán' } as const;

@@ -224,7 +224,7 @@ function startObst() {
   puestoOf.clear(); puestoMsg = undefined;
   activeGame = 'obstaculos';
   obstSummary = null;
-  obstRun = new ObstRun({ mode: cr ? cr.mode : o.tether, difficulty: config.difficulty, level: cr ? 1 : level, seed: config.seed, slots: live.map((p) => p.info.slot), ...(cr ? { levels: [cr.def] } : {}) }, {
+  obstRun = new ObstRun({ mode: cr ? cr.mode : o.tether, difficulty: config.difficulty, level: cr ? 1 : level, seed: config.seed, slots: live.map((p) => p.info.slot), ...(cr ? { levels: [cr.def], campaign: { world: cr.world } } : {}) }, {
     names: slotName, bus: gameBus,
     onOver: () => { obstSummary = obstRun?.session.summary() ?? null; if (cr) void camp.over().then(() => dispatch('timeout')); else dispatch('timeout'); },
     ...(cr ? { onLevelEnd: (e) => camp.levelEnd(e) } : {}),
@@ -440,7 +440,7 @@ function onMessage(m: ServerMsg) {
       if (!p) return;
       totalPkts++; p.pkts++;
       p.ctl = { x: m.x, y: m.y, b: (m.btn & 2) !== 0 };
-      if (activeGame === 'obstaculos' && phase === 'playing') obstRun?.receive(p.info.slot, { x: m.x, y: m.y, presses: m.presses }); // the last packet of every phone
+      if (activeGame === 'obstaculos' && phase === 'playing') obstRun?.receive(p.info.slot, { x: m.x, y: m.y, presses: m.presses, signal: m.sig, goHeld: m.go }); // the last packet of every phone
       const delta = p.tracker.update(m.presses);
       if (delta.some((d) => d > 0)) {
         p.pendA += delta[0] ?? 0;

@@ -10,6 +10,20 @@ describe('protocol', () => {
     const m = parseClientMessage('{"t":"input","seq":1,"x":5,"y":-5,"btn":1,"presses":[70000],"ts":1}');
     expect(m).toMatchObject({ x: 1, y: -1, presses: [70000 % 65536] });
   });
+  it('input carries the campaign signals: a counter and a state, both optional, a bad one is dropped and the input survives', () => {
+    const base = { t: 'input', seq: 1, x: 0, y: 0, btn: 0, presses: [0, 0], ts: 5 };
+    const plain = parseClientMessage(JSON.stringify(base));
+    expect(plain).not.toHaveProperty('sig');
+    expect(plain).not.toHaveProperty('go');
+    const sig = parseClientMessage(JSON.stringify({ ...base, sig: { kind: 'arrowL', seq: 65537 }, go: true }));
+    expect(sig).toMatchObject({ t: 'input', sig: { kind: 'arrowL', seq: 1 }, go: true });
+    for (const bad of [{ kind: 'nope', seq: 1 }, { kind: 'go', seq: 1.5 }, { kind: 'go' }, 'go', 7]) {
+      const m = parseClientMessage(JSON.stringify({ ...base, sig: bad, go: 'yes' }));
+      expect(m).toMatchObject({ t: 'input', seq: 1 });
+      expect(m).not.toHaveProperty('sig');
+      expect(m).not.toHaveProperty('go');
+    }
+  });
   it('deadzone zeroes small vectors', () => {
     expect(applyDeadzone(0.1, 0.1)).toEqual([0, 0]);
     expect(applyDeadzone(1, 0)).toEqual([1, 0]);

@@ -67,7 +67,7 @@ export class CampaignScreen {
   }
 
   // ---- what a campaign round needs from main.ts
-  runSpec(levelId: string) { return this.flow.spec(levelId, this.deps.count()); }
+  runSpec(levelId: string) { return this.flow.spec(levelId, this.deps.count(), this.deps.difficulty().value); }
   levelEnd(e: LevelEnd): void { void this.flow.levelEnd(e); }
   // The session ended (cleared and the banners are over, or out of hearts twice): wait for the save, then the results show the outcome.
   async over(): Promise<void> {

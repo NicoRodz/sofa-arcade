@@ -2,7 +2,7 @@
 // The host calls update(dtMs) once per render frame after stepping the world and setting world.alpha. See render/README in view.ts.
 import Phaser from 'phaser';
 import { PLAYER_H, PLAYER_W, ROPE_LEN, TILE, DIFFICULTY_PARAMS, BUBBLE_POP_SEC, isSolidKind, tileAt } from '@party/shared/obstaculos';
-import type { ObstEvents } from '@party/shared/obstaculos';
+import type { AllObstEvents } from '@party/shared/obstaculos';
 import type { Emitter } from '@party/shared/events';
 import { C, CHEFS, H, W, hexNum } from '../../../art/tokens';
 import { buildFxTextures } from '../../../art/fx';
@@ -50,7 +50,7 @@ export class ObstaclesView {
   private t = 0;
   private prevInGoal = new Set<number>();
 
-  constructor(private scene: Phaser.Scene, private world: WorldView, bus?: Emitter<ObstEvents>) {
+  constructor(private scene: Phaser.Scene, private world: WorldView, bus?: Emitter<AllObstEvents>) {
     const mkLayer = () => { const l = scene.add.layer(); this.layers.push(l); return l; };
     const lSky = mkLayer(), lOutside = mkLayer(), lRope = mkLayer(), lTiles = mkLayer(), lBehind = mkLayer(), lEnt = mkLayer(), lPlayers = mkLayer(), lLiquid = mkLayer(), lFx = mkLayer();
     this.hudLayer = scene.add.layer().setDepth(10);
@@ -74,8 +74,8 @@ export class ObstaclesView {
   private explorerLayer: Phaser.GameObjects.Layer;
 
   // ---- events -> juice
-  private wire(bus: Emitter<ObstEvents>) {
-    const on = <K extends keyof ObstEvents>(k: K, fn: (p: ObstEvents[K]) => void) => this.off.push(bus.on(k, fn));
+  private wire(bus: Emitter<AllObstEvents>) {
+    const on = <K extends keyof AllObstEvents>(k: K, fn: (p: AllObstEvents[K]) => void) => this.off.push(bus.on(k, fn));
     const feet = (id: number) => this.feet.get(id) ?? { x: 0, y: 0 };
     const mid = (id: number) => { const f = feet(id); return { x: f.x, y: f.y - PLAYER_H / 2 }; };
     const slotOf = (id: number) => this.world.players.find((p) => p.id === id)?.slot ?? 0;
@@ -131,6 +131,11 @@ export class ObstaclesView {
       this.hud.banner(`¡NIVEL COMPLETADO!\n${medal} · ${clockText(e.timeSec)}`, e.medal === 'gold' ? C.cheese : e.medal === 'silver' ? '#DDE6EC' : '#E0A064', 3200, 84);
       for (const x of this.explorers.values()) x.celebrate();
     });
+    // campaign layer: shared hearts, the 3-2-1 of "go", the super jump and the edge assist
+    on('obst.heartsOut', (e) => { this.hud.banner(e.toStart ? '¡Sin corazones!\nOtra vez desde el inicio' : '¡Corazones de vuelta!', e.toStart ? C.danger : '#7BE08A', 1800, 60); });
+    on('obst.countdown', (e) => { this.hud.banner(e.n > 0 ? String(e.n) : '¡YA!', e.n > 0 ? C.cheese : '#7BE08A', e.n > 0 ? 900 : 700, 150); });
+    on('obst.superJump', (e) => { for (const id of e.players) { const m = mid(id); this.fx.ring(m.x, m.y, 0xffd23f, 0.4, 2); } const a = mid(e.players[0] ?? 0); this.fx.float(a.x, a.y - 60, '¡Supersalto!', C.cheese, 32); });
+    on('obst.edgeAssist', (e) => { const m = mid(e.player); this.fx.float(m.x, m.y - 50, '¡Arriba!', '#7BE08A', 26); });
     on('obst.runEnd', (e) => this.hud.banner(e.reason === 'complete' ? '¡EXPEDICIÓN COMPLETA!' : 'EXPEDICIÓN TERMINADA', e.reason === 'complete' ? C.cheese : C.danger, 3500, 84));
   }
 
@@ -161,11 +166,11 @@ export class ObstaclesView {
       const ok = !p.dead && p.connected;
       return { id: p.id, x: q.x + PLAYER_W / 2, y: q.y + PLAYER_H / 2, vx: p.vx, progress: progressAt(this.field, w.grid, q.x + PLAYER_W / 2, q.y + PLAYER_H / 2), active: ok && !p.bubble, visibleCheck: ok && !p.bubble };
     });
-    const res = computeCamera({ players: camPlayers, boundsW: w.grid.w * TILE, boundsH: w.grid.h * TILE, zones: w.level.def.cameraZones }, this.camState, dtReal);
+    const res = computeCamera({ players: camPlayers, boundsW: w.grid.w * TILE, boundsH: w.grid.h * TILE, zones: w.level.def.cameraZones, look: w.look ?? undefined }, this.camState, dtReal);
     this.camState = res.state; this.camera.result = res;
     cam.setZoom(res.state.zoom);
     cam.setScroll(res.state.cx - W / 2, res.state.cy - H / 2);
-    const bubbleSec = DIFFICULTY_PARAMS[w.difficulty].bubbleSec;
+    const bubbleSec = w.bubbleSec ?? DIFFICULTY_PARAMS[w.difficulty].bubbleSec;
     this.bubbleDue = this.stragglers.update(dtReal, res.offscreen.map((o) => o.id), bubbleSec);
 
     // world layers

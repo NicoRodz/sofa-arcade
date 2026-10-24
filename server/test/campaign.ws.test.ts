@@ -68,7 +68,7 @@ describe('two bots on websockets play 1-1 and the campaign moves on', () => {
       if ('ok' in spec) throw new Error(spec.reason);
       flow.begin('1-1');
       let over = false;
-      run.current = new ObstRun({ mode: spec.mode, difficulty: 'normal', level: 1, seed: 1, slots: [0, 1], levels: [spec.def] }, {
+      run.current = new ObstRun({ mode: spec.mode, difficulty: 'normal', level: 1, seed: 1, slots: [0, 1], levels: [spec.def], campaign: { world: spec.world } }, {
         names: (s) => `J${s + 1}`, bus: { emit: () => {} }, onOver: () => { over = true; }, onLevelEnd: (e) => { void flow.levelEnd(e); },
       });
       const r = run.current;
@@ -113,4 +113,41 @@ describe('two bots on websockets play 1-1 and the campaign moves on', () => {
       await srv.close();
     }
   }, 60_000);
+
+  it('a signal sent from a phone crosses the relay and shows over that explorer in the campaign layer', async () => {
+    const srv = await startServer({ port: 0, mode: 'none', dataDir: dir });
+    const room = 'SIGN';
+    const phones: BotPhone[] = [];
+    let screen: WebSocket | null = null;
+    try {
+      screen = new WebSocket(`ws://127.0.0.1:${srv.port}/ws?role=screen&room=${room}`);
+      const run: { current: ObstRun | null } = { current: null };
+      const slotOf = new Map<number, number>();
+      screen.on('message', (d) => {
+        const m = JSON.parse(d.toString()) as ServerMsg;
+        if (m.t === 'player_joined') slotOf.set(m.player.id, m.player.slot);
+        else if (m.t === 'input') { const slot = slotOf.get(m.playerId); if (slot !== undefined) run.current?.receive(slot, { x: m.x, y: m.y, presses: m.presses, signal: m.sig, goHeld: m.go }); }
+      });
+      await new Promise((r) => screen!.once('open', r));
+      phones.push(new BotPhone(srv.port, room, 'Nico'), new BotPhone(srv.port, room, 'Angi'));
+      for (let i = 0; i < 100 && (slotOf.size < 2 || phones.some((p) => p.slot < 0)); i++) await sleep(20);
+      const level = LEGACY_CATALOG.levels.find((l) => l.id === '1-2')!;
+      run.current = new ObstRun({ mode: 'chain', difficulty: 'normal', level: 1, seed: 1, slots: [0, 1], levels: [level.def], campaign: { world: 'beach' } }, { names: (s) => `J${s}`, bus: { emit: () => {} }, onOver: () => {} });
+      const r = run.current;
+      const raw = (p: BotPhone, extra: object) => p.ws.send(JSON.stringify({ t: 'input', seq: p.seq++, x: 0, y: 0, btn: 0, presses: [0, 0], ts: Date.now(), ...extra }));
+      for (let i = 0; i < 100; i++) r.step(1000 / 30); // the 3-2-1
+      raw(phones[0]!, { sig: { kind: 'wait', seq: 1 } }); // the first sample is the baseline: no signal yet
+      await sleep(30); r.step(1000 / 30);
+      expect(r.session.world.players.find((p) => p.slot === phones[0]!.slot)!.camp.signal).toBeNull();
+      raw(phones[0]!, { sig: { kind: 'wait', seq: 2 } });
+      await sleep(30);
+      for (let i = 0; i < 4; i++) r.step(1000 / 30);
+      expect(r.session.world.players.find((p) => p.slot === phones[0]!.slot)!.camp.signal?.kind).toBe('wait');
+      expect(r.session.world.players.find((p) => p.slot === phones[1]!.slot)!.camp.signal).toBeNull(); // only the one that sent it
+    } finally {
+      phones.forEach((p) => p.ws.close());
+      screen?.close();
+      await srv.close();
+    }
+  }, 30_000);
 });
