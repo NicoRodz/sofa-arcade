@@ -510,6 +510,21 @@ describe('coop regression: one team is the same round as before', () => {
       expect(ge).toEqual(we);
     });
   }
+  it('coop draws a recipe only when the order is admitted (a full queue spends nothing); versus draws at every slot', () => {
+    const seq = (versus: boolean, skipped: number) => {
+      const g = versus ? mk([[1, 2], [3, 4]], { seed: 7 }).g : createGame({ n: 2, seed: 7, rows: fixedMap('9')!.rows });
+      const t = g.teams[0]!;
+      t.orders = [];
+      for (let i = 0; i < g.params.maxOrders; i++) t.orders.push({ id: 100 + i, expiresAt: Infinity, warned: true, recipe: 'marinara' });
+      for (let i = 0; i < skipped; i++) spawnOrder(g, t); // full: nothing is admitted
+      expect(t.orders).toHaveLength(g.params.maxOrders);
+      const out: string[] = [];
+      for (let i = 0; i < 24; i++) { t.orders = []; spawnOrder(g, t); out.push(t.orders[0]!.recipe); }
+      return out.join();
+    };
+    expect(seq(false, 5)).toBe(seq(false, 0));
+    expect(seq(true, 5)).not.toBe(seq(true, 0));
+  });
   it('coop events carry no team and no VIP fields; the legacy fields are team 0', () => {
     const g = createGame({ n: 2 });
     expect(g.versus).toBe(false);
