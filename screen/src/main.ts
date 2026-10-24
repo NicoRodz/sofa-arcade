@@ -6,12 +6,18 @@ import {
 import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/difficulty';
 import { GAMES } from '@party/shared/games';
 import { generate, resolveMap } from '@party/shared/generate';
-import { MAP_IDS, fixedMap, isMapChoice, type MapChoice } from '@party/shared/maps';
+import { FIXED_MAPS, MAP_IDS, fixedMap, isMapChoice, type MapChoice } from '@party/shared/maps';
 import { gameBus } from './bus';
+import { chefCanvas } from './art/chef';
+import { chefOf } from './art/tokens';
+import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
+import { iris } from './art/iris';
+import { MainScene, type Host } from './scene';
+import { C, H, W } from './art/tokens';
 import { percentile } from '@party/shared/stats';
 import {
-  COLS, COUNTDOWN_MS, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
-  type Controls, type Item, type Station,
+  COUNTDOWN_MS, TICK_MS, addPlayer, createGame, removePlayer, tick,
+  type Controls,
 } from '@party/shared/game';
 
 interface P {
@@ -22,7 +28,6 @@ interface P {
   rtt: number[]; lag: number[];
   off: number | null; // phone clock -> server clock
   pkts: number; pktsRate: number;
-  label?: Phaser.GameObjects.Text;
 }
 const players = new Map<number, P>();
 const pendingLag: { id: number; sendServerTime: number }[] = [];
@@ -39,9 +44,8 @@ const room = (() => {
 })();
 let phase: Phase = 'lobby';
 let config: LobbyConfig = { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 };
-let mapName = '';
 let game = createGame();
-let debugOverride: boolean | null = null;
+let debugOverride = false;
 let screenRtt = NaN;
 let totalPkts = 0;
 let pktsRate = 0;
@@ -69,7 +73,6 @@ function upsert(info: PublicPlayer, reset = false) {
 function remove(id: number) {
   const p = players.get(id);
   if (!p) return;
-  p.label?.destroy();
   players.delete(id);
   removePlayer(game, id);
   renderUi();
@@ -82,10 +85,13 @@ function setPhase(next: Phase) {
   phase = next;
   if (phase === 'playing') {
     const map = resolveMap(config.map, config.seed, config.difficulty, players.size, Math.random);
-    mapName = map.name;
     game = createGame({ difficulty: config.difficulty, n: players.size, rows: map.rows, countdownMs: COUNTDOWN_MS, bus: gameBus });
     for (const p of players.values()) { addPlayer(game, p.info.id, p.info.slot); p.pendA = 0; }
-  }
+    overAt = null;
+    stats.delivered.clear(); stats.expired = 0;
+    scene.startRound(game, FIXED_MAPS.find((m) => m.rows === map.rows)?.id ?? 'random', config.seed);
+  } else if (phase === 'results') renderResults();
+  else if (phase === 'lobby') scene.endRound();
   // cooperative: every player carries the team score
   sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: game.score })) : undefined });
   renderUi();
@@ -95,6 +101,11 @@ const setConfig = (patch: Partial<LobbyConfig>) => {
   sendMsg({ t: 'config', ...config });
   renderUi();
 };
+function startRound() {
+  if (phase !== 'lobby' || starting || !canStart([...players.values()].map((p) => p.info))) return;
+  starting = true;
+  iris(() => { dispatch('start'); gateUntil = performance.now() + 700; }, () => { starting = false; });
+}
 const dispatch = (ev: Parameters<typeof nextPhase>[1]) => {
   if (ev === 'start' && !canStart([...players.values()].map((p) => p.info))) return;
   setPhase(nextPhase(phase, ev));
@@ -154,181 +165,180 @@ setInterval(() => {
   ws.send(JSON.stringify({ t: 'ping', id: performance.now(), t0: Date.now() }));
 }, PING_MS);
 
-const COL_ITEM = [0xf2d49b, 0xe53935]; // masa, tomate/queso
-const COL_STATION: Record<Station['kind'], number> = {
-  crate: 0x8d6e63, board: 0xd7b98e, pot: 0xbf5b2c, plates: 0xcfd8dc, window: 0x7e57c2, counter: 0x5c5c6e,
+let overAt: number | null = null;
+let gateUntil = 0; // the logic waits for the iris to open
+let starting = false;
+let acc = 0;
+const host: Host = {
+  players: () => new Map([...players].map(([id, p]) => [id, p.info])),
+  step(delta) {
+    if (phase !== 'playing' || performance.now() < gateUntil) { acc = 0; return; }
+    acc += Math.min(delta, 100);
+    while (acc >= TICK_MS) {
+      acc -= TICK_MS;
+      const controls = new Map<number, Controls>();
+      for (const p of players.values()) {
+        controls.set(p.info.id, { ...p.ctl, a: p.pendA });
+        p.pendA = 0;
+      }
+      tick(game, controls);
+      if (game.over) { overAt ??= performance.now(); break; }
+    }
+    // "¡TIEMPO!" stays on screen for a beat before the results
+    if (game.over && overAt !== null && performance.now() - overAt > 1100) { overAt = null; dispatch('timeout'); }
+  },
 };
-const HUD_H = 96;
-
-class Main extends Phaser.Scene {
-  private gfx!: Phaser.GameObjects.Graphics;
-  private acc = 0;
-  create() {
-    this.gfx = this.add.graphics();
-    // Called right after the frame is drawn: closest browser-side proxy for "visible on screen".
-    this.game.events.on(Phaser.Core.Events.POST_RENDER, () => {
-      const off = sync.offset;
-      if (!pendingLag.length || off === null) return;
-      const nowServer = Date.now() + off;
-      for (const q of pendingLag.splice(0)) {
-        const p = players.get(q.id);
-        if (p) record('lag', p, nowServer - q.sendServerTime);
-      }
-    });
-  }
-  update(_time: number, delta: number) {
-    if (phase === 'playing') {
-      this.acc += Math.min(delta, 100);
-      while (this.acc >= TICK_MS) {
-        this.acc -= TICK_MS;
-        const controls = new Map<number, Controls>();
-        for (const p of players.values()) {
-          controls.set(p.info.id, { ...p.ctl, a: p.pendA });
-          p.pendA = 0;
-        }
-        tick(game, controls);
-        if (game.over) { dispatch('timeout'); break; }
-      }
-    } else this.acc = 0;
-    this.draw();
-  }
-  private item(it: Item, x: number, y: number, s: number) {
-    const g = this.gfx;
-    if (it === 'plate' || it === 'dish') {
-      g.fillStyle(0xffffff).fillRect(x - s * 0.3, y - s * 0.3, s * 0.6, s * 0.6); // tray / box
-      g.fillStyle(0xcfd8dc).fillRect(x - s * 0.24, y - s * 0.24, s * 0.48, s * 0.48);
-      if (it === 'dish') g.fillStyle(COL_ITEM[0]!).fillCircle(x, y, s * 0.2).fillStyle(COL_ITEM[1]!).fillCircle(x - s * 0.06, y - s * 0.04, s * 0.07).fillCircle(x + s * 0.07, y + s * 0.05, s * 0.07);
-      return;
-    }
-    const type = it.endsWith('1') ? 1 : 0;
-    g.fillStyle(COL_ITEM[type]!);
-    if (it.startsWith('raw')) {
-      if (type === 0) g.fillCircle(x, y, s * 0.22); else g.fillRect(x - s * 0.2, y - s * 0.2, s * 0.4, s * 0.4);
-    } else {
-      // cut: two smaller pieces
-      for (const dx of [-0.13, 0.13]) {
-        if (type === 0) g.fillCircle(x + s * dx, y, s * 0.11); else g.fillRect(x + s * dx - s * 0.1, y - s * 0.1, s * 0.2, s * 0.2);
-      }
-    }
-  }
-  private bar(x: number, y: number, w: number, v: number, color: number) {
-    this.gfx.fillStyle(0x000000, 0.7).fillRect(x, y, w, 7);
-    this.gfx.fillStyle(color).fillRect(x, y, w * Math.max(0, Math.min(1, v)), 7);
-  }
-  private draw() {
-    const { width, height } = this.scale;
-    const s = Math.floor(Math.min(width / COLS, (height - HUD_H) / ROWS));
-    const ox = Math.floor((width - s * COLS) / 2);
-    const oy = HUD_H + Math.floor((height - HUD_H - s * ROWS) / 2);
-    const g = this.gfx;
-    g.clear();
-    game.grid.forEach((row, ty) => row.forEach((t, tx) => {
-      if (t.kind === 'wall') return;
-      const color = t.kind === 'water' ? 0x1f4e79 : t.kind === 'floor' ? ((tx + ty) % 2 ? 0x2a2a38 : 0x26262f) : 0x2a2a38;
-      g.fillStyle(color).fillRect(ox + tx * s, oy + ty * s, s, s);
-    }));
-    for (const st of game.stations) {
-      const x = ox + st.tx * s, y = oy + st.ty * s, cx = x + s / 2, cy = y + s / 2;
-      g.fillStyle(COL_STATION[st.kind]).fillRect(x + 2, y + 2, s - 4, s - 4);
-      if (st.kind === 'crate') this.item(st.crate === 0 ? 'raw0' : 'raw1', cx, cy, s * 1.3);
-      else if (st.kind === 'plates') this.item('plate', cx, cy, s * 1.3);
-      else if (st.kind === 'window') g.fillStyle(0xffffff, 0.8).fillRect(x + s * 0.2, y + s * 0.4, s * 0.6, s * 0.2);
-      else if (st.kind === 'pot') {
-        g.fillStyle(0x263238).fillCircle(cx, cy, s * 0.36);
-        st.inputs.forEach((t, i) => g.fillStyle(COL_ITEM[t]!).fillCircle(cx + (i - 0.5) * s * 0.26, cy, s * 0.11));
-        if (st.done) g.lineStyle(4, 0x69f0ae).strokeCircle(cx, cy, s * 0.4);
-        else if (st.inputs.length === 2) this.bar(x + 4, y + s - 11, s - 8, st.progress, 0xff9100);
-      } else if (st.item) {
-        this.item(st.item, cx, cy, s);
-        if (st.kind === 'board' && st.progress > 0) this.bar(x + 4, y + s - 11, s - 8, st.progress, 0x69f0ae);
-      }
-    }
-    for (const gp of game.players.values()) {
-      const p = players.get(gp.id);
-      if (!p) continue;
-      const px = ox + gp.x * s, py = oy + gp.y * s, r = s * 0.35;
-      const len = Math.hypot(gp.fx, gp.fy) || 1;
-      const color = Phaser.Display.Color.HexStringToColor(p.info.color).color;
-      const alpha = p.info.connected ? 1 : 0.35;
-      g.fillStyle(color, alpha).fillCircle(px, py, r);
-      g.fillStyle(0xffffff, alpha).fillCircle(px + (gp.fx / len) * r * 0.6, py + (gp.fy / len) * r * 0.6, r * 0.25);
-      if (gp.item) {
-        g.fillStyle(0x000000, 0.45).fillCircle(px, py - r - s * 0.22, s * 0.26);
-        this.item(gp.item, px, py - r - s * 0.22, s);
-      }
-      if (gp.cutting) g.lineStyle(3, 0xffffff).strokeCircle(px, py, r + 4);
-      if (!p.label) p.label = this.add.text(0, 0, '', { fontSize: '16px', color: '#fff' }).setOrigin(0.5, 0);
-      p.label.setPosition(px, py + r + 2).setText(p.info.name).setColor(p.info.connected ? '#fff' : '#777');
-    }
-    // orders, top-left of the HUD strip
-    game.orders.forEach((o, i) => {
-      const w = 110, x = 16 + i * (w + 10), y = 14;
-      g.fillStyle(0x000000, 0.6).fillRoundedRect(x, y, w, 64, 8);
-      this.item('cut0', x + 28, y + 26, 56);
-      this.item('cut1', x + 56, y + 26, 56);
-      this.item('dish', x + 88, y + 26, 56);
-      const left = (o.expiresAt - game.time) / game.params.orderTtlMs;
-      this.bar(x + 8, y + 50, w - 16, left, left > 0.5 ? 0x69f0ae : left > 0.25 ? 0xffd740 : 0xff5252);
-    });
-  }
-}
-
-new Phaser.Game({
+const scene = new MainScene(host);
+// Called right after the frame is drawn: closest browser-side proxy for "visible on screen".
+const phaser = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
-  backgroundColor: '#1b1b24',
-  scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight },
+  backgroundColor: C.cocoa,
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: W, height: H },
   fps: { target: 60 },
-  scene: Main,
+  scene,
 });
+phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
+  const off = sync.offset;
+  if (!pendingLag.length || off === null) return;
+  const nowServer = Date.now() + off;
+  for (const q of pendingLag.splice(0)) {
+    const p = players.get(q.id);
+    if (p) record('lag', p, nowServer - q.sendServerTime);
+  }
+});
+(window as unknown as { __pg: unknown }).__pg = {
+  forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },
+  fastForward: (ms: number) => { game.params.roundMs = game.time + ms; },
+  snapshot: () => ({ fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown }),
+};
 
 $('code').textContent = room;
 fetch(`/api/info?room=${encodeURIComponent(room)}`)
   .then((r) => r.json())
   .then(({ url, qrSvg }: { url: string; qrSvg: string }) => {
     document.getElementById('qr')!.innerHTML = qrSvg;
-    document.getElementById('joinurl')!.textContent = url;
+    document.getElementById('joinurl')!.textContent = url.replace(/^http:\/\//, '');
   })
   .catch(() => { document.getElementById('joinurl')!.textContent = 'no se pudo obtener la URL'; });
 
 const f = (n: number) => (Number.isFinite(n) ? n.toFixed(0) : '-');
 const esc = (t: string) => t.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
+// layout: the 1920x1080 stage is scaled to the window
+const fit = () => document.documentElement.style.setProperty('--k', String(Math.min(innerWidth / 1920, innerHeight / 1080)));
+fit();
+addEventListener('resize', fit);
+drawLogo($('logo') as HTMLCanvasElement);
+
+// lobby chips: one persistent element per slot so the idle animation never restarts
+const chips = Array.from({ length: 8 }, (_v, i) => {
+  const el = document.createElement('div');
+  el.className = 'chip empty';
+  el.style.setProperty('--c', chefOf(i).color);
+  el.innerHTML = '<div class="av"></div><div><div class="nm"></div><div class="sub"></div></div><div class="num"></div>';
+  $('chips').appendChild(el);
+  return { el, av: el.querySelector('.av')!, nm: el.querySelector('.nm')!, sub: el.querySelector('.sub')!, num: el.querySelector('.num')!, who: -1 };
+});
+chips.forEach((c, i) => { c.num.textContent = String(i + 1); c.nm.textContent = 'Esperando…'; });
+
+const cache = new Map<string, string>();
+const setHtml = (id: string, html: string) => { if (cache.get(id) !== html) { cache.set(id, html); $(id).innerHTML = html; } };
+
+function renderChips() {
+  const bySlot = new Map([...players.values()].map((p) => [p.info.slot % 8, p.info]));
+  chips.forEach((c, i) => {
+    const info = bySlot.get(i);
+    c.el.classList.toggle('empty', !info);
+    c.el.classList.toggle('gone', !!info && !info.connected);
+    if (!info) { c.who = -1; c.av.replaceChildren(); c.nm.textContent = 'Esperando…'; c.sub.textContent = ''; return; }
+    if (c.who !== info.id) {
+      c.who = info.id;
+      c.av.replaceChildren(chefCanvas(i, 'idle', true));
+      c.el.classList.remove('pop'); void c.el.offsetWidth; c.el.classList.add('pop');
+    }
+    c.nm.textContent = info.name;
+    c.sub.textContent = info.connected ? `${chefOf(i).name} · listo` : 'Desconectado';
+  });
+}
+
+let lastMapKey = '';
 function renderUi() {
-  $('lobby').classList.toggle('off', phase !== 'lobby');
-  $('setup').classList.toggle('off', phase !== 'lobby');
-  $('hud').classList.toggle('off', phase !== 'playing');
+  const lobby = phase === 'lobby';
+  $('lobbybg').classList.toggle('off', !lobby);
+  $('stage').classList.toggle('off', !lobby);
   $('results').classList.toggle('off', phase !== 'results');
-  $('debug').classList.toggle('off', !(debugOverride ?? phase !== 'playing'));
-  $('games').innerHTML = GAMES.map((g) =>
-    `<button class="card ${g.id === config.game ? 'sel' : ''}" data-game="${g.id}"><b>${g.name}</b><small>${g.blurb}<br>${g.players}</small></button>`).join('');
-  $('diffs').innerHTML = DIFFICULTIES.map((d) =>
-    `<button class="chip ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join('');
+  $('debug').classList.toggle('off', !debugOverride);
+  if (!lobby) return;
+  setHtml('games', GAMES.map((g) => `<button class="pill ${g.id === config.game ? 'sel' : ''}" id="gamepill" data-game="${g.id}" title="${esc(g.blurb)}">${g.name}</button>`).join(''));
+  setHtml('diffs', DIFFICULTIES.map((d) => `<button class="pill ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join(''));
   const mapLabel = (id: string) => `${id} ${fixedMap(id)!.name}`;
-  $('maps').innerHTML = [['auto', 'Al azar'], ...MAP_IDS.map((id) => [id, mapLabel(id)]), ['random', 'Mapa aleatorio']]
-    .map(([id, label]) => `<button class="chip ${id === config.map ? 'sel' : ''}" data-map="${id}">${label}</button>`).join('');
+  setHtml('maps', [['auto', 'Al azar'], ...MAP_IDS.map((id) => [id, mapLabel(id)]), ['random', 'Mapa aleatorio']]
+    .map(([id, label]) => `<button class="pill ${id === config.map ? 'sel' : ''}" data-map="${id}">${label}</button>`).join(''));
   const list = [...players.values()];
   const rand = config.map === 'random';
   $('seedrow').classList.toggle('off', !rand);
   $('seed').textContent = String(config.seed);
   const gen = rand ? generate(config.seed, config.difficulty, list.length) : null;
   const shown = gen ? { rows: gen.rows } : config.map === 'auto' ? null : fixedMap(config.map);
-  $('mappreview').textContent = shown ? shown.rows.join('\n') : `Un mapa de la dificultad ${DIFFICULTY_LABEL[config.difficulty]}`;
+  const key = shown ? shown.rows.join('') : 'none';
+  if (key !== lastMapKey) {
+    lastMapKey = key;
+    const cv = $('minimap') as HTMLCanvasElement;
+    if (shown) drawMiniMap(cv, shown.rows); else { const c = cv.getContext('2d')!; c.fillStyle = '#3A2A24'; c.fillRect(0, 0, cv.width, cv.height); c.fillStyle = '#FFF4E0'; c.font = '800 54px ui-rounded, system-ui'; c.textAlign = 'center'; c.fillText('?', cv.width / 2, cv.height / 2 + 18); }
+  }
   $('mapinfo').textContent = gen && !gen.inBand ? 'Esta semilla no cae en la banda de la dificultad: se usa el mapa válido más cercano'
     : list.length > 4 && !rand ? 'Mapa pensado para 2 a 4: los extra aparecen junto a un punto de inicio' : '';
   const pr = params(config.difficulty, list.length);
   $('diffinfo').textContent = `Pedido cada ${(pr.orderEveryMs / 1000).toFixed(0)} s, paciencia ${pr.orderTtlMs / 1000} s, hasta ${pr.maxOrders} pedidos`;
-  $('plist').innerHTML = list
-    .map((p) => `<li class="${p.info.connected ? '' : 'gone'}"><span class="dot" style="background:${p.info.color}"></span>${esc(p.info.name)}</li>`)
-    .join('') || '<li style="color:#888">Esperando jugadores...</li>';
+  renderChips();
   ($('start') as HTMLButtonElement).disabled = !canStart(list.map((p) => p.info));
-  const st = stars(game.difficulty, game.n, game.score);
-  $('rank').innerHTML = `<li><span>Equipo</span><b>${game.score}</b></li><li><span>Entregas</span><b>${game.delivered}</b></li>` +
-    `<li><span>${DIFFICULTY_LABEL[game.difficulty]}</span><b>${'★'.repeat(st)}${'☆'.repeat(3 - st)}</b></li>`;
-  $('scores').innerHTML = `<span>Equipo ${game.score}</span>`;
-  $('mapname').textContent = mapName;
 }
 renderUi();
+
+// round stats for the results screen
+const stats = { delivered: new Map<number, number>(), expired: 0 };
+gameBus.on('delivered', (e) => stats.delivered.set(e.player, (stats.delivered.get(e.player) ?? 0) + 1));
+gameBus.on('orderExpired', () => { stats.expired++; });
+
+let resultsTimers: ReturnType<typeof setTimeout>[] = [];
+function renderResults() {
+  resultsTimers.forEach(clearTimeout);
+  resultsTimers = [];
+  const st = stars(game.difficulty, game.n, game.score);
+  const starsEl = $('stars');
+  starsEl.replaceChildren();
+  for (let i = 0; i < 3; i++) {
+    const cv = starCanvas();
+    if (i >= st) cv.classList.add('off2');
+    starsEl.appendChild(cv);
+    resultsTimers.push(setTimeout(() => cv.classList.add('drop'), 500 + i * 550));
+  }
+  const target = game.score, t0 = performance.now() + 400, dur = 1300;
+  const fin = $('finalscore');
+  const step = () => {
+    const k = Math.max(0, Math.min(1, (performance.now() - t0) / dur));
+    fin.textContent = String(Math.round(target * (1 - (1 - k) ** 3)));
+    if (k < 1 && phase === 'results') requestAnimationFrame(step);
+  };
+  step();
+  $('stats').innerHTML = `<div class="stat good"><b>${game.delivered}</b><span>Entregadas</span></div><div class="stat bad"><b>${stats.expired}</b><span>Falladas</span></div>`;
+  const ranked = [...players.values()].map((p) => ({ p, n: stats.delivered.get(p.info.id) ?? 0 })).sort((a, b) => b.n - a.n || a.p.info.slot - b.p.info.slot);
+  const top = ranked.filter((r) => r.n > 0).slice(0, 3);
+  const order = top.length === 3 ? [1, 0, 2] : top.length === 2 ? [1, 0] : [0];
+  const pod = $('podium');
+  pod.replaceChildren();
+  for (const i of order) {
+    const r = top[i];
+    if (!r) continue;
+    const el = document.createElement('div');
+    el.className = `pod p${i + 1}`;
+    el.innerHTML = `${i === 0 ? '<div class="crown">👑</div>' : ''}<div class="step">${esc(r.p.info.name)}<small>${r.n} ${r.n === 1 ? 'pizza' : 'pizzas'}</small></div>`;
+    el.insertBefore(chefCanvas(r.p.info.slot, 'happy', true), el.firstChild);
+    pod.appendChild(el);
+  }
+  if (!top.length) pod.innerHTML = '<div class="hint">Nadie alcanzó a entregar una pizza</div>';
+}
 
 $('games').addEventListener('click', (e) => {
   const id = (e.target as HTMLElement).closest<HTMLElement>('[data-game]')?.dataset.game;
@@ -345,11 +355,11 @@ $('maps').addEventListener('click', (e) => {
   if (isMapChoice(m)) setConfig({ map: m });
 });
 $('again-seed').addEventListener('click', () => setConfig({ seed: (config.seed + 1) % 2 ** 32 }));
-$('start').addEventListener('click', () => dispatch('start'));
+$('start').addEventListener('click', () => startRound());
 $('again').addEventListener('click', () => dispatch('again'));
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'd' || e.key === 'D') { debugOverride = !($('debug').classList.contains('off')); renderUi(); }
-  else if (e.key === 'Enter' && phase === 'lobby') dispatch('start');
+  if (e.key === 'd' || e.key === 'D') { debugOverride = !debugOverride; renderUi(); }
+  else if (e.key === 'Enter' && phase === 'lobby') startRound();
   else if (e.key === 'Enter' && phase === 'results') dispatch('again');
 });
 setInterval(() => {
@@ -366,11 +376,6 @@ setInterval(() => {
   }
   $('table').innerHTML = rows.join('');
   $('summary').textContent = `total ${pktsRate} pkt/s | screen<->server RTT ${f(screenRtt)} ms | clock offset ${f(sync.offset ?? NaN)} ms`;
-  if (phase === 'playing') {
-    const left = game.params.roundMs - game.time;
-    $('timer').textContent = game.countdown > 0 ? `¡${Math.ceil(game.countdown / 1000)}!` : String(Math.max(0, Math.ceil(left / 1000)));
-    renderUi();
-  }
   $('warn').textContent = document.hidden ? 'TAB HIDDEN: rendering paused, keep it in the foreground' : '';
 }, 250);
 
