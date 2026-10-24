@@ -68,7 +68,7 @@ describe('lobby config', () => {
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"3","seed":7}')).toEqual({ t: 'config', game: 'pizzas', difficulty: 'hard', map: '3', seed: 7 });
     expect(parseClientMessage('{"t":"config","game":"nope","difficulty":"hard","map":"3","seed":1}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"insane","map":"3","seed":1}')).toBeNull();
-    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"9","seed":7}')).toBeNull();
+    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"99","seed":7}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"random","seed":4294967295}')).toMatchObject({ map: 'random', seed: 4294967295 });
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"random","seed":4294967296}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"random","seed":-1}')).toBeNull();
@@ -76,5 +76,21 @@ describe('lobby config', () => {
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard"}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"3"}')).toBeNull();
     expect(parseClientMessage('{"t":"config"}')).toBeNull();
+  });
+});
+
+describe('puestos on the wire', () => {
+  const msg = { cheese: true, sink: false, assign: [{ id: 1, puestos: ['masa', 'horno'], pool: ['masa', 'corte', 'horno'] }] };
+  it('a phase message may carry the round puestos; bad ids or shapes are rejected', () => {
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: msg }))).toEqual({ t: 'phase', phase: 'playing', puestos: msg });
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, assign: [{ id: 1, puestos: ['hack'], pool: [] }] } }))).toBeNull();
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, cheese: 'yes' } }))).toBeNull();
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: 7 }))).toBeNull();
+  });
+  it('"Cambiar" sends the new puesto list', () => {
+    expect(parseClientMessage('{"t":"puesto","puestos":["corte"]}')).toEqual({ t: 'puesto', puestos: ['corte'] });
+    expect(parseClientMessage('{"t":"puesto","puestos":[]}')).toBeNull();
+    expect(parseClientMessage('{"t":"puesto","puestos":["boss"]}')).toBeNull();
+    expect(parseClientMessage('{"t":"puesto"}')).toBeNull();
   });
 });

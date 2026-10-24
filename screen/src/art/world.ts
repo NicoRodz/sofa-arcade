@@ -10,6 +10,7 @@ import { Fx } from './fx';
 import { Hud } from './hud';
 import { StationViews, place } from './stations';
 import { foodKey } from './food';
+import { PuestoMarks, type PuestoView } from './puestos';
 
 export class World {
   private bg: Phaser.GameObjects.Image;
@@ -17,13 +18,15 @@ export class World {
   private hud: Hud;
   private stations: StationViews;
   private chefs = new Map<number, Chef>();
+  private marks: PuestoMarks;
   private off: (() => void)[] = [];
 
-  constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, bus: Emitter<GameEvents>, mapId: string, seed: number) {
+  constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, private puestos: () => Map<number, PuestoView>, bus: Emitter<GameEvents>, mapId: string, seed: number) {
     this.bg = buildBackground(scene, game.grid, mapId, seed);
     this.fx = new Fx(scene);
     this.stations = new StationViews(scene, game, this.fx);
     this.hud = new Hud(scene, game);
+    this.marks = new PuestoMarks(scene, game, puestos);
     this.wire(bus);
   }
 
@@ -97,6 +100,7 @@ export class World {
     }
     for (const [id, c] of this.chefs) if (!g.players.has(id)) { c.destroy(); this.chefs.delete(id); }
     this.stations.update(dtMs, chop);
+    this.marks.update(dtMs, this.chefs);
     this.hud.update(dtMs);
   }
 
@@ -106,6 +110,7 @@ export class World {
     for (const c of this.chefs.values()) c.destroy();
     this.chefs.clear();
     this.stations.destroy();
+    this.marks.destroy();
     this.hud.destroy();
     this.bg.destroy();
     this.scene.tweens.killAll();

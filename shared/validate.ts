@@ -1,4 +1,5 @@
 // Map solvability: floor components, zone graph over passing counters, recipe legs, spawns per zone.
+import { puestoProblems } from './puestos';
 import { DIRS, MAP_H, MAP_W, floorComponents, isFloor, parseMap, posKey, type Grid, type MapDef, type Pos } from './maps';
 
 export type StationKey = '1' | '2' | 'K' | 'O' | 'P' | 'E';
@@ -122,6 +123,7 @@ export function validateMap(m: MapDef): { ok: boolean; errors: string[] } {
     const set = new Set(s.map(key));
     if (!m.spawns.every((p) => set.has(key(p))) || new Set(m.spawns.map(key)).size !== m.spawns.length) errors.push('explicit spawn order does not match the S tiles');
   }
+  errors.push(...puestoProblems(m));
   if (floorTiles(g) < FLOOR_PER_PLAYER * m.nMax) errors.push(`${floorTiles(g)} floor tiles for ${m.nMax} players (want ${FLOOR_PER_PLAYER} each)`);
   return { ok: !errors.length, errors };
 }

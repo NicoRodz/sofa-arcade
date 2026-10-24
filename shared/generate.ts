@@ -2,7 +2,7 @@
 // and lands in the difficulty band. Same seed, difficulty and team size give the same map.
 import type { Difficulty } from './difficulty';
 import { teamSize } from './difficulty';
-import { MAPS_BY_DIFFICULTY, MAP_H, MAP_W, fixedMap, parseMap, pickFixedMap, posKey, type MapChoice, type Pos } from './maps';
+import { MAPS_BY_DIFFICULTY, MAP_H, MAP_W, fixedMap, parseMap, pickFixedMap, posKey, type MapChoice, type MapDef, type Pos } from './maps';
 import { mulberry32, pick, pickWeighted, randInt, type Rng } from './rng';
 import { metric } from './score';
 import { accessTiles, analyze, validate } from './validate';
@@ -163,8 +163,8 @@ export function generate(seed: number, diff: Difficulty, n: number, maxAttempts 
 }
 
 // The map a lobby choice stands for. "random" is generated from the lobby seed; the rest are fixed maps.
-export function resolveMap(choice: MapChoice, seed: number, diff: Difficulty, n: number, rand: Rng): { id: string; name: string; rows: readonly string[]; spawns?: readonly Pos[] } {
+export function resolveMap(choice: MapChoice, seed: number, diff: Difficulty, n: number, rand: Rng): { id: string; name: string; rows: readonly string[]; spawns?: readonly Pos[]; puestos?: MapDef['puestos'] } {
   if (choice === 'random') return { id: 'random', name: `Aleatorio ${seed}`, rows: generate(seed, diff, n).rows };
   const m = pickFixedMap(choice, diff, rand, n);
-  return { id: m.id, name: m.name, rows: m.rows, spawns: m.spawns };
+  return { id: m.id, name: m.name, rows: m.rows, spawns: m.spawns, puestos: m.puestos };
 }

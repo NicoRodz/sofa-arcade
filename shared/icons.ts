@@ -7,6 +7,10 @@ export const ICONS = {
   crate: '<path d="M6 16L24 8L42 16V33L24 41L6 33Z"/><path d="M6 16L24 24L42 16M24 24V41"/>',
   oven: '<path d="M7 41V23a17 17 0 0 1 34 0V41Z"/><path d="M4 41H44"/><path d="M24 37C18 37 16 32 19 27C20 29 22 29 22 27C22 24 23 21 26 19C26 23 31 25 31 31C31 34 28 37 24 37Z"/>',
   bell: '<path d="M6 34a18 18 0 0 1 36 0Z"/><path d="M3 39H45"/><path d="M24 16V11M21 11H27"/>',
+  dough: '<circle cx="24" cy="24" r="17"/><path d="M17 19h.01M30 17h.01M31 29h.01M19 31h.01M24 24h.01" stroke-width="5"/>',
+  plate: '<circle cx="24" cy="24" r="18"/><circle cx="24" cy="24" r="10"/>',
+  cheese: '<path d="M5 36L43 20V36Z"/><path d="M5 36L43 20"/><circle cx="19" cy="31" r="2.4"/><circle cx="31" cy="28" r="1.8"/>',
+  wash: '<path d="M6 24H42V29a11 11 0 0 1-11 11H17A11 11 0 0 1 6 29Z"/><path d="M15 12c-3 4-3 7 0 7s3-3 0-7ZM27 6c-3 4-3 7 0 7s3-3 0-7Z"/>',
   star: '<path d="M24 5L29.5 17.5L43 19L33 28.5L36 42L24 35L12 42L15 28.5L5 19L18.5 17.5Z"/>',
 } as const;
 

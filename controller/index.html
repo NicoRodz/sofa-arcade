@@ -59,6 +59,14 @@
   #howtoopen { margin-top: 6px; font-size: 16px; padding: 6px 16px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
   #zoomfix { display: none; position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 30; font-size: 17px; padding: 10px 18px; background: var(--cream); color: var(--ink); text-shadow: none; }
   body.zoomed #zoomfix { display: block; }
+  #puesto { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: min(46vw, 400px); display: none; align-items: center; gap: 8px; padding: 6px 8px; border: 3px solid var(--ink); border-radius: 16px; background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 rgba(43,27,23,.35); }
+  body[data-puesto=on] #puesto { display: flex; }
+  #puesto .pi { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--c); background: #F6E8CB; display: flex; align-items: center; justify-content: center; color: var(--tomato2); }
+  #puesto .pi .ico { width: 26px; height: 26px; }
+  #puesto .pt { min-width: 0; flex: 1; }
+  #pname { display: block; font: 800 16px/1.05 var(--font); }
+  #phint { display: block; font: 700 12px/1.1 var(--font); color: var(--muted); }
+  #pswap { flex: none; font-size: 13px; padding: 6px 10px; border-width: 3px; border-radius: 10px; box-shadow: 0 3px 0 rgba(43,27,23,.4); }
   #hud { position: absolute; top: 6px; left: 10px; font-size: 14px; color: var(--c); opacity: .9; pointer-events: none; }
 </style>
 </head>
@@ -74,6 +82,7 @@
   <div id="btnA" class="act"></div>
   <div id="btnB" class="act"></div>
   <div id="hud"></div>
+  <div id="puesto"><span class="pi" id="pico"></span><div class="pt"><b id="pname"></b><span id="phint"></span></div><button id="pswap" type="button">Cambiar</button></div>
 </div>
 <div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><button id="howtoopen" type="button">Cómo se juega</button></div>
 <div id="results" class="overlay"><div>Fin de la ronda</div><div id="rank" class="big"></div><div id="myscore"></div></div>

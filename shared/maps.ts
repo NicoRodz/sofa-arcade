@@ -1,5 +1,6 @@
 // Kitchen maps: 16x9 tile grids as strings, plus the parser to typed tiles.
 import type { Difficulty } from './difficulty';
+import type { PuestoId } from './puestos';
 
 export const MAP_W = 16;
 export const MAP_H = 9;
@@ -120,6 +121,7 @@ export interface MapDef {
   minDuro: number; // fewest players that can still finish the recipe (a test derives it from the floor regions)
   stars: 1 | 2 | 3; // the map's own complexity, independent of the Fácil/Normal/Difícil selector
   spawns?: readonly Pos[]; // explicit spawn order when reading order is not the order the author wants
+  puestos?: readonly (readonly PuestoId[])[]; // replaces the default puesto table (zone maps), indexed by spawn
 }
 
 // Spawns: the 'S' tiles are the spawn slots; slot i goes to the i-th chef (see puestos: spawn i sits next to puesto i).
@@ -157,6 +159,7 @@ export const FIXED_MAPS: readonly MapDef[] = [
   },
   {
     id: '3', name: 'El río', nMin: 2, nMax: 4, minDuro: 2, stars: 2,
+    puestos: [['prep'], ['horno', 'reparto'], ['prep'], ['horno', 'reparto']], // left bank prepares, right bank bakes and serves
     rows: [
       '##1C2CK~CCOCOC##',
       '#......~.......#',
@@ -185,6 +188,7 @@ export const FIXED_MAPS: readonly MapDef[] = [
   },
   {
     id: '5', name: 'Cinta', nMin: 3, nMax: 6, minDuro: 2, stars: 2,
+    puestos: [['prep'], ['horno', 'platos'], ['entrega'], ['horno', 'platos'], ['prep'], ['horno', 'platos']], // delivery is on the preparation bank
     rows: [
       '##1C2CK~COCOCP##',
       '#......~.......#',
@@ -199,6 +203,7 @@ export const FIXED_MAPS: readonly MapDef[] = [
   },
   {
     id: '6', name: 'La ventanita', nMin: 2, nMax: 3, minDuro: 2, stars: 1,
+    puestos: [['prep'], ['horno', 'reparto'], ['prep']],
     rows: [
       '##12#KK###O##EE#',
       '#......#.......#',

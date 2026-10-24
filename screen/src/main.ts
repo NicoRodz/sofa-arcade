@@ -16,6 +16,8 @@ import { drawLogo, drawMiniMap, starCanvas } from './art/ui';
 import { iris } from './art/iris';
 import { HOWTO_MS, howToOnKey, isExpired, progress, secondsLeft, type HowToState } from './howto';
 import { MainScene, type Host } from './scene';
+import type { PuestoView } from './art/puestos';
+import { assignPuestos, featuresOf, type PuestoId } from '@party/shared/puestos';
 import { C, H, W } from './art/tokens';
 import { percentile } from '@party/shared/stats';
 import {
@@ -52,6 +54,9 @@ let game = createGame();
 const played = new Set<string>(); // fixed maps already played in this session: the lobby proposes a new one by default
 let mapTouched = false; // the host picked a map by hand: stop proposing defaults
 let mapNotice = '';
+const puestoOf = new Map<number, PuestoView>(); // suggested stations of the running round, by player id
+let puestoStamp = 0;
+let puestoMsg: import('@party/shared').PuestoMsg | undefined;
 let debugOverride = false;
 let screenRtt = NaN;
 let totalPkts = 0;
@@ -99,14 +104,23 @@ function setPhase(next: Phase) {
     const map = resolveMap(config.map, config.seed, config.difficulty, n, Math.random);
     game = createGame({ difficulty: config.difficulty, n, rows: map.rows, spawns: map.spawns, countdownMs: COUNTDOWN_MS, bus: gameBus });
     played.add(map.id);
-    for (const p of players.values()) { addPlayer(game, p.info.id, p.info.slot); p.pendA = 0; }
+    // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
+    const order = [...players.values()].sort((a, b) => Number(b.info.connected) - Number(a.info.connected) || a.info.slot - b.info.slot);
+    order.forEach((p, rank) => { addPlayer(game, p.info.id, p.info.slot, rank); p.pendA = 0; });
+    puestoOf.clear();
+    const live = order.filter((p) => p.info.connected);
+    if (live.length >= 2) {
+      const pm = assignPuestos(live.map((p) => p.info.id), featuresOf(game.stations), map.puestos);
+      pm.assign.forEach((a) => puestoOf.set(a.id, { ids: a.puestos, stamp: ++puestoStamp }));
+      puestoMsg = pm;
+    } else puestoMsg = undefined;
     overAt = null;
     stats.delivered.clear(); stats.expired = 0;
     scene.startRound(game, map.id, config.seed);
   } else if (phase === 'results') renderResults();
   else if (phase === 'lobby') scene.endRound();
   // cooperative: every player carries the team score
-  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: game.score })) : undefined });
+  sendMsg({ t: 'phase', phase, scores: phase === 'results' ? [...players.keys()].map((id) => ({ id, score: game.score })) : undefined, puestos: phase === 'playing' ? puestoMsg : undefined });
   renderUi();
 }
 const setConfig = (patch: Partial<LobbyConfig>) => {
@@ -173,6 +187,10 @@ function onMessage(m: ServerMsg) {
       break;
     }
     case 'player_removed': remove(m.playerId); break;
+    case 'puesto': { // the phone picked another puesto with "Cambiar": the screen lights it up again
+      if (phase === 'playing' && players.has(m.playerId)) puestoOf.set(m.playerId, { ids: m.puestos as PuestoId[], stamp: ++puestoStamp });
+      break;
+    }
     case 'rtt': {
       const p = players.get(m.playerId);
       if (p) { p.off = m.off; record('rtt', p, m.rtt); }
@@ -218,6 +236,7 @@ let starting = false;
 let acc = 0;
 const host: Host = {
   players: () => new Map([...players].map(([id, p]) => [id, p.info])),
+  puestos: () => puestoOf,
   step(delta) {
     if (phase !== 'playing' || performance.now() < gateUntil) { acc = 0; return; }
     acc += Math.min(delta, 100);

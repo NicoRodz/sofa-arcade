@@ -7,10 +7,12 @@ import { buildChefTextures } from './art/chef';
 import { buildFoodTextures } from './art/food';
 import { buildFxTextures } from './art/fx';
 import { World } from './art/world';
+import { buildPuestoIcons, type PuestoView } from './art/puestos';
 
 export interface Host {
   step(deltaMs: number): void; // advances the game logic
   players(): Map<number, PublicPlayer>;
+  puestos(): Map<number, PuestoView>; // suggested stations of the round, by player id
 }
 
 export class MainScene extends Phaser.Scene {
@@ -22,6 +24,7 @@ export class MainScene extends Phaser.Scene {
     buildFoodTextures(this);
     buildChefTextures(this);
     buildFxTextures(this);
+    buildPuestoIcons(this);
     this.cameras.main.setBackgroundColor(C.cocoa);
     if (this.pending) { const p = this.pending; this.pending = null; this.startRound(p.game, p.mapId, p.seed); }
   }
@@ -29,7 +32,7 @@ export class MainScene extends Phaser.Scene {
   startRound(game: Game, mapId: string, seed: number) {
     if (!this.sys.isActive() || !this.textures.exists('chef_shadow')) { this.pending = { game, mapId, seed }; return; }
     this.endRound();
-    this.world = new World(this, game, () => this.host.players(), gameBus, mapId, seed);
+    this.world = new World(this, game, () => this.host.players(), () => this.host.puestos(), gameBus, mapId, seed);
   }
   endRound() { this.world?.destroy(); this.world = null; }
 

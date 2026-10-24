@@ -68,7 +68,7 @@ export function attachRelay(server: Server) {
       }
       if (m.t === 'phase') {
         if (!isScreen) return;
-        r.phase = { phase: m.phase, scores: m.scores };
+        r.phase = { phase: m.phase, scores: m.scores, puestos: m.puestos };
         toPlayers(r, { t: 'phase', ...r.phase });
         return;
       }
@@ -104,6 +104,10 @@ export function attachRelay(server: Server) {
         send(ws, configMsg(r.config));
         send(ws, { t: 'phase', ...r.phase });
         toScreens(r, { t: 'player_joined', player: pub(p) });
+        return;
+      }
+      if (m.t === 'puesto' && me) {
+        toScreens(r, { t: 'puesto', playerId: me.id, puestos: m.puestos });
         return;
       }
       if (m.t === 'input' && me) {

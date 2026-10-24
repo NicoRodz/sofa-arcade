@@ -26,6 +26,7 @@ export interface Station {
 export interface Player {
   id: number;
   slot: number;
+  spawn: number; // index into game.spawns where this chef started (puesto i belongs to spawn i)
   x: number;
   y: number;
   fx: number; // facing, last non-null stick vector
@@ -87,10 +88,12 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
   return g;
 }
 
-export function addPlayer(g: Game, id: number, slot: number) {
+// `slot` picks the chef (colour); `spawn` the start tile (default: the same index). The screen passes the chef's rank so
+// spawn i always holds the i-th chef and the puesto table (spawn i = puesto i) lines up even when slots have gaps.
+export function addPlayer(g: Game, id: number, slot: number, spawn = slot) {
   if (g.players.has(id)) return;
-  const [sx, sy] = g.spawns[slot % g.spawns.length] ?? [1, 1];
-  g.players.set(id, { id, slot, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, item: null, cutting: false, chopAt: -1 });
+  const [sx, sy] = g.spawns[spawn % g.spawns.length] ?? [1, 1];
+  g.players.set(id, { id, slot, spawn: spawn % g.spawns.length, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, item: null, cutting: false, chopAt: -1 });
 }
 export const removePlayer = (g: Game, id: number) => { g.players.delete(id); };
 

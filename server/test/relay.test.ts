@@ -137,6 +137,34 @@ describe('phases', () => {
   });
 });
 
+describe('puestos', () => {
+  const puestos = { cheese: false, sink: false, assign: [{ id: 1, puestos: ['masa' as const, 'horno' as const], pool: ['masa' as const, 'corte' as const, 'horno' as const] }] };
+
+  it('the round puestos reach the phones, late joiners included; "Cambiar" is forwarded to the screen only when the sender joined', async () => {
+    const screen = new Client('?role=screen&room=pu1');
+    const a = new Client('?room=pu1');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'puesto', puestos: ['corte'] }); // before joining: dropped
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined');
+    await a.next('phase'); // lobby, right after joining
+    screen.send({ t: 'phase', phase: 'playing', puestos });
+    expect(await a.next('phase')).toMatchObject({ phase: 'playing', puestos });
+    a.send({ t: 'puesto', puestos: ['corte'] });
+    expect(await screen.next('puesto')).toEqual({ t: 'puesto', playerId: 1, puestos: ['corte'] });
+    a.ws.close();
+    await screen.next('player_left');
+    const a2 = new Client('?room=pu1');
+    await a2.open();
+    a2.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a2.next('joined');
+    expect(await a2.next('phase')).toMatchObject({ phase: 'playing', puestos }); // reconnecting phone gets its card back
+    screen.send({ t: 'phase', phase: 'lobby' });
+    expect((await a2.next('phase')).puestos).toBeUndefined();
+    [screen.ws, a2.ws].forEach((w) => w.close());
+  });
+});
+
 describe('lobby config', () => {
   it('screen config reaches players and late joiners; players cannot set it', async () => {
     const screen = new Client('?role=screen&room=c1');

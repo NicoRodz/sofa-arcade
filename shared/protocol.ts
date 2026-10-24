@@ -1,6 +1,7 @@
 import { DEFAULT_DIFFICULTY, isDifficulty, type Difficulty } from './difficulty';
 import { DEFAULT_GAME, gameInfo, isGameId, type GameId, type GameInfo } from './games';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
+import { isPuestoId, type PuestoId } from './puestos';
 
 export { ROUND_MS } from './difficulty';
 
@@ -30,7 +31,10 @@ export interface InputState {
 export const PHASES = ['lobby', 'playing', 'results'] as const;
 export type Phase = (typeof PHASES)[number];
 export interface Score { id: number; score: number }
-export interface PhaseInfo { phase: Phase; scores?: Score[] }
+// Suggested stations for the round (see puestos.ts): the screen assigns them, the phones show them. Never enforced.
+export interface PuestoAssign { id: number; puestos: PuestoId[]; pool: PuestoId[] } // pool: what "Cambiar" cycles through
+export interface PuestoMsg { cheese: boolean; sink: boolean; assign: PuestoAssign[] }
+export interface PhaseInfo { phase: Phase; scores?: Score[]; puestos?: PuestoMsg }
 
 // What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
 export const SEED_MAX = 2 ** 32;
@@ -55,7 +59,8 @@ export type ClientMsg =
   | ({ t: 'input' } & InputState)
   | { t: 'ping'; id: number; t0: number; rtt?: number; off?: number }
   | ({ t: 'phase' } & PhaseInfo) // screen only
-  | ({ t: 'config' } & LobbyConfig); // screen only
+  | ({ t: 'config' } & LobbyConfig) // screen only
+  | { t: 'puesto'; puestos: PuestoId[] }; // phone: "Cambiar" picked another puesto
 
 export type ServerMsg =
   | { t: 'joined'; player: PublicPlayer; room: string }
@@ -68,10 +73,23 @@ export type ServerMsg =
   | ({ t: 'phase' } & PhaseInfo)
   | ConfigMsg
   | ({ t: 'input'; playerId: number } & InputState)
-  | { t: 'rtt'; playerId: number; rtt: number; off: number };
+  | { t: 'rtt'; playerId: number; rtt: number; off: number }
+  | { t: 'puesto'; playerId: number; puestos: PuestoId[] };
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
+
+const parsePuestoIds = (v: unknown): PuestoId[] | null => (Array.isArray(v) && v.length <= 4 && v.every(isPuestoId) ? [...v] : null);
+function parsePuestoMsg(v: any): PuestoMsg | null {
+  if (!v || typeof v !== 'object' || typeof v.cheese !== 'boolean' || typeof v.sink !== 'boolean' || !Array.isArray(v.assign) || v.assign.length > MAX_PLAYERS) return null;
+  const assign: PuestoAssign[] = [];
+  for (const a of v.assign) {
+    const puestos = parsePuestoIds(a?.puestos), pool = parsePuestoIds(a?.pool);
+    if (!a || !num(a.id) || !puestos || !pool) return null;
+    assign.push({ id: a.id, puestos, pool });
+  }
+  return { cheese: v.cheese, sink: v.sink, assign };
+}
 
 export function parseClientMessage(raw: string): ClientMsg | null {
   let m: any;
@@ -102,9 +120,21 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       return { t: 'ping', id: m.id, t0: m.t0, rtt: num(m.rtt) ? m.rtt : undefined, off: num(m.off) ? m.off : undefined };
     case 'phase': {
       if (!PHASES.includes(m.phase)) return null;
-      if (m.scores === undefined) return { t: 'phase', phase: m.phase };
-      if (!Array.isArray(m.scores) || !m.scores.every((x: any) => x && num(x.id) && num(x.score))) return null;
-      return { t: 'phase', phase: m.phase, scores: m.scores.map((x: Score) => ({ id: x.id, score: x.score })) };
+      const out: ClientMsg = { t: 'phase', phase: m.phase };
+      if (m.scores !== undefined) {
+        if (!Array.isArray(m.scores) || !m.scores.every((x: any) => x && num(x.id) && num(x.score))) return null;
+        out.scores = m.scores.map((x: Score) => ({ id: x.id, score: x.score }));
+      }
+      if (m.puestos !== undefined) {
+        const p = parsePuestoMsg(m.puestos);
+        if (!p) return null;
+        out.puestos = p;
+      }
+      return out;
+    }
+    case 'puesto': {
+      const ids = parsePuestoIds(m.puestos);
+      return ids?.length ? { t: 'puesto', puestos: ids } : null;
     }
     case 'config':
       if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map) || !isSeed(m.seed)) return null;
