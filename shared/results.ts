@@ -22,3 +22,16 @@ export function summarize(g: Game): Summary {
     delivered: g.delivered, expired: g.expired, rejected: g.rejected, tips: g.tips, bestStreak: g.bestStreak,
   };
 }
+
+// Versus: the same numbers per team (stars by the team's own size, on the score with k). The verdict (ranking, winner) is game.result once the round is over.
+export interface TeamSummary extends Summary { teamId: number; k: number; gross: number; vips: number; reachedAt: number }
+export function summarizeTeam(g: Game, teamId: number): TeamSummary {
+  const t = g.teams[teamId]!;
+  const thresholds = starThresholds(g.mapId, g.difficulty, t.n);
+  const st = stars(g.mapId, g.difficulty, t.n, t.score);
+  return {
+    score: t.score, stars: st, thresholds, next: st >= 3 ? null : thresholds[st]! - t.score,
+    delivered: t.delivered, expired: t.expired, rejected: t.rejected, tips: t.tips, bestStreak: t.bestStreak,
+    teamId, k: t.k, gross: t.gross, vips: t.vips, reachedAt: t.reachedAt,
+  };
+}
