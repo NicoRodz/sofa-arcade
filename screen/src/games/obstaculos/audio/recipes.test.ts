@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BIOMES, MAX_FALL, type Biome, type ObstEvents } from '@party/shared/obstaculos';
-import { HANDLERS, LAND_MIN_IMPACT, cueDuration, cuesFor, voicesFor, type Cue } from './recipes';
+import { HANDLERS, cueDuration, cuesFor, voicesFor, type Cue } from './recipes';
 import { degreeFreq, slotFreq } from './scales';
 
 const SAMPLE: { [K in keyof ObstEvents]: ObstEvents[K] } = {
@@ -59,7 +59,8 @@ describe('event -> cue selection', () => {
     expect(voicesFor(first('obst.jump', { player: 0, kind: 'ground' })).some((v) => v.src === 'pluck')).toBe(false);
   });
   it('landing: silent when gentle, surface filter by biome and platform, gain proportional to impact squared, 40-80 ms', () => {
-    expect(cuesFor('obst.land', { player: 0, impact: LAND_MIN_IMPACT - 1, on: 'ground' }, 'beach')).toEqual([]);
+    expect(cuesFor('obst.land', { player: 0, impact: 119, on: 'ground' }, 'beach')).toEqual([]);
+    expect(cuesFor('obst.land', { player: 0, impact: 120, on: 'ground' }, 'beach').length).toBe(1);
     const f = (b: (typeof BIOMES)[number], on: 'ground' | 'oneWay' | 'head') => voicesFor(first('obst.land', { player: 0, impact: 700, on }, b))[0]!.filter!;
     expect(f('beach', 'ground')).toMatchObject({ type: 'bandpass', f0: 900 });
     expect(f('forest', 'ground').f0).toBe(400);
@@ -70,7 +71,7 @@ describe('event -> cue selection', () => {
     const g = (impact: number) => at(impact).gain - 0.04; // 0.04 is the audibility floor
     const lo = MAX_FALL / 4, hi = MAX_FALL / 2;
     expect(g(hi) / g(lo)).toBeCloseTo(4, 1);
-    expect(at(LAND_MIN_IMPACT).dur).toBeGreaterThanOrEqual(0.04);
+    expect(at(120).dur).toBeGreaterThanOrEqual(0.04);
     expect(at(MAX_FALL * 2).dur).toBeLessThanOrEqual(0.0801);
   });
   it('rope: taut is a Karplus-Strong string at 110-220 Hz (feedback 0.985), strain is two saws 55 / 55.7 Hz under a 300-900 Hz bandpass', () => {
@@ -129,5 +130,6 @@ describe('event -> cue selection', () => {
     expect(first('obst.death', { player: 0, cause: 'fall' }).priority).toBe(3);
     expect(first('obst.jump', { player: 0, kind: 'ground' }).priority).toBe(2);
     expect(first('obst.release', { player: 0 }).priority).toBe(0);
+    expect(first('obst.bubble', { player: 0, reason: 'rope' }).priority).toBe(1);
   });
 });
