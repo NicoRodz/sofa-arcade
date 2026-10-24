@@ -252,6 +252,7 @@ describe('boxes and keys', () => {
     run(w, 80, (s) => (s === 0 ? inp({ move: 1 }) : undefined));
     expect(pl(w, 0).stats.deaths).toBeGreaterThan(0);
     expect(w.ent.keys[0]!.heldBy).toBe(-1);
+    expect([w.ent.keys[0]!.x, w.ent.keys[0]!.y]).toEqual([w.ent.keys[0]!.homeX, w.ent.keys[0]!.homeY]);
   });
 });
 
@@ -277,11 +278,15 @@ describe('hazards', () => {
     run(w, 30);
     expect(w.ent.hazard!.pos).toBeLessThan(pos);
   });
-  it('avalanche: a wall from the left at speed tiles/s kills whoever it overtakes', () => {
+  it('avalanche: a wall from the left at speed tiles/s kills whoever it overtakes, and only then', () => {
     const w = world(level(hall(), { hazard: { kind: 'avalanche', speed: 2 } }), { mode: 'free' });
-    const ev = run(w, 60 * 4);
-    expect(of(ev, 'obst.death').length).toBeGreaterThanOrEqual(2);
-    expect(w.ent.hazard!.pos).toBeGreaterThan(0);
+    expect(of(run(w, 90), 'obst.death')).toEqual([]); // 1.5 s: the wall is still off screen at x = -4 + 3 tiles
+    expect(w.ent.hazard!.pos).toBeCloseTo(-4 * TILE + 3 * TILE, 3);
+    let ev: ReturnType<typeof run> = [];
+    for (let i = 0; i < 200 && !of(ev, 'obst.death').length; i++) ev = run(w, 1);
+    const dead = of(ev, 'obst.death');
+    expect(dead.map((d) => d.cause)).toEqual(['hazard']);
+    expect(Math.abs(w.ent.hazard!.pos - (pl(w, dead[0]!.player).body.x + 17))).toBeLessThan(5); // it killed him the step it reached him
   });
   it('tide: the level oscillates between the bottom and speed x 4 s above it, period 8 s', () => {
     const w = world(level(hall(), { hazard: { kind: 'tide', speed: 0.5 } }), { mode: 'free' });
