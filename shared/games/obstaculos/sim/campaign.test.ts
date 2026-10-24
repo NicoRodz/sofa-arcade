@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { DIFFICULTY_PARAMS, JUMP_PEAK_PX, ROPE_LEN, TILE } from '../constants';
 import { WORLD_ORDER, campaignParams, dparamsForCampaign, physicsForCampaign, superJumpV0, worldForDifficulty } from './campaign';
 import { clearLevel, draw, hall, inp, level, names, of, pl, run, teleport, world } from './testkit';
+import { cameraHints } from './campaignrules';
 import { hashState, snapshot, step } from './world';
+import { ObstSession } from '../session';
 
 const GROUND = 11;
 const camp = (n?: number) => ({ campaign: { world: 'forest' as const, n } });
@@ -399,5 +401,24 @@ describe('throw arc (plan §5.1)', () => {
     const b = pl(w, 1).body;
     expect(Math.abs(b.x + 17 - end.x)).toBeLessThan(16);
     expect(Math.abs(b.y + 23 - end.y)).toBeLessThan(20);
+  });
+});
+
+describe('camera hints and the session (plan §5.1)', () => {
+  it('cameraHints: 3 tiles of margin, look at the goal, the hazard; null in a quick match', () => {
+    const rows = draw(hall(60), [20, GROUND, '.']);
+    const w = world(level(rows, { hazard: { kind: 'avalanche', speed: 1 } }), { mode: 'chain', ...camp() });
+    const g = w.level.markers.goal[0]!;
+    expect(cameraHints(w)).toEqual({ goalX: g.x * TILE + TILE / 2, hazard: { kind: 'avalanche', pos: -4 * TILE }, padTiles: 3 });
+    run(w, 60);
+    expect(cameraHints(w)!.hazard!.pos).toBeGreaterThan(-4 * TILE); // the avalanche advanced: the hint follows it
+    expect(cameraHints(world(level(hall())))).toBeNull();
+  });
+  it('the session passes the campaign option to every world it builds (and a quick-match session builds none)', () => {
+    const mk = (c?: { world: 'forest' }) => new ObstSession({ mode: 'chain', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [level(hall()), level(hall())], campaign: c });
+    const s = mk({ world: 'forest' });
+    expect(s.world.camp?.world).toBe('forest');
+    expect(s.world.ropes[0]!.links[0]!.base).toBeCloseTo(ROPE_LEN * 1.2, 6);
+    expect(mk().world.camp).toBeNull();
   });
 });
