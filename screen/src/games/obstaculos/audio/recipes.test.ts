@@ -135,7 +135,7 @@ describe('event -> cue selection', () => {
 });
 
 // Campaign A5 (plan §4 #4-#9): the six dynamics have ONE effect each, made of the same voices.
-describe('campaign A5: one sound per dynamic', () => {
+describe('campaign A5 and A6: one sound per dynamic', () => {
   const S: { [K in CampaignSound]: CampaignEvents[K] } = {
     'obst.balance': { id: 'D', other: 'E' },
     'obst.target': { id: 'a', player: 0, seconds: 4 },
@@ -143,6 +143,10 @@ describe('campaign A5: one sound per dynamic', () => {
     'obst.ice': { player: 0 },
     'obst.wind': { phase: 'warn', dir: 1 },
     'obst.pickaxe': { player: 0, action: 'climb' },
+    'obst.lantern': { player: 0, action: 'light' },
+    'obst.bungee': { player: 0, stretch: 1.5 },
+    'obst.sinker': { id: 'D', load: 2 },
+    'obst.geyser': { phase: 'gush', id: 'E' },
   };
   const cf = <K extends CampaignSound>(n: K, p: CampaignEvents[K], b: Biome = 'beach') => cuesFor(n, p, b);
   it('each one rings a cue with sane voices (positive, at most 0.5 gain, under 3 s) in every biome', () => {
@@ -156,8 +160,8 @@ describe('campaign A5: one sound per dynamic', () => {
       }
     }
   });
-  it('the director listens to the 18 quick-match events and these 6', () => {
-    expect(SOUND_EVENTS).toHaveLength(Object.keys(HANDLERS).length + 6);
+  it('the director listens to the 18 quick-match events and these 10', () => {
+    expect(SOUND_EVENTS).toHaveLength(Object.keys(HANDLERS).length + 10);
     for (const n of Object.keys(CAMPAIGN_HANDLERS)) expect(SOUND_EVENTS).toContain(n);
   });
   it('wind: silent when it calms, the gust louder than the warning; ice is the quietest priority', () => {
@@ -174,5 +178,29 @@ describe('campaign A5: one sound per dynamic', () => {
     expect([f('take'), f('pass'), f('climb'), f('top')]).toEqual([...[f('take'), f('pass'), f('climb'), f('top')]].sort((a, b) => a - b));
     expect(new Set([f('take'), f('pass'), f('climb'), f('top')]).size).toBe(4);
     expect(cf('obst.target', { id: 'a', player: 0, seconds: 4 }, 'forest')[0]!.p.freq).toBeCloseTo(degreeFreq('forest', 8, 2));
+  });
+});
+
+describe('campaign A6 (dynamics 10-12): what each cue is made of', () => {
+  const cf = <K extends CampaignSound>(n: K, p: CampaignEvents[K], b: Biome = 'beach') => cuesFor(n, p, b);
+  it('lantern: lighting the crystals is the loudest (priority 2, a three-note chord) and putting them out is a falling sigh; take and pass are a ting', () => {
+    const light = cf('obst.lantern', { player: 0, action: 'light' })[0]!, dim = cf('obst.lantern', { player: -1, action: 'dim' })[0]!;
+    expect(light.priority).toBe(2); expect(dim.priority).toBe(1);
+    expect(voicesFor(light).filter((v) => v.src === 'sine' && v.at < 0.11 && v.dur > 0.6)).toHaveLength(3);
+    const d = voicesFor(dim)[0]!; expect(d.f1!).toBeLessThan(d.f0!);
+    expect(cf('obst.lantern', { player: 0, action: 'take' })[0]!.p.variant).toBe('take');
+  });
+  it('bungee: the harder the stretch the higher the twang; sinker: a falling glug that is louder with more characters', () => {
+    const f = (s: number) => voicesFor(cf('obst.bungee', { player: 0, stretch: s })[0]!)[0]!.f0!;
+    expect(f(1.6)).toBeGreaterThan(f(1.25));
+    const g = (n: number) => Math.max(...voicesFor(cf('obst.sinker', { id: 'D', load: n })[0]!).map((v) => v.gain));
+    expect(voicesFor(cf('obst.sinker', { id: 'D', load: 1 })[0]!)[0]!.f1!).toBeLessThan(voicesFor(cf('obst.sinker', { id: 'D', load: 1 })[0]!)[0]!.f0!);
+    expect(g(3)).toBeGreaterThanOrEqual(g(1));
+  });
+  it('geyser: silent when it calms, bubbling is quieter than the eruption, the eruption outranks it', () => {
+    expect(cf('obst.geyser', { id: 'E', phase: 'calm' })).toEqual([]);
+    const warn = cf('obst.geyser', { id: 'E', phase: 'warn' })[0]!, gush = cf('obst.geyser', { id: 'E', phase: 'gush' })[0]!;
+    expect(Math.max(...voicesFor(gush).map((v) => v.gain))).toBeGreaterThan(Math.max(...voicesFor(warn).map((v) => v.gain)));
+    expect(gush.priority).toBeGreaterThan(warn.priority);
   });
 });

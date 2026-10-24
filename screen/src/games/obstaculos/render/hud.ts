@@ -22,6 +22,8 @@ export class ObstHud {
   private bannerT = 0; private bannerMs = 0;
   private lastClock = -1; private lastGoalKey = '';
   private t = 0;
+  private hearts: boolean; // campaign with finite hearts: a row of hearts (shared by the pair) instead of the number
+  private prevLives = -1; private loseT = 0; private gainT = 0;
 
   constructor(private scene: Phaser.Scene, private layer: Phaser.GameObjects.Layer, private w: WorldView) {
     this.panels = scene.add.graphics(); this.dyn = scene.add.graphics(); this.arrows = scene.add.graphics();
@@ -33,6 +35,7 @@ export class ObstHud {
     mk('lvl', 40, 30, 17, '#8A7461', 0, 0.5); mk('name', 40, 62, 31, C.ink, 0, 0.5);
     mk('clock', W / 2, 38, 48, C.ink); mk('par', W / 2, 78, 17, '#8A7461');
     mk('lives', 1536, 40, 34, C.ink, 0, 0.5); mk('stars', 1668, 40, 34, C.ink, 0, 0.5); mk('goal', 1790, 30, 16, '#8A7461', 0.5, 0.5);
+    this.hearts = !!w.camp && Number.isFinite(w.hud.livesMax) && w.hud.livesMax > 0 && w.hud.livesMax <= 10;
     this.drawPanels();
     this.text.lvl!.setText(`NIVEL ${w.hud.levelIndex + 1}/${w.hud.levelCount} · ${BIOME_NAME[w.level.def.biome].toUpperCase()}`);
     this.text.name!.setText(w.level.def.name);
@@ -51,8 +54,27 @@ export class ObstHud {
     this.pill(g, W / 2 - 110, 8, 220, 92);
     this.pill(g, 1456, 12, 440, 80);
     // heart and star icons
-    g.fillStyle(INK, 1); this.heart(g, 1500, 52, 19); g.fillStyle(0xe63b2e, 1); this.heart(g, 1500, 52, 14.5);
+    if (!this.hearts) { g.fillStyle(INK, 1); this.heart(g, 1500, 52, 19); g.fillStyle(0xe63b2e, 1); this.heart(g, 1500, 52, 14.5); }
     g.fillStyle(INK, 1); this.star(g, 1636, 51, 19, 8.5); g.fillStyle(0xffc21a, 1); this.star(g, 1636, 51, 14.5, 6.2);
+  }
+  // Campaign hearts, one for each of the world's hearts: full while left, a grey outline once spent. Losing one pops the first lost heart out (it swells and fades red -> grey);
+  // getting them all back (0 hearts: refill) makes the whole row bounce.
+  private drawHearts(d: Phaser.GameObjects.Graphics, dt: number) {
+    const hud = this.w.hud, n = hud.livesMax, left = Math.max(0, Math.min(n, hud.lives));
+    if (this.prevLives >= 0 && left < this.prevLives) this.loseT = 0.7;
+    if (this.prevLives >= 0 && left > this.prevLives) this.gainT = 0.6;
+    this.prevLives = left;
+    this.loseT = Math.max(0, this.loseT - dt); this.gainT = Math.max(0, this.gainT - dt);
+    const cell = Math.min(25, 128 / n), s = cell * 0.45, x0 = 1472 + cell / 2, y = 52; // (the star icon starts at x = 1617)
+    for (let i = 0; i < n; i++) {
+      const cx = x0 + i * cell, full = i < left;
+      const losing = !full && i === left && this.loseT > 0 ? this.loseT / 0.7 : 0; // 1 -> 0 while it pops
+      const bounce = full && this.gainT > 0 ? 1 + Math.sin((1 - this.gainT / 0.6) * Math.PI) * 0.45 : 1;
+      const k = (full ? bounce : 1 + losing * 0.8) * 1;
+      d.fillStyle(INK, 1); this.heart(d, cx, y, (s + 3.5) * k);
+      d.fillStyle(full ? 0xe63b2e : losing > 0.4 ? 0xff8a7a : 0xd8cdbb, full || losing > 0 ? 1 : 0.9); this.heart(d, cx, y, s * k);
+      if (full) { d.fillStyle(0xffffff, 0.55); d.fillCircle(cx - s * 0.5, cy0(y, s), s * 0.2); }
+    }
   }
   private heart(g: Phaser.GameObjects.Graphics, cx: number, cy: number, s: number) {
     g.fillCircle(cx - s * 0.5, cy - s * 0.25, s * 0.56); g.fillCircle(cx + s * 0.5, cy - s * 0.25, s * 0.56);
@@ -79,10 +101,11 @@ export class ObstHud {
     // medal colour of the clock
     const medal = medalFor(hud.timeSec, w.level.def.parSec);
     this.text.clock!.setColor(medal === 'gold' ? C.ink : medal === 'silver' ? '#6C7A84' : '#A0602A');
-    this.text.lives!.setText(hud.lives === Infinity ? '∞' : `${hud.lives}`);
+    this.text.lives!.setText(this.hearts ? '' : hud.lives === Infinity ? '∞' : `${hud.lives}`);
     this.text.stars!.setText(`${hud.starsTaken}/${w.level.markers.star.length}`);
     // par bar under the clock text
     const d = this.dyn; d.clear();
+    if (this.hearts) this.drawHearts(d, dtMs / 1000);
     const bx = W / 2 - 88, by = 94, bw = 176, frac = Math.min(1, hud.timeSec / (w.level.def.parSec * SILVER_PAR_MULT));
     d.fillStyle(INK, 0.2); d.fillRoundedRect(bx, by - 3, bw, 6, 3);
     d.fillStyle(MEDAL_COLORS[medal], 1); d.fillRoundedRect(bx, by - 3, Math.max(6, bw * frac), 6, 3);
@@ -137,4 +160,5 @@ export class ObstHud {
     this.bannerTxt?.destroy();
   }
 }
+const cy0 = (y: number, s: number) => y - s * 0.35; // the glint of a full heart
 const easeBack = (t: number) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };

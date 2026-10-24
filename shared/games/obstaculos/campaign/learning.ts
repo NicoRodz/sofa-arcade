@@ -10,12 +10,6 @@ import type { CampaignLevel } from './types';
 import { worldForDifficulty, type WorldId } from '../sim/campaign';
 import { BAND_SLACK, HINT_FREE_FROM, HINT_MAX_PER_LEVEL, HINT_MAX_WORDS, WORLD_NAME, bandOf, checkpointEverySec, inBand } from './world';
 
-// Mechanics that the validator's graph reaches the same places with: a level cannot prove one necessary against a bot that already has the other.
-// (A5: S1 gave the throw its niche in a campaign: tied, it crosses a 5-tile pit that no jump or tower does (sim/campaign.ts header, validator/dynamics.test.ts). The frozen 1-5 is a
-// 4-tile wall, which the tower also climbs, so the pair stays until S2 builds a throw level around the pit; then drop it and 1-5 / its successor gets a real debut test.)
-export const EQUIVALENT: readonly (readonly ModeledMechanic[])[] = [['tower', 'throw']];
-const twinsOf = (m: Mechanic): Mechanic[] => EQUIVALENT.filter((g) => (g as readonly string[]).includes(m)).flatMap((g) => g.filter((x) => x !== m));
-
 // Felt but not needed: no debut check, and nothing to prove. The rest of SIM_ONLY is `unverified`: only the sim bot of A2 can show its use.
 export const PASSIVE: readonly Mechanic[] = ['move', 'coyote', 'belt', 'crumble', 'lava'];
 
@@ -97,9 +91,9 @@ export function learnLevel(levels: readonly CampaignLevel[], i: number): Learnin
   const d = good.length ? good.reduce((s, r) => s + difficultyOf(r, def).D, 0) / good.length : 0;
   if (good.length && !inBand(l.world, d)) errors.push(`${l.id}: D ${d.toFixed(1)} outside the ${WORLD_NAME[l.world]} band ${bandOf(l.world).join('-')} (+-${BAND_SLACK})`);
 
-  // 3. it only uses what it declares (and what is taught): every mechanic of the route is in introduces or requires (a twin counts)
+  // 3. it only uses what it declares (and what is taught): every mechanic of the route is in introduces or requires
   const declared = new Set<Mechanic>([...l.introduces, ...l.requires, 'jump']);
-  for (const m of Object.keys(uses) as ModeledMechanic[]) if (!declared.has(m) && !twinsOf(m).some((t) => declared.has(t))) errors.push(`${l.id}: the route uses ${m}, which is neither introduced nor required here`);
+  for (const m of Object.keys(uses) as ModeledMechanic[]) if (!declared.has(m)) errors.push(`${l.id}: the route uses ${m}, which is neither introduced nor required here`);
   for (const m of l.requires) if (!before.has(m)) errors.push(`${l.id}: requires ${m}, which no earlier level taught`);
 
   // 4. debut: the bot without X fails, the one with X shows a use
@@ -107,14 +101,12 @@ export function learnLevel(levels: readonly CampaignLevel[], i: number): Learnin
   for (const x of l.introduces) {
     if (PASSIVE.includes(x)) { debut.push({ mechanic: x, kind: 'passive' }); continue; }
     if (!isModeled(x)) { debut.push({ mechanic: x, kind: 'unverified' }); continue; }
-    const twins = twinsOf(x).filter((t) => before.has(t)); // a twin taught earlier: the bot loses the whole pair, then gets only X
-    const without = new Set([...known].filter((m) => m !== x && !twins.includes(m)));
-    const withX = new Set([...known].filter((m) => !twins.includes(m)));
+    const without = new Set([...known].filter((m) => m !== x));
     let fails = true, used = Infinity;
     for (const mode of levelModes(l)) {
       const a = validateState(def, campaignEnv(l.world, mode, without));
-      if (a.ok) { fails = false; errors.push(`${l.id} ${mode}: the bot without ${x}${twins.length ? ` and ${twins.join(', ')}` : ''} still finishes: ${x} is not needed here`); }
-      const b = validateState(def, campaignEnv(l.world, mode, withX));
+      if (a.ok) { fails = false; errors.push(`${l.id} ${mode}: the bot without ${x} still finishes: ${x} is not needed here`); }
+      const b = validateState(def, campaignEnv(l.world, mode, known));
       if (!b.ok) errors.push(`${l.id} ${mode}: the bot with ${x} does not finish: ${b.errors.join('; ')}`);
       const u = b.uses[x] ?? 0;
       used = Math.min(used, u);

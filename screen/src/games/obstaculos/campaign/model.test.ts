@@ -10,6 +10,8 @@ import { renderHub, renderMap, renderPick, renderPractice, renderResult, type Vi
 import { DIFFICULTIES, DIFFICULTY_LABEL } from '@party/shared/difficulty';
 
 const plan = planCatalog();
+// The real catalog grows with each phase (A5 built Bosque and Glaciar, A6 will add two more): the hub tests that are about "one world built" use this slice of it, so they do not move with the content.
+const oneWorld: Catalog = { ...CAMPAIGN_CATALOG, worlds: CAMPAIGN_CATALOG.worlds.slice(0, 1), levels: CAMPAIGN_CATALOG.levels.filter((l) => l.world === '1') };
 let clock = 1000;
 const ex = (name = 'Nico y Angi') => newExpedition('exp-test0001', name, 1000);
 const clearAll = (e: Expedition, c: Catalog, ids: string[], perfect = false) => ids.reduce((a, id) => applyResult(a, c, { levelId: id, cleared: true, timeMs: 1000, collectiblesMask: perfect ? fullMask(3) : 0, deaths: perfect ? 0 : 4 }, ++clock), e);
@@ -20,18 +22,20 @@ const eff = (s: CampState, key: string, c: KeyCtx): Effect | null => campKey(s, 
 
 describe('hub items', () => {
   it('offers Continuar first when there is an expedition, with the label the plan asks for', () => {
-    const items = hubItems(hubOf([ex()]), CAMPAIGN_CATALOG, 2);
+    const items = hubItems(hubOf([ex()]), oneWorld, 2);
     expect(items.map((i) => i.id)).toEqual(['continue', 'new', 'practice', 'quick']); // one world built: no "ya sabemos escalar"
     expect(items[0]!.label).toBe('Continuar · Nico y Angi · Playa 1-1 · 0★');
   });
   it('has no Continuar with nothing saved, and a "pick another" entry from two expeditions on', () => {
-    expect(hubItems(hubOf([]), CAMPAIGN_CATALOG, 2).map((i) => i.id)).toEqual(['new', 'practice', 'quick']);
+    expect(hubItems(hubOf([]), oneWorld, 2).map((i) => i.id)).toEqual(['new', 'practice', 'quick']);
+    // the real catalog has Playa, Bosque and Glaciar since A5: "ya sabemos escalar" opens the Bosque
+    expect(hubItems(hubOf([]), CAMPAIGN_CATALOG, 2).find((i) => i.id === 'newSkip')).toMatchObject({ label: 'Nueva · ya sabemos escalar', sub: 'Abre Bosque de entrada' });
     expect(hubItems(hubOf([]), plan, 2).map((i) => i.id)).toEqual(['new', 'newSkip', 'practice', 'quick']); // with a second world, "ya sabemos escalar" appears
     const two = hubItems(hubOf([ex(), { ...ex('B'), id: 'exp-test0002' }]), CAMPAIGN_CATALOG, 2);
     expect(two.find((i) => i.id === 'pick')?.label).toBe('Otra expedición (2)');
   });
   it('with fewer than two players the campaign cannot start, but the quick game entry is not blocked here', () => {
-    const items = hubItems(hubOf([ex()]), CAMPAIGN_CATALOG, 1);
+    const items = hubItems(hubOf([ex()]), oneWorld, 1);
     expect(items.filter((i) => i.disabled).map((i) => i.id)).toEqual(['continue', 'new', 'practice']);
     expect(items.find((i) => i.id === 'quick')!.disabled).toBe('');
   });
@@ -91,7 +95,7 @@ describe('the trail of a world', () => {
 describe('keys in the hub', () => {
   it('moves with the arrows without leaving the list, and each key does the one thing', () => {
     let s = initialState();
-    const c = ctx();
+    const c = ctx({ catalog: oneWorld });
     expect(press(s, 'ArrowUp', c).effect).toBeNull(); // already on the first
     s = press(s, 'ArrowDown', c).state;
     expect(s.hubSel).toBe(1);

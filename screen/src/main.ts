@@ -172,7 +172,10 @@ function setPhase(next: Phase) {
   if (next === phase) return;
   phase = next;
   let match: MatchStart | undefined;
-  if (phase === 'playing' && config.game === OBST_ID) startObst();
+  if (phase === 'playing' && config.game === OBST_ID) {
+    startObst();
+    if (campRun) match = { gameId: OBST_ID, modeId: 'coop', mapId: 'campaign', difficulty: config.difficulty, teams: null, modeOptions: { campaign: true } }; // the phones show the signal pad
+  }
   else if (phase === 'playing' && config.modeId === 'versus' && config.teams) {
     activeGame = 'pizzas';
     showScene('main');

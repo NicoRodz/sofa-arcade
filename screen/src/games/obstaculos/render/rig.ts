@@ -116,6 +116,8 @@ const SIGNAL_TEXT: Record<string, string> = { arrowL: '←', arrowR: '→', arro
 export class Explorer {
   readonly root: Phaser.GameObjects.Container;
   private rig: Phaser.GameObjects.Container;
+  private sigBg: Phaser.GameObjects.Graphics;
+  private sigBox: Phaser.GameObjects.Container;
   private head: Phaser.GameObjects.Container;
   private torso: Phaser.GameObjects.Image;
   private torsoB: Phaser.GameObjects.Image;
@@ -158,11 +160,14 @@ export class Explorer {
     this.bubble = at('ex_bubble', 0, -50).setVisible(false);
     this.badge = at(`ex_badge_${i}`, 0, -122);
     this.icon = at('ex_icon_grab', 0, -158).setVisible(false);
-    this.sig = scene.add.text(0, -170, '', { fontFamily: 'ui-rounded, system-ui, sans-serif', fontSize: '40px', fontStyle: '800', color: '#FFF4E0', stroke: '#2B1B17', strokeThickness: 8 }).setOrigin(0.5, 1).setVisible(false); // campaign signals
+    // campaign signals: a speech bubble (cream, inked, with a tail) around a big arrow or word, drawn in the text's own pixels (the box is scaled like the badge)
+    this.sigBg = scene.add.graphics();
+    this.sig = scene.add.text(0, -26, '', { fontFamily: 'ui-rounded, system-ui, sans-serif', fontSize: '84px', fontStyle: '800', color: '#2B1B17' }).setOrigin(0.5, 1);
+    this.sigBox = scene.add.container(0, -170, [this.sigBg, this.sig]).setVisible(false);
     this.root = scene.add.container(0, 0, [this.shadow, this.rig]);
     this.root.setScale(RIG_SCALE);
     // badge, icon and bubble live outside the scaled rig so they keep a constant on-screen size
-    this.root.add([this.bubble, this.badge, this.icon, this.sig]);
+    this.root.add([this.bubble, this.badge, this.icon, this.sigBox]);
     layer.add(this.root);
   }
 
@@ -283,10 +288,18 @@ export class Explorer {
     // campaign signal (arrow, wait, go) above the head, on-screen size like the badge; it replaces the hint icon while it shows
     const sigText = p.signal ? SIGNAL_TEXT[p.signal] : '';
     if (sigText) {
-      if (this.sig.text !== sigText) this.sig.setText(sigText);
-      this.sig.setVisible(true).setColor(p.signal === 'go' ? '#7BE08A' : p.signal === 'wait' ? '#FFD23F' : '#FFF4E0').setScale((1 / R) * counter * 0.9 * inv * (1 + Math.sin(this.t * 14) * 0.04)).setPosition(0, -(64 + 44 * inv) * counter);
+      if (this.sig.text !== sigText) {
+        this.sig.setText(sigText);
+        const w = Math.max(this.sig.width + 56, 120), h = this.sig.height + 30, g = this.sigBg;
+        g.clear();
+        g.fillStyle(0x2b1b17, 1); g.fillRoundedRect(-w / 2 - 7, -h - 24 - 7, w + 14, h + 14, 30); g.fillTriangle(-24, -24, 24, -24, 0, 10);
+        g.fillStyle(0xfff4e0, 1); g.fillRoundedRect(-w / 2, -h - 24, w, h, 24); g.fillTriangle(-17, -26, 17, -26, 0, 2);
+        this.sig.setPosition(0, -24 - 15);
+      }
+      this.sig.setColor(p.signal === 'go' ? '#2A7A36' : p.signal === 'wait' ? '#C62E22' : '#2B1B17');
+      this.sigBox.setVisible(true).setScale((1 / R) * counter * 0.72 * inv * (1 + Math.sin(this.t * 14) * 0.03)).setPosition(0, -(62 + 24 * inv) * counter);
       this.icon.setVisible(false);
-    } else this.sig.setVisible(false);
+    } else this.sigBox.setVisible(false);
 
     // blink while invulnerable, dim if disconnected
     const inv2 = p.invulnSec > 0 && Math.floor(this.t * 14) % 2 === 0;

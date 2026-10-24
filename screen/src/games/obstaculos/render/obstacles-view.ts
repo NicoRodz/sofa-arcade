@@ -14,6 +14,7 @@ import { EntityLayer, HintSigns, buildEntityTextures } from './entities';
 import { Explorer, buildRigTextures } from './rig';
 import { ObstHud, medalFor, clockText } from './hud';
 import { ObstFx } from './fx';
+import { DarkLayer } from './dark';
 import { StragglerTracker, VIEW_H, VIEW_W, computeCamera, progressAt, progressField, type CamPlayer, type CamResult, type CamState } from './camera';
 import type { EntityView, PlayerView, WorldView } from './view';
 
@@ -42,6 +43,7 @@ export class ObstaclesView {
   private ents: EntityLayer;
   private hints: HintSigns;
   private fx: ObstFx;
+  private dark: DarkLayer;
   private hud: ObstHud;
   private explorers = new Map<number, Explorer>();
   private field: Int32Array;
@@ -51,10 +53,11 @@ export class ObstaclesView {
   private prevInGoal = new Set<number>();
   private windAcc = 0;
   private windN = 0;
+  private lastLight = -9;
 
   constructor(private scene: Phaser.Scene, private world: WorldView, bus?: Emitter<AllObstEvents>) {
     const mkLayer = () => { const l = scene.add.layer(); this.layers.push(l); return l; };
-    const lSky = mkLayer(), lOutside = mkLayer(), lRope = mkLayer(), lTiles = mkLayer(), lBehind = mkLayer(), lEnt = mkLayer(), lPlayers = mkLayer(), lLiquid = mkLayer(), lFx = mkLayer();
+    const lSky = mkLayer(), lOutside = mkLayer(), lRope = mkLayer(), lTiles = mkLayer(), lBehind = mkLayer(), lEnt = mkLayer(), lPlayers = mkLayer(), lLiquid = mkLayer(), lDark = mkLayer(), lFx = mkLayer();
     this.hudLayer = scene.add.layer().setDepth(10);
     const def = world.level.def;
     this.bg = new Background(scene, lSky, lOutside, def.biome, world.grid.w * TILE, world.grid.h * TILE);
@@ -62,6 +65,7 @@ export class ObstaclesView {
     this.rope = new RopeDrawer(scene, lRope);
     this.ents = new EntityLayer(scene, lEnt, lBehind, def.biome);
     this.hints = new HintSigns(scene, lEnt, def.hints ?? []);
+    this.dark = new DarkLayer(scene, lDark);
     this.fx = new ObstFx(scene, lFx);
     this.explorerLayer = lPlayers;
     this.hud = new ObstHud(scene, this.hudLayer, world);
@@ -155,6 +159,21 @@ export class ObstaclesView {
       else if (e.action === 'climb') this.fx.spark(m.x, m.y, 5);
       else this.fx.puff(m.x, m.y + PLAYER_H / 2, 6);
     });
+    // A6: lantern, bungee, sinkers, geyser (one juice effect each; the sound is audio/recipes.ts CAMPAIGN_HANDLERS)
+    on('obst.lantern', (e) => {
+      const m = e.player >= 0 ? mid(e.player) : null;
+      if (e.action === 'take') { if (m) this.fx.float(m.x, m.y - 56, '¡Farol!', '#FFE9A0', 28); }
+      else if (e.action === 'pass') { if (m) this.fx.float(m.x, m.y - 56, '¡Toma!', C.cheese, 28); }
+      else if (e.action === 'light') { if (m && this.t - this.lastLight > 0.9) { this.lastLight = this.t; this.fx.ring(m.x, m.y, 0xffe9a0, 0.6, 3.4); } } // (the crystals change a column at a time as the circle moves: one ring per second at most)
+    });
+    on('obst.bungee', (e) => { const m = mid(e.player); this.fx.ring(m.x, m.y, 0xff9a2e, 0.3, 1.8); this.fx.float(m.x, m.y - 52, '¡Boing!', '#FFB45A', 28); });
+    on('obst.sinker', (e) => { const p = ent(`obj${e.id}`); if (p) { this.fx.puff(p.x + p.w / 2, p.y + 6, 5); this.fx.float(p.x + p.w / 2, p.y - 14, '¡Se hunde!', '#BFEAFF', 24); } });
+    on('obst.geyser', (e) => {
+      const p = ent(`obj${e.id}`); if (!p) return;
+      const x = p.x + p.w / 2, y = p.y + p.h - 4;
+      if (e.phase === 'warn') this.fx.puff(x, y, 6);
+      else if (e.phase === 'gush') { this.fx.puff(x, y, 12); this.fx.ring(x, y, 0x9be0ff, 0.4, 2.4); this.fx.shake(120, 0.002); }
+    });
     on('obst.runEnd', (e) => this.hud.banner(e.reason === 'complete' ? '¡EXPEDICIÓN COMPLETA!' : 'EXPEDICIÓN TERMINADA', e.reason === 'complete' ? C.cheese : C.danger, 3500, 84));
   }
 
@@ -226,6 +245,7 @@ export class ObstaclesView {
     for (const [id, ex] of this.explorers) if (!seen.has(id)) { ex.destroy(); this.explorers.delete(id); }
     this.rope.update(dt, w.ropes, anchors, res.rect, this.t, (px, py) => isSolidKind(tileAt(w.grid, Math.floor(px / TILE), Math.floor(py / TILE))));
     this.ents.update(dt, w.entities, w.players);
+    this.dark.update(res.rect, w.dark ?? null, w.players.filter((p) => !p.dead && p.connected).map((p) => { const q = pos.get(p.id)!; return { x: q.x + PLAYER_W / 2, y: q.y + PLAYER_H / 2 }; }), this.t);
     this.hints.update(dt, [...pos.values()]);
 
     // hud
@@ -240,7 +260,7 @@ export class ObstaclesView {
     this.off = [];
     for (const e of this.explorers.values()) e.destroy();
     this.explorers.clear();
-    this.hud.destroy(); this.fx.destroy(); this.hints.destroy(); this.ents.destroy(); this.rope.destroy(); this.tiles.destroy(); this.bg.destroy();
+    this.hud.destroy(); this.dark.destroy(); this.fx.destroy(); this.hints.destroy(); this.ents.destroy(); this.rope.destroy(); this.tiles.destroy(); this.bg.destroy();
     for (const l of this.layers) l.destroy();
     this.hudLayer.destroy();
     const cam = this.scene.cameras.main;

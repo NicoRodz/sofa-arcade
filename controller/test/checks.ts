@@ -19,7 +19,7 @@ const fmt = (b: Box) => `[${b.x.toFixed(0)},${b.y.toFixed(0)} ${b.w.toFixed(0)}x
 const nm = (i: Item) => `${i.sel}#${i.i}`;
 
 // 1. Everything you press is at least 44x44 CSS px.
-const TOUCH = ['#remote .rb', '#btnA', '#btnB', '#pswap', '#schoolskip', '#schoolall', '#howtoopen', '#assist', '#howtoclose', '#zoomfix', '#join button', '#name'];
+const TOUCH = ['#remote .rb', '#signals .sg', '#btnA', '#btnB', '#pswap', '#schoolskip', '#schoolall', '#howtoopen', '#assist', '#howtoclose', '#zoomfix', '#join button', '#name'];
 export function touchSize(p: Probe): string[] {
   const out: string[] = [];
   for (const sel of TOUCH) for (const i of all(p, sel)) if (i.box.w < MIN_TOUCH - 0.5 || i.box.h < MIN_TOUCH - 0.5) out.push(`touch target ${nm(i)} is ${i.box.w.toFixed(0)}x${i.box.h.toFixed(0)} (< ${MIN_TOUCH})`);
@@ -45,6 +45,7 @@ export function insideControl(p: Probe): string[] {
 
 // 3. Text stays inside the box that is meant to hold it (cards, tiles); a designed ellipsis only clips horizontally.
 const CONTAINERS: [string, string][] = [['#school', '#schoolstep'], ['#school', '#schooltext'], ['#school', '#schoolskip'], ['#school', '#schoolall'], ['#puesto', '#pico'], ['#puesto', '#pname'], ['#puesto', '#phint'], ['#puesto', '#pswap'], ['#howto .steps li', '#howto .steps .tx'], ['#howto .steps li', '#howto .steps .ic'],
+  ['#signals .go', '#signals .go'], ['#signals .w', '#signals .w'],
   ...['#stickLbl', '#lblA', '#lblB'].flatMap((l): [string, string][] => [[`${l} .pl`, `${l} .lbl`], [`${l} .pl`, `${l} .hold`]])];
 export function textInBox(p: Probe): string[] {
   const out: string[] = [];
@@ -65,7 +66,7 @@ export function textInBox(p: Probe): string[] {
 }
 
 // 4. Controls and text stay inside the safe area (notch, rounded corners, home indicator).
-const SAFE_BOXES = ['#remote .rb', '#remote .crown', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#school', '#zoomfix', '#join button', '#name', '#howtoopen', '#assist', '#howtoclose', '#howto .steps li', '#howto .note'];
+const SAFE_BOXES = ['#remote .rb', '#remote .crown', '#signals', '#signals .sg', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#btnA', '#btnB', '#stickhint', '#puesto', '#school', '#zoomfix', '#join button', '#name', '#howtoopen', '#assist', '#howtoclose', '#howto .steps li', '#howto .note'];
 export function safeArea(p: Probe): string[] {
   const out: string[] = [];
   const safe = safeRect(p), full: Box = { x: 0, y: 0, w: p.vw, h: p.vh };
@@ -81,7 +82,7 @@ export function safeArea(p: Probe): string[] {
 // 5. Nothing on the pad sits on top of anything else: stick, two buttons, station card, HUD, zoom banner.
 export function padOverlaps(p: Probe): string[] {
   const out: string[] = [];
-  const parts = ['#stickhint', '#btnA', '#btnB', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#puesto', '#school', '#hud', '#zoomfix'].flatMap((s) => all(p, s));
+  const parts = ['#stickhint', '#btnA', '#btnB', '#stickLbl .pl', '#lblA .pl', '#lblB .pl', '#puesto', '#school', '#hud', '#zoomfix', '#signals'].flatMap((s) => all(p, s));
   for (let a = 0; a < parts.length; a++) for (let b = a + 1; b < parts.length; b++) {
     const A = parts[a]!, B = parts[b]!;
     const ba = A.sel === '#hud' ? A.text ?? A.box : A.box, bb = B.sel === '#hud' ? B.text ?? B.box : B.box;
