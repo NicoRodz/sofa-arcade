@@ -75,6 +75,7 @@ describe('parseLevel: errors', () => {
     expect(parseLevel(mini(['#####', '#..G#', '#####'])).errors).toContain('want exactly one S, found 0');
     expect(parseLevel(mini(['#####', '#SSG#', '#####'])).errors).toContain('want exactly one S, found 2');
     expect(parseLevel(mini(['#####', '#S..#', '#####'])).errors).toContain('want exactly one G, found 0');
+    expect(parseLevel(mini(['#####', '#SGG#', '#####'])).errors).toContain('want exactly one G, found 2');
   });
   it('letters need params and params need letters', () => {
     expect(parseLevel(mini(['#####', '#SaG#', '#####'])).errors).toContain("letter 'a' has no params entry");
@@ -88,6 +89,11 @@ describe('parseLevel: errors', () => {
     expect(q).toContain("'a' opens 'A', which is not in the grid");
     const r = parseLevel(mini(['#####', '#SDG#', '#####'], { params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 } } })).errors;
     expect(r.join()).toMatch(/partner/);
+    // both balances exist but E points at somebody else
+    const twoD = mini(['######', '#SDEG#', '######'], { params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 }, E: { kind: 'balance', partner: 'D', travel: 1, speed: 1 } } });
+    expect(parseLevel(twoD).errors).toEqual([]);
+    const bad = mini(['######', '#SDEG#', '######'], { params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 }, E: { kind: 'balance', partner: 'E', travel: 1, speed: 1 } } });
+    expect(parseLevel(bad).errors.join()).toMatch(/'D' balance partner 'E'/);
   });
   it('players, par and zones', () => {
     expect(parseLevel(mini(ok, { players: { min: 1, max: 9 } })).errors.join()).toMatch(/players/);
