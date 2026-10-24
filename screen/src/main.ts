@@ -29,6 +29,7 @@ interface P {
   info: PublicPlayer;
   ctl: { x: number; y: number; b: boolean }; // latest input: no queue
   pendA: number; // A presses not yet consumed by a tick
+  pendB: number; // same for B (a quick tap can start and end between two ticks: the dash needs it)
   tracker: PressTracker;
   rtt: number[]; lag: number[];
   off: number | null; // phone clock -> server clock
@@ -74,7 +75,7 @@ function upsert(info: PublicPlayer, reset = false) {
   let p = players.get(info.id);
   if (!p) {
     p = {
-      info, ctl: { x: 0, y: 0, b: false }, pendA: 0, tracker: new PressTracker(),
+      info, ctl: { x: 0, y: 0, b: false }, pendA: 0, pendB: 0, tracker: new PressTracker(),
       rtt: [], lag: [], off: null, pkts: 0, pktsRate: 0,
     };
     players.set(info.id, p);
@@ -106,7 +107,7 @@ function setPhase(next: Phase) {
     played.add(map.id);
     // spawn i holds the i-th chef (connected ones first), so "spawn i = puesto i" holds even when slots have gaps
     const order = [...players.values()].sort((a, b) => Number(b.info.connected) - Number(a.info.connected) || a.info.slot - b.info.slot);
-    order.forEach((p, rank) => { addPlayer(game, p.info.id, p.info.slot, rank); p.pendA = 0; });
+    order.forEach((p, rank) => { addPlayer(game, p.info.id, p.info.slot, rank); p.pendA = 0; p.pendB = 0; });
     puestoOf.clear();
     const live = order.filter((p) => p.info.connected);
     if (live.length >= 2) {
@@ -209,6 +210,7 @@ function onMessage(m: ServerMsg) {
       const delta = p.tracker.update(m.presses);
       if (delta.some((d) => d > 0)) {
         p.pendA += delta[0] ?? 0;
+        p.pendB += delta[1] ?? 0;
         if (p.off !== null) pendingLag.push({ id: p.info.id, sendServerTime: m.ts + p.off });
       }
       break;
@@ -244,8 +246,8 @@ const host: Host = {
       acc -= TICK_MS;
       const controls = new Map<number, Controls>();
       for (const p of players.values()) {
-        controls.set(p.info.id, { ...p.ctl, a: p.pendA });
-        p.pendA = 0;
+        controls.set(p.info.id, { ...p.ctl, a: p.pendA, bTaps: p.pendB });
+        p.pendA = 0; p.pendB = 0;
       }
       tick(game, controls);
       if (game.over) { overAt ??= performance.now(); break; }
