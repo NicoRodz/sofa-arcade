@@ -22,12 +22,17 @@ export interface ObstEvents {
   'obst.gate': { id: string; open: boolean };
   'obst.goalEnter': { player: number; inside: number; total: number };
   'obst.levelClear': { level: string; timeSec: number; medal: 'gold' | 'silver' | 'bronze'; stars: number; deaths: number };
-  // --- campaign layer (sim/campaign.ts); never emitted by a quick-match world
+  'obst.runEnd': { score: number; levels: number; reason: 'complete' | 'failed' };
+}
+
+// Events of the campaign layer (sim/campaign.ts); never emitted by a quick-match world. Kept apart from ObstEvents on purpose: the screen's audio
+// maps every ObstEvents key to a cue at compile time, and these have no sound yet (S3 wires them: signal, countdown, superJump, edgeAssist, heartsOut).
+export interface CampaignEvents {
   'obst.signal': { player: number; kind: SignalKind }; // dynamic 1; also from the bubble
   'obst.countdown': { by: number; n: number }; // "go" held: 3, 2, 1, then 0 = "ya!"
   'obst.superJump': { players: number[] }; // dynamic 3: two ground jumps within the window
   'obst.edgeAssist': { player: number }; // a hanger whose head reached the ledge climbs on its own
   'obst.heartsOut': { toStart: boolean }; // 0 hearts: refilled and back at the checkpoint (Summit: at the start)
-  'obst.runEnd': { score: number; levels: number; reason: 'complete' | 'failed' };
 }
-export type ObstEventName = keyof ObstEvents;
+export type AllObstEvents = ObstEvents & CampaignEvents; // what the world returns on every step
+export type ObstEventName = keyof AllObstEvents;

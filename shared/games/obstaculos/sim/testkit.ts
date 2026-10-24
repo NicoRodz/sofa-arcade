@@ -4,7 +4,7 @@ import type { EntityParam, GameMode, LevelDef } from '../types';
 import { TILE } from '../constants';
 import type { PlayerStep } from './input';
 import { createWorld, step, type World, type WorldOptions } from './world';
-import type { ObstEventName, ObstEvents } from '../events';
+import type { AllObstEvents, ObstEventName } from '../events';
 import type { ObstEvent } from './state';
 
 export const IDLE: PlayerStep = { move: 0, down: false, jump: false, up: false, grab: false };
@@ -46,7 +46,7 @@ export function run(w: World, steps: number, f: InputFn = () => undefined, onSte
   return all;
 }
 export const names = (ev: ObstEvent[]): string[] => ev.map((e) => e.name);
-export const of = <K extends ObstEventName>(ev: ObstEvent[], name: K): ObstEvents[K][] => ev.filter((e) => e.name === name).map((e) => e.data as ObstEvents[K]);
+export const of = <K extends ObstEventName>(ev: ObstEvent[], name: K): AllObstEvents[K][] => ev.filter((e) => e.name === name).map((e) => e.data as AllObstEvents[K]);
 export const pl = (w: World, slot: number) => w.players.find((p) => p.slot === slot)!;
 export const feetOnFloor = (w: World, slot: number, floorRow: number) => Math.abs(pl(w, slot).body.y + 46 - floorRow * TILE) < 0.7;
 // Put a player at tile coords (feet on the bottom of the cell row), for set-ups.

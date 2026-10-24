@@ -1,7 +1,7 @@
 // Shared shapes of the world of F2a. Plain data only (no classes, no closures): a world can be hashed, snapshotted and compared.
 import type { Difficulty } from '../../../difficulty';
 import type { DifficultyParams } from '../constants';
-import type { ObstEventName, ObstEvents } from '../events';
+import type { AllObstEvents, ObstEventName } from '../events';
 import type { ParsedLevel } from '../parse';
 import type { Cell, EntityParam, GameMode, Weight } from '../types';
 import type { PxRect } from './collide';
@@ -10,7 +10,7 @@ import type { Body, PhysicsParams } from './player';
 import type { Rope } from './rope';
 import type { TileGrid } from './tiles';
 
-export type ObstEvent = { [K in ObstEventName]: { name: K; data: ObstEvents[K] } }[ObstEventName];
+export type ObstEvent = { [K in ObstEventName]: { name: K; data: AllObstEvents[K] } }[ObstEventName];
 
 // --- players
 export type PlayerMode = 'active' | 'dead' | 'bubble';
@@ -137,7 +137,7 @@ export interface World {
   countdown: { by: number; steps: number } | null; // campaign: a 3-2-1 launched by "go" held
 }
 
-export const emit = <K extends ObstEventName>(w: World, name: K, data: ObstEvents[K]): void => { w.events.push({ name, data } as ObstEvent); };
+export const emit = <K extends ObstEventName>(w: World, name: K, data: AllObstEvents[K]): void => { w.events.push({ name, data } as ObstEvent); };
 export const playerOf = (w: World, slot: number): PlayerState | undefined => w.players.find((p) => p.slot === slot);
 export const isActive = (p: PlayerState): boolean => p.connected && p.mode === 'active';
 export const connectedCount = (w: World): number => w.players.filter((p) => p.connected).length;
