@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <lobby|game|results|all> [outDir]
+// usage: npx tsx tools/capture.ts <lobby|game|results|all|phone> [outDir]
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -209,6 +209,32 @@ async function main() {
       return null;
     };
 
+    if (what === 'phone') {
+      // a real controller page in a phone-sized emulated viewport, driven by a fake screen that sends config and phase
+      const room = 'PHON';
+      const fake = new WebSocket(`ws://127.0.0.1:${PORT}/ws?role=screen&room=${room}`);
+      await new Promise((r) => fake.once('open', r));
+      const cfg = { t: 'config', game: 'pizzas', difficulty: 'normal', map: '1', seed: 1 };
+      fake.send(JSON.stringify(cfg)); fake.send(JSON.stringify({ t: 'phase', phase: 'lobby' }));
+      await cdp.send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
+      await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+      await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=${room}` });
+      await sleep(1200);
+      await cdp.shot('phone-join');
+      await cdp.eval(`document.getElementById('name').value = 'Nico'; document.getElementById('join').requestSubmit()`);
+      await sleep(1200);
+      await cdp.shot('phone-lobby');
+      if (process.env.PHONE_DISMISS) { await cdp.eval(process.env.PHONE_DISMISS); await sleep(300); await cdp.shot('phone-lobby-closed'); }
+      fake.send(JSON.stringify({ t: 'phase', phase: 'playing' }));
+      await sleep(800);
+      await cdp.shot('phone-play');
+      const r = await cdp.eval<{ x: number; y: number }>(`(() => { const b = document.getElementById('btnB').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; })()`);
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.x, y: r.y, id: 1 }] });
+      await sleep(250);
+      await cdp.shot('phone-play-hold');
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      fake.close();
+    }
     if (what === 'lobby' || what === 'all') {
       await open('LOBY');
       await join('LOBY', 8, fixedMap('1')!.rows);

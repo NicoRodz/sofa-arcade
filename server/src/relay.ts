@@ -1,7 +1,7 @@
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  COLORS, DEFAULT_CONFIG, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage,
+  COLORS, DEFAULT_CONFIG, configMsg, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage,
   type LobbyConfig, type PhaseInfo, type PublicPlayer, type ServerMsg,
 } from '@party/shared';
 
@@ -76,7 +76,7 @@ export function attachRelay(server: Server) {
         if (!isScreen) return;
         const { t: _t, ...cfg } = m;
         r.config = cfg;
-        toPlayers(r, { t: 'config', ...r.config });
+        toPlayers(r, configMsg(r.config));
         return;
       }
       if (isScreen) return;
@@ -101,7 +101,7 @@ export function attachRelay(server: Server) {
         p.ws = ws;
         me = p;
         send(ws, { t: 'joined', player: pub(p), room: url.searchParams.get('room') || DEFAULT_ROOM });
-        send(ws, { t: 'config', ...r.config });
+        send(ws, configMsg(r.config));
         send(ws, { t: 'phase', ...r.phase });
         toScreens(r, { t: 'player_joined', player: pub(p) });
         return;

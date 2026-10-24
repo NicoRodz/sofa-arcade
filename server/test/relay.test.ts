@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { SLOT_GRACE_MS, type ClientMsg, type ServerMsg } from '@party/shared';
+import { GAMES } from '@party/shared/games';
 import { startServer } from '../src/server';
 
 let srv: Awaited<ReturnType<typeof startServer>>;
@@ -157,6 +158,22 @@ describe('lobby config', () => {
     b.send({ t: 'join', name: 'Bo', token: 'b' });
     expect(await b.next('config')).toMatchObject({ difficulty: 'hard', map: 'random', seed: 99 }); // late joiner
     [screen.ws, a.ws, b.ws].forEach((w) => w.close());
+  });
+
+  it('config carries the game control labels and how-to steps, on join and on change', async () => {
+    const screen = new Client('?role=screen&room=c2');
+    const a = new Client('?room=c2');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined');
+    const first = await a.next('config');
+    expect(first.controls).toEqual(GAMES[0].controls);
+    expect(first.howTo.steps.length).toBeGreaterThanOrEqual(3);
+    screen.send({ t: 'config', game: 'pizzas', difficulty: 'easy', map: 'auto', seed: 5 });
+    const next = await a.next('config');
+    expect(next).toMatchObject({ difficulty: 'easy', controls: GAMES[0].controls, howTo: GAMES[0].howTo });
+    expect(srv.relay.rooms.get('c2')!.config).not.toHaveProperty('controls'); // the room keeps only the lobby config
+    [screen.ws, a.ws].forEach((w) => w.close());
   });
 });
 

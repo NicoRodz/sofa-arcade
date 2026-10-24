@@ -1,5 +1,5 @@
 import { DEFAULT_DIFFICULTY, isDifficulty, type Difficulty } from './difficulty';
-import { DEFAULT_GAME, isGameId, type GameId } from './games';
+import { DEFAULT_GAME, gameInfo, isGameId, type GameId, type GameInfo } from './games';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
 
 export { ROUND_MS } from './difficulty';
@@ -38,6 +38,10 @@ export const isSeed = (v: unknown): v is number => Number.isInteger(v) && (v as 
 export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice; seed: number }
 export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY, map: DEFAULT_MAP, seed: 1 };
 
+// What the phones receive: the lobby config plus the chosen game's control labels and how-to steps (from the registry).
+export type ConfigMsg = { t: 'config' } & LobbyConfig & GameInfo;
+export const configMsg = (cfg: LobbyConfig): ConfigMsg => ({ t: 'config', ...cfg, ...gameInfo(cfg.game) });
+
 export interface PublicPlayer {
   id: number;
   name: string;
@@ -62,7 +66,7 @@ export type ServerMsg =
   | { t: 'player_left'; playerId: number } // disconnected, slot still held
   | { t: 'player_removed'; playerId: number } // grace expired, slot freed
   | ({ t: 'phase' } & PhaseInfo)
-  | ({ t: 'config' } & LobbyConfig)
+  | ConfigMsg
   | ({ t: 'input'; playerId: number } & InputState)
   | { t: 'rtt'; playerId: number; rtt: number; off: number };
 

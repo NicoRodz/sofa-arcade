@@ -1,7 +1,8 @@
 import nipplejs from 'nipplejs';
 import { DIFFICULTY_LABEL } from '@party/shared/difficulty';
 import { fixedMap } from '@party/shared/maps';
-import { gameName } from '@party/shared/games';
+import { gameName, type GameControls } from '@party/shared/games';
+import { controlHtml } from '@party/shared/render';
 import {
   ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone,
   type ClientMsg, type Phase, type ServerMsg,
@@ -45,6 +46,13 @@ const token = store.get('pg.token') ?? Math.random().toString(36).slice(2) + Dat
 store.set('pg.token', token);
 let name = store.get('pg.name') ?? '';
 
+// Labels and icons come from the game registry via the config message: nothing here knows a specific game.
+function applyControls(c: GameControls) {
+  $('stickhint').innerHTML = controlHtml(c.stick);
+  $('btnA').innerHTML = controlHtml(c.btn1);
+  $('btnB').innerHTML = controlHtml(c.btn2);
+}
+
 const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
@@ -71,11 +79,11 @@ function connect() {
       joined = true;
       myId = m.player.id;
       document.documentElement.style.setProperty('--c', m.player.color);
-      $('btnA').style.background = m.player.color;
       $('who').textContent = m.player.name;
       hud(`${m.player.name} #${m.player.slot + 1}`);
     } else if (m.t === 'config') {
       $('game').textContent = gameName(m.game);
+      applyControls(m.controls);
       $('setup').textContent = `${DIFFICULTY_LABEL[m.difficulty]} · ${m.map === 'auto' ? 'Mapa al azar' : m.map === 'random' ? `Mapa aleatorio ${m.seed}` : fixedMap(m.map)?.name ?? ''}`;
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores);
@@ -115,7 +123,8 @@ function startPad() {
     const [x, y] = applyDeadzone(e.data.vector.x, -e.data.vector.y);
     state.x = x; state.y = y;
   });
-  stick.on('end', () => { state.x = 0; state.y = 0; });
+  stick.on('start', () => $('stickhint').classList.add('active'));
+  stick.on('end', () => { state.x = 0; state.y = 0; $('stickhint').classList.remove('active'); });
 
   const bindButton = (el: HTMLElement, i: number) => {
     let activePointer: number | null = null;
