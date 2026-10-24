@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LEGACY_CATALOG, applyResult, continueLevel, parseExpedition, type Expedition } from '@party/shared/obstaculos/campaign';
+import { CAMPAIGN_CATALOG, applyResult, continueLevel, parseExpedition, type Expedition } from '@party/shared/obstaculos/campaign';
 import { ExpeditionError, ExpeditionStore, type StepName } from '../src/expeditions';
 import { startServer } from '../src/server';
 
@@ -12,7 +12,7 @@ let dir = '';
 beforeEach(() => { dir = mkdtempSync(path.join(tmpdir(), 'pg-exp-')); });
 afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
-const clear = (e: Expedition, levelId: string, now: number) => applyResult(e, LEGACY_CATALOG, { levelId, cleared: true, timeMs: 5000, collectiblesMask: 0, deaths: 0 }, now);
+const clear = (e: Expedition, levelId: string, now: number) => applyResult(e, CAMPAIGN_CATALOG, { levelId, cleared: true, timeMs: 5000, collectiblesMask: 0, deaths: 0 }, now);
 const onDisk = (id: string) => parseExpedition(JSON.parse(readFileSync(path.join(dir, `${id}.json`), 'utf8')));
 const STEPS: StepName[] = ['write-tmp', 'copy-bak', 'rename-bak', 'rename'];
 
@@ -171,7 +171,7 @@ describe('the HTTP API, and "Continuar" after the server restarts', () => {
       const created = await call('POST', '/api/expeditions', { name: 'Nico y Angi' });
       expect(created.status).toBe(201);
       const id = created.body.id as string;
-      expect(continueLevel(created.body, LEGACY_CATALOG)?.id).toBe('1-1');
+      expect(continueLevel(created.body, CAMPAIGN_CATALOG)?.id).toBe('1-1');
 
       expect((await call('POST', `/api/expeditions/${id}/claim`, { room: 'MAIN' })).status).toBe(200);
       expect((await call('POST', `/api/expeditions/${id}/claim`, { room: 'OTRA' })).status).toBe(409);
@@ -191,7 +191,7 @@ describe('the HTTP API, and "Continuar" after the server restarts', () => {
       expect(list.body.expeditions).toHaveLength(1);
       expect(list.body.expeditions[0]).toMatchObject({ id, name: 'Nico y Angi', stars: 2, lastLevelId: '1-1', active: false }); // claims do not survive a restart
       const back = await call('GET', `/api/expeditions/${id}`);
-      expect(continueLevel(back.body, LEGACY_CATALOG)?.id).toBe('1-2'); // "Continuar" offers 1-2
+      expect(continueLevel(back.body, CAMPAIGN_CATALOG)?.id).toBe('1-2'); // "Continuar" offers 1-2
 
       const del = await call('DELETE', `/api/expeditions/${id}`);
       expect(del.status).toBe(200);
@@ -200,7 +200,7 @@ describe('the HTTP API, and "Continuar" after the server restarts', () => {
       expect(trash.body.trash).toHaveLength(1);
       const restored = await call('POST', `/api/expeditions-trash/${trash.body.trash[0].name}/restore`);
       expect(restored.status).toBe(200);
-      expect(continueLevel(restored.body, LEGACY_CATALOG)?.id).toBe('1-2');
+      expect(continueLevel(restored.body, CAMPAIGN_CATALOG)?.id).toBe('1-2');
     } finally { await srv.close(); }
   });
   it('a server that never plays the campaign leaves no folder behind', async () => {

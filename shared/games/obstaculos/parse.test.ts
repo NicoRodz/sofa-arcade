@@ -30,7 +30,8 @@ describe('parseLevel: the three grids of the plan (§11)', () => {
     expect(p.markers.ring).toEqual([{ x: 44, y: 7 }, { x: 14, y: 9 }]);
     expect([17, 47].map((x, i) => kindAt(p, x, [12, 8][i]!))).toEqual([T.FreeSolid, T.FreeSolid]);
     expect(p.markers.goal).toEqual([{ x: 52, y: 7 }]);
-    expect(kindAt(p, 34, 8)).toBe(T.Solid); // cliff top at row 8
+    expect(kindAt(p, 34, 8)).toBe(T.FreeSolid); // cliff top at row 8: '%', 4 tiles in Libres and 3 in Encadenados (the rope cannot hold a tower of 2 higher)
+    expect(kindAt(p, 34, 9)).toBe(T.Solid);
     expect(kindAt(p, 34, 7)).toBe(T.Empty);
   });
   it('C: 64x18, one object per letter with its params and bounds', () => {

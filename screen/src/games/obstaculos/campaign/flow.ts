@@ -23,6 +23,7 @@ export interface Outcome {
   next: CatalogLevel | null; // "Siguiente", when the following level is open
   failuresInARow: number;
   canSkip: boolean;
+  practice?: true; // a station of the practice room: nothing is saved
   saved: boolean; // false: the server could not be reached; the progress is kept in memory and goes with the next save
 }
 
@@ -111,17 +112,23 @@ export class CampaignFlow {
   // What the session needs to run `levelId` (the level's own tilemap and mode), or why it cannot: closed, or not validated for this many players.
   spec(levelId: string, n: number, difficulty: Difficulty = 'normal'): RunSpec | Refusal {
     const e = this.exp, level = levelById(this.catalog, levelId);
+    if (level?.kind === 'practice') return playableWith(level, n) ? { level, def: level.def, mode: level.mode, world: worldForDifficulty('beach', difficulty) } : { ok: false, reason: 'Esta estación no está validada para este grupo' };
     if (!e || !level) return { ok: false, reason: 'Nivel desconocido' };
     if (!isUnlocked(e, this.catalog, levelId)) return { ok: false, reason: 'Todavía está cerrado' };
     if (!playableWith(level, n)) return { ok: false, reason: `Este nivel no está validado para ${n} ${n === 1 ? 'jugador' : 'jugadores'}` };
     return { level, def: level.def, mode: level.mode, world: worldForDifficulty(level.kind === 'summit' ? 'summit' : level.def.biome, difficulty) };
   }
   begin(levelId: string): void { this.current = { levelId, deaths: 0 }; this.outcome = null; }
+  private get practicing(): boolean { return !!this.current && levelById(this.catalog, this.current.levelId)?.kind === 'practice'; }
 
   // One attempt of the level ended. Cleared: the result is folded into the expedition and saved right now. Not cleared: the hearts it cost are
   // carried to the next attempt of the same session (star 3 needs none lost in the whole play).
   levelEnd(end: LevelEnd): Promise<void> {
     const cur = this.current, e = this.exp;
+    if (cur && this.practicing) { // the practice room: no hearts to count, nothing to save
+      if (end.cleared) this.outcome = this.practiceOutcome(cur.levelId, true, end.timeMs, 0);
+      return Promise.resolve();
+    }
     if (!cur || !e) return Promise.resolve();
     if (!end.cleared) { cur.deaths += end.deaths; return Promise.resolve(); }
     const before = progressOf(e, cur.levelId);
@@ -135,10 +142,15 @@ export class CampaignFlow {
   // The session is over without a clear: the team ran out of hearts twice.
   failed(): void {
     const cur = this.current, e = this.exp;
+    if (cur && this.practicing) { if (!this.outcome?.cleared) this.outcome = this.practiceOutcome(cur.levelId, false, 0, 0); return; }
     if (!cur || !e || this.outcome?.cleared) return;
     this.failures.set(cur.levelId, (this.failures.get(cur.levelId) ?? 0) + 1);
     const p = progressOf(e, cur.levelId);
     this.outcome = this.outcomeOf(cur.levelId, false, 0, cur.deaths, p, e);
+  }
+  private practiceOutcome(levelId: string, cleared: boolean, timeMs: number, deaths: number): Outcome {
+    const p = progressOf({ levels: {} } as Expedition, levelId);
+    return { levelId, cleared, timeMs, deaths, before: p, after: p, next: null, failuresInARow: 0, canSkip: false, practice: true, saved: true };
   }
   private outcomeOf(levelId: string, cleared: boolean, timeMs: number, deaths: number, before: LevelProgress, e: Expedition): Outcome {
     const fails = this.failures.get(levelId) ?? 0;

@@ -7,7 +7,7 @@ const G = 14; // standing row; the floor top is row 15
 
 export const MODULES: readonly LevelModule[] = [
   mod({ id: 'wall3', name: 'Muro de 3', minPlayers: 2, tether: 'any', coop: false, c: new Canvas(10).rect(4, 12, 6, 14, '#') }),
-  mod({ id: 'wall4', name: 'Muro de 4: torre de 2', minPlayers: 2, tether: 'any', coop: true, c: new Canvas(12).rect(4, 11, 8, 14, '#') }),
+  mod({ id: 'wall4', name: 'Muro de 4: torre de 2', minPlayers: 2, tether: 'any', coop: true, c: new Canvas(12).rect(4, 12, 8, 14, '#').rect(4, 11, 8, 11, '%') }), // top row '%': 4 tiles untied (tower of 2), 3 tied (the 168 px rope cannot hold a climber higher with 2)
   mod({ id: 'wall5', name: 'Muro de 5: torre de 3', minPlayers: 3, tether: 'any', coop: true, c: new Canvas(14).rect(5, 10, 9, 14, '#') }),
   mod({ id: 'spikepit', name: 'Foso de pinchos', minPlayers: 2, tether: 'any', coop: false, c: new Canvas(12).pit(4, 7, '^', G + 1).rect(4, 16, 7, 17, '#') }),
   mod({ id: 'lavahop', name: 'Islotes sobre lava', minPlayers: 2, tether: 'any', coop: false, c: (() => { const c = new Canvas(18).pit(4, 13, '~'); c.rect(8, 15, 9, 15, '#'); return c; })() }),
@@ -45,7 +45,7 @@ export const MODULES: readonly LevelModule[] = [
   }),
   mod({
     id: 'keydoor', name: 'Llave y puerta', minPlayers: 2, tether: 'any', coop: true,
-    c: new Canvas(22).rect(3, 11, 7, 14, '#').set(5, 10, 'k').rect(14, 0, 14, 11, '#').rect(14, 12, 14, 14, 'K'),
+    c: new Canvas(22).rect(3, 12, 7, 14, '#').rect(3, 11, 7, 11, '%').set(5, 10, 'k').rect(14, 0, 14, 11, '#').rect(14, 12, 14, 14, 'K'),
   }),
   mod({ id: 'stairs', name: 'Escalera de saltos', minPlayers: 2, tether: 'any', coop: false, c: new Canvas(16).rect(3, 13, 5, 14, '#').rect(6, 12, 8, 14, '#').rect(9, 13, 11, 14, '#') }),
 ] as const;

@@ -1,5 +1,5 @@
 // The words the campaign shows, built from the progress (pure, so the screen and the tests read the same text).
-import { maxStarsOf, worldById, type Catalog, type CatalogLevel } from './catalog';
+import { maxStarsOf, worldById, type Catalog, type CatalogLevel } from './progcatalog';
 import { continueLevel, totalStars, worldStars, type Expedition } from './progress';
 
 export const starsText = (n: number) => `${n}★`;

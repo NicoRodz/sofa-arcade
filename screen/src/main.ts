@@ -34,7 +34,7 @@ import {
   DIFFICULTY_PARAMS as OBST_DIFFICULTY, type Biome, type GameMode, type ObstOptions, type RunSummary,
 } from '@party/shared/obstaculos';
 import { ObstRun } from './games/obstaculos/host';
-import { LEGACY_CATALOG } from '@party/shared/obstaculos/campaign';
+import { CAMPAIGN_CATALOG } from '@party/shared/obstaculos/campaign';
 import { CampaignApi } from './games/obstaculos/campaign/api';
 import { CampaignScreen } from './games/obstaculos/campaign/screen';
 import { ObstaclesScene } from './games/obstaculos/render/scene';
@@ -111,7 +111,7 @@ const slotName = (slot: number) => [...players.values()].find((p) => p.info.slot
 // Obstaculos' campaign (the hub, the trail map and the results after each level; the progress lives on the server). campRun: the level that runs now, null in a quick game.
 let campRun: string | null = null;
 const camp = new CampaignScreen({
-  api: new CampaignApi(), catalog: LEGACY_CATALOG, room, kv: (() => { try { return localStorage; } catch { return null; } })(),
+  api: new CampaignApi(), catalog: CAMPAIGN_CATALOG, room, kv: (() => { try { return localStorage; } catch { return null; } })(),
   host: { set: (h) => setHtml('campaign', h) }, results: { set: (h) => setHtml('campres', h) },
   names: () => [...players.values()].filter((p) => p.info.connected).sort((a, b) => a.info.slot - b.info.slot).map((p) => p.info.name),
   count: connectedCount,
@@ -551,7 +551,7 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   obstSkip: (ms: number) => { if (!obstRun) return; for (let t = 0; t < ms; t += 1000 / 60) obstRun.step(1000 / 60); },
   deliver: (m: ServerMsg) => onMessage(m), // e2e: hand the screen a relay message directly (to prove the screen validates the Captain itself)
   captain: () => captainId,
-  camp: () => ({ on: camp.on, resultOn: camp.resultOn, state: camp.state, expId: camp.flow.exp?.id ?? null, outcome: camp.flow.outcome, run: campRun }), // e2e: what the campaign believes
+  camp: () => ({ on: camp.on, resultOn: camp.resultOn, state: camp.state, expId: camp.flow.exp?.id ?? null, outcome: camp.flow.outcome, run: campRun, starting, howTo: !!howTo, busy: camp.isBusy }), // e2e: what the campaign believes
   forceLobby: () => { if (phase === 'menu') setPhase('lobby'); }, // capture tool: skip the menu (and its player range)
   menu: () => ({ sel: menuSel, cards: menuCards(connectedCount()).map((c) => `${c.id}:${c.state}`) }),
   forceExpire: () => { for (const o of game.orders) o.expiresAt = game.time + 30; },

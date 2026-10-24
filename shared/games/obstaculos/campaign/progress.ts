@@ -3,7 +3,7 @@
 //   applyResult     a played level -> stars, medal, best time, next unlocks (monotone: nothing ever goes down)
 //   mergeExpedition the union of two versions of the same expedition (commutative, associative, idempotent), so a stale screen can never erase progress
 //   isUnlocked...   what the map may open
-import { SKIP_AFTER_FAILURES, SUMMIT_STARS_DEN, SUMMIT_STARS_NUM, TIME_MEDAL_FACTOR, bossOf, campaignOrder, levelById, pathOf, summitOf, worldById, worldIndex, type Catalog, type CatalogLevel } from './catalog';
+import { SKIP_AFTER_FAILURES, SUMMIT_STARS_DEN, SUMMIT_STARS_NUM, TIME_MEDAL_FACTOR, bossOf, campaignOrder, levelById, pathOf, summitOf, worldById, worldIndex, type Catalog, type CatalogLevel } from './progcatalog';
 
 export const SCHEMA_VERSION = 1;
 export type Stars = [boolean, boolean, boolean]; // [reached the goal, every collectible, no hearts lost]

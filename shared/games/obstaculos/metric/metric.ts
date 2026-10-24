@@ -6,7 +6,7 @@
 //  Lg : (length - 60) / 140, clipped to 0..1; length = columns + 2 per row above the usual 18 (vertical levels)
 // "Envelope use" of a jump = the smallest stick scale (of the 0.92 the validator allows) that still makes it, or the climb
 // as a share of the 173 px jump, whichever is larger. It is measured by re-running the very plan that validated the edge.
-import { DIFFICULTY_PARAMS, JUMP_PEAK_PX, PLAYER_H, TILE } from '../constants';
+import { JUMP_PEAK_PX, PLAYER_H, TILE } from '../constants';
 import { isHazardKind } from '../legend';
 import { tileAt } from '../sim/tiles';
 import { EDGE_MOVE_SCALE, simPlan } from '../validator/sim';
@@ -20,7 +20,7 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 export function edgeUsage(g: Graph, e: Edge): number {
   const vertical = Math.max(0, e.rise) / JUMP_PEAK_PX;
   if (e.kind === 'tower') return clamp01(Math.max(0, e.rise) / (JUMP_PEAK_PX + PLAYER_H * (e.k ?? 1)));
-  if (e.kind === 'hand') return clamp01(Math.max(0, e.rise) / (JUMP_PEAK_PX + DIFFICULTY_PARAMS[g.env.diff].handZoneTiles * TILE));
+  if (e.kind === 'hand') return clamp01(Math.max(0, e.rise) / (JUMP_PEAK_PX + g.dp.handZoneTiles * TILE));
   if (e.kind !== 'jump' || !e.plan) return 0;
   if (e.plan.trigger === 'walk' || e.plan.trigger === 'drop') return 0;
   // the smallest stick scale at which ANY plan from that segment still reaches the same target

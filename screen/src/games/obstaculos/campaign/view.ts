@@ -2,7 +2,7 @@
 import { continueLevel, levelById, levelTag, totalStars, worldById, type Catalog, type Expedition } from '@party/shared/obstaculos/campaign';
 import type { Biome } from '@party/shared/obstaculos';
 import type { Outcome } from './flow';
-import { hubItems, resetLeftMs, resetReady, resultButtons, trailPoints, worldNodes, worldTabs, type CampState, type KeyCtx, type MapNode } from './model';
+import { hubItems, practiceRows, resetLeftMs, resetReady, resultButtons, trailPoints, worldNodes, worldTabs, type CampState, type KeyCtx, type MapNode } from './model';
 import type { Difficulty } from '@party/shared/difficulty';
 
 export const BIOME_COLOR: Record<Biome, string> = { beach: '#F2D49B', forest: '#6FA85A', mine: '#C98A55', glacier: '#BFE8F5', volcano: '#F0783C' };
@@ -38,6 +38,12 @@ export function renderHub(s: CampState, ctx: ViewCtx): string {
     + (s.resetArmedAt !== null ? resetBanner(s, ctx) : `<div class="cfoot"><span class="cdiff">Dificultad ${diffs}</span><span class="ckeys"><kbd>↑</kbd><kbd>↓</kbd> elegir · <kbd>Enter</kbd> OK · <kbd>?</kbd> reiniciar · <kbd>Esc</kbd> atrás</span></div>`);
 }
 
+export function renderPractice(s: CampState, ctx: ViewCtx): string {
+  const rows = practiceRows(ctx.exp ?? ctx.hub.last, ctx.catalog, ctx.n);
+  const cells = rows.map((r, i) => `<button class="citem${i === s.pracSel ? ' sel' : ''}${r.open ? '' : ' dis'}" data-station="${esc(r.levelId)}"><b>${r.open ? '▶ ' : '🔒 '}${esc(r.name)}</b><span>${r.open ? 'Sin corazones · con aro de meta' : esc(r.why)}</span></button>`).join('');
+  return `<div class="chead"><h3>Sala de práctica</h3><span class="cnote">${esc(s.notice)}</span></div><div class="chub">${cells}</div>`
+    + '<div class="cfoot"><span class="ckeys"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> elegir · <kbd>Enter</kbd> practicar · <kbd>Esc</kbd> atrás</span></div>';
+}
 export function renderPick(s: CampState, ctx: ViewCtx): string {
   const rows = ctx.hub.list.map((x, i) => `<button class="citem row${i === s.pickSel ? ' sel' : ''}" data-pick="${esc(x.id)}"><b>${esc(x.name)}</b><span>${x.stars}★${x.active ? ' · jugando en otra sala' : ''}${x.lastLevelId ? ` · último ${esc(x.lastLevelId)}` : ''}</span></button>`).join('');
   return `<div class="chead"><h3>Elegir expedición</h3><span class="cnote">${esc(s.notice)}</span></div><div class="cpick">${rows}</div>`
@@ -83,7 +89,8 @@ export function renderResult(s: CampState, o: Outcome, c: Catalog): string {
   const why = [0, 1, 2].map((i) => `<li class="${o.after.stars[i] ? 'on' : ''}${o.after.stars[i] && !o.before.stars[i] ? ' fresh' : ''}">${o.after.stars[i] ? '★' : '☆'} ${labels[i]}</li>`).join('');
   const medal = lvl?.botMs ? `<div class="rmedal ${o.after.timeMedal ? 'on' : ''}${o.after.timeMedal && !o.before.timeMedal ? ' fresh' : ''}">⏱ Medalla de reloj ${o.after.timeMedal ? '✓' : `· ≤ ${clock(Math.round(lvl.botMs * 1.6))}`}</div>` : '';
   const btns = resultButtons(o).map((b, i) => `<button class="rbtn${i === s.resSel ? ' sel' : ''}" data-res="${b.id}">${esc(b.label)}</button>`).join('');
-  const title = o.cleared ? '¡Nivel completado!' : 'Se acabaron los corazones';
+  const title = o.practice ? (o.cleared ? '¡Estación lista!' : 'Otra vez') : o.cleared ? '¡Nivel completado!' : 'Se acabaron los corazones';
+  if (o.practice) return `<div class="rtitle win">${title}</div><div class="rname">Sala de práctica · ${esc(lvl?.name ?? '')}</div><div class="rline">Tiempo ${clock(o.timeMs)}</div><div class="rbtns">${btns}</div>`;
   return `<div class="rtitle ${o.cleared ? 'win' : 'lose'}">${title}</div><div class="rname">${esc(lvl ? levelTag(c, lvl) : o.levelId)} · ${esc(lvl?.name ?? '')}</div>`
     + (o.cleared ? `<div class="rstars">${stars}</div><ul class="rwhy">${why}</ul>${medal}<div class="rline">Tiempo ${clock(o.timeMs)}${o.after.bestTimeMs !== null ? ` · mejor ${clock(o.after.bestTimeMs)}` : ''} · corazones perdidos ${o.deaths}</div>`
       : `<div class="rline">${o.failuresInARow > 1 ? `${o.failuresInARow} intentos seguidos sin pasar. ` : ''}${o.canSkip ? 'Pueden saltar este nivel: queda marcado sin estrellas.' : 'Respiren y prueben otra vez.'}</div>`)

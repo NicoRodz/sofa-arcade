@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { LEGACY_CATALOG, applyResult, fullMask, levelById, progressOf } from '@party/shared/obstaculos/campaign';
+import { planCatalog } from '../../../../../shared/games/obstaculos/campaign/testkit';
+import { CAMPAIGN_CATALOG, applyResult, fullMask, levelById, progressOf, type Catalog } from '@party/shared/obstaculos/campaign';
 import { LAST_KEY } from './api';
 import { CampaignFlow, joinNames } from './flow';
 import { FakeApi, MemKV } from './testkit';
 
-const mk = (room = 'MAIN') => {
+const mk = (room = 'MAIN', catalog: Catalog = CAMPAIGN_CATALOG) => {
   const api = new FakeApi(), kv = new MemKV();
   let t = 5000;
-  const flow = new CampaignFlow({ api, catalog: LEGACY_CATALOG, room, kv, now: () => ++t });
-  return { api, kv, flow, other: (r: string) => new CampaignFlow({ api, catalog: LEGACY_CATALOG, room: r, kv: new MemKV(), now: () => ++t }) };
+  const flow = new CampaignFlow({ api, catalog, room, kv, now: () => ++t });
+  return { api, kv, flow, other: (r: string) => new CampaignFlow({ api, catalog: CAMPAIGN_CATALOG, room: r, kv: new MemKV(), now: () => ++t }) };
 };
 const clear = { cleared: true, timeMs: 8000, collectiblesMask: 0, deaths: 0 };
 const fail = { cleared: false, timeMs: 30_000, collectiblesMask: 0, deaths: 12 };
@@ -52,7 +53,7 @@ describe('opening, creating and leaving', () => {
     expect(flow.exp).toBeNull();
   });
   it('"ya sabemos escalar" saves the Bosque as open', async () => {
-    const { api, flow } = mk();
+    const { api, flow } = mk('MAIN', planCatalog());
     await flow.create(['A', 'B'], ['2']);
     expect(api.store.get(flow.exp!.id)!.unlocked).toEqual(['world:2']);
     expect(flow.spec('2-1', 2)).toMatchObject({ level: { id: '2-1' } });
@@ -101,7 +102,7 @@ describe('what a level asks and what it gives back', () => {
     const { api, flow } = mk();
     await flow.create(['A', 'B']);
     flow.begin('1-1');
-    await flow.levelEnd({ ...clear, collectiblesMask: fullMask(levelById(LEGACY_CATALOG, '1-1')!.collectibles) });
+    await flow.levelEnd({ ...clear, collectiblesMask: fullMask(levelById(CAMPAIGN_CATALOG, '1-1')!.collectibles) });
     const o = flow.outcome!;
     expect(o).toMatchObject({ levelId: '1-1', cleared: true, saved: true, next: { id: '1-2' } });
     expect(o.after.stars).toEqual([true, true, true]); // every collectible taken, no hearts lost
@@ -166,8 +167,23 @@ describe('what a level asks and what it gives back', () => {
     const id = flow.exp!.id;
     // someone else (another screen, earlier) already beat 1-1 with 3 stars on the server
     const server = api.store.get(id)!;
-    api.store.set(id, applyResult(server, LEGACY_CATALOG, { levelId: '1-1', cleared: true, timeMs: 5000, collectiblesMask: fullMask(levelById(LEGACY_CATALOG, '1-1')!.collectibles), deaths: 0 }, 9000));
+    api.store.set(id, applyResult(server, CAMPAIGN_CATALOG, { levelId: '1-1', cleared: true, timeMs: 5000, collectiblesMask: fullMask(levelById(CAMPAIGN_CATALOG, '1-1')!.collectibles), deaths: 0 }, 9000));
     flow.begin('1-1'); await flow.levelEnd({ ...clear, deaths: 5, timeMs: 9000 });
     expect(progressOf(flow.exp!, '1-1')).toMatchObject({ stars: [true, true, true], bestTimeMs: 5000 });
+  });
+
+  it('a practice station runs without an expedition, saves nothing and answers with its own outcome', async () => {
+    const { api, flow } = mk();
+    const spec = flow.spec('p-move', 2);
+    expect('ok' in spec).toBe(false);
+    expect(spec).toMatchObject({ world: 'beach', level: { id: 'p-move', kind: 'practice' } });
+    flow.begin('p-move');
+    await flow.levelEnd({ ...clear });
+    expect(flow.outcome).toMatchObject({ levelId: 'p-move', cleared: true, practice: true, next: null, saved: true });
+    expect(api.merges).toBe(0);
+    flow.begin('p-jump');
+    await flow.levelEnd(fail); flow.failed();
+    expect(flow.outcome).toMatchObject({ cleared: false, practice: true, canSkip: false });
+    expect(flow.failures.size).toBe(0);
   });
 });

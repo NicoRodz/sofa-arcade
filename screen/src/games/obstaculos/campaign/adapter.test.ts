@@ -1,11 +1,11 @@
 // The campaign layer reaches the picture: camera hints, the longer rope, the hearts and the signal over a head (SimWorldView).
 import { describe, expect, it } from 'vitest';
 import { COUNTDOWN_MS, ObstSession, ROPE_LEN } from '@party/shared/obstaculos';
-import { LEGACY_CATALOG } from '@party/shared/obstaculos/campaign';
+import { CAMPAIGN_CATALOG } from '@party/shared/obstaculos/campaign';
 import { SimWorldView } from '../render/adapter';
 import { checkWorldView } from '../render/view';
 
-const def = LEGACY_CATALOG.levels.find((l) => l.id === '1-2')!.def;
+const def = CAMPAIGN_CATALOG.levels.find((l) => l.id === '1-2')!.def;
 const FRAME = 1000 / 60;
 function mk(campaign: boolean, world: 'beach' | 'forest' = 'beach') {
   const s = new ObstSession({ mode: 'chain', difficulty: 'normal', level: 1, seed: 1, slots: [0, 1], levels: [def], ...(campaign ? { campaign: { world } } : {}) });

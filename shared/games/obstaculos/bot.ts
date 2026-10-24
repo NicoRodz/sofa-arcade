@@ -83,7 +83,8 @@ export class ObstBot {
     const seen = me.grounded ? this.tallWall(g, me, dir) : null; // only measured from solid ground (the walls of a pit are not a puzzle)
     if (seen && !this.wall) this.wall = seen; // remembered: a body in the air or on top no longer measures the wall from below
     const wall = this.wall ?? this.wallFromTop(v, g, act);
-    if (wall) return this.coopWall(v, me, act, wall, dir);
+    if (wall && act.every((p) => (p.x + HALF_W - wall.faceX) * dir > -4)) this.wall = null; // everybody is past it: back to plain running (campaign levels have more than one obstacle)
+    else if (wall) return this.coopWall(v, me, act, wall, dir);
 
     if (me.planted && v.tick - this.lastGrab > 10) { out.grab = true; this.lastGrab = v.tick; return out; } // never stay planted by accident
     if (atGoal) return IDLE;
@@ -126,7 +127,8 @@ export class ObstBot {
       const waiting = act.filter((p) => p.slot !== this.slot && (endX - (p.x + HALF_W)) * dir > 0 && p.grounded);
       if (waiting.some((p) => Math.abs(p.x + HALF_W - cx) > CROWD_PX)) { out.x = 0; return out; }
     }
-    if (me.grounded && (wallAhead || !floorAhead) && this.jumpOk(v.tick)) { out.jump = true; this.lastJump = v.tick; }
+    const spikesAhead = tileAt(g, col(cx + dir * (HALF_W + 34)), feetRow - 1) === T.Spikes; // a strip of spikes on the floor: jump before it
+    if (me.grounded && (wallAhead || !floorAhead || spikesAhead) && this.jumpOk(v.tick)) { out.jump = true; this.lastJump = v.tick; }
     return out;
   }
 
@@ -144,7 +146,7 @@ export class ObstBot {
   private coopWall(v: BotView, me: PlayerSnap, act: readonly PlayerSnap[], wall: Wall, dir: number): BotOut {
     const out: BotOut = { x: 0, y: 0, jump: false, grab: false };
     const cx = me.x + HALF_W, feetY = me.y + PLAYER_H;
-    const onTop = (p: PlayerSnap) => p.y + PLAYER_H <= wall.topY + 6 && (p.x + HALF_W - wall.faceX) * dir > -4;
+    const onTop = (p: PlayerSnap) => (p.x + HALF_W - wall.faceX) * dir > -4; // past the wall's face: on top of it, or already down the far side (campaign walls drop to a floor)
     const top = act.filter(onTop);
     const below = act.filter((p) => !onTop(p)).sort((a, b) => a.slot - b.slot);
     const base = below[0];

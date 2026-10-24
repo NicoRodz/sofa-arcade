@@ -1,13 +1,13 @@
 // What the campaign needs from a running level (host.ts onLevelEnd): reported the moment the level ends, with the collectibles it took and the hearts it cost.
 import { describe, expect, it } from 'vitest';
 import { COUNTDOWN_MS } from '@party/shared/obstaculos';
-import { LEGACY_CATALOG } from '@party/shared/obstaculos/campaign';
+import { CAMPAIGN_CATALOG } from '@party/shared/obstaculos/campaign';
 import { teleport } from '../../../../../shared/games/obstaculos/sim/testkit';
 import { ObstRun } from '../host';
 import type { LevelEnd } from './flow';
 
 const FRAME = 1000 / 60;
-const level = LEGACY_CATALOG.levels.find((l) => l.id === '2-1')!; // Bosque: 2 collectibles
+const level = CAMPAIGN_CATALOG.levels.find((l) => l.id === '1-1')!;
 function start() {
   const ends: LevelEnd[] = [];
   let over = 0;

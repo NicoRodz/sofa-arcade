@@ -148,7 +148,7 @@ async function main() {
     await key('Enter');
     await waitFor(async () => (await phase()) === 'playing', 'playing');
     let grid: any = null, gridLevel = '';
-    timers.push(setInterval(async () => {
+    const think = () => timers.push(setInterval(async () => {
       try {
         const st = await c.eval<any>('window.__pg.obst()');
         if (!st) return;
@@ -156,6 +156,7 @@ async function main() {
         phones.forEach((p) => p.think(st, grid));
       } catch { /* busy */ }
     }, 66));
+    think();
     await waitFor(async () => !!(await camp()).outcome?.cleared, 'the bots clear 1-1', 120_000);
     const o = (await camp()).outcome;
     console.log('outcome', JSON.stringify({ levelId: o.levelId, stars: o.after.stars, next: o.next?.id, saved: o.saved }));
@@ -169,12 +170,21 @@ async function main() {
     check((await text('#campres .rtitle')) === '¡Nivel completado!', 'results panel is the campaign one');
     check((await c.eval<number>(`document.querySelectorAll('#campres .rbtn').length`)) === 3, 'three buttons: Siguiente, Repetir, Mapa');
 
-    // 4. Esc = Mapa: the cursor is on 1-2
+    // 3b. Siguiente: the bots play 1-2 (Encadenados, with the campaign's longer rope)
+    await key('Enter');
+    await waitFor(async () => { const k = await camp(); return (await phase()) === 'playing' && k.run === '1-2'; }, 'playing 1-2');
+    await waitFor(async () => { const k = await camp(); return k.outcome?.levelId === '1-2' && !!k.outcome?.cleared; }, 'the bots clear 1-2', 150_000);
+    check(onDisk().levels['1-2']?.done === true, 'the server wrote 1-2 as done');
+    await waitFor(async () => (await phase()) === 'results', 'results of 1-2', 30_000);
+    await sleep(1500);
+    await c.shot('result-1-2');
+
+    // 4. Esc = Mapa: the cursor is on the next open level
     await key('Escape');
     await waitFor(async () => (await phase()) === 'lobby' && (await camp()).state.view === 'map', 'back on the map');
     await sleep(800);
     const sel = await c.eval<string>(`document.querySelector('#campaign .cnode.sel')?.className ?? ''`);
-    check(/open/.test(sel), 'the cursor sits on the next open level (1-2)');
+    check(/open/.test(sel), 'the cursor sits on the next open level (1-3)');
     await c.shot('map-after-1-1');
     timers.forEach(clearInterval);
 
@@ -188,7 +198,7 @@ async function main() {
     await openObst();
     const label = await attr('#campaign [data-hub="continue"]', 'data-label');
     console.log('Continuar label:', label);
-    check(/^Continuar · Nico y Angi · Playa 1-2 · \d+★$/.test(label), 'after the restart Continuar offers Playa 1-2 with the group name');
+    check(/^Continuar · Nico y Angi · Playa 1-3 · \d+★$/.test(label), 'after the restart Continuar offers Playa 1-3 with the group name');
     await c.shot('hub-continue');
     await c.eval(`document.querySelector('#campaign [data-hub="continue"]').click()`);
     await waitFor(async () => (await camp()).state.view === 'map', 'map after Continuar');
@@ -196,12 +206,34 @@ async function main() {
     check((await c.eval<string>(`document.querySelector('#campaign .cnode.sel')?.className ?? ''`)).includes('open'), 'Continuar opens the map on the open level');
     await c.shot('map-continue');
 
-    // 6. reset: "?" arms it, OK before 3 s is refused, OK after 3 s sends it to the trash
+    think(); // the phones are new after the reload
+    // 5b. the practice room: 8 stations, the ones of the levels already reached open
     await key('Escape');
-    await waitFor(async () => (await camp()).state.view === 'hub', 'hub again');
+    await waitFor(async () => (await camp()).state.view === 'hub', 'hub for the practice room');
+    await sleep(900); // the hub reloads its list after leaving; clicks wait for it
+    await c.eval(`document.querySelector('#campaign [data-hub="practice"]').click()`);
+    await waitFor(async () => (await camp()).state.view === 'practice', 'practice view');
     await sleep(500);
+    check((await c.eval<number>(`document.querySelectorAll('#campaign [data-station]').length`)) === 8, 'the practice room lists 8 stations');
+    check((await c.eval<number>(`document.querySelectorAll('#campaign [data-station]:not(.dis)').length`)) === 5, 'five stations are open after 1-1 and 1-2 (1-3 is reached, its tower station opens)');
+    await c.shot('practice');
+    await key('Enter'); // Mover
+    await waitFor(async () => (await phase()) === 'playing' && (await camp()).run === 'p-move', 'playing the station');
+    await waitFor(async () => { const k = await camp(); return k.outcome?.levelId === 'p-move' && !!k.outcome?.cleared; }, 'the bots clear the station', 90_000);
+    check(JSON.parse(readFileSync(path.join(dataDir, `${expId}.json`), 'utf8')).levels['p-move'] === undefined, 'the practice saved nothing');
+    await waitFor(async () => (await phase()) === 'results', 'practice results', 30_000);
+    await sleep(1200); await c.shot('practice-result');
+    await key('Escape');
+    await waitFor(async () => (await phase()) === 'lobby' && (await camp()).state.view === 'practice', 'back on the stations');
+    await key('Escape');
+    await waitFor(async () => (await camp()).state.view === 'hub', 'hub again after the practice');
+
+    // 6. reset: "?" arms it, OK before 3 s is refused, OK after 3 s sends it to the trash
+    await sleep(500);
+    for (let i = 0; i < 4; i++) { await key('ArrowUp'); await sleep(150); } // back on Continuar
     await key('h');
     await sleep(500);
+    check((await camp()).state.resetArmedAt !== null, 'the Captain\'s ? arms the reset');
     await key('Enter');
     await sleep(400);
     check(readdirSync(dataDir).includes(`${expId}.json`), 'OK before 3 s does not reset');

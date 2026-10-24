@@ -4,7 +4,7 @@
 import { nextLevel, type Catalog, type CatalogLevel } from '@party/shared/obstaculos/campaign';
 import type { Difficulty } from '@party/shared/difficulty';
 import { campKey, hubItems, initialState, startNode, worldNodes, type CampState, type Effect, type KeyCtx } from './model';
-import { renderHub, renderMap, renderPick, renderResult, type ViewCtx } from './view';
+import { renderHub, renderMap, renderPick, renderPractice, renderResult, type ViewCtx } from './view';
 import { CampaignFlow, type FlowDeps, type Hub, type LevelEnd } from './flow';
 
 export type Sfx = 'move' | 'pick' | 'back' | 'refuse';
@@ -53,13 +53,14 @@ export class CampaignScreen {
   quickGame(): void { this.on = false; this.resultOn = false; void this.flow.leave(); this.deps.quick(); }
 
   shows(phase: string): boolean { return (phase === 'lobby' && this.on) || (phase === 'results' && this.resultOn); }
+  get isBusy(): boolean { return this.busy; }
   get armed(): boolean { return this.state.resetArmedAt !== null; }
 
   render(): void {
     if (!this.on) return;
     const c = this.viewCtx();
     const s = this.state;
-    this.deps.host.set(s.view === 'pick' ? renderPick(s, c) : s.view === 'map' && c.exp ? renderMap(s, c) : renderHub(s.view === 'hub' ? s : { ...s, view: 'hub' }, c));
+    this.deps.host.set(s.view === 'pick' ? renderPick(s, c) : s.view === 'practice' ? renderPractice(s, c) : s.view === 'map' && c.exp ? renderMap(s, c) : renderHub(s.view === 'hub' ? s : { ...s, view: 'hub' }, c));
   }
   renderResults(): void {
     const o = this.flow.outcome;
@@ -100,6 +101,8 @@ export class CampaignScreen {
     const set = (patch: Partial<CampState>, press = true) => { this.state = { ...this.state, ...patch, resetArmedAt: null }; if (press) this.key('Enter', false); else { this.render(); this.deps.refresh(); } };
     const h = hit('[data-hub]')?.dataset.hub;
     if (h && this.state.view === 'hub') { const idx = hubItems(this.hub, this.catalog, this.deps.count()).findIndex((x) => x.id === h); if (idx >= 0) set({ hubSel: idx }); return; }
+    const st = hit('[data-station]')?.dataset.station;
+    if (st && this.state.view === 'practice') { const idx = this.catalog.practice.findIndex((x) => x.id === st); if (idx >= 0) set({ pracSel: idx }); return; }
     const p = hit('[data-pick]')?.dataset.pick;
     if (p) { const idx = this.hub.list.findIndex((x) => x.id === p); if (idx >= 0) set({ pickSel: idx }); return; }
     const nd = hit('[data-node]')?.dataset.node;
@@ -132,11 +135,19 @@ export class CampaignScreen {
       case 'refuse': d.sfx('refuse'); this.state = { ...this.state, notice: e.reason }; return;
       case 'menu': d.sfx('back'); d.leaveToMenu(); return;
       case 'quick': d.sfx('pick'); this.quickGame(); return;
-      case 'practice': d.sfx('refuse'); this.state = { ...this.state, notice: 'La Sala de práctica llega con el Mundo 1' }; return;
       case 'continue': if (this.hub.last) await this.openMap(await this.flow.open(this.hub.last.id)); return;
       case 'open': await this.openMap(await this.flow.open(e.id)); return;
       case 'new': await this.openMap(await this.flow.create(d.names(), e.skipIntro && this.catalog.worlds[1] ? [this.catalog.worlds[1].id] : [])); await this.reloadHubQuiet(); return;
       case 'leave': d.sfx('back'); await this.flow.leave(); this.state = { ...this.state, view: 'hub', notice: '' }; await this.reloadHubQuiet(); return;
+      case 'practicePlay': {
+        const spec = this.flow.spec(e.levelId, d.count(), d.difficulty().value);
+        if ('ok' in spec) { d.sfx('refuse'); this.state = { ...this.state, notice: spec.reason }; return; }
+        d.sfx('pick');
+        this.flow.begin(e.levelId);
+        this.resultOn = false;
+        d.play(e.levelId);
+        return;
+      }
       case 'play': {
         const spec = this.flow.spec(e.levelId, d.count());
         if ('ok' in spec) { d.sfx('refuse'); this.state = { ...this.state, notice: spec.reason }; return; }
@@ -156,6 +167,7 @@ export class CampaignScreen {
       case 'result': {
         const o = this.flow.outcome;
         if (!o) return;
+        if (o.practice && e.button === 'map') { d.sfx('back'); this.resultOn = false; this.state = { ...this.state, view: 'practice', notice: '' }; d.toLobby(); return; }
         if (e.button === 'skip') { await this.flow.skip(o.levelId); }
         if (e.button === 'next' && o.next) { d.sfx('pick'); this.flow.begin(o.next.id); this.resultOn = false; d.play(o.next.id); return; }
         if (e.button === 'retry') { d.sfx('pick'); this.flow.begin(o.levelId); this.resultOn = false; d.play(o.levelId); return; }

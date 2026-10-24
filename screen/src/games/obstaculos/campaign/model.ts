@@ -1,7 +1,7 @@
 // The campaign's screens as data and keys (no DOM): the hub's items, the trail of a world, the buttons after a level, and what every key does in each.
 // view.ts draws it, main.ts feeds it keys (the Mac's or the Captain's D-pad, which arrive as the same keys) and acts on the effect it returns.
 import {
-  bossOf, continueLabel, continueLevel, isUnlocked, isWorldUnlocked, pathOf, playableWith, progressOf, summitNeed, summitOf, summitState, worldById, worldStars,
+  bossOf, campaignOrder, continueLabel, continueLevel, isUnlocked, isWorldUnlocked, pathOf, playableWith, progressOf, summitNeed, summitOf, summitState, worldById, worldStars,
   maxStarsOf, type Catalog, type CatalogLevel, type Expedition, type Stars,
 } from '@party/shared/obstaculos/campaign';
 import type { Hub, Outcome } from './flow';
@@ -75,10 +75,23 @@ export function startNode(e: Expedition, c: Catalog, worldId: string, n: number)
   return Math.max(0, lastDone);
 }
 
+// ---- the practice room: one station per action; it opens when the level that debuts its mechanic is open (nothing saved yet: only the first level's)
+export interface StationRow { levelId: string; name: string; open: boolean; why: string }
+export function practiceRows(e: Expedition | null, c: Catalog, n: number): StationRow[] {
+  const first = campaignOrder(c)[0]?.id;
+  return c.practice.map((s) => {
+    const opensAt = s.opensAt ?? '';
+    const open = e ? isUnlocked(e, c, opensAt) : opensAt === first;
+    const fits = s.validatedFor.includes(n);
+    return { levelId: s.id, name: s.name, open: open && fits, why: !open ? `Se abre en ${opensAt}` : !fits ? `Validada para ${s.validatedFor.join(', ')} jug.` : '' };
+  });
+}
+
 // ---- the buttons after a level
 export type ResultButton = 'next' | 'retry' | 'skip' | 'map';
 export function resultButtons(o: Outcome): { id: ResultButton; label: string }[] {
   const out: { id: ResultButton; label: string }[] = [];
+  if (o.practice) return [{ id: 'retry', label: o.cleared ? 'Otra vez' : 'Reintentar' }, { id: 'map', label: 'Estaciones' }];
   if (o.cleared && o.next) out.push({ id: 'next', label: `Siguiente · ${o.next.id}` });
   out.push({ id: 'retry', label: o.cleared ? 'Repetir' : 'Reintentar' });
   if (o.canSkip) out.push({ id: 'skip', label: 'Saltar nivel' });
@@ -87,15 +100,15 @@ export function resultButtons(o: Outcome): { id: ResultButton; label: string }[]
 }
 
 // ---- keys
-export type CampView = 'hub' | 'pick' | 'map' | 'result';
+export type CampView = 'hub' | 'pick' | 'map' | 'result' | 'practice';
 export interface CampState {
   view: CampView;
-  hubSel: number; pickSel: number; resSel: number;
+  hubSel: number; pickSel: number; resSel: number; pracSel: number;
   world: string; node: number;
   resetArmedAt: number | null; // the Captain pressed "?" on an expedition: the reset can be confirmed after RESET_HOLD_MS
   notice: string;
 }
-export const initialState = (): CampState => ({ view: 'hub', hubSel: 0, pickSel: 0, resSel: 0, world: '', node: 0, resetArmedAt: null, notice: '' });
+export const initialState = (): CampState => ({ view: 'hub', hubSel: 0, pickSel: 0, resSel: 0, pracSel: 0, world: '', node: 0, resetArmedAt: null, notice: '' });
 
 export interface KeyCtx {
   now: number;
@@ -106,8 +119,8 @@ export interface KeyCtx {
   outcome: Outcome | null;
 }
 export type Effect =
-  | { t: 'continue' } | { t: 'new'; skipIntro: boolean } | { t: 'open'; id: string } | { t: 'quick' } | { t: 'practice' } | { t: 'menu' }
-  | { t: 'play'; levelId: string }
+  | { t: 'continue' } | { t: 'new'; skipIntro: boolean } | { t: 'open'; id: string } | { t: 'quick' } | { t: 'menu' }
+  | { t: 'play'; levelId: string } | { t: 'practicePlay'; levelId: string }
   | { t: 'reset'; id: string }
   | { t: 'result'; button: ResultButton }
   | { t: 'leave' } // back from the map to the hub (the expedition is released)
@@ -163,7 +176,7 @@ export function campKey(s0: CampState, key: string, ctx: KeyCtx): KeyOut {
         case 'pick': s = { ...s, view: 'pick', pickSel: 0 }; return out({ t: 'move' });
         case 'new': return out({ t: 'new', skipIntro: false });
         case 'newSkip': return out({ t: 'new', skipIntro: true });
-        case 'practice': return out({ t: 'practice' });
+        case 'practice': s = { ...s, view: 'practice', pracSel: 0 }; return out({ t: 'move' });
         case 'quick': return out({ t: 'quick' });
       }
     }
@@ -174,6 +187,17 @@ export function campKey(s0: CampState, key: string, ctx: KeyCtx): KeyOut {
     if (key in DIR) { const sel = clamp(s.pickSel + DIR[key]!, 0, list.length - 1); const moved = sel !== s.pickSel; s = { ...s, pickSel: sel }; return out(moved ? { t: 'move' } : null); }
     if (key === 'Escape') { s = { ...s, view: 'hub' }; return out({ t: 'move' }); }
     if ((key === 'Enter' || key === ' ') && list[s.pickSel]) return out({ t: 'open', id: list[s.pickSel]!.id });
+    return out();
+  }
+  if (s.view === 'practice') {
+    const rows = practiceRows(ctx.exp ?? ctx.hub.last, ctx.catalog, ctx.n);
+    if (key in DIR) { const sel = clamp(s.pracSel + DIR[key]!, 0, rows.length - 1); const moved = sel !== s.pracSel; s = { ...s, pracSel: sel }; return out(moved ? { t: 'move' } : null); }
+    if (key === 'Escape') { s = { ...s, view: 'hub' }; return out({ t: 'move' }); }
+    if (key === 'Enter' || key === ' ') {
+      const r = rows[clamp(s.pracSel, 0, rows.length - 1)];
+      if (!r) return out();
+      return r.open ? out({ t: 'practicePlay', levelId: r.levelId }) : out({ t: 'refuse', reason: r.why });
+    }
     return out();
   }
   if (s.view === 'map' && ctx.exp) {

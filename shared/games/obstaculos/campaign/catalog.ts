@@ -1,82 +1,116 @@
-// The catalog of the campaign: which levels exist, how they group into worlds, and what the progress rules need to know about each one.
-// S2 produces the real one (40 levels + the practice room); until it lands, LEGACY_CATALOG feeds the same interface with the 15 existing levels.
-// Everything here is plain data + pure lookups, so the server, the screen and the tests read the same thing.
-import { levelCompat } from '../lobby';
-import { LEVELS } from '../levels';
-import { parseLevel } from '../parse';
-import type { Biome, GameMode, LevelDef } from '../types';
+// The campaign: 5 worlds x 7 levels + 5 Cumbres = 40 (plan §2). Built levels carry their frozen tilemap; planned ones carry only metadata until
+// their phase (Mundo 2-3: A5, Mundo 4-5: A6, Cumbres: A7). `introduces` / `requires` are checked by the learning test (learning.ts).
+//
+// DEVIATIONS from the plan's table, found while reconciling it with the code (details in each `note`):
+//  - 1-3 teaches the tower AND the hand: with 2 players the tower is one-way (the pioneer climbs, the base cannot), so the plan's "Torre" level needs
+//    the hand to be solvable. 1-4 then teaches the anchor.
+//  - 1-5 (throw) is Encadenados like the plan says, but in the validator's model the throw reaches what the tower reaches (5.4 tiles, 4 tiles up):
+//    no geometry makes it necessary once the tower is known. Its debut test is "without lift fails, with the throw instead of the tower passes".
+import { MECHANICS, type Mechanic } from '../mechanics';
+import type { Biome, Cell } from '../types';
+import { C_1_1, C_1_2, C_1_3, C_1_4, C_1_5, C_1_6, C_1_7 } from './world1';
+import type { WorldId } from '../sim/campaign';
+import type { CampaignLevel, CampaignMode } from './types';
 
-export type LevelKind = 'level' | 'boss' | 'summit' | 'practice';
+type Row = [id: string, name: string, introduces: Mechanic[], requires: Mechanic[], mode: CampaignMode, origin: 'new' | 'relocate', extra?: Partial<CampaignLevel>];
 
-export interface CatalogWorld {
-  id: string; // '1'..'5'
-  name: string; // 'Playa'
-  biome: Biome;
-}
+const BUILT = { '1-1': C_1_1, '1-2': C_1_2, '1-3': C_1_3, '1-4': C_1_4, '1-5': C_1_5, '1-6': C_1_6, '1-7': C_1_7 } as const;
 
-export interface CatalogLevel {
-  id: string; // '1-3' (world 1, third level), 'C1' for a summit, 'P-ancla' for a practice station. Unique across the catalog; it is the key of the saved progress.
-  world: string; // CatalogWorld.id. A summit belongs to the world whose stars open it.
-  order: number; // 1-based position inside its world (summits and practice stations: 0)
-  name: string;
-  kind: LevelKind; // 'boss' closes a world: beating it opens the next world
-  def: LevelDef; // the frozen tilemap
-  mode: GameMode; // chained or free: the campaign decides it per level (plan §2 "Modo")
-  collectibles: number; // how many collectibles the level has: all of them = star 2
-  botMs: number | null; // the validator bot's time: the clock medal is timeMs <= botMs * TIME_MEDAL_FACTOR (null: no medal)
-  validatedFor: readonly number[]; // player counts the CI validated this level for (plan §7 "lobby ofrece solo los validados")
-}
-
-export interface Catalog {
-  readonly worlds: readonly CatalogWorld[]; // in unlock order
-  readonly levels: readonly CatalogLevel[]; // regular levels and bosses in campaign order, then summits; practice stations are kept apart
-  readonly practice: readonly CatalogLevel[]; // the practice room, one station per action (empty until A3)
-}
-
-export const TIME_MEDAL_FACTOR = 1.6; // plan §3: the clock medal needs the bot's time x 1.6
-export const SUMMIT_STARS_NUM = 15; // plan §3: a summit opens with 15 of the 21 stars of its world...
-export const SUMMIT_STARS_DEN = 21; // ...so the share of the world's stars is 15/21, whatever the number of levels
-export const SKIP_AFTER_FAILURES = 5; // plan §2: after 5 game overs in a row on a level the group is offered to skip it
-
-// ---- lookups
-export const levelById = (c: Catalog, id: string): CatalogLevel | undefined => c.levels.find((l) => l.id === id) ?? c.practice.find((l) => l.id === id);
-export const worldById = (c: Catalog, id: string): CatalogWorld | undefined => c.worlds.find((w) => w.id === id);
-export const worldIndex = (c: Catalog, id: string): number => c.worlds.findIndex((w) => w.id === id);
-// The regular levels (bosses included) of a world in play order: the path of the map.
-export const pathOf = (c: Catalog, worldId: string): CatalogLevel[] => c.levels.filter((l) => l.world === worldId && l.kind !== 'summit').sort((a, b) => a.order - b.order);
-export const summitOf = (c: Catalog, worldId: string): CatalogLevel | undefined => c.levels.find((l) => l.world === worldId && l.kind === 'summit');
-export const bossOf = (c: Catalog, worldId: string): CatalogLevel | undefined => pathOf(c, worldId).find((l) => l.kind === 'boss');
-// The regular levels of the whole campaign in play order (no summits).
-export const campaignOrder = (c: Catalog): CatalogLevel[] => c.worlds.flatMap((w) => pathOf(c, w.id));
-export const playableWith = (l: CatalogLevel, n: number): boolean => l.validatedFor.includes(n);
-export const maxStarsOf = (c: Catalog, worldId: string): number => pathOf(c, worldId).length * 3;
-
-// ---- the 15 existing levels as a catalog (S2's 40-level catalog replaces it behind the same interface)
-// Decisions: the worlds follow the plan's order (Playa, Bosque, Glaciar, Mina, Volcan); only the levels that can be played by 2 enter (11 of the 15:
-// the rest ask for 3-4 players), the last of each world is its boss, the first of each world is Libres (plan: 1-1 is "L") and the rest are Encadenados
-// unless the level itself allows only one of the two; the bot time is the level's par (the existing levels carry no validator time); the collectibles
-// are the stars drawn in the tilemap (LevelDef.stars is the level's difficulty rating, not a count).
-const LEGACY_WORLDS: readonly CatalogWorld[] = [
-  { id: '1', name: 'Playa', biome: 'beach' },
-  { id: '2', name: 'Bosque', biome: 'forest' },
-  { id: '3', name: 'Glaciar', biome: 'glacier' },
-  { id: '4', name: 'Mina', biome: 'mine' },
-  { id: '5', name: 'Volcán', biome: 'volcano' },
+// Names, mechanics and modes: the plan's §2 table. `requires` of the planned levels is a first draft (A5/A6 settle it when they build the tilemap).
+const ROWS: Row[] = [
+  // Playa
+  ['1-1', 'Huellas', ['move', 'jump', 'coyote'], [], 'L', 'new'],
+  ['1-2', 'El mosquetón', ['rope', 'signals'], ['jump'], 'E', 'new'],
+  ['1-3', 'Torre de arena', ['tower', 'hand'], ['jump'], 'E', 'new', { note: 'The plan teaches the hand in 1-4; with 2 players the tower alone leaves the base behind, so the hand debuts here.' }],
+  ['1-4', 'Mano amiga', ['anchor'], ['jump', 'tower', 'hand'], 'E', 'new', { note: 'Teaches only the anchor (new dynamic); the hand moved to 1-3.' }],
+  ['1-5', 'Coco-pulta', ['throw'], ['jump', 'hand'], 'E', 'new', { note: 'The throw reaches what the tower reaches (see the file header): the debut test swaps the tower for the throw.' }],
+  ['1-6', 'Liana', ['swing'], ['jump'], 'E', 'new'],
+  ['1-7', 'Jefe: La marea', [], ['jump', 'tower', 'hand'], 'E', 'relocate', { note: 'Built new: l03 Marea alta has D 26, above the Playa band.' }],
+  // Bosque
+  ['2-1', 'El roble', ['ladder'], [], 'E', 'relocate'],
+  ['2-2', 'Saltamontes', ['spring', 'superjump'], [], 'E', 'relocate'],
+  ['2-3', 'Sube y baja', ['balance'], [], 'E', 'new'],
+  ['2-4', 'La diana', ['plate', 'target'], [], 'E', 'new'],
+  ['2-5', 'Guardabosques', ['key'], [], 'E/L', 'relocate'],
+  ['2-6', 'Escarabajos', ['softEnemies'], [], 'L', 'new'],
+  ['2-7', 'Jefe: El jabalí', [], [], 'E', 'new'],
+  // Glaciar
+  ['3-1', 'Lago helado', ['ice'], [], 'E', 'new'],
+  ['3-2', 'Ventisca', ['wind'], [], 'E', 'new'],
+  ['3-3', 'Témpanos', ['mover'], [], 'E', 'relocate'],
+  ['3-4', 'El piolet', ['pickaxe'], [], 'E', 'new'],
+  ['3-5', 'Grietas', [], [], 'E', 'relocate'],
+  ['3-6', 'Cordada perfecta', [], [], 'E', 'relocate'],
+  ['3-7', 'Jefe: Avalancha', [], [], 'E', 'relocate', { candidate: 'l12' }],
+  // Mina
+  ['4-1', 'El farol', ['lantern'], [], 'E', 'new'],
+  ['4-2', 'Cintas', ['belt'], [], 'E', 'relocate'],
+  ['4-3', 'Vagonetas', ['cart'], [], 'E', 'relocate'],
+  ['4-4', 'Bungee', ['bungee'], [], 'E', 'new'],
+  ['4-5', 'Galería', ['lever'], [], 'E', 'relocate'],
+  ['4-6', 'Topos', [], [], 'L', 'new'],
+  ['4-7', 'Jefe: Vagoneta', [], [], 'E', 'new'],
+  // Volcan
+  ['5-1', 'Rocas flotantes', ['sinkers'], [], 'E', 'new'],
+  ['5-2', 'Géiseres', ['geyser'], [], 'E', 'new'],
+  ['5-3', 'Río de lava', ['lava'], [], 'E', 'relocate'],
+  ['5-4', 'Ceniza', [], [], 'E', 'relocate'],
+  ['5-5', 'La forja', [], [], 'E', 'relocate'],
+  ['5-6', 'Ladera ardiente', [], [], 'E', 'relocate'],
+  ['5-7', 'Jefe: Erupción', [], [], 'E', 'relocate'],
+  // Cumbres: harder remixes of their world (3 existing + 2 new)
+  ['C1', 'Cumbre de la Playa', [], [], 'E', 'relocate'],
+  ['C2', 'Cumbre del Bosque', [], [], 'E', 'relocate'],
+  ['C3', 'Cumbre del Glaciar', [], [], 'E', 'relocate'],
+  ['C4', 'Cumbre de la Mina', [], [], 'E', 'new'],
+  ['C5', 'Cumbre del Volcán', [], [], 'E', 'new'],
 ];
 
-export function legacyCatalog(defs: readonly LevelDef[] = LEVELS): Catalog {
-  const levels: CatalogLevel[] = [];
-  for (const w of LEGACY_WORLDS) {
-    const own = defs.filter((d) => d.biome === w.biome && d.players.min <= 2);
-    own.forEach((def, i) => {
-      const mode: GameMode = def.tether === 'chainOnly' ? 'chain' : def.tether === 'freeOnly' ? 'free' : i === 0 ? 'free' : 'chain';
-      levels.push({
-        id: `${w.id}-${i + 1}`, world: w.id, order: i + 1, name: def.name, kind: i === own.length - 1 ? 'boss' : 'level', def, mode,
-        collectibles: parseLevel(def).markers.star.length, botMs: def.parSec * 1000,
-        validatedFor: [2, 3, 4, 5, 6, 7, 8].filter((n) => levelCompat(def, n, mode).ok),
-      });
-    });
+const WORLDS = ['beach', 'forest', 'glacier', 'mine', 'volcano'] as const;
+const worldOf = (id: string): WorldId => (id.startsWith('C') ? 'summit' : WORLDS[Number(id[0]) - 1]!);
+const biomeOf = (w: WorldId, id: string): Biome => (w === 'summit' ? WORLDS[Number(id[1]) - 1]! : w);
+const starsOf = (rows: readonly string[]): Cell[] => rows.flatMap((r, y) => [...r].flatMap((c, x) => (c === '*' ? [{ x, y }] : [])));
+
+export const CAMPAIGN: readonly CampaignLevel[] = ROWS.map(([id, name, introduces, requires, mode, origin, extra], i) => {
+  const world = worldOf(id);
+  const def = (BUILT as Record<string, (typeof BUILT)[keyof typeof BUILT]>)[id];
+  return {
+    id, world, index: world === 'summit' ? Number(id[1]) : Number(id[2]), order: i + 1, name, biome: biomeOf(world, id),
+    boss: world !== 'summit' && id.endsWith('7'), introduces, requires, mode, origin, status: def ? 'built' : 'planned',
+    ...(def ? { def } : {}), collectibles: def ? starsOf(def.rows) : [], validatedFor: def ? [2] : [], ...extra,
+  } satisfies CampaignLevel;
+});
+
+export const campaignLevel = (id: string): CampaignLevel => {
+  const l = CAMPAIGN.find((x) => x.id === id);
+  if (!l) throw new Error(`no campaign level ${id}`);
+  return l;
+};
+
+// Structure of a catalog (also run on permuted copies by the sabotage test).
+export function catalogErrors(levels: readonly CampaignLevel[] = CAMPAIGN): string[] {
+  const errors: string[] = [];
+  const ids = new Set<string>();
+  const taught = new Set<Mechanic>();
+  for (const l of levels) {
+    if (ids.has(l.id)) errors.push(`${l.id}: duplicated id`);
+    ids.add(l.id);
+    for (const m of l.introduces) {
+      if (!(MECHANICS as readonly string[]).includes(m)) errors.push(`${l.id}: unknown mechanic ${m}`);
+      if (taught.has(m)) errors.push(`${l.id}: introduces ${m}, already taught`);
+    }
+    for (const m of l.requires) if (!taught.has(m)) errors.push(`${l.id}: requires ${m}, which no earlier level introduces`);
+    for (const m of l.introduces) taught.add(m);
+    if (l.status === 'built') {
+      if (!l.def) { errors.push(`${l.id}: built without a tilemap`); continue; }
+      if (l.def.id !== l.id) errors.push(`${l.id}: tilemap id is ${l.def.id}`);
+      if (l.def.biome !== l.biome) errors.push(`${l.id}: biome ${l.def.biome}, the slot is ${l.biome}`);
+      const want = l.mode === 'E' ? 'chainOnly' : l.mode === 'L' ? 'freeOnly' : 'any';
+      if (l.def.tether !== want) errors.push(`${l.id}: mode ${l.mode} wants tether ${want}, the tilemap has ${l.def.tether}`);
+      if (l.def.players.min !== 2 || l.def.players.max !== 2) errors.push(`${l.id}: validated for 2 players only (players ${l.def.players.min}-${l.def.players.max})`);
+      if (l.collectibles.length !== 3) errors.push(`${l.id}: ${l.collectibles.length} collectibles, want 3`);
+      if (l.validatedFor.join() !== '2') errors.push(`${l.id}: validatedFor ${l.validatedFor.join()}`);
+    }
   }
-  return { worlds: LEGACY_WORLDS.filter((w) => levels.some((l) => l.world === w.id)), levels, practice: [] };
+  return errors;
 }
-export const LEGACY_CATALOG: Catalog = legacyCatalog();

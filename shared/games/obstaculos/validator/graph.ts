@@ -1,16 +1,30 @@
 // Terrain for one game state (which objectives are open), standing segments, and the reachability graph between them.
 // Pioneer edges = what the first explorer can do (jumps, towers of k, throws, rope swings); follower edges add the planted
 // partner's hand (plan §5) on top of the plain ones.
-import { DIFFICULTY_PARAMS, JUMP_V0, PLAYER_H, PLAYER_W, ROPE_LEN, TILE, TRAMPOLINE_MULT } from '../constants';
+import { DIFFICULTY_PARAMS, type DifficultyParams, JUMP_V0, PLAYER_H, PLAYER_W, ROPE_LEN, TILE, TRAMPOLINE_MULT } from '../constants';
 import { T, isHazardKind, isSolidKind } from '../legend';
 import type { ParsedLevel, LevelObject } from '../parse';
 import { buildGrid, boxHitsSolid, tileAt, tileOf, type TileGrid } from '../sim/tiles';
 import { physicsFor, type PhysicsParams } from '../sim/player';
+import { campaignParams, dparamsForCampaign, physicsForCampaign, type WorldId } from '../sim/campaign';
+import { THROW_VX, THROW_VY } from '../sim/tuning';
 import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode } from '../types';
+import type { Mechanic } from '../mechanics';
 import { EDGE_MOVE_SCALE, feetOfRow, simPlan, type CatchZone, type Landing, type Plan } from './sim';
 
-export interface Env { n: number; mode: GameMode; diff: Difficulty }
+// allow: the mechanics the explorer knows (the learning test's bot); undefined = all of them.
+// world: a campaign world (sim/campaign.ts): its coyote/buffer, hand zone and rope replace the legacy `diff` table. ropeLen overrides the rope (px).
+export interface Env { n: number; mode: GameMode; diff: Difficulty; allow?: ReadonlySet<Mechanic>; world?: WorldId; ropeLen?: number }
+// The numbers a validation runs with: the campaign world's (S1's campaignParams, N-dependent) or the legacy difficulty's.
+export function envParams(env: Env): { physics: PhysicsParams; dp: DifficultyParams; ropeLen: number } {
+  if (env.world) {
+    const c = campaignParams(env.n, env.world);
+    return { physics: physicsForCampaign(c), dp: dparamsForCampaign(c), ropeLen: env.ropeLen ?? c.ropeLen };
+  }
+  return { physics: physicsFor(env.diff), dp: DIFFICULTY_PARAMS[env.diff], ropeLen: env.ropeLen ?? ROPE_LEN };
+}
+export const can = (env: Env, m: Mechanic): boolean => !env.allow || env.allow.has(m);
 export interface OpenState { open: Set<string>; doors: Set<number> }
 export type EdgeKind = 'jump' | 'tower' | 'hand' | 'throw' | 'swing' | 'ladder' | 'ride';
 export interface Edge {
@@ -18,7 +32,7 @@ export interface Edge {
   coop: boolean; // needs a teammate (tower, hand, throw, swing, balance)
   timing: boolean; // moving or crumbling surfaces, trampoline bounces, belts, one-shot timing
   steps: number; takeoffX: number; landX: number; // px; steps = simulated length
-  plan?: Plan; k?: number; ring?: number; rise: number; // rise in px: takeoff floor minus landing floor (positive = up)
+  plan?: Plan; k?: number; ring?: number; obj?: string; rise: number; // rise in px: takeoff floor minus landing floor (positive = up)
   landCell: Cell;
 }
 export interface Seg { id: number; row: number; x0: number; x1: number; tramp?: boolean } // tramp: boyas (the surface bounces)
@@ -26,9 +40,15 @@ export interface Graph {
   // shifted: platform tiles that exist only at the far end of a mover or balance (reachable by riding, never by a direct jump)
   grid: TileGrid; shifted: Uint8Array; segs: Seg[]; cellSeg: Int32Array; adj: Edge[][]; params: PhysicsParams; env: Env;
   ladders: { x: number; y0: number; y1: number }[];
+  dp: DifficultyParams; ropeLen: number;
 }
 
 export const CHAIN_MAX_DX = 4.5 * TILE; // chain mode: the rope (3.5 tiles) plus a tile of slack keeps a single jump under this, takeoff to landing
+// Tied with 2 players the single rope holds the climber within ROPE_LEN of the partner left below (centre to centre). A step of `rise` px
+// lands the climber at hypot(rise, one body width) from a base that hugs the wall: past ROPE_LEN no tower, hand or throw gets anybody
+// up, whatever the jump envelope says. Only n = 2 is modelled (one link); with more players the cordada chain reaches further (plan B1).
+export const ROPE_RISE_DX = PLAYER_W;
+export const ropeCapsRise = (env: Env, rise: number): boolean => env.mode === 'chain' && env.n === 2 && rise > 0 && Math.hypot(rise, ROPE_RISE_DX) > envParams(env).ropeLen;
 export const SWING_NEAR = 4.5 * TILE; // the swinger hangs from a ring within this of it (L + 1 tile)
 export const SWING_FAR = 7.5 * TILE; // and lets go anywhere within this: pendulum + rope jump (assumption, F2a calibrates)
 const HAND_FACE_PX = 20;
@@ -229,8 +249,7 @@ export const surfaceTiming = (g: TileGrid, row: number, x0: number, x1: number):
 export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[][], opts: GraphOpts): Graph {
   const { grid, shifted } = buildTerrain(p, env, S, doors);
   const { segs, cellSeg } = buildSegments(grid);
-  const params = physicsFor(env.diff);
-  const dp = DIFFICULTY_PARAMS[env.diff];
+  const { physics: params, dp, ropeLen } = envParams(env);
   const adj: Edge[][] = segs.map(() => []);
   const ladders = findLadders(grid);
   const best = new Map<string, Edge>();
@@ -247,21 +266,24 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     const dx = Math.abs(l.landX - l.takeoffX);
     if (env.mode === 'chain' && dx > CHAIN_MAX_DX) return null;
     const tgt = segs[to]!;
+    if (ropeCapsRise(env, feetOfRow(from.row) - feetOfRow(tgt.row))) return null;
+    if ((from.tramp || tgt.tramp) && !can(env, 'spring')) return null;
     const timing = from.tramp === true || tgt.tramp === true || surfaceTiming(grid, from.row, from.x0, from.x1) || surfaceTiming(grid, tgt.row, tgt.x0, tgt.x1) || l.steps > 140;
     return { from: from.id, to, kind, coop, timing, steps: l.steps, takeoffX: l.takeoffX, landX: l.landX, plan, k, rise: feetOfRow(from.row) - feetOfRow(tgt.row), landCell: { x: l.cx, y: l.ty } };
   };
   const f = EDGE_MOVE_SCALE;
-  const catches = opts.catchTargets ? catchZonesFor(grid, segs, (id) => opts.catchTargets!.has(id), dp.handZoneTiles) : undefined;
+  const catches = opts.catchTargets && can(env, 'hand') ? catchZonesFor(grid, segs, (id) => opts.catchTargets!.has(id), dp.handZoneTiles) : undefined;
   const maxTower = Math.min(3, env.n - 1);
 
   const cols: string[] = [];
   for (let x = 0; x < grid.w; x++) { let c = ''; for (let y = 0; y < grid.h; y++) c += String.fromCharCode(48 + grid.cells[y * grid.w + x]!); cols.push(c); }
   const cache = opts.cache ?? newSimCache();
   for (const s of segs) {
+    if (s.tramp && !can(env, 'spring')) continue;
     const wk = windowKey(grid, cols, s, params);
     let bucket = cache.get(wk);
     if (!bucket) { bucket = new Map(); cache.set(wk, bucket); }
-    for (const plan of planSet(grid, s, f)) {
+    for (const plan of planSet(grid, s, f).filter((q) => can(env, 'jump') || q.trigger === 'walk' || s.tramp)) {
       const l = simCached(grid, params, s, plan, bucket);
       if (l) { const e = toEdge(s, l, 'jump', plan, false); if (e) addEdge(e); }
       if (catches && plan.trigger !== 'walk' && plan.trigger !== 'drop') {
@@ -269,17 +291,17 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
         if (h && h.viaHand) { const e = toEdge(s, h, 'hand', plan, true); if (e) addEdge(e); }
       }
     }
-    if (opts.pioneer && maxTower >= 1) {
+    if (opts.pioneer && maxTower >= 1 && can(env, 'tower')) {
       for (const { plan, k } of towerPlans(grid, s, f, maxTower)) {
         const l = simCached(grid, params, s, plan, bucket);
         if (l) { const e = toEdge(s, l, 'tower', plan, true, k); if (e) addEdge(e); }
       }
     }
-    if (opts.pioneer && env.n >= 2) {
+    if (opts.pioneer && env.n >= 2 && can(env, 'throw')) {
       // throw: the thrower lifts a partner and launches him at (420, -950) px/s (plan §2)
       for (const dir of [-1, 1] as const) {
         const x = dir === 1 ? (s.x1 + 1) * TILE - PLAYER_W : s.x0 * TILE;
-        const plan: Plan = { x, feetY: feetOfRow(s.row) - PLAYER_H, dir, trigger: 'launch', k: 0, air: 'hold', f: 1, vx0: dir * 420 * f, vy0: -950 * f };
+        const plan: Plan = { x, feetY: feetOfRow(s.row) - PLAYER_H, dir, trigger: 'launch', k: 0, air: 'hold', f: 1, vx0: dir * THROW_VX * f, vy0: THROW_VY * f };
         const l = simCached(grid, params, s, plan, bucket);
         if (l) { const e = toEdge(s, l, 'throw', plan, true); if (e) addEdge(e); }
       }
@@ -287,7 +309,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
   }
 
   // Ladders: every segment next to a ladder column (same row range, or the ledge one above its top) is connected to the others.
-  for (const lad of ladders) {
+  for (const lad of can(env, 'ladder') ? ladders : []) {
     const attached = new Set<number>();
     for (const s of segs) {
       if (s.row < lad.y0 - 1 || s.row > lad.y1) continue;
@@ -306,6 +328,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     const q = o.param;
     if (!q || (q.kind !== 'mover' && q.kind !== 'balance')) continue;
     if (q.kind === 'balance' && env.n < 3) continue;
+    if (!can(env, q.kind)) continue;
     const shifts: [number, number][] = q.kind === 'mover' ? [[0, 0], [Math.round(q.dx), Math.round(q.dy)]] : [[0, 0], [0, Math.round(q.travel)], [0, -Math.round(q.travel)]];
     if (q.kind === 'mover' && !adjOpen(p, o.char, S)) continue;
     const ids: number[] = [];
@@ -320,12 +343,12 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     for (const a of ids) for (const b of ids) {
       if (a === b) continue;
       const sa = segs[a]!, sb = segs[b]!;
-      addEdge({ from: a, to: b, kind: 'ride', coop: q.kind === 'balance', timing: true, steps: 240, takeoffX: sa.x0 * TILE, landX: sb.x0 * TILE, rise: feetOfRow(sa.row) - feetOfRow(sb.row), landCell: { x: sb.x0, y: sb.row } });
+      addEdge({ from: a, to: b, kind: 'ride', obj: o.char, coop: q.kind === 'balance', timing: true, steps: 240, takeoffX: sa.x0 * TILE, landX: sb.x0 * TILE, rise: feetOfRow(sa.row) - feetOfRow(sb.row), landCell: { x: sb.x0, y: sb.row } });
     }
   }
 
   // Rope swings (Encadenados only): a partner anchors on a ring, the other hangs from it and lets go within SWING_FAR.
-  if (env.mode === 'chain' && env.n >= 2 && p.markers.ring.length) {
+  if (env.mode === 'chain' && env.n >= 2 && p.markers.ring.length && can(env, 'swing')) {
     const center = (s: Seg, x: number) => ({ x: x * TILE + TILE / 2, y: s.row * TILE + TILE / 2 });
     for (const ring of p.markers.ring) {
       const rc = { x: ring.x * TILE + TILE / 2, y: ring.y * TILE + TILE / 2 };
@@ -349,7 +372,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
   }
 
   for (const e of best.values()) adj[e.from]!.push(e);
-  return { grid, shifted, segs, cellSeg, adj, params, env, ladders };
+  return { grid, shifted, segs, cellSeg, adj, params, env, ladders, dp, ropeLen };
 }
 
 const adjOpen = (p: ParsedLevel, ch: string, S: OpenState): boolean => S.open.has(ch) || !Object.values(p.def.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever') && q.opens === ch);
