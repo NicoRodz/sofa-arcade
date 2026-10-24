@@ -175,7 +175,7 @@ describe('buzz', () => {
     b.send({ t: 'join', name: 'Beto', token: 'b' });
     const idA = (await a.next('joined')).player.id, idB = (await b.next('joined')).player.id;
     await a.next('phase'); await b.next('phase');
-    a.send({ t: 'buzz', playerId: idB, kind: 'pick' }); // a phone cannot buzz another one
+    a.send({ t: 'buzz', playerId: idB, kind: 'dash' }); // a phone cannot buzz another one
     screen.send({ t: 'buzz', playerId: idA, kind: 'chop' });
     expect(await a.next('buzz')).toEqual({ t: 'buzz', kind: 'chop' });
     screen.send({ t: 'buzz', playerId: 999, kind: 'chop' }); // unknown player: dropped
