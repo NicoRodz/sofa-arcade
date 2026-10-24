@@ -1,5 +1,6 @@
 import { DEFAULT_DIFFICULTY, isDifficulty, type Difficulty } from './difficulty';
 import { DEFAULT_GAME, isGameId, type GameId } from './games';
+import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
 
 export { ROUND_MS } from './difficulty';
 
@@ -31,8 +32,8 @@ export interface Score { id: number; score: number }
 export interface PhaseInfo { phase: Phase; scores?: Score[] }
 
 // What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
-export interface LobbyConfig { game: GameId; difficulty: Difficulty }
-export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY };
+export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice }
+export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY, map: DEFAULT_MAP };
 
 export interface PublicPlayer {
   id: number;
@@ -99,8 +100,8 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       return { t: 'phase', phase: m.phase, scores: m.scores.map((x: Score) => ({ id: x.id, score: x.score })) };
     }
     case 'config':
-      if (!isGameId(m.game) || !isDifficulty(m.difficulty)) return null;
-      return { t: 'config', game: m.game, difficulty: m.difficulty };
+      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !isMapChoice(m.map)) return null;
+      return { t: 'config', game: m.game, difficulty: m.difficulty, map: m.map };
     default:
       return null;
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
+import { COLS, ROWS, TICK_MS, addPlayer, createGame, isSolid, tick, type Controls, type Game, type Station } from './overcooked';
+import { DIRS, fixedMap, isFloor } from './maps';
 import { params, type Difficulty } from './difficulty';
 import { ROUND_MS } from './protocol';
 
@@ -17,8 +18,7 @@ function setup(difficulty: Difficulty = 'normal') {
 // Puts a player on the floor tile next to a station, facing it.
 function face(g: Game, id: number, s: Station) {
   const p = g.players.get(id)!;
-  const floor = [[0, 1], [0, -1], [1, 0], [-1, 0]] as const;
-  const [dx, dy] = floor.find(([dx, dy]) => (s.tx + dx >= 1 && s.tx + dx <= 9 && s.ty + dy >= 1 && s.ty + dy <= 5))!;
+  const [dx, dy] = DIRS.find(([dx, dy]) => isFloor(g.grid, s.tx + dx, s.ty + dy))!;
   p.x = s.tx + dx + 0.5;
   p.y = s.ty + dy + 0.5;
   p.fx = -dx;
@@ -86,7 +86,7 @@ describe('grab and drop', () => {
   it('A does nothing when no station is in the facing direction', () => {
     const g = setup();
     const p = g.players.get(1)!;
-    p.x = 5.5; p.y = 3.5; p.fx = 1; p.fy = 0;
+    p.x = 5.5; p.y = 2.5; p.fx = 1; p.fy = 0;
     press(g, 1);
     expect(p.item).toBeNull();
   });
@@ -104,7 +104,7 @@ describe('grab and drop', () => {
     expect(p.y).toBe(y);
     expect([p.fx, p.fy]).toEqual([0, -1]);
     run(g, 3000, new Map([[1, { ...idle, x: 1 }]]));
-    expect(p.x).toBeLessThan(10);
+    expect(p.x).toBeLessThan(15); // the counter column stops it
   });
 });
 
@@ -275,6 +275,55 @@ describe('orders and score', () => {
     run(g, params('easy', 2).orderEveryMs * 5);
     expect(g.orders.length).toBeLessThanOrEqual(3);
     expect(createGame({ difficulty: 'normal', n: 6 }).params.maxOrders).toBe(6);
+  });
+});
+
+describe('maps', () => {
+  const river = () => createGame({ rows: fixedMap('3')!.rows });
+
+  it('players spawn on the map S tiles, alternating sides on the river map', () => {
+    const g = river();
+    [1, 2, 3, 4].forEach((id) => addPlayer(g, id, id - 1));
+    expect([...g.players.values()].map((p) => [p.x, p.y])).toEqual([[3.5, 4.5], [11.5, 4.5], [3.5, 6.5], [11.5, 6.5]]);
+  });
+
+  it('extra players (slots 4..7) land on distinct free floor tiles', () => {
+    const g = river();
+    for (let i = 0; i < 8; i++) addPlayer(g, i + 1, i);
+    const tiles = new Set([...g.players.values()].map((p) => `${Math.floor(p.x)},${Math.floor(p.y)}`));
+    expect(tiles.size).toBe(8);
+    for (const p of g.players.values()) expect(isSolid(g, Math.floor(p.x), Math.floor(p.y))).toBe(false);
+  });
+
+  it('water blocks walking: the left side cannot reach the right', () => {
+    const g = river();
+    addPlayer(g, 1, 0);
+    const p = g.players.get(1)!;
+    p.x = 5.5; p.y = 3.5;
+    run(g, 3000, new Map([[1, { ...idle, x: 1 }]]));
+    expect(p.x).toBeLessThan(7);
+  });
+
+  it('an item crosses the river through a passing counter', () => {
+    const g = river();
+    addPlayer(g, 1, 0); // left
+    addPlayer(g, 2, 1); // right
+    const counter = g.stations.find((s) => s.kind === 'counter' && s.tx === 7 && s.ty === 4)!;
+    const left = g.players.get(1)!, right = g.players.get(2)!;
+    left.x = 6.5; left.y = 4.5; left.fx = 1; left.fy = 0; left.item = 'cut0';
+    right.x = 8.5; right.y = 4.5; right.fx = -1; right.fy = 0;
+    press(g, 1);
+    expect(counter.item).toBe('cut0');
+    press(g, 2);
+    expect(right.item).toBe('cut0');
+    expect(counter.item).toBeNull();
+  });
+
+  it('a 16x9 map renders its stations from the grid', () => {
+    const g = createGame({ rows: fixedMap('5')!.rows });
+    expect(g.stations.filter((s) => s.kind === 'board').length).toBe(1);
+    expect(g.stations.filter((s) => s.kind === 'pot').length).toBe(2);
+    expect(COLS * ROWS).toBe(144);
   });
 });
 

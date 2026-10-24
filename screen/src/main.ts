@@ -5,9 +5,10 @@ import {
 } from '@party/shared';
 import { DIFFICULTIES, DIFFICULTY_LABEL, params, stars } from '@party/shared/difficulty';
 import { GAMES } from '@party/shared/games';
+import { MAP_IDS, fixedMap, pickFixedMap, type MapChoice } from '@party/shared/maps';
 import { percentile } from '@party/shared/stats';
 import {
-  COLS, MAP, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
+  COLS, ROWS, TICK_MS, addPlayer, createGame, removePlayer, tick,
   type Controls, type Item, type Station,
 } from '@party/shared/game';
 
@@ -36,6 +37,7 @@ const room = (() => {
 })();
 let phase: Phase = 'lobby';
 let config: LobbyConfig = { ...DEFAULT_CONFIG };
+let mapName = '';
 let game = createGame();
 let debugOverride: boolean | null = null;
 let screenRtt = NaN;
@@ -77,7 +79,9 @@ function setPhase(next: Phase) {
   if (next === phase) return;
   phase = next;
   if (phase === 'playing') {
-    game = createGame({ difficulty: config.difficulty, n: players.size });
+    const map = pickFixedMap(config.map, config.difficulty, Math.random);
+    mapName = map.name;
+    game = createGame({ difficulty: config.difficulty, n: players.size, rows: map.rows });
     for (const p of players.values()) { addPlayer(game, p.info.id, p.info.slot); p.pendA = 0; }
   }
   // cooperative: every player carries the team score
@@ -150,7 +154,7 @@ setInterval(() => {
 
 const COL_ITEM = [0xf2d49b, 0xe53935]; // masa, tomate/queso
 const COL_STATION: Record<Station['kind'], number> = {
-  crate: 0x8d6e63, board: 0xd7b98e, pot: 0xbf5b2c, plates: 0xcfd8dc, window: 0x7e57c2, counter: 0x5c5c6e, trash: 0x37474f,
+  crate: 0x8d6e63, board: 0xd7b98e, pot: 0xbf5b2c, plates: 0xcfd8dc, window: 0x7e57c2, counter: 0x5c5c6e,
 };
 const HUD_H = 96;
 
@@ -216,9 +220,10 @@ class Main extends Phaser.Scene {
     const oy = HUD_H + Math.floor((height - HUD_H - s * ROWS) / 2);
     const g = this.gfx;
     g.clear();
-    MAP.forEach((row, ty) => [...row].forEach((c, tx) => {
-      if (c === '#') return;
-      g.fillStyle(c === '.' ? ((tx + ty) % 2 ? 0x2a2a38 : 0x26262f) : 0x2a2a38).fillRect(ox + tx * s, oy + ty * s, s, s);
+    game.grid.forEach((row, ty) => row.forEach((t, tx) => {
+      if (t.kind === 'wall') return;
+      const color = t.kind === 'water' ? 0x1f4e79 : t.kind === 'floor' ? ((tx + ty) % 2 ? 0x2a2a38 : 0x26262f) : 0x2a2a38;
+      g.fillStyle(color).fillRect(ox + tx * s, oy + ty * s, s, s);
     }));
     for (const st of game.stations) {
       const x = ox + st.tx * s, y = oy + st.ty * s, cx = x + s / 2, cy = y + s / 2;
@@ -226,7 +231,6 @@ class Main extends Phaser.Scene {
       if (st.kind === 'crate') this.item(st.crate === 0 ? 'raw0' : 'raw1', cx, cy, s * 1.3);
       else if (st.kind === 'plates') this.item('plate', cx, cy, s * 1.3);
       else if (st.kind === 'window') g.fillStyle(0xffffff, 0.8).fillRect(x + s * 0.2, y + s * 0.4, s * 0.6, s * 0.2);
-      else if (st.kind === 'trash') g.lineStyle(3, 0xff5252).strokeCircle(cx, cy, s * 0.22);
       else if (st.kind === 'pot') {
         g.fillStyle(0x263238).fillCircle(cx, cy, s * 0.36);
         st.inputs.forEach((t, i) => g.fillStyle(COL_ITEM[t]!).fillCircle(cx + (i - 0.5) * s * 0.26, cy, s * 0.11));
@@ -298,7 +302,13 @@ function renderUi() {
     `<button class="card ${g.id === config.game ? 'sel' : ''}" data-game="${g.id}"><b>${g.name}</b><small>${g.blurb}<br>${g.players}</small></button>`).join('');
   $('diffs').innerHTML = DIFFICULTIES.map((d) =>
     `<button class="chip ${d === config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`).join('');
+  const mapLabel = (id: string) => `${id} ${fixedMap(id)!.name}`;
+  $('maps').innerHTML = [['auto', 'Al azar'], ...MAP_IDS.map((id) => [id, mapLabel(id)])]
+    .map(([id, label]) => `<button class="chip ${id === config.map ? 'sel' : ''}" data-map="${id}">${label}</button>`).join('');
   const list = [...players.values()];
+  const shown = config.map === 'auto' ? null : fixedMap(config.map);
+  $('mappreview').textContent = shown ? shown.rows.join('\n') : `Un mapa de la dificultad ${DIFFICULTY_LABEL[config.difficulty]}`;
+  $('mapinfo').textContent = list.length > 4 ? 'Mapa pensado para 2 a 4: los extra aparecen junto a un punto de inicio' : '';
   const pr = params(config.difficulty, list.length);
   $('diffinfo').textContent = `Pedido cada ${(pr.orderEveryMs / 1000).toFixed(0)} s, paciencia ${pr.orderTtlMs / 1000} s, hasta ${pr.maxOrders} pedidos`;
   $('plist').innerHTML = list
@@ -309,6 +319,7 @@ function renderUi() {
   $('rank').innerHTML = `<li><span>Equipo</span><b>${game.score}</b></li><li><span>Entregas</span><b>${game.delivered}</b></li>` +
     `<li><span>${DIFFICULTY_LABEL[game.difficulty]}</span><b>${'★'.repeat(st)}${'☆'.repeat(3 - st)}</b></li>`;
   $('scores').innerHTML = `<span>Equipo ${game.score}</span>`;
+  $('mapname').textContent = mapName;
 }
 renderUi();
 
@@ -321,6 +332,10 @@ $('diffs').addEventListener('click', (e) => {
   const d = (e.target as HTMLElement).closest<HTMLElement>('[data-diff]')?.dataset.diff;
   const diff = DIFFICULTIES.find((x) => x === d);
   if (diff) setConfig({ difficulty: diff });
+});
+$('maps').addEventListener('click', (e) => {
+  const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map as MapChoice | undefined;
+  if (m && (m === 'auto' || MAP_IDS.includes(m))) setConfig({ map: m });
 });
 $('start').addEventListener('click', () => dispatch('start'));
 $('again').addEventListener('click', () => dispatch('again'));

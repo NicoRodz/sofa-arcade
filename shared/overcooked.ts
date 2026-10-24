@@ -1,4 +1,5 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
+import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type StationKind } from './maps';
 import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficulty, type Params } from './difficulty';
 
 export const TICK_HZ = 60;
@@ -8,22 +9,8 @@ export const RADIUS = 0.35;
 export const REACH = 0.8; // probe distance from the player centre along the facing direction
 export const REACH_SLACK = 0.3; // max gap between probe and a station tile
 
-// # wall, . floor, A/B ingredient crates, K cutting board, P pot, D plate pile, W delivery window, T counter, X trash
-export const MAP = [
-  '#A#B#K#K#P#',
-  '#.........#',
-  'T.........#',
-  'W.........X',
-  'T.........#',
-  '#.........#',
-  '#D#T#######',
-];
-export const COLS = MAP[0]!.length;
-export const ROWS = MAP.length;
-
-export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash';
+export type { StationKind } from './maps';
 export type Item = 'raw0' | 'raw1' | 'cut0' | 'cut1' | 'plate' | 'dish';
-const KINDS: Record<string, StationKind> = { A: 'crate', B: 'crate', K: 'board', P: 'pot', D: 'plates', W: 'window', T: 'counter', X: 'trash' };
 
 export interface Station {
   kind: StationKind;
@@ -47,7 +34,13 @@ export interface Player {
 }
 export interface Order { id: number; expiresAt: number }
 export interface Controls { x: number; y: number; a: number; b: boolean } // a = new A presses since last tick
+export const COLS = MAP_W;
+export const ROWS = MAP_H;
+export const MAX_SLOTS = 8;
+
 export interface Game {
+  grid: Grid;
+  spawns: [number, number][];
   difficulty: Difficulty;
   n: number; // team size the parameters were scaled for
   params: Params;
@@ -62,34 +55,35 @@ export interface Game {
   orderSeq: number;
 }
 
-export const isSolid = (tx: number, ty: number) => (MAP[ty]?.[tx] ?? '#') !== '.';
+export const isSolid = (g: Game, tx: number, ty: number) => !isFloor(g.grid, tx, ty);
 
 const spawnOrder = (g: Game) => {
   if (g.orders.length < g.params.maxOrders) g.orders.push({ id: g.orderSeq++, expiresAt: g.time + g.params.orderTtlMs });
 };
 
-export function createGame(opts: { difficulty?: Difficulty; n?: number } = {}): Game {
+export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: readonly string[] } = {}): Game {
+  const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows);
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const p = difficultyParams(difficulty, opts.n ?? 2);
   const stations: Station[] = [];
-  MAP.forEach((row, ty) => [...row].forEach((c, tx) => {
-    const kind = KINDS[c];
-    if (kind) stations.push({ kind, tx, ty, crate: c === 'B' ? 1 : 0, item: null, progress: 0, inputs: [], done: false });
+  grid.forEach((row, ty) => row.forEach((t, tx) => {
+    if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false });
   }));
-  const g: Game = { difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
+  const g: Game = { grid, spawns: spawnPoints(grid, MAX_SLOTS), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
   for (let i = 0; i < p.initialOrders; i++) spawnOrder(g);
   return g;
 }
 
 export function addPlayer(g: Game, id: number, slot: number) {
   if (g.players.has(id)) return;
-  g.players.set(id, { id, slot, x: 2.5 + (slot % 4) * 2, y: 4.5 + (Math.floor(slot / 4) % 2), fx: 0, fy: 1, item: null, cutting: false });
+  const [sx, sy] = g.spawns[slot % g.spawns.length] ?? [1, 1];
+  g.players.set(id, { id, slot, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, item: null, cutting: false });
 }
 export const removePlayer = (g: Game, id: number) => { g.players.delete(id); };
 
-const blocked = (x: number, y: number) => {
+const blocked = (g: Game, x: number, y: number) => {
   for (let ty = Math.floor(y - RADIUS); ty <= Math.floor(y + RADIUS); ty++)
-    for (let tx = Math.floor(x - RADIUS); tx <= Math.floor(x + RADIUS); tx++) if (isSolid(tx, ty)) return true;
+    for (let tx = Math.floor(x - RADIUS); tx <= Math.floor(x + RADIUS); tx++) if (isSolid(g, tx, ty)) return true;
   return false;
 };
 
@@ -148,9 +142,6 @@ function interact(g: Game, p: Player, s: Station) {
         p.item = null;
       }
       break;
-    case 'trash':
-      p.item = null;
-      break;
   }
 }
 
@@ -169,9 +160,9 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     } else {
       if (c.x || c.y) { p.fx = c.x; p.fy = c.y; }
       const nx = p.x + c.x * SPEED * dt;
-      if (!blocked(nx, p.y)) p.x = nx;
+      if (!blocked(g, nx, p.y)) p.x = nx;
       const ny = p.y + c.y * SPEED * dt;
-      if (!blocked(p.x, ny)) p.y = ny;
+      if (!blocked(g, p.x, ny)) p.y = ny;
     }
     for (let i = 0; i < c.a; i++) {
       const s = targetStation(g, p);
