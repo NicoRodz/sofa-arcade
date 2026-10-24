@@ -175,9 +175,10 @@ function crate(c: Ctx, x0: number, y0: number, type: number) {
   c.fillStyle = 'rgba(255,255,255,0.22)'; c.fillRect(14, 66, 92, 3);
   // label
   drawOutlined(c, () => rr(c, 26, 80, 68, 24, 8), col, { lw: 2.5 });
-  c.fillStyle = type === 1 ? C.cream : C.ink;
-  c.font = `800 15px ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.fillText(['MASA', 'TOMATE', 'QUESO'][type]!, 60, 93);
+  c.fillStyle = type === 1 || type === 3 ? C.cream : C.ink;
+  const name = ['MASA', 'TOMATE', 'QUESO', 'PEPPERONI', 'CHAMPIÑÓN'][type]!;
+  c.font = `800 ${name.length > 6 ? 11 : 15}px ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(name, 60, 93);
   c.fillStyle = 'rgba(255,255,255,0.4)'; c.beginPath(); c.arc(31, 86, 1.8, 0, Math.PI * 2); c.fill();
   c.restore();
 }
@@ -348,7 +349,7 @@ function windowStation(c: Ctx, x0: number, y0: number) {
   c.restore();
 }
 
-export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, seedN: number): Phaser.GameObjects.Image {
+export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, seedN: number, topping = 2): Phaser.GameObjects.Image { // topping: what the cheese crate holds this round (2 cheese, 3 pepperoni, 4 mushroom)
   const key = `bg_${scene.textures.getTextureKeys().filter((k) => k.startsWith('bg_')).length}_${Date.now() % 100000}`;
   for (const k of scene.textures.getTextureKeys()) if (k.startsWith('bg_')) scene.textures.remove(k);
   const tex = scene.textures.createCanvas(key, Math.ceil(W * BG_R), Math.ceil(H * BG_R))!;
@@ -364,7 +365,7 @@ export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, see
   g.forEach((row, ty) => row.forEach((t, tx) => {
     if (t.kind !== 'station') return;
     const x0 = tx * 120, y0 = ty * 120;
-    if (t.station === 'crate') crate(c, x0, y0, t.crate);
+    if (t.station === 'crate') crate(c, x0, y0, t.crate === 2 ? topping : t.crate);
     else if (t.station === 'board') board(c, x0, y0, tx, ty);
     else if (t.station === 'pot') oven(c, x0, y0);
     else if (t.station === 'plates') plates(c, x0, y0);

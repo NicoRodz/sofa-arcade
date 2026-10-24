@@ -43,7 +43,7 @@ export class RecBus extends Emitter<GameEvents> {
 }
 
 type Take = 'a' | 'chop' | 'serve';
-interface Step { at: 'crate0' | 'crate1' | 'board' | 'pot' | 'plates' | 'window'; take: Take; done: (g: Game, p: Player, s: Station) => boolean }
+interface Step { at: 'crate0' | 'crate1' | 'crate2' | 'board' | 'pot' | 'plates' | 'window'; take: Take; done: (g: Game, p: Player, s: Station) => boolean }
 const cut = (p: Player) => !!p.item && p.item.startsWith('cut');
 // dough -> board -> cut -> oven; tomato -> board -> cut -> oven; plate -> oven when done -> window
 const RECIPE: readonly Step[] = [
@@ -64,11 +64,11 @@ const RECIPE: readonly Step[] = [
 const STUCK_MS = 25_000;
 const PRESS_EVERY = 12; // ticks between A presses of one chef
 
-const stationsOf = (g: Game, at: Step['at']) =>
+export const stationsOf = (g: Game, at: Step['at']) =>
   at.startsWith('crate') ? g.stations.filter((s) => s.kind === 'crate' && s.crate === Number(at[5])) : g.stations.filter((s) => s.kind === (at === 'window' ? 'window' : at));
 
 // BFS over floor tiles from the chef's tile to the nearest tile that touches the station. Returns the next tile to head for, or null when already there.
-function route(g: Game, p: Player, s: Station): { arrived: boolean; next: [number, number] | null } {
+export function route(g: Game, p: Player, s: Station): { arrived: boolean; next: [number, number] | null } {
   const sx = Math.floor(p.x), sy = Math.floor(p.y);
   const touches = (x: number, y: number) => DIRS.some(([dx, dy]) => x + dx === s.tx && y + dy === s.ty);
   if (touches(sx, sy)) return { arrived: true, next: null };

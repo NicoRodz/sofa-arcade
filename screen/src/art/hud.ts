@@ -1,11 +1,13 @@
 // Top strip: order tickets, round clock, team score; plus the big centre banners (countdown, time up).
 import Phaser from 'phaser';
 import type { Game } from '@party/shared/game';
+import type { Recipe } from '@party/shared/recipes/defs';
 import type { TeamInfo } from '@party/shared/teams';
 import { C, H, W, hexNum, timerColor } from './tokens';
 import { R } from './gfx';
-import { foodKey } from './food';
 import { Bar, place } from './stations';
+import { recipeParts } from './food/ticket';
+import { cardIntro } from './food/cardIntro';
 import { makeText } from './fx';
 import { MAX_TICKETS, TICKET_SHAKE_AT, TICKET_WIDTH, VS_TICKET_MAX_X, clockText, ticketXs } from './layout';
 import { VersusHud } from './versusHud';
@@ -96,21 +98,11 @@ export class Hud {
     this.scene.tweens.add({ targets: box, scale: 1, duration: 260, ease: 'back.out' });
   }
 
-  private makeTicket(id: number, recipe: 'marinara' | 'margarita', team: number, vip: boolean, birthday = false): Ticket {
+  private makeTicket(id: number, recipe: Recipe, team: number, vip: boolean, birthday = false): Ticket {
     const s = this.scene;
     const bg = s.add.image(0, 0, 'ticket_bg').setOrigin(0.5, 0).setScale(1 / R);
     const bar = new Bar(s, 100); bar.root.setPosition(0, 17);
-    const q = recipe === 'margarita'; // Margarita: three ingredient icons, the pizza with cheese
-    const pizza = place(s, foodKey(q ? 'pizza_done_q' : 'pizza_done'), -27, 57, 1);
-    // ingredients already drawn in their processed form (stretched dough, sliced tomato, shredded cheese)
-    const dough = place(s, foodKey('dough_str'), 28, q ? 37 : 46, 1);
-    const tomato = place(s, foodKey('tomato_cut'), 28, q ? 56 : 72, 1);
-    const cheese = q ? place(s, foodKey('cheese_cut'), 28, 75, 1) : null;
     const num = makeText(s, -48, 74, `#${id + 1}`, { size: 14, color: C.muted, stroke: 0, depth: 0 });
-    pizza.setScale(0.86 / R); dough.setScale((q ? 0.4 : 0.5) / R); tomato.setScale((q ? 0.4 : 0.52) / R); cheese?.setScale(0.4 / R);
-    // R23: process glyphs, so the ticket reads "cut these, bake them": a knife by the ingredients and a flame on the pizza
-    const knife = place(s, 'knife', 54, 56, 1).setScale(0.3 / R).setAngle(-65);
-    const flame = place(s, 'flame_1', -9, 41, 1).setScale(0.34 / R);
     bar.root.setVisible(true);
     const frame = s.add.graphics().setVisible(vip);
     frame.lineStyle(7, hexNum(C.cheese2), 1).strokeRoundedRect(-62, 3, 124, 96, 10);
@@ -123,7 +115,7 @@ export class Hud {
       frame.lineStyle(3, 0xff8cc4, 1).strokeRoundedRect(-62, 3, 124, 96, 10);
       extra.push(place(s, 'balloon', -45, 36, 0.3).setScale(0.3 / R).setTint(0xe95fa5), makeText(s, 30, 20, '150', { size: 30, color: C.tomato, stroke: 6, depth: 0 }));
     }
-    const root = s.add.container(W + 200, 6, [bg, frame, bar.root, pizza, dough, tomato, ...(cheese ? [cheese] : []), knife, flame, num, ...extra]).setDepth(2100 + id * 0.001);
+    const root = s.add.container(W + 200, 6, [bg, frame, bar.root, ...recipeParts(s, recipe), num, ...extra]).setDepth(2100 + id * 0.001);
     root.setAngle((id % 3) - 1);
     if (vip) bg.setTint(hexNum(C.cheese));
     else if (birthday) bg.setTint(0xffc9e2);
@@ -157,11 +149,14 @@ export class Hud {
     this.scene.tweens.add({ targets: b, scale: 1, alpha: 1, duration: 300, ease: 'back.out' });
     this.scene.tweens.add({ targets: b, scale: 1.35, alpha: 0, delay: 300 + hold, duration: out, ease: 'cubic.in', onComplete: () => { b.destroy(); if (this.banner === b) this.banner = undefined; } });
   }
+  private intro?: Phaser.GameObjects.Container; // the card of the day, shown under the countdown
   countdown(n: number) {
+    if (n > 0 && this.game.rec && !this.intro) { this.intro = cardIntro(this.scene, this.game.rec, this.game.difficulty); this.scene.tweens.add({ targets: this.intro, alpha: 1, duration: 250 }); }
     if (n > 0) { this.dim.setVisible(true).setAlpha(0.35); this.banner_(String(n), 240, C.cream, 300, 400); }
     else {
       this.banner_('¡A COCINAR!', 150, C.tomato, 450, 400);
       this.scene.tweens.add({ targets: this.dim, alpha: 0, duration: 500, onComplete: () => this.dim.setVisible(false) });
+      if (this.intro) { const i = this.intro; this.intro = undefined; this.scene.tweens.add({ targets: i, alpha: 0, y: i.y + 60, delay: 400, duration: 400, onComplete: () => i.destroy() }); }
     }
   }
   timeUp() { this.banner_('¡TIEMPO!', 210, C.tomato, 450, 300); }
@@ -234,6 +229,7 @@ export class Hud {
   destroy() {
     for (const t of this.tickets.values()) t.root.destroy();
     this.tickets.clear();
+    this.intro?.destroy();
     for (const o of [this.clockG, this.clockImg, this.clockTxt, this.coin, this.scoreTxt, this.panel, this.dim, this.banner, this.streakBox]) o?.destroy();
     this.vs?.destroy();
   }

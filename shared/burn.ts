@@ -43,7 +43,7 @@ export const isDark = (g: Pick<Game, 'mid'>) => !!g.mid?.dark;
 /** The oven is empty again (a chef took the pizza, or the fire ate it). */
 export function clearPot(s: Station) {
   s.inputs = []; s.done = false; s.progress = 0;
-  delete s.readyAt; delete s.warned; delete s.burnt;
+  delete s.readyAt; delete s.warned; delete s.burnt; delete s.fold; delete s.folded;
 }
 
 function ignite(g: Game, s: Station, origin: boolean) {

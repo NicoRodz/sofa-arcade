@@ -3,6 +3,8 @@ import { puestoProblems } from './puestos';
 import { DIRS, MAP_H, MAP_W, floorComponents, isFloor, parseMap, posKey, type Grid, type MapDef, type Pos, type VersusMapDef } from './maps';
 import { SIGMAS, isometryCheck } from './symmetry';
 import { MIN_LANDING_TILES } from './sabotage-config';
+import { cardFor } from './recipes/cards';
+import { cardProblems } from './recipes/cardCheck';
 
 export type StationKey = '1' | '2' | '3' | 'K' | 'O' | 'P' | 'E' | 'U' | 'L';
 // 1 -> K, 2 -> K, K -> O (once per ingredient), P -> O, O -> E
@@ -123,6 +125,8 @@ export function validateMap(m: MapDef): { ok: boolean; errors: string[] } {
   if (m.rows.length !== MAP_H || m.rows.some((r) => r.length !== MAP_W)) return { ok: false, errors: ['bad size'] };
   const g = parseMap(m.rows);
   const errors = [...validate(g).errors];
+  const card = cardFor(m.id);
+  if (card) errors.push(...cardProblems(card, g)); // the recipes of the map's card: every station they need, reachable
   if (!(m.nMin >= 2 && m.nMin <= m.nMax && m.nMax <= 8)) errors.push(`range ${m.nMin}-${m.nMax} is not within 2..8`);
   if (m.minDuro > m.nMin) errors.push(`minDuro ${m.minDuro} is above nMin ${m.nMin}`);
   const mp = minPlayers(g);
@@ -370,6 +374,8 @@ export function validateVersus(m: VersusMapDef, opts: { requireMirror?: boolean;
   sides.forEach((sg, i) => {
     const name = i ? 'B' : 'A';
     for (const e of validate(sg).errors) errors.push(`kitchen ${name}: ${e}`);
+    const card = cardFor(m.id);
+    if (card) for (const e of cardProblems(card, sg)) errors.push(`kitchen ${name}: ${e}`); // the same card in both kitchens: each must be able to make every recipe
     const need = minPlayers(sg);
     if (need > team.min) errors.push(`kitchen ${name} needs ${need} chefs to finish the recipe but the smallest team has ${team.min}`);
     const s = spawnTiles(sg);

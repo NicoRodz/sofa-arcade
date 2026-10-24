@@ -54,6 +54,10 @@ export interface GameEvents extends SabotageEvents {
   'fire:end': { team?: number }; // the last flame of the kitchen is out
   douseStart: { player: number; station: number }; // a chef holds Picar in front of a station on fire (the extinguisher)
   douseStop: { player: number; station: number };
+  // the calzone (recipes/sim.ts; only in a round with a Carta del día): a chef holds Picar at an oven with dough and tomato, and at the end the dough is folded
+  foldStart: { player: number; station: number };
+  foldStop: { player: number; station: number };
+  foldDone: { player: number; station: number; team?: number };
   // events in the middle of the round (midround.ts). The global ones carry no team.
   'event:announce': { kind: EventKind; inMs: number }; // the banner: it starts in `inMs`
   'event:start': { kind: EventKind; durationMs: number };

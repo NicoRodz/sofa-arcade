@@ -189,7 +189,7 @@ describe('R17 stars by map x difficulty x team size', () => {
     const g = createGame({ mapId: '1', difficulty: 'normal', n: 2 });
     addPlayer(g, 1, 0);
     g.score = 150; g.delivered = 3; g.expired = 1; g.rejected = 1; g.tips = 40; g.bestStreak = 3;
-    expect(summarize(g)).toEqual({ score: 150, stars: 1, thresholds: [122, 210, 298], next: 60, delivered: 3, expired: 1, rejected: 1, tips: 40, bestStreak: 3 });
+    expect(summarize(g)).toEqual({ score: 150, stars: 1, thresholds: [122, 210, 298], next: 60, delivered: 3, expired: 1, rejected: 1, tips: 40, bestStreak: 3, table: 1 });
     g.score = 300;
     expect(summarize(g)).toMatchObject({ stars: 3, next: null });
   });

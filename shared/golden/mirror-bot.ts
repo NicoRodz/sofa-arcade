@@ -7,6 +7,7 @@ import { SIGMAS, type Sigma } from '../symmetry';
 import type { Difficulty } from '../difficulty';
 import { MAP_H, MAP_W } from '../maps';
 import { RecBus, decide, type Mem } from './bot';
+import { decideR, newMem } from './recipe-bot';
 
 // The design's legend (pizzas-modalidades-coop-versus §2) onto the real one: M T Q = crates 1 2 3, '=' counter, H oven, C board, B trash,
 // '|' barrier (a wall), a/b start tiles. P L E . # are the same.
@@ -55,7 +56,9 @@ export function twinSpawns(rows: readonly string[], sigma: Sigma, half: (x: numb
 export interface VersusRun {
   rows: readonly string[]; sigma: Sigma; half: (x: number, y: number) => boolean;
   difficulty: Difficulty; seed: number; teams: number[][]; handicap?: boolean;
-  flags?: { burn?: boolean; fire?: boolean; events?: boolean }; // the new rules (off by default: the original proofs stay exact)
+  flags?: { burn?: boolean; fire?: boolean; events?: boolean; recipes?: boolean }; // the new rules (off by default: the original proofs stay exact). recipes: the Carta del día of `mapId`, cooked by recipe-bot.ts
+  mapId?: string; // default 'versus-test' (no card); 'V1' / 'V3' for the maps the mirror designs are
+  drive?: typeof decide; // the scripted chef (default: the Marinara script; the recipes flag picks the recipe bot)
 }
 export const MIRRORS = {
   v1: { rows: MIRROR_V1, sigma: SIGMAS.mirrorX, half: (x: number) => x < MAP_W / 2 },
@@ -70,9 +73,10 @@ export interface VersusResult { g: Game; bus: RecBus; ticks: number }
 export function runVersus(r: VersusRun, before?: (g: Game, t: number) => void): VersusResult {
   const iso = isoOf(r.sigma);
   const bus = new RecBus();
-  const g = createGame({ mapId: 'versus-test', difficulty: r.difficulty, rows: r.rows, spawns: twinSpawns(r.rows, r.sigma, r.half), seed: r.seed, countdownMs: COUNTDOWN_MS, bus, teams: r.teams.map((playerIds) => ({ playerIds })), handicap: r.handicap, ...r.flags });
+  const g = createGame({ mapId: r.mapId ?? 'versus-test', difficulty: r.difficulty, rows: r.rows, spawns: twinSpawns(r.rows, r.sigma, r.half), seed: r.seed, countdownMs: COUNTDOWN_MS, bus, teams: r.teams.map((playerIds) => ({ playerIds })), handicap: r.handicap, ...r.flags });
   r.teams.forEach((ids) => ids.forEach((id, rank) => addPlayer(g, id, rank, rank)));
-  const mem = new Map(r.teams.flat().map((id) => [id, { step: 0, since: 0, lastPress: -99, bin: false } as Mem]));
+  const cook = r.drive ?? (r.flags?.recipes ? (decideR as unknown as typeof decide) : decide);
+  const mem = new Map(r.teams.flat().map((id) => [id, (r.flags?.recipes ? newMem() : { step: 0, since: 0, lastPress: -99, bin: false }) as Mem]));
   const rankOf = new Map(r.teams.flatMap((ids) => ids.map((id, rank) => [id, rank] as const)));
   let t = 0;
   const limit = Math.ceil((COUNTDOWN_MS + g.params.roundMs) / TICK_MS) + 60;
@@ -88,9 +92,9 @@ export function runVersus(r: VersusRun, before?: (g: Game, t: number) => void): 
       if (flip) stations.sort((a, b) => a.ty - b.ty || a.tx - b.tx); // reading order in team 0's frame
       const [x, y] = to(p.x, p.y).map(snap) as [number, number]; // float noise (1e-15) must not decide which tile a chef is in when it stands on a tile edge
       const [fx, fy] = flip ? iso.vec(p.fx, p.fy) : [p.fx, p.fy];
-      const view = { grid: g.grid, stations, time: g.time } as unknown as Game;
+      const view = { grid: g.grid, stations, time: g.time, teams: g.teams, rec: g.rec } as unknown as Game;
       const me = { ...p, x, y, fx, fy } as Player;
-      const c = decide(view, me, rankOf.get(p.id)!, mem.get(p.id)!, t);
+      const c = cook(view, me, rankOf.get(p.id)!, mem.get(p.id)!, t);
       const [cx, cy] = flip ? iso.vec(c.x, c.y) : [c.x, c.y];
       controls.set(p.id, { ...c, x: cx, y: cy });
     }

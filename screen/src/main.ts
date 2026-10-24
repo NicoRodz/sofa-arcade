@@ -618,7 +618,7 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
   },
   // capture tool (burn): put an oven at a stage of its life, stand a chef in front of a station
   kit: {
-    bake: (i: number) => { const s = game.stations[i]!; s.inputs = [0, 1]; s.progress = 1; s.done = true; s.readyAt = game.time; },
+    bake: (i: number, inputs = [0, 1], folded = false, progress = 1) => { const s = game.stations[i]!; s.inputs = inputs; s.progress = progress; s.done = progress >= 1; s.readyAt = game.time; if (folded) s.folded = true; }, // inputs: what is in the oven (3 = pepperoni, 4 = mushroom); folded: a calzone; progress < 1: still cooking
     age: (i: number, ms: number) => { const s = game.stations[i]!; if (s.readyAt !== undefined) s.readyAt = game.time - ms; }, // as if the pizza had been ready for `ms`
     stand: (id: number, i: number, k = 0) => { // the chef on the k-th open tile of the station, facing it
       const p = game.players.get(id), s = game.stations[i]!;
@@ -924,7 +924,7 @@ renderUi();
 // R7: a short vibration on the phone of the chef the event belongs to (the phone falls back to a colour flash)
 const buzz = (player: number, kind: BuzzKind) => sendMsg({ t: 'buzz', playerId: player, kind });
 gameBus.on('itemPicked', (e) => buzz(e.player, 'pick'));
-gameBus.on('chopDone', (e) => buzz(e.player, 'chop'));
+for (const k of ['chopDone', 'foldDone'] as const) gameBus.on(k, (e) => buzz(e.player, 'chop')); // folding the calzone buzzes like a finished chop
 gameBus.on('washDone', (e) => buzz(e.player, 'chop'));
 gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
 gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
