@@ -41,6 +41,11 @@ export interface CampaignEvents {
   'obst.ice': { player: number }; // dynamic 7: stepped onto ice
   'obst.wind': { phase: WindPhase; dir: -1 | 1 }; // dynamic 8: 'warn' 1 s before a gust, 'gust' while it blows, 'calm' when it ends
   'obst.pickaxe': { player: number; action: 'take' | 'pass' | 'climb' | 'top' }; // dynamic 9: took it / passed it with B / started a climb / mantled over the top
+  // A6 (dynamics 10-12). Sound: screen/.../audio/recipes.ts CAMPAIGN_HANDLERS, one cue each.
+  'obst.lantern': { player: number; action: 'take' | 'pass' | 'light' | 'dim' }; // dynamic 10: took / passed it with B / crystals turned solid (player = the holder, -1 if it lies on the floor) / crystals went dark
+  'obst.bungee': { player: number; stretch: number }; // dynamic 11: the rope hanging from an elastic ring stretched past 1.25 x its length (player = the end that stretches; at most every 0.67 s per link)
+  'obst.sinker': { id: string; load: number }; // dynamic 12: a rock started to sink under `load` characters
+  'obst.geyser': { id: string; phase: 'calm' | 'warn' | 'gush' }; // dynamic 12: 'warn' = bubbling, 'gush' = erupting (launches whoever is in the vent), 'calm' = quiet again
 }
 export type AllObstEvents = ObstEvents & CampaignEvents; // what the world returns on every step
 export type ObstEventName = keyof AllObstEvents;

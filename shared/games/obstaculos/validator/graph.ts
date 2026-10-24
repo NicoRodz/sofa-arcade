@@ -6,7 +6,7 @@ import { T, isHazardKind, isSolidKind } from '../legend';
 import type { ParsedLevel, LevelObject } from '../parse';
 import { buildGrid, boxHitsSolid, tileAt, tileOf, type TileGrid } from '../sim/tiles';
 import { physicsFor, type PhysicsParams } from '../sim/player';
-import { campaignParams, dparamsForCampaign, physicsOfWorld, type WorldId } from '../sim/campaign';
+import { campaignParams, dparamsForCampaign, physicsOfWorld, superJumpV0, type WorldId } from '../sim/campaign';
 import { THROW_VX, THROW_VY } from '../sim/tuning';
 import type { Difficulty } from '../../../difficulty';
 import type { Cell, GameMode } from '../types';
@@ -26,7 +26,7 @@ export function envParams(env: Env): { physics: PhysicsParams; dp: DifficultyPar
 }
 export const can = (env: Env, m: Mechanic): boolean => !env.allow || env.allow.has(m);
 export interface OpenState { open: Set<string>; doors: Set<number>; pick?: boolean } // pick: the pioneer has the pickaxe (ice walls can be climbed)
-export type EdgeKind = 'jump' | 'tower' | 'hand' | 'throw' | 'swing' | 'ladder' | 'ride' | 'climb';
+export type EdgeKind = 'jump' | 'tower' | 'hand' | 'throw' | 'swing' | 'ladder' | 'ride' | 'climb' | 'superjump';
 export interface Edge {
   from: number; to: number; kind: EdgeKind;
   coop: boolean; // needs a teammate (tower, hand, throw, swing, balance)
@@ -53,12 +53,15 @@ export const SWING_NEAR = 4.5 * TILE; // the swinger hangs from a ring within th
 export const SWING_FAR = 7.5 * TILE; // and lets go anywhere within this: pendulum + rope jump (assumption, F2a calibrates)
 const HAND_FACE_PX = 20;
 
+// Every ring of the level: the plain 'o' ones, then the elastic 'u' ones (campaign dynamic 11). The validator models an elastic ring as a plain one (it only ADDS reach in the sim).
+export const ringsOf = (p: ParsedLevel): Cell[] => [...p.markers.ring, ...p.markers.bungee];
 export const objectsOf = (p: ParsedLevel, kinds: string[]): LevelObject[] => Object.values(p.objects).filter((o) => o.param && kinds.includes(o.param.kind));
 
 // Grid for a state: '%' resolved by mode, boxes solid, gates/ladders/movers/balances/doors by their state.
 export function buildTerrain(p: ParsedLevel, env: Env, S: OpenState, doorGroups: Cell[][]): { grid: TileGrid; shifted: Uint8Array } {
   const g = buildGrid(p, env.mode);
   const shifted = new Uint8Array(g.w * g.h);
+  if (p.markers.lantern.length) for (let i = 0; i < g.cells.length; i++) if (g.cells[i] === T.Crystal) g.cells[i] = T.Solid; // dynamic 10: crystals count as LIT (solid) whenever the level has a lantern; who carries it is not modelled
   for (const c of [...p.markers.box, ...p.markers.heavyBox]) g.cells[c.y * g.w + c.x] = T.Solid;
   const put = (x: number, y: number, k: number, onlyEmpty = false) => {
     if (x < 0 || y < 0 || x >= g.w || y >= g.h) return;
@@ -78,6 +81,10 @@ export function buildTerrain(p: ParsedLevel, env: Env, S: OpenState, doorGroups:
     else if (q.kind === 'mover') {
       for (const c of o.cells) put(c.x, c.y, T.OneWay);
       if (open) for (const c of o.cells) put(c.x + Math.round(q.dx), c.y + Math.round(q.dy), T.OneWay, true);
+    } else if (q.kind === 'sinker') {
+      for (const c of o.cells) put(c.x, c.y, T.OneWay); // dynamic 12: the rock at its resting height; sinking is not modelled (the sim bot shows it)
+    } else if (q.kind === 'geyser') {
+      for (const c of o.cells) put(c.x, c.y + 1, T.Trampoline); // dynamic 12: a vent is modelled as a spring under it (the real one launches harder, 1.65 x v0 vs 1.45, and only 0.5 s every period)
     } else if (q.kind === 'balance') {
       for (const c of o.cells) put(c.x, c.y, T.OneWay);
       if (env.n >= 3 || env.world) for (const c of o.cells) for (const s of [q.travel, -q.travel]) put(c.x, c.y + Math.round(s), T.OneWay, true); // campaign: also with 2 (sim/entities.ts stepMovers)
@@ -224,7 +231,7 @@ export interface GraphOpts { pioneer: boolean; catchTargets?: Set<number>; cache
 export type SimCache = Map<string, Map<string, (Omit<Landing, 'cx' | 'ty'> & { dcx: number; dty: number }) | null>>;
 export const newSimCache = (): SimCache => new Map();
 const CACHE_COLS = 26;
-const planSig = (p: Plan, s: Seg): string => `${p.trigger}|${p.dir}|${p.x - s.x0 * TILE}|${p.feetY - s.row * TILE}|${p.k}|${p.lead ?? ''}|${p.endX === undefined ? '' : p.endX - s.x0 * TILE}|${p.air}|${p.f}|${p.vx0 ?? ''}|${p.vy0 ?? ''}`;
+const planSig = (p: Plan, s: Seg): string => `${p.boost ?? ''}|${p.boostDelay ?? ''}|${p.trigger}|${p.dir}|${p.x - s.x0 * TILE}|${p.feetY - s.row * TILE}|${p.k}|${p.lead ?? ''}|${p.endX === undefined ? '' : p.endX - s.x0 * TILE}|${p.air}|${p.f}|${p.vx0 ?? ''}|${p.vy0 ?? ''}`;
 function windowKey(g: TileGrid, cols: string[], s: Seg, params: PhysicsParams): string {
   let k = `${s.row}:${s.x1 - s.x0}:${params.coyote}:${params.buffer}:${params.stickyEdges ? 1 : 0}:${g.h}:`;
   for (let x = s.x0 - CACHE_COLS; x <= s.x1 + CACHE_COLS; x++) k += (x < 0 || x >= g.w ? 'W' : cols[x]!) + '/';
@@ -267,7 +274,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
     const dx = Math.abs(l.landX - l.takeoffX);
     if (env.mode === 'chain' && dx > (kind === 'throw' && cp ? ropeLen * cp.throwSlack : CHAIN_MAX_DX)) return null; // the campaign throw's rope stretches (sim/actions.ts slackRope)
     const tgt = segs[to]!;
-    if (ropeCapsRise(env, feetOfRow(from.row) - feetOfRow(tgt.row))) return null;
+    if (kind !== 'superjump' && ropeCapsRise(env, feetOfRow(from.row) - feetOfRow(tgt.row))) return null; // a super jump lifts BOTH: nobody hangs from the rope
     if ((from.tramp || tgt.tramp) && !can(env, 'spring')) return null;
     const timing = from.tramp === true || tgt.tramp === true || surfaceTiming(grid, from.row, from.x0, from.x1) || surfaceTiming(grid, tgt.row, tgt.x0, tgt.x1) || l.steps > 140;
     return { from: from.id, to, kind, coop, timing, steps: l.steps, takeoffX: l.takeoffX, landX: l.landX, plan, k, rise: feetOfRow(from.row) - feetOfRow(tgt.row), landCell: { x: l.cx, y: l.ty } };
@@ -290,6 +297,17 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
       if (catches && plan.trigger !== 'walk' && plan.trigger !== 'drop') {
         const h = simPlan(grid, params, plan, catches);
         if (h && h.viaHand) { const e = toEdge(s, h, 'hand', plan, true); if (e) addEdge(e); }
+      }
+    }
+    // Super jump (campaign dynamic 3, n = 2): both jump within the pairing window and rise x1.3, so the pair reaches ledges and gaps a plain jump does not. Both go: followers get it too.
+    // Modelled for the partner that jumped FIRST (boost `window` steps after its jump: the lower peak), so a pair that lands together has margin. A plain run-up or a jump from a spot.
+    if (cp && env.n === 2 && can(env, 'superjump')) {
+      const boost = superJumpV0(cp) - JUMP_V0, delay = Math.round(cp.superJumpWindowMs / (1000 / 60));
+      for (const base of planSet(grid, s, f)) {
+        if (base.trigger !== 'at' && base.trigger !== 'edge') continue;
+        const plan: Plan = { ...base, boost, boostDelay: delay };
+        const l = simCached(grid, params, s, plan, bucket);
+        if (l) { const e = toEdge(s, l, 'superjump', plan, true); if (e) addEdge({ ...e, timing: true }); } // both must jump within the window: timing
       }
     }
     if (opts.pioneer && maxTower >= 1 && can(env, 'tower')) {
@@ -369,9 +387,9 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
   }
 
   // Rope swings (Encadenados only): a partner anchors on a ring, the other hangs from it and lets go within SWING_FAR.
-  if (env.mode === 'chain' && env.n >= 2 && p.markers.ring.length && can(env, 'swing')) {
+  if (env.mode === 'chain' && env.n >= 2 && ringsOf(p).length && can(env, 'swing')) {
     const center = (s: Seg, x: number) => ({ x: x * TILE + TILE / 2, y: s.row * TILE + TILE / 2 });
-    for (const ring of p.markers.ring) {
+    for (const ring of ringsOf(p)) {
       const rc = { x: ring.x * TILE + TILE / 2, y: ring.y * TILE + TILE / 2 };
       const near: { s: Seg; x: number }[] = [], far: { s: Seg; x: number }[] = [];
       for (const s of segs) {
@@ -384,7 +402,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
         if (bn <= SWING_NEAR) near.push({ s, x: bx });
         if (bf <= SWING_FAR && seesFrom(grid, rc, center(s, fx))) far.push({ s, x: fx });
       }
-      const ringIdx = p.markers.ring.indexOf(ring);
+      const ringIdx = ringsOf(p).indexOf(ring);
       for (const a of near) for (const b of far) {
         if (a.s.id === b.s.id) continue;
         addEdge({ ring: ringIdx, from: a.s.id, to: b.s.id, kind: 'swing', coop: true, timing: false, steps: 90, takeoffX: a.x * TILE, landX: b.x * TILE, rise: feetOfRow(a.s.row) - feetOfRow(b.s.row), landCell: { x: b.x, y: b.s.row } });

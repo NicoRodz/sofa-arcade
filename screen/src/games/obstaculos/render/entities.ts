@@ -43,6 +43,15 @@ export function buildEntityTextures(scene: Phaser.Scene) {
     c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 14, Math.PI * 1.1, Math.PI * 1.45); c.stroke();
     drawOutlined(c, () => rr(c, -5, -22, 10, 10, 3), '#7D8B95', { lw: 2.4 });
   });
+  // Elastic ring (campaign dynamic 11): the same ring in orange rubber with a coiled spring up to its hook, so it reads as "stretches" from across the screen.
+  makeTex(scene, 'ob_ring_bungee', { w: 44, h: 52, oy: 26 }, (c) => {
+    drawOutlined(c, () => { c.beginPath(); c.arc(0, 4, 14, 0, 7); }, 'rgba(0,0,0,0)', { lw: 9.5 });
+    c.strokeStyle = '#FF9A2E'; c.lineWidth = 5; c.beginPath(); c.arc(0, 4, 14, 0, 7); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.85)'; c.lineWidth = 2; c.beginPath(); c.arc(0, 4, 14, Math.PI * 1.1, Math.PI * 1.45); c.stroke();
+    c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = 5.4; c.beginPath(); c.moveTo(0, -10); for (let i = 0; i < 4; i++) { c.lineTo(i % 2 ? -5 : 5, -14 - i * 3); } c.stroke();
+    c.strokeStyle = '#D9DEE2'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(0, -10); for (let i = 0; i < 4; i++) { c.lineTo(i % 2 ? -5 : 5, -14 - i * 3); } c.stroke();
+    drawOutlined(c, () => rr(c, -5, -26, 10, 7, 3), '#7D8B95', { lw: 2.4 });
+  });
   makeTex(scene, 'ob_box', { w: 52, h: 52 }, (c) => {
     drawOutlined(c, () => rr(c, -22, -22, 44, 44, 5), vgrad(c, -22, 22, '#E2A961', '#B57A3A'), { lw: 3 });
     c.strokeStyle = 'rgba(80,40,10,0.55)'; c.lineWidth = 3; c.beginPath(); c.moveTo(-18, -18); c.lineTo(18, 18); c.moveTo(18, -18); c.lineTo(-18, 18); c.stroke();
@@ -92,7 +101,7 @@ export class EntityLayer {
       case 'star': sp.halo = add(at(s, 'ob_halo').setAlpha(0.7)); sp.flag = add(at(s, 'ob_star')); break;
       case 'checkpoint': add(at(s, 'ob_pole')); sp.flag = add(at(s, 'ob_flag_off')); sp.halo = add(at(s, 'ob_flag_on').setAlpha(0)); break;
       case 'goal': sp.halo = add(at(s, 'ob_halo').setTint(0xfff2b0).setScale(2.6 / R)); add(at(s, 'ob_pole').setScale(1.3 / R)); sp.flag = add(at(s, 'ob_goalflag').setScale(1.15 / R)); break;
-      case 'ring': sp.halo = add(at(s, 'ob_halo').setAlpha(0)); sp.flag = add(at(s, 'ob_ring')); break;
+      case 'ring': sp.halo = add(at(s, 'ob_halo').setAlpha(0)); sp.flag = add(at(s, e.label === 'elastic' ? 'ob_ring_bungee' : 'ob_ring')); break;
       case 'box': sp.flag = add(at(s, 'ob_box')); break;
       case 'heavyBox': sp.flag = add(at(s, 'ob_heavy')); break;
       case 'key': sp.halo = add(at(s, 'ob_halo').setScale(0.6 / R)); sp.flag = add(at(s, 'ob_key')); break;
@@ -165,6 +174,9 @@ export class EntityLayer {
         case 'target': this.drawTarget(sp, e); break;
         case 'enemy': this.drawEnemy(sp, e); break;
         case 'pickaxe': this.drawPickaxe(sp, e); break;
+        case 'lantern': this.drawLantern(sp, e); break;
+        case 'sinker': this.drawSinker(sp, e); break;
+        case 'geyser': this.drawGeyser(sp, e); break;
       }
     }
     for (const [id, sp] of this.sprites) if (!sp.seen) { sp.objs.forEach((o) => o.destroy()); this.sprites.delete(id); }
@@ -302,6 +314,51 @@ export class EntityLayer {
     g.lineStyle(4.5 * k, 0xb57a3a, 1); g.lineBetween(cx - 12 * k, cy + 15 * k, cx + 9 * k, cy - 11 * k);
     g.lineStyle(9 * k, 0x2b1b17, 1); g.beginPath(); g.moveTo(cx - 8 * k, cy - 16 * k); g.lineTo(cx + 8 * k, cy - 18 * k); g.lineTo(cx + 22 * k, cy - 6 * k); g.strokePath();
     g.lineStyle(5 * k, 0xcfe9f5, 1); g.beginPath(); g.moveTo(cx - 8 * k, cy - 16 * k); g.lineTo(cx + 8 * k, cy - 18 * k); g.lineTo(cx + 22 * k, cy - 6 * k); g.strokePath();
+  }
+
+  // ---- campaign A6 (dynamics 10 and 12): Graphics only, redrawn when their signature changes
+  // Farol: a brass lantern with a warm glass; on the floor it bobs with a big halo, in a player's hands it is smaller and sits over the head.
+  private drawLantern(sp: Sprite, e: EntityView) {
+    const bob = e.on ? 0 : Math.round(Math.sin(this.t * 3 + e.x) * 3), k = e.on ? 0.8 : 1, fl = Math.round((0.5 + 0.5 * Math.sin(this.t * 9 + e.x)) * 3);
+    const g = this.redraw(sp, `${e.x.toFixed(0)}|${e.y.toFixed(0)}|${bob}|${e.on}|${fl}`); if (!g) return;
+    const cx = e.x + e.w / 2, cy = e.y + e.h / 2 + bob;
+    g.fillStyle(0xffd27a, 0.18 + fl * 0.03); g.fillCircle(cx, cy, 30 * k);
+    g.lineStyle(4, 0x2b1b17, 1); g.beginPath(); g.arc(cx, cy - 16 * k, 8 * k, Math.PI, 0, false); g.strokePath(); // handle
+    g.fillStyle(0x2b1b17, 1); g.fillRoundedRect(cx - 12 * k, cy - 16 * k, 24 * k, 7 * k, 3); g.fillRoundedRect(cx - 12 * k, cy + 10 * k, 24 * k, 7 * k, 3);
+    g.fillStyle(0xc98a2b, 1); g.fillRoundedRect(cx - 10 * k, cy - 15 * k, 20 * k, 5 * k, 2); g.fillRoundedRect(cx - 10 * k, cy + 11 * k, 20 * k, 5 * k, 2);
+    g.fillStyle(0x2b1b17, 1); g.fillRoundedRect(cx - 11 * k, cy - 10 * k, 22 * k, 21 * k, 5);
+    g.fillStyle(0xfff0b0, 1); g.fillRoundedRect(cx - 8.5 * k, cy - 8 * k, 17 * k, 17 * k, 4);
+    g.fillStyle(0xffb62e, 1); g.fillCircle(cx, cy + 2 * k, (4.5 + fl * 0.5) * k);
+    g.fillStyle(0xffffff, 0.7); g.fillRect(cx - 6 * k, cy - 6 * k, 2.4 * k, 9 * k);
+  }
+  // Roca hundible: a grey slab with a darker underside and waterline streaks; it darkens and drips as it sinks.
+  private drawSinker(sp: Sprite, e: EntityView) {
+    const sink = Math.round(e.value * 8) / 8;
+    const g = this.redraw(sp, `${e.x.toFixed(1)}|${e.y.toFixed(1)}|${e.w}|${sink}`); if (!g) return;
+    const th = 22, top = (Math.round(0x9a + (0x6f - 0x9a) * sink) << 16) | (Math.round(0xa3 + (0x77 - 0xa3) * sink) << 8) | Math.round(0xa8 + (0x7c - 0xa8) * sink);
+    g.fillStyle(0x2b1b17, 1); g.fillRoundedRect(e.x - 2, e.y - 2, e.w + 4, th + 4, 9);
+    g.fillStyle(top, 1); g.fillRoundedRect(e.x + 1, e.y + 1, e.w - 2, th - 2, 8);
+    g.fillStyle(0x59636b, 1); g.fillRoundedRect(e.x + 6, e.y + th - 9, e.w - 12, 6, 3);
+    g.fillStyle(0xffffff, 0.35); g.fillRect(e.x + 10, e.y + 4, e.w - 26, 3);
+    g.lineStyle(2, 0x3a4147, 0.8); for (let x = e.x + 18; x < e.x + e.w - 6; x += 26) g.lineBetween(x, e.y + 8, x + 5, e.y + th - 4);
+    if (sink > 0) { g.fillStyle(0x9be0ff, 0.65); for (let i = 0; i < 3; i++) g.fillCircle(e.x + 12 + i * (e.w - 24) / 2, e.y - 4 - i % 2 * 4, 3); } // spray while it goes down
+  }
+  // Geiser: a stone mouth in the floor. Calm: a faint ring; bubbling (value 0.5): bubbles climb; erupting (value 1): a water column with spray.
+  private drawGeyser(sp: Sprite, e: EntityView) {
+    const ph = e.value >= 1 ? 2 : e.value > 0 ? 1 : 0, tt = Math.floor(this.t * 12);
+    const g = this.redraw(sp, `${e.x}|${e.y}|${ph}|${ph ? tt : 0}`); if (!g) return;
+    const cx = e.x + e.w / 2, base = e.y + e.h, w = e.w;
+    g.fillStyle(0x2b1b17, 1); g.fillEllipse(cx, base - 3, w + 10, 20);
+    g.fillStyle(0x59636b, 1); g.fillEllipse(cx, base - 4, w + 2, 15);
+    g.fillStyle(0x1d2a33, 1); g.fillEllipse(cx, base - 5, w - 12, 9);
+    g.fillStyle(ph === 2 ? 0xdff6ff : 0x6fb3d6, 1); g.fillEllipse(cx, base - 5, w - 20, 5);
+    if (ph === 1) for (let i = 0; i < 5; i++) { const u = ((tt * 0.13 + i * 0.21) % 1), bx = cx + Math.sin(i * 2.3 + tt * 0.3) * (w / 3); g.fillStyle(0xbfe9ff, 0.85 * (1 - u)); g.fillCircle(bx, base - 8 - u * 46, 3 + (i % 2) * 1.5); }
+    if (ph === 2) {
+      const h = 2.6 * TILE;
+      g.fillStyle(0x9be0ff, 0.8); g.fillRoundedRect(cx - 19, base - h, 38, h - 4, 15);
+      g.fillStyle(0xffffff, 0.75); g.fillRoundedRect(cx - 8, base - h + 4, 10, h - 14, 5);
+      for (let i = 0; i < 7; i++) { const a = (tt * 0.37 + i * 0.9) % 1; g.fillStyle(0xdff6ff, 1 - a); g.fillCircle(cx + (i % 2 ? 1 : -1) * (12 + a * 26), base - h + 10 + a * 34, 4 - a * 2); }
+    }
   }
 
   destroy() { for (const sp of this.sprites.values()) sp.objs.forEach((o) => o.destroy()); this.sprites.clear(); }

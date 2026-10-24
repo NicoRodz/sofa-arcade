@@ -3,6 +3,7 @@ import { LEVELS } from '../levels';
 import { difficultyOf } from '../metric';
 import { validateState } from '../validator';
 import { CAMPAIGN, campaignLevel, catalogErrors } from './catalog';
+import { lintHints } from './learning';
 import { inBand, bandOf } from './world';
 import { campaignParams } from '../sim/campaign';
 import type { CampaignLevel } from './types';
@@ -23,9 +24,33 @@ describe('the catalog: 5 worlds x 7 + 5 Cumbres = 40 (plan §2)', () => {
   it('is well formed: unique ids, each mechanic introduced once, requires taught earlier, tilemap matches slot, mode and N=2', () => {
     expect(catalogErrors()).toEqual([]);
   });
-  it('Mundo 1 and nothing else is built (A3); the rest waits for A5, A6 and A7 with metadata only', () => {
-    expect(CAMPAIGN.filter((l) => l.status === 'built').map((l) => l.id)).toEqual(['1-1', '1-2', '1-3', '1-4', '1-5', '1-6', '1-7']);
+  it('Mundos 1, 2 and 3 are built (A3 and A5); Mundos 4-5 and the Cumbres wait for A6 and A7 with metadata only', () => {
+    const ids = (w: number) => [1, 2, 3, 4, 5, 6, 7].map((i) => `${w}-${i}`);
+    expect(CAMPAIGN.filter((l) => l.status === 'built').map((l) => l.id)).toEqual([...ids(1), ...ids(2), ...ids(3)]);
+    expect(CAMPAIGN.filter((l) => l.status === 'planned').map((l) => l.id)).toEqual([...ids(4), ...ids(5), 'C1', 'C2', 'C3', 'C4', 'C5']);
     expect(CAMPAIGN.filter((l) => l.status === 'planned').every((l) => !l.def && l.validatedFor.length === 0)).toBe(true);
+    expect(CAMPAIGN.filter((l) => l.status === 'built').every((l) => l.validatedFor.join() === '2')).toBe(true);
+  });
+  it('what each new world teaches, level by level (plan §2 table, with the deviations in the notes)', () => {
+    const taught = (w: string) => CAMPAIGN.filter((l) => l.id.startsWith(w)).map((l) => `${l.id} ${l.introduces.join('+') || '-'}`);
+    expect(taught('2-')).toEqual(['2-1 ladder', '2-2 spring+superjump', '2-3 balance', '2-4 plate+target', '2-5 key', '2-6 softEnemies', '2-7 -']);
+    expect(taught('3-')).toEqual(['3-1 ice', '3-2 wind', '3-3 mover', '3-4 pickaxe', '3-5 -', '3-6 -', '3-7 -']);
+    expect(CAMPAIGN.filter((l) => l.status === 'built').map((l) => l.mode)).toEqual(['L', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E/L', 'L', 'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E']);
+  });
+  it('every level of Mundos 2 and 3 has at most 2 hints of at most 6 words, none in levels 6 and 7, and a hint on the level that introduces something with a modelled rule', () => {
+    for (const l of CAMPAIGN.filter((x) => x.status === 'built' && x.world !== 'beach')) {
+      expect(lintHints(l.def!, l.index), l.id).toEqual([]);
+      if (l.index >= 6) expect(l.def!.hints ?? [], l.id).toEqual([]);
+    }
+    for (const id of ['2-1', '2-2', '2-3', '2-4', '2-5', '3-1', '3-2', '3-3', '3-4', '3-5']) expect(CAMPAIGN.find((l) => l.id === id)!.def!.hints?.length ?? 0, id).toBeGreaterThanOrEqual(1);
+  });
+  it('the campaign levels live only in the campaign: the quick match pool is still the 15 levels and none of the 21 built campaign tilemaps is in it', () => {
+    expect(LEVELS.map((l) => l.id)).toEqual(Array.from({ length: 15 }, (_, i) => `l${String(i + 1).padStart(2, '0')}`));
+    const quick = new Set(LEVELS.map((l) => l.id));
+    for (const l of CAMPAIGN) expect(quick.has(l.id), l.id).toBe(false);
+    // the relocated 3-7 is a copy of l12 for 2 players, not l12 itself: the quick match keeps its own Avalancha (2-8 players, Libres and Encadenados)
+    expect(LEVELS.find((l) => l.id === 'l12')!.players).toEqual({ min: 2, max: 8 });
+    expect(campaignLevel('3-7').def!.hazard).toEqual(LEVELS.find((l) => l.id === 'l12')!.hazard);
   });
   it('every built level has 3 collectibles on its tilemap and a world-valid id', () => {
     for (const l of CAMPAIGN.filter((x) => x.def)) expect(l.collectibles, l.id).toHaveLength(3);

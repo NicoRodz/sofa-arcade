@@ -254,6 +254,61 @@ describe('SimWorldView: campaign A5 entities', () => {
   });
 });
 
+describe('SimWorldView: campaign A6 entities (lantern, crystals, elastic ring, sinker, geyser)', () => {
+  const rows = Array.from({ length: 16 }, (_, y) => {
+    const cs = ('#' + '.'.repeat(38) + '#').split('');
+    if (y >= 14) cs.fill('#');
+    if (y === 13) { cs[2] = 'S'; cs[36] = 'G'; cs[8] = 'l'; cs[30] = 'E'; cs[22] = 'Y'; }
+    if (y === 5) cs[16] = 'u';
+    if (y === 6) cs[16] = 'o';
+    if (y === 9) { cs[12] = 'D'; cs[13] = 'D'; cs[14] = 'D'; }
+    return cs.join('');
+  });
+  const level: LevelDef = {
+    id: 'a6', name: 'a6', biome: 'mine', players: { min: 2, max: 2 }, tether: 'any', stars: 1, parSec: 60, rows,
+    params: { D: { kind: 'sinker', travel: 3 }, E: { kind: 'geyser', periodSec: 4 } },
+  };
+  const mkc = () => new ObstSession({ mode: 'free', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [level], campaign: { world: 'mine' } });
+  it('the view lists the lantern, the sinker, the geyser and an elastic ring after the plain one; passes checkWorldView; the darkness has a light on the lantern', () => {
+    const s = mkc();
+    const v = new SimWorldView(s);
+    play(s, 3300); v.sync();
+    const by = (id: string) => v.entities.find((e) => e.id === id);
+    expect(by('lantern0')?.kind).toBe('lantern');
+    expect(by('objD')?.kind).toBe('sinker');
+    expect(by('objE')?.kind).toBe('geyser');
+    expect(by('ring0')?.label).toBe('');
+    expect(by('ring1')?.label).toBe('elastic');
+    expect(v.dark).toMatchObject({ radius: 4 * TILE });
+    expect(v.dark!.lights).toHaveLength(1);
+    expect(checkWorldView(v)).toEqual([]);
+  });
+  it('whoever steps on the lantern holds it (the light follows); standing on the rock sinks it (value grows); the geyser phase goes 0 -> 0.5 -> 1', () => {
+    const s = mkc();
+    const v = new SimWorldView(s);
+    play(s, 3300);
+    const p = s.world.players[0]!, q = s.world.players[1]!;
+    p.body.x = 8 * TILE + 7; p.body.y = 14 * TILE - 46;
+    play(s, 120); v.sync();
+    expect(v.entities.find((e) => e.id === 'lantern0')).toMatchObject({ on: true, holder: 0 });
+    expect(v.dark!.lights[0]!.x).toBeCloseTo(p.body.x + 17, 0);
+    q.body.x = 12 * TILE + 7; q.body.y = 9 * TILE - 46; q.body.vy = 0;
+    play(s, 1500); v.sync(); // 1.5 s on the rock = 0.75 tile down of 3
+    expect(v.entities.find((e) => e.id === 'objD')!.value).toBeGreaterThan(0.15);
+    const seen = new Set<number>();
+    for (let t = 0; t < 280; t++) { s.advance(FRAME); v.sync(); seen.add(v.entities.find((e) => e.id === 'objE')!.value); }
+    expect([...seen].sort()).toEqual([0, 0.5, 1]);
+  });
+  it('a quick-match session shows none of it: no dark, no elastic ring link', () => {
+    const s = new ObstSession({ mode: 'chain', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [level] });
+    const v = new SimWorldView(s);
+    play(s, 3500); v.sync();
+    expect(v.dark).toBeNull();
+    expect(v.ropes[0]!.links[0]!.elastic).toBe(false);
+    
+  });
+});
+
 describe('ObstRun: what main.ts wires to the scene, the bus and the phones', () => {
   const run = (levels: LevelDef[] = [def(1)], n = 2) => {
     const bus = new Emitter<ObstEvents>();

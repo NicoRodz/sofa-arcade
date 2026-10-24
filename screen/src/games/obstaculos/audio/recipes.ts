@@ -24,7 +24,8 @@ export type RecipeId =
   | 'jump' | 'boing' | 'land' | 'ropeTaut' | 'ropeStrain' | 'grabRing' | 'grabPlayer' | 'grabBox' | 'grabLever' | 'release'
   | 'throw' | 'handCatch' | 'death' | 'bubble' | 'respawn' | 'checkpoint' | 'star' | 'plate' | 'gate' | 'goalEnter'
   | 'fanfare' | 'runWin' | 'runFail'
-  | 'balance' | 'target' | 'enemy' | 'ice' | 'wind' | 'pickaxe'; // campaign A5: one per dynamic
+  | 'balance' | 'target' | 'enemy' | 'ice' | 'wind' | 'pickaxe' // campaign A5: one per dynamic
+  | 'lantern' | 'bungee' | 'sinker' | 'geyser'; // campaign A6: one per dynamic (12 has two: the rock and the vent)
 export type Surface = 'sand' | 'wood' | 'metal' | 'ice' | 'stone' | 'thud';
 export interface Params {
   freq?: number; level?: number; surface?: Surface; variant?: string; tension?: number; notes?: number[];
@@ -86,7 +87,7 @@ export const HANDLERS: Handlers = {
 
 // Campaign A5 (plan §4 #4-#9): ONE effect per dynamic, built from the same voices as the rest. The older campaign events (signal, countdown, superJump, edgeAssist,
 // heartsOut) have no sound yet (the screen shows banners for them), so this map is partial on purpose.
-export type CampaignSound = 'obst.balance' | 'obst.target' | 'obst.enemy' | 'obst.ice' | 'obst.wind' | 'obst.pickaxe';
+export type CampaignSound = 'obst.balance' | 'obst.target' | 'obst.enemy' | 'obst.ice' | 'obst.wind' | 'obst.pickaxe' | 'obst.lantern' | 'obst.bungee' | 'obst.sinker' | 'obst.geyser';
 type CampaignHandlers = { [K in CampaignSound]: (p: CampaignEvents[K], biome: Biome) => Cues };
 const PICK_FREQ = { take: 1400, pass: 1800, climb: 2200, top: 2800 } as const;
 export const CAMPAIGN_HANDLERS: CampaignHandlers = {
@@ -96,6 +97,11 @@ export const CAMPAIGN_HANDLERS: CampaignHandlers = {
   'obst.ice': (p) => [cue('ice', `ice:${p.player}`, 0)], // glassy tick, the lowest priority: it rings at every step onto ice
   'obst.wind': (p) => (p.phase === 'calm' ? [] : [cue('wind', 'wind', 1, { variant: p.phase })]), // a whoosh at the warning and a stronger one with the gust
   'obst.pickaxe': (p) => [cue('pickaxe', `pick:${p.player}`, 1, { freq: PICK_FREQ[p.action], variant: p.action })], // steel tink, higher the further the action goes
+  // A6: the crystals ring a glassy chord when the lantern lights them and sigh when it leaves; a rubber twang for the bungee; a low glug for the rock; the geyser bubbles, then roars
+  'obst.lantern': (p, b) => [cue('lantern', `lantern:${p.action}`, p.action === 'light' ? 2 : 1, { freq: degreeFreq(b, p.action === 'light' ? 5 : 3, 2), variant: p.action })],
+  'obst.bungee': (p) => [cue('bungee', `bungee:${p.player}`, 1, { level: clamp01((p.stretch - 1.25) / 0.35) })],
+  'obst.sinker': (p) => [cue('sinker', `sinker:${p.id}`, 1, { level: clamp01(p.load / 3) })],
+  'obst.geyser': (p) => (p.phase === 'calm' ? [] : [cue('geyser', `geyser:${p.id}`, p.phase === 'gush' ? 2 : 1, { variant: p.phase })]),
 };
 export type SoundEvents = ObstEvents & Pick<CampaignEvents, CampaignSound>;
 const ALL_HANDLERS = { ...HANDLERS, ...CAMPAIGN_HANDLERS } as { [K in keyof SoundEvents]: (p: SoundEvents[K], biome: Biome) => Cues };
@@ -201,6 +207,19 @@ export function voicesFor(c: Cue): Voice[] {
       : [o('sine', 150, 0.07, 0.3, { f1: 90 }), nz(0.05, 0.16, { type: 'lowpass', f0: 500 })];
     case 'ice': return [o('sine', 2600, 0.1, 0.1, { f1: 3300 }), o('sine', 3900, 0.07, 0.05, { at: 0.02 })];
     case 'wind': return [nz(p.variant === 'gust' ? 1.0 : 0.8, p.variant === 'gust' ? 0.32 : 0.2, { type: 'bandpass', f0: 300, f1: p.variant === 'gust' ? 1400 : 900, q: 0.8 }, { att: 0.3 })];
+    case 'lantern': return p.variant === 'light'
+      ? [0, 1, 2].flatMap((i) => bell(f * [1, 1.25, 1.5][i]!, 0.7, 0.2, i * 0.05)) // a glassy major chord
+      : p.variant === 'dim' ? [o('sine', f, 0.3, 0.16, { f1: f * 0.5 })]
+      : [o('triangle', f * 2, 0.1, 0.18), ...bell(f * 3, 0.3, 0.14, 0.04)]; // take / pass: a brass ting
+    case 'bungee': return [ // a rubber twang: a pluck that bends upwards, a boing underneath
+      o('pluck', 150 + 90 * lvl, 0.55, 0.26, { ks: 0.99 }),
+      o('sine', 160, 0.3, 0.26, { f1: 300 + 200 * lvl, glide: 0.12, vib: { rate: 22, depth: 25 } })];
+    case 'sinker': return [ // a low glug and a wet rush
+      o('sine', 240, 0.32, 0.28, { f1: 90, vib: { rate: 11, depth: 28 } }),
+      nz(0.28, 0.12 + 0.06 * lvl, { type: 'lowpass', f0: 900, f1: 300 }, { att: 0.03 })];
+    case 'geyser': return p.variant === 'gush'
+      ? [nz(0.7, 0.34, { type: 'bandpass', f0: 500, f1: 2600, q: 0.7 }, { att: 0.05 }), o('sine', 90, 0.4, 0.4, { f1: 50 }), o('triangle', 220, 0.5, 0.16, { f1: 520 })]
+      : [nz(0.8, 0.14, { type: 'bandpass', f0: 800, f1: 1500, q: 2 }, { att: 0.2 }), o('sine', 300, 0.7, 0.1, { vib: { rate: 14, depth: 60 }, att: 0.2 })]; // bubbling
     case 'pickaxe': return [o('square', f, 0.03, 0.13), o('sine', f * 1.5, 0.18, 0.16, { f1: f * 1.4 }), nz(0.04, 0.2, { type: 'bandpass', f0: 3000, q: 4 })];
   }
 }

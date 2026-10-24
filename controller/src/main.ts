@@ -11,7 +11,7 @@ import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
   BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
-  type BuzzKind, type ClientMsg, type HintLabels, type Phase, type PuestoMsg, type ServerMsg, type TeamInfo,
+  type BuzzKind, type ClientMsg, type HintLabels, type Phase, type PuestoMsg, type ServerMsg, type SignalKind, type TeamInfo,
 } from '@party/shared';
 import type { IconId } from '@party/shared/icons';
 import { outcomeFor, type Outcome, type PhoneResult } from '@party/shared/versusReport';
@@ -56,7 +56,11 @@ window.visualViewport?.addEventListener('scroll', zoomGuard.check);
 setInterval(zoomGuard.check, 2000);
 $('zoomfix').addEventListener('click', () => zoomGuard.manualReset());
 
-const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0 };
+const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0, sig: { kind: 'go' as SignalKind, seq: 0 }, go: false };
+// Campaign signals: the pad of 6 buttons shows only in a campaign round (phase.match.modeOptions.campaign). While it shows, every input carries `sig` (a monotonic counter: a new seq = one
+// signal of that kind; seq 0 is the baseline the screen reads first) and `go` (true while "¡Ya!" is held: 0.4 s of it starts the 3-2-1). A quick match sends neither: the packets are the old ones.
+let signalsOn = false;
+const setSignals = (on: boolean) => { signalsOn = on; document.body.dataset.signals = on ? 'on' : 'off'; };
 const sync = new ClockSync();
 let lastRtt: number | undefined;
 let ws: WebSocket | null = null;
@@ -249,15 +253,16 @@ $('pswap').addEventListener('pointerup', (e) => {
 });
 
 const VERDICT_TEXT: Record<Outcome, string> = { won: '¡Ganaron!', lost: 'Perdieron', draw: '¡Empate!', none: 'Sin ganador' };
-function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg, result?: PhoneResult) {
+function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg, result?: PhoneResult, campaign = false) {
   phase = p;
+  setSignals(p === 'playing' && campaign);
   if (p !== 'playing') setHint(NO_HINT); // the labels the round gave go with it
   seenGame = seenAfterPhase(seenGame, p);
   if (p === 'menu') setHowTo(false);
   else maybeShowHowTo(); // the screen just entered a game: show its summary
   applyPuestos(p === 'playing' ? puestos : undefined);
   if (p === 'playing') setHowTo(false);
-  if (p !== 'playing') { state.x = 0; state.y = 0; state.btn = 0; document.querySelectorAll('.act').forEach((b) => b.classList.remove('down')); }
+  if (p !== 'playing') { state.x = 0; state.y = 0; state.btn = 0; state.go = false; document.querySelectorAll('.act, .sg').forEach((b) => b.classList.remove('down')); }
   if (p === 'results' && scores) {
     const mine = scores.find((s) => s.id === myId) ?? scores[0]; // cooperative: every entry carries the team score
     $('rank').textContent = mine ? String(mine.score) : '-';
@@ -302,7 +307,7 @@ function connect() {
     } else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {
-      showPhase(m.phase, m.scores, m.puestos, m.result);
+      showPhase(m.phase, m.scores, m.puestos, m.result, m.match?.modeOptions.campaign === true);
     } else if (m.t === 'captain') {
       captainId = m.playerId;
       renderCaptain();
@@ -335,7 +340,7 @@ function connect() {
 
 function sendInput() {
   if (!joined || phase !== 'playing') return;
-  tx({ t: 'input', seq: state.seq++, x: state.x, y: state.y, btn: state.btn, presses: state.presses, ts: Date.now() });
+  tx({ t: 'input', seq: state.seq++, x: state.x, y: state.y, btn: state.btn, presses: state.presses, ts: Date.now(), ...(signalsOn ? { sig: state.sig, go: state.go } : {}) });
 }
 
 function startPad() {
@@ -375,6 +380,30 @@ function startPad() {
   };
   bindButton($('btnA'), 0);
   bindButton($('btnB'), 1);
+  for (const el of Array.from(document.querySelectorAll<HTMLElement>('#signals [data-sig]'))) { // the campaign's signal pad: a press = one signal; "¡Ya!" also holds `go`
+    const kind = el.dataset.sig as SignalKind;
+    let activePointer: number | null = null;
+    const release = (e: PointerEvent) => {
+      if (e.pointerId !== activePointer) return;
+      activePointer = null;
+      if (kind === 'go') state.go = false;
+      el.classList.remove('down');
+      sendInput();
+    };
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (activePointer !== null || !signalsOn) return;
+      activePointer = e.pointerId;
+      el.setPointerCapture(e.pointerId);
+      state.sig = { kind, seq: (state.sig.seq + 1) % PRESS_MOD };
+      if (kind === 'go') state.go = true;
+      el.classList.add('down');
+      try { navigator.vibrate?.(8); } catch { /* no vibration API (iOS) */ }
+      sendInput();
+    });
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointercancel', release);
+  }
 
   setInterval(sendInput, 1000 / INPUT_HZ);
   setInterval(() => {

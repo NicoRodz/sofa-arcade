@@ -77,10 +77,11 @@ export class RopeDrawer {
           ch.y[i] = (ty + 1) * TILE - 6; ch.py[i] = ch.y[i]!;
         }
         // draw: ink, then colour; stretched ropes go red and thin
-        const strain = Math.max(0, Math.min(1, (taut - 0.82) / 0.2));
-        const col = hexToInt(rgbHex(lerpColor(base, ROPE_RED, strain)));
-        const colDark = hexToInt(rgbHex(lerpColor(dark, '#8A1B12', strain)));
-        const w = 6.5 - strain * 1.5;
+        const el = !!link.elastic; // hanging from a bungee ring: an orange rubber cord that never goes red, thinner the more it stretches
+        const strain = el ? 0 : Math.max(0, Math.min(1, (taut - 0.82) / 0.2));
+        const col = hexToInt(rgbHex(el ? lerpColor(base, '#FF9A2E', 0.75) : lerpColor(base, ROPE_RED, strain)));
+        const colDark = hexToInt(rgbHex(el ? '#B45A0A' : lerpColor(dark, '#8A1B12', strain)));
+        const w = el ? 7 - Math.max(0, Math.min(1, (link.tension - 1) / 0.6)) * 2.6 : 6.5 - strain * 1.5;
         const pts = Array.from({ length: N }, (_, i) => new Phaser.Math.Vector2(ch!.x[i]!, ch!.y[i]!));
         g.lineStyle(w + 4, 0x2b1b17, 1); g.strokePoints(pts, false, false);
         g.lineStyle(w, col, 1); g.strokePoints(pts, false, false);

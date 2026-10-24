@@ -54,6 +54,7 @@ export interface PlayerCamp {
   goHold: number; // steps "go" has been held
   pick: -1 | 0 | 1; // pickaxe (dynamic 9): side of the ice wall it clings to (-1 left, 1 right), 0 = not climbing
   onIce: boolean; // standing on ice last step (the transition rings obst.ice)
+  geyserCool: number; // steps until a geyser may launch this player again (dynamic 12)
 }
 
 // --- dynamic entities (plan §9)
@@ -73,7 +74,7 @@ export interface Activator {
 }
 export interface Objective {
   letter: string;
-  kind: 'gate' | 'ladder' | 'mover' | 'balance';
+  kind: 'gate' | 'ladder' | 'mover' | 'balance' | 'sinker' | 'geyser';
   param: EntityParam;
   cells: Cell[];
   rect: PxRect; // base position of the object, px
@@ -86,7 +87,8 @@ export interface Objective {
   dx: number; // displacement of the last step (carries whoever stands on it)
   dy: number;
   load: number; // balance: players and boxes standing on it
-  moving: boolean; // balance: it moved in the last step (the start rings obst.balance)
+  moving: boolean; // balance: it moved in the last step (the start rings obst.balance); sinker: it was sinking in the last step (the start rings obst.sinker)
+  // geyser: `phase` is 0 calm, 1 warning, 2 erupting (campaignrules-style transitions ring obst.geyser)
 }
 export interface BoxE { id: number; heavy: boolean; x: number; y: number; vy: number; homeX: number; homeY: number; holders: number[]; dx: number; dy: number; grounded: boolean }
 export interface KeyE { x: number; y: number; homeX: number; homeY: number; heldBy: number; used: boolean }
@@ -110,6 +112,9 @@ export interface Entities {
   stars: StarE[];
   enemies: EnemyE[]; // campaign only
   pickaxes: PickE[]; // from the 'p' markers; inert outside a campaign world
+  lanterns: PickE[]; // from the 'l' markers (dynamic 10): same shape as a pickaxe, one player carries it; a level with one is DARK. Inert outside a campaign world
+  crystals: Cell[]; // the 'Y' cells of the level (dynamic 10): T.Crystal while dark, T.CrystalLit (solid) while the lantern lights them
+  bungeeFrom: number; // rings[bungeeFrom..] are the elastic ones ('u' markers, dynamic 11; plain rings outside a campaign world)
   doorCells: Set<number>; // original 'K' cells (index y * w + x): the only ones a key opens
   hazard: HazardE | null;
   lastStarTick: number;

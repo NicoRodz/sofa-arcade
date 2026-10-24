@@ -196,4 +196,52 @@ describe('phone layout', () => {
     expect(msgs.some((m) => m.t === 'input' && (m.presses?.[0] ?? 0) >= 1), 'button A still counts a press').toBe(true);
     expect(msgs.filter((m) => m.t === 'nav')).toEqual([]);
   }, 90_000);
+
+  it('the signal pad (campaign): 6 buttons in a campaign round, none in a quick-match round or before the round starts', async () => {
+    const count = async (name: string) => { await s.load(SCENARIOS.find((x) => x.name === name)!); await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!); return (await s.probe()).items.filter((i) => i.sel === '#signals .sg').length; };
+    expect(await count('play-campaign')).toBe(6);
+    for (const n of ['play', 'play-puesto', 'lobby', 'results', 'captain-play']) expect(await count(n), n).toBe(0);
+  }, 90_000);
+
+  it('hit-testing: each signal button takes the touch at its centre, in every viewport and inset', async () => {
+    await s.load(SCENARIOS.find((x) => x.name === 'play-campaign')!);
+    for (const v of VIEWPORTS) for (const ins of v.insets) {
+      await s.setViewport(v, ins);
+      const hit = await s.eval<Record<string, string | null>>(`(() => {
+        const out = {};
+        for (const b of document.querySelectorAll('#signals [data-sig]')) { const r = b.getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); out[b.dataset.sig] = e && e.closest('[data-sig]') ? e.closest('[data-sig]').dataset.sig : String(e && e.tagName); }
+        return out;
+      })()`);
+      expect(hit, `${v.name} ${insetsName(ins)}`).toEqual({ arrowL: 'arrowL', arrowU: 'arrowU', arrowR: 'arrowR', wait: 'wait', arrowD: 'arrowD', go: 'go' });
+    }
+  }, 60_000);
+
+  it('tapping the signal pad sends one new signal per tap (a counter from the baseline 0), holding "¡Ya!" holds `go`, and a quick-match phone sends neither', async () => {
+    await s.load(SCENARIOS.find((x) => x.name === 'play-campaign')!);
+    await s.setViewport(VIEWPORTS[3]!, VIEWPORTS[3]!.insets[1]!); // (the packets the pad sent since the round began are kept: the first ones carry the baseline)
+    const centre = (kind: string) => s.eval<[number, number]>(`(() => { const r = document.querySelector('#signals [data-sig=${kind}]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    for (const kind of ['arrowL', 'arrowU', 'arrowR', 'wait', 'arrowD', 'go']) { const [x, y] = await centre(kind); await s.tap(x, y); }
+    type In = { t: string; sig?: { kind: string; seq: number }; go?: boolean };
+    const inputs = (await s.eval<In[]>(`window.__sent`)).filter((m) => m.t === 'input');
+    const seen: string[] = [];
+    for (const m of inputs) { const k = `${m.sig!.kind}:${m.sig!.seq}`; if (seen[seen.length - 1] !== k) seen.push(k); }
+    expect(seen).toEqual(['go:0', 'arrowL:1', 'arrowU:2', 'arrowR:3', 'wait:4', 'arrowD:5', 'go:6']);
+    expect(inputs.every((m) => typeof m.go === 'boolean')).toBe(true);
+    // hold "¡Ya!": `go` is true while the thumb is down and false after it lifts
+    await s.eval(`window.__sent = []`);
+    const [gx, gy] = await centre('go');
+    await s.hold(gx, gy, 700);
+    const held = (await s.eval<In[]>(`window.__sent`)).filter((m) => m.t === 'input');
+    expect(held.some((m) => m.go === true)).toBe(true);
+    expect(held[held.length - 1]!.go).toBe(false);
+    expect(held.filter((m) => m.go === true).length).toBeGreaterThanOrEqual(3); // it was sent while held (10 Hz), not just on the press
+    // a quick-match round: the old packets, no `sig`, no `go`
+    await s.load(SCENARIOS.find((x) => x.name === 'play')!);
+    await s.eval(`window.__sent = []`);
+    const [ax, ay] = await s.eval<[number, number]>(`(() => { const r = document.querySelector('#btnA').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    await s.tap(ax, ay);
+    const quick = (await s.eval<In[]>(`window.__sent`)).filter((m) => m.t === 'input');
+    expect(quick.length).toBeGreaterThan(0);
+    expect(quick.some((m) => 'sig' in m || 'go' in m)).toBe(false);
+  }, 90_000);
 });

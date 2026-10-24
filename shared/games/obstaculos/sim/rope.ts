@@ -16,6 +16,8 @@ export interface RopeLink {
   taut: boolean;
   tension: number; // d / base before the correction of the last step
   strainCool: number;
+  elastic: boolean; // campaign dynamic 11: one end hangs from an elastic ring (set by the world every step, see sim/bungee.ts)
+  boing: number; // steps until another stretch event may ring
 }
 export interface Rope { id: number; members: number[]; links: RopeLink[] }
 
@@ -45,7 +47,7 @@ export function buildRopes(slots: readonly number[], max: number | undefined, pr
     for (let i = 0; i + 1 < members.length; i++) {
       const a = members[i]!, b = members[i + 1]!;
       const len = prev.length ? Math.max(baseLen, dist(a, b)) : baseLen;
-      links.push(old.get(keyOf(a, b)) ?? { a, b, base: baseLen, len, shrink: ((len - baseLen) * DT) / ROPE_RELINK_SEC, active: true, valve: 0, taut: false, tension: 0, strainCool: 0 });
+      links.push(old.get(keyOf(a, b)) ?? { a, b, base: baseLen, len, shrink: ((len - baseLen) * DT) / ROPE_RELINK_SEC, active: true, valve: 0, taut: false, tension: 0, strainCool: 0, elastic: false, boing: 0 });
     }
     ropes.push({ id: ropes.length, members, links });
   }
@@ -56,7 +58,14 @@ export interface RopeNode { body: Body; w: number; active: boolean } // w = inve
 export type RopeEvent =
   | { kind: 'taut'; rope: number; link: number; tension: number }
   | { kind: 'strain'; rope: number; link: number; tension: number }
-  | { kind: 'valve'; rope: number; link: number; behind: number }; // slot that must go to a bubble
+  | { kind: 'valve'; rope: number; link: number; behind: number } // slot that must go to a bubble
+  | { kind: 'bounce'; rope: number; link: number; stretch: number }; // an elastic link stretched past BOUNCE_AT x its length (campaign dynamic 11)
+
+// Campaign dynamic 11 (sim/bungee.ts): a link with `elastic` set is a spring between its rest length and `max` x it (a hard stop beyond). The valve (1.6 x for 1 s) still applies:
+// with max = 1.6 the spring's own speed keeps a body short of it (a 4-tile fall peaks at ~1.47 x); a designer who raises max above 1.6 must raise the valve too.
+export interface ElasticParams { max: number; stiffness: number; damping: number }
+export const BOUNCE_AT = 1.25; // stretch (d / len) that rings the bounce
+const BOUNCE_COOLDOWN = 40; // steps
 
 export const TAUT_AT = 0.98; // d / len from which a link counts as taut
 export const STRAIN_AT = 1.25; // pre-correction d / ROPE_LEN that rings ropeStrain
@@ -68,7 +77,8 @@ export const invMassOf = (st: 'ground' | 'air' | 'planted' | 'anchored'): number
 
 // One step of rope. Order (plan §4): 4 PBD iterations, each correction applied with collision and capped, then the velocity that
 // separates the ends is removed. `behind(a, b)` returns the slot of the pair that is farther from the goal (valve target).
-export function solveRopes(ropes: readonly Rope[], nodes: readonly (RopeNode | undefined)[], g: TileGrid, behind: (a: number, b: number) => number): RopeEvent[] {
+export function solveRopes(ropes: readonly Rope[], nodes: readonly (RopeNode | undefined)[], g: TileGrid, behind: (a: number, b: number) => number, el?: ElasticParams): RopeEvent[] {
+  const hardOf = (l: RopeLink): number => (el && l.elastic ? l.len * el.max : l.len); // where the link stops pulling the ends together
   const events: RopeEvent[] = [];
   for (const rope of ropes) {
     rope.links.forEach((l, li) => {
@@ -88,8 +98,24 @@ export function solveRopes(ropes: readonly Rope[], nodes: readonly (RopeNode | u
       if (t >= TAUT_AT && !l.taut) { l.taut = true; events.push({ kind: 'taut', rope: rope.id, link: li, tension: l.tension }); }
       else if (t < TAUT_AT - 0.08) l.taut = false;
       if (l.strainCool > 0) l.strainCool--;
-      if (l.tension >= STRAIN_AT && l.strainCool === 0) { l.strainCool = STRAIN_COOLDOWN; events.push({ kind: 'strain', rope: rope.id, link: li, tension: l.tension }); }
+      if (el && l.elastic) { // a spring, not a rope: no strain cue, a stretch cue instead
+        if (l.boing > 0) l.boing--;
+        if (d / l.len >= BOUNCE_AT && l.boing === 0) { l.boing = BOUNCE_COOLDOWN; events.push({ kind: 'bounce', rope: rope.id, link: li, stretch: d / l.len }); }
+      } else if (l.tension >= STRAIN_AT && l.strainCool === 0) { l.strainCool = STRAIN_COOLDOWN; events.push({ kind: 'strain', rope: rope.id, link: li, tension: l.tension }); }
     });
+  }
+  if (el) { // the spring: between the rest length and the hard stop, speed towards the other end grows with the stretch; part of the speed along the link bleeds off
+    for (const rope of ropes) for (const l of rope.links) {
+      if (!l.active || !l.elastic) continue;
+      const A = nodes[l.a]!, B = nodes[l.b]!, ws = A.w + B.w;
+      const dx = cx(B.body) - cx(A.body), dy = cy(B.body) - cy(A.body), d = Math.hypot(dx, dy);
+      if (ws === 0 || d <= l.len) continue;
+      const nx = dx / d, ny = dy / d, x = Math.min(d - l.len, l.len * (el.max - 1));
+      const vrel = (B.body.vx - A.body.vx) * nx + (B.body.vy - A.body.vy) * ny; // > 0: separating
+      const dv = el.stiffness * x * DT + vrel * el.damping * DT; // pull together, and brake the relative motion
+      A.body.vx += nx * dv * (A.w / ws); A.body.vy += ny * dv * (A.w / ws);
+      B.body.vx -= nx * dv * (B.w / ws); B.body.vy -= ny * dv * (B.w / ws);
+    }
   }
   for (let it = 0; it < ROPE_ITERATIONS; it++) {
     for (const rope of ropes) for (const l of rope.links) {
@@ -97,10 +123,11 @@ export function solveRopes(ropes: readonly Rope[], nodes: readonly (RopeNode | u
       const A = nodes[l.a]!, B = nodes[l.b]!;
       const dx = cx(B.body) - cx(A.body), dy = cy(B.body) - cy(A.body);
       const d = Math.hypot(dx, dy);
-      if (d <= l.len + 1e-6) continue;
+      const hard = hardOf(l);
+      if (d <= hard + 1e-6) continue;
       const ws = A.w + B.w;
       if (ws === 0) continue;
-      const c = Math.min(d - l.len, ROPE_MAX_CORRECTION);
+      const c = Math.min(d - hard, ROPE_MAX_CORRECTION);
       const nx = dx / d, ny = dy / d;
       pushBody(A.body, nx * c * (A.w / ws), ny * c * (A.w / ws), g);
       pushBody(B.body, -nx * c * (B.w / ws), -ny * c * (B.w / ws), g);
@@ -115,7 +142,7 @@ export function solveRopes(ropes: readonly Rope[], nodes: readonly (RopeNode | u
       if (d >= ROPE_VALVE_RATIO * l.base) { if (++l.valve >= ROPE_VALVE_SEC / DT) { l.valve = 0; events.push({ kind: 'valve', rope: rope.id, link: li, behind: behind(l.a, l.b) }); } }
       else l.valve = 0;
       const ws = A.w + B.w;
-      if (ws === 0 || d < l.len - 0.5 || d === 0) return; // slack link: nothing to remove
+      if (ws === 0 || d < hardOf(l) - 0.5 || d === 0) return; // slack link (an elastic one: short of its hard stop): nothing to remove
       const nx = dx / d, ny = dy / d;
       const vrel = (B.body.vx - A.body.vx) * nx + (B.body.vy - A.body.vy) * ny; // > 0: the ends separate
       if (vrel <= 0) return;

@@ -4,9 +4,10 @@ import { CAMPAIGN } from './catalog';
 import { PRACTICE } from './practice';
 
 // The real sim (S1's campaign layer: rope +20 %, shared hearts) with ObstBot, which knows walls, gaps, spikes, tower + hand. It does not throw, swing
-// or press plates, so 1-6 and the swing station (a 7-wide abyss that only the ring crosses) are NOT played here: the validator carries them.
+// or press plates, so 1-6 and the swing station (a 7-wide abyss that only the ring crosses) are NOT played here: the validator carries them. 1-5 (the 5-tile pit that only the throw
+// crosses) moved to realsim.test.ts with a scripted throw, as did the new levels of Mundos 2 and 3.
 describe('the real sim agrees with the validator on what the bot can play (2 bots, campaign world)', () => {
-  for (const id of ['1-1', '1-2', '1-3', '1-4', '1-5', '1-7']) {
+  for (const id of ['1-1', '1-2', '1-3', '1-4', '1-7']) {
     const l = CAMPAIGN.find((x) => x.id === id)!;
     it(`${id} ${l.name}: cleared`, { timeout: 60_000 }, () => {
       const s = playWithBots(l.def!, 2, l.mode === 'L' ? 'free' : 'chain', 90, { world: l.world });
