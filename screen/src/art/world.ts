@@ -43,6 +43,8 @@ export class World {
       this.fx.dustPoof(p.x, p.y);
       this.chefOf(e.player)?.bump();
     });
+    on('washDone', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y, 0x7fd0f2, 0.4, 1.3); this.fx.bubbles(p.x, p.y); this.chefOf(e.player)?.bump(); });
+    on('dirtyNew', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y, 0xd7263d, 0.3, 1.1); });
     on('potStart', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y + TILE * 0.2, 0xff8a1f, 0.5, 1.5); });
     on('orderWarning', (e) => this.hud.orderWarning(e.order));
     on('orderExpired', (e) => {
@@ -84,7 +86,8 @@ export class World {
           const cur = this.game.players.get(gp.id);
           if (!cur || cur.chopAt < 0) return;
           const p = this.stations.pos(cur.chopAt);
-          if (kind === 'stretch') this.fx.flourPuff(p.x, p.y);
+          if (g.stations[cur.chopAt]?.kind === 'sink') this.fx.bubbles(p.x, p.y);
+          else if (kind === 'stretch') this.fx.flourPuff(p.x, p.y);
           else this.fx.chop(p.x, p.y, { raw0: 0, raw1: 1, raw2: 2 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2'] ?? 1);
         };
         this.chefs.set(gp.id, chef);
@@ -92,7 +95,8 @@ export class World {
       chef.setName(info.name);
       let action: 'none' | 'chop' | 'stretch' = 'none';
       if (gp.cutting && gp.chopAt >= 0) {
-        action = g.stations[gp.chopAt]?.item === 'raw0' ? 'stretch' : 'chop';
+        const at = g.stations[gp.chopAt];
+        action = at?.kind === 'sink' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough
         chop.set(gp.chopAt, action);
       }
       const f = this.feet(gp);

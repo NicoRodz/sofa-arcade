@@ -74,3 +74,30 @@ describe('playthrough: one Margarita on every map with a cheese crate', () => {
     });
   }
 });
+
+/** The washing loop: a delivered plate comes back dirty, goes through the sink and can be used again. */
+export function washCycle(g: Game) {
+  const ret = first(g, 'dirty'), sink = first(g, 'sink');
+  run(g, 6100); // DIRTY_MS after the delivery
+  expect(ret.count).toBe(1);
+  use(g, ret);
+  expect(g.players.get(1)!.item).toBe('dirty');
+  use(g, sink);
+  face(g, sink);
+  run(g, 1600, hold);
+  expect(sink.clean).toBe(1);
+  use(g, sink);
+  expect(g.players.get(1)!.item).toBe('plate');
+}
+
+describe('playthrough: dish washing on every map with a sink', () => {
+  for (const m of FIXED_MAPS.filter((x) => x.rows.some((r) => r.includes('L')))) {
+    it(`map ${m.id} ${m.name}: deliver, wash the plate, serve a second pizza with it`, () => {
+      const g = createGame({ rows: m.rows, spawns: m.spawns, n: m.nMin });
+      addPlayer(g, 1, 0);
+      expect(g.finitePlates).toBe(true);
+      expect(playMarinara(g)).toBeGreaterThanOrEqual(g.params.reward);
+      washCycle(g);
+    });
+  }
+});

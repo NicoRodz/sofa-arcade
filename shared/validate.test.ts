@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED_MAPS, fixedMap, mapFeatures, parseMap } from './maps';
+import { FIXED_MAPS, fixedMap, mapFeatures, parseMap, recommendedMaps } from './maps';
 import { analyze, minPlayers, validate, validateMap } from './validate';
 
 const rowsOf = (id: string) => [...fixedMap(id)!.rows];
@@ -145,5 +145,69 @@ describe('validateMap: cheese maps 9, 11 and 15', () => {
     // sabotage: remove both pass-throughs as well and the rooms cannot trade at all
     const sealed = edit(closed, [[5, 4, '#'], [9, 4, '#']]);
     expect(validateMap({ ...m, rows: sealed }).errors.join()).toMatch(/no route/);
+  });
+});
+
+describe('validateMap: washing maps 10, 12, 13 and 14', () => {
+  it('map 10 El lavadero: valid; the wash room joins the kitchen through the door (6,5) and two serving windows', () => {
+    const m = fixedMap('10')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(mapFeatures(m.rows)).toEqual({ cheese: true, sink: true });
+    // sabotage: remove the sink (both L) and the washing loop has no place to wash
+    const noSink = edit([...m.rows], [[0, 7, 'C'], [1, 8, '#']]);
+    expect(validateMap({ ...m, rows: noSink }).errors.join()).toMatch(/missing station L/);
+    // sabotage: close the door and seal the windows and the wash room is cut off from the ovens
+    const sealed = edit([...m.rows], [[6, 5, '#'], [2, 5, '#'], [4, 5, '#']]);
+    expect(validateMap({ ...m, rows: sealed }).errors.join()).toMatch(/no route|holds recipe stations but no spawn|spawn/);
+  });
+  it('map 12 Línea de montaje: valid with 8 explicit spawns; the corridor is what joins the bays', () => {
+    const m = fixedMap('12')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(m.spawns).toHaveLength(8);
+    // sabotage: take away the return (U) and the plates would never come back
+    expect(validateMap({ ...m, rows: edit([...m.rows], [[15, 6, '#']]) }).errors.join()).toMatch(/missing station U/);
+    // sabotage: only 7 spawn tiles for a map that promises 8
+    expect(validateMap({ ...m, rows: edit([...m.rows], [[13, 7, '.']]), spawns: undefined }).errors.join()).toMatch(/7 spawns for up to 8/);
+  });
+  it('map 13 Tres cuartos: valid, three rooms, needs three players; closing a pass-through counter column loses the route', () => {
+    const m = fixedMap('13')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(analyze(parseMap([...m.rows])).count).toBe(3);
+    expect(minPlayers(parseMap([...m.rows]))).toBe(3);
+    // sabotage: wall column 11 (the counters between the plating room and the serving room)
+    const cut = edit([...m.rows], [[11, 1, '#'], [11, 3, '#'], [11, 5, '#'], [11, 7, '#']]);
+    expect(validateMap({ ...m, rows: cut }).errors.join()).toMatch(/no route O -> E/);
+    // sabotage: the ovens in the wall stop being passable: turn the three ovens into walls
+    const noOven = edit([...m.rows], [[6, 2, '#'], [6, 4, '#'], [6, 6, '#']]);
+    expect(validateMap({ ...m, rows: noOven }).errors.join()).toMatch(/missing station O/);
+  });
+  it('map 14 Dos brigadas: valid; the lanes meet only at the ends; sealing both ends splits the brigades', () => {
+    const m = fixedMap('14')!;
+    expect(validateMap(m)).toEqual({ ok: true, errors: [] });
+    expect(analyze(parseMap([...m.rows])).count).toBe(1);
+    const split = edit([...m.rows], [[1, 4, '#'], [2, 4, '#'], [13, 4, '#'], [14, 4, '#']]);
+    expect(analyze(parseMap(split)).count).toBe(2);
+    expect(validateMap({ ...m, rows: split }).errors.join()).toMatch(/minDuro is 1 but the recipe needs 2|no floor/); // two brigades now need two players
+  });
+});
+
+describe('the fifteen maps', () => {
+  it('are all there, valid, with unique ids 1..15 and names', () => {
+    expect(FIXED_MAPS.map((m) => m.id)).toEqual(Array.from({ length: 15 }, (_v, i) => String(i + 1)));
+    expect(new Set(FIXED_MAPS.map((m) => m.name)).size).toBe(15);
+    for (const m of FIXED_MAPS) expect(validateMap(m), m.name).toEqual({ ok: true, errors: [] });
+  });
+  it('every team size from 2 to 8 has at least 4 maps to play, and 7-8 players have maps 11-14', () => {
+    for (let n = 2; n <= 8; n++) expect(recommendedMaps(n).length, `N=${n}`).toBeGreaterThanOrEqual(4);
+    expect(recommendedMaps(8).map((m) => m.id).sort()).toEqual(['11', '12', '13', '14']);
+    expect(recommendedMaps(7).map((m) => m.id).sort()).toEqual(['11', '12', '13', '14']);
+  });
+  it('match the design availability table by N', () => {
+    const ids = (n: number) => recommendedMaps(n).map((m) => Number(m.id)).sort((a, b) => a - b);
+    expect(ids(2)).toEqual([1, 2, 3, 4, 6, 7, 8]);
+    expect(ids(3)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 15]);
+    expect(ids(4)).toEqual([1, 2, 3, 4, 5, 8, 9, 10, 11, 15]);
+    expect(ids(5)).toEqual([2, 5, 9, 10, 11, 12, 13, 15]);
+    expect(ids(6)).toEqual([5, 10, 11, 12, 13, 14, 15]);
   });
 });

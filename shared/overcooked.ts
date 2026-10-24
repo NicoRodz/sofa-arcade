@@ -1,7 +1,7 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
 import { Emitter, type GameEvents } from './events';
 import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type StationKind } from './maps';
-import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficulty, type Params } from './difficulty';
+import { DEFAULT_DIFFICULTY, DIRTY_MS, WASH_MS, params as difficultyParams, teamSize, type Difficulty, type Params } from './difficulty';
 import { mulberry32, type Rng } from './rng';
 
 export const TICK_HZ = 60;
@@ -13,7 +13,7 @@ export const REACH_SLACK = 0.3; // max gap between probe and a station tile
 
 export type { StationKind } from './maps';
 // raw2/cut2 = cheese (Margarita). dishQ = a pizza that baked with cheese.
-export type Item = 'raw0' | 'raw1' | 'raw2' | 'cut0' | 'cut1' | 'cut2' | 'plate' | 'dish' | 'dishQ';
+export type Item = 'raw0' | 'raw1' | 'raw2' | 'cut0' | 'cut1' | 'cut2' | 'plate' | 'dish' | 'dishQ' | 'dirty';
 export type Recipe = 'marinara' | 'margarita';
 export const RAW_OF: readonly Item[] = ['raw0', 'raw1', 'raw2'];
 
@@ -26,6 +26,8 @@ export interface Station {
   progress: number; // 0..1: board cutting or pot cooking
   inputs: number[]; // pot: ingredient types inside (0 dough, 1 tomato, 2 cheese)
   done: boolean; // pot: dish ready
+  count: number; // plates: clean stock (finite-plate maps); dirty (return): dirty plates waiting; sink: dirty plates to wash
+  clean: number; // sink: washed plates ready to take
 }
 export interface Player {
   id: number;
@@ -67,6 +69,8 @@ export interface Game {
   orders: Order[];
   rng: Rng; // seeded: which orders are Margarita
   hasCheese: boolean;
+  finitePlates: boolean; // the map has a dirty-plate return and a sink: plates run out unless somebody washes
+  dirtyDue: number[]; // game times at which a delivered plate comes back dirty
   nextOrderAt: number;
   orderSeq: number;
 }
@@ -88,9 +92,13 @@ export function createGame(opts: { difficulty?: Difficulty; n?: number; rows?: r
   const p = difficultyParams(difficulty, opts.n ?? 2);
   const stations: Station[] = [];
   grid.forEach((row, ty) => row.forEach((t, tx) => {
-    if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false });
+    if (t.kind === 'station') stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false, count: 0, clean: 0 });
   }));
-  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], rng: mulberry32(opts.seed ?? 1), hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), nextOrderAt: p.orderEveryMs, orderSeq: 0 };
+  const g: Game = { bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(opts.n ?? 2), params: p, time: 0, over: false, score: 0, delivered: 0, players: new Map(), stations, orders: [], rng: mulberry32(opts.seed ?? 1), hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), dirtyDue: [], nextOrderAt: p.orderEveryMs, orderSeq: 0 };
+  if (g.finitePlates) {
+    const piles = stations.filter((s) => s.kind === 'plates');
+    for (let i = 0; i < p.plates && piles.length; i++) piles[i % piles.length]!.count++;
+  }
   for (let i = 0; i < p.initialOrders; i++) spawnOrder(g);
   return g;
 }
@@ -134,7 +142,17 @@ function interact(g: Game, p: Player, s: Station) {
       if (!p.item) p.item = RAW_OF[s.crate] ?? 'raw1';
       break;
     case 'plates':
-      if (!p.item) p.item = 'plate';
+      if (!g.finitePlates) { if (!p.item) p.item = 'plate'; }
+      else if (!p.item) { if (s.count > 0) { s.count--; p.item = 'plate'; } }
+      else if (p.item === 'plate') { s.count++; p.item = null; } // put a clean plate back on the pile
+      break;
+    case 'dirty': // return window: take one dirty plate
+      if (!p.item && s.count > 0) { s.count--; p.item = 'dirty'; }
+      break;
+    case 'sink':
+      if (p.item === 'dirty') { s.count++; p.item = null; }
+      else if (p.item === 'plate') { s.clean++; p.item = null; } // the sink also works as a pile of clean plates
+      else if (!p.item && s.clean > 0) { s.clean--; p.item = 'plate'; }
       break;
     case 'counter':
       if (p.item && !s.item) { s.item = p.item; p.item = null; }
@@ -159,6 +177,8 @@ function interact(g: Game, p: Player, s: Station) {
       break;
     }
     case 'trash':
+      if (g.finitePlates && (p.item === 'plate' || p.item === 'dirty')) break; // plates are not rubbish: they would be lost for good
+      if (g.finitePlates && (p.item === 'dish' || p.item === 'dishQ')) g.dirtyDue.push(g.time + DIRTY_MS); // the plate under the pizza comes back
       p.item = null;
       break;
     case 'window':
@@ -173,6 +193,7 @@ function interact(g: Game, p: Player, s: Station) {
         const tip = Math.round((tipMax * Math.max(0, o.expiresAt - g.time)) / orderTtlMs);
         g.score += reward + tip;
         g.delivered++;
+        if (g.finitePlates) g.dirtyDue.push(g.time + DIRTY_MS);
         p.item = null;
         g.bus.emit('delivered', { player: p.id, points: reward + tip, tip });
       }
@@ -210,12 +231,21 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     const c = controls.get(p.id) ?? { x: 0, y: 0, a: 0, b: false };
     const target = targetStation(g, p);
     const wasCutting = p.cutting;
-    p.cutting = !!(c.b && target?.kind === 'board' && target.item && cutOf(target.item));
+    // B held: cut / grate / stretch on a board with a raw item, or scrub plates at a sink with dirty ones
+    p.cutting = !!(c.b && target && ((target.kind === 'board' && target.item && cutOf(target.item)) || (target.kind === 'sink' && target.count > 0)));
     const at = target ? g.stations.indexOf(target) : -1;
-    if (wasCutting && (!p.cutting || at !== p.chopAt)) g.bus.emit('chopStop', { player: p.id, station: p.chopAt });
-    if (p.cutting && (!wasCutting || at !== p.chopAt)) g.bus.emit('chopStart', { player: p.id, station: at });
+    const wasAt = p.chopAt;
+    if (wasCutting && (!p.cutting || at !== wasAt)) g.bus.emit(g.stations[wasAt]?.kind === 'sink' ? 'washStop' : 'chopStop', { player: p.id, station: wasAt });
+    if (p.cutting && (!wasCutting || at !== wasAt)) g.bus.emit(target!.kind === 'sink' ? 'washStart' : 'chopStart', { player: p.id, station: at });
     p.chopAt = p.cutting ? at : -1;
-    if (p.cutting && target) {
+    if (p.cutting && target?.kind === 'sink') {
+      target.progress += dtMs / WASH_MS;
+      if (target.progress >= 1) {
+        target.count--; target.clean++;
+        target.progress = 0;
+        g.bus.emit('washDone', { player: p.id, station: at });
+      }
+    } else if (p.cutting && target) {
       target.progress += dtMs / g.params.cutMs;
       if (target.progress >= 1) {
         target.item = cutOf(target.item!);
@@ -240,6 +270,12 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
       s.progress += dtMs / g.params.cookMs;
       if (s.progress >= 1) { s.progress = 1; s.done = true; g.bus.emit('potReady', { station: g.stations.indexOf(s) }); }
     }
+  }
+
+  while (g.dirtyDue.length && g.dirtyDue[0]! <= g.time) { // delivered plates come back dirty
+    g.dirtyDue.shift();
+    const back = g.stations.filter((s) => s.kind === 'dirty').sort((a, b) => a.count - b.count)[0];
+    if (back) { back.count++; g.bus.emit('dirtyNew', { station: g.stations.indexOf(back) }); }
   }
 
   if (g.time >= g.nextOrderAt) {

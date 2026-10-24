@@ -97,6 +97,7 @@ export class Fx {
   private stars: Phaser.GameObjects.Particles.ParticleEmitter;
   private smoke: Phaser.GameObjects.Particles.ParticleEmitter;
   private dust: Phaser.GameObjects.Particles.ParticleEmitter;
+  private foam: Phaser.GameObjects.Particles.ParticleEmitter;
   private sparks: Phaser.GameObjects.Particles.ParticleEmitter;
 
   constructor(private scene: Phaser.Scene) {
@@ -107,6 +108,7 @@ export class Fx {
     this.chopTomato = mk('fx_dot', bit(hexNum(C.tomato)));
     this.chopCheese = mk('fx_dot', bit(hexNum(C.cheese)));
     this.dust = mk('fx_dot', { ...bit(0xffffff), speed: { min: 40, max: 90 }, lifespan: 300 });
+    this.foam = mk('fx_ring', { lifespan: 650, speed: { min: 30, max: 90 }, angle: { min: -160, max: -20 }, gravityY: -40, scale: { start: 0.12, end: 0.28 }, alpha: { start: 0.9, end: 0 }, tint: [0xffffff, 0x9be0ff] });
     this.flour = mk('fx_flour', { lifespan: 500, speed: { min: 60, max: 100 }, angle: { min: 0, max: 360 }, scale: { start: 1.3, end: 0.4 }, alpha: { start: 0.8, end: 0 } });
     this.confetti = mk('fx_confetti', {
       lifespan: 1300, speed: { min: 180, max: 420 }, angle: { min: -140, max: -40 }, gravityY: 620, rotate: { start: 0, end: 540 },
@@ -119,6 +121,7 @@ export class Fx {
 
   chop(x: number, y: number, type: number) { (type === 0 ? this.chopDough : type === 1 ? this.chopTomato : this.chopCheese).explode(6, x, y); }
   dustPoof(x: number, y: number) { this.dust.explode(5, x, y); }
+  bubbles(x: number, y: number) { this.foam.explode(5, x, y); }
   flourPuff(x: number, y: number) { this.flour.explode(10, x, y); }
   confettiBurst(x: number, y: number) { this.confetti.explode(30, x, y); }
   starBurst(x: number, y: number, n = 5) { this.stars.explode(n, x, y); }

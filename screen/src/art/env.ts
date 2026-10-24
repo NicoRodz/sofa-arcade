@@ -262,6 +262,35 @@ function trashCan(c: Ctx, x0: number, y0: number) {
   c.restore();
 }
 
+// Return window for dirty plates: a grey bus tub with a slot and a "SUCIOS" tag.
+function dirtyReturn(c: Ctx, x0: number, y0: number) {
+  c.save(); c.translate(x0, y0);
+  c.fillStyle = 'rgba(60,30,10,0.25)'; c.beginPath(); c.ellipse(60, 104, 46, 8, 0, 0, Math.PI * 2); c.fill();
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(16, 44); c.lineTo(104, 44); c.lineTo(96, 104); c.lineTo(24, 104); c.closePath(); }, vgrad(c, 44, 104, '#8FA0AB', '#667782'), { lw: 3 });
+  drawOutlined(c, () => rr(c, 10, 34, 100, 16, 7), vgrad(c, 34, 50, '#C9D4DA', '#93A3AD'), { lw: 3 });
+  c.fillStyle = '#2B1B17'; c.beginPath(); c.roundRect(24, 38, 72, 7, 3.5); c.fill(); // slot
+  drawOutlined(c, () => rr(c, 34, 66, 52, 22, 6), C.cream, { lw: 2.5 });
+  c.fillStyle = C.tomato2; c.font = '800 15px ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('SUCIOS', 60, 78);
+  c.strokeStyle = 'rgba(255,255,255,0.4)'; c.lineWidth = 3; c.beginPath(); c.moveTo(22, 56); c.lineTo(28, 96); c.stroke();
+  c.restore();
+}
+
+// Sink: steel counter with a recessed basin of soapy water and a tap.
+function sinkStation(c: Ctx, x0: number, y0: number) {
+  c.save(); c.translate(x0, y0);
+  c.fillStyle = 'rgba(60,30,10,0.25)'; c.beginPath(); c.ellipse(60, 108, 52, 8, 0, 0, Math.PI * 2); c.fill();
+  drawOutlined(c, () => rr(c, 6, 34, 108, 74, 12), vgrad(c, 34, 108, '#DCE5EA', '#9BAAB4'), { lw: 3 });
+  drawOutlined(c, () => rr(c, 16, 52, 88, 46, 10), vgrad(c, 52, 98, '#7FD0F2', '#2F86C2'), { lw: 3 });
+  c.fillStyle = 'rgba(255,255,255,0.5)';
+  for (const [x, y, r] of [[34, 66, 5], [44, 76, 3.2], [72, 70, 6], [84, 82, 3.6], [60, 86, 2.6]] as const) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 1.5; c.stroke(); }
+  // tap
+  drawOutlined(c, () => { c.beginPath(); c.moveTo(60, 44); c.lineTo(60, 20); c.quadraticCurveTo(60, 8, 74, 8); c.lineTo(86, 8); c.lineTo(86, 20); c.lineTo(74, 20); c.lineTo(72, 44); c.closePath(); }, vgrad(c, 8, 44, '#F2F6F8', C.steel2), { lw: 2.5 });
+  drawOutlined(c, circle(c, 40, 40, 6), C.tomato, { lw: 2 });
+  drawOutlined(c, circle(c, 80, 40, 6), '#2F7DE1', { lw: 2 });
+  c.restore();
+}
+
 function windowStation(c: Ctx, x0: number, y0: number) {
   c.save(); c.translate(x0, y0);
   // cream service pad on the counter
@@ -307,6 +336,8 @@ export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, see
     else if (t.station === 'plates') plates(c, x0, y0);
     else if (t.station === 'window') windowStation(c, x0, y0);
     else if (t.station === 'trash') trashCan(c, x0, y0);
+    else if (t.station === 'dirty') dirtyReturn(c, x0, y0);
+    else if (t.station === 'sink') sinkStation(c, x0, y0);
   }));
   c.restore();
   // soft vignette

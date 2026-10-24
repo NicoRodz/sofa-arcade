@@ -6,10 +6,10 @@ import { blob, circle, contactShadow, drawOutlined, ellipse, makeTex, mix, rng, 
 
 export type FoodKind =
   | 'dough_raw' | 'dough_str' | 'tomato' | 'tomato_cut' | 'cheese_raw' | 'cheese_cut' | 'pizza_raw' | 'pizza_raw_q' | 'pizza_done' | 'pizza_done_q'
-  | 'pizza_burnt' | 'tray' | 'dish' | 'dish_q' | 'box';
+  | 'pizza_burnt' | 'tray' | 'tray_dirty' | 'dish' | 'dish_q' | 'box';
 
 export const ITEM_KIND: Record<Item, FoodKind> = {
-  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dish: 'dish', dishQ: 'dish_q',
+  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dirty: 'tray_dirty', dish: 'dish', dishQ: 'dish_q',
 };
 export const RAW_KIND: readonly FoodKind[] = ['dough_raw', 'tomato', 'cheese_raw'];
 export const CUT_KIND: readonly FoodKind[] = ['dough_str', 'tomato_cut', 'cheese_cut'];
@@ -133,6 +133,17 @@ function tray(c: Ctx) {
   shine(c, 0, 0, 28, 0.6, 3);
 }
 
+// A used plate: the same tray with sauce smears, crumbs and a crust left behind.
+function trayDirty(c: Ctx) {
+  tray(c);
+  const rnd = rng(53);
+  c.fillStyle = 'rgba(181,40,31,0.75)';
+  for (let i = 0; i < 4; i++) { c.beginPath(); c.ellipse((rnd() - 0.5) * 30, (rnd() - 0.5) * 26, 5 + rnd() * 5, 3 + rnd() * 3, rnd() * 3, 0, Math.PI * 2); c.fill(); }
+  c.fillStyle = 'rgba(255,200,60,0.85)';
+  for (let i = 0; i < 6; i++) { c.beginPath(); c.arc((rnd() - 0.5) * 36, (rnd() - 0.5) * 32, 1.4 + rnd() * 1.4, 0, Math.PI * 2); c.fill(); }
+  drawOutlined(c, () => blob(c, 9, -8, 6, 6, 1.2, 9), C.crust, { lw: 1.8 });
+}
+
 function dish(c: Ctx, cheese = false) {
   tray(c);
   c.save(); c.scale(0.82, 0.82); pizzaDone(c, false, cheese); c.restore();
@@ -178,7 +189,7 @@ const DRAW: Record<FoodKind, (c: Ctx) => void> = {
   dough_raw: doughRaw, dough_str: (c) => doughStr(c), tomato, tomato_cut: tomatoCut, cheese_raw: cheeseRaw, cheese_cut: cheeseCut,
   pizza_raw: (c) => pizzaRaw(c), pizza_raw_q: (c) => pizzaRaw(c, true, true),
   pizza_done: (c) => pizzaDone(c), pizza_done_q: (c) => pizzaDone(c, true, true), pizza_burnt: (c) => pizzaBurnt(c),
-  tray, dish: (c) => dish(c), dish_q: (c) => dish(c, true), box,
+  tray, tray_dirty: trayDirty, dish: (c) => dish(c), dish_q: (c) => dish(c, true), box,
 };
 export const drawFood = (c: Ctx, k: FoodKind) => DRAW[k](c);
 

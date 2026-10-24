@@ -6,9 +6,9 @@ export const MAP_W = 16;
 export const MAP_H = 9;
 
 // # wall, . floor, S spawn (floor), ~ water, C counter, 1/2 ingredient crates, K board (stretch/cut),
-// O oven, P tray pile, E delivery counter, X trash, 3 cheese crate (Margarita).
-// Design legend (15-mapas.md) -> this code: T->C, M->1, R->2, Q->3, C (table)->K, H->O; U and L arrive with washing.
-export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash';
+// O oven, P tray pile, E delivery counter, X trash, 3 cheese crate (Margarita), U dirty-plate return, L sink.
+// Design legend (15-mapas.md) -> this code: T->C, M->1, R->2, Q->3, C (table)->K, H->O; the rest is the same.
+export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash' | 'dirty' | 'sink';
 export type Tile =
   | { kind: 'wall' }
   | { kind: 'floor'; spawn: boolean }
@@ -26,8 +26,10 @@ const STATIONS: Record<string, { station: StationKind; crate: number }> = {
   E: { station: 'window', crate: 0 },
   C: { station: 'counter', crate: 0 },
   X: { station: 'trash', crate: 0 },
+  U: { station: 'dirty', crate: 0 },
+  L: { station: 'sink', crate: 0 },
 };
-export const STATION_CHAR: Record<string, string> = { crate0: '1', crate1: '2', crate2: '3', board: 'K', pot: 'O', plates: 'P', window: 'E', counter: 'C', trash: 'X' };
+export const STATION_CHAR: Record<string, string> = { crate0: '1', crate1: '2', crate2: '3', board: 'K', pot: 'O', plates: 'P', window: 'E', counter: 'C', trash: 'X', dirty: 'U', sink: 'L' };
 
 export function parseTile(c: string): Tile | null {
   if (c === '#') return { kind: 'wall' };
@@ -260,6 +262,20 @@ export const FIXED_MAPS: readonly MapDef[] = [
     ],
   },
   {
+    id: '10', name: 'El lavadero', nMin: 4, nMax: 6, minDuro: 1, stars: 2,
+    rows: [
+      '#1#2#3##KK##OO##',
+      '#..............#',
+      '#.S...S...S....P',
+      'X....CCCCC.....E',
+      '#...........S..E',
+      '##C#C#.#.......#',
+      'U..S...#..S....X',
+      'L......#.......#',
+      '#L######CCKCC#P#',
+    ],
+  },
+  {
     // Design spawns (2,2) (12,6) (12,2) (2,6) (5,2) (9,6) (9,2) (5,6) put puesto 2 (Corte) far from the tomato and cheese crates:
     // reordered so spawn i is next to the stations of puesto i (Masa, Corte, Horno, Reparto, Apoyo, Queso, Horno 2, Reparto 2).
     id: '11', name: 'Tres carriles', nMin: 4, nMax: 8, minDuro: 1, stars: 2,
@@ -274,6 +290,55 @@ export const FIXED_MAPS: readonly MapDef[] = [
       '#.S..S...S..S..P',
       '#..............#',
       '##123##KK##CC#X#',
+    ],
+  },
+  {
+    // Design order ends (7,6) (3,6) (11,6); (11,6) moves to 7th so "Horno 2" sits under the ovens of bay C.
+    id: '12', name: 'Línea de montaje', nMin: 5, nMax: 8, minDuro: 1, stars: 2,
+    spawns: [[2, 2], [6, 2], [10, 2], [14, 2], [13, 7], [7, 6], [11, 6], [3, 6]],
+    rows: [
+      '#11K#23K#OOO#PP#',
+      '#...#...#...#..#',
+      '#.S.C.S.C.S.C.SE',
+      'X...K...K...C..E',
+      '#...C...C...C..#',
+      '#...#...#...#..#',
+      '#..S...S...S...U',
+      '#............S.L',
+      '#CCC#CCC#CCC#L##',
+    ],
+  },
+  {
+    id: '13', name: 'Tres cuartos', nMin: 5, nMax: 8, minDuro: 3, stars: 3,
+    spawns: [[2, 2], [8, 2], [13, 2], [4, 2], [4, 4], [8, 4], [2, 4], [13, 5]],
+    puestos: [['masa'], ['horno', 'platos'], ['entrega', 'lavado'], ['corte'], ['queso'], ['horno', 'platos'], ['prep'], ['lavado']], // room A prepares (4), B bakes and plates (2), C serves and washes (2)
+    rows: [
+      '#123KK##CC##EUE#',
+      '#.....C....C...#',
+      '#.S.S.O.S..#.S.L',
+      'X.....C....C...#',
+      '#.S.S.O.S..#...L',
+      '#.....C....C.S.#',
+      '#.....O....#...#',
+      '#.....C....C...X',
+      '#KKCCC##PPX#####',
+    ],
+  },
+  {
+    // Design spawns put the second Horno/Reparto of the 8-chef table far from their stations; they alternate top/bottom lane here
+    // in the order of the puesto table: Masa, Corte, Horno, Reparto, Lavado, Queso, Horno 2, Reparto 2.
+    id: '14', name: 'Dos brigadas', nMin: 6, nMax: 8, minDuro: 1, stars: 3,
+    spawns: [[2, 2], [5, 6], [10, 2], [13, 6], [2, 6], [5, 2], [10, 6], [13, 2]],
+    rows: [
+      '##123#KK#CC##X##',
+      '#..............#',
+      '#.S..S....S..S.P',
+      'U..............E',
+      'L..COCOCCOCOC..E',
+      'L..............E',
+      '#.S..S....S..S.P',
+      '#..............#',
+      '##123#KK#CC##X##',
     ],
   },
   {

@@ -9,6 +9,10 @@ export interface GameEvents {
   chopStart: { player: number; station: number }; // station = index in game.stations
   chopStop: { player: number; station: number };
   chopDone: { player: number; station: number };
+  washStart: { player: number; station: number };
+  washStop: { player: number; station: number };
+  washDone: { player: number; station: number }; // one plate got clean
+  dirtyNew: { station: number }; // a dirty plate showed up at the return
   potStart: { station: number };
   potReady: { station: number };
   orderNew: { order: number; recipe: Recipe };

@@ -14,6 +14,13 @@ describe('event -> sound mapping', () => {
     expect(ACTIONS.chopStop({ player: 1, station: 4 })).toEqual([{ kind: 'loopStop', key: 'chop:4' }]);
     expect(ACTIONS.chopDone({ player: 1, station: 4 })).toEqual([{ kind: 'loopStop', key: 'chop:4' }, { kind: 'play', id: 'ding' }]);
   });
+  it('washing: a splash loop per sink while B is held, a plink per clean plate, a clink when a dirty one arrives', () => {
+    expect(ACTIONS.washStart({ player: 1, station: 7 })).toEqual([{ kind: 'loopStart', key: 'wash:7', loop: 'wash' }]);
+    expect(ACTIONS.washStop({ player: 1, station: 7 })).toEqual([{ kind: 'loopStop', key: 'wash:7' }]);
+    expect(ids(ACTIONS.washDone({ player: 1, station: 7 }))).toEqual(['plink']);
+    expect(ids(ACTIONS.dirtyNew({ station: 5 }))).toEqual(['clink']);
+    expect(LOOPS.wash.every(0.5)).toBe(0.2);
+  });
   it('oven: start plays the swell and loops crackle until ready', () => {
     expect(ACTIONS.potStart({ station: 2 })).toEqual([{ kind: 'play', id: 'ovenOn' }, { kind: 'loopStart', key: 'oven:2', loop: 'oven' }]);
     expect(ACTIONS.potReady({ station: 2 })).toEqual([{ kind: 'loopStop', key: 'oven:2' }, { kind: 'play', id: 'ready' }]);

@@ -44,6 +44,9 @@ export const SFX = {
       ...[1047, 1319, 1568].map((f, i) => osc('square', f, 0.06, 0.15, { at: i * 0.06 })),
     ],
   },
+  splash: { bus: 'sfx', pitchVar: 0.1, voices: [noise(0.09, 0.35, { type: 'bandpass', f0: 1400, f1: 700, q: 0.8 }), osc('sine', 500, 0.05, 0.12, { f1: 900 })] },
+  plink: { bus: 'sfx', pitchVar: 0.05, voices: [osc('sine', 1760, 0.18, 0.28), osc('sine', 1760 * 2.4, 0.12, 0.1)] },
+  clink: { bus: 'sfx', pitchVar: 0.08, voices: [osc('triangle', 1250, 0.05, 0.3, { f1: 900 }), osc('triangle', 1650, 0.05, 0.2, { at: 0.05, f1: 1100 })] },
   orderNew: { bus: 'sfx', voices: [osc('triangle', 660, 0.08, 0.35), osc('triangle', 880, 0.08, 0.35, { at: 0.08 })] },
   count: { bus: 'ui', voices: [osc('square', 440, 0.15, 0.3)] },
   go: { bus: 'ui', voices: [osc('square', 880, 0.4, 0.3)] },
@@ -59,6 +62,7 @@ export const sfxDuration = (id: SfxId): number => Math.max(...SFX[id].voices.map
 export interface LoopDef { sfx: SfxId; every: (rand: number) => number; max: number }
 export const LOOPS = {
   chop: { sfx: 'cut', every: (_r: number) => 0.25, max: Infinity },
+  wash: { sfx: 'splash', every: (_r: number) => 0.2, max: Infinity },
   oven: { sfx: 'crackle', every: (r: number) => 0.06 + r * 0.13, max: 3 }, // ~8 clicks/s, at most 3 pots audible
 } as const satisfies Record<string, LoopDef>;
 export type LoopId = keyof typeof LOOPS;
@@ -72,6 +76,7 @@ export type Action =
 
 const play = (id: SfxId): Action => ({ kind: 'play', id });
 const chopKey = (p: { station: number }) => `chop:${p.station}`;
+const washKey = (p: { station: number }) => `wash:${p.station}`;
 const ovenKey = (p: { station: number }) => `oven:${p.station}`;
 
 // One entry per game event; the mapped type makes a missing event a compile error.
@@ -82,6 +87,10 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   chopStart: (p) => [{ kind: 'loopStart', key: chopKey(p), loop: 'chop' }],
   chopStop: (p) => [{ kind: 'loopStop', key: chopKey(p) }],
   chopDone: (p) => [{ kind: 'loopStop', key: chopKey(p) }, play('ding')],
+  washStart: (p) => [{ kind: 'loopStart', key: washKey(p), loop: 'wash' }],
+  washStop: (p) => [{ kind: 'loopStop', key: washKey(p) }],
+  washDone: () => [play('plink')], // the scrubbing loop keeps going for the next plate while B is held
+  dirtyNew: () => [play('clink')],
   potStart: (p) => [play('ovenOn'), { kind: 'loopStart', key: ovenKey(p), loop: 'oven' }],
   potReady: (p) => [{ kind: 'loopStop', key: ovenKey(p) }, play('ready')],
   orderNew: () => [play('orderNew')],
