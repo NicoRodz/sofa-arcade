@@ -97,6 +97,16 @@
   #hints { position: absolute; left: 26px; right: 26px; bottom: 10px; }
   #hints .hint.notice { color: var(--tomato2); }
   #hints .hint { margin: 0; min-height: 30px; }
+  /* the sabotage level: one line under Dificultad / Modalidad (versus only): label, three pills, what the level does */
+  #sabbox { display: flex; align-items: center; gap: 14px; margin-top: 10px; width: 906px; }
+  #sabbox.off { display: none; }
+  #sabbox h3 { margin: 0; flex: none; }
+  #sabs { flex-wrap: nowrap; flex: none; }
+  #sabs .pill { height: 44px; padding: 0 16px; font-size: 22px; }
+  #sabinfo { margin: 0; min-height: 0; flex: 1; min-width: 0; font-size: 19px; line-height: 1.15; }
+  #sabinfo.notice { color: var(--tomato2); }
+  #sabinfo b { color: var(--ink); }
+  #sabinfo kbd { font-size: 14px; min-width: 0; line-height: 20px; padding: 0 5px; }
   #seedrow { margin-top: 8px; font: 600 22px var(--font); color: var(--muted); }
   #seedrow b { color: var(--ink); }
   #again-seed { height: 40px; font-size: 20px; padding: 0 16px; margin-left: 10px; }
@@ -336,6 +346,7 @@
           <div id="obstmodewrap" class="off"><h3>Modo</h3><div id="obstmodes" class="seg"></div></div>
           <div id="modebox" class="off"><h3>Modalidad</h3><div id="modes" class="seg"></div></div>
         </div>
+        <div id="sabbox" class="off"><h3>Sabotaje</h3><div id="sabs" class="seg"></div><div id="sabinfo" class="hint"></div></div>
         <div id="pizzaops">
           <h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
           <div id="maps"></div>

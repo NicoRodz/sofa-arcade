@@ -471,10 +471,10 @@ function hazardsTick(g: Game) {
   }
 }
 
-// A: pick up what lies on the floor near the chef (rubbish or a dropped item), when its hands are empty and no station is in front of it.
-// The nearest one within reach, and in front of it unless it is under its feet; a dropped item before rubbish on the same tile (ids break ties).
-function pickFloor(g: Game, p: Player): boolean {
-  if (p.item || !g.floor.length) return false;
+// What A would pick up off the floor: the nearest item within reach, and in front of the chef unless it is under its feet; a dropped item
+// before rubbish on the same tile (ids break ties). Null with full hands.
+export function floorItemNear(g: Game, p: Player): FloorItem | null {
+  if (p.item || !g.floor.length) return null;
   const len = Math.hypot(p.fx, p.fy) || 1;
   let best: FloorItem | null = null, bestKey = Infinity;
   for (const f of g.floor) {
@@ -484,6 +484,11 @@ function pickFloor(g: Game, p: Player): boolean {
     const key = d * 1000 + (f.kind === 'dropped' ? 0 : 1) * 10 + f.id * 1e-6;
     if (key < bestKey) { best = f; bestKey = key; }
   }
+  return best;
+}
+// A: pick up what lies on the floor near the chef (rubbish or a dropped item), when its hands are empty and no station is in front of it.
+function pickFloor(g: Game, p: Player): boolean {
+  const best = floorItemNear(g, p);
   if (!best) return false;
   removeFloorItem(g, best.id);
   p.item = best.item;

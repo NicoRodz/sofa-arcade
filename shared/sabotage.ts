@@ -215,6 +215,19 @@ function land(g: Game, f: Flight) {
   g.bus.emit('sabotage:land', { team: f.by, target: f.target, tile: to, double: !!extra, extra });
 }
 
+// --- The phone's labels ---------------------------------------------------------------------------------------------------------------------------
+/** What A and B do for this chef right now, as button labels (null: the game's own). The phone has two buttons and keeps two: only their names change. */
+export function sabotageHint(g: Game, p: Player, target: Station | null, nearFloor: boolean): { a: string | null; b: string | null } {
+  if (!g.sab || p.ghost) return { a: null, b: null };
+  if (isAiming(g, p)) return { a: null, b: '¡Lanzar!' };
+  if (p.item === 'trashBag') return { a: target?.kind === 'catapult' ? 'Cargar' : target?.kind === 'trash' ? 'Botar bolsa' : null, b: null };
+  if (!p.item) {
+    if (target?.kind === 'trash' && g.sab.teams[p.team]!.bags > 0) return { a: 'Tomar bolsa', b: null };
+    if (!target && nearFloor) return { a: 'Recoger', b: null };
+  }
+  return { a: null, b: null };
+}
+
 // --- One tick (after the chefs moved) ---------------------------------------------------------------------------------------------------------
 export function sabotageTick(g: Game) {
   const sab = g.sab!;

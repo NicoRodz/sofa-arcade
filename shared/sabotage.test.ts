@@ -6,7 +6,9 @@ import { FIXED_MAPS, DIRS, isFloor, parseMap } from './maps';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Item, type Player, type Station } from './overcooked';
 import { addFloorItem, pilesIn } from './floor';
 import { RULES, SLIP, AIM_MAX_MS, LAND_AFTER_MS, RETICLE_STEP_MS, DESECHOS_DRIP_MS, type SabotageMode } from './sabotage-config';
-import { adjustLanding, catapultState, kitchenTiles, landingTiles, reticleAt, sweepOrder } from './sabotage';
+import { adjustLanding, catapultState, kitchenTiles, landingTiles, reticleAt, sabotageHint, sweepOrder } from './sabotage';
+import { floorItemNear, targetStation } from './overcooked';
+import { LABEL_MAX } from './games';
 import { versusMap } from './versusMaps';
 import type { Difficulty } from './difficulty';
 
@@ -454,5 +456,31 @@ describe('determinism and the guarantee that off is off', () => {
     const nothing = (mode: SabotageMode) => { const { g } = mk({ mode, seed: 9 }); run(g, 100_000); return q(g); };
     expect(nothing('soft')).toBe(nothing('off'));
     expect(nothing('chaos')).toBe(nothing('off'));
+  });
+});
+
+describe('the labels of the two buttons (no third button)', () => {
+  const hint = (g: Game, id: number) => { const p = g.players.get(id)!; return sabotageHint(g, p, targetStation(g, p), !!floorItemNear(g, p)); };
+  it('A and B are only renamed: Tomar bolsa at the bin with a bag waiting, Cargar at the catapult with the bag, ¡Lanzar! while aiming, Recoger next to rubbish', () => {
+    const { g } = mk();
+    expect(hint(g, 1)).toEqual({ a: null, b: null });
+    face(g, 1, station(g, 'trash', 0));
+    expect(hint(g, 1)).toEqual({ a: null, b: null }); // nothing waiting
+    g.sab!.teams[0]!.bags = 1;
+    expect(hint(g, 1)).toEqual({ a: 'Tomar bolsa', b: null });
+    g.players.get(1)!.item = 'trashBag';
+    expect(hint(g, 1)).toEqual({ a: 'Botar bolsa', b: null });
+    face(g, 1, station(g, 'catapult', 0));
+    expect(hint(g, 1)).toEqual({ a: 'Cargar', b: null });
+    pressA(g, 1);
+    expect(hint(g, 1)).toEqual({ a: null, b: '¡Lanzar!' });
+    const q = g.players.get(2)!; Object.assign(q, { x: 4.5, y: 2.5, fx: 1, fy: 0 });
+    addFloorItem(g, { tx: 5, ty: 2, item: 'trash', kind: 'trash', team: 0 });
+    expect(hint(g, 2)).toEqual({ a: 'Recoger', b: null });
+    for (const h of [{ a: 'Tomar bolsa' }, { a: 'Botar bolsa' }, { a: 'Cargar' }, { b: '¡Lanzar!' }, { a: 'Recoger' }]) for (const v of Object.values(h)) expect(v.length).toBeLessThanOrEqual(LABEL_MAX);
+  });
+  it('with the sabotage off there is nothing to rename', () => {
+    const { g } = mk({ mode: 'off' });
+    expect(sabotageHint(g, g.players.get(1)!, null, true)).toEqual({ a: null, b: null });
   });
 });

@@ -187,6 +187,28 @@ describe('buzz', () => {
   });
 });
 
+describe('hint (the label of A and B, sabotage)', () => {
+  it('only the screen can relabel a button, and only the phone it names gets it', async () => {
+    const screen = new Client('?role=screen&room=ht1');
+    const a = new Client('?room=ht1');
+    const b = new Client('?room=ht1');
+    await Promise.all([screen.open(), a.open(), b.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    b.send({ t: 'join', name: 'Beto', token: 'b' });
+    const idA = (await a.next('joined')).player.id, idB = (await b.next('joined')).player.id;
+    await a.next('phase'); await b.next('phase');
+    a.send({ t: 'hint', playerId: idB, a: 'Hack', b: null }); // a phone cannot relabel another one
+    screen.send({ t: 'hint', playerId: idA, a: 'Cargar', b: '¡Lanzar!' });
+    expect(await a.next('hint')).toEqual({ t: 'hint', a: 'Cargar', b: '¡Lanzar!' });
+    screen.send({ t: 'hint', playerId: 999, a: 'x', b: null }); // unknown player: dropped
+    screen.send({ t: 'hint', playerId: idB, a: null, b: null });
+    expect(await b.next('hint')).toEqual({ t: 'hint', a: null, b: null });
+    expect(a.msgs.filter((m) => m.t === 'hint')).toEqual([]);
+    expect(b.msgs.filter((m) => m.t === 'hint')).toEqual([]);
+    [screen.ws, a.ws, b.ws].forEach((w) => w.close());
+  });
+});
+
 describe('lobby config', () => {
   it('screen config reaches players and late joiners; players cannot set it', async () => {
     const screen = new Client('?role=screen&room=c1');

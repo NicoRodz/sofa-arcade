@@ -1,5 +1,5 @@
 import { DEFAULT_DIFFICULTY, isDifficulty, type Difficulty } from './difficulty';
-import { DEFAULT_GAME, DEFAULT_MODE, GAMES, gameInfo, isGameId, isModeId, resolveModes, type GameId, type GameInfo, type ModeId } from './games';
+import { DEFAULT_GAME, DEFAULT_MODE, GAMES, LABEL_MAX, gameInfo, isGameId, isModeId, resolveModes, type GameId, type GameInfo, type ModeId } from './games';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
 import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
 import { MAX_TEAMS, teamOf, type TeamInfo } from './teams';
@@ -53,7 +53,7 @@ export interface PhaseInfo { phase: Phase; scores?: Score[]; puestos?: PuestoMsg
 
 // R7: a short vibration on one phone (Android); iOS has no vibration API, so the phone flashes its colour instead.
 // The screen decides when (it owns the game events); the phone only plays the pattern, in ms on / off / on...
-export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15] } as const satisfies Record<string, readonly number[]>;
+export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15], slip: [120] } as const satisfies Record<string, readonly number[]>;
 export type BuzzKind = keyof typeof BUZZ_PATTERNS;
 export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.prototype.hasOwnProperty.call(BUZZ_PATTERNS, v);
 
@@ -88,6 +88,7 @@ export type ClientMsg =
   | { t: 'puesto'; puestos: PuestoId[] } // phone: "Cambiar" picked another puesto
   | { t: 'setTeam'; teamId: number } // phone: "Cambiar de equipo" (the screen decides: it is the host and owns the lobby)
   | { t: 'buzz'; playerId: number; kind: BuzzKind } // screen only: vibrate that phone
+  | { t: 'hint'; playerId: number; a: string | null; b: string | null } // screen only: what A and B do for that chef right now (null: the game's own label); sabotage uses it, no third button
   | { t: 'nav'; key: NavKey }; // phone: a D-pad button (only the Captain's is forwarded; the relay stamps who sent it)
 
 export type ServerMsg =
@@ -106,6 +107,7 @@ export type ServerMsg =
   | { t: 'setTeam'; playerId: number; teamId: number } // to the screens: this phone asks to change team
   | { t: 'you'; teamId: number; color: string; icon: string; sideLabel?: string } // to one phone: its team (when it has one)
   | { t: 'buzz'; kind: BuzzKind }
+  | { t: 'hint'; a: string | null; b: string | null } // the label of A and B right now (null: back to the game's label)
   | { t: 'captain'; playerId: number | null } // to everyone: who holds the crown now (null: nobody is connected)
   | { t: 'nav'; from: number; key: NavKey }; // to the screens: the Captain's phone pressed this. `from` is set by the relay from the socket, never taken from the payload
 
@@ -224,6 +226,11 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       return intIn(m.teamId, 0, MAX_TEAMS - 1) ? { t: 'setTeam', teamId: m.teamId } : null;
     case 'buzz':
       return num(m.playerId) && isBuzzKind(m.kind) ? { t: 'buzz', playerId: m.playerId, kind: m.kind } : null;
+    case 'hint': {
+      const label = (v: unknown): string | null | undefined => (v === null || v === undefined ? null : typeof v === 'string' && v.trim() && v.length <= LABEL_MAX ? v : undefined);
+      const a = label(m.a), b = label(m.b);
+      return num(m.playerId) && a !== undefined && b !== undefined ? { t: 'hint', playerId: m.playerId, a, b } : null;
+    }
     case 'nav':
       return isNavKey(m.key) ? { t: 'nav', key: m.key } : null; // anything else in the payload (a fake `from`) is dropped here
     case 'config':

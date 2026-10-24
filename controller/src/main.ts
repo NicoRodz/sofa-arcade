@@ -5,6 +5,7 @@ import { VERSUS_AUTO, VERSUS_RANDOM, versusMap } from '@party/shared/versusMaps'
 import { gameName, type GameControls, type HowTo } from '@party/shared/games';
 import { esc, howToHtml, iconSvg } from '@party/shared/render';
 import { PUESTOS, type PuestoId } from '@party/shared/puestos';
+import { SABOTAGE_LABEL, sabotageOf } from '@party/shared/sabotage-config';
 import { parseObstOptions, setupLabel } from '@party/shared/obstaculos/lobby';
 import { seenAfterPhase, shouldShowHowTo } from './howto';
 import { createZoomGuard, isDoubleTap } from './zoom';
@@ -77,6 +78,7 @@ let name = store.get('pg.name') ?? '';
 
 // Labels and icons come from the game registry via the config message: nothing here knows a specific game.
 // The circle (the touch area) carries the icon only; the label goes in a plate underneath, outside the touch area.
+// The screen may rename A and B for a moment (sabotage: "Tomar bolsa", "Cargar", "¡Lanzar!"): `hint` overrides the registry label, null brings it back.
 function setControl(circle: HTMLElement, plate: HTMLElement, c: GameControls['stick']) {
   circle.innerHTML = iconSvg(c.icon);
   plate.innerHTML = `<div class="pl"><span class="lbl">${esc(c.label)}</span>${c.hold ? '<span class="hold">mantén apretado</span>' : ''}</div>`;
@@ -94,12 +96,17 @@ function fitLabels() {
   }
 }
 window.addEventListener('resize', fitLabels);
-function applyControls(c: GameControls) {
+let controls: GameControls | null = null;
+let hint: { a: string | null; b: string | null } = { a: null, b: null };
+function applyControls(c: GameControls | null = controls) {
+  if (!c) return;
+  controls = c;
   setControl($('stickhint'), $('stickLbl'), c.stick);
-  setControl($('btnA'), $('lblA'), c.btn1);
-  setControl($('btnB'), $('lblB'), c.btn2);
+  setControl($('btnA'), $('lblA'), hint.a ? { ...c.btn1, label: hint.a } : c.btn1);
+  setControl($('btnB'), $('lblB'), hint.b ? { ...c.btn2, label: hint.b, hold: false } : c.btn2);
   fitLabels();
 }
+const setHint = (a: string | null, b: string | null) => { if (hint.a === a && hint.b === b) return; hint = { a, b }; applyControls(); };
 
 // "Cómo se juega": one-view summary, closed with a tap. Opens on join and when the lobby picks a game not shown yet.
 let seenGame: string | null = null;
@@ -120,8 +127,14 @@ $('howtoopen').addEventListener('pointerup', () => setHowTo(true));
 
 // R7: vibrate where the browser can (Android), flash the phone's colour where it cannot (iOS Safari has no vibration API).
 let flashTimer: ReturnType<typeof setTimeout> | undefined;
+let slipTimer: ReturnType<typeof setTimeout> | undefined;
 function buzz(kind: BuzzKind) {
   if (phase !== 'playing') return;
+  if (kind === 'slip') { // sabotage: the chef slipped on rubbish
+    $('slip').classList.add('on');
+    clearTimeout(slipTimer);
+    slipTimer = setTimeout(() => $('slip').classList.remove('on'), 900);
+  }
   const pattern = BUZZ_PATTERNS[kind];
   try { if (typeof navigator.vibrate === 'function' && navigator.vibrate([...pattern])) return; } catch { /* blocked: fall back to the flash */ }
   document.body.classList.add('flash');
@@ -216,6 +229,7 @@ $('pswap').addEventListener('pointerup', (e) => {
 const VERDICT_TEXT: Record<Outcome, string> = { won: '¡Ganaron!', lost: 'Perdieron', draw: '¡Empate!', none: 'Sin ganador' };
 function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg, result?: PhoneResult) {
   phase = p;
+  if (p !== 'playing') setHint(null, null); // the labels the round gave go with it
   seenGame = seenAfterPhase(seenGame, p);
   if (p === 'menu') setHowTo(false);
   else maybeShowHowTo(); // the screen just entered a game: show its summary
@@ -258,7 +272,7 @@ function connect() {
       const mapName = m.map === 'auto' || m.map === VERSUS_AUTO ? 'Mapa al azar' : m.map === 'random' || m.map === VERSUS_RANDOM ? `Mapa aleatorio ${m.seed}` : (fixedMap(m.map) ?? versusMap(m.map))?.name ?? '';
       $('setup').textContent = m.game === 'obstaculos'
         ? setupLabel(parseObstOptions(m.modeOptions), m.difficulty, m.seed, DIFFICULTY_LABEL)
-        : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}`;
+        : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}${m.modeId === 'versus' ? ` · Sabotaje ${SABOTAGE_LABEL[sabotageOf(m.modeOptions)]}` : ''}`;
     } else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {
@@ -268,6 +282,8 @@ function connect() {
       renderCaptain();
     } else if (m.t === 'buzz') {
       buzz(m.kind);
+    } else if (m.t === 'hint') {
+      setHint(m.a, m.b);
     } else if (m.t === 'pong') {
       lastPong = Date.now();
       const s = sent.get(m.id);
