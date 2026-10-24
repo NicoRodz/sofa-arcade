@@ -36,7 +36,7 @@
   .overlay { position: fixed; inset: 0; display: none; flex-direction: column; gap: clamp(4px, 1.6vmin, 10px); align-items: center; justify-content: center; text-align: center; font-size: clamp(16px, 5.6vmin, 22px); padding: max(12px, var(--st)) max(16px, var(--sr)) max(12px, var(--sb)) max(16px, var(--sl)); overflow-wrap: anywhere; }
   body[data-view=lobby] #wait, body[data-view=results] #results, body[data-view=menu] #choosing { display: flex; }
   #rotate { z-index: 10; }
-  @media (orientation: portrait) { body[data-view] #rotate { display: flex; } }
+  @media (orientation: portrait) { body[data-view=playing] #rotate { display: flex; } } /* only the round needs the wide pad: portrait.css lays out the other screens upright */
   .big { font-size: clamp(36px, 14vmin, 56px); font-weight: 800; line-height: 1.1; }
 
   /* ---- stick: the whole left half is the touch zone; the dashed ring is only a hint of where the thumb goes */
@@ -169,6 +169,7 @@
   body[data-team=on][data-view=lobby] #teamswap { display: inline-block; }
   #hud { position: absolute; top: max(6px, calc(var(--st) + 6px)); left: var(--gutter); max-width: calc(73% - var(--bsz) - var(--gutter) - 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; line-height: 1.2; color: var(--c); opacity: .9; pointer-events: none; }
 </style>
+<link rel="stylesheet" href="/portrait.css" />
 </head>
 <body>
 <form id="join" autocomplete="off">

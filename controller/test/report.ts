@@ -1,16 +1,17 @@
-// Prints the layout violations grouped by state (same checks as layout.test.ts). usage: npx tsx controller/test/report.ts [scenarioFilter]
+// Prints the layout violations grouped by state (same checks as layout.test.ts). usage: npx tsx controller/test/report.ts [scenarioFilter] [landscape|portrait|both]
 import { violations } from './checks';
-import { SCENARIOS, VIEWPORTS, insetsName, openSession } from './harness';
+import { ORIENTATIONS, SCENARIOS, insetsName, openSession } from './harness';
 
-const only = process.argv[2];
+const only = process.argv[2] && process.argv[2] !== '-' ? process.argv[2] : undefined;
+const orient = process.argv[3] ?? 'both';
 const dog = setTimeout(() => { console.error('watchdog fired'); process.exit(2); }, 280_000);
 const s = await openSession();
 try {
   const groups = new Map<string, Set<string>>();
   for (const sc of SCENARIOS) {
-    if (sc.portrait || (only && !sc.name.includes(only))) continue;
+    if ((only && !sc.name.includes(only))) continue;
     await s.load(sc);
-    for (const v of VIEWPORTS) for (const ins of v.insets) {
+    for (const v of Object.entries(ORIENTATIONS).filter(([o]) => orient === 'both' || o === orient).flatMap(([, x]) => x)) for (const ins of v.insets) {
       await s.setViewport(v, ins);
       for (const msg of violations(await s.probe())) {
         const k = `${sc.name} | ${msg.replace(/\[[^\]]*\]/g, '[]').replace(/-?\d+(\.\d+)?px/g, 'Npx').replace(/\d+x\d+ \(/, 'WxH (')}`;

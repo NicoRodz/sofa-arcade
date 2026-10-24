@@ -31,7 +31,18 @@ export const VIEWPORTS: Viewport[] = [
   { name: '915x412', w: 915, h: 412, insets: [NONE, CUTOUT] },
   { name: '932x430', w: 932, h: 430, insets: [NONE, ISLAND] },
 ];
-export const PORTRAIT: Viewport = { name: '390x844', w: 390, h: 844, insets: [{ top: 47, right: 0, bottom: 34, left: 0 }] };
+// Portrait CSS viewports: iPhone SE 1 / SE 2-3 + 8 (no insets), iPhone 12-14 (notch), Pixel 7 (status bar 24, gesture bar), iPhone 14 Pro Max (Dynamic Island).
+const P_NOTCH: Insets = { top: 47, right: 0, bottom: 34, left: 0 };
+export const PORTRAITS: Viewport[] = [
+  { name: '320x568', w: 320, h: 568, insets: [NONE] },
+  { name: '375x667', w: 375, h: 667, insets: [NONE] },
+  { name: '390x844', w: 390, h: 844, insets: [P_NOTCH] },
+  { name: '412x915', w: 412, h: 915, insets: [{ top: 24, right: 0, bottom: 16, left: 0 }] },
+  { name: '430x932', w: 430, h: 932, insets: [{ top: 59, right: 0, bottom: 34, left: 0 }] },
+];
+export const ORIENTATIONS = { landscape: VIEWPORTS, portrait: PORTRAITS } as const;
+// What you press (the probe also records whether something else sits on top of its centre).
+export const TOUCH_SELECTORS = ['#remote .rb', '#signals .sg', '#btnA', '#btnB', '#pswap', '#howtoopen', '#assist', '#howtoclose', '#zoomfix', '#join button', '#name', '#teamswap'];
 export const insetsName = (i: Insets) => (i.left || i.right || i.bottom || i.top ? `inset-${i.top}-${i.right}-${i.bottom}-${i.left}` : 'noinset');
 
 // ---- process hygiene: Chrome is killed by PID tree (SIGTERM, then SIGKILL)
@@ -95,8 +106,10 @@ export interface Item {
   ellipsis: boolean; // text-overflow: ellipsis on a clipping box: the cut is designed
   clipped: boolean; // content taller/wider than the box (not designed)
   round: boolean; // a circle (border-radius 50%)
+  fs: number; // computed font size
+  covered: boolean; // a touch target whose centre hits something that is not it (an overlay on top, off screen)
 }
-export interface Probe { vw: number; vh: number; inset: Insets; zoomed: boolean; pressed: boolean; items: Item[] }
+export interface Probe { vw: number; vh: number; inset: Insets; zoomed: boolean; pressed: boolean; view: string; items: Item[] }
 
 // Selectors that matter for layout. Anything not displayed in the current state is skipped by the probe.
 export const SELECTORS = [
@@ -107,10 +120,10 @@ export const SELECTORS = [
   '#hud', '#puesto', '#pico', '#pname', '#phint', '#pswap', '#signals', '#signals .sg',
   '#wait > *', '#howtoopen', '#assist', '#assist svg', '#assistlbl', '#choosing > *', '#results > *',
   '#howto h2', '#howtogame', '#howto .steps', '#howto .steps li', '#howto .steps .n', '#howto .steps .ic', '#howto .steps .tx', '#howto .note', '#howtoclose',
-  '#rotate > *', '#zoomfix', '#remote .rb', '#remote .crown',
+  '#rotate > *', '#zoomfix', '#remote .rb', '#remote .crown', '#teamswap',
 ];
 
-const PROBE = `((selectors) => {
+const PROBE = `((selectors, touch) => {
   const probe = document.createElement('div');
   probe.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
   document.body.appendChild(probe);
@@ -118,6 +131,7 @@ const PROBE = `((selectors) => {
   const inset = { top: parseFloat(ps.paddingTop), right: parseFloat(ps.paddingRight), bottom: parseFloat(ps.paddingBottom), left: parseFloat(ps.paddingLeft) };
   probe.remove();
   const box = (r) => ({ x: r.left, y: r.top, w: r.width, h: r.height });
+  const modal = document.body.dataset.howto === 'open'; // the how-to card is a modal: what it hides is meant to be hidden
   const items = [];
   for (const sel of selectors) {
     document.querySelectorAll(sel).forEach((el, i) => {
@@ -136,10 +150,12 @@ const PROBE = `((selectors) => {
       const clips = cs.overflow !== 'visible' || cs.overflowX !== 'visible';
       items.push({ sel, i, box: box(r), text, ellipsis: cs.textOverflow === 'ellipsis' && clips,
         clipped: clips && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1),
-        round: parseFloat(cs.borderTopLeftRadius) >= Math.min(r.width, r.height) / 2 - 0.5 && r.width > 0 && Math.abs(r.width - r.height) < 1 });
+        round: parseFloat(cs.borderTopLeftRadius) >= Math.min(r.width, r.height) / 2 - 0.5 && r.width > 0 && Math.abs(r.width - r.height) < 1,
+        fs: parseFloat(cs.fontSize),
+        covered: touch.includes(sel) && !(modal && !el.closest('#howto, #remote, #zoomfix')) && (() => { const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !(e && el.contains(e)); })() });
     });
   }
-  return { vw: innerWidth, vh: innerHeight, inset, zoomed: document.body.classList.contains('zoomed'), pressed: !!document.querySelector('.act.down'), items };
+  return { vw: innerWidth, vh: innerHeight, inset, zoomed: document.body.classList.contains('zoomed'), view: document.body.dataset.view || '', pressed: !!document.querySelector('.act.down'), items };
 })`;
 
 // ---- scenarios: relay messages that put the page in each state
@@ -163,7 +179,7 @@ const HOWTO_LONG = { steps: HOWTO.steps.map((s) => ({ ...s, text: (s.text + ' y 
 const POOL = ['masa', 'corte', 'queso', 'horno', 'reparto', 'lavado', 'apoyo', 'prep'];
 const puestos = (id: number, list: string[], cheese = true) => ({ cheese, sink: true, assign: [{ id, puestos: list, pool: POOL }] });
 
-export interface Scenario { name: string; portrait?: boolean; fresh?: boolean; msgs: object[]; after?: string; storedName?: boolean }
+export interface Scenario { name: string; fresh?: boolean; msgs: object[]; after?: string; storedName?: boolean }
 const player = (name: string, id = 1, color = '#E63B2E') => ({ t: 'joined', player: { id, name, color, slot: 0 }, room: 'main' });
 const config = (controls: ControlsMsg = PIZZAS, howTo = HOWTO) => ({ t: 'config', game: controls === OBST ? 'obstaculos' : 'pizzas', difficulty: 'normal', map: 'auto', seed: 1, controls, howTo });
 const captain = (id: number | null = 1) => ({ t: 'captain', playerId: id }); // the relay's crown message: id 1 is the phone every scenario plays
@@ -243,7 +259,6 @@ export const SCENARIOS: Scenario[] = [
   { name: 'captain-play', msgs: [player('Nico'), config(), phase('lobby'), phase('playing', { puestos: puestos(1, ['horno', 'reparto']) }), captain()] }, // the round: the pad alone, no D-pad
   { name: 'not-captain-menu', msgs: [player('Nico'), config(), phase('menu'), captain(2)] },
   { name: 'not-captain-howto', msgs: [player('Nico'), config(), phase('lobby'), captain(2)] },
-  { name: 'rotate', portrait: true, msgs: [player('Nico'), config(), phase('lobby'), phase('playing')] },
 ];
 
 // ---- the browser session
@@ -284,7 +299,7 @@ export async function openSession(): Promise<Session> {
     };
     return {
       async load(s) {
-        await setViewport(s.portrait ? PORTRAIT : vp, NONE);
+        await setViewport(vp, NONE);
         const store = s.fresh ? `localStorage.clear()` : `localStorage.setItem('pg.name', 'Nico'); localStorage.setItem('pg.room', 'main'); localStorage.setItem('pg.token', 'tok')`;
         await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=main` });
         await sleep(300);
@@ -297,7 +312,7 @@ export async function openSession(): Promise<Session> {
         await sleep(120);
       },
       setViewport,
-      async probe() { return cdp.eval<Probe>(`(${PROBE})(${JSON.stringify(SELECTORS)})`); },
+      async probe() { return cdp.eval<Probe>(`(${PROBE})(${JSON.stringify(SELECTORS)}, ${JSON.stringify(TOUCH_SELECTORS)})`); },
       async shot(file) { const r = await cdp.send('Page.captureScreenshot', { format: 'png' }); writeFileSync(file, Buffer.from(r.data, 'base64')); },
       async tap(x, y) {
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
