@@ -1,0 +1,42 @@
+/* Modo Ayudante: the switch (title + what it gives + who it is for), "¿Qué es?", the three-line card and the confirmation notice. See src/assist-help.ts. */
+#assistrow { display: none; align-items: stretch; justify-content: center; gap: 8px; }
+body[data-game=pizzas] #assistrow { display: flex; }
+#assistrow #assist { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: center; text-align: left; font-size: 16px; line-height: 1.1; padding: 4px 14px 4px 12px; min-height: 44px; }
+#assistrow #assist svg { grid-row: 1 / span 3; width: 24px; height: 24px; }
+#assistrow #assist #assistlbl { grid-column: 2; }
+#assistrow #assist small { grid-column: 2; display: block; font: 700 12px/1.15 var(--font); text-shadow: none; opacity: .85; }
+#assistrow #assist.on #assistnote { display: none; } /* it already chose: the "who is it for" line has done its job */
+#assisthelpopen { flex: none; min-width: 44px; min-height: 44px; font-size: 14px; padding: 4px 12px; background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); text-shadow: none; }
+@media (max-height: 440px) {
+  #lobbybtns { flex-wrap: wrap; } /* short landscape: the switch gets the whole row, "Cómo se juega" goes under it */
+  #assistrow { flex: 1 0 100%; }
+  #assistrow #assist { flex: 1; min-width: 0; padding: 3px 10px; }
+  #assistrow #assist svg { grid-row: 1 / span 2; }
+  #assistrow #assist #assistnote { display: none; }
+  #assisthelpopen { padding: 4px 8px; }
+  /* what the switch's second row costs is taken from the lines that say least: logo, game name and "who you are" (the HUD has the name) */
+  body[data-game=pizzas][data-view=lobby] #wait .brand, body[data-game=pizzas][data-view=lobby] #wait #game, body[data-game=pizzas][data-view=lobby] #who { display: none; }
+}
+@media (orientation: portrait) {
+  #assistrow { width: 100%; }
+  #assistrow #assist { flex: 1; width: auto; justify-content: initial; }
+  #lobbybtns #assisthelpopen { width: auto; }
+  body[data-remote=on] #assistrow #assist #assistnote { display: none; } /* the Captain's D-pad takes the height: the note lives in the card */
+  body[data-remote=on] #assistrow #assist svg { display: none; }
+  body[data-remote=on] #assistrow #assist { column-gap: 0; padding: 2px 10px; line-height: 1; }
+  body[data-remote=on] #assistrow #assist small { line-height: 1.05; }
+  body[data-remote=on] #lobbybtns { gap: 4px; }
+  @media (max-height: 600px) { #assistrow #assist #assistnote { display: none; } }
+}
+
+#assisthelp { z-index: 5; background: var(--cocoa); }
+body[data-assisthelp=open][data-view=lobby] #assisthelp { display: flex; }
+#assisthelp h2 { margin: 0; font: 800 clamp(20px, 7.4vmin, 28px)/1.1 var(--font); color: var(--c); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; }
+#assisthelp ul { list-style: none; margin: 0; padding: 0; width: min(100%, 520px); display: grid; gap: 6px; }
+#assisthelp li { padding: 6px 12px; border: 3px solid var(--ink); border-radius: 14px; background: var(--cream); color: var(--ink); text-align: left; font: 800 clamp(13px, 4vmin, 17px)/1.15 var(--font); }
+#assisthelpclose { font-size: 18px; padding: 6px 24px; min-height: 44px; }
+@media (max-height: 440px) { #assisthelp { gap: 4px; } #assisthelp li { padding: 4px 10px; } }
+
+#assisttoast { display: none; position: fixed; z-index: 40; left: 50%; top: max(10px, calc(var(--st) + 10px)); transform: translateX(-50%); width: max-content; max-width: min(calc(100% - 2 * var(--gutter)), 420px); padding: 8px 14px; border: 3px solid var(--ink); border-radius: 14px; background: var(--cheese); color: var(--ink); text-shadow: none; font: 800 14px/1.2 var(--font); text-align: center; pointer-events: none; box-shadow: 0 4px 0 rgba(43,27,23,.35); }
+body[data-assisttoast=on] #assisttoast { display: block; }
+body[data-assisthelp=open][data-view=lobby] #wait { display: none; } /* the card replaces the lobby while it is open (like the how-to card) */
