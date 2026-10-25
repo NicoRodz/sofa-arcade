@@ -60,10 +60,8 @@
   "tools/camp-e2e.ts": { "max": 430, "until": "2027-03-31" },
   "tools/camp-w23.ts": { "max": 386, "until": "2027-03-31" },
   "tools/capture-recipes.ts": { "max": 331, "until": "2027-03-31" },
-  "tools/capture.ts": { "max": 1661, "until": "2026-12-31" },
   "tools/latency-report/src/index.ts": { "max": 23, "until": "2027-03-31" },
   "tools/menu-remote-e2e.ts": { "max": 315, "until": "2027-03-31" },
-  "tools/obst-e2e.ts": { "max": 578, "until": "2027-03-31" },
   "tools/school-shots.ts": { "max": 438, "until": "2027-03-31" }
  },
  "folders": {
