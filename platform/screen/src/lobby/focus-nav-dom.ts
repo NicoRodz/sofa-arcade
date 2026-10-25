@@ -26,7 +26,7 @@ export const domEnv: FocusEnv = {
   root: (s) => document.getElementById(s.root),
   items(s) {
     const root = document.getElementById(s.root);
-    return !root ? [] : s.items === ':scope' ? [root] : [...root.querySelectorAll<HTMLElement>(s.items)];
+    return !root ? [] : s.items === ':scope' ? [root] : Array.from(root.querySelectorAll<HTMLElement>(s.items));
   },
 };
 
