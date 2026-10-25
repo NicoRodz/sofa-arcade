@@ -14,7 +14,7 @@ import type Phaser from 'phaser';
 import type { Difficulty } from '@pichi/core/difficulty';
 import { createRegistry, type Registry } from '@pichi/core/registry';
 import type { GameManifest } from '@pichi/core/contract';
-import type { GameId } from '@pichi/core/games';
+import { GAME_IDS, type GameId } from '@pichi/core/games';
 import type { LobbyConfig, MatchStart, PhaseInfo, Phase, ServerMsg } from '@pichi/core';
 import type { PlayerRec } from './player';
 
@@ -83,7 +83,13 @@ export interface ScreenGame {
 }
 
 let registry: Registry<ScreenGame> = createRegistry<ScreenGame>([]);
+/** The games this screen runs. Refuses to start when a published manifest (core GAMES) has no ScreenGame or a ScreenGame has no manifest there. */
 export const registerGames = (games: readonly ScreenGame[]) => {
-  registry = createRegistry(games);
+  const reg = createRegistry(games);
+  const missing = GAME_IDS.filter((id) => !reg.get(id));
+  const unknown = reg.ids().filter((id) => !(GAME_IDS as readonly string[]).includes(id));
+  if (missing.length || unknown.length)
+    throw new Error(`screen games do not match the manifests: missing ${missing.join(',') || '-'}, unknown ${unknown.join(',') || '-'}`);
+  registry = reg;
 };
 export const games = () => registry;
