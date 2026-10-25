@@ -132,3 +132,14 @@ export function magnetHug(g: Game, p: Player, speed: number, tickMs: number): nu
   }
   return ms;
 }
+
+/**
+ * Hazards only. A with the magnet on: a piece of rubbish (or a dropped item) the chef is facing at least as much as the station beside it wins over that station, so a
+ * janitor next to a counter still picks the banana-skin up (the old rule only looked at the floor when no station was in front, and the magnet finds one much more often).
+ */
+export function floorWins(p: Player, s: Station, f: { tx: number; ty: number } | null): boolean {
+  if (!f) return false;
+  const fl = Math.hypot(p.fx, p.fy) || 1, fx = p.fx / fl, fy = p.fy / fl;
+  const [nx, ny] = nearest(p, s), sd = Math.hypot(nx - p.x, ny - p.y) || 1, fd = Math.hypot(f.tx + 0.5 - p.x, f.ty + 0.5 - p.y) || 1;
+  return ((f.tx + 0.5 - p.x) * fx + (f.ty + 0.5 - p.y) * fy) / fd >= ((nx - p.x) * fx + (ny - p.y) * fy) / sd;
+}

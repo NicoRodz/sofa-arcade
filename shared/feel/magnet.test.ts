@@ -5,6 +5,7 @@ import { fixedMap } from '../maps';
 import { RADIUS, REACH, REACH_SLACK, SPEED, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player } from '../overcooked';
 import { ASSIST_REACH_MULT } from '../assist';
 import { chefHint } from '../hints';
+import { addFloorItem } from '../floor';
 import { BASE_REACH, CHEF_RADIUS, MAGNET_TUNING, magnetFor } from './magnet';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
@@ -194,6 +195,32 @@ describe('the phone\'s labels follow what the buttons will do', () => {
     expect(chefHint(on, on.players.get(1)!).b).toBe('Correr');
     tick(on, new Map([[1, { ...idle, x: 0.7, y: -0.7, b: true }]]));
     expect(on.players.get(1)!.dashMs).toBeGreaterThan(0); // and it is a dash, as the label said
+  });
+});
+
+describe('rubbish beside a counter (hazards)', () => {
+  const sab = (face: [number, number], magnet = true) => {
+    const g = round({ magnet, hazards: true });
+    away(g);
+    addFloorItem(g, { tx: 6, ty: 7, item: 'trash', kind: 'trash', team: 0 });
+    put(g.players.get(1)!, 5.5, 7.3, face[0], face[1]); // 0.7 above the counter row, rubbish one tile to the right
+    tick(g, new Map([[1, { ...idle, a: 1 }]]));
+    return g.players.get(1)!;
+  };
+  it('a janitor facing the rubbish picks it up although the magnet also finds the counter; facing the counter it uses the counter', () => {
+    expect(sab([0.9, 0.44]).item).toBe('trash');
+    expect(sab([0.1, 1]).item).toBeNull(); // the counter wins when it is what the chef faces
+    const g = round({ magnet: true, hazards: true });
+    away(g);
+    put(g.players.get(1)!, 5.5, 7.3, 0.9, 0.44);
+    expect(targetStation(g, g.players.get(1)!)?.kind).toBe('counter'); // the magnet does find a station here: the rubbish rule is what makes the pick-up work
+  });
+  it('and the phone says Recoger, not the counter\'s label', () => {
+    const g = round({ magnet: true, hazards: true });
+    away(g);
+    addFloorItem(g, { tx: 6, ty: 7, item: 'trash', kind: 'trash', team: 0 });
+    put(g.players.get(1)!, 5.5, 7.3, 0.9, 0.44);
+    expect(chefHint(g, g.players.get(1)!).a).toBe('Recoger');
   });
 });
 

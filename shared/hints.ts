@@ -5,7 +5,7 @@
 // It mirrors interact() / the B rules of overcooked.ts; hints.test.ts pins each case against what the sim really does.
 import type { IconId } from './icons';
 import type { ClientMsg, HintLabels } from './protocol';
-import { floorItemNear, targetStation, type Game, type Item, type Player, type Station } from './overcooked';
+import { aStation, floorItemNear, targetStation, type Game, type Item, type Player, type Station } from './overcooked';
 import { isAiming, sabotageHint } from './sabotage';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
@@ -86,8 +86,9 @@ export function chefHint(g: Game, p: Player): HintLabels {
   if (p.slip) return { a: 'Sin control', b: 'Sin control', aIcon: 'grab', bIcon: 'chop', aOff: true, bOff: true };
   const s = targetStation(g, p), near = !!floorItemNear(g, p);
   const aiming = isAiming(g, p);
-  const sab = sabotageHint(g, p, s, near); // the catapult and the bags: it names what only versus has
-  const a = aiming ? off('Apuntando', 'grab') : sab.a ? on(sab.a, sab.a === 'Cargar' || sab.a === 'Recoger' ? 'grab' : 'trash') : buttonA(g, p, s, near);
+  const sa = aStation(g, p); // A's station: the rubbish beside a counter can win it under the magnet
+  const sab = sabotageHint(g, p, sa, near); // the catapult and the bags: it names what only versus has
+  const a = aiming ? off('Apuntando', 'grab') : sab.a ? on(sab.a, sab.a === 'Cargar' || sab.a === 'Recoger' ? 'grab' : 'trash') : buttonA(g, p, sa, near);
   const b = aiming ? on('¡Lanzar!', 'star') : buttonB(p, s, g.magnet && !p.assist ? targetStation(g, p, true) : s);
   return { a: a.label, b: b.label, aIcon: a.icon, bIcon: b.icon, ...(a.off ? { aOff: true } : {}), ...(b.off ? { bOff: true } : {}) };
 }

@@ -11,7 +11,7 @@ import { addFloorItem, removeFloorItem } from './floor';
 import { burnTick, clearPot, createBurn, douse, fireAllowed, isDark, type Burn } from './burn';
 import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, createMid, midTick, type Mid, type MidFx } from './midround';
 import { ASSIST_FACING_BONUS, ASSIST_REACH_MULT, ASSIST_STICK_CANCEL } from './assist';
-import { applyMagnet, faceStation as magnetFace, magnetHug, magnetPull, magnetStation, type MagnetCfg, type MagnetLevel } from './feel/magnet';
+import { applyMagnet, faceStation as magnetFace, floorWins, magnetHug, magnetPull, magnetStation, type MagnetCfg, type MagnetLevel } from './feel/magnet';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -539,6 +539,12 @@ export function targetStation(g: Game, p: Player, plain = false): Station | null
   return best;
 }
 
+// What A acts on: the target station, unless (magnetism, hazards) the chef faces a piece of rubbish at least as much as that station (feel/magnet.ts floorWins).
+export function aStation(g: Game, p: Player): Station | null {
+  const s = targetStation(g, p);
+  return s && g.magnet && g.hazards && floorWins(p, s, floorItemNear(g, p)) ? null : s;
+}
+
 // Ayudante (assist.ts): the nearest usable station within ASSIST_REACH_MULT times the usual radius, whichever way the chef faces (a near tie goes to the one it
 // already faces), and never through a wall. The normal rule measures from a probe in front of the chef; this one from the chef's centre to the station's tile.
 const nearestPoint = (p: Player, s: Station): [number, number] => [Math.max(s.tx, Math.min(p.x, s.tx + 1)), Math.max(s.ty, Math.min(p.y, s.ty + 1))];
@@ -802,7 +808,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     // R6: an A press with no station in front waits bufferMs for one to show up
     if (c.a > 0) { p.buffA += c.a; p.buffAge = 0; }
     while (p.buffA > 0) {
-      const s = targetStation(g, p);
+      const s = aStation(g, p);
       if (!s) {
         if (g.hazards && pickFloor(g, p)) { p.buffA--; continue; } // nothing in front: whatever lies on the floor close by
         break;
