@@ -310,6 +310,11 @@ function renderCaptain() {
   const crown = isCaptain() ? '👑 ' : '';
   $('who').textContent = crown + myName;
   $('who2').textContent = crown + myName;
+  $('waitmsg').textContent = !joined
+    ? 'Esperando que inicie la partida'
+    : isCaptain()
+      ? 'Eres el Capitán'
+      : 'Elige el Capitán';
 }
 bindRemote(Array.from(document.querySelectorAll<HTMLElement>('#remote [data-nav]')), {
   isCaptain,
