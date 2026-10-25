@@ -3,7 +3,7 @@
 import './attention.css';
 import type { ServerMsg } from '@pichi/core';
 
-export type Cue = 'turn' | 'go' | 'done' | 'soft';
+export type Cue = 'turn' | 'go' | 'done' | 'soft' | 'alert';
 export interface CueMemory {
   phase: string | null;
   captain: number | null;
@@ -23,6 +23,7 @@ export function cueFor(m: ServerMsg, me: number | null, mem: CueMemory): Cue | n
     mem.captain = m.playerId;
     return m.playerId === me && was !== me ? 'turn' : null; // the menus are yours now
   }
+  if (m.t === 'buzz') return m.kind === 'alert' ? 'alert' : null; // something is coming in the kitchen: look at the screen
   if (m.t === 'assist') return m.playerId === me && m.on ? 'soft' : null;
   return null;
 }
@@ -42,8 +43,19 @@ const TONES: Record<Cue, [freq: number, ms: number][]> = {
     [587, 220],
   ],
   soft: [[740, 120]],
+  alert: [
+    [988, 90],
+    [740, 90],
+    [988, 90],
+  ],
 };
-const VIBRATION: Record<Cue, number[]> = { turn: [60, 40, 60, 40, 120], go: [50, 30, 90], done: [90, 50, 160], soft: [40] };
+const VIBRATION: Record<Cue, number[]> = {
+  turn: [60, 40, 60, 40, 120],
+  go: [50, 30, 90],
+  done: [90, 50, 160],
+  soft: [40],
+  alert: [80, 50, 80, 50, 160],
+};
 
 let ctx: AudioContext | undefined;
 let el: HTMLElement | undefined;

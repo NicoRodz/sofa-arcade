@@ -128,12 +128,16 @@ export const hintExtras = (h: HintLabels): Omit<HintLabels, 'a' | 'b'> => ({
 
 // R7: a short vibration on one phone (Android); iOS has no vibration API, so the phone flashes its colour instead.
 // The screen decides when (it owns the game events); the phone only plays the pattern, in ms on / off / on...
-export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15], slip: [120] } as const satisfies Record<
-  string,
-  readonly number[]
->;
+export const BUZZ_PATTERNS = {
+  pick: [20],
+  chop: [40],
+  bad: [30, 40, 30],
+  dash: [15],
+  slip: [120],
+  alert: [80, 50, 80, 50, 160],
+} as const satisfies Record<string, readonly number[]>;
 export type BuzzKind = keyof typeof BUZZ_PATTERNS;
-export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.prototype.hasOwnProperty.call(BUZZ_PATTERNS, v);
+export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.hasOwn(BUZZ_PATTERNS, v);
 
 // What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
 export const SEED_MAX = 2 ** 32;
@@ -345,7 +349,7 @@ export function parseClientMessage(raw: string): ClientMsg | null {
     case 'join':
       if (typeof m.name !== 'string' || typeof m.token !== 'string' || !m.token) return null;
       return { t: 'join', name: m.name.trim().slice(0, 16) || 'Player', token: m.token.slice(0, 64) };
-    case 'input':
+    case 'input': {
       if (!num(m.seq) || !num(m.x) || !num(m.y) || !num(m.btn) || !num(m.ts)) return null;
       if (!Array.isArray(m.presses) || !m.presses.every(num)) return null;
       const sig =
@@ -363,6 +367,7 @@ export function parseClientMessage(raw: string): ClientMsg | null {
         ...(sig ? { sig } : {}),
         ...(m.go === true ? { go: true } : {}),
       };
+    }
     case 'ping':
       if (!num(m.id) || !num(m.t0)) return null;
       return { t: 'ping', id: m.id, t0: m.t0, rtt: num(m.rtt) ? m.rtt : undefined, off: num(m.off) ? m.off : undefined };

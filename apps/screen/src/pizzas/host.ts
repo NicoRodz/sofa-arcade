@@ -113,6 +113,11 @@ export function initHost() {
   gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
   gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
   gameBus.on('dash', (e) => buzz(e.player, 'dash'));
+  // the phones that must look up: the whole kitchen for an event, a mutation or a fire; the defending team when rubbish is on its way
+  const alert = (mine: (team: number | undefined) => boolean) => pz.game.players.forEach((p) => mine(p.team) && buzz(p.id, 'alert'));
+  for (const k of ['event:announce', 'mutate:warn'] as const) gameBus.on(k, () => alert(() => true));
+  gameBus.on('fire:start', (e) => alert((t) => e.team === undefined || e.team === t));
+  gameBus.on('sabotage:launch', (e) => alert((t) => t !== e.team));
   gameBus.on('chef:slip', (e) => buzz(e.chef, 'slip')); // sabotage: the phone of the chef that slipped vibrates and says "¡Resbalaste!"
   $('pcont').addEventListener('click', () => {
     if (pz.game.paused) resolvePause(pz.game, 'continue');

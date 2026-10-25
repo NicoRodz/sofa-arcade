@@ -29,4 +29,8 @@ describe('cueFor', () => {
     expect(cueFor({ t: 'assist', playerId: 1, on: false } as never, 1, mem())).toBeNull();
     expect(cueFor({ t: 'assist', playerId: 2, on: true } as never, 1, mem())).toBeNull();
   });
+  it('an alert buzz (event, mutation, fire, rubbish on its way) rings; the ordinary buzzes do not', () => {
+    expect(cueFor({ t: 'buzz', playerId: 1, kind: 'alert' } as never, 1, mem())).toBe('alert');
+    expect(cueFor({ t: 'buzz', playerId: 1, kind: 'pick' } as never, 1, mem())).toBeNull();
+  });
 });
