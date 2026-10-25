@@ -191,7 +191,7 @@ export class Chef {
     const len = Math.hypot(s.fx, s.fy) || 1;
 
     // walk cycle
-    if (moving) this.phase += dt * (HOUR / 0.14) * Math.min(1.15, Math.max(0.5, speed / 4.5));
+    if (moving) this.phase += dt * (HOUR / 0.3) * Math.min(1.15, Math.max(0.5, speed / 4.5));
     else this.phase = 0;
     if (this.wasMoving && !moving && s.action === 'none') {
       this.sx = 0.12;

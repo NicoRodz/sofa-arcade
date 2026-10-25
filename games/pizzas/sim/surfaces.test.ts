@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SPEED, TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Player } from './overcooked';
 import { parseMap } from './maps';
 import { addFloorItem } from './floor';
+import { ICE_TAU_MS } from './surfaces/config';
 import { usesSurfaces } from './surfaces/legend';
 import { surfaceProblems, validateMap } from './validate';
 import type { MapDef } from './maps/types';
@@ -81,19 +82,19 @@ describe('ice', () => {
     walk(plain, 150, {});
     expect(Math.hypot(plain.players.get(1)!.vx, 0)).toBeLessThan(SPEED * 0.1);
   });
-  it('a reversed stick does not turn the chef at once, but takes the control back (tau ~ 400 ms)', () => {
+  it('a reversed stick does not turn the chef at once, but takes the control back (tau = ICE_TAU_MS)', () => {
     const g = make(true);
     put(chef(g), 8.5, 2.5);
     chef(g).vx = SPEED;
     walk(g, 100, { 1: { x: -1 } });
     expect(chef(g).vx).toBeGreaterThan(0);
-    walk(g, 1900, { 1: { x: -1 } });
+    walk(g, 3.2 * ICE_TAU_MS, { 1: { x: -1 } });
     expect(chef(g).vx).toBeLessThan(-SPEED * 0.9);
   });
   it('with the stick held it reaches 95% of the walking speed within 3 tau', () => {
     const g = make(true);
     put(chef(g), 3.5, 2.5);
-    walk(g, 1200, { 1: { x: 1 } });
+    walk(g, 3 * ICE_TAU_MS, { 1: { x: 1 } });
     expect(chef(g).vx).toBeGreaterThan(SPEED * 0.9);
   });
 });
