@@ -31,7 +31,6 @@
   "games/obstaculos/sim/rules.ts": { "max": 492, "until": "2027-03-31" },
   "games/obstaculos/sim/world.ts": { "max": 684, "until": "2027-03-31" },
   "games/obstaculos/test/obst.dynamics.scenarios.ts": { "max": 441, "until": "2027-03-31" },
-  "games/obstaculos/validator/graph.ts": { "max": 734, "until": "2026-12-31" },
   "games/obstaculos/validator/validate.ts": { "max": 467, "until": "2027-03-31" },
   "games/pizzas/screen/art/env.ts": { "max": 776, "until": "2027-03-31" },
   "games/pizzas/screen/art/events.ts": { "max": 716, "until": "2027-03-31" },
