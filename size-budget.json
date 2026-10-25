@@ -29,7 +29,6 @@
   "games/obstaculos/sim/player.test.ts": { "max": 510, "until": "2027-03-31" },
   "games/obstaculos/sim/player.ts": { "max": 340, "until": "2027-03-31" },
   "games/obstaculos/sim/rules.ts": { "max": 492, "until": "2027-03-31" },
-  "games/obstaculos/sim/world.ts": { "max": 684, "until": "2027-03-31" },
   "games/obstaculos/test/obst.dynamics.scenarios.ts": { "max": 441, "until": "2027-03-31" },
   "games/obstaculos/validator/validate.ts": { "max": 467, "until": "2027-03-31" },
   "games/pizzas/screen/art/env.ts": { "max": 776, "until": "2027-03-31" },
@@ -72,7 +71,7 @@
  "folders": {
   "games/obstaculos/campaign": { "max": 15, "until": "2026-12-31" },
   "games/obstaculos/screen/render": { "max": 18, "until": "2026-12-31" },
-  "games/obstaculos/sim": { "max": 20, "until": "2026-12-31" },
+  "games/obstaculos/sim": { "max": 19, "until": "2026-12-31" },
   "games/pizzas/screen/art": { "max": 16, "until": "2026-12-31" },
   "games/pizzas/sim": { "max": 17, "until": "2026-12-31" },
   "tools": { "max": 13, "until": "2026-12-31" }
