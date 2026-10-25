@@ -58,7 +58,11 @@ export const MAP_IDS = COOP_MAPS.map((m) => m.id);
 export const fixedMap = (id: string): MapDef | undefined => COOP_MAPS.find((m) => m.id === id);
 
 // Which fixed maps each difficulty draws from.
-export const MAPS_BY_DIFFICULTY: Record<Difficulty, readonly string[]> = { easy: ['1', '2'], normal: ['2', '3', '4'], hard: ['4', '5'] };
+export const MAPS_BY_DIFFICULTY: Record<Difficulty, readonly string[]> = {
+  easy: ['1', '2'],
+  normal: ['2', '3', '4', '16', '17'],
+  hard: ['4', '5', '18', '19'],
+};
 
 export const MAP_CHOICES = ['auto', ...MAP_IDS, 'random'] as const;
 export type MapChoice = (typeof MAP_CHOICES)[number];

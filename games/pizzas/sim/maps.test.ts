@@ -41,7 +41,7 @@ describe('fixed maps', () => {
 
   it('"auto" picks from the difficulty list; a fixed id is kept', () => {
     expect(pickFixedMap('auto', 'hard', () => 0).id).toBe('4');
-    expect(pickFixedMap('auto', 'hard', () => 0.99).id).toBe('5');
+    expect(pickFixedMap('auto', 'hard', () => 0.99).id).toBe('19');
     expect(pickFixedMap('auto', 'easy', () => 0.6).id).toBe('2');
     expect(pickFixedMap('3', 'easy', () => 0).id).toBe('3');
   });
