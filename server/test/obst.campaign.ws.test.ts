@@ -3,7 +3,7 @@
 // screen -> session.receive -> step, in lockstep (the screen waits for both inputs of a frame before it advances 1/60 s).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { type ClientMsg, type ServerMsg } from '@party/shared';
+import type { ClientMsg, ServerMsg } from '@party/shared';
 import { LEVELS, ObstBot, ObstSession, ROPE_LEN, snapshot, type ObstEvent } from '../../shared/games/obstaculos';
 import { startServer } from '../src/server';
 

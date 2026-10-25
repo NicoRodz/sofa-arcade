@@ -1,7 +1,7 @@
 // What a ticket shows of its recipe (hud.ts builds the ticket around it): the finished pizza, the ingredients in the form they are used (stretched dough, sliced tomato, then the
 // topping), the process glyphs (a knife, a flame; the calzone adds the fold arrow and a second flame: the long oven) and the recipe's name, in capitals, as a plain label.
 // The pictures differ by SHAPE, not only by colour: the calzone is a half-moon, the pepperoni a row of coins, the mushroom a T, the cheese a heap of shreds.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { RECIPE_DEFS, type Recipe } from '@party/shared/recipes/defs';
 import { C } from '../tokens';
 import { R } from '../gfx';

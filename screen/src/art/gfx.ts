@@ -1,6 +1,6 @@
 // Canvas 2D drawing helpers. Textures are drawn once into canvas textures (Graphics.generateTexture goes
 // through the same canvas path but ignores gradients), then used as plain images.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { C, U } from './tokens';
 
 export type Ctx = CanvasRenderingContext2D;

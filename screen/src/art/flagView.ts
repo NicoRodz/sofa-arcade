@@ -1,5 +1,5 @@
 // An in-game team flag: a canvas texture that drawFlag repaints about 30 times a second, shown as an image planted at a tile.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from './flags';
 
 const SS = 2; // supersampling of the texture

@@ -1,6 +1,6 @@
 // One level on screen: background, tiles, rope, entities, explorers, fx, shared camera and HUD, drawn from a WorldView.
 // The host calls update(dtMs) once per render frame after stepping the world and setting world.alpha. See render/README in view.ts.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { PLAYER_H, PLAYER_W, ROPE_LEN, TILE, DIFFICULTY_PARAMS, BUBBLE_POP_SEC, isSolidKind, tileAt } from '@party/shared/obstaculos';
 import type { AllObstEvents } from '@party/shared/obstaculos';
 import type { Emitter } from '@party/shared/events';

@@ -1,10 +1,10 @@
 // Stateful things of the level drawn from WorldView.entities: stars, checkpoints, goal, rings, boxes, keys, plates, levers, gates,
 // ladders, movers, balances, crumbling tiles and the hint signs. Static art is baked into textures; geometry that changes is
 // redrawn into a Graphics only when its signature changes.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { TILE, type Biome } from '@party/shared/obstaculos';
 import { C, FONT } from '../../../art/tokens';
-import { R, circle, drawOutlined, makeTex, rr, star as starPath, texSize, vgrad, type Ctx } from '../../../art/gfx';
+import { R, circle, drawOutlined, makeTex, rr, star as starPath, texSize, vgrad, } from '../../../art/gfx';
 import { INK, PALETTES, hexToInt, tagColor } from './biome';
 import { drawCrumble, drawLadder, type CellCtx } from './tiledraw';
 import type { EntityView, PlayerView } from './view';

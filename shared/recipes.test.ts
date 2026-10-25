@@ -1,7 +1,7 @@
 // The Carta del día (recipes/*): pure logic on the real maps. What each recipe is worth, the cards and their validator, the orders a round draws, the crate that gives the
 // topping, the plate that serves each order, the calzone's fold at the oven, and the star table that follows. Chefs are put next to the stations by hand.
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from './events';
+import type { Emitter, GameEvents } from './events';
 import { DIRS, FIXED_MAPS, fixedMap, isFloor, parseMap } from './maps';
 import { TICK_MS, addPlayer, createGame, recipeBase, tick, tipMultiplier, type Controls, type Game, type Item, type Order, type Station } from './overcooked';
 import { TUNING } from './difficulty';

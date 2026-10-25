@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTIES, params } from './difficulty';
-import { DIRS, FIXED_MAPS, MAP_H, MAP_W, MAPS_BY_DIFFICULTY, fixedMap, isFloor, parseMap, recommendedMaps, spawnPoints } from './maps';
+import { FIXED_MAPS, MAP_H, MAP_W, MAPS_BY_DIFFICULTY, fixedMap, isFloor, parseMap, recommendedMaps, spawnPoints } from './maps';
 import { MAX_ATTEMPTS, applyArchetype, generate, inBand, orderSpawns, pickMech, placeStations, resolveMap, scatterObstacles, shape, stationCounts, zonePuestos } from './generate';
 import { mulberry32 } from './rng';
 import { createGame, addPlayer } from './overcooked';

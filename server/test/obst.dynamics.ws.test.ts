@@ -3,7 +3,7 @@
 // a bot sends goes phone -> relay -> screen -> session.receive -> step. The bots are the controllers of obst.dynamics.scenarios.ts (they read the snapshot like the screen does).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { type ClientMsg, type ServerMsg } from '@party/shared';
+import type { ClientMsg, ServerMsg } from '@party/shared';
 import { ObstSession, TILE, snapshot, type ObstEvent } from '../../shared/games/obstaculos';
 import { startServer } from '../src/server';
 import { SCENARIOS, type Scenario } from './obst.dynamics.scenarios';

@@ -1,7 +1,7 @@
 // Darkness of a level with a lantern (campaign dynamic 10): a low-resolution canvas the size of the picture (its world rectangle), black with a soft hole of `radius` px around
 // every lantern and a faint small one around every player (so the one without the lantern is never lost). Redrawn every frame; at 320x180 it costs nothing and the stretch
 // hides the resolution under the gradients.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { TILE } from '@party/shared/obstaculos';
 
 const TW = 320, TH = 180;

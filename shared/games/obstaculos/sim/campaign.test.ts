@@ -2,7 +2,7 @@
 // signals, throw arc. Every rule has its quick-match twin that must NOT show it (the layer is opt-in).
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTY_PARAMS, JUMP_PEAK_PX, ROPE_LEN, TILE } from '../constants';
-import { WORLD_ORDER, campaignParams, dparamsForCampaign, physicsForCampaign, superJumpV0, worldForDifficulty } from './campaign';
+import { type WORLD_ORDER, campaignParams, dparamsForCampaign, physicsForCampaign, superJumpV0, worldForDifficulty } from './campaign';
 import { clearLevel, draw, hall, inp, level, names, of, pl, run, teleport, world } from './testkit';
 import { cameraHints } from './campaignrules';
 import { hashState, snapshot, step } from './world';

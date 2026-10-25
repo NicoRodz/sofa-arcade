@@ -1,6 +1,6 @@
 // Magnetism on screen (feel/magnet.ts): a bracket in the chef's colour around the station its next Tomar / Picar will act on, so you see what the magnet picked before you press.
 // Exists only in a round with the magnet on. One Graphics, redrawn every frame (a handful of rectangles).
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Game } from '@party/shared/game';
 import { targetStation } from '@party/shared/game';
 import { OX, OY, TILE, chefOf, hexNum } from '../tokens';

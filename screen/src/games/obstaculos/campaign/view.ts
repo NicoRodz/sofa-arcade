@@ -1,5 +1,5 @@
 // The campaign's screens as HTML strings (pure: the DOM only receives them). Classes and ids are styled in screen/index.html under "Campaign".
-import { continueLevel, levelById, levelTag, totalStars, worldById, type Catalog, type Expedition } from '@party/shared/obstaculos/campaign';
+import { continueLevel, levelById, levelTag, totalStars, worldById, type Catalog, } from '@party/shared/obstaculos/campaign';
 import type { Biome } from '@party/shared/obstaculos';
 import type { Outcome } from './flow';
 import { hubItems, practiceRows, resetLeftMs, resetReady, resultButtons, trailPoints, worldNodes, worldTabs, type CampState, type KeyCtx, type MapNode } from './model';

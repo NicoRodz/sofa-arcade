@@ -9,7 +9,6 @@ import { GRACE_MS } from './burn';
 import { recipeBase } from './overcooked';
 import { params } from './difficulty';
 import { MIRRORS } from './golden/mirror-bot';
-import { versusMap } from './versusMaps';
 import { GAMES, modeOf } from './games';
 import { mulberry32 } from './rng';
 import { startVersusRound, syncTeams } from './versusLobby';

@@ -3,7 +3,6 @@
 import { describe, expect, it } from 'vitest';
 import { DT, JUMP_V0, PLAYER_H, ROPE_LEN, TILE } from '../constants';
 import { T } from '../legend';
-import { campaignParams } from './campaign';
 import { draw, hall, inp, level, names, obj, of, pl, run, teleport, tile, vline, world } from './testkit';
 import { previewB, snapshot } from './world';
 

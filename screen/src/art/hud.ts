@@ -1,5 +1,5 @@
 // Top strip: order tickets, round clock, team score; plus the big centre banners (countdown, time up).
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Game } from '@party/shared/game';
 import type { Recipe } from '@party/shared/recipes/defs';
 import type { TeamInfo } from '@party/shared/teams';

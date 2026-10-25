@@ -1,8 +1,8 @@
 // The explorers: the pizzaiolos' procedural rig (art/chefdraw parts) with a climbing helmet and a harness instead of the toque and
 // the apron look, and poses driven by the physics state (run, jump, land, hang, planted, carrying, carried, thrown, bubble, cheer).
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { C, CHEFS, SKINS, chefOf } from '../../../art/tokens';
-import { HEAD_Y, MOUTH_DY, drawBody, drawBodyBack, drawFaceA, drawFaceB, drawHead, drawHeadBack } from '../../../art/chefdraw';
+import { HEAD_Y, MOUTH_DY, drawBody, drawBodyBack, } from '../../../art/chefdraw';
 import { buildChefTextures } from '../../../art/chef';
 import { R, makeTex, texSize, type Ctx } from '../../../art/gfx';
 import { circle, drawOutlined, mix, rr, shade, vgrad } from '../../../art/gfx';

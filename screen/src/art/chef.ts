@@ -1,5 +1,5 @@
 // The eight pizzaiolos: part textures plus a procedural rig (squash & stretch, walk bounce, chop, carry, expressions).
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Item } from '@party/shared/game';
 import { C, TILE, U, chefOf, hexNum, SKINS } from './tokens';
 import { R, domCanvas, makeTex, rr, texSize, type Ctx } from './gfx';

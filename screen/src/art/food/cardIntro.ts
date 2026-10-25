@@ -1,6 +1,6 @@
 // "Carta del día": during the countdown of a round whose map brings a card, a panel under the big number shows the 2 or 3 recipes of the round, each with its picture, its name
 // and what it pays, so the table knows what the tickets will ask for before the first one arrives.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Rec } from '@party/shared/recipes/sim';
 import { RECIPE_DEFS, recipeBase } from '@party/shared/recipes/defs';
 import { TUNING } from '@party/shared/difficulty';

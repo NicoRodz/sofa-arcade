@@ -1,7 +1,7 @@
 // Sabotage on screen: the reticle and the dotted flight line while a chef aims, the shadow that warns where the bag lands and the bag in the air,
 // the banana-skins on the floor (outlined in the colour of the team that threw them, with a ring that counts their life down), the items that fell,
 // the cooldown ring over each catapult, and the reactions to the sabotage events (splat, slip, catch, burst, cleaning). Reads `game.sab` and `game.floor`.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Emitter, GameEvents } from '@party/shared/events';
 import type { Game } from '@party/shared/game';
 import type { TeamInfo } from '@party/shared/teams';

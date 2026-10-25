@@ -1,5 +1,5 @@
 // Food and items, drawn procedurally at the current ctx origin. One box of 72x72 design units per item.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Item } from '@party/shared/game';
 import { C } from './tokens';
 import { blob, circle, contactShadow, drawOutlined, ellipse, makeTex, mix, rng, shade, shine, star, vgrad, type Ctx } from './gfx';

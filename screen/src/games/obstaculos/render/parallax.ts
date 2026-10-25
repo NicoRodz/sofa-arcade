@@ -1,5 +1,5 @@
 // Background: sky gradient, three parallax layers drawn once per biome from seeded periodic noise, and the "outside the level" fill.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Biome } from '@party/shared/obstaculos';
 import { INK, PALETTES, hexToInt, lerpColor, type Palette } from './biome';
 const lerpHex = (a: string, b: string, t: number): string => { const m = /rgb\((\d+),(\d+),(\d+)\)/.exec(lerpColor(a, b, t))!; return '#' + [m[1], m[2], m[3]].map((v) => Number(v).toString(16).padStart(2, '0')).join(''); };

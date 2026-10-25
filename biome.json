@@ -11,12 +11,12 @@
     "rules": {
       "preset": "recommended",
       "style": {
-        "useImportType": "warn",
+        "useImportType": "error",
         "noNonNullAssertion": "off",
         "useTemplate": "off"
       },
       "correctness": {
-        "noUnusedImports": "warn",
+        "noUnusedImports": "error",
         "noUnusedFunctionParameters": "off",
         "noUnusedVariables": "warn",
         "noSwitchDeclarations": "warn",

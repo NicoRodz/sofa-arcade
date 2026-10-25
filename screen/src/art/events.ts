@@ -2,7 +2,7 @@
 // clock while it lasts, and what each one looks like: the rush (red edges, bells), the inspector (his pill counts the dirty plates, a stamp at the windows when he leaves),
 // the blackout (the kitchen goes dark, a crossed-out bolt over every oven), the birthday (balloons and confetti; the order's ticket is in hud.ts) and the rat (a little
 // grey rat that runs across the floor, grabs an item and is scared off by a dash). Everything is drawn by code. Only exists when `game.mid` does.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Emitter, GameEvents } from '@party/shared/events';
 import type { Game } from '@party/shared/game';
 import type { TeamInfo } from '@party/shared/teams';

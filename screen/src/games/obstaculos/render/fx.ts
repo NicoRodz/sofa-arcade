@@ -1,5 +1,5 @@
 // Juice: dust, bursts, rings, confetti, floating words, shake. Particle emitters live in the world layer, so they follow the zoomed camera.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { C, FONT, CHEFS, hexNum, confettiColorsOf } from './fxtokens';
 
 export class ObstFx {

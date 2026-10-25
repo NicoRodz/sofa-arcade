@@ -2,7 +2,7 @@
 // The lobby's choices travel in the generic config as modeOptions ({ tether: 'chain' | 'free', level: 0..15 }); difficulty and seed use
 // the config's own fields. Pure: the screen, the phone's label and the tests all read it.
 import type { Difficulty } from '../../difficulty';
-import { type ModeOptions } from '../../protocol';
+import type { ModeOptions } from '../../protocol';
 import { EXPEDITION_LEVELS } from './constants';
 import { LEVELS } from './levels';
 import type { GameMode, LevelDef } from './types';

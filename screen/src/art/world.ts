@@ -1,5 +1,5 @@
 // One round on screen: background, station views, chefs, HUD and the reactions to game events.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Emitter, GameEvents } from '@party/shared/events';
 import type { Game } from '@party/shared/game';
 import type { PublicPlayer } from '@party/shared';

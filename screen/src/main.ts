@@ -29,7 +29,7 @@ import { drawCardArt } from './art/cards';
 import { NAV_SFX, clampSel, lobbyEscGoesBack, menuCards, menuOnKey, menuPick, soundFor, type MenuAction } from './menu';
 import { iris } from './art/iris';
 import { toggleShake } from './art/fx';
-import { HOWTO_MS, howToOnKey, isExpired, progress, secondsLeft, type HowToState } from './howto';
+import { howToOnKey, isExpired, progress, secondsLeft, type HowToState } from './howto';
 import { MainScene, type Host } from './scene';
 import {
   DEFAULT_OBST_OPTIONS, GAME_ID as OBST_ID, LEVELS as OBST_LEVELS, MODE_BLURB, MODE_LABEL, RANDOM_LEVEL, fixedExpedition, levelCompat, parseObstOptions, resolveLevel, toModeOptions,
@@ -47,7 +47,7 @@ import { assignPuestos, featuresOf, type PuestoId } from '@party/shared/puestos'
 import { C, H, W } from './art/tokens';
 import { percentile } from '@party/shared/stats';
 import {
-  COUNTDOWN_MS, TICK_MS, addPlayer, createGame, dropPlayer, floorItemNear, rejoinPlayer, removePlayer, resolvePause, targetStation, tick,
+  COUNTDOWN_MS, TICK_MS, addPlayer, createGame, dropPlayer, rejoinPlayer, removePlayer, resolvePause, tick,
   type Controls,
 } from '@party/shared/game';
 import { sabotageAimPress, sabotageLoad } from '@party/shared/sabotage';

@@ -1,6 +1,6 @@
 // Suggested stations on the big screen: during the countdown and the first seconds each chef wears a pill with the puesto
 // and its stations glow in the chef's colour; afterwards only a small icon stays over the head. Nothing here blocks play.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { ICONS, type IconId } from '@party/shared/icons';
 import { PUESTOS, puestoStations, type PuestoId } from '@party/shared/puestos';
 import type { Game } from '@party/shared/game';

@@ -1,5 +1,5 @@
 // Tile layer: the level baked into canvas chunks (20 columns each), repainted when the live grid changes, plus the animated liquid.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { T, TILE, type Biome, type Rect, type TileGrid } from '@party/shared/obstaculos';
 import { PALETTES, hexToInt } from './biome';
 import { drawCell } from './tiledraw';

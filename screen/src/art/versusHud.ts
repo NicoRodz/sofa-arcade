@@ -1,6 +1,6 @@
 // Versus HUD (F4): the scoreboard plates (score, handicap, streak, golden orders won), the golden order card on the barrier, the end
 // reveal and the little notices (a chef dropped, the handicap changed). The order queues of each kitchen stay in hud.ts.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Game, Recipe } from '@party/shared/game';
 import type { TeamInfo } from '@party/shared/teams';
 import { VIP_TTL_MS } from '@party/shared/versus';

@@ -2,7 +2,7 @@
 // shown. Each chef has its own progress (steps.ts) and moves on when the sim says it did the thing. Pure: the browser screen and the Node tests drive it the same way
 // (`step` with the roster and a function that hands over each chef's controls), and it only talks through `send` (the hints of the contextual buttons and the
 // school messages to the phones).
-import { Emitter, type GameEvents } from '../events';
+import type { Emitter, GameEvents } from '../events';
 import { chefHint, createHintSync } from '../hints';
 import { TICK_MS, addPlayer, createGame, removePlayer, tick, type Controls, type Game } from '../overcooked';
 import { clearPot } from '../burn';

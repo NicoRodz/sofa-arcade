@@ -1,5 +1,5 @@
 // Kitchen environment: floor, walls, benches and the static body of every station, baked into ONE canvas texture.
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Grid, Tile } from '@party/shared/maps';
 import { C, H, HUD_H, OX, OY, TILE, U, W, floorPair } from './tokens';
 import { circle, drawOutlined, rng, rr, shade, vgrad, type Ctx } from './gfx';
