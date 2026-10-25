@@ -40,11 +40,12 @@ const lines = [
       `| ${n} | ${by.get(n)!.length} | ${
         {
           'no-cross-game': 'games/X imports games/Y',
-          'platform-not-games': 'platform code (shared core, kits) imports a game or a main.ts',
+          'platform-not-games': 'platform/** imports a game or an app',
           'only-apps-compose': 'someone imports a main.ts',
-          'pure-sim': 'shared/ imports phaser, ws, express or screen/controller/server',
-          'pure-sim-node-core': 'shared/ imports a Node core module (node:*)',
-          'public-api': 'cross-package import that is not an index.ts (today: @party/shared subpath exports)',
+          'pure-sim': 'platform/core or a game sim side imports phaser, ws, express or a screen/controller/server package',
+          'pure-sim-node-core': 'platform/core or a game sim side imports a Node core module (node:*)',
+          'public-api':
+            'cross-package import that is not an index.ts (the F3 move keeps the old per-file subpaths of @party/shared as package exports)',
           'no-circular': 'import cycles (one row per module in a cycle)',
           'no-test-in-prod': 'production code imports a test file or test harness',
         }[n]

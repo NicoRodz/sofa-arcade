@@ -868,6 +868,26 @@
    "replace": "const DIRS = ['platform', 'games', 'apps', 'tools'];"
   },
   {
+   "file": "tools/meta/deps-report.ts",
+   "find": "'platform code (shared core, kits) imports a game or a main.ts'",
+   "replace": "'platform/** imports a game or an app'"
+  },
+  {
+   "file": "tools/meta/deps-report.ts",
+   "find": "'shared/ imports phaser, ws, express or screen/controller/server'",
+   "replace": "'platform/core or a game sim side imports phaser, ws, express or a screen/controller/server package'"
+  },
+  {
+   "file": "tools/meta/deps-report.ts",
+   "find": "'shared/ imports a Node core module (node:*)'",
+   "replace": "'platform/core or a game sim side imports a Node core module (node:*)'"
+  },
+  {
+   "file": "tools/meta/deps-report.ts",
+   "find": "(today: @party/shared subpath exports)",
+   "replace": "(the F3 move keeps the old per-file subpaths of @party/shared as package exports)"
+  },
+  {
    "file": "tools/meta/size-budget.ts",
    "find": "  'screen/src/main.ts',",
    "replace": "  'apps/screen/src/main.ts',"
