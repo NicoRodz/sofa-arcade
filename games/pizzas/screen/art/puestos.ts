@@ -104,6 +104,7 @@ export class PuestoMarks {
       }
     const g = this.glow;
     g.clear();
+    const byX = [...chefs.keys()].sort((a, b) => chefs.get(a)!.root.x - chefs.get(b)!.root.x); // neighbours' pills sit at two heights so they never overlap
     for (const [id, chef] of chefs) {
       const v = views.get(id),
         gp = this.game.players.get(id);
@@ -126,7 +127,7 @@ export class PuestoMarks {
       const bigK = Math.max(0, Math.min(1, (BIG_MS - m.t) / 600)); // 1 while big, fades into the small icon
       m.big.setAlpha(bigK);
       m.small.setAlpha(1 - bigK);
-      m.root.setPosition(chef.root.x, chef.root.y - TILE * 1.6);
+      m.root.setPosition(chef.root.x, chef.root.y - TILE * 1.6 - (byX.indexOf(id) % 2) * 62);
       if (bigK > 0) {
         const pulse = 0.55 + 0.45 * Math.sin(this.clock / 170);
         const inset = 5 + 6 * ([...this.marks.keys()].indexOf(id) % 3);
