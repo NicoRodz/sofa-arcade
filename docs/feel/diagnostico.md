@@ -88,3 +88,11 @@ Bot imperfecto (`shared/feel/rat-bot.ts`, `tools/rat-measure.ts`): 15 mapas × 1
 Por qué costaba: la rata nace en un hoyo pegado a un mesón, roba en el primer tick (17 ms) y ya está en la salida (33 ms de ventana); va a 2,4 tiles/s en zigzag por centros de casilla; solo la espanta un dash a menos de 1,1 tile, y un cocinero con las manos llenas no puede hacer dash nunca.
 
 Qué cambia (`RAT_GENTLE`): velocidad 2,4 → 1,68 (70 %), tramos rectos de 1,6 s con giro suave (360°/s) y pausa de 0,7 s; no roba en su primer segundo y no se va antes de 12 s (con botín se queda comiendo en el mesón, sin botín espera 14 s; antes 10 s); radio de espanto con dash 1,1 → 1,5, un dash terminado hace menos de 250 ms sigue valiendo hasta 1,9 tiles, y chocar corriendo con ella (≥1,2 tiles/s a menos de 0,6) la espanta aunque lleves las manos llenas; premio de 50 puntos al equipo (más un ding); telegrafía: evento `rat:target` (flecha sobre la rata, línea punteada y aro hasta el mesón que va a robar, sonido `ratTarget`) y `rat:near` a 2,2 tiles (destello de alarma, tres pitidos). El texto de la píldora dice "Dash o choca con ella: +50".
+
+### Una regresión que atrapó la suite (hazards)
+
+Con el magnetismo encendido el bot janitor del test de sabotaje por relay recogía 10 basuras en vez de 32 y nadie resbalaba: A busca primero una estación, y el imán la encuentra casi siempre, así que la basura del piso nunca se miraba. Regla (`floorWins`): con hazards, la basura que el chef mira al menos tanto como la estación vecina gana A; el teléfono dice "Recoger".
+
+### Riesgo conocido
+
+Los números del magnetismo se afinaron con un bot que se para junto a su estación; un humano que mira a una estación algo más lejana que la vecina (puntaje: distancia − 0,1 × coseno) obtendrá la vecina. No se midió con personas.
