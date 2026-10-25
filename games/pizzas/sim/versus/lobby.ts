@@ -26,7 +26,6 @@ import { CATAPULT_CHAR, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabota
 import { VERSUS_AUTO, VERSUS_MAPS, VERSUS_RANDOM, versusMap, type VersusChoice } from './maps';
 
 // --- Map choice ---------------------------------------------------------------------------------------------------------------------
-
 // VERSUS_AUTO ("Aleatorio": one of the maps that fit the teams) and VERSUS_RANDOM ("Mapa generado": built from the lobby seed) live in versusMaps.ts.
 export { VERSUS_AUTO, VERSUS_RANDOM, VERSUS_CHOICES, isVersusChoice, type VersusChoice } from './maps';
 

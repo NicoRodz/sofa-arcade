@@ -43,14 +43,10 @@
   "games/pizzas/screen/art/world.ts": { "max": 392, "until": "2027-03-31" },
   "games/pizzas/sim/assist.test.ts": { "max": 560, "until": "2027-03-31" },
   "games/pizzas/sim/feel/human-bot.ts": { "max": 435, "until": "2027-03-31" },
-  "games/pizzas/sim/generate.ts": { "max": 529, "until": "2027-03-31" },
-  "games/pizzas/sim/maps.ts": { "max": 703, "until": "2026-12-31" },
   "games/pizzas/sim/midround.test.ts": { "max": 508, "until": "2027-03-31" },
   "games/pizzas/sim/overcooked.test.ts": { "max": 725, "until": "2027-03-31" },
-  "games/pizzas/sim/overcooked.ts": { "max": 1452, "until": "2026-12-31" },
   "games/pizzas/sim/sabotage.test.ts": { "max": 648, "until": "2027-03-31" },
   "games/pizzas/sim/sabotage.ts": { "max": 330, "until": "2027-03-31" },
-  "games/pizzas/sim/validate.ts": { "max": 600, "until": "2026-12-31" },
   "games/pizzas/sim/versus/lobby.ts": { "max": 331, "until": "2027-03-31" },
   "games/pizzas/sim/versus/versus.slow.test.ts": { "max": 835, "until": "2027-03-31" },
   "platform/core/src/lobby/vote.test.ts": { "max": 670, "until": "2027-03-31" },
@@ -75,7 +71,7 @@
   "games/obstaculos/screen/render": { "max": 18, "until": "2026-12-31" },
   "games/obstaculos/sim": { "max": 20, "until": "2026-12-31" },
   "games/pizzas/screen/art": { "max": 16, "until": "2026-12-31" },
-  "games/pizzas/sim": { "max": 17, "until": "2026-12-31" },
+  "games/pizzas/sim": { "max": 14, "until": "2026-12-31" },
   "tools": { "max": 13, "until": "2026-12-31" }
  }
 }
