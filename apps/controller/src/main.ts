@@ -8,7 +8,7 @@ import { PUESTOS, type PuestoId } from '@pichi/game-pizzas/sim/puestos';
 import { SABOTAGE_LABEL, sabotageOf } from '@pichi/game-pizzas/sim/sabotage-config';
 import { parseObstOptions, setupLabel } from '@pichi/game-obstaculos/lobby';
 import { seenAfterPhase, shouldShowHowTo } from '@pichi/controller-kit/howto';
-import { announceAssist, assistLabel, mountAssistHelp } from './assist-help';
+import { announceAssist, assistLabel } from './assist-help';
 import { createSchoolUi } from '@pichi/game-pizzas/controller/school';
 import { kvOf } from '@pichi/game-pizzas/sim/school';
 import { createZoomGuard, isDoubleTap } from '@pichi/controller-kit/zoom';
@@ -264,7 +264,6 @@ $('teamswap').addEventListener('pointerup', (e) => {
 
 // Ayudante (assist.ts): one switch for this player, in the lobby. The phone shows what it asked for at once and the relay's echo ('assist' with this id) confirms it,
 // also after a reconnect (the relay keeps the choice with the slot).
-mountAssistHelp();
 let assist = false;
 function showAssist(on: boolean) {
   assist = on;

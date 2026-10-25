@@ -64,3 +64,5 @@ export function mountAssistHelp() {
   });
   card.addEventListener('pointerup', () => setAssistHelp(false));
 }
+
+if (typeof document !== 'undefined') mountAssistHelp(); // on import: main.ts runs after the page markup exists, and the tests import the texts in node

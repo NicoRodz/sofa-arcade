@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
 import { WebSocket } from 'ws';
+import { ASSIST_PROBE, ASSIST_TOUCH, assistHelpScenarios } from './assist-scenarios';
 
 export const PORT = Number(process.env.PG_PORT ?? 3600); // 3000 / 3100 belong to the dev servers of the user; PG_PORT / PG_CDP_PORT let two worktrees run this suite at once
 const CDP_PORT = Number(process.env.PG_CDP_PORT ?? 9366);
@@ -59,9 +60,7 @@ export const TOUCH_SELECTORS = [
   '#btnB',
   '#pswap',
   '#howtoopen',
-  '#assist',
-  '#assisthelpopen',
-  '#assisthelpclose',
+  ...ASSIST_TOUCH,
   '#howtoclose',
   '#zoomfix',
   '#join button',
@@ -223,17 +222,7 @@ export const SELECTORS = [
   '#signals .sg',
   '#wait > *',
   '#howtoopen',
-  '#assist',
-  '#assist svg',
-  '#assistlbl',
-  '#assistsub',
-  '#assistnote',
-  '#assistrow',
-  '#assisthelpopen',
-  '#assisthelp h2',
-  '#assisthelp li',
-  '#assisthelpclose',
-  '#assisttoast',
+  ...ASSIST_PROBE,
   '#choosing > *',
   '#results > *',
   '#howto h2',
@@ -431,32 +420,7 @@ export const SCENARIOS: Scenario[] = [
     ],
     after: `${WIDE}; document.body.dataset.howto = 'closed'`,
   },
-  // Modo Ayudante explained: the notice after turning it on, and the "¿Qué es?" card (also under the Captain's D-pad and in versus)
-  {
-    name: 'lobby-assist-toast',
-    msgs: [player('Nico'), config(), phase('lobby'), { t: 'assist', playerId: 1, on: true }],
-    after: `document.body.dataset.howto = 'closed'; document.getElementById('assisttoast').textContent = 'Ayudante activado: llevarás un gorro con hélice'; document.body.dataset.assisttoast = 'on'`,
-  },
-  {
-    name: 'captain-lobby-assist-toast',
-    msgs: [player('WWWWWWWWWWWWWWWW'), vsConfig(), you(1), phase('lobby'), captain(), { t: 'assist', playerId: 1, on: true }],
-    after: `document.body.dataset.howto = 'closed'; document.getElementById('assisttoast').textContent = 'Ayudante activado: llevarás un gorro con hélice'; document.body.dataset.assisttoast = 'on'`,
-  },
-  {
-    name: 'assist-help',
-    msgs: [player('Nico'), config(), phase('lobby')],
-    after: `document.body.dataset.howto = 'closed'; document.body.dataset.assisthelp = 'open'`,
-  },
-  {
-    name: 'captain-assist-help',
-    msgs: [player('Nico'), vsConfig(), you(1), phase('lobby'), captain()],
-    after: `document.body.dataset.howto = 'closed'; document.body.dataset.assisthelp = 'open'`,
-  },
-  {
-    name: 'assist-help-wide-font',
-    msgs: [player('WWWWWWWWWWWWWWWW'), vsConfig(), you(1), phase('lobby'), captain()],
-    after: `${WIDE}; document.body.dataset.howto = 'closed'; document.body.dataset.assisthelp = 'open'`,
-  },
+  ...assistHelpScenarios({ player, config, vsConfig, you, captain, phase, WIDE }),
   {
     name: 'lobby-other-game',
     msgs: [player('Nico'), { ...config(), game: 'obstaculos' }, phase('lobby')],
