@@ -134,7 +134,7 @@ export const BUZZ_PATTERNS = {
   bad: [30, 40, 30],
   dash: [15],
   slip: [120],
-  alert: [80, 50, 80, 50, 160],
+  alert: [60, 40, 60],
 } as const satisfies Record<string, readonly number[]>;
 export type BuzzKind = keyof typeof BUZZ_PATTERNS;
 export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.hasOwn(BUZZ_PATTERNS, v);
