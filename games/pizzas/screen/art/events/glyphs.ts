@@ -9,6 +9,7 @@ export const EVENT_COLOR: Record<EventKind, { main: string; dark: string }> = {
   blackout: { main: '#3A4466', dark: '#1B2036' },
   birthday: { main: '#E95FA5', dark: '#A83572' },
   rat: { main: '#8A6B4C', dark: '#563F2A' },
+  frost: { main: '#4FB6E0', dark: '#1F6E99' },
 };
 
 // --- Textures -----------------------------------------------------------------------------------------------------------------------------------------
@@ -200,6 +201,32 @@ export const GLYPH: Record<EventKind, (c: Ctx) => void> = {
       c.moveTo(26, 12 + dy * 0.3);
       c.lineTo(46, 12 + dy);
       c.stroke();
+    }
+  },
+  frost: (c) => {
+    // a snowflake: three crossed arms with little branches
+    c.strokeStyle = C.ink;
+    c.lineCap = 'round';
+    for (const [w, col] of [
+      [11, C.ink],
+      [6, '#F2FBFF'],
+    ] as const) {
+      c.strokeStyle = col;
+      c.lineWidth = w;
+      for (let i = 0; i < 3; i++) {
+        c.save();
+        c.rotate((i * Math.PI) / 3);
+        c.beginPath();
+        c.moveTo(0, -34);
+        c.lineTo(0, 34);
+        for (const y of [-22, 22]) {
+          c.moveTo(-10, y - Math.sign(y) * 9);
+          c.lineTo(0, y);
+          c.lineTo(10, y - Math.sign(y) * 9);
+        }
+        c.stroke();
+        c.restore();
+      }
     }
   },
 };

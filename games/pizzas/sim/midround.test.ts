@@ -26,6 +26,8 @@ import {
 } from './midround';
 import { GRACE_MS } from './burn';
 import { recipeBase } from './overcooked';
+import { FIXED_MAPS } from './maps';
+import { surfaceAt } from './surfaces/physics';
 import { params } from '@pichi/core/difficulty';
 import { MIRRORS } from '../test/golden/mirror-bot';
 import { GAMES, modeOf } from '@pichi/core/games';
@@ -117,7 +119,7 @@ describe('the schedule: one event per round, between 1:00 and 2:00, announced 3 
     };
     expect(at(7)).toBe(at(7));
     const all = Array.from({ length: 120 }, (_v, i) => mk({ seed: i + 1 }).g.mid!);
-    expect(new Set(all.map((m) => m.kind)).size).toBe(4); // map 1 has no plates to wash: no inspector (the other four appear)
+    expect(new Set(all.map((m) => m.kind)).size).toBe(5); // map 1 has no plates to wash: no inspector (the other five appear)
     expect(new Set(all.map((m) => m.startAt)).size).toBeGreaterThan(60);
     for (const m of all) {
       expect(m.startAt).toBeGreaterThanOrEqual(EVENT_FROM_MS);
@@ -150,11 +152,11 @@ describe('the schedule: one event per round, between 1:00 and 2:00, announced 3 
       expect([log['event:announce']!.length, log['event:start']!.length, log['event:end']!.length], kind).toEqual([1, 1, 1]); // one event, never two at a time
     }
   });
-  it('the pool: no rat in versus, no inspector on a map with no plates to wash; the rat and the inspector do exist where they can', () => {
+  it('the pool: no rat or frost in versus, no inspector on a map with no plates to wash; the rat and the inspector do exist where they can', () => {
     const coop1 = mk({ map: '1' }).g,
       coop13 = mk({ map: '13' }).g;
-    expect(eventPool(coop1)).toEqual(['rush', 'blackout', 'birthday', 'rat']);
-    expect(eventPool(coop13)).toEqual(['rush', 'inspector', 'blackout', 'birthday', 'rat']);
+    expect(eventPool(coop1)).toEqual(['rush', 'blackout', 'birthday', 'rat', 'frost']);
+    expect(eventPool(coop13)).toEqual(['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost']);
     const vs = createGame({ rows: MIRRORS.v1.rows, teams: [{ playerIds: [1, 2] }, { playerIds: [3, 4] }], events: true });
     expect(eventPool(vs)).toEqual(['rush', 'blackout', 'birthday']);
     for (let seed = 1; seed <= 150; seed++)
@@ -504,5 +506,25 @@ describe('the lobby option', () => {
       3, 100, 150, 3000, 60_000, 120_000, 10_000,
     ]);
     expect(BIRTHDAY_POINTS).toBeGreaterThanOrEqual(2 * recipeBase('marinara', params('normal', 2).tune));
+  });
+});
+
+describe('frost: the whole floor is ice for a while', () => {
+  it('while it is on every floor tile is ice (belts included) and the stick only steers the slide; it ends by itself', () => {
+    const g = createGame({ rows: FIXED_MAPS[0]!.rows, events: true, seed: 1 });
+    addPlayer(g, 1, 0, 0);
+    const p = g.players.get(1)!;
+    expect(surfaceAt(g, p.x, p.y)).toBeNull();
+    g.mid!.kind = 'frost';
+    g.mid!.phase = 'announced';
+    g.mid!.startAt = g.time;
+    tick(g, new Map());
+    expect(g.mid!.frost).toBe(true);
+    expect(g.surf).not.toBeNull();
+    expect(surfaceAt(g, p.x, p.y)).toEqual({ kind: 'ice' });
+    g.time = g.mid!.endAt + 1;
+    tick(g, new Map());
+    expect(g.mid!.frost).toBe(false);
+    expect(surfaceAt(g, p.x, p.y)).toBeNull();
   });
 });

@@ -7,6 +7,7 @@ import type { Emitter, GameEvents } from '@pichi/core/events';
 import type { Game } from '../../../sim/overcooked';
 import type { TeamInfo } from '@pichi/core/lobby/teams';
 import { ANNOUNCE_MS, EVENT_INFO, dirtyPlates, type EventKind } from '../../../sim/midround';
+import { FrostView } from './frost-view';
 import { C, H, OX, OY, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
 import { foodKey, ITEM_KIND } from '../food';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
@@ -35,6 +36,7 @@ export class EventsView {
   private pill: Pill | null = null;
   private dark: Phaser.GameObjects.Rectangle;
   private darkNow = 0; // eased 0..1
+  private frost: FrostView;
   private bolts: Phaser.GameObjects.Image[] = [];
   private edges: Phaser.GameObjects.Graphics;
   private edgeT = 0;
@@ -61,6 +63,7 @@ export class EventsView {
       .setAlpha(0)
       .setVisible(false);
     this.edges = scene.add.graphics().setDepth(1860).setVisible(false);
+    this.frost = new FrostView(scene);
     const on = <K extends keyof GameEvents>(k: K, fn: (p: GameEvents[K]) => void) => this.off.push(bus.on(k, fn));
     const winTile = (team?: number) => {
       const s = game.stations.find((x) => x.kind === 'window' && (team === undefined || x.owner === team));
@@ -265,11 +268,13 @@ export class EventsView {
               ? '¡UNA RATA! Dash o choca con ella: +50'
               : '¡UNA RATA! Dash para espantarla',
         );
+      else if (p.kind === 'frost') p.text.setText(`¡OLA DE FRÍO! Todo resbala ${Math.ceil(left / 1000)} s`);
       else if (p.kind === 'blackout') p.text.setText(`¡CORTE DE LUZ! ${Math.ceil(left / 1000)} s`);
       else if (p.kind === 'rush') p.text.setText('¡HORA PUNTA! +3 pedidos');
       else if (p.kind === 'birthday') p.text.setText('¡CUMPLEAÑOS! Pedido de 150');
       p.text.setX(30);
     }
+    this.frost.update(dtMs, m.frost);
     // the blackout: the kitchen darkens (a flicker when it starts), a crossed-out bolt over each oven
     const target = m.dark ? 1 : 0;
     this.darkNow += (target - this.darkNow) * Math.min(1, dtMs / 160);
@@ -344,6 +349,7 @@ export class EventsView {
     this.banner?.destroy();
     this.pill?.root.destroy();
     this.dark.destroy();
+    this.frost.destroy();
     this.edges.destroy();
     for (const b of this.bolts) b.destroy();
     this.rat?.img.destroy();

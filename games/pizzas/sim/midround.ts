@@ -7,22 +7,31 @@
 //   inspector  Inspector          for INSPECTOR_MS: a team with no dirty plate left when it ends gets +100 (only on maps with plates to wash)
 //   blackout   Corte de luz       every oven is off for 10 s (it does not cook, and the grace time of a ready pizza does not run)
 //   birthday   Pedido de cumpleaños  a pizza order worth 150 flat in every queue
+//   frost      Ola de frío        every floor tile is ice for FROST_MS (the playtest of 25-oct: a patch of ice did nothing; a frozen kitchen is a different game for a while). Cooperative only
 //   rat        Rata               a rat steals the item of a counter; a dash scares it (and the item goes back). Cooperative only
 // Versus: the same event, at the same instant, to both teams (one global state). The rat is never in the pool there (it would double the sabotage).
 import { DIRS, isFloor } from './maps';
 import { mulberry32, type Rng } from '@pichi/core/rng';
 import type { Difficulty } from '@pichi/core/difficulty';
 import { magnetFor } from './feel/magnet';
+import { newSurfaceState } from './surfaces/config';
 import { gentleRatStep, ratPrize } from './feel/rat';
 import type { Game, Item, Station } from './round/state';
 
-export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat';
-export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat'];
+export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost';
+export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost'];
 export const EVENTS_SEED_TAG = 0xe7e47e55;
 export const EVENT_FROM_MS = 60_000; // the event starts between these two instants of the match
 export const EVENT_TO_MS = 120_000;
 export const ANNOUNCE_MS = 3000; // the banner is up this long before it starts
-export const ACTIVE_MS: Record<EventKind, number> = { rush: 3000, inspector: 20_000, blackout: 10_000, birthday: 3000, rat: 25_000 }; // how long it counts as "on" (the rat leaves earlier when it is gone)
+export const ACTIVE_MS: Record<EventKind, number> = {
+  rush: 3000,
+  inspector: 20_000,
+  blackout: 10_000,
+  birthday: 3000,
+  rat: 25_000,
+  frost: 30_000,
+}; // how long it counts as "on" (the rat leaves earlier when it is gone)
 export const RUSH_ORDERS = 3;
 export const EVENT_MAX_QUEUE = 6; // a rush never grows a queue past what the order strip can show
 export const INSPECTOR_BONUS = 100;
@@ -39,6 +48,7 @@ export const EVENT_INFO: Record<EventKind, { title: string; blurb: string }> = {
   blackout: { title: '¡CORTE DE LUZ!', blurb: 'Hornos apagados 10 s' },
   birthday: { title: '¡CUMPLEAÑOS!', blurb: 'Pedido triple: 150 puntos' },
   rat: { title: '¡UNA RATA!', blurb: 'Espántala con el dash' },
+  frost: { title: '¡OLA DE FRÍO!', blurb: 'Todo el piso es hielo 30 s' },
 };
 
 /** The lobby option: events on or off. Missing = the difficulty's default (Sí in Normal and Difícil, No in Fácil). */
@@ -56,10 +66,10 @@ export const recipesOf = (modeOptions: Readonly<Record<string, boolean | number 
   return typeof v === 'boolean' ? v : true;
 };
 
-/** What the lobby switches on for a round (coop and versus alike): the burning oven always (the sim leaves the fire out on Easy and under the Suave sabotage), the event by the option, the map's card of recipes, the magnetism of the chefs. */
 /** How much faster than the base table the lobby rounds serve orders: the playtest of 25-oct found Normal too slack once the controls got good (spare time, one oven was enough). */
 export const PACE: Record<Difficulty, number> = { easy: 1.2, normal: 1.6, hard: 1.8 };
 
+/** What the lobby switches on for a round (coop and versus alike): the burning oven always (the sim leaves the fire out on Easy and under the Suave sabotage), the event by the option, the map's card of recipes, the magnetism of the chefs. */
 export const roundRules = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty) => ({
   burn: true,
   fire: true,
@@ -93,6 +103,7 @@ export interface Mid {
   endAt: number; // Infinity until it starts
   phase: 'wait' | 'announced' | 'active' | 'done';
   dark: boolean; // blackout in progress
+  frost: boolean; // frost in progress: surfaces/physics reads it (every floor tile is ice)
   rat: Rat | null;
   rng: Rng; // the stream of the events (the instant, the kind, the hole of the rat)
 }
@@ -108,7 +119,13 @@ const tag = (g: Game, team: number): { team?: number } => (g.versus ? { team } :
 /** The kinds this round can have: no rat in versus, no inspector without plates to wash, no rat without counters. */
 export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations'>): EventKind[] =>
   EVENT_KINDS.filter((k) =>
-    k === 'rat' ? !g.versus && g.stations.some((s) => s.kind === 'counter') : k === 'inspector' ? g.finitePlates : true,
+    k === 'rat'
+      ? !g.versus && g.stations.some((s) => s.kind === 'counter')
+      : k === 'inspector'
+        ? g.finitePlates
+        : k === 'frost'
+          ? !g.versus
+          : true,
   );
 
 /** The event of the round: kind and instant from the seed. */
@@ -117,7 +134,7 @@ export function createMid(g: Game, seed: number): Mid {
   const pool = eventPool(g);
   const kind = pool[Math.floor(rng() * pool.length)]!;
   const startAt = EVENT_FROM_MS + Math.floor(rng() * (EVENT_TO_MS - EVENT_FROM_MS + 1));
-  return { kind, announceAt: startAt - ANNOUNCE_MS, startAt, endAt: Infinity, phase: 'wait', dark: false, rat: null, rng };
+  return { kind, announceAt: startAt - ANNOUNCE_MS, startAt, endAt: Infinity, phase: 'wait', dark: false, frost: false, rat: null, rng };
 }
 
 // --- The rat ----------------------------------------------------------------------------------------------------------------------------------------
@@ -286,7 +303,10 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
     if (m.kind === 'rush') fx.rush(g);
     else if (m.kind === 'birthday') fx.birthday(g);
     else if (m.kind === 'blackout') m.dark = true;
-    else if (m.kind === 'rat') spawnRat(g, m);
+    else if (m.kind === 'frost') {
+      m.frost = true;
+      g.surf ??= newSurfaceState(); // the ice rules only run in a round that has `surf`
+    } else if (m.kind === 'rat') spawnRat(g, m);
     return;
   }
   if (m.phase !== 'active') return;
@@ -294,6 +314,7 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
   if (g.time < m.endAt && !(m.kind === 'rat' && !m.rat)) return;
   m.phase = 'done';
   if (m.kind === 'blackout') m.dark = false;
+  else if (m.kind === 'frost') m.frost = false;
   else if (m.kind === 'inspector') inspect(g);
   else if (m.kind === 'rat') ratGone(g, m);
   g.bus.emit('event:end', { kind: m.kind });

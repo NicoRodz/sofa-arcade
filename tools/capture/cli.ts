@@ -1,11 +1,12 @@
 // Visual check: serves the app, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn|events|events-vs|assist|magnet> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn|events|events-vs|assist|magnet|frost> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { what } from './config';
 import { type Ctx, withSession } from './session';
 import { runPhone, runVersusPhone } from './scenarios/phone';
 import { runEventsVs, runVersus, runVsDrop, runVsHud, runVsLobby, runVsPantry, runVsResults } from './scenarios/versus';
 import { runAssist, runBurn, runSabotage } from './scenarios/coop-a';
 import { runEvents, runMagnet } from './scenarios/coop-b';
+import { runFrost } from './scenarios/frost';
 import { runMutate } from './scenarios/mutate';
 import { runHowto, runHowtoTimeout, runMenu } from './scenarios/screens';
 import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './scenarios/maps';
@@ -30,6 +31,7 @@ const MODES: Record<string, Scenario[]> = {
   events: [runEvents],
   magnet: [runMagnet],
   mutate: [runMutate],
+  frost: [runFrost],
   howto: [runHowto],
   'howto-timeout': [runHowtoTimeout],
   menu: [runMenu],
