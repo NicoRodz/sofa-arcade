@@ -6,6 +6,7 @@ import { renderMenu } from '../menu/view';
 import { $, setHtml } from '../ui/dom';
 import { app, pickedGame, setConfig } from '../shell/app-state';
 import { renderChips, showTeams } from './chips';
+import { paintFocus } from './focus-nav-dom';
 
 export function paintUi() {
   const inMenu = app.phase === 'menu';
@@ -33,6 +34,7 @@ export function paintUi() {
     ).join(''),
   );
   pickedGame().lobby.render();
+  paintFocus();
 }
 
 export function initLobby() {

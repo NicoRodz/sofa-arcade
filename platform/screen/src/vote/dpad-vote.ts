@@ -3,6 +3,7 @@
 // Moved out of apps/screen/src/main.ts (F4b); the Obstaculos / Pizzas branches became those hooks.
 import { howToOnKey } from '../howto';
 import { lobbyEscGoesBack, menuCards, menuOnKey } from '../menu';
+import { lobbyFocusKey } from '../lobby/focus-nav-dom';
 import { menuAct } from '../menu/view';
 import { toggleShake } from '../art/fx';
 import { activeGame, app, connectedCount, dispatch, pickedGame, renderUi } from '../shell/app-state';
@@ -30,6 +31,7 @@ export function onKey(key: string, repeat: boolean) {
     menuAct(menuOnKey(menuCards(connectedCount()), app.menuSel, key));
     return;
   }
+  if (app.phase === 'lobby' && lobbyFocusKey(key, repeat)) return; // focus on the lobby rows: up/down row, left/right value, Enter picks
   if (app.phase === 'lobby' && pickedGame().lobby.key?.(key, repeat)) return; // the game's own lobby keys (events, sabotage level)
   if (lobbyEscGoesBack(app.phase, key, !!app.howTo, app.starting)) {
     goBack();

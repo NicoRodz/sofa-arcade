@@ -1,0 +1,6 @@
+/* Lobby focus ring (keyboard / Captain's D-pad): a thick gold outline with a soft glow, on the item and a marker bar on its row. */
+.kfocus { outline: 5px solid #FFD23F; outline-offset: 3px; box-shadow: 0 0 0 9px rgba(255, 210, 63, 0.28), 0 0 22px 6px rgba(255, 210, 63, 0.55); position: relative; z-index: 2; animation: kfocus-pulse 1.1s ease-in-out infinite alternate; }
+.kfocus-row { position: relative; }
+.kfocus-row::before { content: '▶'; position: absolute; left: -30px; top: 50%; transform: translateY(-50%); color: #FFD23F; font-size: 26px; text-shadow: 0 2px 0 rgba(43, 27, 23, 0.6); }
+@keyframes kfocus-pulse { from { outline-color: #FFD23F; } to { outline-color: #FFF1A8; } }
+@media (prefers-reduced-motion: reduce) { .kfocus { animation: none; } }
