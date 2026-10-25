@@ -50,7 +50,7 @@ describe('target by score', () => {
     for (const magnet of [false, true]) {
       const g = round({ magnet });
       away(g);
-      put(g.players.get(1)!, 3.7, 1.35, 0.55, -0.84); // under the crate at (3,0), looking up and a bit right
+      put(g.players.get(1)!, 3.85, 1.35, 0.55, -0.84); // under the crate at (3,0) but near its right edge, looking up and a bit right
       const t = targetStation(g, g.players.get(1)!);
       expect(t && [t.tx, t.ty], `magnet ${magnet}`).toEqual(magnet ? [3, 0] : [4, 0]);
     }
