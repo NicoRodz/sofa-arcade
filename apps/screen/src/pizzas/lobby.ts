@@ -5,7 +5,6 @@ import { teamOf } from '@pichi/core/lobby/teams';
 import type { LobbyConfig } from '@pichi/core';
 import { defaultSabotage, isSabotageMode, SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
 import { eventsOf } from '@pichi/game-pizzas/sim/midround';
-import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
 import { fixedMap, isMapChoice, mapStatus } from '@pichi/game-pizzas/sim/maps';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import { isVersusChoice, stepChoice, teamSizes, versusAvailability, versusMapStatus } from '@pichi/game-pizzas/sim/versus/lobby';
@@ -53,10 +52,6 @@ export function renderLobby() {
 export function lobbyKey(key: string, repeat: boolean): boolean {
   if ((key === 'e' || key === 'E') && !repeat) {
     setEvents(!eventsOf(app.config.modeOptions, app.config.difficulty));
-    return true;
-  }
-  if ((key === 'm' || key === 'M') && !repeat && !isVersus()) {
-    setMutate(!mutateOf(app.config.modeOptions, app.config.difficulty));
     return true;
   }
   if (isVersus() && (key === 'ArrowLeft' || key === 'ArrowRight')) {

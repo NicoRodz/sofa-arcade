@@ -110,12 +110,12 @@
   #sabinfo.notice { color: var(--tomato2); }
   /* the mid-round events option: label, Sí / No, on the line of the map heading (both modes of the pizza game) */
   #maprow { display: flex; align-items: flex-end; justify-content: space-between; }
-  #evbox { display: flex; align-items: center; gap: 12px; margin-bottom: 2px; margin-right: 262px; } /* left of the minimap */
+  #evbox { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; margin-right: 250px; } /* left of the minimap */
   #evbox.off { display: none; }
   #evbox h3 { margin: 0; flex: none; }
   #evbox kbd { font-size: 13px; min-width: 0; line-height: 18px; padding: 0 5px; letter-spacing: 0; }
-  #evs { flex-wrap: nowrap; flex: none; }
-  #evs .pill { height: 38px; padding: 0 18px; font-size: 20px; }
+  #evs, #muts { flex-wrap: nowrap; flex: none; }
+  #evs .pill, #muts .pill { height: 38px; padding: 0 18px; font-size: 20px; }
   #seedrow { margin-top: 8px; font: 600 22px var(--font); color: var(--muted); }
   #seedrow b { color: var(--ink); }
   #again-seed { height: 40px; font-size: 20px; padding: 0 16px; margin-left: 10px; }
@@ -434,7 +434,7 @@
         <div id="sabbox" class="off"><h3>Sabotaje</h3><div id="sabs" class="seg"></div><div id="sabinfo" class="hint"></div></div>
         <div id="pizzaops">
           <div id="maprow"><h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
-            <div id="evbox"><h3 title="Un evento por ronda, entre el 1:00 y el 2:00">Eventos <kbd>E</kbd></h3><div id="evs" class="seg"></div><h3 id="mutl" title="La cocina cambia a 1:30 (solo algunos mapas cooperativos)">Cocina que muta <kbd>M</kbd></h3><div id="muts" class="seg"></div></div></div>
+            <div id="evbox"><h3 title="Un evento por ronda, entre el 1:00 y el 2:00">Eventos <kbd>E</kbd></h3><div id="evs" class="seg"></div><h3 id="mutl" title="La cocina cambia a 1:30 (solo algunos mapas cooperativos)">Muta</h3><div id="muts" class="seg"></div></div></div>
           <div id="maps"></div>
           <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
           <canvas id="minimap" width="232" height="130"></canvas>

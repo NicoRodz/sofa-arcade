@@ -15,6 +15,7 @@ Cocina coop y versus. `sim/` es código puro (sin DOM, Node ni Phaser); `screen/
 | `versus/match.ts` | Fin de ronda, roster, fantasmas, pausa |
 | `maps/` | `parse.ts`, `catalog.ts`, `lobby.ts`, `layouts/*.ts` (un mapa por archivo, son datos) |
 | `validate/`, `generate/` | Validador de mapas (coop y versus) y generador con semilla |
+| `mutate/` | Cocinas que mutan (flag `mutate`, apagado por defecto): un diff de tiles a 1:30 en los mapas 1, 2 y 4, aviso 3 s antes, sub-semilla propia (`seed ^ MUTATE_SEED_TAG`). `check.ts` valida el mapa antes y después. Versus lo excluye por ahora (habría que espejar el diff por sigma) |
 | `burn`, `sabotage`, `midround`, `assist`, `recipes/`, `feel/`, `school/` | Reglas opcionales, cada una detrás de su flag |
 
 ## Invariantes

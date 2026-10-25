@@ -5,8 +5,9 @@ import { gameBus } from '@pichi/screen-kit/bus';
 import { C } from '@pichi/screen-kit/art/tokens';
 import { buildChefTextures } from '@pichi/screen-kit/art/chef';
 import { buildFoodTextures } from './art/food';
-import { buildFxTextures } from '@pichi/screen-kit/art/fx';
+import { Fx, buildFxTextures } from '@pichi/screen-kit/art/fx';
 import { World } from './art/world';
+import { MutateView } from './art/mutate/mutate-view';
 import type { RoundView } from './art/hud';
 import { buildPuestoIcons, type PuestoView } from './art/puestos';
 import { buildEventTextures } from './art/events';
@@ -54,6 +55,7 @@ export class MainScene extends Phaser.Scene {
       seed,
       view,
     );
+    if (game.mut) new MutateView(this, game, new Fx(this), gameBus); // the kitchen that mutates: banner, alarm outline, flash (self-managed, goes with the round)
   }
   endRound() {
     this.world?.destroy();

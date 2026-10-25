@@ -15,7 +15,6 @@ import { FlagView } from './flag-view';
 import { SabotageView } from './sabotage';
 import { BurnView } from './burn';
 import { EventsView } from './events';
-import { MutateView } from './mutate/mutate-view';
 import { MagnetView } from './feel/magnet-view';
 import { RatSignal } from './feel/rat-signal';
 import { kText } from '../../sim/versus/report';
@@ -35,7 +34,6 @@ export class World {
   private sabotage: SabotageView | null = null; // versus with sabotage: reticle, bags in the air, rubbish on the floor, catapult rings
   private events: EventsView | null = null; // the mid-round event: banner, pill, blackout, balloons, the rat (only when the round has one)
   private ratSignal: RatSignal | null = null; // the gentle rat's arrow and alarm (only with the magnet and the events)
-  private mutate: MutateView | null = null; // the kitchen that mutates at 1:30: banner, alarm outline, flash (only when the round has it)
   private magnet: MagnetView | null = null; // the bracket around each chef's target station (only when the round has the magnet)
   private burn: BurnView | null = null; // the oven that burns: warning bubble, flames, extinguisher (only when the round has it)
 
@@ -57,7 +55,6 @@ export class World {
     if (game.sab) this.sabotage = new SabotageView(scene, game, view, this.fx, bus);
     if (game.burn) this.burn = new BurnView(scene, game, this.fx, bus);
     if (game.mid) this.events = new EventsView(scene, game, view, this.fx, bus);
-    if (game.mut) this.mutate = new MutateView(scene, game, this.fx, bus);
     if (game.magnet) {
       this.magnet = new MagnetView(scene, game);
       if (game.mid) this.ratSignal = new RatSignal(scene, game, this.fx, bus);
@@ -367,7 +364,6 @@ export class World {
     this.sabotage?.update(dtMs);
     this.burn?.update(dtMs);
     this.events?.update(dtMs);
-    this.mutate?.update(dtMs);
     this.magnet?.update(dtMs);
     this.ratSignal?.update(dtMs);
     this.hud.update(dtMs);
@@ -384,7 +380,6 @@ export class World {
     this.sabotage?.destroy();
     this.burn?.destroy();
     this.events?.destroy();
-    this.mutate?.destroy();
     this.magnet?.destroy();
     this.ratSignal?.destroy();
     for (const f of this.flags) f.destroy();

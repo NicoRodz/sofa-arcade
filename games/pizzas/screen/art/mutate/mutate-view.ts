@@ -26,6 +26,12 @@ export class MutateView {
     bus: Emitter<GameEvents>,
   ) {
     this.hazard = scene.add.graphics().setDepth(1.6).setVisible(false); // over the floor, under the stations and chefs
+    const tick = (_time: number, dtMs: number) => this.update(dtMs);
+    scene.events.on('update', tick);
+    this.hazard.once('destroy', () => {
+      scene.events.off('update', tick); // goes away with the scene's children (the round's teardown removes them all)
+      this.destroy();
+    });
     this.off.push(bus.on('mutate:warn', (e) => this.warn(e.title, e.blurb, e.inMs)));
     this.off.push(bus.on('mutate:apply', (e) => this.change(e.tiles)));
   }

@@ -76,6 +76,9 @@ export const pizzasDebug = () => ({
   },
   // capture tool (burn): put an oven at a stage of its life, stand a chef in front of a station
   kit: {
+    setTime: (ms: number) => {
+      pz.game.time = ms;
+    }, // capture tool (mutate): jump the match clock to just before the 1:30 change
     bake: (i: number, inputs = [0, 1], folded = false, progress = 1) => {
       const s = pz.game.stations[i]!;
       s.inputs = inputs;

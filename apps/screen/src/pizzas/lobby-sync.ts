@@ -89,7 +89,7 @@ export function setEvents(on: boolean) {
   services.ui(NAV_SFX.move);
   setConfig({ modeOptions: { ...app.config.modeOptions, [EVENTS_OPTION]: on } });
 }
-// The mutating kitchen option (coop only): Sí on Normal and Difícil, No on Fácil, until the host picks. Key M.
+// The mutating kitchen option (coop only): Sí on Normal and Difícil, No on Fácil, until the host picks.
 export function setMutate(on: boolean) {
   if (app.phase !== 'lobby' || app.config.game !== PIZZAS || isVersus()) return;
   services.ui(NAV_SFX.move);

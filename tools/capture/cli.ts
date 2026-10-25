@@ -6,6 +6,7 @@ import { runPhone, runVersusPhone } from './scenarios/phone';
 import { runEventsVs, runVersus, runVsDrop, runVsHud, runVsLobby, runVsPantry, runVsResults } from './scenarios/versus';
 import { runAssist, runBurn, runSabotage } from './scenarios/coop-a';
 import { runEvents, runMagnet } from './scenarios/coop-b';
+import { runMutate } from './scenarios/mutate';
 import { runHowto, runHowtoTimeout, runMenu } from './scenarios/screens';
 import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './scenarios/maps';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
@@ -28,6 +29,7 @@ const MODES: Record<string, Scenario[]> = {
   burn: [runBurn],
   events: [runEvents],
   magnet: [runMagnet],
+  mutate: [runMutate],
   howto: [runHowto],
   'howto-timeout': [runHowtoTimeout],
   menu: [runMenu],
