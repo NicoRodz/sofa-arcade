@@ -1,1 +1,1 @@
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "types": ["node"], "allowImportingTsExtensions": true }, "include": ["*.ts", "../../vitest.config.ts", "../../vitest.shared.ts"] }
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "types": ["node"], "allowImportingTsExtensions": true }, "include": ["*.ts", "../capture.ts", "../capture/**/*.ts", "../obst-e2e.ts", "../obst-e2e/**/*.ts", "../kill-tree.ts", "../../vitest.config.ts", "../../vitest.shared.ts"] }
