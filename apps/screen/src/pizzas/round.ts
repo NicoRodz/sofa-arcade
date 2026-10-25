@@ -8,6 +8,7 @@ import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { COUNTDOWN_MS, addPlayer, createGame } from '@pichi/game-pizzas/sim';
 import { resolveMap } from '@pichi/game-pizzas/sim/generate';
 import type { MapChoice } from '@pichi/game-pizzas/sim/maps';
+import { usesSurfaces } from '@pichi/game-pizzas/sim/surfaces/legend';
 import { roundRules } from '@pichi/game-pizzas/sim/midround';
 import { assignPuestos, featuresOf } from '@pichi/game-pizzas/sim/puestos';
 import { NO_LEAD } from '@pichi/game-pizzas/sim/versus/report';
@@ -68,6 +69,7 @@ function startCoop(): undefined {
     bus: gameBus,
     eventsSeed: nextEventsSeed(),
     ...roundRules(app.config.modeOptions, app.config.difficulty),
+    surfaces: usesSurfaces(map.rows), // a map with ice or belts turns the surfaces on by itself; versus never draws those maps
     assist: assistIds(),
   }); // the lobby turns the new rules on: the oven burns (and, from Normal up, catches fire), the event by its option
   pz.played.add(map.id);

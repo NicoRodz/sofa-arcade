@@ -4,7 +4,7 @@ import { params } from '@pichi/core/difficulty';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
 import { generate } from '@pichi/game-pizzas/sim/generate';
-import { fixedMap, lobbyMaps, mapFeatures, mapStatus } from '@pichi/game-pizzas/sim/maps';
+import { COOP_MAPS, fixedMap, lobbyMaps, mapFeatures, mapStatus } from '@pichi/game-pizzas/sim/maps';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusLobbyMaps } from '@pichi/game-pizzas/sim/versus/lobby';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import { drawMiniMap } from '@pichi/game-pizzas/screen/art/ui';
@@ -20,7 +20,7 @@ export function renderMapPanel(vs: boolean, n: number) {
         map,
         status: status.state === 'recommended' ? { state: 'recommended' as const } : status,
       }))
-    : lobbyMaps(n);
+    : lobbyMaps(n, COOP_MAPS);
   const cards = rows.map(({ map, status }) => {
     const f = mapFeatures(map.rows);
     const cls = `mc ${status.state === 'recommended' ? 'rec' : status.state === 'warn' ? 'warn' : 'blk'} ${map.id === app.config.map ? 'sel' : ''}`;

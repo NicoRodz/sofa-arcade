@@ -15,6 +15,10 @@ import { MAP_12 } from './layouts/linea-de-montaje';
 import { MAP_13 } from './layouts/tres-cuartos';
 import { MAP_14 } from './layouts/dos-brigadas';
 import { MAP_15 } from './layouts/el-sotano';
+import { MAP_16 } from './layouts/pista-de-hielo';
+import { MAP_17 } from './layouts/cinta-de-sushi';
+import { MAP_18 } from './layouts/cocina-resbaladiza';
+import { MAP_19 } from './layouts/linea-de-montaje-con-cinta';
 import type { MapDef } from './types';
 
 // Spawns: the 'S' tiles are the spawn slots; slot i goes to the i-th chef (see puestos: spawn i sits next to puesto i).
@@ -39,14 +43,19 @@ export const FIXED_MAPS: readonly MapDef[] = [
   MAP_15,
 ];
 
+// The surface maps (ice, floor belts), coop only. Apart from FIXED_MAPS (the fifteen of the original design, pinned by many tests): the lobby draws from both
+// (COOP_MAPS) and turns `surfaces` on for these (usesSurfaces); a versus round never draws from this list.
+export const SURFACE_MAPS: readonly MapDef[] = [MAP_16, MAP_17, MAP_18, MAP_19];
+export const COOP_MAPS: readonly MapDef[] = [...FIXED_MAPS, ...SURFACE_MAPS];
+
 // Mechanics a map brings: a cheese crate ('3') makes Margarita orders, a sink ('L') turns on plate washing.
 export const mapFeatures = (rows: readonly string[]) => ({
   cheese: rows.some((r) => r.includes('3')),
   sink: rows.some((r) => r.includes('L')),
 });
 
-export const MAP_IDS = FIXED_MAPS.map((m) => m.id);
-export const fixedMap = (id: string): MapDef | undefined => FIXED_MAPS.find((m) => m.id === id);
+export const MAP_IDS = COOP_MAPS.map((m) => m.id);
+export const fixedMap = (id: string): MapDef | undefined => COOP_MAPS.find((m) => m.id === id);
 
 // Which fixed maps each difficulty draws from.
 export const MAPS_BY_DIFFICULTY: Record<Difficulty, readonly string[]> = { easy: ['1', '2'], normal: ['2', '3', '4'], hard: ['4', '5'] };

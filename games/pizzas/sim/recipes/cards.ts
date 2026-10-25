@@ -38,9 +38,14 @@ export const CARDS: Readonly<Record<string, Card>> = {
   V5: { recipes: [M, H] },
 };
 
+// The surface maps (ice, belts; ids 16-19) play the plain pair: the surface is the twist.
+const SURFACE_CARD: Card = { recipes: [M, C] };
+
 /** The card of a map: a derived versus map (`11-vs`) plays the card of the coop map it comes from. Undefined for a generated map. */
 export const cardFor = (mapId: string | undefined): Card | undefined =>
-  mapId === undefined ? undefined : (CARDS[mapId] ?? CARDS[mapId.replace(/-vs$/, '')]);
+  mapId === undefined
+    ? undefined
+    : (CARDS[mapId] ?? CARDS[mapId.replace(/-vs$/, '')] ?? (/^1[6-9]$/.test(mapId) ? SURFACE_CARD : undefined));
 
 /** The recipe of the card that needs a topping (at most one), if any. */
 export const toppingRecipe = (card: Card): Recipe | null => card.recipes.find((r) => RECIPE_DEFS[r].topping !== null) ?? null;

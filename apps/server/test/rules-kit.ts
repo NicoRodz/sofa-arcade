@@ -118,7 +118,7 @@ export interface RoundOpts {
   map?: string;
   difficulty?: 'easy' | 'normal' | 'hard';
   seed?: number;
-  flags: { burn?: boolean; fire?: boolean; events?: boolean; recipes?: boolean; magnet?: boolean | 'strong' };
+  flags: { burn?: boolean; fire?: boolean; events?: boolean; recipes?: boolean; magnet?: boolean | 'strong'; surfaces?: boolean };
   setup?: (g: Game) => void; // right after createGame and addPlayer
   drive?: (g: Game, p: Player, i: number, frame: number) => Controls | undefined; // a script of the test for chef i (undefined: the role decides)
   before?: (g: Game, frame: number) => void; // before each frame is sent
@@ -179,6 +179,8 @@ export async function playRound(room: string, o: RoundOpts) {
     'dishRejected',
     'potStart',
     'potReady',
+    'surface:slide',
+    'surface:belt',
   ] as const)
     bus.on(k, ((p: never) => {
       log.push({ t: game.time, type: k, p: p as Record<string, unknown> });

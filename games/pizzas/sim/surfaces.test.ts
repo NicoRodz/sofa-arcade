@@ -4,7 +4,6 @@ import { SPEED, TICK_MS, addPlayer, createGame, tick, type Controls, type Game, 
 import { parseMap } from './maps';
 import { addFloorItem } from './floor';
 import { usesSurfaces } from './surfaces/legend';
-import { BELT_SPEED, BELT_STEP_MS, ICE_TAU_MS } from './surfaces/config';
 import { surfaceProblems, validateMap } from './validate';
 import type { MapDef } from './maps/types';
 
@@ -94,7 +93,7 @@ describe('ice', () => {
   it('with the stick held it reaches 95% of the walking speed within 3 tau', () => {
     const g = make(true);
     put(chef(g), 3.5, 2.5);
-    walk(g, 3 * ICE_TAU_MS, { 1: { x: 1 } });
+    walk(g, 1200, { 1: { x: 1 } });
     expect(chef(g).vx).toBeGreaterThan(SPEED * 0.9);
   });
 });
@@ -104,7 +103,7 @@ describe('belts', () => {
     const g = make(true);
     put(chef(g), 3.5, 5.5);
     walk(g, 1000, {});
-    expect(chef(g).x - 3.5).toBeCloseTo(BELT_SPEED, 1);
+    expect(chef(g).x - 3.5).toBeCloseTo(1.2, 1);
   });
   it('can be walked against, slower', () => {
     const g = make(true);
@@ -112,16 +111,27 @@ describe('belts', () => {
     walk(g, 800, { 1: { x: -1 } });
     const net = (9.5 - chef(g).x) / 0.8;
     expect(net).toBeGreaterThan(1.5);
-    expect(net).toBeLessThan(SPEED - BELT_SPEED + 0.3);
+    expect(net).toBeLessThan(SPEED - 1.2 + 0.3);
   });
   it('carry a loose item one tile per BELT_STEP_MS and stop it at the end of the belt, on the floor', () => {
     const g = make(true);
     const f = addFloorItem(g, { tx: 2, ty: 5, item: 'raw0', kind: 'dropped', team: 0 });
-    walk(g, BELT_STEP_MS * 3 + 50, {});
+    walk(g, 833 * 3 + 50, {});
     expect(f.tx).toBe(5);
     walk(g, 20000, {});
     expect(f.tx).toBe(13); // the belt ends at column 12; the item steps off onto the plain floor and stays
     expect(g.grid[f.ty]![f.tx]!.kind).toBe('floor');
+  });
+  it('never push an item into a station or a wall: it waits at the end of the belt', () => {
+    const g = createGame({
+      rows: ROWS.map((r, i) => (i === 5 ? 'C.→→→→→→→→→→→C..C'.slice(0, 13) + 'C..' : r)),
+      surfaces: true,
+      countdownMs: 0,
+      n: 2,
+    });
+    const f = addFloorItem(g, { tx: 11, ty: 5, item: 'raw0', kind: 'dropped', team: 0 });
+    walk(g, 5000, {});
+    expect(f.tx).toBe(12);
   });
   it('leave rubbish where it fell and a chef carried into a wall just stops', () => {
     const g = make(true);
