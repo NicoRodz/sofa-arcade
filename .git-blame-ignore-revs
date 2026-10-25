@@ -1,0 +1,4 @@
+# Commits that only reformat code (biome format): git blame skips them.
+# Use: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# F2: biome format, esbuild-minified output identical on all 315 files
+560dc3ee1a5dffcfe04775c43ea27f11a9db5c41
