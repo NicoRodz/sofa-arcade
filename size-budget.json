@@ -33,9 +33,6 @@
   "games/obstaculos/test/obst.dynamics.scenarios.ts": { "max": 441, "until": "2027-03-31" },
   "games/obstaculos/validator/graph.ts": { "max": 734, "until": "2026-12-31" },
   "games/obstaculos/validator/validate.ts": { "max": 467, "until": "2027-03-31" },
-  "games/pizzas/screen/art/env.ts": { "max": 776, "until": "2027-03-31" },
-  "games/pizzas/screen/art/events.ts": { "max": 716, "until": "2027-03-31" },
-  "games/pizzas/screen/art/food.ts": { "max": 622, "until": "2027-03-31" },
   "games/pizzas/screen/art/hud.ts": { "max": 357, "until": "2027-03-31" },
   "games/pizzas/screen/art/sabotage.ts": { "max": 390, "until": "2027-03-31" },
   "games/pizzas/screen/art/stations.ts": { "max": 421, "until": "2027-03-31" },
@@ -56,9 +53,6 @@
   "platform/core/src/lobby/vote.test.ts": { "max": 670, "until": "2027-03-31" },
   "platform/core/src/lobby/vote.ts": { "max": 369, "until": "2027-03-31" },
   "platform/core/src/protocol.ts": { "max": 565, "until": "2027-03-31" },
-  "platform/screen/src/art/chef.ts": { "max": 508, "until": "2027-03-31" },
-  "platform/screen/src/art/chefdraw.ts": { "max": 575, "until": "2027-03-31" },
-  "platform/screen/src/art/fx.ts": { "max": 572, "until": "2027-03-31" },
   "platform/screen/src/audio/recipes.ts": { "max": 497, "until": "2027-03-31" },
   "scripts/move.ts": { "max": 328, "until": "2027-03-31" },
   "tools/camp-e2e.ts": { "max": 430, "until": "2027-03-31" },
@@ -74,7 +68,7 @@
   "games/obstaculos/campaign": { "max": 15, "until": "2026-12-31" },
   "games/obstaculos/screen/render": { "max": 18, "until": "2026-12-31" },
   "games/obstaculos/sim": { "max": 20, "until": "2026-12-31" },
-  "games/pizzas/screen/art": { "max": 16, "until": "2026-12-31" },
+  "games/pizzas/screen/art": { "max": 13, "until": "2026-12-31" },
   "games/pizzas/sim": { "max": 17, "until": "2026-12-31" },
   "tools": { "max": 13, "until": "2026-12-31" }
  }
