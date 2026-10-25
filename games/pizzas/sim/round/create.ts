@@ -58,6 +58,7 @@ export function createGame(
     magnet?: boolean | MagnetLevel;
     surfaces?: boolean;
     mutate?: boolean;
+    pace?: number; // order-flow speed-up (1 = the table as it is): orders arrive 1/pace as far apart and the queue holds one more from 1.3 up
   } = {},
 ): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
@@ -69,6 +70,10 @@ export function createGame(
   // the order flow is sized for the average team (versus: round((nA + nB) / 2), 3v2 plays at 3); coop keeps its own team size
   const n = opts.n ?? (seats ? Math.round(seats.reduce((a, t) => a + t.playerIds.length, 0) / teamCount) : 2);
   const p = difficultyParams(difficulty, n);
+  if (opts.pace && opts.pace !== 1) {
+    p.orderEveryMs /= opts.pace;
+    if (opts.pace >= 1.3) p.maxOrders += 1;
+  }
   const seed = opts.seed ?? 1;
   const kitchens = versus ? kitchenRegions(grid, teamCount, opts.spawns) : null;
   const stations: Station[] = [];

@@ -477,8 +477,8 @@ describe('the lobby option', () => {
     expect(eventsOf({ [EVENTS_OPTION]: 'nonsense' }, 'hard')).toBe(true); // anything that is not a boolean is "no choice made"
   });
   it('roundRules: the burning oven always, the event by the option', () => {
-    expect(roundRules({}, 'normal')).toEqual({ burn: true, fire: true, events: true, recipes: true, magnet: 'normal' });
-    expect(roundRules({}, 'easy')).toEqual({ burn: true, fire: true, events: false, recipes: true, magnet: 'strong' }); // Easy: a stronger magnet
+    expect(roundRules({}, 'normal')).toEqual({ burn: true, fire: true, events: true, recipes: true, magnet: 'normal', pace: 1.6 });
+    expect(roundRules({}, 'easy')).toEqual({ burn: true, fire: true, events: false, recipes: true, magnet: 'strong', pace: 1.2 }); // Easy: a stronger magnet
     expect(roundRules({}, 'hard').magnet).toBe('normal');
     expect(roundRules({ magnet: false }, 'normal').magnet).toBe(false);
     expect(roundRules({ events: false }, 'hard').events).toBe(false);
