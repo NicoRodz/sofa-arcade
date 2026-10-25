@@ -6,11 +6,23 @@ import { DOUSE_MS, GRACE_MS } from '@party/shared/burn';
 import { startServer } from '../src/server';
 import { kit, neglectedPizza, playRound } from './rules-kit';
 
-beforeAll(async () => { kit.srv = await startServer({ port: 0, mode: 'none' }); });
-afterAll(async () => { await kit.srv.close(); });
+beforeAll(async () => {
+  kit.srv = await startServer({ port: 0, mode: 'none' });
+});
+afterAll(async () => {
+  await kit.srv.close();
+});
 
 const flags = { burn: true, fire: true };
-const burnAt = (ms: number) => { let done = false; return (g: Parameters<typeof neglectedPizza>[0]) => { if (!done && g.time >= ms) { done = true; neglectedPizza(g); } }; };
+const burnAt = (ms: number) => {
+  let done = false;
+  return (g: Parameters<typeof neglectedPizza>[0]) => {
+    if (!done && g.time >= ms) {
+      done = true;
+      neglectedPizza(g);
+    }
+  };
+};
 
 describe('the oven that burns over the relay', () => {
   it('nobody takes the pizza out and nobody puts the fire out: it burns after the grace time, catches fire 5 s later, jumps to the counters and stays lit to the end', async () => {

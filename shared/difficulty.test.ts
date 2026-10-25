@@ -3,7 +3,9 @@ import { DIFFICULTIES, maxOrders, orderEveryMs, params } from './difficulty';
 
 describe('order flow by team size', () => {
   it('Normal interval is 40 s / (0.6 + 0.2 N): 40, 28.6, 22.2 and 18.2 s for 2, 4, 6 and 8 players', () => {
-    expect([2, 4, 6, 8].map((n) => orderEveryMs('normal', n))).toEqual([40_000, 40_000 / 1.4, 40_000 / 1.8, 40_000 / 2.2].map((v) => expect.closeTo(v, 6)));
+    expect([2, 4, 6, 8].map((n) => orderEveryMs('normal', n))).toEqual(
+      [40_000, 40_000 / 1.4, 40_000 / 1.8, 40_000 / 2.2].map((v) => expect.closeTo(v, 6)),
+    );
   });
   it('Easy stretches the interval x1.25 and Hard shrinks it x0.8', () => {
     expect(orderEveryMs('easy', 2)).toBe(50_000);
@@ -31,7 +33,8 @@ describe('params', () => {
 
   it('does not scale patience, cutting, cooking or penalty with the team', () => {
     for (const d of DIFFICULTIES) {
-      const a = params(d, 2), b = params(d, 8);
+      const a = params(d, 2),
+        b = params(d, 8);
       expect([b.orderTtlMs, b.cutMs, b.cookMs, b.penalty]).toEqual([a.orderTtlMs, a.cutMs, a.cookMs, a.penalty]);
     }
   });

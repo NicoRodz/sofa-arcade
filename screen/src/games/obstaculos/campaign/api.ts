@@ -2,18 +2,37 @@
 // thing the Mac keeps for itself, the id of the last expedition ("Continuar"). The server is the source of truth: localStorage only points at it.
 import { parseExpedition, type Expedition } from '@party/shared/obstaculos/campaign';
 
-export interface ExpeditionSummary { id: string; name: string; updatedAt: number; stars: number; lastLevelId: string | null; active: boolean }
-export type Fetch = (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
+export interface ExpeditionSummary {
+  id: string;
+  name: string;
+  updatedAt: number;
+  stars: number;
+  lastLevelId: string | null;
+  active: boolean;
+}
+export type Fetch = (
+  url: string,
+  init?: { method?: string; headers?: Record<string, string>; body?: string },
+) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 export type ClaimResult = { ok: true } | { ok: false; room: string } | { ok: 'error' };
 
 export class CampaignApi {
-  constructor(private readonly doFetch: Fetch = (u, i) => fetch(u, i), private readonly base = '/api/expeditions') {}
+  constructor(
+    private readonly doFetch: Fetch = (u, i) => fetch(u, i),
+    private readonly base = '/api/expeditions',
+  ) {}
 
   private async call(method: string, path: string, body?: unknown): Promise<{ ok: boolean; status: number; data: any }> {
     try {
-      const r = await this.doFetch(`${this.base}${path}`, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+      const r = await this.doFetch(`${this.base}${path}`, {
+        method,
+        headers: { 'content-type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
       return { ok: r.ok, status: r.status, data: await r.json().catch(() => null) };
-    } catch { return { ok: false, status: 0, data: null }; } // the server is down or the network is: the caller decides what to say
+    } catch {
+      return { ok: false, status: 0, data: null };
+    } // the server is down or the network is: the caller decides what to say
   }
 
   async list(): Promise<ExpeditionSummary[] | null> {
@@ -38,15 +57,41 @@ export class CampaignApi {
     if (r.ok) return { ok: true };
     return r.status === 409 ? { ok: false, room: String(r.data?.room ?? '') } : { ok: 'error' };
   }
-  async release(id: string, room: string): Promise<void> { await this.call('POST', `/${encodeURIComponent(id)}/release`, { room }); }
-  async reset(id: string): Promise<boolean> { return (await this.call('DELETE', `/${encodeURIComponent(id)}`)).ok; }
+  async release(id: string, room: string): Promise<void> {
+    await this.call('POST', `/${encodeURIComponent(id)}/release`, { room });
+  }
+  async reset(id: string): Promise<boolean> {
+    return (await this.call('DELETE', `/${encodeURIComponent(id)}`)).ok;
+  }
 }
 
 // What the Mac remembers: only the id of the last expedition. Storage can be blocked or empty (private window): then there is simply no "Continuar".
 export const LAST_KEY = 'pg.obst.lastExp';
-export interface KV { getItem(k: string): string | null; setItem(k: string, v: string): void; removeItem(k: string): void }
+export interface KV {
+  getItem(k: string): string | null;
+  setItem(k: string, v: string): void;
+  removeItem(k: string): void;
+}
 export const lastExpedition = {
-  get(kv: KV | null): string | null { try { return kv?.getItem(LAST_KEY) ?? null; } catch { return null; } },
-  set(kv: KV | null, id: string): void { try { kv?.setItem(LAST_KEY, id); } catch { /* blocked */ } },
-  clear(kv: KV | null): void { try { kv?.removeItem(LAST_KEY); } catch { /* blocked */ } },
+  get(kv: KV | null): string | null {
+    try {
+      return kv?.getItem(LAST_KEY) ?? null;
+    } catch {
+      return null;
+    }
+  },
+  set(kv: KV | null, id: string): void {
+    try {
+      kv?.setItem(LAST_KEY, id);
+    } catch {
+      /* blocked */
+    }
+  },
+  clear(kv: KV | null): void {
+    try {
+      kv?.removeItem(LAST_KEY);
+    } catch {
+      /* blocked */
+    }
+  },
 };

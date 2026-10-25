@@ -17,7 +17,8 @@ describe('dynamic 10: lantern and crystals (a crystal is solid only while the la
   const rows = draw(hall(40, 16), [6, FLOOR, 'l'], ...vline(20, 10, FLOOR, 'Y'));
   const mk = (o: { campaign?: boolean; slots?: number[] } = {}) => {
     const w = world(level(rows), { mode: 'free', slots: o.slots ?? [0, 1], ...(o.campaign === false ? {} : camp()) });
-    teleport(w, 0, 3, FLOOR); teleport(w, 1, 4, FLOOR);
+    teleport(w, 0, 3, FLOOR);
+    teleport(w, 1, 4, FLOOR);
     return w;
   };
   const crystals = (w: ReturnType<typeof mk>) => w.ent.crystals.map((c) => tile(w, c.x, c.y));
@@ -54,16 +55,21 @@ describe('dynamic 10: lantern and crystals (a crystal is solid only while the la
   });
   it('the circle is 4 tiles of radius, centre to centre: the crystal 3 tiles away is lit, the ones farther are not, and the top of the wall (3 tiles up) needs the holder closer', () => {
     const w = mk();
-    teleport(w, 0, 6, FLOOR); run(w, 2);
-    teleport(w, 0, 17, FLOOR); run(w, 2); // 3 tiles from column 20 on the floor: the bottom crystal is lit, the top one (3 up and 3 across = 4.2 tiles) is not
+    teleport(w, 0, 6, FLOOR);
+    run(w, 2);
+    teleport(w, 0, 17, FLOOR);
+    run(w, 2); // 3 tiles from column 20 on the floor: the bottom crystal is lit, the top one (3 up and 3 across = 4.2 tiles) is not
     expect(crystals(w)).toEqual([T.Crystal, T.CrystalLit, T.CrystalLit, T.CrystalLit]);
-    teleport(w, 0, 15, FLOOR); run(w, 2); // 5 tiles away: nothing
+    teleport(w, 0, 15, FLOOR);
+    run(w, 2); // 5 tiles away: nothing
     expect(crystals(w)).toEqual([T.Crystal, T.Crystal, T.Crystal, T.Crystal]);
   });
   it('walking away with the lantern puts the light out: "dim" rings once and whoever stood on a lit crystal falls', () => {
     const w = mk();
-    teleport(w, 0, 6, FLOOR); run(w, 2);
-    teleport(w, 0, 18, FLOOR); run(w, 2);
+    teleport(w, 0, 6, FLOOR);
+    run(w, 2);
+    teleport(w, 0, 18, FLOOR);
+    run(w, 2);
     teleport(w, 1, 20, 8); // above the wall (rows 10..13 are crystals): it lands on the lit top
     run(w, 40);
     expect(pl(w, 1).body.y + PLAYER_H).toBeCloseTo(10 * TILE, 0);
@@ -74,7 +80,8 @@ describe('dynamic 10: lantern and crystals (a crystal is solid only while the la
   });
   it('a crystal never turns solid around a body: it waits dark until the cell is free', () => {
     const w = mk();
-    teleport(w, 0, 6, FLOOR); run(w, 2);
+    teleport(w, 0, 6, FLOOR);
+    run(w, 2);
     teleport(w, 1, 20, FLOOR); // standing inside the lowest crystal
     teleport(w, 0, 18, FLOOR);
     run(w, 3);
@@ -86,7 +93,8 @@ describe('dynamic 10: lantern and crystals (a crystal is solid only while the la
   });
   it('B hands it over to a teammate in reach (preview says "pass"), obst.lantern pass rings and the light follows the new holder', () => {
     const w = mk();
-    teleport(w, 0, 6, FLOOR); run(w, 2);
+    teleport(w, 0, 6, FLOOR);
+    run(w, 2);
     teleport(w, 1, 7, FLOOR);
     expect(previewB(w, 0).action).toBe('pass');
     const ev = run(w, 1, B(0));
@@ -96,8 +104,10 @@ describe('dynamic 10: lantern and crystals (a crystal is solid only while the la
   });
   it('whoever dies drops it where it was found and the crystals go dark', () => {
     const w = mk();
-    teleport(w, 0, 6, FLOOR); run(w, 2);
-    teleport(w, 0, 18, FLOOR); run(w, 2);
+    teleport(w, 0, 6, FLOOR);
+    run(w, 2);
+    teleport(w, 0, 18, FLOOR);
+    run(w, 2);
     pl(w, 0).body.y = w.level.h * TILE + 300; // out of the grid: falls to its death
     run(w, 4);
     expect(w.ent.lanterns[0]!.heldBy).toBe(-1);
@@ -131,8 +141,17 @@ describe('dynamic 11: elastic ring (the rope that hangs from a "u" ring stretche
   const dist = (w: ReturnType<typeof mk>) => Math.hypot(pl(w, 0).body.x - pl(w, 1).body.x, pl(w, 0).body.y - pl(w, 1).body.y);
   // fall: max stretch and the step it happens
   const fall = (w: ReturnType<typeof mk>, n = 240) => {
-    let max = 0, maxAt = 0, vyUp = 0;
-    const ev = run(w, n, undefined, () => { const d = dist(w); if (d > max) { max = d; maxAt = w.tick; } if (w.tick > maxAt) vyUp = Math.min(vyUp, pl(w, 1).body.vy); });
+    let max = 0,
+      maxAt = 0,
+      vyUp = 0;
+    const ev = run(w, n, undefined, () => {
+      const d = dist(w);
+      if (d > max) {
+        max = d;
+        maxAt = w.tick;
+      }
+      if (w.tick > maxAt) vyUp = Math.min(vyUp, pl(w, 1).body.vy);
+    });
     return { max, maxAt, vyUp, ev };
   };
   it('anchored to it, the partner falls past the rope length (up to 1.6x), bounces back up (upward speed after the stretch) and obst.bungee rings with its stretch', () => {
@@ -152,8 +171,18 @@ describe('dynamic 11: elastic ring (the rope that hangs from a "u" ring stretche
     const w = mk();
     run(w, 600);
     const d = dist(w);
-    expect(d).toBeGreaterThan(ROPE * 1.05); expect(d).toBeLessThan(ROPE * 1.3);
-    const lo = (() => { let m = Infinity, M = 0; run(w, 90, undefined, () => { const x = dist(w); m = Math.min(m, x); M = Math.max(M, x); }); return M - m; })();
+    expect(d).toBeGreaterThan(ROPE * 1.05);
+    expect(d).toBeLessThan(ROPE * 1.3);
+    const lo = (() => {
+      let m = Infinity,
+        M = 0;
+      run(w, 90, undefined, () => {
+        const x = dist(w);
+        m = Math.min(m, x);
+        M = Math.max(M, x);
+      });
+      return M - m;
+    })();
     expect(lo).toBeLessThan(0.02 * ROPE); // settled (a plain asymmetric-gravity limit cycle would still swing 15+ px)
     expect(pl(w, 1).mode).toBe('active');
   });
@@ -193,15 +222,18 @@ describe('dynamic 12a: sinkers (a rock sinks 0.5 tile/s PER CHARACTER and floats
     teleport(w, 0, 9, 8);
     const y0 = pl(w, 0).body.y;
     const ev = run(w, 60);
-    expect(obj(w, 'D').oy).toBeGreaterThan(21); expect(obj(w, 'D').oy).toBeLessThan(25.5); // 24 px minus the step it takes to load
+    expect(obj(w, 'D').oy).toBeGreaterThan(21);
+    expect(obj(w, 'D').oy).toBeLessThan(25.5); // 24 px minus the step it takes to load
     expect(pl(w, 0).body.y - y0).toBeCloseTo(obj(w, 'D').oy, 0);
     expect(of(ev, 'obst.sinker')).toEqual([{ id: 'D', load: 1 }]);
   });
   it('two characters: twice as fast (the sinking is per character)', () => {
     const w = mk();
-    teleport(w, 0, 9, 8); teleport(w, 1, 10, 8);
+    teleport(w, 0, 9, 8);
+    teleport(w, 1, 10, 8);
     run(w, 60);
-    expect(obj(w, 'D').oy).toBeGreaterThan(44); expect(obj(w, 'D').oy).toBeLessThan(50);
+    expect(obj(w, 'D').oy).toBeGreaterThan(44);
+    expect(obj(w, 'D').oy).toBeLessThan(50);
   });
   it('it stops at its travel (3 tiles) and rings only once', () => {
     const w = mk();
@@ -237,19 +269,26 @@ describe('dynamic 12b: geyser (a timed spring: 1 s of bubbling, then 0.5 s of er
   const params = { E: { kind: 'geyser' as const, periodSec: 4, activeSec: 0.5 } };
   const mk = (o: { campaign?: boolean } = {}) => {
     const w = world(level(rows, { params }), { mode: 'free', ...(o.campaign === false ? {} : camp()) });
-    teleport(w, 0, 3, FLOOR); teleport(w, 1, 5, FLOOR);
+    teleport(w, 0, 3, FLOOR);
+    teleport(w, 1, 5, FLOOR);
     return w;
   };
   const phases = (w: ReturnType<typeof mk>, n: number) => {
     const out: { tick: number; phase: string }[] = [];
-    run(w, n, undefined, (ev) => { for (const e of ev) if (e.name === 'obst.geyser') out.push({ tick: w.tick, phase: e.data.phase }); });
+    run(w, n, undefined, (ev) => {
+      for (const e of ev) if (e.name === 'obst.geyser') out.push({ tick: w.tick, phase: e.data.phase });
+    });
     return out;
   };
   it('every 4 s: "warn" at 2.5 s, "gush" at 3.5 s (the last 0.5 s of the period), "calm" when the period turns', () => {
     const w = mk();
     expect(phases(w, 480)).toEqual([
-      { tick: 150, phase: 'warn' }, { tick: 210, phase: 'gush' }, { tick: 240, phase: 'calm' },
-      { tick: 390, phase: 'warn' }, { tick: 450, phase: 'gush' }, { tick: 480, phase: 'calm' },
+      { tick: 150, phase: 'warn' },
+      { tick: 210, phase: 'gush' },
+      { tick: 240, phase: 'calm' },
+      { tick: 390, phase: 'warn' },
+      { tick: 450, phase: 'gush' },
+      { tick: 480, phase: 'calm' },
     ]);
   });
   it('whoever stands in the vent when it erupts is launched at 1.65 x the jump speed, far above a normal jump; the other one, outside, stays', () => {
@@ -258,8 +297,12 @@ describe('dynamic 12b: geyser (a timed spring: 1 s of bubbling, then 0.5 s of er
     run(w, 209);
     expect(pl(w, 0).body.grounded).toBe(true);
     const feet0 = pl(w, 0).body.y + PLAYER_H;
-    let vy = 0, top = feet0;
-    run(w, 90, undefined, () => { vy = Math.min(vy, pl(w, 0).body.vy); top = Math.min(top, pl(w, 0).body.y + PLAYER_H); });
+    let vy = 0,
+      top = feet0;
+    run(w, 90, undefined, () => {
+      vy = Math.min(vy, pl(w, 0).body.vy);
+      top = Math.min(top, pl(w, 0).body.y + PLAYER_H);
+    });
     expect(vy).toBeLessThan(-JUMP_V0 * 1.6);
     expect(feet0 - top).toBeGreaterThan(300); // a normal jump is 173 px; 1.65x the speed is 2.7x the height
     expect(pl(w, 1).body.y + PLAYER_H).toBeCloseTo(feet0, 0);
@@ -267,23 +310,33 @@ describe('dynamic 12b: geyser (a timed spring: 1 s of bubbling, then 0.5 s of er
   it('being in the vent while it is calm or only bubbling does nothing', () => {
     const w = mk();
     teleport(w, 0, 20, FLOOR);
-    let top = Infinity; const f0 = pl(w, 0).body.y;
-    run(w, 205, undefined, () => { top = Math.min(top, pl(w, 0).body.y); });
+    let top = Infinity;
+    const f0 = pl(w, 0).body.y;
+    run(w, 205, undefined, () => {
+      top = Math.min(top, pl(w, 0).body.y);
+    });
     expect(f0 - top).toBeLessThan(1);
   });
   it('one launch per eruption: the body is still inside the vent for the first steps of the climb and must not be hurled again (the apex stays at ~9.8 tiles: 1.65 x v0, not a held jet)', () => {
     const w = mk();
     teleport(w, 0, 20, FLOOR);
     run(w, 209);
-    const f0 = pl(w, 0).body.y + PLAYER_H; let top = f0;
-    run(w, 120, undefined, () => { top = Math.min(top, pl(w, 0).body.y + PLAYER_H); });
-    expect(f0 - top).toBeGreaterThan(9.5 * TILE); expect(f0 - top).toBeLessThan(10.1 * TILE);
+    const f0 = pl(w, 0).body.y + PLAYER_H;
+    let top = f0;
+    run(w, 120, undefined, () => {
+      top = Math.min(top, pl(w, 0).body.y + PLAYER_H);
+    });
+    expect(f0 - top).toBeGreaterThan(9.5 * TILE);
+    expect(f0 - top).toBeLessThan(10.1 * TILE);
   });
   it('quick match: the vent is air, nobody is launched, no event', () => {
     const w = mk({ campaign: false });
     teleport(w, 0, 20, FLOOR);
-    let top = Infinity; const f0 = pl(w, 0).body.y;
-    const ev = run(w, 480, undefined, () => { top = Math.min(top, pl(w, 0).body.y); });
+    let top = Infinity;
+    const f0 = pl(w, 0).body.y;
+    const ev = run(w, 480, undefined, () => {
+      top = Math.min(top, pl(w, 0).body.y);
+    });
     expect(f0 - top).toBeLessThan(1);
     expect(names(ev)).not.toContain('obst.geyser');
   });

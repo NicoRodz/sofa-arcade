@@ -17,13 +17,28 @@ export const isDark = (w: World): boolean => !!w.camp && w.ent.lanterns.length >
 function stepItems(w: World): void {
   for (const k of w.ent.lanterns) {
     if (k.heldBy < 0) {
-      const p = w.players.find((q) => isActive(q) && !ownsLantern(w, q.slot) && Math.abs(q.body.x + PLAYER_W / 2 - k.x) < PLAYER_W / 2 + PICK_TAKE_REACH && Math.abs(q.body.y + PLAYER_H / 2 - k.y) < PLAYER_H / 2 + PICK_TAKE_REACH);
-      if (p) { k.heldBy = p.slot; emit(w, 'obst.lantern', { player: p.slot, action: 'take' }); }
+      const p = w.players.find(
+        (q) =>
+          isActive(q) &&
+          !ownsLantern(w, q.slot) &&
+          Math.abs(q.body.x + PLAYER_W / 2 - k.x) < PLAYER_W / 2 + PICK_TAKE_REACH &&
+          Math.abs(q.body.y + PLAYER_H / 2 - k.y) < PLAYER_H / 2 + PICK_TAKE_REACH,
+      );
+      if (p) {
+        k.heldBy = p.slot;
+        emit(w, 'obst.lantern', { player: p.slot, action: 'take' });
+      }
       continue;
     }
     const p = w.players.find((q) => q.slot === k.heldBy);
-    if (!p || !isActive(p)) { k.heldBy = -1; k.x = k.homeX; k.y = k.homeY; continue; }
-    k.x = p.body.x + PLAYER_W / 2; k.y = p.body.y - 6;
+    if (!p || !isActive(p)) {
+      k.heldBy = -1;
+      k.x = k.homeX;
+      k.y = k.homeY;
+      continue;
+    }
+    k.x = p.body.x + PLAYER_W / 2;
+    k.y = p.body.y - 6;
   }
 }
 
@@ -46,14 +61,26 @@ export function stepLanterns(w: World): void {
   const c = w.camp;
   if (!c || w.ent.lanterns.length === 0) return;
   stepItems(w);
-  const src = lightSources(w), r2 = (c.lanternRadiusTiles * TILE) ** 2;
-  let lit = 0, dim = 0, by = -1;
+  const src = lightSources(w),
+    r2 = (c.lanternRadiusTiles * TILE) ** 2;
+  let lit = 0,
+    dim = 0,
+    by = -1;
   for (const cell of w.ent.crystals) {
-    const cx = (cell.x + 0.5) * TILE, cy = (cell.y + 0.5) * TILE;
+    const cx = (cell.x + 0.5) * TILE,
+      cy = (cell.y + 0.5) * TILE;
     const s = src.find((q) => (q.x - cx) ** 2 + (q.y - cy) ** 2 <= r2);
     const kind = tileAt(w.grid, cell.x, cell.y);
-    if (s && kind === T.Crystal) { if (!occupiedCell(w, cell.x, cell.y)) { setTile(w.grid, cell.x, cell.y, T.CrystalLit); lit++; by = s.holder; } }
-    else if (!s && kind === T.CrystalLit) { setTile(w.grid, cell.x, cell.y, T.Crystal); dim++; }
+    if (s && kind === T.Crystal) {
+      if (!occupiedCell(w, cell.x, cell.y)) {
+        setTile(w.grid, cell.x, cell.y, T.CrystalLit);
+        lit++;
+        by = s.holder;
+      }
+    } else if (!s && kind === T.CrystalLit) {
+      setTile(w.grid, cell.x, cell.y, T.Crystal);
+      dim++;
+    }
   }
   if (lit + dim > 0) w.tilesVersion++;
   if (lit > 0) emit(w, 'obst.lantern', { player: by, action: 'light' });
@@ -63,7 +90,11 @@ export function stepLanterns(w: World): void {
 // B hands the lantern over (sim/pickaxe.ts calls this next to the pickaxe).
 export function passLantern(w: World, from: PlayerState, to: PlayerState): boolean {
   let any = false;
-  for (const k of w.ent.lanterns) if (k.heldBy === from.slot) { k.heldBy = to.slot; any = true; }
+  for (const k of w.ent.lanterns)
+    if (k.heldBy === from.slot) {
+      k.heldBy = to.slot;
+      any = true;
+    }
   if (any) emit(w, 'obst.lantern', { player: from.slot, action: 'pass' });
   return any;
 }

@@ -6,27 +6,103 @@ import { SCHOOL_MAP_ID, SCHOOL_TOTAL, roomKey } from '@party/shared/tutorial';
 import { ALL_DONE_HOLD_MS, createSchoolHost, type SchoolCtx, type SchoolPlayer } from './host';
 import type { SchoolView, ViewModel } from './view';
 
-const info = (id: number, extra: Partial<PublicPlayer> = {}): PublicPlayer => ({ id, name: `P${id}`, color: '#fff', slot: id - 1, connected: true, teamId: null, ...extra });
-const player = (id: number, extra: Partial<PublicPlayer> = {}): SchoolPlayer => ({ info: info(id, extra), ctl: { x: 0, y: 0, b: false }, pendA: 0, pendB: 0 });
+const info = (id: number, extra: Partial<PublicPlayer> = {}): PublicPlayer => ({
+  id,
+  name: `P${id}`,
+  color: '#fff',
+  slot: id - 1,
+  connected: true,
+  teamId: null,
+  ...extra,
+});
+const player = (id: number, extra: Partial<PublicPlayer> = {}): SchoolPlayer => ({
+  info: info(id, extra),
+  ctl: { x: 0, y: 0, b: false },
+  pendA: 0,
+  pendB: 0,
+});
 
-function rig(o: { n?: number; infos?: Partial<PublicPlayer>[]; storage?: SchoolCtx['storage']; pizzas?: boolean; versus?: boolean; busy?: boolean; room?: string } = {}) {
+function rig(
+  o: {
+    n?: number;
+    infos?: Partial<PublicPlayer>[];
+    storage?: SchoolCtx['storage'];
+    pizzas?: boolean;
+    versus?: boolean;
+    busy?: boolean;
+    room?: string;
+  } = {},
+) {
   const players = new Map<number, SchoolPlayer>();
   (o.infos ?? Array.from({ length: o.n ?? 2 }, () => ({}))).forEach((x, i) => players.set(i + 1, player(i + 1, x)));
   const mem = new Map<string, string>();
-  const state = { phase: 'lobby' as Phase, busy: !!o.busy, pizzas: o.pizzas ?? true, versus: !!o.versus, rounds: 0, sent: [] as ClientMsg[], started: [] as { map: string; view: unknown }[], views: [] as ViewModel[], shown: 0, hidden: 0, sfx: [] as string[], prepared: 0 };
-  const view: SchoolView = { shown: false, show() { state.shown++; }, hide() { state.hidden++; }, render(m) { state.views.push(m); } };
+  const state = {
+    phase: 'lobby' as Phase,
+    busy: !!o.busy,
+    pizzas: o.pizzas ?? true,
+    versus: !!o.versus,
+    rounds: 0,
+    sent: [] as ClientMsg[],
+    started: [] as { map: string; view: unknown }[],
+    views: [] as ViewModel[],
+    shown: 0,
+    hidden: 0,
+    sfx: [] as string[],
+    prepared: 0,
+  };
+  const view: SchoolView = {
+    shown: false,
+    show() {
+      state.shown++;
+    },
+    hide() {
+      state.hidden++;
+    },
+    render(m) {
+      state.views.push(m);
+    },
+  };
   const ctx: SchoolCtx = {
-    players, room: o.room ?? 'ROOM', send: (m) => state.sent.push(m), bus: new Emitter<GameEvents>(),
-    scene: () => ({ startRound: (_g, map, _seed, v) => { state.started.push({ map, view: v }); } }),
-    sfx: (id) => state.sfx.push(id), phase: () => state.phase,
-    dispatch: (ev: PhaseEvent) => { state.phase = nextPhase(state.phase, ev); if (state.phase === 'school') host.begin(); }, // what main.ts does: setPhase(school) -> begin()
-    transition: (swap) => swap(), busy: () => state.busy, pizzas: () => state.pizzas, versus: () => state.versus,
-    prepare: () => { state.prepared++; }, continueToRound: () => { state.rounds++; },
-    storage: o.storage === undefined ? { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => { mem.set(k, v); } } : o.storage,
+    players,
+    room: o.room ?? 'ROOM',
+    send: (m) => state.sent.push(m),
+    bus: new Emitter<GameEvents>(),
+    scene: () => ({
+      startRound: (_g, map, _seed, v) => {
+        state.started.push({ map, view: v });
+      },
+    }),
+    sfx: (id) => state.sfx.push(id),
+    phase: () => state.phase,
+    dispatch: (ev: PhaseEvent) => {
+      state.phase = nextPhase(state.phase, ev);
+      if (state.phase === 'school') host.begin();
+    }, // what main.ts does: setPhase(school) -> begin()
+    transition: (swap) => swap(),
+    busy: () => state.busy,
+    pizzas: () => state.pizzas,
+    versus: () => state.versus,
+    prepare: () => {
+      state.prepared++;
+    },
+    continueToRound: () => {
+      state.rounds++;
+    },
+    storage:
+      o.storage === undefined
+        ? {
+            getItem: (k) => mem.get(k) ?? null,
+            setItem: (k, v) => {
+              mem.set(k, v);
+            },
+          }
+        : o.storage,
     makeView: () => view,
   };
   const host = createSchoolHost(ctx);
-  const frames = (ms: number) => { for (let t = 0; t < ms; t += 16) host.step(16); };
+  const frames = (ms: number) => {
+    for (let t = 0; t < ms; t += 16) host.step(16);
+  };
   return { host, ctx, state, players, mem, frames };
 }
 
@@ -42,7 +118,11 @@ describe('when "A cocinar" offers the school', () => {
     expect(r.host.debug().origin).toBe('start');
   });
   it('not in the other game, not while the iris or the how-to card is up, not with nobody connected', () => {
-    for (const o of [{ pizzas: false }, { busy: true }, { infos: [{ connected: false }] }]) { const r = rig(o); expect(r.host.offer(), JSON.stringify(o)).toBe(false); expect(r.state.phase).toBe('lobby'); }
+    for (const o of [{ pizzas: false }, { busy: true }, { infos: [{ connected: false }] }]) {
+      const r = rig(o);
+      expect(r.host.offer(), JSON.stringify(o)).toBe(false);
+      expect(r.state.phase).toBe('lobby');
+    }
   });
   it('not when every connected phone already did it (the relay flagged them)', () => {
     expect(rig({ infos: [{ school: true }, { school: true }] }).host.offer()).toBe(false);
@@ -54,13 +134,17 @@ describe('when "A cocinar" offers the school', () => {
     expect(r.host.offer()).toBe(true);
     expect(r.state.views.at(-1)!.sub).toMatch(/Equipos juntos, sin competir/);
     expect(rig().host.offer() && true).toBe(true);
-    const c = rig(); c.host.offer();
+    const c = rig();
+    c.host.offer();
     expect(c.state.views.at(-1)!.sub).toMatch(/Sin tiempo ni puntos/);
   });
 });
 
 describe('what the room remembers', () => {
-  const everybodySkips = (r: ReturnType<typeof rig>) => { for (const id of r.players.keys()) r.host.skip(id); r.frames(ALL_DONE_HOLD_MS + 200); };
+  const everybodySkips = (r: ReturnType<typeof rig>) => {
+    for (const id of r.players.keys()) r.host.skip(id);
+    r.frames(ALL_DONE_HOLD_MS + 200);
+  };
   it('when everybody finishes the school ends by itself after the "todos listos" beat, and the room does not offer it again', () => {
     const r = rig();
     r.host.offer();
@@ -93,13 +177,27 @@ describe('what the room remembers', () => {
   });
   it('another room (another code) is a new session: the school is offered again', () => {
     const shared = new Map<string, string>();
-    const storage = { getItem: (k: string) => shared.get(k) ?? null, setItem: (k: string, v: string) => { shared.set(k, v); } };
-    const a = rig({ room: 'AAAA', storage }); a.host.offer(); a.host.key('Enter', false);
+    const storage = {
+      getItem: (k: string) => shared.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        shared.set(k, v);
+      },
+    };
+    const a = rig({ room: 'AAAA', storage });
+    a.host.offer();
+    a.host.key('Enter', false);
     expect(rig({ room: 'AAAA', storage }).host.offer(), 'same room, same session').toBe(false);
     expect(rig({ room: 'BBBB', storage }).host.offer(), 'another room').toBe(true);
   });
   it('with blocked storage it still remembers for the life of the page', () => {
-    const throwing = { getItem: () => { throw new Error('SecurityError'); }, setItem: () => { throw new Error('SecurityError'); } };
+    const throwing = {
+      getItem: () => {
+        throw new Error('SecurityError');
+      },
+      setItem: () => {
+        throw new Error('SecurityError');
+      },
+    };
     const r = rig({ storage: throwing });
     expect(r.host.offer()).toBe(true);
     r.host.key('Enter', false);
@@ -107,7 +205,8 @@ describe('what the room remembers', () => {
   });
   it('with no storage object at all (private mode) the same', () => {
     const r = rig({ storage: null });
-    r.host.offer(); r.host.key('Escape', false);
+    r.host.offer();
+    r.host.key('Escape', false);
     expect(r.host.offer()).toBe(false);
   });
 });
@@ -131,22 +230,28 @@ describe('what follows the school', () => {
   });
   it('by hand it works again and again, whatever the room remembers', () => {
     const r = rig();
-    r.host.offer(); r.host.key('Enter', false);
+    r.host.offer();
+    r.host.key('Enter', false);
     expect(r.host.open()).toBe(true);
     expect(r.state.phase).toBe('school');
   });
   it('a school opened by hand ignores what the phones remember: everybody starts at step 0; the one offered at the start honours it', () => {
     const manual = rig({ infos: [{ school: true }, {}] });
-    manual.host.open(); manual.frames(100);
+    manual.host.open();
+    manual.frames(100);
     expect(manual.host.debug().rows.map((x) => x.step)).toEqual([0, 0]);
     const auto = rig({ infos: [{ school: true }, {}] });
-    auto.host.offer(); auto.frames(100);
-    expect(auto.host.debug().rows.map((x) => [x.step, x.skipped])).toEqual([[SCHOOL_TOTAL, true], [0, false]]);
+    auto.host.offer();
+    auto.frames(100);
+    expect(auto.host.debug().rows.map((x) => [x.step, x.skipped])).toEqual([
+      [SCHOOL_TOTAL, true],
+      [0, false],
+    ]);
   });
 });
 
 describe('the keys', () => {
-  it('while it runs every key is the school\'s (nothing else moves), but only Enter and Escape end it, and a held key does not', () => {
+  it("while it runs every key is the school's (nothing else moves), but only Enter and Escape end it, and a held key does not", () => {
     const r = rig();
     r.host.offer();
     for (const k of ['ArrowLeft', 'h', 'e', 'x']) expect(r.host.key(k, false), k).toBe(true);
@@ -169,16 +274,18 @@ describe('the keys', () => {
     const held = rig();
     expect(held.host.key('p', true), 'a held key').toBe(false);
     expect(held.state.phase).toBe('lobby');
-    const r = rig(); r.state.phase = 'results';
+    const r = rig();
+    r.state.phase = 'results';
     expect(r.host.key('p', false)).toBe(false);
-    expect(rig().host.key('Enter', false), 'Enter in the lobby is not the school\'s').toBe(false);
+    expect(rig().host.key('Enter', false), "Enter in the lobby is not the school's").toBe(false);
   });
 });
 
 describe('the phones during the school', () => {
   it('each frame tells every connected phone its step; a phone that pressed "Saltar" is done on the TV at once', () => {
     const r = rig({ n: 3 });
-    r.host.offer(); r.frames(200);
+    r.host.offer();
+    r.frames(200);
     const msgs = r.state.sent.filter((m) => m.t === 'school');
     expect(new Set(msgs.map((m) => (m as { playerId: number }).playerId))).toEqual(new Set([1, 2, 3]));
     r.host.skip(2);
@@ -192,7 +299,8 @@ describe('the phones during the school', () => {
   });
   it('the presses a phone sent before the school started are not carried into it', () => {
     const r = rig({ n: 1 });
-    r.players.get(1)!.pendA = 5; r.players.get(1)!.pendB = 3;
+    r.players.get(1)!.pendA = 5;
+    r.players.get(1)!.pendB = 3;
     r.host.offer();
     expect(r.players.get(1)!.pendA).toBe(0);
     expect(r.players.get(1)!.pendB).toBe(0);

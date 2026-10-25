@@ -17,15 +17,35 @@ export interface ZoomGuardOpts {
 }
 
 export function createZoomGuard(o: ZoomGuardOpts) {
-  const attempts = o.attempts ?? 3, retryMs = o.retryMs ?? 250;
-  let tries = 0, shown = false;
-  const set = (z: boolean) => { if (z !== shown) { shown = z; o.onZoomed(z); } };
+  const attempts = o.attempts ?? 3,
+    retryMs = o.retryMs ?? 250;
+  let tries = 0,
+    shown = false;
+  const set = (z: boolean) => {
+    if (z !== shown) {
+      shown = z;
+      o.onZoomed(z);
+    }
+  };
   const check = (): void => {
-    if (!isZoomed(o.viewport?.scale)) { tries = 0; set(false); return; }
-    if (tries >= attempts) { set(true); return; }
+    if (!isZoomed(o.viewport?.scale)) {
+      tries = 0;
+      set(false);
+      return;
+    }
+    if (tries >= attempts) {
+      set(true);
+      return;
+    }
     tries++;
     o.reset();
     o.later(check, retryMs); // the scale updates asynchronously after a reset: look again
   };
-  return { check, manualReset() { tries = 0; check(); } };
+  return {
+    check,
+    manualReset() {
+      tries = 0;
+      check();
+    },
+  };
 }

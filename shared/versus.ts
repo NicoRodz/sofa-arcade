@@ -13,13 +13,20 @@ export const VIP_MULT = 2; // the delivery that wins the VIP is worth this much 
 export const PANTRY_MAX = 4; // units in stock at the start, and the most it holds
 export const PANTRY_EVERY_MS = 6000; // one unit comes back this often while the stock is below the maximum
 
-export interface Kitchens { comp: number[][]; regions: number[] } // comp: floor region of each tile (-1 off floor); regions[team] = the region of that team
+export interface Kitchens {
+  comp: number[][];
+  regions: number[];
+} // comp: floor region of each tile (-1 off floor); regions[team] = the region of that team
 
 /** The floor regions that hold a start tile ('S', or the explicit spawns), in reading order, one per team. Throws when there are fewer than teams. */
 export function kitchenRegions(grid: Grid, teamCount: number, explicit?: readonly Pos[]): Kitchens {
   const { comp } = floorComponents(grid);
   const starts = new Set<number>();
-  grid.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'floor' && t.spawn) starts.add(comp[y]![x]!); }));
+  grid.forEach((row, y) =>
+    row.forEach((t, x) => {
+      if (t.kind === 'floor' && t.spawn) starts.add(comp[y]![x]!);
+    }),
+  );
   for (const [x, y] of explicit ?? []) if (isFloor(grid, x, y)) starts.add(comp[y]![x]!);
   const regions = [...starts].sort((a, b) => a - b);
   if (regions.length < teamCount) throw new Error(`${teamCount} teams need ${teamCount} separate kitchens, the map has ${regions.length}`);
@@ -30,7 +37,8 @@ export function kitchenRegions(grid: Grid, teamCount: number, explicit?: readonl
 export function stationOwner(grid: Grid, k: Kitchens, tx: number, ty: number): TeamId | null {
   const teams = new Set<TeamId>();
   for (const [dx, dy] of DIRS) {
-    const x = tx + dx, y = ty + dy;
+    const x = tx + dx,
+      y = ty + dy;
     if (!isFloor(grid, x, y)) continue;
     const t = k.regions.indexOf(k.comp[y]![x]!);
     if (t >= 0) teams.add(t);
@@ -43,6 +51,10 @@ export function teamStarts(grid: Grid, k: Kitchens, team: TeamId, explicit?: rea
   const inside = (x: number, y: number) => isFloor(grid, x, y) && k.comp[y]![x] === k.regions[team];
   if (explicit) return explicit.filter(([x, y]) => inside(x, y)).map(([x, y]): Pos => [x, y]);
   const out: Pos[] = [];
-  grid.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'floor' && t.spawn && inside(x, y)) out.push([x, y]); }));
+  grid.forEach((row, y) =>
+    row.forEach((t, x) => {
+      if (t.kind === 'floor' && t.spawn && inside(x, y)) out.push([x, y]);
+    }),
+  );
   return out;
 }

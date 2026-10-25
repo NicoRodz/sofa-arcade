@@ -12,32 +12,73 @@ import { createSchoolUi } from './school';
 import { kvOf } from '@party/shared/tutorial';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
-  BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
-  type BuzzKind, type ClientMsg, type HintLabels, type Phase, type PuestoMsg, type ServerMsg, type SignalKind, type TeamInfo,
+  BUZZ_PATTERNS,
+  ClockSync,
+  DEADZONE,
+  DEFAULT_ROOM,
+  INPUT_HZ,
+  PING_MS,
+  PRESS_MOD,
+  WS_PATH,
+  applyDeadzone,
+  isNavKey,
+  remoteVisible,
+  type BuzzKind,
+  type ClientMsg,
+  type HintLabels,
+  type Phase,
+  type PuestoMsg,
+  type ServerMsg,
+  type SignalKind,
+  type TeamInfo,
 } from '@party/shared';
 import type { IconId } from '@party/shared/icons';
 import { outcomeFor, type Outcome, type PhoneResult } from '@party/shared/versusReport';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const store = {
-  get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
-  set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } },
+  get: (k: string) => {
+    try {
+      return localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  },
+  set: (k: string, v: string) => {
+    try {
+      localStorage.setItem(k, v);
+    } catch {
+      /* ignore */
+    }
+  },
 };
 
 // Touch hardening: no zoom (pinch, double-tap), scroll, selection or context menu. iOS Safari ignores user-scalable=no,
 // so the gesture events are cancelled too, and zoom.ts watches visualViewport in case it zooms anyway.
 const stop = (e: Event) => e.preventDefault();
 document.addEventListener('touchmove', stop, { passive: false });
-document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false }); // second finger = pinch
+document.addEventListener(
+  'touchstart',
+  (e) => {
+    if (e.touches.length > 1) e.preventDefault();
+  },
+  { passive: false },
+); // second finger = pinch
 for (const g of ['gesturestart', 'gesturechange', 'gestureend', 'contextmenu', 'dblclick', 'selectstart']) {
-  document.addEventListener(g, (e) => { if (!(e.target as HTMLElement | null)?.closest?.('input')) e.preventDefault(); });
+  document.addEventListener(g, (e) => {
+    if (!(e.target as HTMLElement | null)?.closest?.('input')) e.preventDefault();
+  });
 }
 let lastEnd = 0;
-document.addEventListener('touchend', (e) => {
-  const now = Date.now();
-  if (isDoubleTap(lastEnd, now)) e.preventDefault();
-  lastEnd = now;
-}, { passive: false });
+document.addEventListener(
+  'touchend',
+  (e) => {
+    const now = Date.now();
+    if (isDoubleTap(lastEnd, now)) e.preventDefault();
+    lastEnd = now;
+  },
+  { passive: false },
+);
 
 function resetZoom() {
   window.scrollTo(0, 0);
@@ -45,13 +86,17 @@ function resetZoom() {
   if (!meta) return;
   const original = meta.content;
   meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'; // a changed value makes iOS re-evaluate the scale
-  setTimeout(() => { meta.content = original; }, 120);
+  setTimeout(() => {
+    meta.content = original;
+  }, 120);
 }
 const zoomGuard = createZoomGuard({
   viewport: window.visualViewport,
   reset: resetZoom,
   onZoomed: (z) => document.body.classList.toggle('zoomed', z),
-  later: (fn, ms) => { setTimeout(fn, ms); },
+  later: (fn, ms) => {
+    setTimeout(fn, ms);
+  },
 });
 window.visualViewport?.addEventListener('resize', zoomGuard.check);
 window.visualViewport?.addEventListener('scroll', zoomGuard.check);
@@ -63,7 +108,10 @@ const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0, sig: { kind: 'go' a
 // Campaign signals: the pad of 6 buttons shows only in a campaign round (phase.match.modeOptions.campaign). While it shows, every input carries `sig` (a monotonic counter: a new seq = one
 // signal of that kind; seq 0 is the baseline the screen reads first) and `go` (true while "¡Ya!" is held: 0.4 s of it starts the 3-2-1). A quick match sends neither: the packets are the old ones.
 let signalsOn = false;
-const setSignals = (on: boolean) => { signalsOn = on; document.body.dataset.signals = on ? 'on' : 'off'; };
+const setSignals = (on: boolean) => {
+  signalsOn = on;
+  document.body.dataset.signals = on ? 'on' : 'off';
+};
 const sync = new ClockSync();
 let lastRtt: number | undefined;
 let ws: WebSocket | null = null;
@@ -76,7 +124,9 @@ let myName = ''; // as the relay registered it (trimmed)
 let captainId: number | null = null; // who holds the crown (the relay says); the Captain gets the D-pad
 let lastPong = 0;
 const room = new URLSearchParams(location.search).get('room') || DEFAULT_ROOM;
-const view = (v: string) => { document.body.dataset.view = v; };
+const view = (v: string) => {
+  document.body.dataset.view = v;
+};
 let pingId = 0;
 const sent = new Map<number, { perf: number; t0: number }>();
 
@@ -99,7 +149,10 @@ function fitLabels() {
     const avail = () => pl.parentElement!.clientWidth + 10 - 16; // plate: control width + 10, minus its side padding
     for (const sp of spans) {
       let size = parseFloat(getComputedStyle(sp).fontSize);
-      while (sp.scrollWidth > avail() + 0.5 && size > 8) { size -= 0.5; sp.style.fontSize = `${size}px`; }
+      while (sp.scrollWidth > avail() + 0.5 && size > 8) {
+        size -= 0.5;
+        sp.style.fontSize = `${size}px`;
+      }
     }
   }
 }
@@ -108,22 +161,36 @@ let controls: GameControls | null = null;
 const NO_HINT: HintLabels = { a: null, b: null };
 let hint: HintLabels = NO_HINT;
 // A hint with a label also brings its icon and whether there is anything to do; the "mantén apretado" line only belongs to the game's own B.
-const hinted = (base: GameControls['btn1'], label: string | null, icon: IconId | undefined, hold: boolean): GameControls['btn1'] => (label ? { ...base, label, ...(icon ? { icon } : {}), hold } : base);
+const hinted = (base: GameControls['btn1'], label: string | null, icon: IconId | undefined, hold: boolean): GameControls['btn1'] =>
+  label ? { ...base, label, ...(icon ? { icon } : {}), hold } : base;
 function applyControls(c: GameControls | null = controls) {
   if (!c) return;
   controls = c;
   setControl($('stickhint'), $('stickLbl'), c.stick);
   setControl($('btnA'), $('lblA'), hinted(c.btn1, hint.a, hint.aIcon, !!c.btn1.hold));
   setControl($('btnB'), $('lblB'), hinted(c.btn2, hint.b, hint.bIcon, false));
-  for (const [id, lbl, isOff] of [['btnA', 'lblA', hint.aOff], ['btnB', 'lblB', hint.bOff]] as const) { $(id).classList.toggle('off', !!isOff); $(lbl).classList.toggle('off', !!isOff); }
+  for (const [id, lbl, isOff] of [
+    ['btnA', 'lblA', hint.aOff],
+    ['btnB', 'lblB', hint.bOff],
+  ] as const) {
+    $(id).classList.toggle('off', !!isOff);
+    $(lbl).classList.toggle('off', !!isOff);
+  }
   fitLabels();
 }
-const sameHint = (x: HintLabels, y: HintLabels) => x.a === y.a && x.b === y.b && x.aIcon === y.aIcon && x.bIcon === y.bIcon && !!x.aOff === !!y.aOff && !!x.bOff === !!y.bOff;
-const setHint = (h: HintLabels) => { if (sameHint(hint, h)) return; hint = h; applyControls(); }; // every hint is a whole state, so the latest one is the truth
+const sameHint = (x: HintLabels, y: HintLabels) =>
+  x.a === y.a && x.b === y.b && x.aIcon === y.aIcon && x.bIcon === y.bIcon && !!x.aOff === !!y.aOff && !!x.bOff === !!y.bOff;
+const setHint = (h: HintLabels) => {
+  if (sameHint(hint, h)) return;
+  hint = h;
+  applyControls();
+}; // every hint is a whole state, so the latest one is the truth
 
 // "Cómo se juega": one-view summary, closed with a tap. Opens on join and when the lobby picks a game not shown yet.
 let seenGame: string | null = null;
-const setHowTo = (open: boolean) => { document.body.dataset.howto = open ? 'open' : 'closed'; };
+const setHowTo = (open: boolean) => {
+  document.body.dataset.howto = open ? 'open' : 'closed';
+};
 let shown: { game: string; name: string; howTo: HowTo } | null = null; // the game the screen last announced
 function renderHowTo(game: string, name: string, h: HowTo) {
   shown = { game, name, howTo: h };
@@ -132,7 +199,10 @@ function renderHowTo(game: string, name: string, h: HowTo) {
   maybeShowHowTo();
 }
 function maybeShowHowTo() {
-  if (shown && shouldShowHowTo(seenGame, shown.game, phase)) { seenGame = shown.game; setHowTo(true); }
+  if (shown && shouldShowHowTo(seenGame, shown.game, phase)) {
+    seenGame = shown.game;
+    setHowTo(true);
+  }
 }
 // pointerup, not click: a touchend inside the double-tap window is cancelled (see above) and would swallow the click
 $('howto').addEventListener('pointerup', () => setHowTo(false));
@@ -143,13 +213,18 @@ let flashTimer: ReturnType<typeof setTimeout> | undefined;
 let slipTimer: ReturnType<typeof setTimeout> | undefined;
 function buzz(kind: BuzzKind) {
   if (phase !== 'playing' && phase !== 'school') return; // the school buzzes like a round
-  if (kind === 'slip') { // sabotage: the chef slipped on rubbish
+  if (kind === 'slip') {
+    // sabotage: the chef slipped on rubbish
     $('slip').classList.add('on');
     clearTimeout(slipTimer);
     slipTimer = setTimeout(() => $('slip').classList.remove('on'), 900);
   }
   const pattern = BUZZ_PATTERNS[kind];
-  try { if (typeof navigator.vibrate === 'function' && navigator.vibrate([...pattern])) return; } catch { /* blocked: fall back to the flash */ }
+  try {
+    if (typeof navigator.vibrate === 'function' && navigator.vibrate([...pattern])) return;
+  } catch {
+    /* blocked: fall back to the flash */
+  }
   document.body.classList.add('flash');
   clearTimeout(flashTimer);
   flashTimer = setTimeout(() => document.body.classList.remove('flash'), 120);
@@ -202,10 +277,26 @@ $('assist').addEventListener('pointerup', (e) => {
   tx({ t: 'assist', on: assist });
 });
 
-const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
-const schoolUi = createSchoolUi({ kv: (() => { try { return kvOf(localStorage); } catch { return null; } })(), token, send: tx, isCaptain: () => joined && captainId !== null && captainId === myId });
+const tx = (m: ClientMsg) => {
+  if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
+};
+const schoolUi = createSchoolUi({
+  kv: (() => {
+    try {
+      return kvOf(localStorage);
+    } catch {
+      return null;
+    }
+  })(),
+  token,
+  send: tx,
+  isCaptain: () => joined && captainId !== null && captainId === myId,
+});
 let label = '';
-const hud = (s: string) => { label = s; $('hud').textContent = s; };
+const hud = (s: string) => {
+  label = s;
+  $('hud').textContent = s;
+};
 
 // The Captain's remote: shown on every screen but the round, and only while the socket is joined (a button that cannot send would lie).
 const isCaptain = () => joined && captainId !== null && captainId === myId;
@@ -224,7 +315,11 @@ for (const b of Array.from(document.querySelectorAll<HTMLElement>('#remote [data
     const key = b.dataset.nav;
     if (!isNavKey(key) || !isCaptain()) return;
     b.classList.add('down');
-    try { navigator.vibrate?.(8); } catch { /* no vibration API (iOS) */ }
+    try {
+      navigator.vibrate?.(8);
+    } catch {
+      /* no vibration API (iOS) */
+    }
     tx({ t: 'nav', key }); // no id in it: the relay knows which phone this socket is
   });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, up);
@@ -244,7 +339,10 @@ function showPuesto(ids: PuestoId[] | null) {
 }
 function applyPuestos(pm: PuestoMsg | undefined) {
   const mine = pm?.assign.find((a) => a.id === myId);
-  if (!pm || !mine) { showPuesto(null); return; }
+  if (!pm || !mine) {
+    showPuesto(null);
+    return;
+  }
   feats = { cheese: pm.cheese, sink: pm.sink };
   puestoPool = mine.pool;
   showPuesto(mine.puestos);
@@ -269,7 +367,13 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
   applyPuestos(p === 'playing' ? puestos : undefined);
   if (live) setHowTo(false);
   schoolUi.show(p === 'school');
-  if (!live) { state.x = 0; state.y = 0; state.btn = 0; state.go = false; document.querySelectorAll('.act, .sg').forEach((b) => b.classList.remove('down')); }
+  if (!live) {
+    state.x = 0;
+    state.y = 0;
+    state.btn = 0;
+    state.go = false;
+    document.querySelectorAll('.act, .sg').forEach((b) => b.classList.remove('down'));
+  }
   if (p === 'results' && scores) {
     const mine = scores.find((s) => s.id === myId) ?? scores[0]; // cooperative: every entry carries the team score
     $('rank').textContent = mine ? String(mine.score) : '-';
@@ -277,8 +381,12 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
     // versus: the verdict and the score of this phone's own team (the screen sends every team's; the phone picks its own)
     const outcome = result ? outcomeFor(result, myTeam) : null;
     const own = result && myTeam !== null ? result.scores.find((x) => x.team === myTeam) : undefined;
-    if (outcome && own) { $('rank').textContent = String(own.score); $('myscore').textContent = 'puntos de tu equipo'; $('verdict').textContent = VERDICT_TEXT[outcome]; document.body.dataset.outcome = outcome; }
-    else delete document.body.dataset.outcome;
+    if (outcome && own) {
+      $('rank').textContent = String(own.score);
+      $('myscore').textContent = 'puntos de tu equipo';
+      $('verdict').textContent = VERDICT_TEXT[outcome];
+      document.body.dataset.outcome = outcome;
+    } else delete document.body.dataset.outcome;
   } else delete document.body.dataset.outcome;
   view(live ? 'playing' : p);
   renderCaptain();
@@ -288,7 +396,10 @@ function connect() {
   if (ws && ws.readyState <= WebSocket.OPEN) return;
   halted = false;
   const sock = (ws = new WebSocket(`ws://${location.host}${WS_PATH}?room=${encodeURIComponent(room)}`));
-  sock.onopen = () => { lastPong = Date.now(); tx({ t: 'join', name, token }); };
+  sock.onopen = () => {
+    lastPong = Date.now();
+    tx({ t: 'join', name, token });
+  };
   sock.onmessage = (ev) => {
     const m = JSON.parse(ev.data) as ServerMsg;
     if (m.t === 'joined') {
@@ -306,10 +417,16 @@ function connect() {
       applyControls(m.controls);
       renderHowTo(m.game, gameName(m.game), m.howTo);
       applyTeams(m.teams, m.teamsLocked);
-      const mapName = m.map === 'auto' || m.map === VERSUS_AUTO ? 'Mapa al azar' : m.map === 'random' || m.map === VERSUS_RANDOM ? `Mapa aleatorio ${m.seed}` : (fixedMap(m.map) ?? versusMap(m.map))?.name ?? '';
-      $('setup').textContent = m.game === 'obstaculos'
-        ? setupLabel(parseObstOptions(m.modeOptions), m.difficulty, m.seed, DIFFICULTY_LABEL)
-        : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}${m.modeId === 'versus' ? ` · Sabotaje ${SABOTAGE_LABEL[sabotageOf(m.modeOptions)]}` : ''}`;
+      const mapName =
+        m.map === 'auto' || m.map === VERSUS_AUTO
+          ? 'Mapa al azar'
+          : m.map === 'random' || m.map === VERSUS_RANDOM
+            ? `Mapa aleatorio ${m.seed}`
+            : ((fixedMap(m.map) ?? versusMap(m.map))?.name ?? '');
+      $('setup').textContent =
+        m.game === 'obstaculos'
+          ? setupLabel(parseObstOptions(m.modeOptions), m.difficulty, m.seed, DIFFICULTY_LABEL)
+          : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}${m.modeId === 'versus' ? ` · Sabotaje ${SABOTAGE_LABEL[sabotageOf(m.modeOptions)]}` : ''}`;
     } else if (m.t === 'assist') {
       if (m.playerId === myId) showAssist(m.on);
     } else if (m.t === 'school') {
@@ -350,7 +467,16 @@ function connect() {
 
 function sendInput() {
   if (!joined || (phase !== 'playing' && phase !== 'school')) return;
-  tx({ t: 'input', seq: state.seq++, x: state.x, y: state.y, btn: state.btn, presses: state.presses, ts: Date.now(), ...(signalsOn ? { sig: state.sig, go: state.go } : {}) });
+  tx({
+    t: 'input',
+    seq: state.seq++,
+    x: state.x,
+    y: state.y,
+    btn: state.btn,
+    presses: state.presses,
+    ts: Date.now(),
+    ...(signalsOn ? { sig: state.sig, go: state.go } : {}),
+  });
 }
 
 function startPad() {
@@ -361,10 +487,15 @@ function startPad() {
   const stick = nipplejs.create({ zone: $('zone'), mode: 'dynamic', color: 'white', size: 130, threshold: DEADZONE });
   stick.on('move', (e) => {
     const [x, y] = applyDeadzone(e.data.vector.x, -e.data.vector.y);
-    state.x = x; state.y = y;
+    state.x = x;
+    state.y = y;
   });
   stick.on('start', () => $('stickhint').classList.add('active'));
-  stick.on('end', () => { state.x = 0; state.y = 0; $('stickhint').classList.remove('active'); });
+  stick.on('end', () => {
+    state.x = 0;
+    state.y = 0;
+    $('stickhint').classList.remove('active');
+  });
 
   const bindButton = (el: HTMLElement, i: number) => {
     let activePointer: number | null = null;
@@ -390,7 +521,8 @@ function startPad() {
   };
   bindButton($('btnA'), 0);
   bindButton($('btnB'), 1);
-  for (const el of Array.from(document.querySelectorAll<HTMLElement>('#signals [data-sig]'))) { // the campaign's signal pad: a press = one signal; "¡Ya!" also holds `go`
+  for (const el of Array.from(document.querySelectorAll<HTMLElement>('#signals [data-sig]'))) {
+    // the campaign's signal pad: a press = one signal; "¡Ya!" also holds `go`
     const kind = el.dataset.sig as SignalKind;
     let activePointer: number | null = null;
     const release = (e: PointerEvent) => {
@@ -408,7 +540,11 @@ function startPad() {
       state.sig = { kind, seq: (state.sig.seq + 1) % PRESS_MOD };
       if (kind === 'go') state.go = true;
       el.classList.add('down');
-      try { navigator.vibrate?.(8); } catch { /* no vibration API (iOS) */ }
+      try {
+        navigator.vibrate?.(8);
+      } catch {
+        /* no vibration API (iOS) */
+      }
       sendInput();
     });
     el.addEventListener('pointerup', release);
@@ -424,7 +560,9 @@ function startPad() {
     if (sent.size > 20) sent.delete(sent.keys().next().value!);
     tx({ t: 'ping', id, t0, rtt: lastRtt, off: sync.offset ?? undefined });
   }, PING_MS);
-  setInterval(() => { if (joined && lastRtt !== undefined) $('hud').textContent = `${label} | ${lastRtt.toFixed(0)} ms`; }, 1000);
+  setInterval(() => {
+    if (joined && lastRtt !== undefined) $('hud').textContent = `${label} | ${lastRtt.toFixed(0)} ms`;
+  }, 1000);
 
   // A locked phone can leave a half-dead socket that still reads OPEN: drop it if the server went quiet.
   document.addEventListener('visibilitychange', () => {

@@ -14,7 +14,11 @@ const FIXTURES: Record<string, GoldenRun> = { [n2.name]: n2, [n4.name]: n4, [n6.
 // Coop is the team mechanism with ONE team: the round is sized by that team's chefs, so the golden reaches the sim through the
 // teams contract. Splitting coop into two teams (teams != 1) halves N and the fixtures go red.
 const coopTeam = (n: number) => {
-  const teams = makeTeams(modeOf(GAMES[0], 'coop'), Array.from({ length: n }, (_v, i) => i + 1), 1)!;
+  const teams = makeTeams(
+    modeOf(GAMES[0], 'coop'),
+    Array.from({ length: n }, (_v, i) => i + 1),
+    1,
+  )!;
   expect(teams).toHaveLength(1);
   return teams[0]!.playerIds.length;
 };

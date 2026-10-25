@@ -16,8 +16,12 @@ export function recipeStarFactor(g: Pick<Game, 'rec' | 'hasCheese' | 'params'>):
   const rec = g.rec;
   if (!rec) return 1;
   const t = g.params.tune;
-  const rate = (mix: readonly (readonly [Recipe, number])[]) => mix.reduce((n, [r, w]) => n + w * recipeBase(r, t), 0) / mix.reduce((n, [r, w]) => n + w * RECIPE_DEFS[r].effort, 0);
+  const rate = (mix: readonly (readonly [Recipe, number])[]) =>
+    mix.reduce((n, [r, w]) => n + w * recipeBase(r, t), 0) / mix.reduce((n, [r, w]) => n + w * RECIPE_DEFS[r].effort, 0);
   const pct = g.hasCheese ? g.params.cheesePct : 0;
-  const old = rate([['marinara', 100 - pct], ['margarita', pct]]);
+  const old = rate([
+    ['marinara', 100 - pct],
+    ['margarita', pct],
+  ]);
   return rate(rec.recipes.map((r, i) => [r, rec.weights[i]!] as const)) / old;
 }

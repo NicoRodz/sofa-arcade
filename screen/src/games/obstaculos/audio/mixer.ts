@@ -14,7 +14,9 @@ export const capFor = (priority: Cue['priority']): number => MAX_VOICES - (3 - p
 export class VoiceLimiter {
   private live: { key: string; recipe: Cue['recipe']; start: number; end: number }[] = [];
   private last = new Map<string, number>();
-  get size() { return this.live.length; }
+  get size() {
+    return this.live.length;
+  }
   /** True when the cue may play at `now`; records it. */
   allow(c: Cue, now: number): boolean {
     this.live = this.live.filter((v) => v.end > now);

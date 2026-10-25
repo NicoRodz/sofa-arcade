@@ -9,7 +9,15 @@ import { lobbyEscGoesBack, menuCards, menuOnKey } from './menu';
 const pizzas = GAMES[0] as GameDef;
 const mk = (id: string): GameDef => ({ ...structuredClone(pizzas), id, name: id, minPlayers: 1, maxPlayers: 8 });
 const cards = menuCards(4, [mk('a'), mk('b'), mk('c'), mk('d'), mk('e')], []); // 5 games: two rows of the 3-column grid
-const KEYBOARD: Record<NavKey, string> = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', ok: 'Enter', back: 'Escape', help: 'h' };
+const KEYBOARD: Record<NavKey, string> = {
+  up: 'ArrowUp',
+  down: 'ArrowDown',
+  left: 'ArrowLeft',
+  right: 'ArrowRight',
+  ok: 'Enter',
+  back: 'Escape',
+  help: 'h',
+};
 
 describe('D-pad -> the same intents as the keyboard', () => {
   it('every button produces exactly the key it stands for', () => {
@@ -21,7 +29,9 @@ describe('D-pad -> the same intents as the keyboard', () => {
     expect(menuOnKey(cards, 1, navToKey('down'))).toEqual({ kind: 'move', sel: 4 });
     expect(menuOnKey(cards, 4, navToKey('up'))).toEqual({ kind: 'move', sel: 1 });
     expect(menuOnKey(cards, 2, navToKey('ok'))).toEqual({ kind: 'pick', id: 'c' });
-    for (const k of NAV_KEYS) for (let sel = 0; sel < 5; sel++) expect(menuOnKey(cards, sel, navToKey(k)), `${k} on ${sel}`).toEqual(menuOnKey(cards, sel, KEYBOARD[k]));
+    for (const k of NAV_KEYS)
+      for (let sel = 0; sel < 5; sel++)
+        expect(menuOnKey(cards, sel, navToKey(k)), `${k} on ${sel}`).toEqual(menuOnKey(cards, sel, KEYBOARD[k]));
   });
   it('start menu: the edges of the grid do nothing, like the keyboard', () => {
     expect(menuOnKey(cards, 0, navToKey('left'))).toEqual({ kind: 'none' });

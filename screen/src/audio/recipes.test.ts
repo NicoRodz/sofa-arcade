@@ -12,7 +12,10 @@ describe('event -> sound mapping', () => {
   it('chopping loops per station while held and ends with a ding', () => {
     expect(ACTIONS.chopStart({ player: 1, station: 4 })).toEqual([{ kind: 'loopStart', key: 'chop:4', loop: 'chop' }]);
     expect(ACTIONS.chopStop({ player: 1, station: 4 })).toEqual([{ kind: 'loopStop', key: 'chop:4' }]);
-    expect(ACTIONS.chopDone({ player: 1, station: 4 })).toEqual([{ kind: 'loopStop', key: 'chop:4' }, { kind: 'play', id: 'ding' }]);
+    expect(ACTIONS.chopDone({ player: 1, station: 4 })).toEqual([
+      { kind: 'loopStop', key: 'chop:4' },
+      { kind: 'play', id: 'ding' },
+    ]);
   });
   it('washing: a splash loop per sink while B is held, a plink per clean plate, a clink when a dirty one arrives', () => {
     expect(ACTIONS.washStart({ player: 1, station: 7 })).toEqual([{ kind: 'loopStart', key: 'wash:7', loop: 'wash' }]);
@@ -22,13 +25,22 @@ describe('event -> sound mapping', () => {
     expect(LOOPS.wash.every(0.5)).toBe(0.2);
   });
   it('oven: start plays the swell and loops crackle until ready', () => {
-    expect(ACTIONS.potStart({ station: 2 })).toEqual([{ kind: 'play', id: 'ovenOn' }, { kind: 'loopStart', key: 'oven:2', loop: 'oven' }]);
-    expect(ACTIONS.potReady({ station: 2 })).toEqual([{ kind: 'loopStop', key: 'oven:2' }, { kind: 'play', id: 'ready' }]);
+    expect(ACTIONS.potStart({ station: 2 })).toEqual([
+      { kind: 'play', id: 'ovenOn' },
+      { kind: 'loopStart', key: 'oven:2', loop: 'oven' },
+    ]);
+    expect(ACTIONS.potReady({ station: 2 })).toEqual([
+      { kind: 'loopStop', key: 'oven:2' },
+      { kind: 'play', id: 'ready' },
+    ]);
   });
   it('the calzone: a kneading loop per oven while Picar is held, and a whump when it is folded', () => {
     expect(ACTIONS.foldStart({ player: 1, station: 3 })).toEqual([{ kind: 'loopStart', key: 'fold:3', loop: 'fold' }]);
     expect(ACTIONS.foldStop({ player: 1, station: 3 })).toEqual([{ kind: 'loopStop', key: 'fold:3' }]);
-    expect(ACTIONS.foldDone({ player: 1, station: 3 })).toEqual([{ kind: 'loopStop', key: 'fold:3' }, { kind: 'play', id: 'folded' }]);
+    expect(ACTIONS.foldDone({ player: 1, station: 3 })).toEqual([
+      { kind: 'loopStop', key: 'fold:3' },
+      { kind: 'play', id: 'folded' },
+    ]);
     expect(LOOPS.fold.sfx).toBe('knead');
     expect(sfxDuration('folded')).toBeGreaterThan(0.3);
   });
@@ -88,18 +100,20 @@ describe('versus sounds (F4)', () => {
     expect(end()).toEqual(['stopLoops', 'whistle']);
   });
   it('the fanfare and the close come after the whistle (0.7 s), so they never mask it', () => {
-    for (const id of ['fanfare', 'tieJingle'] as const) expect(Math.min(...SFX[id].voices.map((v) => v.at)), id).toBeGreaterThanOrEqual(sfxDuration('whistle'));
+    for (const id of ['fanfare', 'tieJingle'] as const)
+      expect(Math.min(...SFX[id].voices.map((v) => v.at)), id).toBeGreaterThanOrEqual(sfxDuration('whistle'));
     expect(sfxDuration('fanfare')).toBeGreaterThan(2.5);
   });
 });
 
 describe('recipes', () => {
   it('every voice has a positive duration and a gain in (0, 1]', () => {
-    for (const [id, s] of Object.entries(SFX)) for (const v of s.voices) {
-      expect(v.dur, id).toBeGreaterThan(0);
-      expect(v.gain, id).toBeGreaterThan(0);
-      expect(v.gain, id).toBeLessThanOrEqual(1);
-    }
+    for (const [id, s] of Object.entries(SFX))
+      for (const v of s.voices) {
+        expect(v.dur, id).toBeGreaterThan(0);
+        expect(v.gain, id).toBeGreaterThan(0);
+        expect(v.gain, id).toBeLessThanOrEqual(1);
+      }
   });
   it('durations follow the spec table', () => {
     expect(sfxDuration('pickup')).toBeCloseTo(0.04);
@@ -146,9 +160,19 @@ describe('burn sounds', () => {
     expect(ids(ACTIONS['oven:warn']({ station: 5, msLeft: 3000 }))).toEqual(['ovenWarn']);
     expect(ids(ACTIONS['oven:burnt']({ station: 5 }))).toEqual(['burnt']);
     expect(ids(ACTIONS['oven:rescued']({ player: 1, station: 5 }))).toEqual(['rescued']);
-    expect(ACTIONS['fire:start']({ station: 5 })).toEqual([{ kind: 'play', id: 'fireStart' }, { kind: 'loopStart', key: 'fire:5', loop: 'blaze' }]);
-    expect(ACTIONS['fire:spread']({ station: 6 })).toEqual([{ kind: 'play', id: 'fireSpread' }, { kind: 'loopStart', key: 'fire:6', loop: 'blaze' }]);
-    expect(ACTIONS['fire:out']({ player: 1, station: 5 })).toEqual([{ kind: 'loopStop', key: 'fire:5' }, { kind: 'loopStop', key: 'douse:5' }, { kind: 'play', id: 'fireOut' }]);
+    expect(ACTIONS['fire:start']({ station: 5 })).toEqual([
+      { kind: 'play', id: 'fireStart' },
+      { kind: 'loopStart', key: 'fire:5', loop: 'blaze' },
+    ]);
+    expect(ACTIONS['fire:spread']({ station: 6 })).toEqual([
+      { kind: 'play', id: 'fireSpread' },
+      { kind: 'loopStart', key: 'fire:6', loop: 'blaze' },
+    ]);
+    expect(ACTIONS['fire:out']({ player: 1, station: 5 })).toEqual([
+      { kind: 'loopStop', key: 'fire:5' },
+      { kind: 'loopStop', key: 'douse:5' },
+      { kind: 'play', id: 'fireOut' },
+    ]);
     expect(ACTIONS['fire:end']({})).toEqual([]);
   });
   it('the extinguisher hisses in a loop while Picar is held in front of a fire (and has nothing to do with the chop loop)', () => {
@@ -169,7 +193,13 @@ describe('mid-round event sounds', () => {
   it('the announcement is a siren; each event then has a sting of its own, the rat has no sting (it squeaks when it shows up)', () => {
     expect(ids(ACTIONS['event:announce']({ kind: 'rush', inMs: 3000 }))).toEqual(['siren']);
     const start = (kind: 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat') => ids(ACTIONS['event:start']({ kind, durationMs: 1000 }));
-    expect([start('rush'), start('inspector'), start('blackout'), start('birthday'), start('rat')]).toEqual([['rushStart'], ['inspectorStart'], ['blackoutStart'], ['birthday'], []]);
+    expect([start('rush'), start('inspector'), start('blackout'), start('birthday'), start('rat')]).toEqual([
+      ['rushStart'],
+      ['inspectorStart'],
+      ['blackoutStart'],
+      ['birthday'],
+      [],
+    ]);
     expect(ids(ACTIONS['rat:appear']({ at: [2, 3] }))).toEqual(['ratAppear']);
   });
   it('the power comes back with its own sound; no other event ends with one', () => {

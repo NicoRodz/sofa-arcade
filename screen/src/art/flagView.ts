@@ -10,12 +10,29 @@ export class FlagView {
   private since = 99;
   private dead = false;
 
-  constructor(private scene: Phaser.Scene, private key: string, private color: string, private glyph: string, private mood: FlagMood, x: number, y: number, depth: number, size: number) {
+  constructor(
+    private scene: Phaser.Scene,
+    private key: string,
+    private color: string,
+    private glyph: string,
+    private mood: FlagMood,
+    x: number,
+    y: number,
+    depth: number,
+    size: number,
+  ) {
     this.tex = scene.textures.createCanvas(key, FLAG_W * SS, FLAG_H * SS)!;
-    this.image = scene.add.image(x, y, key).setOrigin(16 / FLAG_W, (FLAG_H - 6) / FLAG_H).setScale(size / FLAG_H / SS).setDepth(depth);
+    this.image = scene.add
+      .image(x, y, key)
+      .setOrigin(16 / FLAG_W, (FLAG_H - 6) / FLAG_H)
+      .setScale(size / FLAG_H / SS)
+      .setDepth(depth);
     this.paint();
   }
-  setMood(mood: FlagMood) { this.mood = mood; this.since = 99; }
+  setMood(mood: FlagMood) {
+    this.mood = mood;
+    this.since = 99;
+  }
   /** Rises from the ground with a bounce. */
   raise() {
     const k = this.image.scaleY;
@@ -33,7 +50,10 @@ export class FlagView {
     if (this.dead) return;
     this.t += dtMs / 1000;
     this.since += dtMs;
-    if (this.since >= 33) { this.since = 0; this.paint(); }
+    if (this.since >= 33) {
+      this.since = 0;
+      this.paint();
+    }
   }
   destroy() {
     this.dead = true;

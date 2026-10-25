@@ -10,23 +10,47 @@ type Log = { type: keyof GameEvents; payload: unknown }[];
 function setup(opts: Parameters<typeof createGame>[0] = {}) {
   const bus = new Emitter<GameEvents>();
   const log: Log = [];
-  for (const type of ['itemPicked', 'itemDropped', 'interactInvalid', 'chopStart', 'chopStop', 'chopDone', 'potStart', 'potReady', 'orderNew', 'orderWarning', 'orderExpired', 'delivered', 'countdownTick', 'roundStart', 'roundEnd'] as const)
+  for (const type of [
+    'itemPicked',
+    'itemDropped',
+    'interactInvalid',
+    'chopStart',
+    'chopStop',
+    'chopDone',
+    'potStart',
+    'potReady',
+    'orderNew',
+    'orderWarning',
+    'orderExpired',
+    'delivered',
+    'countdownTick',
+    'roundStart',
+    'roundEnd',
+  ] as const)
     bus.on(type, (payload) => log.push({ type, payload }));
   const g = createGame({ ...opts, bus });
   addPlayer(g, 1, 0);
   return { g, log };
 }
-const warm = (g: Game, log: Log) => { tick(g, new Map()); log.length = 0; }; // flush roundStart and the initial orders
+const warm = (g: Game, log: Log) => {
+  tick(g, new Map());
+  log.length = 0;
+}; // flush roundStart and the initial orders
 const types = (log: Log) => log.map((e) => e.type);
 const station = (g: Game, kind: string, n = 0) => g.stations.filter((s) => s.kind === kind)[n]!;
 const crate = (g: Game, t: number) => g.stations.find((s) => s.kind === 'crate' && s.crate === t)!;
 function face(g: Game, s: Station) {
   const p = g.players.get(1)!;
   const [dx, dy] = DIRS.find(([dx, dy]) => isFloor(g.grid, s.tx + dx, s.ty + dy))!;
-  p.x = s.tx + dx + 0.5; p.y = s.ty + dy + 0.5; p.fx = -dx; p.fy = -dy;
+  p.x = s.tx + dx + 0.5;
+  p.y = s.ty + dy + 0.5;
+  p.fx = -dx;
+  p.fy = -dy;
 }
 const press = (g: Game) => tick(g, new Map([[1, { ...idle, a: 1 }]]));
-const run = (g: Game, ms: number, c: Map<number, Controls> = new Map()) => { for (let t = 0; t < ms; t += TICK_MS) tick(g, c); };
+const run = (g: Game, ms: number, c: Map<number, Controls> = new Map()) => {
+  for (let t = 0; t < ms; t += TICK_MS) tick(g, c);
+};
 const hold = new Map([[1, { ...idle, b: true }]]);
 
 describe('Emitter', () => {
@@ -64,7 +88,10 @@ describe('game events', () => {
   it('pressing A at nothing is silent', () => {
     const { g, log } = setup();
     const p = g.players.get(1)!;
-    p.x = 5.5; p.y = 2.5; p.fx = 1; p.fy = 0;
+    p.x = 5.5;
+    p.y = 2.5;
+    p.fx = 1;
+    p.fy = 0;
     warm(g, log);
     press(g);
     expect(log).toEqual([]);
@@ -104,11 +131,14 @@ describe('game events', () => {
     const { g, log } = setup();
     const pot = station(g, 'pot');
     for (const t of [0, 1]) {
-      face(g, crate(g, t)); press(g);
-      face(g, station(g, 'board')); press(g);
+      face(g, crate(g, t));
+      press(g);
+      face(g, station(g, 'board'));
+      press(g);
       run(g, params('normal', 2).cutMs + 100, hold);
       press(g);
-      face(g, pot); press(g);
+      face(g, pot);
+      press(g);
     }
     expect(types(log).filter((t) => t === 'potStart')).toEqual(['potStart']);
     expect(types(log)).not.toContain('potReady');
@@ -156,7 +186,7 @@ describe('game events', () => {
     expect(g.time).toBeGreaterThan(0);
     log.length = 0;
     run(g, g.params.roundMs + 500);
-    const end = log.filter((e) => e.type === 'countdownTick').map((e) => (e.payload as { n: number; kind: string }));
+    const end = log.filter((e) => e.type === 'countdownTick').map((e) => e.payload as { n: number; kind: string });
     expect(end.map((e) => e.n)).toEqual([10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
     expect(end.every((e) => e.kind === 'end')).toBe(true);
     expect(log.filter((e) => e.type === 'roundEnd')).toHaveLength(1);

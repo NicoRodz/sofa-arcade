@@ -29,10 +29,27 @@ describe('phase "school"', () => {
 describe("the screen's 'school' message to one phone", () => {
   it('parses the step, the total, the instruction and the button to light', () => {
     expect(parse(good)).toEqual(good);
-    expect(parse({ ...good, step: 4, done: true, btn: undefined })).toEqual({ t: 'school', playerId: 3, step: 4, total: 4, text: good.text, done: true });
+    expect(parse({ ...good, step: 4, done: true, btn: undefined })).toEqual({
+      t: 'school',
+      playerId: 3,
+      step: 4,
+      total: 4,
+      text: good.text,
+      done: true,
+    });
   });
   it('refuses a malformed one (no player, step beyond the total, empty or huge text, unknown button)', () => {
-    for (const bad of [{ ...good, playerId: 'x' }, { ...good, step: 5 }, { ...good, step: -1 }, { ...good, total: 0 }, { ...good, text: '' }, { ...good, text: 'x'.repeat(49) }, { ...good, btn: 'c' }, { ...good, step: 1.5 }]) expect(parse(bad), JSON.stringify(bad)).toBeNull();
+    for (const bad of [
+      { ...good, playerId: 'x' },
+      { ...good, step: 5 },
+      { ...good, step: -1 },
+      { ...good, total: 0 },
+      { ...good, text: '' },
+      { ...good, text: 'x'.repeat(49) },
+      { ...good, btn: 'c' },
+      { ...good, step: 1.5 },
+    ])
+      expect(parse(bad), JSON.stringify(bad)).toBeNull();
   });
 });
 

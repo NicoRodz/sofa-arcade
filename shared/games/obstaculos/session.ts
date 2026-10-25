@@ -39,13 +39,21 @@ export interface SessionOpts {
 }
 
 export interface LevelSummary {
-  id: string; name: string; biome: LevelDef['biome']; index: number;
+  id: string;
+  name: string;
+  biome: LevelDef['biome'];
+  index: number;
   cleared: boolean; // false: the lives ran out
   retry: boolean; // played again after running out of lives (score x0.5)
-  timeSec: number; parSec: number; medal: 'gold' | 'silver' | 'bronze' | null;
-  stars: number; starsMax: number; // the collectible stars
-  deaths: number; livesLeft: number; // Infinity when unlimited
-  checkpoints: number; checkpointsMax: number;
+  timeSec: number;
+  parSec: number;
+  medal: 'gold' | 'silver' | 'bronze' | null;
+  stars: number;
+  starsMax: number; // the collectible stars
+  deaths: number;
+  livesLeft: number; // Infinity when unlimited
+  checkpoints: number;
+  checkpointsMax: number;
   score: number; // what this level added to the run
 }
 export interface RunSummary {
@@ -55,12 +63,20 @@ export interface RunSummary {
   expedition: number; // levels in the expedition (3, or fewer when it starts near the end of the list)
   cleared: number;
   awards: Awards;
-  mode: GameMode; difficulty: Difficulty; random: boolean; seed: number;
+  mode: GameMode;
+  difficulty: Difficulty;
+  random: boolean;
+  seed: number;
   totals: { deaths: number; stars: number; starsMax: number; timeSec: number };
 }
 
 const sumStats = (a: PlayerStats, b: PlayerStats): PlayerStats => ({
-  deaths: a.deaths + b.deaths, stars: a.stars + b.stars, anchoredSteps: a.anchoredSteps + b.anchoredSteps, throws: a.throws + b.throws, catches: a.catches + b.catches, offCameraSteps: a.offCameraSteps + b.offCameraSteps,
+  deaths: a.deaths + b.deaths,
+  stars: a.stars + b.stars,
+  anchoredSteps: a.anchoredSteps + b.anchoredSteps,
+  throws: a.throws + b.throws,
+  catches: a.catches + b.catches,
+  offCameraSteps: a.offCameraSteps + b.offCameraSteps,
 });
 const zeroStats = (): PlayerStats => ({ deaths: 0, stars: 0, anchoredSteps: 0, throws: 0, catches: 0, offCameraSteps: 0 });
 
@@ -92,14 +108,31 @@ export class ObstSession {
     this.world = this.build(0);
   }
 
-  get levelIndex(): number { return this.run.index; }
-  get levelCount(): number { return this.levels.length; }
-  get over(): boolean { return this.status === 'over'; }
-  get overDue(): boolean { return this.status === 'over' && this.overMs >= OVER_HOLD_MS; } // the screen switches to the results now
-  get connectedSlots(): number[] { return [...this.connected].sort((a, b) => a - b); }
+  get levelIndex(): number {
+    return this.run.index;
+  }
+  get levelCount(): number {
+    return this.levels.length;
+  }
+  get over(): boolean {
+    return this.status === 'over';
+  }
+  get overDue(): boolean {
+    return this.status === 'over' && this.overMs >= OVER_HOLD_MS;
+  } // the screen switches to the results now
+  get connectedSlots(): number[] {
+    return [...this.connected].sort((a, b) => a - b);
+  }
 
   private build(index: number): World {
-    const w = createWorld({ level: this.levels[Math.min(index, this.levels.length - 1)]!, mode: this.opts.mode, difficulty: this.opts.difficulty, slots: this.connectedSlots, p90LatencyMs: this.opts.p90LatencyMs, campaign: this.opts.campaign });
+    const w = createWorld({
+      level: this.levels[Math.min(index, this.levels.length - 1)]!,
+      mode: this.opts.mode,
+      difficulty: this.opts.difficulty,
+      slots: this.connectedSlots,
+      p90LatencyMs: this.opts.p90LatencyMs,
+      campaign: this.opts.campaign,
+    });
     this.prev = Array.from({ length: SLOT_COUNT }, () => ({ x: 0, y: 0 }));
     for (const p of w.players) this.prev[p.slot] = { x: p.body.x, y: p.body.y };
     return w;
@@ -113,19 +146,23 @@ export class ObstSession {
 
   setConnected(slot: number, on: boolean): void {
     if (slot < 0 || slot >= SLOT_COUNT) return;
-    if (on) this.connected.add(slot); else this.connected.delete(slot);
+    if (on) this.connected.add(slot);
+    else this.connected.delete(slot);
     if (!on) this.trackers[slot]!.reset();
     if (this.status === 'playing' || this.status === 'countdown' || this.status === 'between') setConnected(this.world, slot, on);
   }
 
   // Slots the camera shows out of the picture this frame (drives the bubble). Optional: without a camera nobody goes off.
-  setOffCamera(flags: readonly boolean[] | undefined): void { this.off = flags ? [...flags] : undefined; }
+  setOffCamera(flags: readonly boolean[] | undefined): void {
+    this.off = flags ? [...flags] : undefined;
+  }
 
   advance(dtMs: number): ObstEvent[] {
     const out: ObstEvent[] = [];
     this.acc += Math.min(dtMs, MAX_STEPS_PER_FRAME * STEP_MS);
     let n = 0;
-    while (this.acc >= STEP_MS - 1e-6 && n < MAX_STEPS_PER_FRAME) { // the epsilon: 4 x 16.67 ms must be 4 steps, not 3 and a crumb
+    while (this.acc >= STEP_MS - 1e-6 && n < MAX_STEPS_PER_FRAME) {
+      // the epsilon: 4 x 16.67 ms must be 4 steps, not 3 and a crumb
       this.acc -= STEP_MS;
       n++;
       this.tick(out);
@@ -143,11 +180,17 @@ export class ObstSession {
   private tick(out: ObstEvent[]): void {
     this.clockMs += STEP_MS;
     this.steps++;
-    if (this.status === 'over') { this.overMs += STEP_MS; return; }
+    if (this.status === 'over') {
+      this.overMs += STEP_MS;
+      return;
+    }
     if (this.status === 'countdown') {
       for (const t of this.trackers) t.step(this.clockMs); // taps made during the 3-2-1 do not jump at the start
       this.countdownMs -= STEP_MS;
-      if (this.countdownMs <= 0) { this.countdownMs = 0; this.status = 'playing'; }
+      if (this.countdownMs <= 0) {
+        this.countdownMs = 0;
+        this.status = 'playing';
+      }
       return;
     }
     if (this.status === 'between') {
@@ -171,10 +214,22 @@ export class ObstSession {
     const stats = this.statsOf(w);
     for (const [slot, st] of stats) this.levelStats.set(slot, sumStats(this.levelStats.get(slot) ?? zeroStats(), st));
     this.summaries.push({
-      id: w.level.def.id, name: w.level.def.name, biome: w.level.def.biome, index: this.run.index, cleared, retry,
-      timeSec: cleared ? w.result!.timeSec : w.tick * DT, parSec: w.level.def.parSec, medal: cleared ? w.result!.medal : null,
-      stars: w.ent.stars.filter((s) => s.taken).length, starsMax: w.ent.stars.length, deaths: w.deaths, livesLeft: w.lives,
-      checkpoints: w.ent.checkpoints.filter((c) => c.activated).length, checkpointsMax: w.ent.checkpoints.length, score: 0,
+      id: w.level.def.id,
+      name: w.level.def.name,
+      biome: w.level.def.biome,
+      index: this.run.index,
+      cleared,
+      retry,
+      timeSec: cleared ? w.result!.timeSec : w.tick * DT,
+      parSec: w.level.def.parSec,
+      medal: cleared ? w.result!.medal : null,
+      stars: w.ent.stars.filter((s) => s.taken).length,
+      starsMax: w.ent.stars.length,
+      deaths: w.deaths,
+      livesLeft: w.lives,
+      checkpoints: w.ent.checkpoints.filter((c) => c.activated).length,
+      checkpointsMax: w.ent.checkpoints.length,
+      score: 0,
     });
     this.pendingScore = before;
     this.status = 'between';
@@ -193,11 +248,16 @@ export class ObstSession {
     const ev = advanceRun(this.run, this.world);
     this.summaries[this.summaries.length - 1]!.score = this.run.score - this.pendingScore;
     out.push(...ev);
-    if (!this.run.ended && this.run.index >= this.levels.length) { // a shorter expedition (it started near the end of the list)
+    if (!this.run.ended && this.run.index >= this.levels.length) {
+      // a shorter expedition (it started near the end of the list)
       this.run.ended = 'complete';
       out.push({ name: 'obst.runEnd', data: { score: this.run.score, levels: this.run.cleared, reason: 'complete' } });
     }
-    if (this.run.ended) { this.status = 'over'; this.overMs = 0; return; }
+    if (this.run.ended) {
+      this.status = 'over';
+      this.overMs = 0;
+      return;
+    }
     this.world = this.build(this.run.index);
     this.status = 'countdown';
     this.countdownMs = NEXT_COUNTDOWN_MS;
@@ -205,16 +265,28 @@ export class ObstSession {
   }
 
   // Seconds of the whole run on the clock of the levels (pauses excluded).
-  get timeSec(): number { return this.summaries.reduce((a, s) => a + s.timeSec, 0) + (this.status === 'playing' ? this.world.tick * DT : 0); }
+  get timeSec(): number {
+    return this.summaries.reduce((a, s) => a + s.timeSec, 0) + (this.status === 'playing' ? this.world.tick * DT : 0);
+  }
 
   summary(): RunSummary | null {
     if (!this.run.ended) return null;
     const list = [...this.levelStats.entries()].map(([slot, stats]) => ({ slot, stats }));
     return {
-      reason: this.run.ended, score: this.run.score, levels: this.summaries.map((s) => ({ ...s })), expedition: this.levels.length, cleared: this.run.cleared, awards: awardsOf(list),
-      mode: this.opts.mode, difficulty: this.opts.difficulty, random: this.opts.level === RANDOM_LEVEL && !this.opts.levels, seed: this.opts.seed,
+      reason: this.run.ended,
+      score: this.run.score,
+      levels: this.summaries.map((s) => ({ ...s })),
+      expedition: this.levels.length,
+      cleared: this.run.cleared,
+      awards: awardsOf(list),
+      mode: this.opts.mode,
+      difficulty: this.opts.difficulty,
+      random: this.opts.level === RANDOM_LEVEL && !this.opts.levels,
+      seed: this.opts.seed,
       totals: {
-        deaths: this.summaries.reduce((a, s) => a + s.deaths, 0), stars: this.summaries.reduce((a, s) => a + s.stars, 0), starsMax: this.summaries.reduce((a, s) => a + s.starsMax, 0),
+        deaths: this.summaries.reduce((a, s) => a + s.deaths, 0),
+        stars: this.summaries.reduce((a, s) => a + s.stars, 0),
+        starsMax: this.summaries.reduce((a, s) => a + s.starsMax, 0),
         timeSec: this.summaries.reduce((a, s) => a + s.timeSec, 0),
       },
     };
@@ -227,5 +299,9 @@ export function planExpedition(o: Pick<SessionOpts, 'mode' | 'difficulty' | 'lev
     const fixed = fixedExpedition(o.level, n, o.mode);
     if (fixed.length) return fixed;
   }
-  return Array.from({ length: EXPEDITION_LEVELS }, (_, i) => generateLevel({ seed: (o.seed + i) >>> 0, n, tether: o.mode === 'chain' ? 'chainOnly' : 'freeOnly', difficulty: o.difficulty }).level);
+  return Array.from(
+    { length: EXPEDITION_LEVELS },
+    (_, i) =>
+      generateLevel({ seed: (o.seed + i) >>> 0, n, tether: o.mode === 'chain' ? 'chainOnly' : 'freeOnly', difficulty: o.difficulty }).level,
+  );
 }

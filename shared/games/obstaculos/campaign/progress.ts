@@ -3,7 +3,21 @@
 //   applyResult     a played level -> stars, medal, best time, next unlocks (monotone: nothing ever goes down)
 //   mergeExpedition the union of two versions of the same expedition (commutative, associative, idempotent), so a stale screen can never erase progress
 //   isUnlocked...   what the map may open
-import { SKIP_AFTER_FAILURES, SUMMIT_STARS_DEN, SUMMIT_STARS_NUM, TIME_MEDAL_FACTOR, bossOf, campaignOrder, levelById, pathOf, summitOf, worldById, worldIndex, type Catalog, type CatalogLevel } from './progcatalog';
+import {
+  SKIP_AFTER_FAILURES,
+  SUMMIT_STARS_DEN,
+  SUMMIT_STARS_NUM,
+  TIME_MEDAL_FACTOR,
+  bossOf,
+  campaignOrder,
+  levelById,
+  pathOf,
+  summitOf,
+  worldById,
+  worldIndex,
+  type Catalog,
+  type CatalogLevel,
+} from './progcatalog';
 
 export const SCHEMA_VERSION = 1;
 export type Stars = [boolean, boolean, boolean]; // [reached the goal, every collectible, no hearts lost]
@@ -16,7 +30,12 @@ export interface LevelProgress {
   collectiblesMask: number; // bit i = collectible i taken in a run that cleared the level
   skipped: boolean; // passed over after repeated game overs: it opens the next level but gives no stars; cleared later it stops being "skipped"
 }
-export interface Assists { infiniteHearts: boolean; slowMotion: boolean; instantBubble: boolean; permanentSilhouette: boolean }
+export interface Assists {
+  infiniteHearts: boolean;
+  slowMotion: boolean;
+  instantBubble: boolean;
+  permanentSilhouette: boolean;
+}
 export const NO_ASSISTS: Assists = { infiniteHearts: false, slowMotion: false, instantBubble: false, permanentSilhouette: false };
 
 export interface Expedition {
@@ -40,17 +59,37 @@ export interface LevelOutcome {
   deaths: number; // hearts lost in this play of the level, failed attempts included
 }
 
-export const emptyProgress = (): LevelProgress => ({ done: false, stars: [false, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false });
+export const emptyProgress = (): LevelProgress => ({
+  done: false,
+  stars: [false, false, false],
+  bestTimeMs: null,
+  timeMedal: false,
+  collectiblesMask: 0,
+  skipped: false,
+});
 export const newExpedition = (id: string, name: string, now: number): Expedition => ({
-  schemaVersion: SCHEMA_VERSION, id, name, createdAt: now, updatedAt: now, levels: {}, unlocked: [], assists: { ...NO_ASSISTS }, lastLevelId: null,
+  schemaVersion: SCHEMA_VERSION,
+  id,
+  name,
+  createdAt: now,
+  updatedAt: now,
+  levels: {},
+  unlocked: [],
+  assists: { ...NO_ASSISTS },
+  lastLevelId: null,
 });
 
 export const fullMask = (collectibles: number): number => (collectibles >= 31 ? 0x7fffffff : (1 << collectibles) - 1);
-export const maskCount = (mask: number): number => { let n = 0; for (let m = mask >>> 0; m; m &= m - 1) n++; return n; };
+export const maskCount = (mask: number): number => {
+  let n = 0;
+  for (let m = mask >>> 0; m; m &= m - 1) n++;
+  return n;
+};
 export const progressOf = (e: Expedition, levelId: string): LevelProgress => e.levels[levelId] ?? emptyProgress();
 export const starCount = (p: LevelProgress): number => p.stars.filter(Boolean).length;
 export const totalStars = (e: Expedition): number => Object.values(e.levels).reduce((a, p) => a + starCount(p), 0);
-export const worldStars = (e: Expedition, c: Catalog, worldId: string): number => pathOf(c, worldId).reduce((a, l) => a + starCount(progressOf(e, l.id)), 0);
+export const worldStars = (e: Expedition, c: Catalog, worldId: string): number =>
+  pathOf(c, worldId).reduce((a, l) => a + starCount(progressOf(e, l.id)), 0);
 
 // ---- stars (plan §3): 1 = the goal; 2 = every collectible (counted over the runs that cleared the level); 3 = no hearts lost and no infinite-hearts assist
 export function starsOf(r: LevelOutcome, level: CatalogLevel, assists: Assists, maskSoFar: number): Stars {
@@ -58,7 +97,8 @@ export function starsOf(r: LevelOutcome, level: CatalogLevel, assists: Assists, 
   const mask = (maskSoFar | r.collectiblesMask) >>> 0;
   return [true, level.collectibles > 0 && mask === fullMask(level.collectibles), r.deaths === 0 && !assists.infiniteHearts];
 }
-export const timeMedalOf = (timeMs: number, level: CatalogLevel): boolean => level.botMs !== null && timeMs <= level.botMs * TIME_MEDAL_FACTOR;
+export const timeMedalOf = (timeMs: number, level: CatalogLevel): boolean =>
+  level.botMs !== null && timeMs <= level.botMs * TIME_MEDAL_FACTOR;
 
 // ---- monotone merge
 const minN = (a: number | null, b: number | null): number | null => (a === null ? b : b === null ? a : Math.min(a, b)); // best time: the smaller
@@ -73,15 +113,24 @@ export function mergeProgress(a: LevelProgress, b: LevelProgress): LevelProgress
     skipped: (a.skipped || b.skipped) && !done,
   };
 }
-const later = (a: Expedition, b: Expedition): Expedition => (a.updatedAt !== b.updatedAt ? (a.updatedAt > b.updatedAt ? a : b) : JSON.stringify(a) >= JSON.stringify(b) ? a : b);
+const later = (a: Expedition, b: Expedition): Expedition =>
+  a.updatedAt !== b.updatedAt ? (a.updatedAt > b.updatedAt ? a : b) : JSON.stringify(a) >= JSON.stringify(b) ? a : b;
 // The union of two versions: progress only ever goes up. The settings (name, assists, last level) come from the newer one; ties break on content, so it is commutative.
 export function mergeExpedition(a: Expedition, b: Expedition): Expedition {
   const win = later(a, b);
   const levels: Record<string, LevelProgress> = {};
-  for (const id of [...new Set([...Object.keys(a.levels), ...Object.keys(b.levels)])].sort()) levels[id] = mergeProgress(progressOf(a, id), progressOf(b, id));
+  for (const id of [...new Set([...Object.keys(a.levels), ...Object.keys(b.levels)])].sort())
+    levels[id] = mergeProgress(progressOf(a, id), progressOf(b, id));
   return {
-    schemaVersion: SCHEMA_VERSION, id: win.id, name: win.name, createdAt: Math.min(a.createdAt, b.createdAt), updatedAt: Math.max(a.updatedAt, b.updatedAt),
-    levels, unlocked: [...new Set([...a.unlocked, ...b.unlocked])].sort(), assists: { ...win.assists }, lastLevelId: win.lastLevelId,
+    schemaVersion: SCHEMA_VERSION,
+    id: win.id,
+    name: win.name,
+    createdAt: Math.min(a.createdAt, b.createdAt),
+    updatedAt: Math.max(a.updatedAt, b.updatedAt),
+    levels,
+    unlocked: [...new Set([...a.unlocked, ...b.unlocked])].sort(),
+    assists: { ...win.assists },
+    lastLevelId: win.lastLevelId,
   };
 }
 
@@ -100,14 +149,24 @@ export function applyResult(e: Expedition, c: Catalog, r: LevelOutcome, now: num
     next.bestTimeMs = r.timeMs;
     next.timeMedal = timeMedalOf(r.timeMs, level);
   }
-  return mergeExpedition(e, { ...e, updatedAt: Math.max(now, e.updatedAt + 1), levels: { ...e.levels, [r.levelId]: next }, lastLevelId: r.levelId });
+  return mergeExpedition(e, {
+    ...e,
+    updatedAt: Math.max(now, e.updatedAt + 1),
+    levels: { ...e.levels, [r.levelId]: next },
+    lastLevelId: r.levelId,
+  });
 }
 // "Saltar nivel" (after SKIP_AFTER_FAILURES game overs): opens the next level, gives nothing. Only for a level that is open and not done.
 export function skipLevel(e: Expedition, c: Catalog, levelId: string, now: number): Expedition {
   const level = levelById(c, levelId);
   if (!level || level.kind === 'summit' || level.kind === 'practice' || !isUnlocked(e, c, levelId) || progressOf(e, levelId).done) return e;
   const prev = progressOf(e, levelId);
-  return mergeExpedition(e, { ...e, updatedAt: Math.max(now, e.updatedAt + 1), levels: { ...e.levels, [levelId]: { ...prev, skipped: true } }, lastLevelId: levelId });
+  return mergeExpedition(e, {
+    ...e,
+    updatedAt: Math.max(now, e.updatedAt + 1),
+    levels: { ...e.levels, [levelId]: { ...prev, skipped: true } },
+    lastLevelId: levelId,
+  });
 }
 export const canOfferSkip = (failuresInARow: number): boolean => failuresInARow >= SKIP_AFTER_FAILURES;
 // "Ya sabemos escalar": opens a world from the start.
@@ -127,7 +186,8 @@ export function isWorldUnlocked(e: Expedition, c: Catalog, worldId: string): boo
   return !boss || progressOf(e, boss.id).done;
 }
 // Stars a world must give for its summit to open: 15 of the 21 (the same share when a world has fewer levels).
-export const summitNeed = (c: Catalog, worldId: string): number => Math.ceil((pathOf(c, worldId).length * 3 * SUMMIT_STARS_NUM) / SUMMIT_STARS_DEN);
+export const summitNeed = (c: Catalog, worldId: string): number =>
+  Math.ceil((pathOf(c, worldId).length * 3 * SUMMIT_STARS_NUM) / SUMMIT_STARS_DEN);
 export function isUnlocked(e: Expedition, c: Catalog, levelId: string): boolean {
   const l = levelById(c, levelId);
   if (!l) return false;

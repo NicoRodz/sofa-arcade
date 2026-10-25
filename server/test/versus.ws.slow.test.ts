@@ -18,14 +18,21 @@ import { SIGMAS } from '../../shared/symmetry';
 import { startServer } from '../src/server';
 
 let srv: Awaited<ReturnType<typeof startServer>>;
-beforeAll(async () => { srv = await startServer({ port: 0, mode: 'none' }); });
-afterAll(async () => { await srv.close(); });
+beforeAll(async () => {
+  srv = await startServer({ port: 0, mode: 'none' });
+});
+afterAll(async () => {
+  await srv.close();
+});
 
 const versus = modeOf(GAMES[0], 'versus');
 const tickOf = () => new Promise<void>((r) => setImmediate(r));
 const until = async (f: () => boolean, what: string, ms = 5000) => {
   const end = Date.now() + ms;
-  while (!f()) { if (Date.now() > end) throw new Error(`timeout: ${what}`); await tickOf(); }
+  while (!f()) {
+    if (Date.now() > end) throw new Error(`timeout: ${what}`);
+    await tickOf();
+  }
 };
 
 // A phone: joins with a token, keeps what the relay told it, and sends inputs like the controller does (counters for the presses).
@@ -36,7 +43,9 @@ class Phone {
   you: Extract<ServerMsg, { t: 'you' }> | null = null;
   phase: Extract<ServerMsg, { t: 'phase' }> | null = null;
   config: Extract<ServerMsg, { t: 'config' }> | null = null;
-  presses = [0, 0]; seq = 0; heldB = false;
+  presses = [0, 0];
+  seq = 0;
+  heldB = false;
   constructor(room: string, name: string) {
     this.ws = new WebSocket(`ws://127.0.0.1:${srv.port}/ws?room=${room}`);
     this.ws.on('open', () => this.send({ t: 'join', name, token: `tok-${room}-${name}` }));
@@ -49,7 +58,9 @@ class Phone {
       this.msgs.push(m);
     });
   }
-  send(m: ClientMsg) { if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(m)); }
+  send(m: ClientMsg) {
+    if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(m));
+  }
   sendControls(c: Controls) {
     if (c.a > 0) this.presses[0] = (this.presses[0]! + c.a) % 65536;
     if (c.b && !this.heldB) this.presses[1] = (this.presses[1]! + 1) % 65536;
@@ -61,7 +72,13 @@ class Phone {
 // The screen: owns the lobby (config, teams) and the round. Mirrors what screen/src/main.ts does with the same functions.
 class Screen {
   ws: WebSocket;
-  config: LobbyConfig = { ...DEFAULT_CONFIG, modeId: 'versus', modeOptions: { hiddenScore: true, handicap: true }, map: VERSUS_AUTO, seed: 11 };
+  config: LobbyConfig = {
+    ...DEFAULT_CONFIG,
+    modeId: 'versus',
+    modeOptions: { hiddenScore: true, handicap: true },
+    map: VERSUS_AUTO,
+    seed: 11,
+  };
   ids: number[] = [];
   touched = false;
   slots = new Map<number, number>();
@@ -74,13 +91,24 @@ class Screen {
     this.ws = new WebSocket(`ws://127.0.0.1:${srv.port}/ws?role=screen&room=${room}`);
     this.ws.on('message', (d) => this.onMessage(JSON.parse(d.toString()) as ServerMsg));
   }
-  send(m: ClientMsg) { this.ws.send(JSON.stringify(m)); }
-  sendConfig() { this.send({ t: 'config', ...this.config }); }
+  send(m: ClientMsg) {
+    this.ws.send(JSON.stringify(m));
+  }
+  sendConfig() {
+    this.send({ t: 'config', ...this.config });
+  }
   onMessage(m: ServerMsg) {
-    if (m.t === 'player_joined') { this.slots.set(m.player.id, m.player.slot); if (!this.ids.includes(m.player.id)) this.ids.push(m.player.id); }
-    else if (m.t === 'setTeam' && this.config.teams) { // a phone asks: the lobby decides
+    if (m.t === 'player_joined') {
+      this.slots.set(m.player.id, m.player.slot);
+      if (!this.ids.includes(m.player.id)) this.ids.push(m.player.id);
+    } else if (m.t === 'setTeam' && this.config.teams) {
+      // a phone asks: the lobby decides
       const r = movePlayer(this.config.teams, m.playerId, m.teamId, this.config.teamsLocked);
-      if (r.ok) { this.touched = true; this.config = { ...this.config, teams: r.teams }; this.sendConfig(); }
+      if (r.ok) {
+        this.touched = true;
+        this.config = { ...this.config, teams: r.teams };
+        this.sendConfig();
+      }
     } else if (m.t === 'input') this.latest.set(m.playerId, { x: m.x, y: m.y, btn: m.btn, presses: m.presses, seq: m.seq });
   }
   /** The teams follow the connected phones, as the lobby does on every join. */
@@ -91,7 +119,17 @@ class Screen {
   /** Lobby -> round: the same call as the screen's startVersus, then the `phase` the phones get. */
   start(rand = mulberry32(3)) {
     expect(lobbySetup(versus, this.config.teams).ok).toBe(true);
-    const round = startVersusRound({ teams: this.config.teams!, choice: this.config.map, difficulty: 'easy', seed: this.config.seed, modeOptions: this.config.modeOptions, slotOf: (id) => this.slots.get(id) ?? 0, rand, bus: this.bus, countdownMs: COUNTDOWN_MS });
+    const round = startVersusRound({
+      teams: this.config.teams!,
+      choice: this.config.map,
+      difficulty: 'easy',
+      seed: this.config.seed,
+      modeOptions: this.config.modeOptions,
+      slotOf: (id) => this.slots.get(id) ?? 0,
+      rand,
+      bus: this.bus,
+      countdownMs: COUNTDOWN_MS,
+    });
     this.game = round.game;
     this.config = { ...this.config, teams: round.teams, teamsLocked: true };
     this.sendConfig();
@@ -104,7 +142,12 @@ class Screen {
 function brain(g: Game, p: Player, rank: number, mem: Mem, t: number): Controls {
   const iso = isoOf(SIGMAS.mirrorX);
   const flip = p.team === 1;
-  const stations: Station[] = g.stations.filter((s) => s.owner === p.team).map((s) => { const [tx, ty] = flip ? iso.tile(s.tx, s.ty) : [s.tx, s.ty]; return { ...s, tx, ty }; });
+  const stations: Station[] = g.stations
+    .filter((s) => s.owner === p.team)
+    .map((s) => {
+      const [tx, ty] = flip ? iso.tile(s.tx, s.ty) : [s.tx, s.ty];
+      return { ...s, tx, ty };
+    });
   if (flip) stations.sort((a, b) => a.ty - b.ty || a.tx - b.tx);
   const snap = (v: number) => Math.round(v * 1e9) / 1e9;
   const [x, y] = (flip ? iso.point(p.x, p.y) : [p.x, p.y]).map(snap) as [number, number];
@@ -115,7 +158,14 @@ function brain(g: Game, p: Player, rank: number, mem: Mem, t: number): Controls 
   return { ...c, x: cx, y: cy };
 }
 
-interface Played { screen: Screen; phones: Phone[]; game: Game; teams: TeamInfo[]; frames: number; report: VersusReport }
+interface Played {
+  screen: Screen;
+  phones: Phone[];
+  game: Game;
+  teams: TeamInfo[];
+  frames: number;
+  report: VersusReport;
+}
 
 /**
  * n phones on the relay join, get their team, and play a whole round on V1 (frame by frame: every bot sends its input, the screen waits for
@@ -160,11 +210,19 @@ async function playRound(room: string, n: number, o: { lazyMs?: number } = {}): 
   }
   // the end, as the real screen does it: the report of the round (from the sim and the per-chef tally) and what the phones are told of it
   const report = versusReport(game, round.teams, screen.tally.counts);
-  screen.send({ t: 'phase', phase: 'results', scores: phones.map((p) => ({ id: p.id, score: game.teams[game.players.get(p.id)!.team]!.score })), result: phoneResult(report) });
+  screen.send({
+    t: 'phase',
+    phase: 'results',
+    scores: phones.map((p) => ({ id: p.id, score: game.teams[game.players.get(p.id)!.team]!.score })),
+    result: phoneResult(report),
+  });
   await until(() => phones.every((p) => p.phase?.phase === 'results'), 'phase results');
   return { screen, phones, game, teams: round.teams, frames, report };
 }
-const closeAll = (r: Played) => { r.screen.ws.close(); r.phones.forEach((p) => p.ws.close()); };
+const closeAll = (r: Played) => {
+  r.screen.ws.close();
+  r.phones.forEach((p) => p.ws.close());
+};
 
 describe('versus over the relay: bots on websockets', () => {
   for (const n of [4, 6]) {
@@ -189,15 +247,32 @@ describe('versus over the relay: bots on websockets', () => {
         const mine = r.teams.find((t) => t.playerIds.includes(p.id))!;
         const score = p.phase!.scores!.find((s) => s.id === p.id)!.score;
         expect(score).toBe(game.teams[mine.id]!.score);
-        expect(p.you).toMatchObject({ teamId: mine.id, color: mine.color, icon: mine.icon, sideLabel: mine.id === 0 ? 'izquierda' : 'derecha' });
+        expect(p.you).toMatchObject({
+          teamId: mine.id,
+          color: mine.color,
+          icon: mine.icon,
+          sideLabel: mine.id === 0 ? 'izquierda' : 'derecha',
+        });
       }
       // the results payload (F4): the verdict and every team's score reach each phone, and each one reads its own outcome from its team
       const { report } = r;
       const winner = a!.score > b!.score ? 0 : 1;
-      expect([report.verdict, report.winner, report.decidedBy, report.ranked]).toEqual(['win', winner, 'score', winner === 0 ? [0, 1] : [1, 0]]);
+      expect([report.verdict, report.winner, report.decidedBy, report.ranked]).toEqual([
+        'win',
+        winner,
+        'score',
+        winner === 0 ? [0, 1] : [1, 0],
+      ]);
       expect(report.margin).toBe(Math.abs(a!.score - b!.score));
       for (const p of phones) {
-        expect(p.phase!.result).toEqual({ verdict: 'win', winner, scores: [{ team: 0, score: a!.score }, { team: 1, score: b!.score }] });
+        expect(p.phase!.result).toEqual({
+          verdict: 'win',
+          winner,
+          scores: [
+            { team: 0, score: a!.score },
+            { team: 1, score: b!.score },
+          ],
+        });
         const mine = r.teams.find((t) => t.playerIds.includes(p.id))!;
         expect(outcomeFor(p.phase!.result!, p.you!.teamId)).toBe(mine.id === winner ? 'won' : 'lost');
         expect(p.phase!.result!.scores.find((s) => s.team === p.you!.teamId)!.score).toBe(game.teams[mine.id]!.score); // the phone's own team's score
@@ -205,9 +280,20 @@ describe('versus over the relay: bots on websockets', () => {
       // the numbers of each team in the report are the sim's, and the MVP tally adds up to the team's deliveries (a chef counted twice or lost would break it)
       for (const t of report.teams) {
         const sim = summarizeTeam(game, t.teamId);
-        expect([t.score, t.delivered, t.tips, t.bestStreak, t.vips, t.stars, t.k]).toEqual([sim.score, sim.delivered, sim.tips, sim.bestStreak, sim.vips, sim.stars, sim.k]);
+        expect([t.score, t.delivered, t.tips, t.bestStreak, t.vips, t.stars, t.k]).toEqual([
+          sim.score,
+          sim.delivered,
+          sim.tips,
+          sim.bestStreak,
+          sim.vips,
+          sim.stars,
+          sim.k,
+        ]);
         const members = r.teams[t.teamId]!.playerIds;
-        expect(members.reduce((n, id) => n + (r.screen.tally.counts.get(id) ?? 0), 0), `team ${t.teamId} tally`).toBe(sim.delivered);
+        expect(
+          members.reduce((n, id) => n + (r.screen.tally.counts.get(id) ?? 0), 0),
+          `team ${t.teamId} tally`,
+        ).toBe(sim.delivered);
         expect(t.mvp, `team ${t.teamId} mvp`).not.toBeNull();
         expect(members).toContain(t.mvp!.playerId);
         expect(t.mvp!.delivered).toBe(Math.max(...members.map((id) => r.screen.tally.counts.get(id) ?? 0)));
@@ -220,7 +306,8 @@ describe('versus over the relay: bots on websockets', () => {
   it('5 phones: 3 v 2, the small team carries k 1.22 on every delivery and the big one plays at 1', async () => {
     const r = await playRound('vs5', 5);
     const { game } = r;
-    const small = game.teams.find((t) => t.n === 2)!, big = game.teams.find((t) => t.n === 3)!;
+    const small = game.teams.find((t) => t.n === 2)!,
+      big = game.teams.find((t) => t.n === 3)!;
     expect(small.k).toBe(1.22);
     expect(big.k).toBe(1);
     const s = summarizeTeam(game, small.id);
@@ -236,7 +323,7 @@ describe('versus over the relay: bots on websockets', () => {
   }, 180_000);
 });
 
-describe('versus lobby over the relay: teams are the screen\'s call', () => {
+describe("versus lobby over the relay: teams are the screen's call", () => {
   it('a phone asks to change team: the screen moves it and the phone gets its new colour and side; locked teams refuse', async () => {
     const screen = new Screen('vsmove');
     await new Promise<void>((r) => screen.ws.once('open', () => r()));
@@ -260,6 +347,7 @@ describe('versus lobby over the relay: teams are the screen\'s call', () => {
     p1.send({ t: 'setTeam', teamId: before });
     await new Promise((r) => setTimeout(r, 150));
     expect(JSON.stringify(screen.config.teams)).toBe(kept);
-    screen.ws.close(); phones.forEach((p) => p.ws.close());
+    screen.ws.close();
+    phones.forEach((p) => p.ws.close());
   });
 });

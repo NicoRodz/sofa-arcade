@@ -2,7 +2,17 @@
 // frame, the inputs coming through the relay), and scripted chefs. Nothing in the game imports this. `kit.srv` is set by each test file in beforeAll.
 import { WebSocket } from 'ws';
 import { DEFAULT_CONFIG, PressTracker, type ClientMsg, type ServerMsg } from '@party/shared';
-import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Player, type Station } from '@party/shared/game';
+import {
+  COUNTDOWN_MS,
+  TICK_MS,
+  addPlayer,
+  createGame,
+  tick,
+  type Controls,
+  type Game,
+  type Player,
+  type Station,
+} from '@party/shared/game';
 import { Emitter, type GameEvents } from '@party/shared/events';
 import { DIRS, fixedMap, isFloor } from '../../shared/maps';
 import { decide, type Mem } from '../../shared/golden/bot';
@@ -13,7 +23,10 @@ export const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const tickOf = () => new Promise<void>((r) => setImmediate(r));
 export const until = async (f: () => boolean, what: string, ms = 5000) => {
   const end = Date.now() + ms;
-  while (!f()) { if (Date.now() > end) throw new Error(`timeout: ${what}`); await tickOf(); }
+  while (!f()) {
+    if (Date.now() > end) throw new Error(`timeout: ${what}`);
+    await tickOf();
+  }
 };
 
 export class Phone {
@@ -21,7 +34,9 @@ export class Phone {
   id = 0;
   buzzes: string[] = [];
   phase: Extract<ServerMsg, { t: 'phase' }> | null = null;
-  presses = [0, 0]; seq = 0; heldB = false;
+  presses = [0, 0];
+  seq = 0;
+  heldB = false;
   constructor(room: string, name: string) {
     this.ws = new WebSocket(`ws://127.0.0.1:${kit.srv.port}/ws?room=${room}`);
     this.ws.on('open', () => this.send({ t: 'join', name, token: `tok-${room}-${name}` }));
@@ -32,7 +47,9 @@ export class Phone {
       else if (m.t === 'buzz') this.buzzes.push(m.kind);
     });
   }
-  send(m: ClientMsg) { if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(m)); }
+  send(m: ClientMsg) {
+    if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(m));
+  }
   sendControls(c: Controls) {
     if (c.a > 0) this.presses[0] = (this.presses[0]! + c.a) % 65536;
     if (c.b && !this.heldB) this.presses[1] = (this.presses[1]! + 1) % 65536;
@@ -54,33 +71,53 @@ export function walkTo(g: Game, p: Player, s: Station): { x: number; y: number }
       let k = `${x},${y}`;
       while (prev.get(k) && prev.get(prev.get(k)!) !== null) k = prev.get(k)!;
       const [nx, ny] = k.split(',').map(Number) as [number, number];
-      const dx = nx + 0.5 - p.x, dy = ny + 0.5 - p.y, l = Math.hypot(dx, dy) || 1;
+      const dx = nx + 0.5 - p.x,
+        dy = ny + 0.5 - p.y,
+        l = Math.hypot(dx, dy) || 1;
       return { x: dx / l, y: dy / l };
     }
-    for (const [dx, dy] of DIRS) { const nx = x + dx, ny = y + dy, k = `${nx},${ny}`; if (isFloor(g.grid, nx, ny) && !prev.has(k)) { prev.set(k, `${x},${y}`); queue.push([nx, ny]); } }
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx,
+        ny = y + dy,
+        k = `${nx},${ny}`;
+      if (isFloor(g.grid, nx, ny) && !prev.has(k)) {
+        prev.set(k, `${x},${y}`);
+        queue.push([nx, ny]);
+      }
+    }
   }
   return null;
 }
 /** Walks to what is burning and holds Picar in front of it. */
 export function firefighter(g: Game, p: Player): Controls {
-  const s = g.stations.filter((x) => x.fire !== undefined).sort((a, b) => Math.hypot(a.tx - p.x, a.ty - p.y) - Math.hypot(b.tx - p.x, b.ty - p.y))[0];
+  const s = g.stations
+    .filter((x) => x.fire !== undefined)
+    .sort((a, b) => Math.hypot(a.tx - p.x, a.ty - p.y) - Math.hypot(b.tx - p.x, b.ty - p.y))[0];
   if (!s) return idle;
   const step = walkTo(g, p, s);
   if (step) return { ...step, a: 0, b: false };
-  const dx = s.tx + 0.5 - p.x, dy = s.ty + 0.5 - p.y, l = Math.hypot(dx, dy) || 1;
+  const dx = s.tx + 0.5 - p.x,
+    dy = s.ty + 0.5 - p.y,
+    l = Math.hypot(dx, dy) || 1;
   return { x: dx / l, y: dy / l, a: 0, b: true };
 }
 /** Runs at the rat and dashes (B pressed in pulses, empty hands, nothing in front) when it is close. */
 export function ratcatcher(g: Game, p: Player, frame: number): Controls {
   const r = g.mid?.rat;
   if (!r || p.item) return idle;
-  const dx = r.x - p.x, dy = r.y - p.y, d = Math.hypot(dx, dy) || 1;
+  const dx = r.x - p.x,
+    dy = r.y - p.y,
+    d = Math.hypot(dx, dy) || 1;
   return { x: dx / d, y: dy / d, a: 0, b: d < 2.4 && frame % 12 === 0 };
 }
 
 export type Role = 'cook' | 'firefighter' | 'ratcatcher' | 'idle';
 export interface RoundOpts {
-  roles: Role[]; seconds: number; map?: string; difficulty?: 'easy' | 'normal' | 'hard'; seed?: number;
+  roles: Role[];
+  seconds: number;
+  map?: string;
+  difficulty?: 'easy' | 'normal' | 'hard';
+  seed?: number;
   flags: { burn?: boolean; fire?: boolean; events?: boolean; recipes?: boolean; magnet?: boolean | 'strong' };
   setup?: (g: Game) => void; // right after createGame and addPlayer
   drive?: (g: Game, p: Player, i: number, frame: number) => Controls | undefined; // a script of the test for chef i (undefined: the role decides)
@@ -101,9 +138,51 @@ export async function playRound(room: string, o: RoundOpts) {
   const phones = o.roles.map((_r, i) => new Phone(room, `Bot${i + 1}`));
   await until(() => phones.every((p) => p.id > 0) && ids.length === phones.length, 'phones joined');
   const map = fixedMap(o.map ?? '1')!;
-  const game = createGame({ mapId: map.id, rows: map.rows, spawns: map.spawns, difficulty: o.difficulty ?? 'normal', n: phones.length, seed: o.seed ?? 9, bus, countdownMs: COUNTDOWN_MS, ...o.flags });
+  const game = createGame({
+    mapId: map.id,
+    rows: map.rows,
+    spawns: map.spawns,
+    difficulty: o.difficulty ?? 'normal',
+    n: phones.length,
+    seed: o.seed ?? 9,
+    bus,
+    countdownMs: COUNTDOWN_MS,
+    ...o.flags,
+  });
   game.params.roundMs = o.seconds * 1000;
-  for (const k of ['oven:warn', 'oven:burnt', 'oven:rescued', 'fire:start', 'fire:spread', 'fire:out', 'fire:end', 'douseStart', 'douseStop', 'delivered', 'orderNew', 'event:announce', 'event:start', 'event:end', 'event:inspector', 'rat:appear', 'rat:steal', 'rat:scared', 'rat:gone', 'rat:target', 'rat:near', 'dash', 'foldStart', 'foldStop', 'foldDone', 'dishRejected', 'potStart', 'potReady'] as const) bus.on(k, ((p: never) => { log.push({ t: game.time, type: k, p: p as Record<string, unknown> }); }) as never);
+  for (const k of [
+    'oven:warn',
+    'oven:burnt',
+    'oven:rescued',
+    'fire:start',
+    'fire:spread',
+    'fire:out',
+    'fire:end',
+    'douseStart',
+    'douseStop',
+    'delivered',
+    'orderNew',
+    'event:announce',
+    'event:start',
+    'event:end',
+    'event:inspector',
+    'rat:appear',
+    'rat:steal',
+    'rat:scared',
+    'rat:gone',
+    'rat:target',
+    'rat:near',
+    'dash',
+    'foldStart',
+    'foldStop',
+    'foldDone',
+    'dishRejected',
+    'potStart',
+    'potReady',
+  ] as const)
+    bus.on(k, ((p: never) => {
+      log.push({ t: game.time, type: k, p: p as Record<string, unknown> });
+    }) as never);
   phones.forEach((p, rank) => addPlayer(game, p.id, rank, rank));
   o.setup?.(game);
   screenWs.send(JSON.stringify({ t: 'config', ...DEFAULT_CONFIG }));
@@ -122,7 +201,16 @@ export async function playRound(room: string, o: RoundOpts) {
     phones.forEach((p, i) => {
       const gp = game.players.get(p.id)!;
       const role = o.roles[i]!;
-      p.sendControls(o.drive?.(game, gp, i, frames) ?? (role === 'firefighter' ? firefighter(game, gp) : role === 'ratcatcher' ? ratcatcher(game, gp, frames) : role === 'cook' ? decide(game, gp, i, mem.get(p.id)!, frames) : idle));
+      p.sendControls(
+        o.drive?.(game, gp, i, frames) ??
+          (role === 'firefighter'
+            ? firefighter(game, gp)
+            : role === 'ratcatcher'
+              ? ratcatcher(game, gp, frames)
+              : role === 'cook'
+                ? decide(game, gp, i, mem.get(p.id)!, frames)
+                : idle),
+      );
     });
     await until(() => phones.every((p) => latest.get(p.id)!.seq >= want), `inputs of frame ${want}`, 3000);
     const controls = new Map<number, Controls>();
@@ -135,7 +223,10 @@ export async function playRound(room: string, o: RoundOpts) {
     frames++;
   }
   const of = (type: string) => log.filter((e) => e.type === type);
-  const close = () => { screenWs.close(); phones.forEach((p) => p.ws.close()); };
+  const close = () => {
+    screenWs.close();
+    phones.forEach((p) => p.ws.close());
+  };
   return { game, log, of, phones, frames, close };
 }
 /** A forced event: this round's event is `kind`, starting at `startAt` ms of match time. */
@@ -145,5 +236,8 @@ export function forceEvent(g: Game, kind: NonNullable<Game['mid']>['kind'], star
 /** A pizza that nobody takes out of the first oven, ready at this instant. */
 export function neglectedPizza(g: Game) {
   const oven = g.stations.find((s) => s.kind === 'pot')!;
-  oven.inputs = [0, 1]; oven.progress = 1; oven.done = true; oven.readyAt = g.time;
+  oven.inputs = [0, 1];
+  oven.progress = 1;
+  oven.done = true;
+  oven.readyAt = g.time;
 }

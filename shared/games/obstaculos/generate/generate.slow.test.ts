@@ -25,7 +25,8 @@ describe('generateLevel: 500 consecutive seeds, every one valid', { timeout: 900
   it('500 seeds (difficulty, players and mode rotating) produce a valid level each, with no hand-made fallback and within the attempt cap', () => {
     FALLBACK_LOG.length = 0;
     const bad: string[] = [];
-    let inBand = 0, attempts = 0;
+    let inBand = 0,
+      attempts = 0;
     const seen = new Set<string>();
     for (let seed = 1; seed <= 500; seed++) {
       const o: GenerateOpts = { seed, n: NS[seed % 3]!, tether: TETHERS[seed % 2]!, difficulty: DIFFICULTIES[Math.floor(seed / 3) % 3]! };
@@ -47,12 +48,15 @@ describe('generateLevel: 500 consecutive seeds, every one valid', { timeout: 900
 
   it('the full matrix: 3 difficulties x n in {2,4,8} x 2 modes x 20 seeds, all valid', () => {
     const bad: string[] = [];
-    for (const difficulty of DIFFICULTIES) for (const n of NS) for (const tether of TETHERS) for (let seed = 1000; seed < 1020; seed++) {
-      const o: GenerateOpts = { seed, n, tether, difficulty };
-      const { level } = generateLevel(o);
-      const errs = revalidate(o, level.rows, level);
-      if (errs.length) bad.push(`${JSON.stringify(o)}: ${errs.join(' | ')}`);
-    }
+    for (const difficulty of DIFFICULTIES)
+      for (const n of NS)
+        for (const tether of TETHERS)
+          for (let seed = 1000; seed < 1020; seed++) {
+            const o: GenerateOpts = { seed, n, tether, difficulty };
+            const { level } = generateLevel(o);
+            const errs = revalidate(o, level.rows, level);
+            if (errs.length) bad.push(`${JSON.stringify(o)}: ${errs.join(' | ')}`);
+          }
     expect(bad).toEqual([]);
   });
 
@@ -70,7 +74,8 @@ describe('generateLevel: 500 consecutive seeds, every one valid', { timeout: 900
 describe('generateLevel: determinism and structure', { timeout: 120_000 }, () => {
   it('the same seed gives the same level, byte for byte; the seed is not ignored', () => {
     const o: GenerateOpts = { seed: 123, n: 4, tether: 'chainOnly', difficulty: 'normal' };
-    const a = generateLevel(o), b = generateLevel(o);
+    const a = generateLevel(o),
+      b = generateLevel(o);
     expect(a.level).toEqual(b.level);
     expect(a.report).toEqual(b.report);
     const other = generateLevel({ ...o, seed: 124 });
@@ -102,14 +107,25 @@ describe('generateLevel: determinism and structure', { timeout: 120_000 }, () =>
   });
 
   it('the harder the difficulty, the higher D on average (bands 10-35 < 35-60 < 60-85)', () => {
-    const mean = (d: Difficulty) => { let s = 0; for (let seed = 300; seed < 320; seed++) s += generateLevel({ seed, n: 4, tether: 'freeOnly', difficulty: d }).report.d; return s / 20; };
-    const e = mean('easy'), nm = mean('normal'), h = mean('hard');
+    const mean = (d: Difficulty) => {
+      let s = 0;
+      for (let seed = 300; seed < 320; seed++) s += generateLevel({ seed, n: 4, tether: 'freeOnly', difficulty: d }).report.d;
+      return s / 20;
+    };
+    const e = mean('easy'),
+      nm = mean('normal'),
+      h = mean('hard');
     expect(e).toBeLessThan(nm);
     expect(nm).toBeLessThan(h);
   });
 
   it('cooperative modules respect n: with 2 players no tower of 3 and no wall of 5 ever appears; with 8 they can', () => {
-    const wall5 = (n: number) => { let c = 0; for (let seed = 400; seed < 440; seed++) if (generateLevel({ seed, n, tether: 'freeOnly', difficulty: 'hard' }).report.modules.includes('wall5')) c++; return c; };
+    const wall5 = (n: number) => {
+      let c = 0;
+      for (let seed = 400; seed < 440; seed++)
+        if (generateLevel({ seed, n, tether: 'freeOnly', difficulty: 'hard' }).report.modules.includes('wall5')) c++;
+      return c;
+    };
     expect(wall5(2)).toBe(0);
     expect(wall5(8)).toBeGreaterThan(0);
   });

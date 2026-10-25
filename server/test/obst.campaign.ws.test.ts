@@ -8,26 +8,39 @@ import { LEVELS, ObstBot, ObstSession, ROPE_LEN, snapshot, type ObstEvent } from
 import { startServer } from '../src/server';
 
 let srv: Awaited<ReturnType<typeof startServer>>;
-beforeAll(async () => { srv = await startServer({ port: 0, mode: 'none' }); });
-afterAll(async () => { await srv.close(); });
+beforeAll(async () => {
+  srv = await startServer({ port: 0, mode: 'none' });
+});
+afterAll(async () => {
+  await srv.close();
+});
 
 const tickOf = () => new Promise<void>((r) => setImmediate(r));
 const until = async (f: () => boolean, what: string, ms = 5000) => {
   const end = Date.now() + ms;
-  while (!f()) { if (Date.now() > end) throw new Error(`timeout: ${what}`); await tickOf(); }
+  while (!f()) {
+    if (Date.now() > end) throw new Error(`timeout: ${what}`);
+    await tickOf();
+  }
 };
 
 class Phone {
   ws: WebSocket;
   id = 0;
-  presses = [0, 0]; seq = 0;
+  presses = [0, 0];
+  seq = 0;
   bot!: ObstBot; // created once the relay told the slot
   constructor(room: string, name: string) {
     this.ws = new WebSocket(`ws://127.0.0.1:${srv.port}/ws?room=${room}`);
     this.ws.on('open', () => this.send({ t: 'join', name, token: `tok-${room}-${name}` }));
-    this.ws.on('message', (d) => { const m = JSON.parse(d.toString()) as ServerMsg; if (m.t === 'joined') this.id = m.player.id; });
+    this.ws.on('message', (d) => {
+      const m = JSON.parse(d.toString()) as ServerMsg;
+      if (m.t === 'joined') this.id = m.player.id;
+    });
   }
-  send(m: ClientMsg) { if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(m)); }
+  send(m: ClientMsg) {
+    if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(m));
+  }
   sendInput(x: number, y: number, jump: boolean, grab: boolean) {
     if (jump) this.presses[0] = (this.presses[0]! + 1) % 65536;
     if (grab) this.presses[1] = (this.presses[1]! + 1) % 65536;
@@ -56,8 +69,18 @@ async function play(room: string, levelIdx: number, campaign: boolean, maxSec = 
   const phones = [new Phone(room, 'Nico'), new Phone(room, 'Angi')];
   await until(() => phones.every((p) => p.id > 0) && screen.slots.size === 2, 'phones joined');
   const slots = phones.map((p) => screen.slots.get(p.id)!);
-  phones.forEach((p, i) => { p.bot = new ObstBot(slots[i]!); }); // the bot plays the slot the relay gave
-  const s = new ObstSession({ mode: 'chain', difficulty: 'normal', level: 0, seed: 1, slots, levels: [LEVELS[levelIdx - 1]!], ...(campaign ? { campaign: { world: 'forest' as const } } : {}) });
+  phones.forEach((p, i) => {
+    p.bot = new ObstBot(slots[i]!);
+  }); // the bot plays the slot the relay gave
+  const s = new ObstSession({
+    mode: 'chain',
+    difficulty: 'normal',
+    level: 0,
+    seed: 1,
+    slots,
+    levels: [LEVELS[levelIdx - 1]!],
+    ...(campaign ? { campaign: { world: 'forest' as const } } : {}),
+  });
   for (const p of phones) p.sendInput(0, 0, false, false); // the first sample of a phone is the baseline of its press counters
   await until(() => phones.every((p) => screen.latest.get(p.id)?.seq === 0), 'baseline inputs');
   const events: ObstEvent[] = [];
@@ -65,14 +88,21 @@ async function play(room: string, levelIdx: number, campaign: boolean, maxSec = 
   while (s.status !== 'between' && !s.over && frames < (maxSec + 4) * 60) {
     const snap = snapshot(s.world);
     const view = { tick: s.world.tick, grid: s.world.grid, players: snap.players, goal: snap.goal };
-    for (const p of phones) { const o = p.bot.decide(view); p.sendInput(o.x, o.y, o.jump, o.grab); }
+    for (const p of phones) {
+      const o = p.bot.decide(view);
+      p.sendInput(o.x, o.y, o.jump, o.grab);
+    }
     const want = frames + 1;
     await until(() => phones.every((p) => screen.latest.get(p.id)!.seq >= want), `inputs of frame ${want}`, 3000);
-    for (const p of phones) { const l = screen.latest.get(p.id)!; s.receive(screen.slots.get(p.id)!, { x: l.x, y: l.y, presses: l.presses }); }
+    for (const p of phones) {
+      const l = screen.latest.get(p.id)!;
+      s.receive(screen.slots.get(p.id)!, { x: l.x, y: l.y, presses: l.presses });
+    }
     events.push(...s.advance(1000 / 60));
     frames++;
   }
-  screen.ws.close(); phones.forEach((p) => p.ws.close());
+  screen.ws.close();
+  phones.forEach((p) => p.ws.close());
   return { s, events, frames };
 }
 

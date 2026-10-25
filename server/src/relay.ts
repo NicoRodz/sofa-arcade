@@ -1,8 +1,22 @@
 import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
-  COLORS, DEFAULT_CONFIG, captainOf, hintExtras, PROTOCOL_VERSION, configMsg, DEFAULT_ROOM, MAX_PLAYERS, SLOT_GRACE_MS, WS_PATH, parseClientMessage, youMsg,
-  type LobbyConfig, type PhaseInfo, type PublicPlayer, type ServerMsg,
+  COLORS,
+  DEFAULT_CONFIG,
+  captainOf,
+  hintExtras,
+  PROTOCOL_VERSION,
+  configMsg,
+  DEFAULT_ROOM,
+  MAX_PLAYERS,
+  SLOT_GRACE_MS,
+  WS_PATH,
+  parseClientMessage,
+  youMsg,
+  type LobbyConfig,
+  type PhaseInfo,
+  type PublicPlayer,
+  type ServerMsg,
 } from '@party/shared';
 
 interface Player {
@@ -30,14 +44,25 @@ const send = (ws: WebSocket, m: ServerMsg) => {
 // The team comes from the lobby teams the screen sent (it owns them), so a phone that reconnects with its token keeps it.
 const teamIdOf = (r: Room, id: number) => r.config.teams?.find((t) => t.playerIds.includes(id))?.id ?? null;
 const pub = (p: Player, r: Room): PublicPlayer => ({
-  id: p.id, name: p.name, color: COLORS[p.slot % COLORS.length]!, slot: p.slot, connected: p.ws !== null, teamId: teamIdOf(r, p.id), ...(p.assist ? { assist: true as const } : {}), ...(p.school ? { school: true as const } : {}),
+  id: p.id,
+  name: p.name,
+  color: COLORS[p.slot % COLORS.length]!,
+  slot: p.slot,
+  connected: p.ws !== null,
+  teamId: teamIdOf(r, p.id),
+  ...(p.assist ? { assist: true as const } : {}),
+  ...(p.school ? { school: true as const } : {}),
 });
 
 export function attachRelay(server: Server) {
   const rooms = new Map<string, Room>();
   const room = (code: string) => {
     let r = rooms.get(code);
-    if (!r) rooms.set(code, (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'menu' }, config: DEFAULT_CONFIG, captain: null }));
+    if (!r)
+      rooms.set(
+        code,
+        (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'menu' }, config: DEFAULT_CONFIG, captain: null }),
+      );
     return r;
   };
   const toScreens = (r: Room, m: ServerMsg) => {
@@ -104,9 +129,18 @@ export function attachRelay(server: Server) {
         if (isScreen && to?.ws) send(to.ws, { t: 'hint', a: m.a, b: m.b, ...hintExtras(m) });
         return;
       }
-      if (m.t === 'school') { // the screen tells one phone where its chef is in the Cocina escuela
+      if (m.t === 'school') {
+        // the screen tells one phone where its chef is in the Cocina escuela
         const to = r.players.get(m.playerId);
-        if (isScreen && to?.ws) send(to.ws, { t: 'school', step: m.step, total: m.total, text: m.text, ...(m.btn ? { btn: m.btn } : {}), ...(m.done ? { done: true as const } : {}) });
+        if (isScreen && to?.ws)
+          send(to.ws, {
+            t: 'school',
+            step: m.step,
+            total: m.total,
+            text: m.text,
+            ...(m.btn ? { btn: m.btn } : {}),
+            ...(m.done ? { done: true as const } : {}),
+          });
         return;
       }
       if (m.t === 'config') {
@@ -152,14 +186,16 @@ export function attachRelay(server: Server) {
         if (r.captain === me.id) toScreens(r, { t: 'nav', from: me.id, key: m.key });
         return;
       }
-      if (m.t === 'schoolDone' && me) { // it stays with the slot; the screen hears it every time (a "Saltar" during the school needs the nudge even when it was known)
+      if (m.t === 'schoolDone' && me) {
+        // it stays with the slot; the screen hears it every time (a "Saltar" during the school needs the nudge even when it was known)
         me.school = true;
         toScreens(r, { t: 'schoolDone', playerId: me.id, ...(m.skip ? { skip: true as const } : {}) });
         return;
       }
       if (m.t === 'assist' && me) {
         if (r.phase.phase === 'playing' || r.phase.phase === 'school' || !!me.assist === m.on) return; // the round (and the school) have their chefs: the choice is for the lobby
-        if (m.on) me.assist = true; else delete me.assist;
+        if (m.on) me.assist = true;
+        else delete me.assist;
         const msg: ServerMsg = { t: 'assist', playerId: me.id, on: m.on };
         toScreens(r, msg);
         send(ws, msg);

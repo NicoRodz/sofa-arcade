@@ -28,7 +28,9 @@ describe('palettes', () => {
     expect(new Set(ROPE_COLORS).size).toBe(4);
     expect(ROPE_COLORS).not.toContain('#E63B2E');
   });
-  it('lerpColor mixes in rgb', () => { expect(lerpColor('#000000', '#ffffff', 0.5)).toBe('rgb(128,128,128)'); });
+  it('lerpColor mixes in rgb', () => {
+    expect(lerpColor('#000000', '#ffffff', 0.5)).toBe('rgb(128,128,128)');
+  });
 });
 
 describe('autotile mask', () => {
@@ -46,7 +48,9 @@ describe('autotile mask', () => {
     // tile (27, 9) is the top-left of the second block (cols 27-30, rows 9-11)
     expect(g.cells[9 * g.w + 27]).toBe(T.Solid);
     const m = terrainMask(g, 27, 9);
-    expect(m & N_).toBe(0); expect(m & W_).toBe(0); expect(m & E_).toBe(E_);
+    expect(m & N_).toBe(0);
+    expect(m & W_).toBe(0);
+    expect(m & E_).toBe(E_);
   });
 });
 
@@ -56,15 +60,25 @@ describe('cellRand', () => {
     const v = new Set<number>();
     for (let x = 0; x < 20; x++) v.add(cellRand(x, 7, 2));
     expect(v.size).toBeGreaterThan(18);
-    for (const x of v) { expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThan(1); }
+    for (const x of v) {
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x).toBeLessThan(1);
+    }
   });
 });
 
 describe('hud helpers', () => {
   it('clock text and medal thresholds follow the par (gold <= par, silver <= 1.5 par)', () => {
-    expect(clockText(75)).toBe('1:15'); expect(clockText(0)).toBe('0:00'); expect(clockText(-3)).toBe('0:00');
-    expect(medalFor(75, 75)).toBe('gold'); expect(medalFor(75.5, 75)).toBe('silver');
-    expect(medalFor(112.5, 75)).toBe('silver'); expect(medalFor(113, 75)).toBe('bronze');
+    expect(clockText(75)).toBe('1:15');
+    expect(clockText(0)).toBe('0:00');
+    expect(clockText(-3)).toBe('0:00');
+    expect(medalFor(75, 75)).toBe('gold');
+    expect(medalFor(75.5, 75)).toBe('silver');
+    expect(medalFor(112.5, 75)).toBe('silver');
+    expect(medalFor(113, 75)).toBe('bronze');
   });
-  it('type check: Biome list', () => { const b: Biome = 'glacier'; expect(BIOMES).toContain(b); });
+  it('type check: Biome list', () => {
+    const b: Biome = 'glacier';
+    expect(BIOMES).toContain(b);
+  });
 });

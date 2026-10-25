@@ -35,7 +35,10 @@ export class SfxLimiter {
   }
 }
 
-export interface Hit { at: number; sfx: SfxId }
+export interface Hit {
+  at: number;
+  sfx: SfxId;
+}
 export class LoopTable {
   private loops = new Map<string, { id: LoopId; next: number }>();
   start(key: string, id: LoopId, now: number): boolean {
@@ -46,9 +49,15 @@ export class LoopTable {
     this.loops.set(key, { id, next: now });
     return true;
   }
-  stop(key: string) { this.loops.delete(key); }
-  clear() { this.loops.clear(); }
-  get size() { return this.loops.size; }
+  stop(key: string) {
+    this.loops.delete(key);
+  }
+  clear() {
+    this.loops.clear();
+  }
+  get size() {
+    return this.loops.size;
+  }
   /** Hits that fall before now + lookahead; advances each loop past them. */
   due(now: number, lookahead: number, rand: () => number): Hit[] {
     const hits: Hit[] = [];
@@ -69,6 +78,9 @@ export class LoopTable {
   }
 }
 
-export interface HintState { running: boolean; muted: boolean }
+export interface HintState {
+  running: boolean;
+  muted: boolean;
+}
 export const hintText = ({ running, muted }: HintState): string =>
   !running ? 'Haz clic para activar el sonido' : muted ? 'Sonido silenciado (M)' : '';

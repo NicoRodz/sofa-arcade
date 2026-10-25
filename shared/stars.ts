@@ -30,13 +30,18 @@ export const E2_DEFAULT: Record<Difficulty, number> = { easy: 310, normal: 340, 
 export const e2 = (mapId: string | undefined, d: Difficulty): number => (mapId !== undefined ? E2[mapId]?.[d] : undefined) ?? E2_DEFAULT[d];
 
 // E(N) = E(2) * (1 + 0.4 (min(N, 4) - 2) + 0.15 max(N - 4, 0))
-export const teamFactor = (n: number) => { const t = teamSize(n); return 1 + 0.4 * (Math.min(t, 4) - 2) + 0.15 * Math.max(t - 4, 0); };
+export const teamFactor = (n: number) => {
+  const t = teamSize(n);
+  return 1 + 0.4 * (Math.min(t, 4) - 2) + 0.15 * Math.max(t - 4, 0);
+};
 // `factor`: 1 for every round without a card (table version 1); the card's factor (recipes/stars.ts) for table version 2
-export const expectedScore = (mapId: string | undefined, d: Difficulty, n: number, factor = 1): number => e2(mapId, d) * teamFactor(n) * factor;
+export const expectedScore = (mapId: string | undefined, d: Difficulty, n: number, factor = 1): number =>
+  e2(mapId, d) * teamFactor(n) * factor;
 
 export function starThresholds(mapId: string | undefined, d: Difficulty, n: number, factor = 1): [number, number, number] {
   const e = expectedScore(mapId, d, n, factor);
   const [a, b, c] = params(d, n).tune.starPct;
   return [Math.round(e * a), Math.round(e * b), Math.round(e * c)];
 }
-export const stars = (mapId: string | undefined, d: Difficulty, n: number, score: number, factor = 1): number => starThresholds(mapId, d, n, factor).filter((t) => score >= t).length;
+export const stars = (mapId: string | undefined, d: Difficulty, n: number, score: number, factor = 1): number =>
+  starThresholds(mapId, d, n, factor).filter((t) => score >= t).length;

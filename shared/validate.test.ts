@@ -17,10 +17,27 @@ describe('validate', () => {
 
   it('river map: items cross through the three counters; it breaks only when all are gone', () => {
     const rows = rowsOf('3');
-    expect(analyze(parseMap(rows)).passes.map((p) => p.pos)).toEqual([[7, 2], [7, 4], [7, 6]]);
+    expect(analyze(parseMap(rows)).passes.map((p) => p.pos)).toEqual([
+      [7, 2],
+      [7, 4],
+      [7, 6],
+    ]);
     expect(check(edit(rows, [[7, 4, '~']])).ok).toBe(true);
-    expect(check(edit(rows, [[7, 4, '~'], [7, 2, '~']])).ok).toBe(true);
-    const cut = check(edit(rows, [[7, 4, '~'], [7, 2, '~'], [7, 6, '~']]));
+    expect(
+      check(
+        edit(rows, [
+          [7, 4, '~'],
+          [7, 2, '~'],
+        ]),
+      ).ok,
+    ).toBe(true);
+    const cut = check(
+      edit(rows, [
+        [7, 4, '~'],
+        [7, 2, '~'],
+        [7, 6, '~'],
+      ]),
+    );
     expect(cut.ok).toBe(false);
     expect(cut.errors.join()).toMatch(/no route K -> O/);
   });
@@ -30,14 +47,21 @@ describe('validate', () => {
     const r = check(rows);
     expect(r.ok).toBe(false);
     expect(r.errors.join()).toMatch(/no spawn/);
-    const onlyLeft = edit(rowsOf('3'), [[11, 4, '.'], [11, 6, '.']]);
+    const onlyLeft = edit(rowsOf('3'), [
+      [11, 4, '.'],
+      [11, 6, '.'],
+    ]);
     expect(check(onlyLeft).errors.join()).toMatch(/holds recipe stations but no spawn/);
   });
 
   it('flags missing and walled-in stations', () => {
     expect(check(edit(rowsOf('1'), [[15, 4, 'C']])).errors.join()).toMatch(/missing station E/);
     // oven at (11,0) and (13,0) get their floor row turned into walls
-    const walled = edit(rowsOf('1'), [[11, 1, 'C'], [13, 1, 'C'], [12, 1, 'C']]);
+    const walled = edit(rowsOf('1'), [
+      [11, 1, 'C'],
+      [13, 1, 'C'],
+      [12, 1, 'C'],
+    ]);
     expect(check(walled).errors.join()).toMatch(/station O at \(11, 0\) has no floor/);
   });
 
@@ -64,20 +88,46 @@ describe('validateMap: one test per fixed map', () => {
     const m = fixedMap('3')!;
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
     expect(minPlayers(parseMap([...m.rows]))).toBe(2);
-    const cut = edit([...m.rows], [[7, 2, '~'], [7, 4, '~'], [7, 6, '~']]);
+    const cut = edit(
+      [...m.rows],
+      [
+        [7, 2, '~'],
+        [7, 4, '~'],
+        [7, 6, '~'],
+      ],
+    );
     expect(validateMap({ ...m, rows: cut }).errors.join()).toMatch(/no route K -> O/);
   });
   it('map 4 Pasillo: valid; walling the only gap splits the kitchen', () => {
     const m = fixedMap('4')!;
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
-    const walled = edit([...m.rows], [[6, 4, '#'], [7, 4, '#'], [8, 4, '#'], [9, 4, '#']]);
+    const walled = edit(
+      [...m.rows],
+      [
+        [6, 4, '#'],
+        [7, 4, '#'],
+        [8, 4, '#'],
+        [9, 4, '#'],
+      ],
+    );
     expect(validateMap({ ...m, rows: walled }).ok).toBe(false);
   });
   it('map 5 Cinta: valid with 6 spawns; its minDuro is 2 because the belt is two counters over water', () => {
     const m = fixedMap('5')!;
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
     expect(validateMap({ ...m, minDuro: 1 }).errors.join()).toMatch(/minDuro is 1 but the recipe needs 2/);
-    expect(validateMap({ ...m, rows: edit([...m.rows], [[7, 2, '~'], [7, 6, '~']]) }).errors.join()).toMatch(/no route/);
+    expect(
+      validateMap({
+        ...m,
+        rows: edit(
+          [...m.rows],
+          [
+            [7, 2, '~'],
+            [7, 6, '~'],
+          ],
+        ),
+      }).errors.join(),
+    ).toMatch(/no route/);
   });
 });
 
@@ -85,20 +135,48 @@ describe('validateMap: maps 6 to 8', () => {
   it('map 6 La ventanita: two kitchens joined only by the serving counters (7,2) (7,4) (7,6)', () => {
     const m = fixedMap('6')!;
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
-    expect(analyze(parseMap([...m.rows])).passes.map((p) => p.pos)).toEqual([[7, 2], [7, 4], [7, 6]]);
+    expect(analyze(parseMap([...m.rows])).passes.map((p) => p.pos)).toEqual([
+      [7, 2],
+      [7, 4],
+      [7, 6],
+    ]);
     expect(minPlayers(parseMap([...m.rows]))).toBe(2);
     // sabotage: take the serving counters away and the recipe cannot cross
-    const cut = edit([...m.rows], [[7, 2, '#'], [7, 4, '#'], [7, 6, '#']]);
+    const cut = edit(
+      [...m.rows],
+      [
+        [7, 2, '#'],
+        [7, 4, '#'],
+        [7, 6, '#'],
+      ],
+    );
     expect(validateMap({ ...m, rows: cut }).errors.join()).toMatch(/no route K -> O/);
     // one counter is enough to keep it solvable
-    expect(validateMap({ ...m, rows: edit([...m.rows], [[7, 2, '#'], [7, 6, '#']]) }).ok).toBe(true);
+    expect(
+      validateMap({
+        ...m,
+        rows: edit(
+          [...m.rows],
+          [
+            [7, 2, '#'],
+            [7, 6, '#'],
+          ],
+        ),
+      }).ok,
+    ).toBe(true);
   });
   it('map 7 Food truck: one 12x2 corridor, two ovens, three spawns', () => {
     const m = fixedMap('7')!;
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
     expect(analyze(parseMap([...m.rows])).count).toBe(1);
     // sabotage: both ovens turn into counters
-    const noOven = edit([...m.rows], [[9, 2, 'C'], [6, 5, 'C']]);
+    const noOven = edit(
+      [...m.rows],
+      [
+        [9, 2, 'C'],
+        [6, 5, 'C'],
+      ],
+    );
     expect(validateMap({ ...m, rows: noOven }).errors.join()).toMatch(/missing station O/);
   });
   it('map 8 Espejo: dough only on the left, tomato only on the right, oven/window/plates shared from both sides', () => {
@@ -108,9 +186,31 @@ describe('validateMap: maps 6 to 8', () => {
     expect(analyze(g).count).toBe(2);
     expect(minPlayers(g)).toBe(2);
     // sabotage: close the left dough crates and nobody can make dough
-    expect(validateMap({ ...m, rows: edit([...m.rows], [[1, 0, '#'], [2, 0, '#']]) }).errors.join()).toMatch(/missing station 1/);
+    expect(
+      validateMap({
+        ...m,
+        rows: edit(
+          [...m.rows],
+          [
+            [1, 0, '#'],
+            [2, 0, '#'],
+          ],
+        ),
+      }).errors.join(),
+    ).toMatch(/missing station 1/);
     // sabotage: no counter or oven left on column 7 and the halves are disconnected
-    const split = edit([...m.rows], [[7, 1, '#'], [7, 2, '#'], [7, 3, '#'], [7, 4, '#'], [7, 5, '#'], [7, 6, '#'], [7, 7, '#']]);
+    const split = edit(
+      [...m.rows],
+      [
+        [7, 1, '#'],
+        [7, 2, '#'],
+        [7, 3, '#'],
+        [7, 4, '#'],
+        [7, 5, '#'],
+        [7, 6, '#'],
+        [7, 7, '#'],
+      ],
+    );
     expect(validateMap({ ...m, rows: split }).ok).toBe(false);
   });
 });
@@ -129,7 +229,15 @@ describe('validateMap: cheese maps 9, 11 and 15', () => {
     const m = fixedMap('11')!;
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
     expect(m.spawns).toHaveLength(8);
-    const noOvens = edit([...m.rows], [[5, 3, 'C'], [11, 3, 'C'], [5, 5, 'C'], [11, 5, 'C']]);
+    const noOvens = edit(
+      [...m.rows],
+      [
+        [5, 3, 'C'],
+        [11, 3, 'C'],
+        [5, 5, 'C'],
+        [11, 5, 'C'],
+      ],
+    );
     expect(validateMap({ ...m, rows: noOvens }).errors.join()).toMatch(/missing station O/);
     expect(validateMap({ ...m, spawns: [[1, 1], ...m.spawns!.slice(1)] }).errors.join()).toMatch(/explicit spawn order/);
   });
@@ -138,12 +246,23 @@ describe('validateMap: cheese maps 9, 11 and 15', () => {
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
     expect(analyze(parseMap([...m.rows])).count).toBe(1);
     // sabotage: close the four doors (7,2) (3,4) (11,4) (7,6)
-    const closed = edit([...m.rows], [[7, 2, '#'], [3, 4, '#'], [11, 4, '#'], [7, 6, '#']]);
+    const closed = edit(
+      [...m.rows],
+      [
+        [7, 2, '#'],
+        [3, 4, '#'],
+        [11, 4, '#'],
+        [7, 6, '#'],
+      ],
+    );
     const r = validateMap({ ...m, rows: closed });
     expect(r.ok).toBe(false);
     expect(analyze(parseMap(closed)).count).toBe(4);
     // sabotage: remove both pass-throughs as well and the rooms cannot trade at all
-    const sealed = edit(closed, [[5, 4, '#'], [9, 4, '#']]);
+    const sealed = edit(closed, [
+      [5, 4, '#'],
+      [9, 4, '#'],
+    ]);
     expect(validateMap({ ...m, rows: sealed }).errors.join()).toMatch(/no route/);
   });
 });
@@ -154,10 +273,23 @@ describe('validateMap: washing maps 10, 12, 13 and 14', () => {
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
     expect(mapFeatures(m.rows)).toEqual({ cheese: true, sink: true });
     // sabotage: remove the sink (both L) and the washing loop has no place to wash
-    const noSink = edit([...m.rows], [[0, 7, 'C'], [1, 8, '#']]);
+    const noSink = edit(
+      [...m.rows],
+      [
+        [0, 7, 'C'],
+        [1, 8, '#'],
+      ],
+    );
     expect(validateMap({ ...m, rows: noSink }).errors.join()).toMatch(/missing station L/);
     // sabotage: close the door and seal the windows and the wash room is cut off from the ovens
-    const sealed = edit([...m.rows], [[6, 5, '#'], [2, 5, '#'], [4, 5, '#']]);
+    const sealed = edit(
+      [...m.rows],
+      [
+        [6, 5, '#'],
+        [2, 5, '#'],
+        [4, 5, '#'],
+      ],
+    );
     expect(validateMap({ ...m, rows: sealed }).errors.join()).toMatch(/no route|holds recipe stations but no spawn|spawn/);
   });
   it('map 12 Línea de montaje: valid with 8 explicit spawns; the corridor is what joins the bays', () => {
@@ -175,17 +307,40 @@ describe('validateMap: washing maps 10, 12, 13 and 14', () => {
     expect(analyze(parseMap([...m.rows])).count).toBe(3);
     expect(minPlayers(parseMap([...m.rows]))).toBe(3);
     // sabotage: wall column 11 (the counters between the plating room and the serving room)
-    const cut = edit([...m.rows], [[11, 1, '#'], [11, 3, '#'], [11, 5, '#'], [11, 7, '#']]);
+    const cut = edit(
+      [...m.rows],
+      [
+        [11, 1, '#'],
+        [11, 3, '#'],
+        [11, 5, '#'],
+        [11, 7, '#'],
+      ],
+    );
     expect(validateMap({ ...m, rows: cut }).errors.join()).toMatch(/no route O -> E/);
     // sabotage: the ovens in the wall stop being passable: turn the three ovens into walls
-    const noOven = edit([...m.rows], [[6, 2, '#'], [6, 4, '#'], [6, 6, '#']]);
+    const noOven = edit(
+      [...m.rows],
+      [
+        [6, 2, '#'],
+        [6, 4, '#'],
+        [6, 6, '#'],
+      ],
+    );
     expect(validateMap({ ...m, rows: noOven }).errors.join()).toMatch(/missing station O/);
   });
   it('map 14 Dos brigadas: valid; the lanes meet only at the ends; sealing both ends splits the brigades', () => {
     const m = fixedMap('14')!;
     expect(validateMap(m)).toEqual({ ok: true, errors: [] });
     expect(analyze(parseMap([...m.rows])).count).toBe(1);
-    const split = edit([...m.rows], [[1, 4, '#'], [2, 4, '#'], [13, 4, '#'], [14, 4, '#']]);
+    const split = edit(
+      [...m.rows],
+      [
+        [1, 4, '#'],
+        [2, 4, '#'],
+        [13, 4, '#'],
+        [14, 4, '#'],
+      ],
+    );
     expect(analyze(parseMap(split)).count).toBe(2);
     expect(validateMap({ ...m, rows: split }).errors.join()).toMatch(/minDuro is 1 but the recipe needs 2|no floor/); // two brigades now need two players
   });
@@ -199,11 +354,22 @@ describe('the fifteen maps', () => {
   });
   it('every team size from 2 to 8 has at least 4 maps to play, and 7-8 players have maps 11-14', () => {
     for (let n = 2; n <= 8; n++) expect(recommendedMaps(n).length, `N=${n}`).toBeGreaterThanOrEqual(4);
-    expect(recommendedMaps(8).map((m) => m.id).sort()).toEqual(['11', '12', '13', '14']);
-    expect(recommendedMaps(7).map((m) => m.id).sort()).toEqual(['11', '12', '13', '14']);
+    expect(
+      recommendedMaps(8)
+        .map((m) => m.id)
+        .sort(),
+    ).toEqual(['11', '12', '13', '14']);
+    expect(
+      recommendedMaps(7)
+        .map((m) => m.id)
+        .sort(),
+    ).toEqual(['11', '12', '13', '14']);
   });
   it('match the design availability table by N', () => {
-    const ids = (n: number) => recommendedMaps(n).map((m) => Number(m.id)).sort((a, b) => a - b);
+    const ids = (n: number) =>
+      recommendedMaps(n)
+        .map((m) => Number(m.id))
+        .sort((a, b) => a - b);
     expect(ids(2)).toEqual([1, 2, 3, 4, 6, 7, 8]);
     expect(ids(3)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 15]);
     expect(ids(4)).toEqual([1, 2, 3, 4, 5, 8, 9, 10, 11, 15]);

@@ -28,9 +28,18 @@ export function noteFreq(name: string): number {
 }
 
 const MELODY = [
-  'A4 C5 E5 A5 E5 C5', 'B4 C5 D5 E5 - -', 'G#4 B4 E5 G#5 E5 B4', 'D5 C5 B4 B4 - -',
-  'B4 D5 E5 G#5 E5 D5', 'C5 B4 A4 G#4 B4 E5', 'A4 C5 E5 A5 G#5 A5', 'E5 C5 B4 A4 - -',
-  'D5 F5 A5 F5 D5 F5', 'E5 C5 E5 A5 - -', 'G#5 E5 B4 D5 C5 B4', 'A4 E4 A4 A4 - -',
+  'A4 C5 E5 A5 E5 C5',
+  'B4 C5 D5 E5 - -',
+  'G#4 B4 E5 G#5 E5 B4',
+  'D5 C5 B4 B4 - -',
+  'B4 D5 E5 G#5 E5 D5',
+  'C5 B4 A4 G#4 B4 E5',
+  'A4 C5 E5 A5 G#5 A5',
+  'E5 C5 B4 A4 - -',
+  'D5 F5 A5 F5 D5 F5',
+  'E5 C5 E5 A5 - -',
+  'G#5 E5 B4 D5 C5 B4',
+  'A4 E4 A4 A4 - -',
 ].map((bar) => bar.split(' '));
 const CHORD = { Am: ['A3', 'C4', 'E4'], E7: ['E3', 'G#3', 'B3', 'D4'], Dm: ['D3', 'F3', 'A3'] } as const;
 const BASS = { Am: ['A2', 'E3'], E7: ['E2', 'B2'], Dm: ['D2', 'A2'] } as const;
@@ -63,7 +72,8 @@ export function stepEvents(step: number, mode: Mode): Note[] {
   }
   if (hasTambourine(mode)) {
     const accent = e === 0 || e === 3 ? 1.6 : 1;
-    for (const offset of mode === 'rush' ? [0, 0.5] : [0]) out.push({ voice: 'tambourine', freqs: [], offset, len: 0.5, gain: REL.tambourine * accent });
+    for (const offset of mode === 'rush' ? [0, 0.5] : [0])
+      out.push({ voice: 'tambourine', freqs: [], offset, len: 0.5, gain: REL.tambourine * accent });
   }
   return out;
 }
@@ -74,18 +84,24 @@ function pushMelody(out: Note[], f: number, offset: number, mode: Mode) {
 // Cadence E7 -> Am in long chords, then silence.
 export const RESULTS_STEPS = 30;
 function resultsEvents(step: number): Note[] {
-  if (step === 0) return [
-    { voice: 'accordion', freqs: freqs(CHORD.E7), offset: 0, len: 12, gain: REL.accordion },
-    { voice: 'bass', freqs: freqs([BASS.E7[0]]), offset: 0, len: 12, gain: REL.bass },
-  ];
-  if (step === 12) return [
-    { voice: 'accordion', freqs: freqs(CHORD.Am), offset: 0, len: 18, gain: REL.accordion },
-    { voice: 'bass', freqs: freqs([BASS.Am[0]]), offset: 0, len: 18, gain: REL.bass },
-  ];
+  if (step === 0)
+    return [
+      { voice: 'accordion', freqs: freqs(CHORD.E7), offset: 0, len: 12, gain: REL.accordion },
+      { voice: 'bass', freqs: freqs([BASS.E7[0]]), offset: 0, len: 12, gain: REL.bass },
+    ];
+  if (step === 12)
+    return [
+      { voice: 'accordion', freqs: freqs(CHORD.Am), offset: 0, len: 18, gain: REL.accordion },
+      { voice: 'bass', freqs: freqs([BASS.Am[0]]), offset: 0, len: 18, gain: REL.bass },
+    ];
   return [];
 }
 
-export interface Snapshot { phase: Phase; started: boolean; timeLeftMs: number | null }
+export interface Snapshot {
+  phase: Phase;
+  started: boolean;
+  timeLeftMs: number | null;
+}
 export function modeFor(s: Snapshot): Mode {
   if (s.phase === 'menu' || s.phase === 'lobby' || s.phase === 'school') return 'lobby'; // the start menu and the Cocina escuela share the lobby's calm music
   if (s.phase === 'results') return 'results';
@@ -95,13 +111,23 @@ export function modeFor(s: Snapshot): Mode {
 export const targetBpm = (m: Mode): number => (m === 'lobby' ? BPM_LOBBY : m === 'rush' ? BPM_RUSH : BPM_GAME);
 // Tempo glides to the target; the full 100 -> 128 change takes RAMP_S.
 export function rampBpm(cur: number, target: number, dtS: number): number {
-  const max = (BPM_RUSH - BPM_GAME) / RAMP_S * dtS;
+  const max = ((BPM_RUSH - BPM_GAME) / RAMP_S) * dtS;
   return cur < target ? Math.min(target, cur + max) : Math.max(target, cur - max);
 }
 export const eighthSeconds = (bpm: number) => 60 / (bpm * 3);
 
-export interface Sched { mode: Mode; step: number; nextTime: number; bpm: number; lastNow: number }
-export interface Scheduled { at: number; eighth: number; note: Note }
+export interface Sched {
+  mode: Mode;
+  step: number;
+  nextTime: number;
+  bpm: number;
+  lastNow: number;
+}
+export interface Scheduled {
+  at: number;
+  eighth: number;
+  note: Note;
+}
 export const newSched = (now: number): Sched => ({ mode: 'silent', step: 0, nextTime: now, bpm: BPM_GAME, lastNow: now });
 
 // game and rush share one loop (no restart when the last minute begins); any other change restarts it.
@@ -111,8 +137,11 @@ const sameLoop = (a: Mode, b: Mode) => a === b || (inRound(a) && inRound(b));
 /** Notes starting before now + lookahead. Pure: returns the next state. */
 export function advance(s: Sched, now: number, lookahead: number, mode: Mode): { state: Sched; notes: Scheduled[] } {
   let { step, nextTime, bpm } = s;
-  if (!sameLoop(s.mode, mode)) { step = 0; nextTime = now + 0.05; bpm = targetBpm(mode); }
-  else bpm = rampBpm(bpm, targetBpm(mode), Math.max(0, now - s.lastNow));
+  if (!sameLoop(s.mode, mode)) {
+    step = 0;
+    nextTime = now + 0.05;
+    bpm = targetBpm(mode);
+  } else bpm = rampBpm(bpm, targetBpm(mode), Math.max(0, now - s.lastNow));
   if (nextTime < now) nextTime = now; // after a stall, do not schedule the past
   const notes: Scheduled[] = [];
   const finite = mode === 'results';

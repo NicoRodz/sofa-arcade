@@ -6,14 +6,32 @@ import type { EntityParam, LevelDef } from '../types';
 import { BAND, bandCenter, difficultyOf, edgeUsage, spearman } from './metric';
 
 function wrap(c: Canvas, params?: Record<string, EntityParam>, extra: Partial<LevelDef> = {}, caps = 6): LevelDef {
-  return { ...toLevel([flatCap(caps, { ch: 'S', x: 2 }), { w: c.w, rows: c.rows(), params }, flatCap(caps, { ch: 'G', x: 3 })], { id: 't', name: 't', biome: 'beach', players: { min: 2, max: 8 }, tether: 'any', stars: 1, parSec: 60 }), ...extra };
+  return {
+    ...toLevel([flatCap(caps, { ch: 'S', x: 2 }), { w: c.w, rows: c.rows(), params }, flatCap(caps, { ch: 'G', x: 3 })], {
+      id: 't',
+      name: 't',
+      biome: 'beach',
+      players: { min: 2, max: 8 },
+      tether: 'any',
+      stars: 1,
+      parSec: 60,
+    }),
+    ...extra,
+  };
 }
-const D = (def: LevelDef, n = 2) => { const r = validateState(def, { n, mode: 'free', diff: 'hard' }); expect(r.ok, r.errors.join()).toBe(true); return difficultyOf(r, def); };
+const D = (def: LevelDef, n = 2) => {
+  const r = validateState(def, { n, mode: 'free', diff: 'hard' });
+  expect(r.ok, r.errors.join()).toBe(true);
+  return difficultyOf(r, def);
+};
 
 describe('difficulty D = 100 (0.35 J + 0.20 H + 0.15 C + 0.15 T + 0.15 Lg)', () => {
   it('is exactly the weighted sum of its five terms, each in 0..1', () => {
     const b = D(wrap(new Canvas(14).pit(4, 8, '~')));
-    for (const k of ['J', 'H', 'C', 'T', 'Lg'] as const) { expect(b[k]).toBeGreaterThanOrEqual(0); expect(b[k]).toBeLessThanOrEqual(1); }
+    for (const k of ['J', 'H', 'C', 'T', 'Lg'] as const) {
+      expect(b[k]).toBeGreaterThanOrEqual(0);
+      expect(b[k]).toBeLessThanOrEqual(1);
+    }
     expect(b.D).toBeCloseTo(100 * (0.35 * b.J + 0.2 * b.H + 0.15 * b.C + 0.15 * b.T + 0.15 * b.Lg), 9);
   });
   it('J grows with the share of the envelope a jump uses: a 5-tile gap > a 3-tile gap > flat ground', () => {
@@ -39,7 +57,7 @@ describe('difficulty D = 100 (0.35 J + 0.20 H + 0.15 C + 0.15 T + 0.15 Lg)', () 
     const base = wrap(new Canvas(14));
     expect(D({ ...base, hazard: { kind: 'avalanche', speed: 1 } }).T).toBeGreaterThan(D(base).T);
   });
-  it('Lg is (length - 60) / 140, clipped; the validator\'s length counts tall levels double per extra row', () => {
+  it("Lg is (length - 60) / 140, clipped; the validator's length counts tall levels double per extra row", () => {
     const short = D(wrap(new Canvas(10)));
     const long = D(wrap(new Canvas(110)));
     expect(short.Lg).toBe(0);

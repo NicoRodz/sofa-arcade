@@ -9,10 +9,15 @@ import { ExpeditionError, ExpeditionStore, type StepName } from '../src/expediti
 import { startServer } from '../src/server';
 
 let dir = '';
-beforeEach(() => { dir = mkdtempSync(path.join(tmpdir(), 'pg-exp-')); });
-afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+beforeEach(() => {
+  dir = mkdtempSync(path.join(tmpdir(), 'pg-exp-'));
+});
+afterEach(() => {
+  rmSync(dir, { recursive: true, force: true });
+});
 
-const clear = (e: Expedition, levelId: string, now: number) => applyResult(e, CAMPAIGN_CATALOG, { levelId, cleared: true, timeMs: 5000, collectiblesMask: 0, deaths: 0 }, now);
+const clear = (e: Expedition, levelId: string, now: number) =>
+  applyResult(e, CAMPAIGN_CATALOG, { levelId, cleared: true, timeMs: 5000, collectiblesMask: 0, deaths: 0 }, now);
 const onDisk = (id: string) => parseExpedition(JSON.parse(readFileSync(path.join(dir, `${id}.json`), 'utf8')));
 const STEPS: StepName[] = ['write-tmp', 'copy-bak', 'rename-bak', 'rename'];
 
@@ -25,7 +30,9 @@ describe('the store', () => {
     expect(s.get(e.id)).toEqual(e);
     expect(s.list().map((x) => x.id)).toEqual([e.id]);
   });
-  it('an empty name becomes a default one', () => { expect(new ExpeditionStore({ dir }).create('   ').name).toBe('Expedición'); });
+  it('an empty name becomes a default one', () => {
+    expect(new ExpeditionStore({ dir }).create('   ').name).toBe('Expedición');
+  });
   it('merging stores the union and never lowers what is on disk', () => {
     const s = new ExpeditionStore({ dir });
     const e0 = s.create('A');
@@ -70,7 +77,12 @@ describe('the store', () => {
 describe('dying in the middle of a write leaves a valid JSON', () => {
   it.each(STEPS)('a crash before %s (simulated in-process)', (step) => {
     let crashAt: StepName | null = null;
-    const s = new ExpeditionStore({ dir, onStep: (n) => { if (n === crashAt) throw new Error('killed'); } });
+    const s = new ExpeditionStore({
+      dir,
+      onStep: (n) => {
+        if (n === crashAt) throw new Error('killed');
+      },
+    });
     const e0 = s.create('A');
     const e1 = clear(e0, '1-1', 100);
     s.merge(e0.id, clear(e0, '1-1', 99)); // a first merge, so the next write has a file to copy to .bak
@@ -87,7 +99,10 @@ describe('dying in the middle of a write leaves a valid JSON', () => {
     const e0 = seed.create('A');
     seed.merge(e0.id, clear(e0, '1-1', 100));
     const before = onDisk(e0.id)!;
-    const child = spawnSync(process.execPath, ['--import', 'tsx', path.resolve(__dirname, 'crash-writer.ts'), dir, e0.id, step, '1-2'], { encoding: 'utf8', timeout: 30_000 });
+    const child = spawnSync(process.execPath, ['--import', 'tsx', path.resolve(__dirname, 'crash-writer.ts'), dir, e0.id, step, '1-2'], {
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
     expect(child.signal).toBe('SIGKILL'); // it really died at the step: it never reached the line after the write
     expect(child.stdout).not.toContain('survived');
     const after = onDisk(e0.id);
@@ -102,7 +117,10 @@ describe('dying in the middle of a write leaves a valid JSON', () => {
   it('the same child, left alone, does write (the harness is not vacuous)', () => {
     const seed = new ExpeditionStore({ dir });
     const e0 = seed.create('A');
-    const child = spawnSync(process.execPath, ['--import', 'tsx', path.resolve(__dirname, 'crash-writer.ts'), dir, e0.id, 'none', '1-1'], { encoding: 'utf8', timeout: 30_000 });
+    const child = spawnSync(process.execPath, ['--import', 'tsx', path.resolve(__dirname, 'crash-writer.ts'), dir, e0.id, 'none', '1-1'], {
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
     expect(child.stdout).toContain('survived');
     expect(onDisk(e0.id)!.levels['1-1']!.done).toBe(true);
   });
@@ -118,7 +136,13 @@ describe('reset goes to a recoverable trash', () => {
     expect(existsSync(path.join(dir, `${e0.id}.json`))).toBe(false);
     expect(existsSync(path.join(dir, `${e0.id}.json.bak`))).toBe(false);
     expect(s.list()).toEqual([]);
-    expect(() => s.get(e0.id) ?? (() => { throw new Error('null'); })()).toThrow('null');
+    expect(
+      () =>
+        s.get(e0.id) ??
+        (() => {
+          throw new Error('null');
+        })(),
+    ).toThrow('null');
     expect(s.listTrash().map((t) => t.name)).toEqual([name]);
     expect(s.restore(name)).toEqual(s.get(e0.id));
     expect(s.get(e0.id)!.levels['1-2']!.done).toBe(true);
@@ -135,8 +159,10 @@ describe('reset goes to a recoverable trash', () => {
   });
   it('trashing twice in the same instant does not clobber the first trash', () => {
     const s = new ExpeditionStore({ dir, now: () => 1000 });
-    const a = s.create('A'), b = s.create('B');
-    s.trash(a.id); s.trash(b.id);
+    const a = s.create('A'),
+      b = s.create('B');
+    s.trash(a.id);
+    s.trash(b.id);
     expect(s.listTrash().length).toBe(2);
   });
 });
@@ -164,7 +190,11 @@ describe('the HTTP API, and "Continuar" after the server restarts', () => {
     let srv = await startServer({ port: 0, mode: 'none', dataDir: dir });
     const url = (p: string) => `http://127.0.0.1:${srv.port}${p}`;
     const call = async (method: string, p: string, body?: unknown) => {
-      const r = await fetch(url(p), { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+      const r = await fetch(url(p), {
+        method,
+        headers: { 'content-type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
       return { status: r.status, body: (await r.json()) as any };
     };
     try {
@@ -201,7 +231,9 @@ describe('the HTTP API, and "Continuar" after the server restarts', () => {
       const restored = await call('POST', `/api/expeditions-trash/${trash.body.trash[0].name}/restore`);
       expect(restored.status).toBe(200);
       expect(continueLevel(restored.body, CAMPAIGN_CATALOG)?.id).toBe('1-2');
-    } finally { await srv.close(); }
+    } finally {
+      await srv.close();
+    }
   });
   it('a server that never plays the campaign leaves no folder behind', async () => {
     const empty = path.join(dir, 'never');

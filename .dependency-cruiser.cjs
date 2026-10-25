@@ -24,7 +24,8 @@ module.exports = {
     },
     {
       name: 'platform-not-games',
-      comment: 'Platform code (shared core, screen/controller/server kits) must not import a game or an app. Today main.ts files and shared/games.ts still do.',
+      comment:
+        'Platform code (shared core, screen/controller/server kits) must not import a game or an app. Today main.ts files and shared/games.ts still do.',
       severity: 'warn',
       from: {
         path: '^(shared|screen/src|controller/src|server/src)/',
@@ -57,7 +58,8 @@ module.exports = {
     },
     {
       name: 'public-api',
-      comment: 'Between packages, import only a package entry point (index.ts). Today screen/controller/server use the subpath exports of @party/shared (shared/protocol.ts, shared/overcooked.ts, ...), so every one of those counts until F3/F4.',
+      comment:
+        'Between packages, import only a package entry point (index.ts). Today screen/controller/server use the subpath exports of @party/shared (shared/protocol.ts, shared/overcooked.ts, ...), so every one of those counts until F3/F4.',
       severity: 'warn',
       from: { path: `^${PACKAGES}/`, pathNot: [TESTS] },
       to: { path: `^(?!$1/)${PACKAGES}/`, pathNot: '(^|/)index\\.ts$' },
@@ -72,7 +74,10 @@ module.exports = {
       name: 'no-test-in-prod',
       comment: 'Production code must not import a test file or the test harness.',
       severity: 'warn',
-      from: { path: '^(shared|screen/src|controller/src|server/src)/', pathNot: [TESTS, '^shared/golden/', '^screen/src/games/obstaculos/harness/'] },
+      from: {
+        path: '^(shared|screen/src|controller/src|server/src)/',
+        pathNot: [TESTS, '^shared/golden/', '^screen/src/games/obstaculos/harness/'],
+      },
       to: { path: ['\\.test\\.ts$', '^(server|controller|screen)/test/'] },
     },
   ],
@@ -81,7 +86,11 @@ module.exports = {
     exclude: { path: ['(^|/)(dist|\\.vitest|docs)/'] },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.base.json' },
-    enhancedResolveOptions: { exportsFields: ['exports'], conditionNames: ['import', 'require', 'node', 'default', 'types'], mainFields: ['module', 'main', 'types'] },
+    enhancedResolveOptions: {
+      exportsFields: ['exports'],
+      conditionNames: ['import', 'require', 'node', 'default', 'types'],
+      mainFields: ['module', 'main', 'types'],
+    },
     reporterOptions: { text: { highlightFocused: true } },
   },
 };

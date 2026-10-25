@@ -10,7 +10,8 @@ export function cardProblems(card: Card, g: Grid): string[] {
   const errors = cardShapeProblems(card);
   const a = analyze(g);
   const manned = new Set(a.zone.filter((_z, c) => a.spawns[c]! > 0)); // zones where a chef starts
-  const reach = (key: StationKey) => stationsOf(g, key).some(([x, y]) => accessTiles(g, x, y).some(([ax, ay]) => manned.has(a.zone[a.comp[ay]![ax]!]!)));
+  const reach = (key: StationKey) =>
+    stationsOf(g, key).some(([x, y]) => accessTiles(g, x, y).some(([ax, ay]) => manned.has(a.zone[a.comp[ay]![ax]!]!)));
   const seen = new Set<string>();
   for (const r of card.recipes) {
     const def = RECIPE_DEFS[r];

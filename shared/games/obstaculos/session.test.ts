@@ -11,15 +11,22 @@ import { ObstBot } from './bot';
 import { DIFFICULTY_LABEL } from '../../difficulty';
 
 const FRAME = 1000 / 60;
-const mk = (o: Partial<SessionOpts> = {}) => new ObstSession({ mode: 'free', difficulty: 'normal', level: 1, seed: 7, slots: [0, 1], ...o });
+const mk = (o: Partial<SessionOpts> = {}) =>
+  new ObstSession({ mode: 'free', difficulty: 'normal', level: 1, seed: 7, slots: [0, 1], ...o });
 const names = (ev: ObstEvent[]) => ev.map((e) => e.name);
 // Steps the session for `ms` of render time in 60 Hz frames, collecting every event.
 function advance(s: ObstSession, ms: number, each?: () => void): ObstEvent[] {
   const out: ObstEvent[] = [];
-  for (let t = 0; t < ms; t += FRAME) { each?.(); out.push(...s.advance(FRAME)); }
+  for (let t = 0; t < ms; t += FRAME) {
+    each?.();
+    out.push(...s.advance(FRAME));
+  }
   return out;
 }
-const startPlaying = (s: ObstSession) => { advance(s, COUNTDOWN_MS + 50); expect(s.status).toBe('playing'); };
+const startPlaying = (s: ObstSession) => {
+  advance(s, COUNTDOWN_MS + 50);
+  expect(s.status).toBe('playing');
+};
 // Everybody in the goal at once: the level is cleared on the next step.
 function winNow(s: ObstSession): ObstEvent[] {
   const g = s.world.level.markers.goal[0]!;
@@ -103,7 +110,8 @@ describe('the clock: 60 Hz fixed steps from the last input', () => {
     for (const fps of [30, 60, 144]) {
       const s = mk();
       startPlaying(s);
-      const t0 = s.world.tick, ms = 2000;
+      const t0 = s.world.tick,
+        ms = 2000;
       for (let t = 0; t < ms; t += 1000 / fps) s.advance(1000 / fps);
       expect(Math.abs(s.world.tick - t0 - ms / STEP_MS), `${fps} fps`).toBeLessThanOrEqual(2.01);
     }
@@ -128,7 +136,10 @@ describe('the clock: 60 Hz fixed steps from the last input', () => {
     s.receive(0, { x: 0, y: 0, presses: [3, 0] }); // taps during the 3-2-1
     advance(s, COUNTDOWN_MS + 100);
     expect(s.world.players[0]!.body.vy).toBe(0);
-    const ev = (() => { s.receive(0, { x: 0, y: 0, presses: [8, 0] }); return advance(s, 100); })();
+    const ev = (() => {
+      s.receive(0, { x: 0, y: 0, presses: [8, 0] });
+      return advance(s, 100);
+    })();
     expect(names(ev).filter((n) => n === 'obst.jump')).toHaveLength(1);
   });
   it('a phone that goes quiet stops: the stick decays to zero instead of running forever', () => {
@@ -145,12 +156,15 @@ describe('the clock: 60 Hz fixed steps from the last input', () => {
     const run = (frame: number) => {
       const s = mk({ slots: [0, 1, 2, 3] });
       for (let t = 0; t < COUNTDOWN_MS + 6000; t += frame) {
-        if (Math.round(t / 100) % 7 === 0) for (const i of [0, 1, 2, 3]) s.receive(i, { x: i % 2 ? 1 : -0.7, y: 0, presses: [Math.floor(t / 900) + i, Math.floor(t / 2500)] });
+        if (Math.round(t / 100) % 7 === 0)
+          for (const i of [0, 1, 2, 3])
+            s.receive(i, { x: i % 2 ? 1 : -0.7, y: 0, presses: [Math.floor(t / 900) + i, Math.floor(t / 2500)] });
         s.advance(frame);
       }
       return s;
     };
-    const a = run(FRAME), b = run(FRAME);
+    const a = run(FRAME),
+      b = run(FRAME);
     expect(hashState(a.world)).toBe(hashState(b.world));
     expect(a.world.tick).toBeGreaterThan(300);
   });
@@ -177,7 +191,15 @@ describe('the expedition: levels, pauses, results', () => {
   });
   it('three cleared levels end the run as complete; the results hold the banner first, then ask for the screen', () => {
     const s = mk({ levels: LEVELS.slice(0, 3) });
-    for (let i = 0; i < 3; i++) { startPlaying(s); winNow(s); const ev = advance(s, BETWEEN_MS + 100); if (i < 2) { expect(names(ev)).not.toContain('obst.runEnd'); advance(s, NEXT_COUNTDOWN_MS + 50); } else expect(names(ev)).toContain('obst.runEnd'); }
+    for (let i = 0; i < 3; i++) {
+      startPlaying(s);
+      winNow(s);
+      const ev = advance(s, BETWEEN_MS + 100);
+      if (i < 2) {
+        expect(names(ev)).not.toContain('obst.runEnd');
+        advance(s, NEXT_COUNTDOWN_MS + 50);
+      } else expect(names(ev)).toContain('obst.runEnd');
+    }
     expect(s.over).toBe(true);
     expect(s.overDue).toBe(false);
     advance(s, OVER_HOLD_MS + 100);
@@ -206,8 +228,12 @@ describe('the expedition: levels, pauses, results', () => {
     advance(s, BETWEEN_MS + 100);
     expect(s.summaries[1]).toMatchObject({ retry: true, cleared: true });
     const r1 = s.summaries[1]!;
-    expect(r1.score).toBe(levelScore({ difficulty: 'hard', parSec: r1.parSec, timeSec: r1.timeSec, stars: r1.stars, livesLeft: r1.livesLeft, retry: true }));
-    expect(r1.score).toBeLessThan(levelScore({ difficulty: 'hard', parSec: r1.parSec, timeSec: r1.timeSec, stars: r1.stars, livesLeft: r1.livesLeft }) * 0.51);
+    expect(r1.score).toBe(
+      levelScore({ difficulty: 'hard', parSec: r1.parSec, timeSec: r1.timeSec, stars: r1.stars, livesLeft: r1.livesLeft, retry: true }),
+    );
+    expect(r1.score).toBeLessThan(
+      levelScore({ difficulty: 'hard', parSec: r1.parSec, timeSec: r1.timeSec, stars: r1.stars, livesLeft: r1.livesLeft }) * 0.51,
+    );
     expect(s.summaries[0]).toMatchObject({ cleared: false, medal: null });
     // the second failure ends the run
     advance(s, NEXT_COUNTDOWN_MS + 50);
@@ -229,13 +255,15 @@ describe('the expedition: levels, pauses, results', () => {
     // the goal needs the connected ones only: 0 and 2 alone clear it while 1 is away
     s.setConnected(1, false);
     const g = s.world.level.markers.goal[0]!;
-    teleport(s.world, 0, g.x, g.y); teleport(s.world, 2, g.x, g.y);
+    teleport(s.world, 0, g.x, g.y);
+    teleport(s.world, 2, g.x, g.y);
     expect(names(advance(s, 200))).toContain('obst.levelClear');
   });
   it('with every phone gone the clock waits: no lives are lost to an empty screen', () => {
     const s = mk();
     startPlaying(s);
-    s.setConnected(0, false); s.setConnected(1, false);
+    s.setConnected(0, false);
+    s.setConnected(1, false);
     const t = s.world.tick;
     advance(s, 3000);
     expect(s.world.tick).toBe(t);
@@ -246,7 +274,10 @@ describe('the expedition: levels, pauses, results', () => {
   it('the awards add up over the whole expedition (the most deaths is the Kamikaze of the run)', () => {
     const s = mk({ levels: LEVELS.slice(0, 2) });
     startPlaying(s);
-    for (let i = 0; i < 3; i++) { s.world.players[1]!.body.y = 10_000; advance(s, 1300); }
+    for (let i = 0; i < 3; i++) {
+      s.world.players[1]!.body.y = 10_000;
+      advance(s, 1300);
+    }
     winNow(s);
     advance(s, BETWEEN_MS + NEXT_COUNTDOWN_MS + 300);
     startPlaying(s);
@@ -277,22 +308,31 @@ describe('explorers with phones: the bot completes the first two levels in Libre
     }
     return s;
   }
-  for (const level of [1, 2]) for (const n of [2, 4, 8]) {
-    it(`level ${level} with ${n} bots`, () => {
-      const s = play(level, n, 'free', 120);
-      expect(s.world.status).toBe('cleared');
-      expect(s.world.result!.timeSec).toBeLessThan(LEVELS[level - 1]!.parSec * 1.5); // at least a silver
-      expect(s.world.players.every((p) => p.inGoal)).toBe(true);
-    }, 60_000);
-  }
+  for (const level of [1, 2])
+    for (const n of [2, 4, 8]) {
+      it(`level ${level} with ${n} bots`, () => {
+        const s = play(level, n, 'free', 120);
+        expect(s.world.status).toBe('cleared');
+        expect(s.world.result!.timeSec).toBeLessThan(LEVELS[level - 1]!.parSec * 1.5); // at least a silver
+        expect(s.world.players.every((p) => p.inGoal)).toBe(true);
+      }, 60_000);
+    }
   it('a level that needs the whole group fails if one explorer stays at the start (the goal counts everybody connected)', () => {
     const s = new ObstSession({ mode: 'free', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1, 2], levels: [LEVELS[0]!] });
     const bots = [new ObstBot(0), new ObstBot(1)]; // slot 2 never moves
-    const taps = [[0, 0], [0, 0]];
+    const taps = [
+      [0, 0],
+      [0, 0],
+    ];
     for (let f = 0; f < 60 * 60; f++) {
       const snap = snapshot(s.world);
       const view = { tick: s.world.tick, grid: s.world.grid, players: snap.players, goal: snap.goal };
-      bots.forEach((b, i) => { const o = b.decide(view); if (o.jump) taps[i]![0]!++; if (o.grab) taps[i]![1]!++; s.receive(i, { x: o.x, y: o.y, presses: [taps[i]![0]!, taps[i]![1]!] }); });
+      bots.forEach((b, i) => {
+        const o = b.decide(view);
+        if (o.jump) taps[i]![0]!++;
+        if (o.grab) taps[i]![1]!++;
+        s.receive(i, { x: o.x, y: o.y, presses: [taps[i]![0]!, taps[i]![1]!] });
+      });
       s.advance(FRAME);
     }
     expect(s.world.status).toBe('playing');

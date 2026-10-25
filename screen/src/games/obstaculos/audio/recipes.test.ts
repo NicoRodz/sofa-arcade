@@ -29,17 +29,22 @@ const gainSum = (c: Cue) => voicesFor(c).reduce((s, v) => s + v.gain, 0);
 describe('event -> cue selection', () => {
   it('every obst.* event produces at least one cue with a sane sound, in every biome', () => {
     expect(Object.keys(SAMPLE).sort()).toEqual(Object.keys(HANDLERS).sort());
-    for (const b of BIOMES) for (const n of Object.keys(SAMPLE) as (keyof ObstEvents)[]) {
-      const cues = cuesFor(n, SAMPLE[n] as never, b);
-      expect(cues.length, n).toBeGreaterThan(0);
-      for (const c of cues) {
-        const v = voicesFor(c);
-        expect(v.length, `${n} ${c.recipe}`).toBeGreaterThan(0);
-        expect(cueDuration(c)).toBeGreaterThan(0.02);
-        expect(cueDuration(c)).toBeLessThan(3);
-        for (const x of v) { expect(x.gain).toBeGreaterThan(0); expect(x.gain).toBeLessThanOrEqual(0.5); expect(x.dur).toBeGreaterThan(0); }
+    for (const b of BIOMES)
+      for (const n of Object.keys(SAMPLE) as (keyof ObstEvents)[]) {
+        const cues = cuesFor(n, SAMPLE[n] as never, b);
+        expect(cues.length, n).toBeGreaterThan(0);
+        for (const c of cues) {
+          const v = voicesFor(c);
+          expect(v.length, `${n} ${c.recipe}`).toBeGreaterThan(0);
+          expect(cueDuration(c)).toBeGreaterThan(0.02);
+          expect(cueDuration(c)).toBeLessThan(3);
+          for (const x of v) {
+            expect(x.gain).toBeGreaterThan(0);
+            expect(x.gain).toBeLessThanOrEqual(0.5);
+            expect(x.dur).toBeGreaterThan(0);
+          }
+        }
       }
-    }
   });
   it('jump plays the player note on the biome scale, glides +7 semitones in 90 ms and falls by 210 ms', () => {
     const v = voicesFor(first('obst.jump', { player: 3, kind: 'ground' }, 'forest'))[0]!;
@@ -61,7 +66,8 @@ describe('event -> cue selection', () => {
   it('landing: silent when gentle, surface filter by biome and platform, gain proportional to impact squared, 40-80 ms', () => {
     expect(cuesFor('obst.land', { player: 0, impact: 119, on: 'ground' }, 'beach')).toEqual([]);
     expect(cuesFor('obst.land', { player: 0, impact: 120, on: 'ground' }, 'beach').length).toBe(1);
-    const f = (b: (typeof BIOMES)[number], on: 'ground' | 'oneWay' | 'head') => voicesFor(first('obst.land', { player: 0, impact: 700, on }, b))[0]!.filter!;
+    const f = (b: (typeof BIOMES)[number], on: 'ground' | 'oneWay' | 'head') =>
+      voicesFor(first('obst.land', { player: 0, impact: 700, on }, b))[0]!.filter!;
     expect(f('beach', 'ground')).toMatchObject({ type: 'bandpass', f0: 900 });
     expect(f('forest', 'ground').f0).toBe(400);
     expect(f('mine', 'ground')).toMatchObject({ f0: 2400, q: 8 });
@@ -69,7 +75,8 @@ describe('event -> cue selection', () => {
     expect(f('beach', 'head').f0).toBeLessThan(300);
     const at = (impact: number) => voicesFor(first('obst.land', { player: 0, impact, on: 'ground' }, 'beach'))[0]!;
     const g = (impact: number) => at(impact).gain - 0.04; // 0.04 is the audibility floor
-    const lo = MAX_FALL / 4, hi = MAX_FALL / 2;
+    const lo = MAX_FALL / 4,
+      hi = MAX_FALL / 2;
     expect(g(hi) / g(lo)).toBeCloseTo(4, 1);
     expect(at(120).dur).toBeGreaterThanOrEqual(0.04);
     expect(at(MAX_FALL * 2).dur).toBeLessThanOrEqual(0.0801);
@@ -82,10 +89,16 @@ describe('event -> cue selection', () => {
     expect(s.map((v) => v.f0)).toEqual([55, 55.7]);
     expect(s[0]!.filter!.f0).toBe(300);
     expect(voicesFor(first('obst.ropeStrain', { rope: 0, link: 0, tension: 1.6 }))[0]!.filter!.f0).toBe(900);
-    expect(gainSum(first('obst.ropeStrain', { rope: 0, link: 0, tension: 1.6 }))).toBeGreaterThan(gainSum(first('obst.ropeStrain', { rope: 0, link: 0, tension: 1 })));
+    expect(gainSum(first('obst.ropeStrain', { rope: 0, link: 0, tension: 1.6 }))).toBeGreaterThan(
+      gainSum(first('obst.ropeStrain', { rope: 0, link: 0, tension: 1 })),
+    );
   });
   it('ring grab is FM 880 Hz, ratio 3.5, index 4 -> 0 in 150 ms', () => {
-    expect(voicesFor(first('obst.grab', { player: 0, target: 'ring', targetId: 0 }))[0]).toMatchObject({ src: 'fm', f0: 880, fm: { ratio: 3.5, i0: 4, i1: 0, t: 0.15 } });
+    expect(voicesFor(first('obst.grab', { player: 0, target: 'ring', targetId: 0 }))[0]).toMatchObject({
+      src: 'fm',
+      f0: 880,
+      fm: { ratio: 3.5, i0: 4, i1: 0, t: 0.15 },
+    });
     expect(first('obst.grab', { player: 0, target: 'lever', targetId: 0 }).recipe).toBe('grabLever');
   });
   it('death is a sine 600 -> 80 Hz in 180 ms; bubble wobbles at 6 Hz around 300 Hz', () => {
@@ -98,7 +111,9 @@ describe('event -> cue selection', () => {
     const c = first('obst.checkpoint', { player: 0, index: 0 }, 'mine');
     expect(c.p.notes).toEqual([1, 3, 5, 8].map((d) => degreeFreq('mine', d, 1)));
     expect(c.duck).toBe(true);
-    const at = voicesFor(c).filter((v) => v.src === 'triangle').map((v) => v.at);
+    const at = voicesFor(c)
+      .filter((v) => v.src === 'triangle')
+      .map((v) => v.at);
     expect(at).toEqual([...at].sort((a, b) => a - b));
   });
   it('star: bell with the 2.76 partial, one degree higher per consecutive star', () => {
@@ -113,7 +128,8 @@ describe('event -> cue selection', () => {
     expect(cuesFor('obst.goalEnter', { player: 2, inside: 4, total: 4 }, 'beach').map((c) => c.recipe)).toEqual(['goalEnter', 'fanfare']);
   });
   it('level clear: the better the medal, the longer the fanfare', () => {
-    const len = (medal: 'gold' | 'silver' | 'bronze') => first('obst.levelClear', { level: 'x', timeSec: 1, medal, stars: 1, deaths: 0 }).p.notes!.length;
+    const len = (medal: 'gold' | 'silver' | 'bronze') =>
+      first('obst.levelClear', { level: 'x', timeSec: 1, medal, stars: 1, deaths: 0 }).p.notes!.length;
     expect([len('bronze'), len('silver'), len('gold')]).toEqual([3, 4, 5]);
   });
   it('run end: win and fail are different sounds', () => {
@@ -151,14 +167,20 @@ describe('campaign A5 and A6: one sound per dynamic', () => {
   const cf = <K extends CampaignSound>(n: K, p: CampaignEvents[K], b: Biome = 'beach') => cuesFor(n, p, b);
   it('each one rings a cue with sane voices (positive, at most 0.5 gain, under 3 s) in every biome', () => {
     expect(Object.keys(S).sort()).toEqual(Object.keys(CAMPAIGN_HANDLERS).sort());
-    for (const b of BIOMES) for (const n of Object.keys(S) as CampaignSound[]) {
-      const cues = cuesFor(n as 'obst.ice', S[n] as never, b);
-      expect(cues.length, n).toBe(1);
-      for (const c of cues) {
-        expect(cueDuration(c)).toBeGreaterThan(0.02); expect(cueDuration(c)).toBeLessThan(3);
-        for (const x of voicesFor(c)) { expect(x.gain).toBeGreaterThan(0); expect(x.gain).toBeLessThanOrEqual(0.5); expect(x.dur).toBeGreaterThan(0); }
+    for (const b of BIOMES)
+      for (const n of Object.keys(S) as CampaignSound[]) {
+        const cues = cuesFor(n as 'obst.ice', S[n] as never, b);
+        expect(cues.length, n).toBe(1);
+        for (const c of cues) {
+          expect(cueDuration(c)).toBeGreaterThan(0.02);
+          expect(cueDuration(c)).toBeLessThan(3);
+          for (const x of voicesFor(c)) {
+            expect(x.gain).toBeGreaterThan(0);
+            expect(x.gain).toBeLessThanOrEqual(0.5);
+            expect(x.dur).toBeGreaterThan(0);
+          }
+        }
       }
-    }
   });
   it('the director listens to the 18 quick-match events and these 10', () => {
     expect(SOUND_EVENTS).toHaveLength(Object.keys(HANDLERS).length + 10);
@@ -171,7 +193,8 @@ describe('campaign A5 and A6: one sound per dynamic', () => {
     expect(cf('obst.ice', { player: 0 })[0]!.priority).toBe(0);
   });
   it('enemy: the stun is a falling squish, the shove a short thud; pickaxe: take < pass < climb < top in pitch; target rings on the biome scale', () => {
-    const sq = voicesFor(cf('obst.enemy', { enemy: 0, action: 'stun', player: 0 })[0]!), th = voicesFor(cf('obst.enemy', { enemy: 0, action: 'push', player: 0 })[0]!);
+    const sq = voicesFor(cf('obst.enemy', { enemy: 0, action: 'stun', player: 0 })[0]!),
+      th = voicesFor(cf('obst.enemy', { enemy: 0, action: 'push', player: 0 })[0]!);
     expect(sq[0]!.f1!).toBeLessThan(sq[0]!.f0!);
     expect(Math.max(...th.map((v) => v.dur))).toBeLessThan(Math.max(...sq.map((v) => v.dur)));
     const f = (a: 'take' | 'pass' | 'climb' | 'top') => cf('obst.pickaxe', { player: 0, action: a })[0]!.p.freq!;
@@ -184,22 +207,28 @@ describe('campaign A5 and A6: one sound per dynamic', () => {
 describe('campaign A6 (dynamics 10-12): what each cue is made of', () => {
   const cf = <K extends CampaignSound>(n: K, p: CampaignEvents[K], b: Biome = 'beach') => cuesFor(n, p, b);
   it('lantern: lighting the crystals is the loudest (priority 2, a three-note chord) and putting them out is a falling sigh; take and pass are a ting', () => {
-    const light = cf('obst.lantern', { player: 0, action: 'light' })[0]!, dim = cf('obst.lantern', { player: -1, action: 'dim' })[0]!;
-    expect(light.priority).toBe(2); expect(dim.priority).toBe(1);
+    const light = cf('obst.lantern', { player: 0, action: 'light' })[0]!,
+      dim = cf('obst.lantern', { player: -1, action: 'dim' })[0]!;
+    expect(light.priority).toBe(2);
+    expect(dim.priority).toBe(1);
     expect(voicesFor(light).filter((v) => v.src === 'sine' && v.at < 0.11 && v.dur > 0.6)).toHaveLength(3);
-    const d = voicesFor(dim)[0]!; expect(d.f1!).toBeLessThan(d.f0!);
+    const d = voicesFor(dim)[0]!;
+    expect(d.f1!).toBeLessThan(d.f0!);
     expect(cf('obst.lantern', { player: 0, action: 'take' })[0]!.p.variant).toBe('take');
   });
   it('bungee: the harder the stretch the higher the twang; sinker: a falling glug that is louder with more characters', () => {
     const f = (s: number) => voicesFor(cf('obst.bungee', { player: 0, stretch: s })[0]!)[0]!.f0!;
     expect(f(1.6)).toBeGreaterThan(f(1.25));
     const g = (n: number) => Math.max(...voicesFor(cf('obst.sinker', { id: 'D', load: n })[0]!).map((v) => v.gain));
-    expect(voicesFor(cf('obst.sinker', { id: 'D', load: 1 })[0]!)[0]!.f1!).toBeLessThan(voicesFor(cf('obst.sinker', { id: 'D', load: 1 })[0]!)[0]!.f0!);
+    expect(voicesFor(cf('obst.sinker', { id: 'D', load: 1 })[0]!)[0]!.f1!).toBeLessThan(
+      voicesFor(cf('obst.sinker', { id: 'D', load: 1 })[0]!)[0]!.f0!,
+    );
     expect(g(3)).toBeGreaterThanOrEqual(g(1));
   });
   it('geyser: silent when it calms, bubbling is quieter than the eruption, the eruption outranks it', () => {
     expect(cf('obst.geyser', { id: 'E', phase: 'calm' })).toEqual([]);
-    const warn = cf('obst.geyser', { id: 'E', phase: 'warn' })[0]!, gush = cf('obst.geyser', { id: 'E', phase: 'gush' })[0]!;
+    const warn = cf('obst.geyser', { id: 'E', phase: 'warn' })[0]!,
+      gush = cf('obst.geyser', { id: 'E', phase: 'gush' })[0]!;
     expect(Math.max(...voicesFor(gush).map((v) => v.gain))).toBeGreaterThan(Math.max(...voicesFor(warn).map((v) => v.gain)));
     expect(gush.priority).toBeGreaterThan(warn.priority);
   });

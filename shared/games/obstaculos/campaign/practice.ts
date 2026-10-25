@@ -7,8 +7,22 @@ import { STATION_LEVELS } from './stations';
 import { campaignEnv } from './learning';
 import type { PracticeStation } from './types';
 
-const st = (id: keyof typeof STATION_LEVELS, name: string, mechanics: Mechanic[], requires: Mechanic[], opensAt: string): PracticeStation => ({
-  id, name, mechanics, requires, opensAt, mode: STATION_LEVELS[id].tether === 'freeOnly' ? 'L' : 'E', def: STATION_LEVELS[id], hearts: 'infinite', silhouette: true,
+const st = (
+  id: keyof typeof STATION_LEVELS,
+  name: string,
+  mechanics: Mechanic[],
+  requires: Mechanic[],
+  opensAt: string,
+): PracticeStation => ({
+  id,
+  name,
+  mechanics,
+  requires,
+  opensAt,
+  mode: STATION_LEVELS[id].tether === 'freeOnly' ? 'L' : 'E',
+  def: STATION_LEVELS[id],
+  hearts: 'infinite',
+  silhouette: true,
 });
 
 export const PRACTICE: readonly PracticeStation[] = [
@@ -22,7 +36,13 @@ export const PRACTICE: readonly PracticeStation[] = [
   st('p-swing', 'Columpio', ['swing'], ['jump'], '1-6'),
 ];
 
-export interface StationReport { id: string; ok: boolean; errors: string[]; verified: Mechanic[]; unverified: Mechanic[] }
+export interface StationReport {
+  id: string;
+  ok: boolean;
+  errors: string[];
+  verified: Mechanic[];
+  unverified: Mechanic[];
+}
 
 // The bot that knows the station's mechanics (and `requires`) finishes it and uses each modeled one; the bot without it fails.
 export function learnStation(s: PracticeStation): StationReport {
@@ -31,9 +51,13 @@ export function learnStation(s: PracticeStation): StationReport {
   const all = new Set<Mechanic>([...s.mechanics, ...s.requires]);
   const r = validateState(s.def, campaignEnv('beach', mode, all));
   if (!r.ok) errors.push(`${s.id}: not solvable with ${[...all].join(', ')}: ${r.errors.join('; ')}`);
-  const verified: Mechanic[] = [], unverified: Mechanic[] = [];
+  const verified: Mechanic[] = [],
+    unverified: Mechanic[] = [];
   for (const x of s.mechanics) {
-    if (!isModeled(x)) { unverified.push(x); continue; }
+    if (!isModeled(x)) {
+      unverified.push(x);
+      continue;
+    }
     verified.push(x);
     const without = new Set([...all].filter((m) => m !== x));
     if (validateState(s.def, campaignEnv('beach', mode, without)).ok) errors.push(`${s.id}: finishes without ${x}`);

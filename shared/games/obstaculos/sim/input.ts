@@ -8,8 +8,19 @@ import type { StepInput } from './player';
 
 // signal / goHeld are the campaign's (dynamic 1). The protocol only carries 2 press counters today: how they travel is the phone's business (S3),
 // this tracker takes `signal.seq` as a monotonic counter (a new value = one signal) and `goHeld` as a state.
-export interface Packet { x: number; y: number; presses: readonly number[]; signal?: { kind: SignalKind; seq: number }; goHeld?: boolean }
-export interface PlayerStep extends StepInput { grab: boolean; up: boolean; signal?: SignalKind; goHeld?: boolean } // grab: apply one B toggle this step
+export interface Packet {
+  x: number;
+  y: number;
+  presses: readonly number[];
+  signal?: { kind: SignalKind; seq: number };
+  goHeld?: boolean;
+}
+export interface PlayerStep extends StepInput {
+  grab: boolean;
+  up: boolean;
+  signal?: SignalKind;
+  goHeld?: boolean;
+} // grab: apply one B toggle this step
 
 // |x| < deadzone: stopped; below 0.6: 45 % of top speed; above: 100 %.
 export function quantizeStick(x: number): number {
@@ -50,11 +61,30 @@ export class InputTracker {
     this.jumps = 0;
     const grab = this.grabs > 0;
     if (grab) this.grabs--;
-    const out: PlayerStep = { move: quantizeStick(this.x * scale), down: this.y * scale > STICK_DOWN, up: this.y * scale < -STICK_DOWN, jump, grab };
-    if (this.sig) { out.signal = this.sig; this.sig = null; }
+    const out: PlayerStep = {
+      move: quantizeStick(this.x * scale),
+      down: this.y * scale > STICK_DOWN,
+      up: this.y * scale < -STICK_DOWN,
+      jump,
+      grab,
+    };
+    if (this.sig) {
+      out.signal = this.sig;
+      this.sig = null;
+    }
     if (this.goHeld) out.goHeld = true;
     return out;
   }
 
-  reset(): void { this.presses.reset(); this.x = 0; this.y = 0; this.lastRx = -Infinity; this.jumps = 0; this.grabs = 0; this.sigSeq = null; this.sig = null; this.goHeld = false; }
+  reset(): void {
+    this.presses.reset();
+    this.x = 0;
+    this.y = 0;
+    this.lastRx = -Infinity;
+    this.jumps = 0;
+    this.grabs = 0;
+    this.sigSeq = null;
+    this.sig = null;
+    this.goHeld = false;
+  }
 }

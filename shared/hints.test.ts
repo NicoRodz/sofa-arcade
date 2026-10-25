@@ -26,47 +26,125 @@ function face(g: Game, s: Station) {
   Object.assign(p, { x: s.tx + dx + 0.5, y: s.ty + dy + 0.5, fx: -dx, fy: -dy, vx: 0, vy: 0 });
 }
 // what a press can change; progress is left out because an oven cooks by itself
-const snap = (g: Game, s: Station | null) => JSON.stringify([g.players.get(1)!.item, s && [s.item, s.inputs, s.done, s.count, s.clean], g.teams[0]!.delivered, g.teams[0]!.rejected, g.pantry?.stock]);
+const snap = (g: Game, s: Station | null) =>
+  JSON.stringify([
+    g.players.get(1)!.item,
+    s && [s.item, s.inputs, s.done, s.count, s.clean],
+    g.teams[0]!.delivered,
+    g.teams[0]!.rejected,
+    g.pantry?.stock,
+  ]);
 
 type Variant = { name: string; set: (g: Game, s: Station) => void };
 const V = (name: string, set: (g: Game, s: Station) => void = () => {}): Variant => ({ name, set });
 const VARIANTS: Record<string, Variant[]> = {
   crate: [V('crate')],
-  plates: [V('no plates', (_g, s) => { s.count = 0; }), V('2 plates', (_g, s) => { s.count = 2; })],
-  dirty: [V('empty', (_g, s) => { s.count = 0; }), V('2 dirty', (_g, s) => { s.count = 2; })],
-  sink: [V('nothing', (_g, s) => { s.count = 0; s.clean = 0; }), V('dirty waiting', (_g, s) => { s.count = 2; s.clean = 0; }), V('clean ready', (_g, s) => { s.count = 0; s.clean = 2; })],
-  counter: [V('empty'), V('with raw1', (_g, s) => { s.item = 'raw1'; })],
-  board: [V('empty'), V('raw0', (_g, s) => { s.item = 'raw0'; }), V('raw1', (_g, s) => { s.item = 'raw1'; }), V('raw2', (_g, s) => { s.item = 'raw2'; }), V('cut1', (_g, s) => { s.item = 'cut1'; })],
+  plates: [
+    V('no plates', (_g, s) => {
+      s.count = 0;
+    }),
+    V('2 plates', (_g, s) => {
+      s.count = 2;
+    }),
+  ],
+  dirty: [
+    V('empty', (_g, s) => {
+      s.count = 0;
+    }),
+    V('2 dirty', (_g, s) => {
+      s.count = 2;
+    }),
+  ],
+  sink: [
+    V('nothing', (_g, s) => {
+      s.count = 0;
+      s.clean = 0;
+    }),
+    V('dirty waiting', (_g, s) => {
+      s.count = 2;
+      s.clean = 0;
+    }),
+    V('clean ready', (_g, s) => {
+      s.count = 0;
+      s.clean = 2;
+    }),
+  ],
+  counter: [
+    V('empty'),
+    V('with raw1', (_g, s) => {
+      s.item = 'raw1';
+    }),
+  ],
+  board: [
+    V('empty'),
+    V('raw0', (_g, s) => {
+      s.item = 'raw0';
+    }),
+    V('raw1', (_g, s) => {
+      s.item = 'raw1';
+    }),
+    V('raw2', (_g, s) => {
+      s.item = 'raw2';
+    }),
+    V('cut1', (_g, s) => {
+      s.item = 'cut1';
+    }),
+  ],
   pot: [
-    V('empty'), V('dough in', (_g, s) => { s.inputs = [0]; }), V('tomato in', (_g, s) => { s.inputs = [1]; }), V('dough+tomato cooking', (_g, s) => { s.inputs = [0, 1]; s.progress = 0.4; }),
-    V('ready', (_g, s) => { s.inputs = [0, 1]; s.done = true; s.progress = 1; }), V('full with cheese', (_g, s) => { s.inputs = [0, 1, 2]; s.progress = 0.4; }),
+    V('empty'),
+    V('dough in', (_g, s) => {
+      s.inputs = [0];
+    }),
+    V('tomato in', (_g, s) => {
+      s.inputs = [1];
+    }),
+    V('dough+tomato cooking', (_g, s) => {
+      s.inputs = [0, 1];
+      s.progress = 0.4;
+    }),
+    V('ready', (_g, s) => {
+      s.inputs = [0, 1];
+      s.done = true;
+      s.progress = 1;
+    }),
+    V('full with cheese', (_g, s) => {
+      s.inputs = [0, 1, 2];
+      s.progress = 0.4;
+    }),
   ],
   trash: [V('bin')],
-  window: [V('orders waiting'), V('no orders', (g) => { g.teams[0]!.orders = []; })],
+  window: [
+    V('orders waiting'),
+    V('no orders', (g) => {
+      g.teams[0]!.orders = [];
+    }),
+  ],
 };
 const labels = new Set<string>();
 
 describe('button A: greyed exactly when pressing it changes nothing', () => {
-  for (const [kind, variants] of Object.entries(VARIANTS)) for (const v of variants) {
-    it(`${kind} (${v.name}): the label matches the sim for every carried item`, () => {
-      for (const [item, nth] of ITEMS.flatMap((it) => (kind === 'crate' ? [0, 1, 2] : [0]).map((n): [Item | null, number] => [it, n]))) { // a crate: one per ingredient
-        const g = fresh();
-        const s = g.stations.filter((x) => x.kind === kind && (kind !== 'crate' || x.crate === nth))[0]!;
-        v.set(g, s);
-        face(g, s);
-        g.players.get(1)!.item = item;
-        const h = chefHint(g, g.players.get(1)!);
-        const before = snap(g, s);
-        tick(g, new Map([[1, { ...idle, a: 1 }]]));
-        const changed = snap(g, s) !== before;
-        const where = `${kind}/${v.name} carrying ${item}: "${h.a}"`;
-        expect(h.a, where).toBeTruthy();
-        expect(!!h.aOff, `${where} greyed=${!!h.aOff} but the press ${changed ? 'did' : 'did not'} change something`).toBe(!changed);
-        labels.add(h.a!);
-        expect(isIconId(h.aIcon), where).toBe(true);
-      }
-    });
-  }
+  for (const [kind, variants] of Object.entries(VARIANTS))
+    for (const v of variants) {
+      it(`${kind} (${v.name}): the label matches the sim for every carried item`, () => {
+        for (const [item, nth] of ITEMS.flatMap((it) => (kind === 'crate' ? [0, 1, 2] : [0]).map((n): [Item | null, number] => [it, n]))) {
+          // a crate: one per ingredient
+          const g = fresh();
+          const s = g.stations.filter((x) => x.kind === kind && (kind !== 'crate' || x.crate === nth))[0]!;
+          v.set(g, s);
+          face(g, s);
+          g.players.get(1)!.item = item;
+          const h = chefHint(g, g.players.get(1)!);
+          const before = snap(g, s);
+          tick(g, new Map([[1, { ...idle, a: 1 }]]));
+          const changed = snap(g, s) !== before;
+          const where = `${kind}/${v.name} carrying ${item}: "${h.a}"`;
+          expect(h.a, where).toBeTruthy();
+          expect(!!h.aOff, `${where} greyed=${!!h.aOff} but the press ${changed ? 'did' : 'did not'} change something`).toBe(!changed);
+          labels.add(h.a!);
+          expect(isIconId(h.aIcon), where).toBe(true);
+        }
+      });
+    }
 
   it('nothing in front: A is greyed, "Tomar" with empty hands and "Dejar" when carrying', () => {
     const g = fresh();
@@ -80,38 +158,110 @@ describe('button A: greyed exactly when pressing it changes nothing', () => {
   });
 
   it('the verbs the council asked for are there: Tomar masa, Al horno, Lavar, Entregar...', () => {
-    const verbs = ['Tomar masa', 'Tomar tomate', 'Tomar queso', 'Poner en tabla', 'Al horno', 'Sacar pizza', 'Entregar', 'Botar', 'Tomar plato', 'Al lavadero'];
+    const verbs = [
+      'Tomar masa',
+      'Tomar tomate',
+      'Tomar queso',
+      'Poner en tabla',
+      'Al horno',
+      'Sacar pizza',
+      'Entregar',
+      'Botar',
+      'Tomar plato',
+      'Al lavadero',
+    ];
     for (const v of verbs) expect([...labels], v).toContain(v);
   });
 });
 
 describe('button B: on exactly when holding it starts a cut, a wash or a dash', () => {
-  const started = (g: Game) => { const p = g.players.get(1)!; return p.cutting || p.dashMs > 0; };
+  const started = (g: Game) => {
+    const p = g.players.get(1)!;
+    return p.cutting || p.dashMs > 0;
+  };
   const cases: { name: string; set: (g: Game) => Station | null; item?: Item | null; cd?: number; label: string; on: boolean }[] = [
-    { name: 'board with dough', set: (g) => { const s = g.stations.find((x) => x.kind === 'board')!; s.item = 'raw0'; return s; }, label: 'Estirar', on: true },
-    { name: 'board with tomato', set: (g) => { const s = g.stations.find((x) => x.kind === 'board')!; s.item = 'raw1'; return s; }, label: 'Picar', on: true },
-    { name: 'board with cheese', set: (g) => { const s = g.stations.find((x) => x.kind === 'board')!; s.item = 'raw2'; return s; }, label: 'Rallar', on: true },
-    { name: 'board already cut', set: (g) => { const s = g.stations.find((x) => x.kind === 'board')!; s.item = 'cut1'; return s; }, label: 'Picar', on: false },
+    {
+      name: 'board with dough',
+      set: (g) => {
+        const s = g.stations.find((x) => x.kind === 'board')!;
+        s.item = 'raw0';
+        return s;
+      },
+      label: 'Estirar',
+      on: true,
+    },
+    {
+      name: 'board with tomato',
+      set: (g) => {
+        const s = g.stations.find((x) => x.kind === 'board')!;
+        s.item = 'raw1';
+        return s;
+      },
+      label: 'Picar',
+      on: true,
+    },
+    {
+      name: 'board with cheese',
+      set: (g) => {
+        const s = g.stations.find((x) => x.kind === 'board')!;
+        s.item = 'raw2';
+        return s;
+      },
+      label: 'Rallar',
+      on: true,
+    },
+    {
+      name: 'board already cut',
+      set: (g) => {
+        const s = g.stations.find((x) => x.kind === 'board')!;
+        s.item = 'cut1';
+        return s;
+      },
+      label: 'Picar',
+      on: false,
+    },
     { name: 'empty board', set: (g) => g.stations.find((x) => x.kind === 'board')!, label: 'Picar', on: false },
-    { name: 'sink with dirty plates', set: (g) => { const s = g.stations.find((x) => x.kind === 'sink')!; s.count = 2; return s; }, label: 'Lavar', on: true },
+    {
+      name: 'sink with dirty plates',
+      set: (g) => {
+        const s = g.stations.find((x) => x.kind === 'sink')!;
+        s.count = 2;
+        return s;
+      },
+      label: 'Lavar',
+      on: true,
+    },
     { name: 'sink with nothing to wash', set: (g) => g.stations.find((x) => x.kind === 'sink')!, label: 'Picar', on: false },
     { name: 'oven (nothing to cut there)', set: (g) => g.stations.find((x) => x.kind === 'pot')!, label: 'Picar', on: false },
-    { name: 'carrying something at the board', set: (g) => g.stations.find((x) => x.kind === 'board')!, item: 'raw1', label: 'Picar', on: false },
+    {
+      name: 'carrying something at the board',
+      set: (g) => g.stations.find((x) => x.kind === 'board')!,
+      item: 'raw1',
+      label: 'Picar',
+      on: false,
+    },
   ];
-  for (const c of cases) it(`${c.name}: "${c.label}", ${c.on ? 'on' : 'greyed'}`, () => {
+  for (const c of cases)
+    it(`${c.name}: "${c.label}", ${c.on ? 'on' : 'greyed'}`, () => {
+      const g = fresh();
+      const p = g.players.get(1)!;
+      const s = c.set(g);
+      if (s) face(g, s);
+      p.item = c.item ?? null;
+      const h = chefHint(g, p);
+      expect([h.b, !h.bOff]).toEqual([c.label, c.on]);
+      tick(g, new Map([[1, { ...idle, b: true }]]));
+      expect(started(g), 'holding B').toBe(c.on);
+      labels.add(h.b!);
+    });
+
+  const clear = () => {
     const g = fresh();
     const p = g.players.get(1)!;
-    const s = c.set(g);
-    if (s) face(g, s);
-    p.item = c.item ?? null;
-    const h = chefHint(g, p);
-    expect([h.b, !h.bOff]).toEqual([c.label, c.on]);
-    tick(g, new Map([[1, { ...idle, b: true }]]));
-    expect(started(g), 'holding B').toBe(c.on);
-    labels.add(h.b!);
-  });
-
-  const clear = () => { const g = fresh(); const p = g.players.get(1)!; Object.assign(p, { x: 7.5, y: 4.5 }); while (g.stations.some((s) => Math.hypot(s.tx + 0.5 - p.x, s.ty + 0.5 - p.y) < 2.2)) p.x += 0.5; return { g, p }; };
+    Object.assign(p, { x: 7.5, y: 4.5 });
+    while (g.stations.some((s) => Math.hypot(s.tx + 0.5 - p.x, s.ty + 0.5 - p.y) < 2.2)) p.x += 0.5;
+    return { g, p };
+  };
   it('free hands and nothing in front: "Correr", greyed while the dash is cooling down', () => {
     const { g, p } = clear();
     expect([chefHint(g, p).b, !!chefHint(g, p).bOff]).toEqual(['Correr', false]);
@@ -127,13 +277,27 @@ describe('button B: on exactly when holding it starts a cut, a wash or a dash', 
 describe('hints in a versus round with sabotage', () => {
   const mk = () => {
     const m = versusMap('V1')!;
-    const g = createVersusGame({ teams: [{ id: 0, name: 'A', color: '#000000', icon: 'a', playerIds: [1] }, { id: 1, name: 'B', color: '#ffffff', icon: 'b', playerIds: [2] }], map: { id: m.id, name: m.name, rows: m.rows, spawns: [...m.versus.spawns[0], ...m.versus.spawns[1]], sigma: m.versus.sigma }, difficulty: 'normal', seed: 3, modeOptions: { sabotage: 'soft' }, slotOf: (id) => id - 1 });
+    const g = createVersusGame({
+      teams: [
+        { id: 0, name: 'A', color: '#000000', icon: 'a', playerIds: [1] },
+        { id: 1, name: 'B', color: '#ffffff', icon: 'b', playerIds: [2] },
+      ],
+      map: { id: m.id, name: m.name, rows: m.rows, spawns: [...m.versus.spawns[0], ...m.versus.spawns[1]], sigma: m.versus.sigma },
+      difficulty: 'normal',
+      seed: 3,
+      modeOptions: { sabotage: 'soft' },
+      slotOf: (id) => id - 1,
+    });
     return g;
   };
   it('the bag, the catapult, the throw and the rubbish keep their names, with a glyph and a state', () => {
     const g = mk();
     const p = g.players.get(1)!;
-    const at = (kind: string) => { const s = g.stations.find((x) => x.kind === kind && x.owner === 0)!; face1(g, s); return s; };
+    const at = (kind: string) => {
+      const s = g.stations.find((x) => x.kind === kind && x.owner === 0)!;
+      face1(g, s);
+      return s;
+    };
     at('trash');
     g.sab!.teams[0]!.bags = 1;
     expect(chefHint(g, p)).toMatchObject({ a: 'Tomar bolsa', aIcon: 'trash' });
@@ -171,7 +335,11 @@ function face1(g: Game, s: Station) {
 describe('every label fits the phone', () => {
   it('at most LABEL_MAX characters, in Spanish, never empty, each with a known icon (collected from every case above)', () => {
     expect(labels.size).toBeGreaterThan(25);
-    for (const l of labels) { expect(l.length, l).toBeLessThanOrEqual(LABEL_MAX); expect(l.trim(), l).toBe(l); expect(l.length).toBeGreaterThan(0); }
+    for (const l of labels) {
+      expect(l.length, l).toBeLessThanOrEqual(LABEL_MAX);
+      expect(l.trim(), l).toBe(l);
+      expect(l.length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -187,7 +355,8 @@ describe('sending: the state of every tick, whole, with lag in mind', () => {
     hs.sync(g, 0);
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ t: 'hint', playerId: 1, a: 'Tomar', aOff: true });
-    hs.sync(g, 16); hs.sync(g, 400);
+    hs.sync(g, 16);
+    hs.sync(g, 400);
     expect(out).toHaveLength(1);
     face(g, g.stations.find((s) => s.kind === 'crate' && s.crate === 0)!);
     hs.sync(g, HINT_MIN_MS - 10); // changed, but too soon after the last one (t = 0)
@@ -205,9 +374,14 @@ describe('sending: the state of every tick, whole, with lag in mind', () => {
     const crate = g.stations.find((s) => s.kind === 'crate' && s.crate === 1)!;
     const counter = g.stations.find((s) => s.kind === 'counter')!;
     let now = 0;
-    for (let i = 0; i < 12; i++) { face(g, i % 2 ? crate : counter); now += 60; hs.sync(g, now); }
+    for (let i = 0; i < 12; i++) {
+      face(g, i % 2 ? crate : counter);
+      now += 60;
+      hs.sync(g, now);
+    }
     face(g, crate);
-    now += 60; hs.sync(g, now);
+    now += 60;
+    hs.sync(g, now);
     const last = out[out.length - 1]!;
     expect([last.a, last.aIcon, !!last.aOff]).toEqual(['Tomar tomate', 'crate', false]);
   });
@@ -224,7 +398,7 @@ describe('sending: the state of every tick, whole, with lag in mind', () => {
     hs.sync(null, 30);
     expect(out).toHaveLength(4);
   });
-  it('a ghost (dropped phone) is sent the game\'s own labels', () => {
+  it("a ghost (dropped phone) is sent the game's own labels", () => {
     const { g, out, hs, p } = rig();
     p.ghost = true;
     hs.sync(g, 0);

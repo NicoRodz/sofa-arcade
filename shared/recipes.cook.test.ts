@@ -11,21 +11,46 @@ import c from './golden/recipes-n2-map2-normal.json';
 import d from './golden/recipes-n4-map14-normal.json';
 
 type Ev = { tick: number } & Record<string, unknown>;
-const evs = (log: string[], type: string): Ev[] => log.map((l) => l.split('|')).filter(([, t]) => t === type).map(([tk, , p]) => ({ tick: Number(tk), ...(JSON.parse(p!) as Record<string, unknown>) }));
+const evs = (log: string[], type: string): Ev[] =>
+  log
+    .map((l) => l.split('|'))
+    .filter(([, t]) => t === type)
+    .map(([tk, , p]) => ({ tick: Number(tk), ...(JSON.parse(p!) as Record<string, unknown>) }));
 
 /** One chef alone, every order on the strip is `recipe`: it must cook it from raw ingredients and serve it. */
 function cookOne(recipe: Recipe, map: string, seconds = 70) {
   const held = new Set<string>(); // every item the chef carried at some tick
-  const r = cookRound({ mapId: map, n: 1, seed: 3, force: recipe, seconds, before: (g, t) => {
-    if (t === 0) g.teams[0]!.orders = [0, 1, 2].map((id): Order => ({ id, expiresAt: 1e9, warned: false, recipe }));
-    const item = g.players.get(1)!.item;
-    if (item) held.add(item);
-  } });
-  return { ...r, held, delivered: evs(r.bus.log, 'delivered'), rejected: evs(r.bus.log, 'dishRejected'), folds: evs(r.bus.log, 'foldDone') };
+  const r = cookRound({
+    mapId: map,
+    n: 1,
+    seed: 3,
+    force: recipe,
+    seconds,
+    before: (g, t) => {
+      if (t === 0) g.teams[0]!.orders = [0, 1, 2].map((id): Order => ({ id, expiresAt: 1e9, warned: false, recipe }));
+      const item = g.players.get(1)!.item;
+      if (item) held.add(item);
+    },
+  });
+  return {
+    ...r,
+    held,
+    delivered: evs(r.bus.log, 'delivered'),
+    rejected: evs(r.bus.log, 'dishRejected'),
+    folds: evs(r.bus.log, 'foldDone'),
+  };
 }
 
 describe('a scripted chef cooks each recipe of the card from the raw ingredients', () => {
-  const cases: [Recipe, string][] = [['marinara', '9'], ['pepperoni', '9'], ['champinon', '12'], ['calzone', '9'], ['calzone', '2'], ['pepperoni', '14'], ['champinon', '10']];
+  const cases: [Recipe, string][] = [
+    ['marinara', '9'],
+    ['pepperoni', '9'],
+    ['champinon', '12'],
+    ['calzone', '9'],
+    ['calzone', '2'],
+    ['pepperoni', '14'],
+    ['champinon', '10'],
+  ];
   for (const [recipe, map] of cases) {
     it(`${recipe} on map ${map}: delivered, paid ${recipeBase(recipe, TUNING.normal)} base, nothing refused`, () => {
       const r = cookOne(recipe, map);
@@ -42,8 +67,12 @@ describe('a scripted chef cooks each recipe of the card from the raw ingredients
     });
   }
   it('the calzone takes longer than a marinara from the first ingredient in the oven to the plate out (the long oven)', () => {
-    const t = (recipe: Recipe) => { const r = cookOne(recipe, '9'); return { start: evs(r.bus.log, 'potStart')[0]!.tick, ready: evs(r.bus.log, 'potReady')[0]!.tick }; };
-    const m = t('marinara'), z = t('calzone');
+    const t = (recipe: Recipe) => {
+      const r = cookOne(recipe, '9');
+      return { start: evs(r.bus.log, 'potStart')[0]!.tick, ready: evs(r.bus.log, 'potReady')[0]!.tick };
+    };
+    const m = t('marinara'),
+      z = t('calzone');
     const bake = (x: { start: number; ready: number }) => (x.ready - x.start) * (1000 / 60);
     expect(bake(m)).toBeGreaterThan(7900); // Normal: cookMs 8000
     expect(bake(m)).toBeLessThan(8200);

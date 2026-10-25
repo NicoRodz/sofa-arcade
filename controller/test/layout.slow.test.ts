@@ -6,8 +6,12 @@ import { violations } from './checks';
 import { ORIENTATIONS, SCENARIOS, VIEWPORTS, insetsName, openSession, type Session } from './harness';
 
 let s: Session;
-beforeAll(async () => { s = await openSession(); }, 60_000);
-afterAll(async () => { await s?.close(); }, 30_000);
+beforeAll(async () => {
+  s = await openSession();
+}, 60_000);
+afterAll(async () => {
+  await s?.close();
+}, 30_000);
 
 describe('phone layout', () => {
   for (const [orientation, vps] of Object.entries(ORIENTATIONS)) {
@@ -16,16 +20,18 @@ describe('phone layout', () => {
       let probes = 0;
       for (const sc of SCENARIOS) {
         await s.load(sc);
-        for (const v of vps) for (const ins of v.insets) {
-          await s.setViewport(v, ins);
-          const p = await s.probe();
-          probes++;
-          // the probe must really see the emulated environment: a green from measuring nothing is worthless
-          expect(p.vw).toBe(v.w); expect(p.vh).toBe(v.h);
-          expect(p.inset).toEqual(ins);
-          expect(p.items.length, `${sc.name} ${v.name}: nothing measured`).toBeGreaterThan(1);
-          for (const msg of violations(p)) bad.push(`${sc.name} @ ${v.name} ${insetsName(ins)}: ${msg}`);
-        }
+        for (const v of vps)
+          for (const ins of v.insets) {
+            await s.setViewport(v, ins);
+            const p = await s.probe();
+            probes++;
+            // the probe must really see the emulated environment: a green from measuring nothing is worthless
+            expect(p.vw).toBe(v.w);
+            expect(p.vh).toBe(v.h);
+            expect(p.inset).toEqual(ins);
+            expect(p.items.length, `${sc.name} ${v.name}: nothing measured`).toBeGreaterThan(1);
+            for (const msg of violations(p)) bad.push(`${sc.name} @ ${v.name} ${insetsName(ins)}: ${msg}`);
+          }
       }
       expect(s.pageErrors()).toEqual([]);
       expect(probes).toBeGreaterThan(orientation === 'landscape' ? 100 : 250);
@@ -38,14 +44,19 @@ describe('phone layout', () => {
     await s.load(sc);
     await s.setViewport(VIEWPORTS[0]!, VIEWPORTS[0]!.insets[0]!);
     const p = await s.probe();
-    for (const sel of ['#stickhint', '#btnA', '#btnB', '#puesto', '#pswap', '#stickLbl .lbl', '#lblA .lbl', '#lblB .lbl']) expect(p.items.some((i) => i.sel === sel), sel).toBe(true);
+    for (const sel of ['#stickhint', '#btnA', '#btnB', '#puesto', '#pswap', '#stickLbl .lbl', '#lblA .lbl', '#lblB .lbl'])
+      expect(
+        p.items.some((i) => i.sel === sel),
+        sel,
+      ).toBe(true);
   }, 60_000);
 
   it('hit-testing: the circles take their own touches, plates and the hint let them through, the left half is the stick zone', async () => {
     await s.load(SCENARIOS.find((x) => x.name === 'play-puesto')!);
-    for (const v of VIEWPORTS) for (const ins of v.insets) {
-      await s.setViewport(v, ins);
-      const hit = await s.eval<Record<string, string>>(`(() => {
+    for (const v of VIEWPORTS)
+      for (const ins of v.insets) {
+        await s.setViewport(v, ins);
+        const hit = await s.eval<Record<string, string>>(`(() => {
         const id = (x, y) => { const e = document.elementFromPoint(x, y); const c = e && e.closest('[id]'); return c ? c.id : String(e && e.tagName); };
         const mid = (sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; };
         const above = (sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height - 6]; };
@@ -56,13 +67,37 @@ describe('phone layout', () => {
         out.swap = id(...mid('#pswap'));
         return out;
       })()`);
-      expect(hit, `${v.name} ${insetsName(ins)}`).toEqual({ A: 'btnA', B: 'btnB', plateA: 'pad', plateB: 'pad', plateStick: 'zone', hint: 'zone', zone: 'zone', swap: 'pswap' });
-    }
+        expect(hit, `${v.name} ${insetsName(ins)}`).toEqual({
+          A: 'btnA',
+          B: 'btnB',
+          plateA: 'pad',
+          plateB: 'pad',
+          plateStick: 'zone',
+          hint: 'zone',
+          zone: 'zone',
+          swap: 'pswap',
+        });
+      }
   }, 60_000);
 
   it('contextual buttons: label, glyph and greyed state follow the hint; a later hint replaces the earlier one whole; leaving the round gives the game its labels back', async () => {
-    const read = async () => { await new Promise((r) => setTimeout(r, 250)); return readNow(); }; // the greying is a 120 ms transition: read the settled style
-    const readNow = () => s.eval<{ a: string; b: string; ia: string; ib: string; offA: boolean; offB: boolean; fa: string; fb: string; plateA: boolean; plateB: boolean }>(`(() => {
+    const read = async () => {
+      await new Promise((r) => setTimeout(r, 250));
+      return readNow();
+    }; // the greying is a 120 ms transition: read the settled style
+    const readNow = () =>
+      s.eval<{
+        a: string;
+        b: string;
+        ia: string;
+        ib: string;
+        offA: boolean;
+        offB: boolean;
+        fa: string;
+        fb: string;
+        plateA: boolean;
+        plateB: boolean;
+      }>(`(() => {
       const q = (sel) => document.querySelector(sel);
       return { a: q('#lblA .lbl').textContent, b: q('#lblB .lbl').textContent, ia: q('#btnA svg').innerHTML.slice(0, 40), ib: q('#btnB svg').innerHTML.slice(0, 40),
         offA: q('#btnA').classList.contains('off'), offB: q('#btnB').classList.contains('off'), fa: getComputedStyle(q('#btnA')).backgroundImage, fb: getComputedStyle(q('#btnB')).backgroundImage,
@@ -101,14 +136,24 @@ describe('phone layout', () => {
     await s.load(SCENARIOS.find((x) => x.name === 'play-hint-off')!);
     await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!);
     await s.eval(`window.__sent = []`);
-    const [ax, ay] = await s.eval<[number, number]>(`(() => { const r = document.querySelector('#btnA').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    const [ax, ay] = await s.eval<[number, number]>(
+      `(() => { const r = document.querySelector('#btnA').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`,
+    );
     await s.tap(ax, ay);
-    expect((await s.eval<{ t: string; presses?: number[] }[]>(`window.__sent`)).some((m) => m.t === 'input' && (m.presses?.[0] ?? 0) >= 1)).toBe(true);
+    expect(
+      (await s.eval<{ t: string; presses?: number[] }[]>(`window.__sent`)).some((m) => m.t === 'input' && (m.presses?.[0] ?? 0) >= 1),
+    ).toBe(true);
   }, 60_000);
 
   it('Ayudante: the switch is in the pizzas lobby only; a tap sends the whole choice, the label and aria follow, and the relay settles it (also for a reconnect)', async () => {
-    const state = () => s.eval<{ label: string; on: boolean; aria: string; shown: boolean }>(`(() => { const b = document.getElementById('assist'); return { label: document.getElementById('assistlbl').textContent, on: b.classList.contains('on'), aria: b.getAttribute('aria-pressed'), shown: getComputedStyle(b).display !== 'none' && b.getBoundingClientRect().width > 0 }; })()`);
-    const centre = () => s.eval<[number, number]>(`(() => { const r = document.getElementById('assist').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    const state = () =>
+      s.eval<{ label: string; on: boolean; aria: string; shown: boolean }>(
+        `(() => { const b = document.getElementById('assist'); return { label: document.getElementById('assistlbl').textContent, on: b.classList.contains('on'), aria: b.getAttribute('aria-pressed'), shown: getComputedStyle(b).display !== 'none' && b.getBoundingClientRect().width > 0 }; })()`,
+      );
+    const centre = () =>
+      s.eval<[number, number]>(
+        `(() => { const r = document.getElementById('assist').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`,
+      );
     const sentAssist = async () => (await s.eval<{ t: string; on?: boolean }[]>(`window.__sent`)).filter((m) => m.t === 'assist');
     await s.load(SCENARIOS.find((x) => x.name === 'lobby')!);
     await s.setViewport(VIEWPORTS[3]!, VIEWPORTS[3]!.insets[0]!);
@@ -118,7 +163,10 @@ describe('phone layout', () => {
     expect(await sentAssist()).toEqual([{ t: 'assist', on: true }]);
     expect(await state()).toEqual({ label: 'Ayudante: sí', on: true, aria: 'true', shown: true });
     await s.tap(...(await centre()));
-    expect(await sentAssist()).toEqual([{ t: 'assist', on: true }, { t: 'assist', on: false }]);
+    expect(await sentAssist()).toEqual([
+      { t: 'assist', on: true },
+      { t: 'assist', on: false },
+    ]);
     expect((await state()).label).toBe('Ayudante: no');
     await s.eval(`window.__push({ t: 'assist', playerId: 1, on: true })`); // the relay: this phone had it on (a reconnect)
     expect(await state()).toEqual({ label: 'Ayudante: sí', on: true, aria: 'true', shown: true });
@@ -154,22 +202,36 @@ describe('phone layout', () => {
   }, 90_000);
 
   it("the Captain's D-pad shows its 7 buttons on every screen but the round, and only on the Captain's phone", async () => {
-    const count = async (name: string) => { await s.load(SCENARIOS.find((x) => x.name === name)!); await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!); return (await s.probe()).items.filter((i) => i.sel === '#remote .rb').length; };
+    const count = async (name: string) => {
+      await s.load(SCENARIOS.find((x) => x.name === name)!);
+      await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!);
+      return (await s.probe()).items.filter((i) => i.sel === '#remote .rb').length;
+    };
     for (const n of ['captain-menu', 'captain-lobby', 'captain-howto', 'captain-results']) expect(await count(n), n).toBe(7);
-    for (const n of ['captain-play', 'not-captain-menu', 'not-captain-howto', 'menu', 'lobby', 'results', 'play']) expect(await count(n), n).toBe(0);
+    for (const n of ['captain-play', 'not-captain-menu', 'not-captain-howto', 'menu', 'lobby', 'results', 'play'])
+      expect(await count(n), n).toBe(0);
   }, 90_000);
 
-  it("hit-testing: each D-pad button takes the touch at its centre, in every viewport and inset", async () => {
+  it('hit-testing: each D-pad button takes the touch at its centre, in every viewport and inset', async () => {
     await s.load(SCENARIOS.find((x) => x.name === 'captain-howto')!); // the busiest screen: the card sits right beside the D-pad
-    for (const v of VIEWPORTS) for (const ins of v.insets) {
-      await s.setViewport(v, ins);
-      const hit = await s.eval<Record<string, string | null>>(`(() => {
+    for (const v of VIEWPORTS)
+      for (const ins of v.insets) {
+        await s.setViewport(v, ins);
+        const hit = await s.eval<Record<string, string | null>>(`(() => {
         const out = {};
         for (const b of document.querySelectorAll('#remote [data-nav]')) { const r = b.getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); out[b.dataset.nav] = e && e.closest('[data-nav]') ? e.closest('[data-nav]').dataset.nav : String(e && e.tagName); }
         return out;
       })()`);
-      expect(hit, `${v.name} ${insetsName(ins)}`).toEqual({ help: 'help', up: 'up', back: 'back', left: 'left', ok: 'ok', right: 'right', down: 'down' });
-    }
+        expect(hit, `${v.name} ${insetsName(ins)}`).toEqual({
+          help: 'help',
+          up: 'up',
+          back: 'back',
+          left: 'left',
+          ok: 'ok',
+          right: 'right',
+          down: 'down',
+        });
+      }
   }, 60_000);
 
   it("tapping the D-pad sends one 'nav' per button with only the key in it (no id: the relay knows the socket), and the pad's buttons still work", async () => {
@@ -177,7 +239,9 @@ describe('phone layout', () => {
     await s.setViewport(VIEWPORTS[3]!, VIEWPORTS[3]!.insets[1]!);
     await s.eval(`window.__sent = []`);
     for (const key of ['up', 'down', 'left', 'right', 'ok', 'back', 'help']) {
-      const [x, y] = await s.eval<[number, number]>(`(() => { const r = document.querySelector('#remote [data-nav=${key}]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+      const [x, y] = await s.eval<[number, number]>(
+        `(() => { const r = document.querySelector('#remote [data-nav=${key}]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`,
+      );
       await s.tap(x, y);
     }
     const sent = (await s.eval<{ t: string; key?: string }[]>(`window.__sent`)).filter((m) => m.t === 'nav');
@@ -185,46 +249,73 @@ describe('phone layout', () => {
     // a phone that is not the Captain has no buttons to press: a tap where the D-pad would be sends nothing
     await s.load(SCENARIOS.find((x) => x.name === 'not-captain-menu')!);
     await s.eval(`window.__sent = []`);
-    await s.tap(780, 195); await s.tap(700, 195);
+    await s.tap(780, 195);
+    await s.tap(700, 195);
     expect((await s.eval<{ t: string }[]>(`window.__sent`)).filter((m) => m.t === 'nav')).toEqual([]);
     // the round: the Captain's phone has the pad alone; its buttons keep working
     await s.load(SCENARIOS.find((x) => x.name === 'captain-play')!);
     await s.eval(`window.__sent = []`);
-    const [ax, ay] = await s.eval<[number, number]>(`(() => { const r = document.querySelector('#btnA').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    const [ax, ay] = await s.eval<[number, number]>(
+      `(() => { const r = document.querySelector('#btnA').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`,
+    );
     await s.tap(ax, ay);
     const msgs = await s.eval<{ t: string; presses?: number[] }[]>(`window.__sent`);
-    expect(msgs.some((m) => m.t === 'input' && (m.presses?.[0] ?? 0) >= 1), 'button A still counts a press').toBe(true);
+    expect(
+      msgs.some((m) => m.t === 'input' && (m.presses?.[0] ?? 0) >= 1),
+      'button A still counts a press',
+    ).toBe(true);
     expect(msgs.filter((m) => m.t === 'nav')).toEqual([]);
   }, 90_000);
 
   it('the signal pad (campaign): 6 buttons in a campaign round, none in a quick-match round or before the round starts', async () => {
-    const count = async (name: string) => { await s.load(SCENARIOS.find((x) => x.name === name)!); await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!); return (await s.probe()).items.filter((i) => i.sel === '#signals .sg').length; };
+    const count = async (name: string) => {
+      await s.load(SCENARIOS.find((x) => x.name === name)!);
+      await s.setViewport(VIEWPORTS[1]!, VIEWPORTS[1]!.insets[0]!);
+      return (await s.probe()).items.filter((i) => i.sel === '#signals .sg').length;
+    };
     expect(await count('play-campaign')).toBe(6);
     for (const n of ['play', 'play-puesto', 'lobby', 'results', 'captain-play']) expect(await count(n), n).toBe(0);
   }, 90_000);
 
   it('hit-testing: each signal button takes the touch at its centre, in every viewport and inset', async () => {
     await s.load(SCENARIOS.find((x) => x.name === 'play-campaign')!);
-    for (const v of VIEWPORTS) for (const ins of v.insets) {
-      await s.setViewport(v, ins);
-      const hit = await s.eval<Record<string, string | null>>(`(() => {
+    for (const v of VIEWPORTS)
+      for (const ins of v.insets) {
+        await s.setViewport(v, ins);
+        const hit = await s.eval<Record<string, string | null>>(`(() => {
         const out = {};
         for (const b of document.querySelectorAll('#signals [data-sig]')) { const r = b.getBoundingClientRect(); const e = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); out[b.dataset.sig] = e && e.closest('[data-sig]') ? e.closest('[data-sig]').dataset.sig : String(e && e.tagName); }
         return out;
       })()`);
-      expect(hit, `${v.name} ${insetsName(ins)}`).toEqual({ arrowL: 'arrowL', arrowU: 'arrowU', arrowR: 'arrowR', wait: 'wait', arrowD: 'arrowD', go: 'go' });
-    }
+        expect(hit, `${v.name} ${insetsName(ins)}`).toEqual({
+          arrowL: 'arrowL',
+          arrowU: 'arrowU',
+          arrowR: 'arrowR',
+          wait: 'wait',
+          arrowD: 'arrowD',
+          go: 'go',
+        });
+      }
   }, 60_000);
 
   it('tapping the signal pad sends one new signal per tap (a counter from the baseline 0), holding "¡Ya!" holds `go`, and a quick-match phone sends neither', async () => {
     await s.load(SCENARIOS.find((x) => x.name === 'play-campaign')!);
     await s.setViewport(VIEWPORTS[3]!, VIEWPORTS[3]!.insets[1]!); // (the packets the pad sent since the round began are kept: the first ones carry the baseline)
-    const centre = (kind: string) => s.eval<[number, number]>(`(() => { const r = document.querySelector('#signals [data-sig=${kind}]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
-    for (const kind of ['arrowL', 'arrowU', 'arrowR', 'wait', 'arrowD', 'go']) { const [x, y] = await centre(kind); await s.tap(x, y); }
+    const centre = (kind: string) =>
+      s.eval<[number, number]>(
+        `(() => { const r = document.querySelector('#signals [data-sig=${kind}]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`,
+      );
+    for (const kind of ['arrowL', 'arrowU', 'arrowR', 'wait', 'arrowD', 'go']) {
+      const [x, y] = await centre(kind);
+      await s.tap(x, y);
+    }
     type In = { t: string; sig?: { kind: string; seq: number }; go?: boolean };
     const inputs = (await s.eval<In[]>(`window.__sent`)).filter((m) => m.t === 'input');
     const seen: string[] = [];
-    for (const m of inputs) { const k = `${m.sig!.kind}:${m.sig!.seq}`; if (seen[seen.length - 1] !== k) seen.push(k); }
+    for (const m of inputs) {
+      const k = `${m.sig!.kind}:${m.sig!.seq}`;
+      if (seen[seen.length - 1] !== k) seen.push(k);
+    }
     expect(seen).toEqual(['go:0', 'arrowL:1', 'arrowU:2', 'arrowR:3', 'wait:4', 'arrowD:5', 'go:6']);
     expect(inputs.every((m) => typeof m.go === 'boolean')).toBe(true);
     // hold "¡Ya!": `go` is true while the thumb is down and false after it lifts
@@ -238,7 +329,9 @@ describe('phone layout', () => {
     // a quick-match round: the old packets, no `sig`, no `go`
     await s.load(SCENARIOS.find((x) => x.name === 'play')!);
     await s.eval(`window.__sent = []`);
-    const [ax, ay] = await s.eval<[number, number]>(`(() => { const r = document.querySelector('#btnA').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+    const [ax, ay] = await s.eval<[number, number]>(
+      `(() => { const r = document.querySelector('#btnA').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`,
+    );
     await s.tap(ax, ay);
     const quick = (await s.eval<In[]>(`window.__sent`)).filter((m) => m.t === 'input');
     expect(quick.length).toBeGreaterThan(0);

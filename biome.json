@@ -2,9 +2,11 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/data", "!**/fixtures", "!**/levels", "!**/golden", "!**/goldens", "!docs", "!.vitest", "!package-lock.json", "!**/*.html", "!**/*.css"]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/data", "!**/fixtures", "!**/levels", "!**/golden", "!**/goldens", "!docs", "!.vitest", "!package-lock.json", "!**/*.html", "!**/*.css", "!**/*.md"]
   },
-  "formatter": { "enabled": false },
+  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 140, "lineEnding": "lf" },
+  "javascript": { "formatter": { "quoteStyle": "single", "semicolons": "always", "trailingCommas": "all", "arrowParentheses": "always" } },
+  "json": { "formatter": { "enabled": false } },
   "assist": { "enabled": false },
   "linter": {
     "enabled": true,

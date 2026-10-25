@@ -1,5 +1,17 @@
 import { DEFAULT_DIFFICULTY, isDifficulty, type Difficulty } from './difficulty';
-import { DEFAULT_GAME, DEFAULT_MODE, GAMES, LABEL_MAX, gameInfo, isGameId, isModeId, resolveModes, type GameId, type GameInfo, type ModeId } from './games';
+import {
+  DEFAULT_GAME,
+  DEFAULT_MODE,
+  GAMES,
+  LABEL_MAX,
+  gameInfo,
+  isGameId,
+  isModeId,
+  resolveModes,
+  type GameId,
+  type GameInfo,
+  type ModeId,
+} from './games';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './maps';
 import { isIconId, type IconId } from './icons';
 import { PUESTO_IDS, isPuestoId, type PuestoId } from './puestos';
@@ -12,7 +24,18 @@ import type { PhoneResult, Verdict } from './versusReport';
 export { ROUND_MS } from './difficulty';
 export type { SignalKind } from './games/obstaculos/sim/campaign';
 export { MAX_TEAMS, type TeamInfo } from './teams';
-export { KEYBOARD_QUIET_MS, NAV_KEYS, NAV_TO_KEY, acceptNav, captainOf, isNavKey, navToKey, remoteBlocked, remoteVisible, type NavKey } from './captain';
+export {
+  KEYBOARD_QUIET_MS,
+  NAV_KEYS,
+  NAV_TO_KEY,
+  acceptNav,
+  captainOf,
+  isNavKey,
+  navToKey,
+  remoteBlocked,
+  remoteVisible,
+  type NavKey,
+} from './captain';
 
 // 2: teams (modeId, teams and teamsLocked in the lobby config, teamId per player, 'setTeam' and 'you'). A v1 screen or phone never sends
 // those fields and is read as cooperative with no teams assigned.
@@ -52,24 +75,63 @@ export interface InputState {
 // menu: the Pichiclub start screen, where the screen picks the game (phones wait). lobby: that game's setup.
 export const PHASES = ['menu', 'lobby', 'school', 'playing', 'results'] as const; // school: the guided practice round (shared/tutorial), between the lobby and the first match
 export type Phase = (typeof PHASES)[number];
-export interface Score { id: number; score: number }
+export interface Score {
+  id: number;
+  score: number;
+}
 // Suggested stations for the round (see puestos.ts): the screen assigns them, the phones show them. Never enforced.
-export interface PuestoAssign { id: number; puestos: PuestoId[]; pool: PuestoId[] } // pool: what "Cambiar" cycles through
-export interface PuestoMsg { cheese: boolean; sink: boolean; assign: PuestoAssign[] }
+export interface PuestoAssign {
+  id: number;
+  puestos: PuestoId[];
+  pool: PuestoId[];
+} // pool: what "Cambiar" cycles through
+export interface PuestoMsg {
+  cheese: boolean;
+  sink: boolean;
+  assign: PuestoAssign[];
+}
 // How a round starts (sent with phase 'playing'): the lobby choices frozen. modeOptions is opaque here: each game types its own.
 export type ModeOptions = Record<string, boolean | number | string>;
-export interface MatchStart { gameId: GameId; modeId: ModeId; mapId: string; difficulty: Difficulty; teams: TeamInfo[] | null; modeOptions: ModeOptions }
-export interface PhaseInfo { phase: Phase; scores?: Score[]; puestos?: PuestoMsg; match?: MatchStart; result?: PhoneResult } // result: versus only, with phase 'results'
+export interface MatchStart {
+  gameId: GameId;
+  modeId: ModeId;
+  mapId: string;
+  difficulty: Difficulty;
+  teams: TeamInfo[] | null;
+  modeOptions: ModeOptions;
+}
+export interface PhaseInfo {
+  phase: Phase;
+  scores?: Score[];
+  puestos?: PuestoMsg;
+  match?: MatchStart;
+  result?: PhoneResult;
+} // result: versus only, with phase 'results'
 
 // What A and B say on one phone right now, sent with the state of every sim tick (not as an event: a late packet is simply replaced by the next).
 // a / b: the label (null: the game's own). aIcon / bIcon: the glyph the button wears (absent: the game's own). aOff / bOff: nothing to do now, the button greys out.
-export interface HintLabels { a: string | null; b: string | null; aIcon?: IconId; bIcon?: IconId; aOff?: boolean; bOff?: boolean }
+export interface HintLabels {
+  a: string | null;
+  b: string | null;
+  aIcon?: IconId;
+  bIcon?: IconId;
+  aOff?: boolean;
+  bOff?: boolean;
+}
 /** The optional fields of a hint, copied only when set (the relay forwards exactly these, nothing else from the payload). */
-export const hintExtras = (h: HintLabels): Omit<HintLabels, 'a' | 'b'> => ({ ...(h.aIcon ? { aIcon: h.aIcon } : {}), ...(h.bIcon ? { bIcon: h.bIcon } : {}), ...(h.aOff ? { aOff: true } : {}), ...(h.bOff ? { bOff: true } : {}) });
+export const hintExtras = (h: HintLabels): Omit<HintLabels, 'a' | 'b'> => ({
+  ...(h.aIcon ? { aIcon: h.aIcon } : {}),
+  ...(h.bIcon ? { bIcon: h.bIcon } : {}),
+  ...(h.aOff ? { aOff: true } : {}),
+  ...(h.bOff ? { bOff: true } : {}),
+});
 
 // R7: a short vibration on one phone (Android); iOS has no vibration API, so the phone flashes its colour instead.
 // The screen decides when (it owns the game events); the phone only plays the pattern, in ms on / off / on...
-export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15], slip: [120] } as const satisfies Record<string, readonly number[]>;
+export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15], slip: [120] } as const satisfies Record<
+  string,
+  readonly number[]
+>;
 export type BuzzKind = keyof typeof BUZZ_PATTERNS;
 export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.prototype.hasOwnProperty.call(BUZZ_PATTERNS, v);
 
@@ -77,14 +139,37 @@ export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' &
 export const SEED_MAX = 2 ** 32;
 export const isSeed = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) < SEED_MAX;
 // modeId + teams + teamsLocked: the lobby's mode and its teams (null until assigned; the screen owns them, the relay derives each phone's team from them).
-export interface LobbyConfig { game: GameId; difficulty: Difficulty; map: MapChoice | VersusChoice; seed: number; modeId: ModeId; teams: TeamInfo[] | null; teamsLocked: boolean; modeOptions: ModeOptions }
+export interface LobbyConfig {
+  game: GameId;
+  difficulty: Difficulty;
+  map: MapChoice | VersusChoice;
+  seed: number;
+  modeId: ModeId;
+  teams: TeamInfo[] | null;
+  teamsLocked: boolean;
+  modeOptions: ModeOptions;
+}
 // What a screen may send: a v1 screen leaves the team fields out and the parser fills the defaults (cooperative, no teams).
-type ConfigFromScreen = Omit<LobbyConfig, 'modeId' | 'teams' | 'teamsLocked' | 'modeOptions'> & Partial<Pick<LobbyConfig, 'modeId' | 'teams' | 'teamsLocked' | 'modeOptions'>>;
-export const DEFAULT_CONFIG: LobbyConfig = { game: DEFAULT_GAME, difficulty: DEFAULT_DIFFICULTY, map: DEFAULT_MAP, seed: 1, modeId: DEFAULT_MODE, teams: null, teamsLocked: false, modeOptions: {} };
+type ConfigFromScreen = Omit<LobbyConfig, 'modeId' | 'teams' | 'teamsLocked' | 'modeOptions'> &
+  Partial<Pick<LobbyConfig, 'modeId' | 'teams' | 'teamsLocked' | 'modeOptions'>>;
+export const DEFAULT_CONFIG: LobbyConfig = {
+  game: DEFAULT_GAME,
+  difficulty: DEFAULT_DIFFICULTY,
+  map: DEFAULT_MAP,
+  seed: 1,
+  modeId: DEFAULT_MODE,
+  teams: null,
+  teamsLocked: false,
+  modeOptions: {},
+};
 
 // What the phones receive: the lobby config plus the chosen game's control labels and how-to steps (from the registry).
 export type ConfigMsg = { t: 'config' } & LobbyConfig & GameInfo;
-export const configMsg = (cfg: LobbyConfig, games?: Parameters<typeof gameInfo>[1]): ConfigMsg => ({ t: 'config', ...cfg, ...gameInfo(cfg.game, games, cfg.modeId) });
+export const configMsg = (cfg: LobbyConfig, games?: Parameters<typeof gameInfo>[1]): ConfigMsg => ({
+  t: 'config',
+  ...cfg,
+  ...gameInfo(cfg.game, games, cfg.modeId),
+});
 
 export interface PublicPlayer {
   id: number;
@@ -97,7 +182,13 @@ export interface PublicPlayer {
   school?: true; // this phone already did (or skipped) the Cocina escuela: the relay keeps it with the slot, the screen does not offer the school when everybody has it
 }
 // Cocina escuela, screen -> one phone: where this chef is (step of `total`, step === total: finished), what to do (<= 8 words), and which button to light.
-export interface SchoolMsg { step: number; total: number; text: string; btn?: 'a' | 'b'; done?: true }
+export interface SchoolMsg {
+  step: number;
+  total: number;
+  text: string;
+  btn?: 'a' | 'b';
+  done?: true;
+}
 
 export type ClientMsg =
   | { t: 'join'; name: string; token: string }
@@ -140,12 +231,22 @@ export type ServerMsg =
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 
-const parsePuestoIds = (v: unknown, max = 4): PuestoId[] | null => (Array.isArray(v) && v.length <= max && v.every(isPuestoId) ? [...v] : null);
+const parsePuestoIds = (v: unknown, max = 4): PuestoId[] | null =>
+  Array.isArray(v) && v.length <= max && v.every(isPuestoId) ? [...v] : null;
 function parsePuestoMsg(v: any): PuestoMsg | null {
-  if (!v || typeof v !== 'object' || typeof v.cheese !== 'boolean' || typeof v.sink !== 'boolean' || !Array.isArray(v.assign) || v.assign.length > MAX_PLAYERS) return null;
+  if (
+    !v ||
+    typeof v !== 'object' ||
+    typeof v.cheese !== 'boolean' ||
+    typeof v.sink !== 'boolean' ||
+    !Array.isArray(v.assign) ||
+    v.assign.length > MAX_PLAYERS
+  )
+    return null;
   const assign: PuestoAssign[] = [];
   for (const a of v.assign) {
-    const puestos = parsePuestoIds(a?.puestos), pool = parsePuestoIds(a?.pool, PUESTO_IDS.length);
+    const puestos = parsePuestoIds(a?.puestos),
+      pool = parsePuestoIds(a?.pool, PUESTO_IDS.length);
     if (!a || !num(a.id) || !puestos || !pool) return null;
     assign.push({ id: a.id, puestos, pool });
   }
@@ -161,23 +262,57 @@ export function parseTeams(v: unknown): TeamInfo[] | null | undefined {
   if (v === null || v === undefined) return null;
   if (!Array.isArray(v) || v.length < 1 || v.length > MAX_TEAMS) return undefined;
   const out: TeamInfo[] = [];
-  const seenIds = new Set<number>(), seenPlayers = new Set<number>();
+  const seenIds = new Set<number>(),
+    seenPlayers = new Set<number>();
   for (const t of v) {
-    if (!t || typeof t !== 'object' || !intIn(t.id, 0, MAX_TEAMS - 1) || seenIds.has(t.id) || !text(t.name, 16) || typeof t.color !== 'string' || !HEX.test(t.color) || !text(t.icon, 4)) return undefined;
+    if (
+      !t ||
+      typeof t !== 'object' ||
+      !intIn(t.id, 0, MAX_TEAMS - 1) ||
+      seenIds.has(t.id) ||
+      !text(t.name, 16) ||
+      typeof t.color !== 'string' ||
+      !HEX.test(t.color) ||
+      !text(t.icon, 4)
+    )
+      return undefined;
     if (t.side !== undefined && !text(t.side, 16)) return undefined;
-    if (!Array.isArray(t.playerIds) || t.playerIds.length > MAX_PLAYERS || !t.playerIds.every((id: unknown) => intIn(id, 0, 2 ** 31) && !seenPlayers.has(id as number) && seenPlayers.add(id as number))) return undefined;
+    if (
+      !Array.isArray(t.playerIds) ||
+      t.playerIds.length > MAX_PLAYERS ||
+      !t.playerIds.every((id: unknown) => intIn(id, 0, 2 ** 31) && !seenPlayers.has(id as number) && seenPlayers.add(id as number))
+    )
+      return undefined;
     seenIds.add(t.id);
-    out.push({ id: t.id, name: t.name, color: t.color, icon: t.icon, ...(t.side !== undefined ? { side: t.side } : {}), playerIds: [...t.playerIds] });
+    out.push({
+      id: t.id,
+      name: t.name,
+      color: t.color,
+      icon: t.icon,
+      ...(t.side !== undefined ? { side: t.side } : {}),
+      playerIds: [...t.playerIds],
+    });
   }
   return out;
 }
 
 const VERDICTS: readonly Verdict[] = ['win', 'draw', 'nowinner', 'aborted'];
 export function parsePhoneResult(v: any): PhoneResult | null {
-  if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict) || !(v.winner === null || intIn(v.winner, 0, MAX_TEAMS - 1))) return null;
-  if (!Array.isArray(v.scores) || v.scores.length < 1 || v.scores.length > MAX_TEAMS || !v.scores.every((x: any) => x && intIn(x.team, 0, MAX_TEAMS - 1) && num(x.score))) return null;
+  if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict) || !(v.winner === null || intIn(v.winner, 0, MAX_TEAMS - 1)))
+    return null;
+  if (
+    !Array.isArray(v.scores) ||
+    v.scores.length < 1 ||
+    v.scores.length > MAX_TEAMS ||
+    !v.scores.every((x: any) => x && intIn(x.team, 0, MAX_TEAMS - 1) && num(x.score))
+  )
+    return null;
   if (v.verdict === 'win' ? v.winner === null : v.winner !== null) return null; // a win names its team; no other verdict does
-  return { verdict: v.verdict, winner: v.winner, scores: v.scores.map((x: { team: number; score: number }) => ({ team: x.team, score: x.score })) };
+  return {
+    verdict: v.verdict,
+    winner: v.winner,
+    scores: v.scores.map((x: { team: number; score: number }) => ({ team: x.team, score: x.score })),
+  };
 }
 
 export function parseModeOptions(v: unknown): ModeOptions | undefined {
@@ -187,7 +322,12 @@ export function parseModeOptions(v: unknown): ModeOptions | undefined {
   if (entries.length > 8) return undefined;
   const out: ModeOptions = {};
   for (const [k, x] of entries) {
-    if (!text(k, 32) || k === '__proto__' || !(typeof x === 'boolean' || (typeof x === 'number' && Number.isFinite(x)) || (typeof x === 'string' && x.length <= 32))) return undefined;
+    if (
+      !text(k, 32) ||
+      k === '__proto__' ||
+      !(typeof x === 'boolean' || (typeof x === 'number' && Number.isFinite(x)) || (typeof x === 'string' && x.length <= 32))
+    )
+      return undefined;
     out[k] = x;
   }
   return out;
@@ -208,7 +348,10 @@ export function parseClientMessage(raw: string): ClientMsg | null {
     case 'input':
       if (!num(m.seq) || !num(m.x) || !num(m.y) || !num(m.btn) || !num(m.ts)) return null;
       if (!Array.isArray(m.presses) || !m.presses.every(num)) return null;
-      const sig = m.sig && typeof m.sig === 'object' && (SIGNAL_KINDS as readonly string[]).includes(m.sig.kind) && Number.isInteger(m.sig.seq) ? { kind: m.sig.kind as SignalKind, seq: ((m.sig.seq % PRESS_MOD) + PRESS_MOD) % PRESS_MOD } : undefined; // a malformed signal is dropped, never the whole input
+      const sig =
+        m.sig && typeof m.sig === 'object' && (SIGNAL_KINDS as readonly string[]).includes(m.sig.kind) && Number.isInteger(m.sig.seq)
+          ? { kind: m.sig.kind as SignalKind, seq: ((m.sig.seq % PRESS_MOD) + PRESS_MOD) % PRESS_MOD }
+          : undefined; // a malformed signal is dropped, never the whole input
       return {
         t: 'input',
         seq: m.seq,
@@ -227,8 +370,20 @@ export function parseClientMessage(raw: string): ClientMsg | null {
       if (!PHASES.includes(m.phase)) return null;
       const out: ClientMsg = { t: 'phase', phase: m.phase };
       if (m.match !== undefined) {
-        const mt = m.match, teams = mt && typeof mt === 'object' ? parseTeams(mt.teams) : undefined, opts = mt && typeof mt === 'object' ? parseModeOptions(mt.modeOptions) : undefined;
-        if (!mt || typeof mt !== 'object' || !isGameId(mt.gameId) || !isModeId(mt.modeId) || !text(mt.mapId, 16) || !isDifficulty(mt.difficulty) || teams === undefined || !opts) return null;
+        const mt = m.match,
+          teams = mt && typeof mt === 'object' ? parseTeams(mt.teams) : undefined,
+          opts = mt && typeof mt === 'object' ? parseModeOptions(mt.modeOptions) : undefined;
+        if (
+          !mt ||
+          typeof mt !== 'object' ||
+          !isGameId(mt.gameId) ||
+          !isModeId(mt.modeId) ||
+          !text(mt.mapId, 16) ||
+          !isDifficulty(mt.difficulty) ||
+          teams === undefined ||
+          !opts
+        )
+          return null;
         out.match = { gameId: mt.gameId, modeId: mt.modeId, mapId: mt.mapId, difficulty: mt.difficulty, teams, modeOptions: opts };
       }
       if (m.scores !== undefined) {
@@ -256,31 +411,82 @@ export function parseClientMessage(raw: string): ClientMsg | null {
     case 'buzz':
       return num(m.playerId) && isBuzzKind(m.kind) ? { t: 'buzz', playerId: m.playerId, kind: m.kind } : null;
     case 'hint': {
-      const label = (v: unknown): string | null | undefined => (v === null || v === undefined ? null : typeof v === 'string' && v.trim() && v.length <= LABEL_MAX ? v : undefined);
-      const a = label(m.a), b = label(m.b);
+      const label = (v: unknown): string | null | undefined =>
+        v === null || v === undefined ? null : typeof v === 'string' && v.trim() && v.length <= LABEL_MAX ? v : undefined;
+      const a = label(m.a),
+        b = label(m.b);
       const icon = (v: unknown): IconId | null | undefined => (v === undefined || v === null ? null : isIconId(v) ? v : undefined);
-      const aIcon = icon(m.aIcon), bIcon = icon(m.bIcon);
+      const aIcon = icon(m.aIcon),
+        bIcon = icon(m.bIcon);
       if (!num(m.playerId) || a === undefined || b === undefined || aIcon === undefined || bIcon === undefined) return null;
-      return { t: 'hint', playerId: m.playerId, a, b, ...hintExtras({ a, b, ...(aIcon ? { aIcon } : {}), ...(bIcon ? { bIcon } : {}), ...(m.aOff === true ? { aOff: true } : {}), ...(m.bOff === true ? { bOff: true } : {}) }) };
+      return {
+        t: 'hint',
+        playerId: m.playerId,
+        a,
+        b,
+        ...hintExtras({
+          a,
+          b,
+          ...(aIcon ? { aIcon } : {}),
+          ...(bIcon ? { bIcon } : {}),
+          ...(m.aOff === true ? { aOff: true } : {}),
+          ...(m.bOff === true ? { bOff: true } : {}),
+        }),
+      };
     }
     case 'assist':
       return typeof m.on === 'boolean' ? { t: 'assist', on: m.on } : null;
     case 'schoolDone':
       return { t: 'schoolDone', ...(m.skip === true ? { skip: true as const } : {}) };
     case 'school': {
-      if (!num(m.playerId) || !intIn(m.step, 0, 8) || !intIn(m.total, 1, 8) || m.step > m.total || !text(m.text, 48) || !(m.btn === undefined || m.btn === 'a' || m.btn === 'b')) return null;
-      return { t: 'school', playerId: m.playerId, step: m.step, total: m.total, text: m.text, ...(m.btn ? { btn: m.btn } : {}), ...(m.done === true ? { done: true as const } : {}) };
+      if (
+        !num(m.playerId) ||
+        !intIn(m.step, 0, 8) ||
+        !intIn(m.total, 1, 8) ||
+        m.step > m.total ||
+        !text(m.text, 48) ||
+        !(m.btn === undefined || m.btn === 'a' || m.btn === 'b')
+      )
+        return null;
+      return {
+        t: 'school',
+        playerId: m.playerId,
+        step: m.step,
+        total: m.total,
+        text: m.text,
+        ...(m.btn ? { btn: m.btn } : {}),
+        ...(m.done === true ? { done: true as const } : {}),
+      };
     }
     case 'nav':
       return isNavKey(m.key) ? { t: 'nav', key: m.key } : null; // anything else in the payload (a fake `from`) is dropped here
     case 'config':
-      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !(isMapChoice(m.map) || isVersusChoice(m.map)) || !isSeed(m.seed)) return null; // versus lobbies hold a versus map choice (V1.., vs-auto, vs-random)
+      if (!isGameId(m.game) || !isDifficulty(m.difficulty) || !(isMapChoice(m.map) || isVersusChoice(m.map)) || !isSeed(m.seed))
+        return null; // versus lobbies hold a versus map choice (V1.., vs-auto, vs-random)
       {
         const modeId = m.modeId === undefined ? DEFAULT_MODE : m.modeId; // a v1 screen sends none: cooperative
         const game = GAMES.find((g) => g.id === m.game)!;
-        const teams = parseTeams(m.teams), modeOptions = parseModeOptions(m.modeOptions);
-        if (!isModeId(modeId) || !resolveModes(game).some((x) => x.id === modeId) || teams === undefined || !modeOptions || (m.teamsLocked !== undefined && typeof m.teamsLocked !== 'boolean')) return null;
-        return { t: 'config', game: m.game, difficulty: m.difficulty, map: m.map, seed: m.seed, modeId, teams, teamsLocked: m.teamsLocked === true, modeOptions };
+        const teams = parseTeams(m.teams),
+          modeOptions = parseModeOptions(m.modeOptions);
+        if (
+          !isModeId(modeId) ||
+          !resolveModes(game).some((x) => x.id === modeId) ||
+          teams === undefined ||
+          !modeOptions ||
+          (m.teamsLocked !== undefined && typeof m.teamsLocked !== 'boolean')
+        )
+          return null;
+        return {
+          t: 'config',
+          game: m.game,
+          difficulty: m.difficulty,
+          map: m.map,
+          seed: m.seed,
+          modeId,
+          teams,
+          teamsLocked: m.teamsLocked === true,
+          modeOptions,
+        };
       }
     default:
       return null;

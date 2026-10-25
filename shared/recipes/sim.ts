@@ -37,12 +37,15 @@ export function pickRecipe(g: Game, rng: Rng): Recipe {
   if (!rec) return g.hasCheese && rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
   const u = rng() * 100;
   let acc = 0;
-  for (let i = 0; i < rec.recipes.length; i++) { acc += rec.weights[i]!; if (u < acc) return rec.recipes[i]!; }
+  for (let i = 0; i < rec.recipes.length; i++) {
+    acc += rec.weights[i]!;
+    if (u < acc) return rec.recipes[i]!;
+  }
   return rec.recipes[rec.recipes.length - 1]!;
 }
 
 /** What a crate gives. Crate type 2 (the cheese crate) gives the card's topping. */
-export const crateItem = (g: Game, crate: number): Item => (crate === 2 && g.rec ? RAW_OF[g.rec.topping]! : RAW_OF[crate] ?? 'raw1');
+export const crateItem = (g: Game, crate: number): Item => (crate === 2 && g.rec ? RAW_OF[g.rec.topping]! : (RAW_OF[crate] ?? 'raw1'));
 
 /** Ingredient type a topping recipe is (2, 3, 4) -> its recipe. Exposed for the art and the tests. */
 export const recipeOfTopping = (t: number): Recipe | undefined => TOPPING_RECIPE[t];
@@ -74,7 +77,14 @@ export function pickOrder(g: Game, orders: readonly Order[], item: Item): number
 // --- the calzone: fold at the oven -------------------------------------------------------------------------------------------------------------------
 /** Can this oven be folded now: a card with a calzone, dough and tomato loaded and cooking (nothing else in it, nothing done), not on fire. */
 export const canFold = (g: Game, s: Station): boolean =>
-  !!g.rec?.recipes.includes('calzone') && s.kind === 'pot' && s.fire === undefined && !s.done && !s.folded && s.inputs.length === 2 && s.inputs.includes(0) && s.inputs.includes(1);
+  !!g.rec?.recipes.includes('calzone') &&
+  s.kind === 'pot' &&
+  s.fire === undefined &&
+  !s.done &&
+  !s.folded &&
+  s.inputs.length === 2 &&
+  s.inputs.includes(0) &&
+  s.inputs.includes(1);
 
 /** `dtMs` more of Picar folding the pot; at FOLD_MS the calzone is folded (it keeps cooking, longer). */
 export function foldStep(g: Game, playerId: number, s: Station, dtMs: number) {

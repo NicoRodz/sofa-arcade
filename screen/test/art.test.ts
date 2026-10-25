@@ -1,8 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import { COLORS } from '@party/shared';
 import { COLS, ROWS } from '@party/shared/game';
-import { CHEFS, FLOORS, H, HUD_H, OX, OY, SKINS, TILE, W, chefOf, floorPair, hairOf, progressColor, skinOf, timerColor, C } from '../src/art/tokens';
-import { MAX_TICKETS, TICKET_SHAKE_AT, TICKET_WIDTH, VS_CLOCK_HALF, VS_PLATE, VS_STAGE_W, VS_TICKET_MAX_X, clockText, ticketXs, vipCardAt } from '../src/art/layout';
+import {
+  CHEFS,
+  FLOORS,
+  H,
+  HUD_H,
+  OX,
+  OY,
+  SKINS,
+  TILE,
+  W,
+  chefOf,
+  floorPair,
+  hairOf,
+  progressColor,
+  skinOf,
+  timerColor,
+  C,
+} from '../src/art/tokens';
+import {
+  MAX_TICKETS,
+  TICKET_SHAKE_AT,
+  TICKET_WIDTH,
+  VS_CLOCK_HALF,
+  VS_PLATE,
+  VS_STAGE_W,
+  VS_TICKET_MAX_X,
+  clockText,
+  ticketXs,
+  vipCardAt,
+} from '../src/art/layout';
 import { FLAG_H, FLAG_W } from '../src/art/flags';
 import { isVersusMapId, VERSUS_FLOOR } from '../src/art/tokens';
 import { VERSUS_MAP_IDS } from '@party/shared/versusMaps';
@@ -104,8 +132,26 @@ describe('versus HUD layout (F4)', () => {
     expect(VS_PLATE.y + VS_PLATE.h).toBeLessThanOrEqual(HUD_H);
   });
   it('the golden order card sits in the middle of the barrier: upper part of a vertical one (the pantry may fill its middle row), middle of a horizontal one', () => {
-    expect(vipCardAt([{ x: 3.5, y: 4.5 }, { x: 12.5, y: 4.5 }], COLS, ROWS)).toEqual({ x: 8, y: 2.5 }); // V1, V2, V4, V5: kitchens side by side
-    expect(vipCardAt([{ x: 8, y: 2 }, { x: 8, y: 7 }], COLS, ROWS)).toEqual({ x: 8, y: 4.5 }); // V3: one above the other
+    expect(
+      vipCardAt(
+        [
+          { x: 3.5, y: 4.5 },
+          { x: 12.5, y: 4.5 },
+        ],
+        COLS,
+        ROWS,
+      ),
+    ).toEqual({ x: 8, y: 2.5 }); // V1, V2, V4, V5: kitchens side by side
+    expect(
+      vipCardAt(
+        [
+          { x: 8, y: 2 },
+          { x: 8, y: 7 },
+        ],
+        COLS,
+        ROWS,
+      ),
+    ).toEqual({ x: 8, y: 4.5 }); // V3: one above the other
     const card = { x: OX + 8 * TILE, y: OY + 2.5 * TILE };
     expect(card.x).toBe(W / 2); // dead centre of the stage: the barrier is symmetric
   });
@@ -115,8 +161,14 @@ describe('versus HUD layout (F4)', () => {
   });
   it('every versus map gets the same neutral floor (the team colour does the rest), and coop maps keep theirs', () => {
     expect(VERSUS_MAP_IDS.length).toBeGreaterThanOrEqual(5);
-    for (const id of VERSUS_MAP_IDS) { expect(isVersusMapId(id), id).toBe(true); expect(floorPair(id, 7)).toBe(VERSUS_FLOOR); }
+    for (const id of VERSUS_MAP_IDS) {
+      expect(isVersusMapId(id), id).toBe(true);
+      expect(floorPair(id, 7)).toBe(VERSUS_FLOOR);
+    }
     expect(isVersusMapId('vs-gen')).toBe(true);
-    for (const id of Object.keys(FLOORS)) { expect(isVersusMapId(id), id).toBe(false); expect(floorPair(id)).toEqual(FLOORS[id]); }
+    for (const id of Object.keys(FLOORS)) {
+      expect(isVersusMapId(id), id).toBe(false);
+      expect(floorPair(id)).toEqual(FLOORS[id]);
+    }
   });
 });

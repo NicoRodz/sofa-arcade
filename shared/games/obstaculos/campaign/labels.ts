@@ -10,4 +10,5 @@ export function continueLabel(e: Expedition, c: Catalog): string {
   const at = continueLevel(e, c);
   return ['Continuar', e.name, at ? levelTag(c, at) : 'campaña completa', starsText(totalStars(e))].join(' · ');
 }
-export const starsOfWorld = (e: Expedition, c: Catalog, worldId: string): string => `${worldStars(e, c, worldId)}/${maxStarsOf(c, worldId)}★`;
+export const starsOfWorld = (e: Expedition, c: Catalog, worldId: string): string =>
+  `${worldStars(e, c, worldId)}/${maxStarsOf(c, worldId)}★`;

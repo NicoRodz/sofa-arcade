@@ -1,8 +1,27 @@
 // Kinematic player: moves in X, then in Y, against the tile grid and one-way platforms (a player's head is one). 60 Hz fixed step.
 // Pure and deterministic: no Math.random, no Date. F2a adds the rope, grabs and entities on top of this.
 import {
-  AIR_ACCEL_MULT, AIR_DECEL_MULT, ACCEL_SEC, APEX_G_MULT, APEX_VY, CORNER_HEAD_PX, DECEL_SEC, DIFFICULTY_PARAMS, DROP_THROUGH_FRAMES, DT,
-  GRAVITY_DOWN_MULT, GRAVITY_UP, JUMP_V0, LEDGE_PX, MAX_FALL, PLAYER_H, PLAYER_W, RUN_SPEED, TILE, TRAMPOLINE_MULT, adaptiveCoyote,
+  AIR_ACCEL_MULT,
+  AIR_DECEL_MULT,
+  ACCEL_SEC,
+  APEX_G_MULT,
+  APEX_VY,
+  CORNER_HEAD_PX,
+  DECEL_SEC,
+  DIFFICULTY_PARAMS,
+  DROP_THROUGH_FRAMES,
+  DT,
+  GRAVITY_DOWN_MULT,
+  GRAVITY_UP,
+  JUMP_V0,
+  LEDGE_PX,
+  MAX_FALL,
+  PLAYER_H,
+  PLAYER_W,
+  RUN_SPEED,
+  TILE,
+  TRAMPOLINE_MULT,
+  adaptiveCoyote,
 } from '../constants';
 import { T, isOneWayKind, isSolidKind } from '../legend';
 import type { Difficulty } from '../../../difficulty';
@@ -31,16 +50,40 @@ export interface Body {
 }
 
 // A surface that is not a tile: a head, later a moving platform. dx/dy = how far it moved in the step before the snapshot.
-export interface Platform { id: number; x: number; y: number; w: number; h: number; oneWay: boolean; dx: number; dy: number }
+export interface Platform {
+  id: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  oneWay: boolean;
+  dx: number;
+  dy: number;
+}
 
-export interface StepInput { move: number; down: boolean; jump: boolean } // move in [-1, 1], already quantized; jump = A pressed since the last step
+export interface StepInput {
+  move: number;
+  down: boolean;
+  jump: boolean;
+} // move in [-1, 1], already quantized; jump = A pressed since the last step
 
-export interface PhysicsParams { coyote: number; buffer: number; stickyEdges: boolean; iceFriction?: number } // iceFriction: campaign only (sim/campaign.ts physicsOfWorld); absent = ice tiles grip like ground
+export interface PhysicsParams {
+  coyote: number;
+  buffer: number;
+  stickyEdges: boolean;
+  iceFriction?: number;
+} // iceFriction: campaign only (sim/campaign.ts physicsOfWorld); absent = ice tiles grip like ground
 export const physicsFor = (d: Difficulty, p90LatencyMs = 0): PhysicsParams => ({
-  coyote: adaptiveCoyote(d, p90LatencyMs), buffer: DIFFICULTY_PARAMS[d].bufferFrames, stickyEdges: DIFFICULTY_PARAMS[d].stickyEdges,
+  coyote: adaptiveCoyote(d, p90LatencyMs),
+  buffer: DIFFICULTY_PARAMS[d].bufferFrames,
+  stickyEdges: DIFFICULTY_PARAMS[d].stickyEdges,
 });
 
-export interface StepCtx { grid: TileGrid; platforms: readonly Platform[]; params: PhysicsParams }
+export interface StepCtx {
+  grid: TileGrid;
+  platforms: readonly Platform[];
+  params: PhysicsParams;
+}
 export interface StepEvents {
   jump: '' | 'ground' | 'coyote' | 'trampoline';
   land: number; // fall speed in px/s when the body touched down this step, else 0
@@ -48,15 +91,45 @@ export interface StepEvents {
 }
 
 export function newBody(id: number, x: number, y: number): Body {
-  return { id, x, y, vx: 0, vy: 0, grounded: false, supportId: -1, onOneWay: false, air: NONE, jumpAge: NONE, dropFrames: 0, facing: 1, dx: 0, dy: 0 };
+  return {
+    id,
+    x,
+    y,
+    vx: 0,
+    vy: 0,
+    grounded: false,
+    supportId: -1,
+    onOneWay: false,
+    air: NONE,
+    jumpAge: NONE,
+    dropFrames: 0,
+    facing: 1,
+    dx: 0,
+    dy: 0,
+  };
 }
 
-export const headPlatform = (b: Body): Platform => ({ id: b.id, x: b.x, y: b.y, w: PLAYER_W, h: HEAD_THICKNESS, oneWay: true, dx: b.dx, dy: b.dy });
+export const headPlatform = (b: Body): Platform => ({
+  id: b.id,
+  x: b.x,
+  y: b.y,
+  w: PLAYER_W,
+  h: HEAD_THICKNESS,
+  oneWay: true,
+  dx: b.dx,
+  dy: b.dy,
+});
 
-const approach = (v: number, target: number, delta: number): number => (v < target ? Math.min(v + delta, target) : Math.max(v - delta, target));
+const approach = (v: number, target: number, delta: number): number =>
+  v < target ? Math.min(v + delta, target) : Math.max(v - delta, target);
 const hitsSolid = (g: TileGrid, x: number, y: number): boolean => boxHitsSolid(g, x, y, PLAYER_W, PLAYER_H);
 
-interface Landing { top: number; platformId: number; oneWay: boolean; kind: number }
+interface Landing {
+  top: number;
+  platformId: number;
+  oneWay: boolean;
+  kind: number;
+}
 // Highest surface whose top lies between the feet before the move (feetOld) and after it (feetNew): solid tiles, one-way tiles
 // and platforms. Ties go to solid ground (a body never "stands on a one-way" when a solid is at the same height).
 function findLanding(b: Body, x: number, feetOld: number, feetNew: number, ctx: StepCtx): Landing | null {
@@ -65,8 +138,10 @@ function findLanding(b: Body, x: number, feetOld: number, feetNew: number, ctx: 
   const consider = (top: number, platformId: number, oneWay: boolean, kind: number) => {
     if (!best || top < best.top || (top === best.top && best.oneWay && !oneWay)) best = { top, platformId, oneWay, kind };
   };
-  const x0 = tileOf(x), x1 = tileOf(x + PLAYER_W - EPS);
-  const ty0 = Math.ceil(lo / TILE), ty1 = Math.floor(feetNew / TILE);
+  const x0 = tileOf(x),
+    x1 = tileOf(x + PLAYER_W - EPS);
+  const ty0 = Math.ceil(lo / TILE),
+    ty1 = Math.floor(feetNew / TILE);
   for (let ty = ty0; ty <= ty1; ty++) {
     for (let tx = x0; tx <= x1; tx++) {
       const k = tileAt(ctx.grid, tx, ty);
@@ -85,7 +160,8 @@ function findLanding(b: Body, x: number, feetOld: number, feetNew: number, ctx: 
 
 export function stepPlayer(b: Body, input: StepInput, ctx: StepCtx): StepEvents {
   const ev: StepEvents = { jump: '', land: 0, landOn: 'ground' };
-  const x0 = b.x, y0 = b.y;
+  const x0 = b.x,
+    y0 = b.y;
   const wasGrounded = b.grounded;
   const { grid, params } = ctx;
 
@@ -102,7 +178,12 @@ export function stepPlayer(b: Body, input: StepInput, ctx: StepCtx): StepEvents 
   if (b.dropFrames > 0) b.dropFrames--;
   let dropped = false;
   if (input.jump) {
-    if (input.down && wasGrounded && b.onOneWay) { b.dropFrames = DROP_THROUGH_FRAMES; b.grounded = false; b.supportId = -1; dropped = true; } // down + A: fall through, no jump
+    if (input.down && wasGrounded && b.onOneWay) {
+      b.dropFrames = DROP_THROUGH_FRAMES;
+      b.grounded = false;
+      b.supportId = -1;
+      dropped = true;
+    } // down + A: fall through, no jump
     else b.jumpAge = 0;
   }
   let jumped = false;
@@ -144,8 +225,17 @@ export function stepPlayer(b: Body, input: StepInput, ctx: StepCtx): StepEvents 
     b.supportId = landed.platformId;
     b.onOneWay = landed.oneWay;
     b.air = 0;
-    if (!wasGrounded) { ev.land = impact; ev.landOn = landed.platformId >= 0 ? 'head' : landed.oneWay ? 'oneWay' : 'ground'; }
-    if (landed.kind === T.Trampoline) { b.vy = -JUMP_V0 * TRAMPOLINE_MULT; b.grounded = false; b.supportId = -1; b.air = NONE; ev.jump = 'trampoline'; }
+    if (!wasGrounded) {
+      ev.land = impact;
+      ev.landOn = landed.platformId >= 0 ? 'head' : landed.oneWay ? 'oneWay' : 'ground';
+    }
+    if (landed.kind === T.Trampoline) {
+      b.vy = -JUMP_V0 * TRAMPOLINE_MULT;
+      b.grounded = false;
+      b.supportId = -1;
+      b.air = NONE;
+      ev.jump = 'trampoline';
+    }
   } else {
     b.grounded = false;
     b.supportId = -1;
@@ -162,9 +252,16 @@ export function stepPlayer(b: Body, input: StepInput, ctx: StepCtx): StepEvents 
 function moveX(b: Body, dx: number, g: TileGrid): void {
   if (dx === 0) return;
   const nx = b.x + dx;
-  if (!hitsSolid(g, nx, b.y)) { b.x = nx; return; }
+  if (!hitsSolid(g, nx, b.y)) {
+    b.x = nx;
+    return;
+  }
   for (let k = 1; k <= LEDGE_PX; k++) {
-    if (!hitsSolid(g, nx, b.y - k)) { b.x = nx; b.y -= k; return; }
+    if (!hitsSolid(g, nx, b.y - k)) {
+      b.x = nx;
+      b.y -= k;
+      return;
+    }
   }
   b.x = dx > 0 ? tileOf(nx + PLAYER_W - EPS) * TILE - PLAYER_W : (tileOf(nx) + 1) * TILE;
   b.vx = 0;
@@ -175,10 +272,17 @@ function moveY(b: Body, dy: number, ctx: StepCtx): Landing | null {
   const g = ctx.grid;
   if (dy < 0) {
     const ny = b.y + dy;
-    if (!hitsSolid(g, b.x, ny)) { b.y = ny; return null; }
+    if (!hitsSolid(g, b.x, ny)) {
+      b.y = ny;
+      return null;
+    }
     for (let n = 1; n <= CORNER_HEAD_PX; n++) {
       for (const s of [n, -n]) {
-        if (!hitsSolid(g, b.x + s, ny) && !hitsSolid(g, b.x + s, b.y)) { b.x += s; b.y = ny; return null; }
+        if (!hitsSolid(g, b.x + s, ny) && !hitsSolid(g, b.x + s, b.y)) {
+          b.x += s;
+          b.y = ny;
+          return null;
+        }
       }
     }
     b.y = (tileOf(ny) + 1) * TILE;
@@ -187,7 +291,10 @@ function moveY(b: Body, dy: number, ctx: StepCtx): Landing | null {
   }
   const feetOld = b.y + PLAYER_H;
   const hit = findLanding(b, b.x, feetOld, feetOld + dy, ctx);
-  if (!hit) { b.y += dy; return null; }
+  if (!hit) {
+    b.y += dy;
+    return null;
+  }
   b.y = hit.top - PLAYER_H;
   b.vy = 0;
   return hit;
@@ -199,13 +306,24 @@ function keepOnEdge(b: Body, xBefore: number, ctx: StepCtx): void {
   if (findLanding(b, b.x, feet, feet + 1, ctx)) return;
   for (let i = 7; i >= 0; i--) {
     const x = xBefore + ((b.x - xBefore) * i) / 8;
-    if (findLanding(b, x, feet, feet + 1, ctx)) { b.x = x; b.vx = 0; return; }
+    if (findLanding(b, x, feet, feet + 1, ctx)) {
+      b.x = x;
+      b.vx = 0;
+      return;
+    }
   }
-  b.x = xBefore; b.vx = 0;
+  b.x = xBefore;
+  b.vx = 0;
 }
 
 // All bodies of a step: heads are one-way platforms snapshotted before anyone moves, then everyone steps in slot order.
-export function stepPlayers(bodies: Body[], inputs: readonly StepInput[], grid: TileGrid, params: PhysicsParams, extra: readonly Platform[] = []): StepEvents[] {
+export function stepPlayers(
+  bodies: Body[],
+  inputs: readonly StepInput[],
+  grid: TileGrid,
+  params: PhysicsParams,
+  extra: readonly Platform[] = [],
+): StepEvents[] {
   const platforms = [...bodies.map(headPlatform), ...extra];
   return bodies.map((b, i) => stepPlayer(b, inputs[i] ?? { move: 0, down: false, jump: false }, { grid, platforms, params }));
 }
@@ -213,7 +331,10 @@ export function stepPlayers(bodies: Body[], inputs: readonly StepInput[], grid: 
 // FNV-1a over the quantized state: equal hashes after N steps = same simulation.
 export function hashBodies(bodies: readonly Body[]): number {
   let h = 0x811c9dc5;
-  const mix = (v: number) => { h = Math.imul(h ^ (Math.round(v * 1000) | 0), 0x01000193); };
-  for (const b of bodies) for (const v of [b.id, b.x, b.y, b.vx, b.vy, b.grounded ? 1 : 0, b.supportId, b.air, b.jumpAge, b.dropFrames, b.facing]) mix(v);
+  const mix = (v: number) => {
+    h = Math.imul(h ^ (Math.round(v * 1000) | 0), 0x01000193);
+  };
+  for (const b of bodies)
+    for (const v of [b.id, b.x, b.y, b.vx, b.vy, b.grounded ? 1 : 0, b.supportId, b.air, b.jumpAge, b.dropFrames, b.facing]) mix(v);
   return h >>> 0;
 }

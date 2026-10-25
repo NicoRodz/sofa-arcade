@@ -8,7 +8,12 @@ import { OX, OY, TILE, chefOf, hexNum } from '../tokens';
 export class MagnetView {
   private g: Phaser.GameObjects.Graphics;
   private t = 0;
-  constructor(scene: Phaser.Scene, private game: Game) { this.g = scene.add.graphics().setDepth(2000); }
+  constructor(
+    scene: Phaser.Scene,
+    private game: Game,
+  ) {
+    this.g = scene.add.graphics().setDepth(2000);
+  }
 
   update(dtMs: number) {
     const { g, game } = this;
@@ -22,7 +27,10 @@ export class MagnetView {
       const s = targetStation(game, p);
       if (!s) continue;
       const inset = 3 + (k++ % 3) * 4; // two chefs on one station get nested brackets
-      const x = OX + s.tx * TILE + inset, y = OY + s.ty * TILE + inset, w = TILE - 2 * inset, c = TILE * 0.28;
+      const x = OX + s.tx * TILE + inset,
+        y = OY + s.ty * TILE + inset,
+        w = TILE - 2 * inset,
+        c = TILE * 0.28;
       g.lineStyle(7, 0x2b1b17, 0.55 * pulse);
       this.corners(x, y, w, c);
       g.lineStyle(4, hexNum(chefOf(p.slot).color), 0.95 * pulse);
@@ -30,8 +38,22 @@ export class MagnetView {
     }
   }
   private corners(x: number, y: number, w: number, c: number) {
-    const g = this.g, r = x + w, b = y + w;
-    for (const [px, py, dx, dy] of [[x, y, 1, 1], [r, y, -1, 1], [x, b, 1, -1], [r, b, -1, -1]] as const) g.beginPath().moveTo(px, py + dy * c).lineTo(px, py).lineTo(px + dx * c, py).strokePath();
+    const g = this.g,
+      r = x + w,
+      b = y + w;
+    for (const [px, py, dx, dy] of [
+      [x, y, 1, 1],
+      [r, y, -1, 1],
+      [x, b, 1, -1],
+      [r, b, -1, -1],
+    ] as const)
+      g.beginPath()
+        .moveTo(px, py + dy * c)
+        .lineTo(px, py)
+        .lineTo(px + dx * c, py)
+        .strokePath();
   }
-  destroy() { this.g.destroy(); }
+  destroy() {
+    this.g.destroy();
+  }
 }

@@ -18,15 +18,32 @@ export type EntityParam =
   // `activeSec` (default 0.5 s, the last part of the period) and launches whoever is inside the vent at CampaignParams.geyserLaunchMult x the jump speed.
   | { kind: 'geyser'; periodSec: number; activeSec?: number };
 
-export interface Rect { x: number; y: number; w: number; h: number }
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 export type Tether = 'any' | 'chainOnly' | 'freeOnly';
 export type GameMode = 'chain' | 'free'; // Encadenados (cordadas) / Libres (Pico Park style)
-export interface Hazard { kind: 'risingLava' | 'tide' | 'avalanche'; speed: number }
+export interface Hazard {
+  kind: 'risingLava' | 'tide' | 'avalanche';
+  speed: number;
+}
 // Campaign dynamic 8 (viento): a gust of `gustSec` blows every `periodSec` (the last `gustSec` of each period), announced 1 s before; it pushes whoever is
 // in the air (so also the hangers of a rope) towards `dir`. `zone` (tiles) limits it; absent = the whole level.
-export interface WindDef { dir: -1 | 1; periodSec: number; gustSec: number; zone?: Rect }
+export interface WindDef {
+  dir: -1 | 1;
+  periodSec: number;
+  gustSec: number;
+  zone?: Rect;
+}
 // Campaign dynamic 6 (enemigos suaves): a soft beetle that spawns standing on the bottom of cell (x, y) and patrols +-`range` tiles around x.
-export interface EnemyDef { x: number; y: number; range: number }
+export interface EnemyDef {
+  x: number;
+  y: number;
+  range: number;
+}
 
 export interface LevelDef {
   id: string;
@@ -46,4 +63,7 @@ export interface LevelDef {
   hints?: { x: number; y: number; text: string }[];
 }
 
-export interface Cell { x: number; y: number }
+export interface Cell {
+  x: number;
+  y: number;
+}

@@ -5,11 +5,25 @@ import { physicsFor } from '../sim/player';
 import type { TileGrid } from '../sim/tiles';
 import { EDGE_MOVE_SCALE, ropeJumpLaunch, simPlan, feetOfRow, type Plan, type CatchZone } from './sim';
 
-const grid = (rows: string[]): TileGrid => ({ w: rows[0]!.length, h: rows.length, cells: Uint8Array.from(rows.flatMap((r) => [...r].map((c) => TILE_CHARS[c] ?? 0))) });
+const grid = (rows: string[]): TileGrid => ({
+  w: rows[0]!.length,
+  h: rows.length,
+  cells: Uint8Array.from(rows.flatMap((r) => [...r].map((c) => TILE_CHARS[c] ?? 0))),
+});
 const P = physicsFor('hard');
 // 12 rows x 40 cols: floor top at row 9 (standing row 8); `extra` rows overwrite from the top
-const level = (over: Record<number, string> = {}): TileGrid => grid(Array.from({ length: 12 }, (_, y) => over[y] ?? (y >= 9 ? '#'.repeat(40) : '.'.repeat(40))));
-const plan = (o: Partial<Plan>): Plan => ({ x: 5 * TILE, feetY: feetOfRow(8), dir: 1, trigger: 'at', k: 0, air: 'hold', f: EDGE_MOVE_SCALE, ...o });
+const level = (over: Record<number, string> = {}): TileGrid =>
+  grid(Array.from({ length: 12 }, (_, y) => over[y] ?? (y >= 9 ? '#'.repeat(40) : '.'.repeat(40))));
+const plan = (o: Partial<Plan>): Plan => ({
+  x: 5 * TILE,
+  feetY: feetOfRow(8),
+  dir: 1,
+  trigger: 'at',
+  k: 0,
+  air: 'hold',
+  f: EDGE_MOVE_SCALE,
+  ...o,
+});
 
 describe('simPlan runs the real stepPlayer', () => {
   it('a standing jump lands back on the same row; a jump with the stick held travels about 4.5 tiles at 92 %', () => {
@@ -36,7 +50,11 @@ describe('simPlan runs the real stepPlayer', () => {
   });
 
   it('falling out of the level is death (null), falling onto a boya is a node of its own', () => {
-    const pit = level({ 9: '#'.repeat(10) + '.'.repeat(5) + '#'.repeat(25), 10: '#'.repeat(10) + '.'.repeat(5) + '#'.repeat(25), 11: '#'.repeat(10) + '.'.repeat(5) + '#'.repeat(25) });
+    const pit = level({
+      9: '#'.repeat(10) + '.'.repeat(5) + '#'.repeat(25),
+      10: '#'.repeat(10) + '.'.repeat(5) + '#'.repeat(25),
+      11: '#'.repeat(10) + '.'.repeat(5) + '#'.repeat(25),
+    });
     expect(simPlan(pit, P, plan({ x: 9 * TILE, trigger: 'walk' }))).toBeNull();
     const boya = level({ 9: '#'.repeat(11) + 'T' + '#'.repeat(28) });
     const l = simPlan(boya, P, plan({ x: 11 * TILE + 7, dir: 0, trigger: 'at' }))!;
@@ -45,7 +63,13 @@ describe('simPlan runs the real stepPlayer', () => {
   });
 
   it('pushing against a wall on the ground is abandoned early instead of running to the step cap', () => {
-    const wall = level({ 4: '.'.repeat(8) + '#' + '.'.repeat(31), 5: '.'.repeat(8) + '#' + '.'.repeat(31), 6: '.'.repeat(8) + '#' + '.'.repeat(31), 7: '.'.repeat(8) + '#' + '.'.repeat(31), 8: '.'.repeat(8) + '#' + '.'.repeat(31) });
+    const wall = level({
+      4: '.'.repeat(8) + '#' + '.'.repeat(31),
+      5: '.'.repeat(8) + '#' + '.'.repeat(31),
+      6: '.'.repeat(8) + '#' + '.'.repeat(31),
+      7: '.'.repeat(8) + '#' + '.'.repeat(31),
+      8: '.'.repeat(8) + '#' + '.'.repeat(31),
+    });
     expect(simPlan(wall, P, plan({ x: 3 * TILE, trigger: 'edge', k: 0 }))).toBeNull();
   });
 
@@ -55,7 +79,11 @@ describe('simPlan runs the real stepPlayer', () => {
     const wall = level(Object.fromEntries([4, 5, 6, 7, 8].map((y) => [y, rows(y)!])));
     const top = 4 * TILE;
     const zone: CatchZone = { x0: 12 * TILE - 54, x1: 12 * TILE + 6, yTop: top + 2, yBot: top + 2 * TILE, cx: 12, ty: 3 };
-    const catches = new Map<number, CatchZone[]>([[10, [zone]], [11, [zone]], [12, [zone]]]);
+    const catches = new Map<number, CatchZone[]>([
+      [10, [zone]],
+      [11, [zone]],
+      [12, [zone]],
+    ]);
     const jump = plan({ x: 12 * TILE - PLAYER_W, trigger: 'at' });
     const plain = simPlan(wall, P, jump)!;
     expect(plain.viaHand).toBe(false);
@@ -67,7 +95,17 @@ describe('simPlan runs the real stepPlayer', () => {
 
   it('a throw and a rope jump are launches: they start airborne with the given velocity', () => {
     const g = level();
-    const throwPlan: Plan = { x: 5 * TILE, feetY: feetOfRow(8) - PLAYER_H, dir: 1, trigger: 'launch', k: 0, air: 'hold', f: 1, vx0: 420 * EDGE_MOVE_SCALE, vy0: -950 * EDGE_MOVE_SCALE };
+    const throwPlan: Plan = {
+      x: 5 * TILE,
+      feetY: feetOfRow(8) - PLAYER_H,
+      dir: 1,
+      trigger: 'launch',
+      k: 0,
+      air: 'hold',
+      f: 1,
+      vx0: 420 * EDGE_MOVE_SCALE,
+      vy0: -950 * EDGE_MOVE_SCALE,
+    };
     const thrown = simPlan(g, P, throwPlan)!;
     expect((thrown.landX - 5 * TILE) / TILE).toBeGreaterThan(5);
     const rope = ropeJumpLaunch(10 * TILE, 8 * TILE, 1, EDGE_MOVE_SCALE);

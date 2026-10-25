@@ -25,17 +25,42 @@ export type Marker = 'spawn' | 'checkpoint' | 'goal' | 'star' | 'ring' | 'box' |
 
 // char -> what it is. Letters a-f and A-F are handled separately (isActivator / isObjective).
 export const TILE_CHARS: Record<string, TileKind> = {
-  '.': T.Empty, '#': T.Solid, '=': T.OneWay, '^': T.Spikes, '~': T.Liquid, '|': T.Ladder, '%': T.FreeSolid,
-  '!': T.Crumble, '<': T.BeltL, '>': T.BeltR, T: T.Trampoline, K: T.Door, I: T.Ice, Y: T.Crystal,
+  '.': T.Empty,
+  '#': T.Solid,
+  '=': T.OneWay,
+  '^': T.Spikes,
+  '~': T.Liquid,
+  '|': T.Ladder,
+  '%': T.FreeSolid,
+  '!': T.Crumble,
+  '<': T.BeltL,
+  '>': T.BeltR,
+  T: T.Trampoline,
+  K: T.Door,
+  I: T.Ice,
+  Y: T.Crystal,
 };
-export const MARKER_CHARS: Record<string, Marker> = { S: 'spawn', P: 'checkpoint', G: 'goal', '*': 'star', o: 'ring', x: 'box', X: 'heavyBox', k: 'key', p: 'pickaxe', l: 'lantern', u: 'bungee' };
+export const MARKER_CHARS: Record<string, Marker> = {
+  S: 'spawn',
+  P: 'checkpoint',
+  G: 'goal',
+  '*': 'star',
+  o: 'ring',
+  x: 'box',
+  X: 'heavyBox',
+  k: 'key',
+  p: 'pickaxe',
+  l: 'lantern',
+  u: 'bungee',
+};
 
 export const isActivator = (c: string) => c >= 'a' && c <= 'f';
 export const isObjective = (c: string) => c >= 'A' && c <= 'F';
 export const isLegendChar = (c: string) => c in TILE_CHARS || c in MARKER_CHARS || isActivator(c) || isObjective(c);
 
 // Solid for walking/standing from any side. FreeSolid must be resolved by buildGrid first (it is not solid here).
-export const isSolidKind = (k: number): boolean => k === T.Solid || k === T.Crumble || k === T.BeltL || k === T.BeltR || k === T.Door || k === T.Ice || k === T.CrystalLit;
+export const isSolidKind = (k: number): boolean =>
+  k === T.Solid || k === T.Crumble || k === T.BeltL || k === T.BeltR || k === T.Door || k === T.Ice || k === T.CrystalLit;
 // Surfaces a body lands on only when falling onto their top.
 export const isOneWayKind = (k: number): boolean => k === T.OneWay || k === T.Trampoline;
 export const isHazardKind = (k: number): boolean => k === T.Spikes || k === T.Liquid;

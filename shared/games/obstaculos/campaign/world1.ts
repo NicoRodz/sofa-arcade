@@ -4,7 +4,13 @@
 import type { LevelDef } from '../types';
 
 export const C_1_1: LevelDef = {
-  id: '1-1', name: 'Huellas', biome: 'beach', players: { min: 2, max: 2 }, tether: 'freeOnly', stars: 1, parSec: 30,
+  id: '1-1',
+  name: 'Huellas',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'freeOnly',
+  stars: 1,
+  parSec: 30,
   hints: [{ x: 4, y: 9, text: '¡Salta el muro!' }],
   rows: [
     '#..........................................................#',
@@ -20,13 +26,22 @@ export const C_1_1: LevelDef = {
     '#.....................###.............###..................#',
     '#..S........##....P...###.......P.....###.....##........G..#',
     '############################################################',
-    '############################################################'
+    '############################################################',
   ],
 };
 
 export const C_1_2: LevelDef = {
-  id: '1-2', name: 'El mosquetón', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 1, parSec: 30,
-  hints: [{ x: 4, y: 9, text: 'La cuerda tira: avancen juntos' }, { x: 20, y: 9, text: 'Pulsa ¡ya! y salten juntos' }],
+  id: '1-2',
+  name: 'El mosquetón',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 1,
+  parSec: 30,
+  hints: [
+    { x: 4, y: 9, text: 'La cuerda tira: avancen juntos' },
+    { x: 20, y: 9, text: 'Pulsa ¡ya! y salten juntos' },
+  ],
   rows: [
     '#..........................................................#',
     '#..........................................................#',
@@ -41,13 +56,22 @@ export const C_1_2: LevelDef = {
     '#.................................###......................#',
     '#..S........###...P...............###...P.....###.......G..#',
     '########################...#################################',
-    '########################~~~#################################'
+    '########################~~~#################################',
   ],
 };
 
 export const C_1_3: LevelDef = {
-  id: '1-3', name: 'Torre de arena', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 1, parSec: 30,
-  hints: [{ x: 22, y: 9, text: '¡Súbete sobre tu compañero!' }, { x: 26, y: 9, text: 'Tu compañero te tira la mano' }],
+  id: '1-3',
+  name: 'Torre de arena',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 1,
+  parSec: 30,
+  hints: [
+    { x: 22, y: 9, text: '¡Súbete sobre tu compañero!' },
+    { x: 26, y: 9, text: 'Tu compañero te tira la mano' },
+  ],
   rows: [
     '#..........................................................#',
     '#..........................................................#',
@@ -62,12 +86,18 @@ export const C_1_3: LevelDef = {
     '#...........................######.........................#',
     '#..S......##......P.........######....P................G...#',
     '############################################################',
-    '############################################################'
+    '############################################################',
   ],
 };
 
 export const C_1_4: LevelDef = {
-  id: '1-4', name: 'Mano amiga', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 2, parSec: 30,
+  id: '1-4',
+  name: 'Mano amiga',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 2,
+  parSec: 30,
   hints: [{ x: 8, y: 9, text: 'Abajo + B clava el ancla' }],
   rows: [
     '#..........................................................#',
@@ -83,14 +113,20 @@ export const C_1_4: LevelDef = {
     '#.........................######...........................#',
     '#..S........P.....^^......######....P..................G...#',
     '############################################################',
-    '############################################################'
+    '############################################################',
   ],
 };
 
 // A5 (S2): the wall became a 5-tile pit (6+ rows deep: the thrown one's partner is pulled across and hangs under the far ledge, see validator pullSafe). It is the throw's niche: no
 // jump (4 tiles tied) and no tower reaches across, so the learning test no longer pairs tower/throw. The first 3-wide pit stays a plain jump.
 export const C_1_5: LevelDef = {
-  id: '1-5', name: 'Coco-pulta', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 2, parSec: 30,
+  id: '1-5',
+  name: 'Coco-pulta',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 2,
+  parSec: 30,
   hints: [{ x: 26, y: 9, text: 'Lanza a tu compañero' }],
   rows: [
     '#..........................................................#',
@@ -112,12 +148,18 @@ export const C_1_5: LevelDef = {
     '################################.....#######################',
     '################################~~~~~#######################',
     '################################~~~~~#######################',
-    '################################~~~~~#######################'
+    '################################~~~~~#######################',
   ],
 };
 
 export const C_1_6: LevelDef = {
-  id: '1-6', name: 'Liana', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 2, parSec: 40,
+  id: '1-6',
+  name: 'Liana',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 2,
+  parSec: 40,
   rows: [
     '#..........................................................#',
     '#..........................................................#',
@@ -132,12 +174,18 @@ export const C_1_6: LevelDef = {
     '#..........................................................#',
     '#..S......##...P................P.......##.............G...#',
     '####################.......#################################',
-    '####################~~~~~~~#################################'
+    '####################~~~~~~~#################################',
   ],
 };
 
 export const C_1_7: LevelDef = {
-  id: '1-7', name: 'Jefe: La marea', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 2, parSec: 30,
+  id: '1-7',
+  name: 'Jefe: La marea',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 2,
+  parSec: 30,
   hazard: { kind: 'tide', speed: 0.6 },
   rows: [
     '#............................................................#',
@@ -153,7 +201,7 @@ export const C_1_7: LevelDef = {
     '#.....................######............##...................#',
     '#..S....##....P.......######....P.......##....P...##..P....G.#',
     '##############################################################',
-    '##############################################################'
+    '##############################################################',
   ],
 };
 

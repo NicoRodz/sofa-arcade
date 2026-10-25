@@ -2,13 +2,39 @@
 import { COLS, ROWS } from '@party/shared/game';
 
 export const C = {
-  ink: '#2B1B17', cream: '#FFF4E0', cocoa: '#3A2A24', wallTop: '#5B4038',
-  tomato: '#E63B2E', tomato2: '#B5281F', basil: '#3FA34D', basil2: '#2A7A36',
-  cheese: '#FFD23F', cheese2: '#E8A317', dough: '#F3D9A4', dough2: '#F7E3B8', doughEdge: '#E9C88A',
-  crust: '#D9963F', burnt: '#4A2C1E', burnt2: '#3B2A22', wood: '#C98A4B', wood2: '#9C6232',
-  board: '#E6B980', steel: '#B8C4CC', steel2: '#7D8B95', brick: '#B5523B', brick2: '#7A3527',
-  fire: '#FF8A1F', fire2: '#FFC93C', floorA: '#EFE3CC', floorB: '#D7C3A0',
-  warn: '#FFB020', danger: '#D7263D', muted: '#8A7461', white: '#FFFFFF', cardboard: '#E8C9A0', cardboard2: '#C9A57A',
+  ink: '#2B1B17',
+  cream: '#FFF4E0',
+  cocoa: '#3A2A24',
+  wallTop: '#5B4038',
+  tomato: '#E63B2E',
+  tomato2: '#B5281F',
+  basil: '#3FA34D',
+  basil2: '#2A7A36',
+  cheese: '#FFD23F',
+  cheese2: '#E8A317',
+  dough: '#F3D9A4',
+  dough2: '#F7E3B8',
+  doughEdge: '#E9C88A',
+  crust: '#D9963F',
+  burnt: '#4A2C1E',
+  burnt2: '#3B2A22',
+  wood: '#C98A4B',
+  wood2: '#9C6232',
+  board: '#E6B980',
+  steel: '#B8C4CC',
+  steel2: '#7D8B95',
+  brick: '#B5523B',
+  brick2: '#7A3527',
+  fire: '#FF8A1F',
+  fire2: '#FFC93C',
+  floorA: '#EFE3CC',
+  floorB: '#D7C3A0',
+  warn: '#FFB020',
+  danger: '#D7263D',
+  muted: '#8A7461',
+  white: '#FFFFFF',
+  cardboard: '#E8C9A0',
+  cardboard2: '#C9A57A',
 } as const;
 
 export const hexNum = (h: string) => parseInt(h.slice(1), 16);
@@ -23,7 +49,12 @@ export const OX = Math.floor((W - TILE * COLS) / 2);
 export const OY = HUD_H + Math.floor((H - HUD_H - TILE * ROWS) / 2);
 export const U = TILE / 120; // design units (tile = 120) to logical px
 
-export interface ChefSpec { name: string; color: string; dark: string; accessory: 'mustache' | 'glasses' | 'tallhat' | 'scarf' | 'pigtails' | 'cap' | 'bow' | 'beard' }
+export interface ChefSpec {
+  name: string;
+  color: string;
+  dark: string;
+  accessory: 'mustache' | 'glasses' | 'tallhat' | 'scarf' | 'pigtails' | 'cap' | 'bow' | 'beard';
+}
 export const CHEFS: readonly ChefSpec[] = [
   { name: 'Rojo', color: '#E63B2E', dark: '#B5281F', accessory: 'mustache' },
   { name: 'Azul', color: '#2F7DE1', dark: '#1F58A8', accessory: 'glasses' },
@@ -38,7 +69,7 @@ export const SKINS = ['#F6D3B3', '#E8B48A', '#C68A5E', '#8D5A3B'] as const;
 export const HAIRS = ['#4A2C1E', '#2B1B17', '#7A4A2A', '#1F1512'] as const;
 export const chefOf = (slot: number) => CHEFS[((slot % 8) + 8) % 8]!;
 export const skinOf = (slot: number) => SKINS[((slot % 4) + 4) % 4]!;
-export const hairOf = (slot: number) => HAIRS[((slot * 3 + 1) % 4 + 4) % 4]!;
+export const hairOf = (slot: number) => HAIRS[(((slot * 3 + 1) % 4) + 4) % 4]!;
 
 // Floor palettes: one pair per map (fixed ids), random maps pick by seed.
 export const FLOORS: Record<string, [string, string]> = {
@@ -62,7 +93,7 @@ export const FLOORS: Record<string, [string, string]> = {
 export const VERSUS_FLOOR: [string, string] = ['#F4EBDB', '#E3D6BD'];
 export const isVersusMapId = (id: string) => /^V\d+$|-vs$|^vs-gen$/.test(id);
 export const floorPair = (mapId: string, seed = 0): [string, string] =>
-  isVersusMapId(mapId) ? VERSUS_FLOOR : FLOORS[mapId] ?? FLOORS[String(1 + (Math.abs(seed) % 5))]!;
+  isVersusMapId(mapId) ? VERSUS_FLOOR : (FLOORS[mapId] ?? FLOORS[String(1 + (Math.abs(seed) % 5))]!);
 
 // Timer colour for tickets and bars: basil, warn under 50%, danger under 25%.
 export const timerColor = (left: number) => (left > 0.5 ? C.basil : left > 0.25 ? C.warn : C.danger);

@@ -39,12 +39,15 @@ export const SUMMIT_STARS_DEN = 21; // ...so the share of the world's stars is 1
 export const SKIP_AFTER_FAILURES = 5; // plan §2: after 5 game overs in a row on a level the group is offered to skip it
 
 // ---- lookups
-export const levelById = (c: Catalog, id: string): CatalogLevel | undefined => c.levels.find((l) => l.id === id) ?? c.practice.find((l) => l.id === id);
+export const levelById = (c: Catalog, id: string): CatalogLevel | undefined =>
+  c.levels.find((l) => l.id === id) ?? c.practice.find((l) => l.id === id);
 export const worldById = (c: Catalog, id: string): CatalogWorld | undefined => c.worlds.find((w) => w.id === id);
 export const worldIndex = (c: Catalog, id: string): number => c.worlds.findIndex((w) => w.id === id);
 // The regular levels (bosses included) of a world in play order: the path of the map.
-export const pathOf = (c: Catalog, worldId: string): CatalogLevel[] => c.levels.filter((l) => l.world === worldId && l.kind !== 'summit').sort((a, b) => a.order - b.order);
-export const summitOf = (c: Catalog, worldId: string): CatalogLevel | undefined => c.levels.find((l) => l.world === worldId && l.kind === 'summit');
+export const pathOf = (c: Catalog, worldId: string): CatalogLevel[] =>
+  c.levels.filter((l) => l.world === worldId && l.kind !== 'summit').sort((a, b) => a.order - b.order);
+export const summitOf = (c: Catalog, worldId: string): CatalogLevel | undefined =>
+  c.levels.find((l) => l.world === worldId && l.kind === 'summit');
 export const bossOf = (c: Catalog, worldId: string): CatalogLevel | undefined => pathOf(c, worldId).find((l) => l.kind === 'boss');
 // The regular levels of the whole campaign in play order (no summits).
 export const campaignOrder = (c: Catalog): CatalogLevel[] => c.worlds.flatMap((w) => pathOf(c, w.id));
@@ -56,7 +59,13 @@ export const maxStarsOf = (c: Catalog, worldId: string): number => pathOf(c, wor
 // 'E' and 'E/L' play Encadenados, 'L' Libres; the clock medal reads the level's par (the validator keeps no bot time); the practice stations carry the
 // level of their debut in `opensAt`.
 const WORLD_IDS = ['beach', 'forest', 'glacier', 'mine', 'volcano'] as const;
-const WORLD_TITLE: Record<(typeof WORLD_IDS)[number], string> = { beach: 'Playa', forest: 'Bosque', glacier: 'Glaciar', mine: 'Mina', volcano: 'Volcán' };
+const WORLD_TITLE: Record<(typeof WORLD_IDS)[number], string> = {
+  beach: 'Playa',
+  forest: 'Bosque',
+  glacier: 'Glaciar',
+  mine: 'Mina',
+  volcano: 'Volcán',
+};
 const modeOf = (m: 'E' | 'L' | 'E/L'): GameMode => (m === 'L' ? 'free' : 'chain');
 
 export function campaignCatalog(): Catalog {
@@ -65,12 +74,36 @@ export function campaignCatalog(): Catalog {
     if (l.status !== 'built' || !l.def) continue;
     const world = l.world === 'summit' ? l.id.slice(1) : String(WORLD_IDS.indexOf(l.world) + 1);
     levels.push({
-      id: l.id, world, order: l.world === 'summit' ? 0 : l.index, name: l.name, kind: l.world === 'summit' ? 'summit' : l.boss ? 'boss' : 'level', def: l.def, mode: modeOf(l.mode),
-      collectibles: l.collectibles.length, botMs: l.def.parSec * 1000, validatedFor: l.validatedFor,
+      id: l.id,
+      world,
+      order: l.world === 'summit' ? 0 : l.index,
+      name: l.name,
+      kind: l.world === 'summit' ? 'summit' : l.boss ? 'boss' : 'level',
+      def: l.def,
+      mode: modeOf(l.mode),
+      collectibles: l.collectibles.length,
+      botMs: l.def.parSec * 1000,
+      validatedFor: l.validatedFor,
     });
   }
-  const worlds = WORLD_IDS.map((b, i): CatalogWorld => ({ id: String(i + 1), name: WORLD_TITLE[b], biome: b })).filter((w) => levels.some((l) => l.world === w.id));
-  const practice = PRACTICE.map((s): CatalogLevel => ({ id: s.id, world: '1', order: 0, name: s.name, kind: 'practice', def: s.def, mode: modeOf(s.mode), collectibles: 0, botMs: null, validatedFor: [2], opensAt: s.opensAt }));
+  const worlds = WORLD_IDS.map((b, i): CatalogWorld => ({ id: String(i + 1), name: WORLD_TITLE[b], biome: b })).filter((w) =>
+    levels.some((l) => l.world === w.id),
+  );
+  const practice = PRACTICE.map(
+    (s): CatalogLevel => ({
+      id: s.id,
+      world: '1',
+      order: 0,
+      name: s.name,
+      kind: 'practice',
+      def: s.def,
+      mode: modeOf(s.mode),
+      collectibles: 0,
+      botMs: null,
+      validatedFor: [2],
+      opensAt: s.opensAt,
+    }),
+  );
   return { worlds, levels, practice };
 }
 export const CAMPAIGN_CATALOG: Catalog = campaignCatalog();

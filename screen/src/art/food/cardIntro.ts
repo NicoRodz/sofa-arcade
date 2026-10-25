@@ -15,12 +15,17 @@ import { RECIPE_PIZZA } from './recipes';
 const SLOT = 190; // px between the pictures
 
 export function cardIntro(scene: Phaser.Scene, rec: Rec, difficulty: Difficulty): Phaser.GameObjects.Container {
-  const n = rec.recipes.length, w = n * SLOT + 60, h = 190;
+  const n = rec.recipes.length,
+    w = n * SLOT + 60,
+    h = 190;
   const bg = scene.add.graphics();
   bg.fillStyle(0x2b1b17, 0.3).fillRoundedRect(-w / 2 + 4, -h / 2 + 8, w, h, 26);
   bg.fillStyle(hexNum(C.cream), 1).fillRoundedRect(-w / 2, -h / 2, w, h, 26);
   bg.lineStyle(5, hexNum(C.ink), 1).strokeRoundedRect(-w / 2, -h / 2, w, h, 26);
-  const parts: Phaser.GameObjects.GameObject[] = [bg, makeText(scene, 0, -h / 2 + 24, 'CARTA DEL DÍA', { size: 26, color: C.tomato, stroke: 0, depth: 0 })];
+  const parts: Phaser.GameObjects.GameObject[] = [
+    bg,
+    makeText(scene, 0, -h / 2 + 24, 'CARTA DEL DÍA', { size: 26, color: C.tomato, stroke: 0, depth: 0 }),
+  ];
   rec.recipes.forEach((r, i) => {
     const x = (i - (n - 1) / 2) * SLOT;
     parts.push(
@@ -29,5 +34,8 @@ export function cardIntro(scene: Phaser.Scene, rec: Rec, difficulty: Difficulty)
       makeText(scene, x, 76, `${recipeBase(r, TUNING[difficulty])} pts`, { size: 18, color: C.muted, stroke: 0, depth: 0 }),
     );
   });
-  return scene.add.container(W / 2, H / 2 + 270, parts).setDepth(2590).setAlpha(0);
+  return scene.add
+    .container(W / 2, H / 2 + 270, parts)
+    .setDepth(2590)
+    .setAlpha(0);
 }

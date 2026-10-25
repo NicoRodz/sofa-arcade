@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { BUZZ_PATTERNS, ClockSync, DEFAULT_CONFIG, PROTOCOL_VERSION, applyDeadzone, canStart, configMsg, newRoomCode, nextPhase, parseClientMessage, parseTeams, youMsg } from './protocol';
+import {
+  BUZZ_PATTERNS,
+  ClockSync,
+  DEFAULT_CONFIG,
+  PROTOCOL_VERSION,
+  applyDeadzone,
+  canStart,
+  configMsg,
+  newRoomCode,
+  nextPhase,
+  parseClientMessage,
+  parseTeams,
+  youMsg,
+} from './protocol';
 import { GAMES } from './games';
 import { assignPuestos } from './puestos';
 
@@ -43,7 +56,9 @@ describe('protocol', () => {
   it('parses phase messages and rejects unknown phases or bad scores', () => {
     expect(parseClientMessage('{"t":"phase","phase":"playing"}')).toEqual({ t: 'phase', phase: 'playing' });
     expect(parseClientMessage('{"t":"phase","phase":"results","scores":[{"id":1,"score":3,"x":9}]}')).toEqual({
-      t: 'phase', phase: 'results', scores: [{ id: 1, score: 3 }],
+      t: 'phase',
+      phase: 'results',
+      scores: [{ id: 1, score: 3 }],
     });
     expect(parseClientMessage('{"t":"phase","phase":"boom"}')).toBeNull();
     expect(parseClientMessage('{"t":"phase","phase":"results","scores":[{"id":1}]}')).toBeNull();
@@ -61,7 +76,12 @@ describe('protocol', () => {
   it('the slip buzz is a single 120 ms pulse (sabotage); the hint message carries two labels of at most 14 characters, or null', () => {
     expect(BUZZ_PATTERNS.slip).toEqual([120]);
     expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"slip"}')).toEqual({ t: 'buzz', playerId: 3, kind: 'slip' });
-    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar bolsa","b":"¡Lanzar!"}')).toEqual({ t: 'hint', playerId: 3, a: 'Tomar bolsa', b: '¡Lanzar!' });
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar bolsa","b":"¡Lanzar!"}')).toEqual({
+      t: 'hint',
+      playerId: 3,
+      a: 'Tomar bolsa',
+      b: '¡Lanzar!',
+    });
     expect(parseClientMessage('{"t":"hint","playerId":3,"a":null}')).toEqual({ t: 'hint', playerId: 3, a: null, b: null });
     expect(parseClientMessage('{"t":"hint","playerId":3,"a":"un rótulo demasiado largo"}')).toBeNull();
     expect(parseClientMessage('{"t":"hint","playerId":3,"a":"  "}')).toBeNull();
@@ -69,15 +89,30 @@ describe('protocol', () => {
     expect(parseClientMessage('{"t":"hint","playerId":3,"a":7}')).toBeNull();
   });
   it('the hint also carries the glyph and the greyed state of each button (contextual buttons): known icons only, true or nothing', () => {
-    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar masa","b":"Picar","aIcon":"dough","bIcon":"chop","bOff":true}')).toEqual({ t: 'hint', playerId: 3, a: 'Tomar masa', b: 'Picar', aIcon: 'dough', bIcon: 'chop', bOff: true });
-    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar","b":"Correr","aOff":false,"bOff":"yes"}')).toEqual({ t: 'hint', playerId: 3, a: 'Tomar', b: 'Correr' }); // only a real true greys a button
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar masa","b":"Picar","aIcon":"dough","bIcon":"chop","bOff":true}')).toEqual(
+      { t: 'hint', playerId: 3, a: 'Tomar masa', b: 'Picar', aIcon: 'dough', bIcon: 'chop', bOff: true },
+    );
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar","b":"Correr","aOff":false,"bOff":"yes"}')).toEqual({
+      t: 'hint',
+      playerId: 3,
+      a: 'Tomar',
+      b: 'Correr',
+    }); // only a real true greys a button
     expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Tomar","aIcon":"<script>"}')).toBeNull(); // an icon id the sheet does not have: the whole message is refused
-    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Botar","aIcon":"trash","aOff":true}')).toEqual({ t: 'hint', playerId: 3, a: 'Botar', b: null, aIcon: 'trash', aOff: true });
+    expect(parseClientMessage('{"t":"hint","playerId":3,"a":"Botar","aIcon":"trash","aOff":true}')).toEqual({
+      t: 'hint',
+      playerId: 3,
+      a: 'Botar',
+      b: null,
+      aIcon: 'trash',
+      aOff: true,
+    });
   });
   it('assist: a phone says on or off, with a real boolean (Ayudante)', () => {
     expect(parseClientMessage('{"t":"assist","on":true}')).toEqual({ t: 'assist', on: true });
     expect(parseClientMessage('{"t":"assist","on":false,"playerId":9}')).toEqual({ t: 'assist', on: false }); // nothing else survives: the relay knows whose socket it is
-    for (const bad of ['{"t":"assist"}', '{"t":"assist","on":1}', '{"t":"assist","on":"true"}', '{"t":"assist","on":null}']) expect(parseClientMessage(bad), bad).toBeNull();
+    for (const bad of ['{"t":"assist"}', '{"t":"assist","on":1}', '{"t":"assist","on":"true"}', '{"t":"assist","on":null}'])
+      expect(parseClientMessage(bad), bad).toBeNull();
     expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(5);
   });
   it('rejects unknown message types', () => {
@@ -123,11 +158,24 @@ describe('phases', () => {
 
 describe('lobby config', () => {
   it('parses a known game and rejects unknown or missing ones', () => {
-    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"3","seed":7}')).toEqual({ t: 'config', game: 'pizzas', difficulty: 'hard', map: '3', seed: 7, modeId: 'coop', teams: null, teamsLocked: false, modeOptions: {} }); // v1 screen: no team fields, so cooperative
+    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"3","seed":7}')).toEqual({
+      t: 'config',
+      game: 'pizzas',
+      difficulty: 'hard',
+      map: '3',
+      seed: 7,
+      modeId: 'coop',
+      teams: null,
+      teamsLocked: false,
+      modeOptions: {},
+    }); // v1 screen: no team fields, so cooperative
     expect(parseClientMessage('{"t":"config","game":"nope","difficulty":"hard","map":"3","seed":1}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"insane","map":"3","seed":1}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"99","seed":7}')).toBeNull();
-    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"random","seed":4294967295}')).toMatchObject({ map: 'random', seed: 4294967295 });
+    expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"random","seed":4294967295}')).toMatchObject({
+      map: 'random',
+      seed: 4294967295,
+    });
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"random","seed":4294967296}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"random","seed":-1}')).toBeNull();
     expect(parseClientMessage('{"t":"config","game":"pizzas","difficulty":"hard","map":"random","seed":1.5}')).toBeNull();
@@ -140,8 +188,16 @@ describe('lobby config', () => {
 describe('puestos on the wire', () => {
   const msg = { cheese: true, sink: false, assign: [{ id: 1, puestos: ['masa', 'horno'], pool: ['masa', 'corte', 'horno'] }] };
   it('a phase message may carry the round puestos; bad ids or shapes are rejected', () => {
-    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: msg }))).toEqual({ t: 'phase', phase: 'playing', puestos: msg });
-    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, assign: [{ id: 1, puestos: ['hack'], pool: [] }] } }))).toBeNull();
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: msg }))).toEqual({
+      t: 'phase',
+      phase: 'playing',
+      puestos: msg,
+    });
+    expect(
+      parseClientMessage(
+        JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, assign: [{ id: 1, puestos: ['hack'], pool: [] }] } }),
+      ),
+    ).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: { ...msg, cheese: 'yes' } }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: 7 }))).toBeNull();
   });
@@ -149,7 +205,11 @@ describe('puestos on the wire', () => {
     const f = { cheese: true, sink: true };
     const pm = assignPuestos([1, 2, 3, 4, 5, 6, 7, 8], f);
     expect(pm.assign[0]!.pool.length).toBeGreaterThanOrEqual(6);
-    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: pm }))).toEqual({ t: 'phase', phase: 'playing', puestos: pm });
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: pm }))).toEqual({
+      t: 'phase',
+      phase: 'playing',
+      puestos: pm,
+    });
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', puestos: assignPuestos([1, 2], f) }))).not.toBeNull();
   });
   it('"Cambiar" sends the new puesto list', () => {
@@ -168,7 +228,9 @@ describe('teams on the wire (protocol v2)', () => {
   ];
   const parse = (extra: object) => parseClientMessage(JSON.stringify({ ...base, ...extra }));
 
-  it('the version was bumped', () => { expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(2); });
+  it('the version was bumped', () => {
+    expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(2);
+  });
   it('a config with a declared mode, teams, the lock and the options round-trips', () => {
     const m = parse({ modeId: 'versus', teams, teamsLocked: true, modeOptions: { hiddenScore: true, rounds: 3, tag: 'x' } });
     expect(m).toEqual({ ...base, modeId: 'versus', teams, teamsLocked: true, modeOptions: { hiddenScore: true, rounds: 3, tag: 'x' } });
@@ -195,13 +257,22 @@ describe('teams on the wire (protocol v2)', () => {
     expect(parseClientMessage('{"t":"setTeam"}')).toBeNull();
   });
   it('a campaign round announces itself in phase.match (obstaculos, coop, modeOptions.campaign) and the parser keeps the flag: it is what makes the phone show the signal pad', () => {
-    const match = { gameId: 'obstaculos', modeId: 'coop', mapId: 'campaign', difficulty: 'normal', teams: null, modeOptions: { campaign: true } };
+    const match = {
+      gameId: 'obstaculos',
+      modeId: 'coop',
+      mapId: 'campaign',
+      difficulty: 'normal',
+      teams: null,
+      modeOptions: { campaign: true },
+    };
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match }))).toEqual({ t: 'phase', phase: 'playing', match });
   });
   it('a phase message may carry the match start; an incomplete or foreign one is rejected', () => {
     const match = { gameId: 'pizzas', modeId: 'versus', mapId: '8', difficulty: 'hard', teams, modeOptions: { hiddenScore: false } };
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match }))).toEqual({ t: 'phase', phase: 'playing', match });
-    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, teams: null } }))).toMatchObject({ match: { teams: null } });
+    expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, teams: null } }))).toMatchObject({
+      match: { teams: null },
+    });
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, gameId: 'nope' } }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, modeId: 'nope' } }))).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'phase', phase: 'playing', match: { ...match, mapId: undefined } }))).toBeNull();
@@ -225,29 +296,61 @@ describe('teams on the wire (protocol v2)', () => {
 });
 
 describe("the Captain's 'nav' on the wire (protocol v3)", () => {
-  it('the version was bumped for the crown', () => { expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(3); });
-  it('every D-pad key parses to a nav with only the key in it', () => {
-    for (const key of ['up', 'down', 'left', 'right', 'ok', 'back', 'help']) expect(parseClientMessage(JSON.stringify({ t: 'nav', key }))).toEqual({ t: 'nav', key });
+  it('the version was bumped for the crown', () => {
+    expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(3);
   });
-  it('drops a `from`, a playerId or any extra field a phone puts in the payload: who sent it is the relay\'s call', () => {
+  it('every D-pad key parses to a nav with only the key in it', () => {
+    for (const key of ['up', 'down', 'left', 'right', 'ok', 'back', 'help'])
+      expect(parseClientMessage(JSON.stringify({ t: 'nav', key }))).toEqual({ t: 'nav', key });
+  });
+  it("drops a `from`, a playerId or any extra field a phone puts in the payload: who sent it is the relay's call", () => {
     expect(parseClientMessage('{"t":"nav","key":"ok","from":1,"playerId":1,"captain":true}')).toEqual({ t: 'nav', key: 'ok' });
   });
   it('refuses an unknown or missing key and anything that is not a string', () => {
-    for (const bad of ['{"t":"nav"}', '{"t":"nav","key":"start"}', '{"t":"nav","key":"Enter"}', '{"t":"nav","key":1}', '{"t":"nav","key":null}', '{"t":"nav","key":["ok"]}', '{"t":"nav","key":"__proto__"}']) expect(parseClientMessage(bad), bad).toBeNull();
+    for (const bad of [
+      '{"t":"nav"}',
+      '{"t":"nav","key":"start"}',
+      '{"t":"nav","key":"Enter"}',
+      '{"t":"nav","key":1}',
+      '{"t":"nav","key":null}',
+      '{"t":"nav","key":["ok"]}',
+      '{"t":"nav","key":"__proto__"}',
+    ])
+      expect(parseClientMessage(bad), bad).toBeNull();
   });
 });
 
 describe('the versus result on the wire (protocol v4)', () => {
-  const res = { verdict: 'win', winner: 0, scores: [{ team: 0, score: 410 }, { team: 1, score: 340 }] };
-  const phase = (result: unknown) => parseClientMessage(JSON.stringify({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result }));
+  const res = {
+    verdict: 'win',
+    winner: 0,
+    scores: [
+      { team: 0, score: 410 },
+      { team: 1, score: 340 },
+    ],
+  };
+  const phase = (result: unknown) =>
+    parseClientMessage(JSON.stringify({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result }));
 
-  it('the version was bumped for the result', () => { expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(4); });
-  it('a results phase carries the verdict, the winner and every team\'s score', () => {
+  it('the version was bumped for the result', () => {
+    expect(PROTOCOL_VERSION).toBeGreaterThanOrEqual(4);
+  });
+  it("a results phase carries the verdict, the winner and every team's score", () => {
     expect(phase(res)).toEqual({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result: res });
-    for (const [verdict, winner] of [['draw', null], ['nowinner', null], ['aborted', null], ['win', 1]] as const) expect(phase({ ...res, verdict, winner })).toMatchObject({ result: { verdict, winner } });
+    for (const [verdict, winner] of [
+      ['draw', null],
+      ['nowinner', null],
+      ['aborted', null],
+      ['win', 1],
+    ] as const)
+      expect(phase({ ...res, verdict, winner })).toMatchObject({ result: { verdict, winner } });
   });
   it('a coop results phase (no result) is the same as ever', () => {
-    expect(parseClientMessage('{"t":"phase","phase":"results","scores":[{"id":1,"score":5}]}')).toEqual({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 5 }] });
+    expect(parseClientMessage('{"t":"phase","phase":"results","scores":[{"id":1,"score":5}]}')).toEqual({
+      t: 'phase',
+      phase: 'results',
+      scores: [{ id: 1, score: 5 }],
+    });
   });
   it('refuses a verdict it does not know, a win without a winner, a winner without a win, and bad scores', () => {
     expect(phase({ ...res, verdict: 'tie' })).toBeNull();
@@ -262,7 +365,9 @@ describe('the versus result on the wire (protocol v4)', () => {
     expect(phase('win')).toBeNull();
   });
   it('drops anything else a screen puts in the result', () => {
-    expect(phase({ ...res, extra: 1, scores: [{ team: 0, score: 1, name: 'x' }] })).toMatchObject({ result: { verdict: 'win', winner: 0, scores: [{ team: 0, score: 1 }] } });
+    expect(phase({ ...res, extra: 1, scores: [{ team: 0, score: 1, name: 'x' }] })).toMatchObject({
+      result: { verdict: 'win', winner: 0, scores: [{ team: 0, score: 1 }] },
+    });
     expect(JSON.stringify(phase({ ...res, extra: 1 }))).not.toContain('extra');
   });
 });

@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTIES, params } from './difficulty';
 import { FIXED_MAPS, MAP_H, MAP_W, MAPS_BY_DIFFICULTY, fixedMap, isFloor, parseMap, recommendedMaps, spawnPoints } from './maps';
-import { MAX_ATTEMPTS, applyArchetype, generate, inBand, orderSpawns, pickMech, placeStations, resolveMap, scatterObstacles, shape, stationCounts, zonePuestos } from './generate';
+import {
+  MAX_ATTEMPTS,
+  applyArchetype,
+  generate,
+  inBand,
+  orderSpawns,
+  pickMech,
+  placeStations,
+  resolveMap,
+  scatterObstacles,
+  shape,
+  stationCounts,
+  zonePuestos,
+} from './generate';
 import { mulberry32 } from './rng';
 import { createGame, addPlayer } from './overcooked';
 import { metric } from './score';
@@ -10,11 +23,18 @@ import { PUESTOS, puestosFor } from './puestos';
 
 describe('mulberry32', () => {
   it('is deterministic, in [0, 1) and differs between seeds', () => {
-    const a = mulberry32(42), b = mulberry32(42), c = mulberry32(43);
-    const xs = Array.from({ length: 5 }, () => a()), ys = Array.from({ length: 5 }, () => b());
+    const a = mulberry32(42),
+      b = mulberry32(42),
+      c = mulberry32(43);
+    const xs = Array.from({ length: 5 }, () => a()),
+      ys = Array.from({ length: 5 }, () => b());
     expect(xs).toEqual(ys);
     expect(xs).not.toEqual(Array.from({ length: 5 }, () => c()));
-    for (let i = 0; i < 1000; i++) { const v = a(); expect(v).toBeGreaterThanOrEqual(0); expect(v).toBeLessThan(1); }
+    for (let i = 0; i < 1000; i++) {
+      const v = a();
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThan(1);
+    }
     expect(mulberry32(1)()).toBeCloseTo(0.6270739405881613, 12); // reference value of the published algorithm
   });
 });
@@ -44,31 +64,39 @@ describe('generate', () => {
   });
 
   it('also valid with 4, 6 and 8 players, with the station counts of the design table', () => {
-    for (const n of [4, 6, 8]) for (const d of DIFFICULTIES) {
-      for (let seed = 0; seed < 60; seed++) {
-        const g = generate(seed, d, n);
-        const grid = parseMap(g.rows);
-        expect(validate(grid).ok, `${d} n=${n} seed ${seed}`).toBe(true);
-        const c = stationCounts(n, d, g.mech);
-        expect(stationsOf(grid, 'K').length).toBe(c.boards);
-        expect(stationsOf(grid, 'O').length).toBe(c.ovens);
-        expect(stationsOf(grid, '1').length).toBe(c.crates);
-        expect(stationsOf(grid, '2').length).toBe(c.crates);
-        expect(stationsOf(grid, '3').length).toBe(c.cheese);
-        expect(stationsOf(grid, 'E').length).toBe(c.serve);
-        expect(stationsOf(grid, 'P').length).toBe(c.serve);
-        expect(stationsOf(grid, 'U').length).toBe(c.wash);
-        expect(stationsOf(grid, 'L').length).toBe(c.wash);
-        expect(grid.flat().filter((t) => t.kind === 'station' && t.station === 'trash').length).toBe(c.trash);
-        expect(spawnPoints(grid, n).length).toBe(n);
-        expect(g.spawns).toHaveLength(n);
+    for (const n of [4, 6, 8])
+      for (const d of DIFFICULTIES) {
+        for (let seed = 0; seed < 60; seed++) {
+          const g = generate(seed, d, n);
+          const grid = parseMap(g.rows);
+          expect(validate(grid).ok, `${d} n=${n} seed ${seed}`).toBe(true);
+          const c = stationCounts(n, d, g.mech);
+          expect(stationsOf(grid, 'K').length).toBe(c.boards);
+          expect(stationsOf(grid, 'O').length).toBe(c.ovens);
+          expect(stationsOf(grid, '1').length).toBe(c.crates);
+          expect(stationsOf(grid, '2').length).toBe(c.crates);
+          expect(stationsOf(grid, '3').length).toBe(c.cheese);
+          expect(stationsOf(grid, 'E').length).toBe(c.serve);
+          expect(stationsOf(grid, 'P').length).toBe(c.serve);
+          expect(stationsOf(grid, 'U').length).toBe(c.wash);
+          expect(stationsOf(grid, 'L').length).toBe(c.wash);
+          expect(grid.flat().filter((t) => t.kind === 'station' && t.station === 'trash').length).toBe(c.trash);
+          expect(spawnPoints(grid, n).length).toBe(n);
+          expect(g.spawns).toHaveLength(n);
+        }
       }
-    }
   });
 
   it('stations by team size follow the design table: ovens ceil(N/3), boards ceil((N+1)/3) (+1 cheese), E and P 1+floor(N/5), X 1+floor(N/4)', () => {
     expect(stationCounts(2, 'normal')).toMatchObject({ boards: 1, ovens: 1, crates: 1, serve: 1, trash: 1, wash: 0, cheese: 0 });
-    expect(stationCounts(5, 'normal', { cheese: true, sink: true })).toMatchObject({ boards: 3, ovens: 2, serve: 2, trash: 2, wash: 1, cheese: 1 });
+    expect(stationCounts(5, 'normal', { cheese: true, sink: true })).toMatchObject({
+      boards: 3,
+      ovens: 2,
+      serve: 2,
+      trash: 2,
+      wash: 1,
+      cheese: 1,
+    });
     expect(stationCounts(8, 'normal')).toMatchObject({ boards: 3, ovens: 3, crates: 2, serve: 2, trash: 3 });
     expect(stationCounts(8, 'normal', { cheese: true, sink: false }).boards).toBe(4);
     expect(stationCounts(2, 'hard').boards).toBe(1);
@@ -87,15 +115,26 @@ describe('generate', () => {
   });
 
   it('a range of team sizes: spawns for nMax, valid for every N, floor for every chef', () => {
-    for (const d of DIFFICULTIES) for (let seed = 0; seed < 40; seed++) {
-      const g = generate(seed, d, 4, MAX_ATTEMPTS, { nMin: 3, nMax: 6 });
-      expect([g.nMin, g.nMax]).toEqual([3, 6]);
-      const grid = parseMap(g.rows);
-      expect(grid.flat().filter((t) => t.kind === 'floor' && t.spawn).length).toBe(6);
-      const def = { id: 'g', name: 'g', rows: g.rows, nMin: 3, nMax: 6, minDuro: minPlayers(grid), stars: 2 as const, spawns: g.spawns, puestos: g.puestos };
-      expect(validateMap(def), `${d} seed ${seed}`).toEqual({ ok: true, errors: [] });
-      expect(stationCounts(6, d, g.mech).ovens).toBe(stationsOf(grid, 'O').length);
-    }
+    for (const d of DIFFICULTIES)
+      for (let seed = 0; seed < 40; seed++) {
+        const g = generate(seed, d, 4, MAX_ATTEMPTS, { nMin: 3, nMax: 6 });
+        expect([g.nMin, g.nMax]).toEqual([3, 6]);
+        const grid = parseMap(g.rows);
+        expect(grid.flat().filter((t) => t.kind === 'floor' && t.spawn).length).toBe(6);
+        const def = {
+          id: 'g',
+          name: 'g',
+          rows: g.rows,
+          nMin: 3,
+          nMax: 6,
+          minDuro: minPlayers(grid),
+          stars: 2 as const,
+          spawns: g.spawns,
+          puestos: g.puestos,
+        };
+        expect(validateMap(def), `${d} seed ${seed}`).toEqual({ ok: true, errors: [] });
+        expect(stationCounts(6, d, g.mech).ovens).toBe(stationsOf(grid, 'O').length);
+      }
   });
 
   it('the range is part of the result: same seed with another range is another kitchen', () => {
@@ -104,7 +143,8 @@ describe('generate', () => {
   });
 
   it('spawns are ordered like the puesto table: spawn 1 is at least as close to the dough crate and a board as any other spawn', () => {
-    const dist = (pts: [number, number][], sp: [number, number]) => Math.min(...pts.map(([x, y]) => Math.abs(x - sp[0]) + Math.abs(y - sp[1])));
+    const dist = (pts: [number, number][], sp: [number, number]) =>
+      Math.min(...pts.map(([x, y]) => Math.abs(x - sp[0]) + Math.abs(y - sp[1])));
     for (let seed = 0; seed < 60; seed++) {
       const g = generate(seed, 'easy', 6);
       const grid = parseMap(g.rows);
@@ -112,23 +152,61 @@ describe('generate', () => {
       const [first, ...rest] = g.spawns! as [number, number][];
       for (const other of rest) expect(cost(first!)).toBeLessThanOrEqual(cost(other));
     }
-    expect(orderSpawns(fixedMap('1')!.rows, [[10, 4], [4, 4]], 4, { cheese: false, sink: false })[0]).toEqual([4, 4]); // spawn 1 = Masa: the dough crate is at the left of map 1
+    expect(
+      orderSpawns(
+        fixedMap('1')!.rows,
+        [
+          [10, 4],
+          [4, 4],
+        ],
+        4,
+        { cheese: false, sink: false },
+      )[0],
+    ).toEqual([4, 4]); // spawn 1 = Masa: the dough crate is at the left of map 1
   });
 
   it('zone maps get zone puestos (prep / bake) and every zone with a spawn gets 15% of the actions', () => {
     let zones = 0;
-    for (const d of ['normal', 'hard'] as const) for (let seed = 0; seed < 80; seed++) {
-      const g = generate(seed, d, 6);
-      if (g.archetype !== 'river' && g.archetype !== 'corridor') { expect(g.puestos).toBeUndefined(); continue; }
-      zones++;
-      expect(g.puestos).toHaveLength(6);
-      expect(g.puestos!.flat()).toContain('prep');
-      expect(g.puestos!.flat()).toContain('horno');
-      expect(zoneShareProblems(parseMap(g.rows))).toEqual([]);
-    }
+    for (const d of ['normal', 'hard'] as const)
+      for (let seed = 0; seed < 80; seed++) {
+        const g = generate(seed, d, 6);
+        if (g.archetype !== 'river' && g.archetype !== 'corridor') {
+          expect(g.puestos).toBeUndefined();
+          continue;
+        }
+        zones++;
+        expect(g.puestos).toHaveLength(6);
+        expect(g.puestos!.flat()).toContain('prep');
+        expect(g.puestos!.flat()).toContain('horno');
+        expect(zoneShareProblems(parseMap(g.rows))).toEqual([]);
+      }
     expect(zones).toBeGreaterThan(40);
-    expect(zonePuestos([[2, 2], [10, 2], [3, 5]], (x) => (x < 7 ? 'A' : 'B'), false, { cheese: false, sink: false })).toEqual([['prep'], ['horno', 'reparto'], ['prep']]);
-    expect(zonePuestos([[2, 2], [10, 2]], (x) => (x < 7 ? 'A' : 'B'), true, { cheese: false, sink: true })).toEqual([['prep', 'entrega'], ['horno', 'platos', 'lavado']]);
+    expect(
+      zonePuestos(
+        [
+          [2, 2],
+          [10, 2],
+          [3, 5],
+        ],
+        (x) => (x < 7 ? 'A' : 'B'),
+        false,
+        { cheese: false, sink: false },
+      ),
+    ).toEqual([['prep'], ['horno', 'reparto'], ['prep']]);
+    expect(
+      zonePuestos(
+        [
+          [2, 2],
+          [10, 2],
+        ],
+        (x) => (x < 7 ? 'A' : 'B'),
+        true,
+        { cheese: false, sink: true },
+      ),
+    ).toEqual([
+      ['prep', 'entrega'],
+      ['horno', 'platos', 'lavado'],
+    ]);
   });
 
   it('zone shares of the fixed maps: every region that holds a spawn gets at least 15% (Tres cuartos plating room is the tightest)', () => {
@@ -145,11 +223,16 @@ describe('generate', () => {
       const g = generate(seed, 'hard', 4);
       const grid = parseMap(g.rows);
       const sp: [number, number][] = [];
-      grid.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'floor' && t.spawn) sp.push([x, y]); }));
+      grid.forEach((row, y) =>
+        row.forEach((t, x) => {
+          if (t.kind === 'floor' && t.spawn) sp.push([x, y]);
+        }),
+      );
       expect(sp.length).toBe(4);
       for (const [x, y] of sp) expect(isFloor(grid, x, y)).toBe(true);
-      for (let i = 0; i < sp.length; i++) for (let j = i + 1; j < sp.length; j++)
-        expect(Math.abs(sp[i]![0] - sp[j]![0]) + Math.abs(sp[i]![1] - sp[j]![1])).toBeGreaterThanOrEqual(2);
+      for (let i = 0; i < sp.length; i++)
+        for (let j = i + 1; j < sp.length; j++)
+          expect(Math.abs(sp[i]![0] - sp[j]![0]) + Math.abs(sp[i]![1] - sp[j]![1])).toBeGreaterThanOrEqual(2);
       if (g.archetype === 'river') {
         const xr = [...g.rows[0]!].indexOf('~');
         expect(sp.filter(([x]) => x < xr).length).toBe(2);
@@ -190,37 +273,50 @@ describe('generate', () => {
 
 describe('placement rules', () => {
   it('every recipe station gets its own access tile (matching, no two stations share one)', () => {
-    for (const d of ['normal', 'hard'] as const) for (let seed = 0; seed < 300; seed++) {
-      const grid = parseMap(generate(seed, d, 8).rows);
-      const stations = keysOf(grid).flatMap((k) => stationsOf(grid, k));
-      const owner = new Map<string, number>();
-      const assign = (i: number, seen: Set<string>): boolean => {
-        for (const [ax, ay] of accessTiles(grid, ...stations[i]!)) {
-          const key = `${ax},${ay}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          if (!owner.has(key) || assign(owner.get(key)!, seen)) { owner.set(key, i); return true; }
-        }
-        return false;
-      };
-      for (let i = 0; i < stations.length; i++) expect(assign(i, new Set()), `${d} seed ${seed} station ${i}`).toBe(true);
-    }
+    for (const d of ['normal', 'hard'] as const)
+      for (let seed = 0; seed < 300; seed++) {
+        const grid = parseMap(generate(seed, d, 8).rows);
+        const stations = keysOf(grid).flatMap((k) => stationsOf(grid, k));
+        const owner = new Map<string, number>();
+        const assign = (i: number, seen: Set<string>): boolean => {
+          for (const [ax, ay] of accessTiles(grid, ...stations[i]!)) {
+            const key = `${ax},${ay}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            if (!owner.has(key) || assign(owner.get(key)!, seen)) {
+              owner.set(key, i);
+              return true;
+            }
+          }
+          return false;
+        };
+        for (let i = 0; i < stations.length; i++) expect(assign(i, new Set()), `${d} seed ${seed} station ${i}`).toBe(true);
+      }
   });
 
   it('placement claims one distinct access tile per station', () => {
-    for (let seed = 0; seed < 200; seed++) for (const [arch, diff, n] of [['island', 'normal', 8], ['open', 'easy', 8], ['river', 'normal', 6], ['corridor', 'hard', 8]] as const) {
-      const rng = mulberry32(seed);
-      const layout = applyArchetype(arch, diff, rng);
-      scatterObstacles(layout.cells, 4, rng);
-      const claimed = placeStations(layout, n, diff, rng);
-      if (!claimed) continue;
-      const c = stationCounts(n, diff);
-      expect(claimed.size, `${arch} seed ${seed}`).toBe(2 * c.serve + c.ovens + c.boards + 2 * c.crates + c.trash);
-    }
+    for (let seed = 0; seed < 200; seed++)
+      for (const [arch, diff, n] of [
+        ['island', 'normal', 8],
+        ['open', 'easy', 8],
+        ['river', 'normal', 6],
+        ['corridor', 'hard', 8],
+      ] as const) {
+        const rng = mulberry32(seed);
+        const layout = applyArchetype(arch, diff, rng);
+        scatterObstacles(layout.cells, 4, rng);
+        const claimed = placeStations(layout, n, diff, rng);
+        if (!claimed) continue;
+        const c = stationCounts(n, diff);
+        expect(claimed.size, `${arch} seed ${seed}`).toBe(2 * c.serve + c.ovens + c.boards + 2 * c.crates + c.trash);
+      }
   });
 
   it('zones: boards and crates on side A, ovens and trays on B, the delivery counter on A for hard and B for normal', () => {
-    for (const [d, eZone] of [['hard', 'A'], ['normal', 'B']] as const) {
+    for (const [d, eZone] of [
+      ['hard', 'A'],
+      ['normal', 'B'],
+    ] as const) {
       let seen = 0;
       for (let seed = 0; seed < 150; seed++) {
         const g = generate(seed, d, 2);
@@ -230,8 +326,11 @@ describe('placement rules', () => {
         const mid = (walls[0]! + walls[walls.length - 1]! + 1) / 2;
         const grid = parseMap(g.rows);
         const onSide = (k: Parameters<typeof stationsOf>[1], zone: 'A' | 'B') =>
-          stationsOf(grid, k).every((p) => accessTiles(grid, ...p).some(([ax]) => (ax < mid) === (zone === 'A')));
-        expect([onSide('K', 'A'), onSide('1', 'A'), onSide('2', 'A'), onSide('O', 'B'), onSide('P', 'B'), onSide('E', eZone)], `${d} seed ${seed}`).toEqual([true, true, true, true, true, true]);
+          stationsOf(grid, k).every((p) => accessTiles(grid, ...p).some(([ax]) => ax < mid === (zone === 'A')));
+        expect(
+          [onSide('K', 'A'), onSide('1', 'A'), onSide('2', 'A'), onSide('O', 'B'), onSide('P', 'B'), onSide('E', eZone)],
+          `${d} seed ${seed}`,
+        ).toEqual([true, true, true, true, true, true]);
       }
       expect(seen).toBeGreaterThan(20);
     }
@@ -239,7 +338,12 @@ describe('placement rules', () => {
 
   it('loose obstacles never split the floor nor remove a passing counter', () => {
     for (let seed = 0; seed < 40; seed++) {
-      for (const [arch, diff] of [['river', 'normal'], ['corridor', 'normal'], ['island', 'normal'], ['open', 'normal']] as const) {
+      for (const [arch, diff] of [
+        ['river', 'normal'],
+        ['corridor', 'normal'],
+        ['island', 'normal'],
+        ['open', 'normal'],
+      ] as const) {
         const rng = mulberry32(seed);
         const layout = applyArchetype(arch, diff, rng);
         const before = shape(layout.cells);

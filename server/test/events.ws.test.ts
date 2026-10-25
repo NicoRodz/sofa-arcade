@@ -5,16 +5,30 @@ import { RUSH_ORDERS } from '@party/shared/midround';
 import { startServer } from '../src/server';
 import { forceEvent, kit, playRound } from './rules-kit';
 
-beforeAll(async () => { kit.srv = await startServer({ port: 0, mode: 'none' }); });
-afterAll(async () => { await kit.srv.close(); });
+beforeAll(async () => {
+  kit.srv = await startServer({ port: 0, mode: 'none' });
+});
+afterAll(async () => {
+  await kit.srv.close();
+});
 
 const flags = { events: true };
 /** A raw tomato waits on a counter in the middle of the left wall: the rat has something to steal. */
-const bait = (g: Parameters<typeof forceEvent>[0]) => { g.stations.filter((s) => s.kind === 'counter')[6]!.item = 'raw1'; };
+const bait = (g: Parameters<typeof forceEvent>[0]) => {
+  g.stations.filter((s) => s.kind === 'counter')[6]!.item = 'raw1';
+};
 
 describe('mid-round events over the relay', () => {
   it('the rat steals the item from the counter and leaves with it when nobody looks', async () => {
-    const r = await playRound('ev1', { roles: ['idle', 'idle'], seconds: 30, flags, setup: (g) => { forceEvent(g, 'rat', 3000); bait(g); } });
+    const r = await playRound('ev1', {
+      roles: ['idle', 'idle'],
+      seconds: 30,
+      flags,
+      setup: (g) => {
+        forceEvent(g, 'rat', 3000);
+        bait(g);
+      },
+    });
     expect(r.game.over).toBe(true);
     expect(r.of('rat:appear')).toHaveLength(1);
     expect(r.of('rat:steal')).toHaveLength(1);
@@ -25,7 +39,15 @@ describe('mid-round events over the relay', () => {
   }, 60_000);
 
   it('a phone that runs at the rat and dashes scares it: the item goes back to the counter', async () => {
-    const r = await playRound('ev2', { roles: ['ratcatcher', 'idle'], seconds: 30, flags, setup: (g) => { forceEvent(g, 'rat', 3000); bait(g); } });
+    const r = await playRound('ev2', {
+      roles: ['ratcatcher', 'idle'],
+      seconds: 30,
+      flags,
+      setup: (g) => {
+        forceEvent(g, 'rat', 3000);
+        bait(g);
+      },
+    });
     expect(r.game.over).toBe(true);
     expect(r.of('dash').length, 'the phone dashed').toBeGreaterThanOrEqual(1);
     const scared = r.of('rat:scared');
@@ -53,8 +75,16 @@ describe('mid-round events over the relay', () => {
     const dark: number[][] = []; // the progress of every oven, each frame of the blackout
     let at = 0;
     const r = await playRound('ev4', {
-      roles: ['cook', 'cook'], seconds: 40, flags, setup: (g) => forceEvent(g, 'blackout', 12_000),
-      before: (g) => { if (g.mid!.dark) { at ||= g.time; dark.push(g.stations.filter((s) => s.kind === 'pot' && !s.done).map((s) => s.progress)); } },
+      roles: ['cook', 'cook'],
+      seconds: 40,
+      flags,
+      setup: (g) => forceEvent(g, 'blackout', 12_000),
+      before: (g) => {
+        if (g.mid!.dark) {
+          at ||= g.time;
+          dark.push(g.stations.filter((s) => s.kind === 'pot' && !s.done).map((s) => s.progress));
+        }
+      },
     });
     expect(r.game.over).toBe(true);
     expect(r.of('event:start')).toHaveLength(1);
@@ -62,7 +92,10 @@ describe('mid-round events over the relay', () => {
     expect(r.game.mid!.dark).toBe(false);
     expect(dark.length).toBeGreaterThan(500); // ~10 s of frames
     const first = dark[0]!;
-    expect(first.some((v) => v > 0), 'an oven was cooking when the lights went out').toBe(true);
+    expect(
+      first.some((v) => v > 0),
+      'an oven was cooking when the lights went out',
+    ).toBe(true);
     for (const frame of dark.slice(1)) expect(frame.filter((v, i) => v > (first[i] ?? Infinity) + 1e-9).length).toBe(0); // nobody got further than at the start
     r.close();
   }, 60_000);

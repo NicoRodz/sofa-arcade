@@ -7,7 +7,8 @@ import { OVEN_SHOW_MS, REGRANT_MS, UNWANTED_MS, createSchool, type SchoolMember 
 import { runSchool } from './schoolBot';
 import { SCHOOL_STEPS, SCHOOL_TOTAL } from './steps';
 
-const chefs = (n: number, extra: Partial<SchoolMember> = {}): SchoolMember[] => Array.from({ length: n }, (_v, i) => ({ id: i + 1, slot: i, connected: true, ...extra }));
+const chefs = (n: number, extra: Partial<SchoolMember> = {}): SchoolMember[] =>
+  Array.from({ length: n }, (_v, i) => ({ id: i + 1, slot: i, connected: true, ...extra }));
 type SchoolMsg = Extract<ClientMsg, { t: 'school' }>;
 type HintMsg = Extract<ClientMsg, { t: 'hint' }>;
 const schoolMsgs = (sent: ClientMsg[], id: number) => sent.filter((m): m is SchoolMsg => m.t === 'school' && m.playerId === id);
@@ -30,7 +31,10 @@ describe('a chef alone goes through the four steps, in order', () => {
     const msgs = schoolMsgs(r.sent, 1);
     const order = [...new Set(msgs.map((m) => m.step))];
     expect(order).toEqual([0, 1, 2, 3, 4]);
-    for (const m of msgs) { expect(m.total).toBe(SCHOOL_TOTAL); if (m.step < SCHOOL_TOTAL) expect(m.text).toBe(SCHOOL_STEPS[m.step]!.text); }
+    for (const m of msgs) {
+      expect(m.total).toBe(SCHOOL_TOTAL);
+      if (m.step < SCHOOL_TOTAL) expect(m.text).toBe(SCHOOL_STEPS[m.step]!.text);
+    }
     expect(msgs.at(-1)!.done).toBe(true);
     expect(msgs[0]!.btn).toBe('a');
     expect(msgs.at(-1)!.btn).toBe('b'); // done: B for the dash
@@ -47,12 +51,19 @@ describe('a chef alone goes through the four steps, in order', () => {
 });
 
 describe('the hands and the wire', () => {
-  it('the chopped tomato is in the chef\'s hands the very moment the chop is done, and the board is free again', () => {
+  it("the chopped tomato is in the chef's hands the very moment the chop is done, and the board is free again", () => {
     let seen = false;
-    runSchool(chefs(1), { limitMs: 30_000, every: (_ms, sch) => {
-      const p = sch.game.players.get(1)!;
-      if (!seen && sch.progressOf(1)!.step === 2) { seen = true; expect(p.item).toBe('cut1'); expect(sch.game.stations.filter((x) => x.kind === 'board').every((b) => b.item === null)).toBe(true); }
-    } });
+    runSchool(chefs(1), {
+      limitMs: 30_000,
+      every: (_ms, sch) => {
+        const p = sch.game.players.get(1)!;
+        if (!seen && sch.progressOf(1)!.step === 2) {
+          seen = true;
+          expect(p.item).toBe('cut1');
+          expect(sch.game.stations.filter((x) => x.kind === 'board').every((b) => b.item === null)).toBe(true);
+        }
+      },
+    });
     expect(seen).toBe(true);
   });
   it('a chef that does nothing is told its step again every second (a phone that came back is right within a second), not every frame', () => {
@@ -70,13 +81,16 @@ describe('the hands and the wire', () => {
     const board = s.game.stations.find((x) => x.kind === 'board' && x.ty === 0)!;
     Object.assign(p, { x: board.tx + 0.5, y: 1.5, fx: 0, fy: -1 });
     sent.length = 0;
-    for (let i = 0; i < 60; i++) { board.item = i % 2 ? 'raw1' : null; s.step(TICK_MS, chefs(1), () => idle); }
+    for (let i = 0; i < 60; i++) {
+      board.item = i % 2 ? 'raw1' : null;
+      s.step(TICK_MS, chefs(1), () => idle);
+    }
     const btns = schoolMsgs(sent, 1).map((m) => m.btn);
     expect(new Set(btns).size, 'it really did flip').toBe(2);
     expect(schoolMsgs(sent, 1).length, 'one second of flapping').toBeLessThanOrEqual(1000 / 50 + 2);
     expect(schoolMsgs(sent, 1).length).toBeGreaterThan(5);
   });
-  it('when the school ends every phone gets the game\'s own button labels back', () => {
+  it("when the school ends every phone gets the game's own button labels back", () => {
     const sent: ClientMsg[] = [];
     const s = createSchool({ bus: new Emitter<GameEvents>(), send: (m) => sent.push(m) });
     for (let i = 0; i < 90; i++) s.step(TICK_MS, chefs(2), () => idle);
@@ -91,7 +105,10 @@ describe('no clock, no score at stake', () => {
   it('five minutes of nobody doing anything: the round never ends and no order expires', () => {
     const events: string[] = [];
     const bus = new Emitter<GameEvents>();
-    for (const t of ['roundEnd', 'orderExpired', 'orderWarning', 'orderNew', 'countdownTick', 'roundStart'] as const) bus.on(t, () => { events.push(t); });
+    for (const t of ['roundEnd', 'orderExpired', 'orderWarning', 'orderNew', 'countdownTick', 'roundStart'] as const)
+      bus.on(t, () => {
+        events.push(t);
+      });
     const r = runSchool(chefs(2), { idle: [1, 2], limitMs: 300_000, bus });
     expect(r.school.game.over).toBe(false);
     expect(r.school.game.time).toBeGreaterThan(299_000);
@@ -131,12 +148,22 @@ describe('a player that joins halfway', () => {
   it('starts at step 0 while the others are further on; the table is not done until they are', () => {
     const members = chefs(2);
     const seen: { ms: number; done: boolean }[] = [];
-    const r = runSchool(members, { join: { 2: 20_000 }, limitMs: 90_000, until: (ms, sc) => ms > 21_000 && sc.everyoneDone, every: (ms, s) => { if (Math.round(ms) % 5000 < TICK_MS) seen.push({ ms, done: s.everyoneDone }); } });
+    const r = runSchool(members, {
+      join: { 2: 20_000 },
+      limitMs: 90_000,
+      until: (ms, sc) => ms > 21_000 && sc.everyoneDone,
+      every: (ms, s) => {
+        if (Math.round(ms) % 5000 < TICK_MS) seen.push({ ms, done: s.everyoneDone });
+      },
+    });
     expect(r.steps.get(1)!.at(-1)!, 'the first chef is done long before the joiner arrives').toBeLessThan(20_000);
     expect(r.steps.get(2)![0]!, 'the joiner starts from step 0').toBeGreaterThan(20_000);
     expect(r.steps.get(2)).toHaveLength(SCHOOL_TOTAL);
     expect(r.school.everyoneDone).toBe(true);
-    expect(seen.filter((s) => s.ms > 8000 && s.ms < 19_000).every((s) => s.done), 'while only chef 1 was there it was "done"').toBe(true);
+    expect(
+      seen.filter((s) => s.ms > 8000 && s.ms < 19_000).every((s) => s.done),
+      'while only chef 1 was there it was "done"',
+    ).toBe(true);
   });
   it('a joiner that arrives after everyone was done reopens the table', () => {
     const members = chefs(2);
@@ -153,8 +180,18 @@ describe('a player that joins halfway', () => {
 describe('skipping', () => {
   it('"Saltar" finishes that chef at once, wherever it was, and the others carry on', () => {
     const members = chefs(2);
-    let skippedAt = -1, before = 0;
-    const r = runSchool(members, { limitMs: 90_000, every: (ms, s) => { if (skippedAt < 0 && ms > 2000) { skippedAt = ms; before = s.progressOf(2)!.step; s.skip(2); } } });
+    let skippedAt = -1,
+      before = 0;
+    const r = runSchool(members, {
+      limitMs: 90_000,
+      every: (ms, s) => {
+        if (skippedAt < 0 && ms > 2000) {
+          skippedAt = ms;
+          before = s.progressOf(2)!.step;
+          s.skip(2);
+        }
+      },
+    });
     expect(r.school.progressOf(2)).toEqual({ step: SCHOOL_TOTAL, skipped: true });
     expect(r.school.progressOf(1)!.skipped).toBe(false);
     expect(r.school.everyoneDone).toBe(true);
@@ -164,7 +201,12 @@ describe('skipping', () => {
   });
   it('skipping everyone ends the table at once', () => {
     const members = chefs(3);
-    const r = runSchool(members, { limitMs: 3000, every: (ms, s) => { if (ms > 1000) for (const m of members) s.skip(m.id); } });
+    const r = runSchool(members, {
+      limitMs: 3000,
+      every: (ms, s) => {
+        if (ms > 1000) for (const m of members) s.skip(m.id);
+      },
+    });
     expect(r.school.everyoneDone).toBe(true);
   });
   it('a "Saltar" that arrives before the chef was first seen is not lost', () => {
@@ -182,13 +224,18 @@ describe('skipping', () => {
     expect(r.steps.get(1)).toHaveLength(n);
   });
   it('chefs whose phone already did the school start finished; with useKnown off (opened by hand) everybody practises', () => {
-    const known = [{ id: 1, slot: 0, connected: true, known: true }, { id: 2, slot: 1, connected: true }];
+    const known = [
+      { id: 1, slot: 0, connected: true, known: true },
+      { id: 2, slot: 1, connected: true },
+    ];
     const auto = createSchool({ bus: new Emitter<GameEvents>(), send: () => {} });
     auto.step(TICK_MS, known, () => idle);
     expect(auto.progressOf(1)).toEqual({ step: SCHOOL_TOTAL, skipped: true });
     expect(auto.progressOf(2)).toEqual({ step: 0, skipped: false });
     expect(schoolMsgs(runSchool(known).sent, 1)[0]!.text).toMatch(/Ya la hiciste/);
-    expect(schoolMsgs(runSchool(known, { useKnown: false }).sent, 1).at(-1)!.text, 'it cooked it for real: no "ya la hiciste"').not.toMatch(/Ya la hiciste/);
+    expect(schoolMsgs(runSchool(known, { useKnown: false }).sent, 1).at(-1)!.text, 'it cooked it for real: no "ya la hiciste"').not.toMatch(
+      /Ya la hiciste/,
+    );
     const manual = createSchool({ bus: new Emitter<GameEvents>(), send: () => {}, useKnown: false });
     manual.step(TICK_MS, known, () => idle);
     expect(manual.progressOf(1)).toEqual({ step: 0, skipped: false });
@@ -212,8 +259,15 @@ describe('Ayudante works the same', () => {
 });
 
 describe('the practice never leaves a chef stuck', () => {
-  const stand = (n = 1) => { const s = createSchool({ bus: new Emitter<GameEvents>(), send: () => {} }); const roster = chefs(n); s.step(TICK_MS, roster, () => idle); return { s, roster }; };
-  const run = (s: ReturnType<typeof stand>['s'], roster: SchoolMember[], ms: number) => { for (let t = 0; t < ms; t += TICK_MS) s.step(TICK_MS, roster, () => idle); };
+  const stand = (n = 1) => {
+    const s = createSchool({ bus: new Emitter<GameEvents>(), send: () => {} });
+    const roster = chefs(n);
+    s.step(TICK_MS, roster, () => idle);
+    return { s, roster };
+  };
+  const run = (s: ReturnType<typeof stand>['s'], roster: SchoolMember[], ms: number) => {
+    for (let t = 0; t < ms; t += TICK_MS) s.step(TICK_MS, roster, () => idle);
+  };
   it('what does not belong in the hands at this step goes away after a moment (the dough once it was taken)', () => {
     const { s, roster } = stand();
     const p = s.game.players.get(1)!;
@@ -227,36 +281,57 @@ describe('the practice never leaves a chef stuck', () => {
     expect(p.item).toBeNull();
   });
   it('a chef at the oven step that puts its chopped tomato down gets another one REGRANT_MS later, and still finishes', () => {
-    let removedAt = -1, backAt = -1;
-    const r = runSchool(chefs(1), { limitMs: 60_000, every: (ms, sch) => {
-      const p = sch.game.players.get(1)!;
-      if (removedAt < 0 && sch.progressOf(1)!.step === 2 && p.item === 'cut1') { removedAt = ms; p.item = null; }
-      else if (removedAt >= 0 && backAt < 0 && p.item === 'cut1') backAt = ms;
-    } });
+    let removedAt = -1,
+      backAt = -1;
+    const r = runSchool(chefs(1), {
+      limitMs: 60_000,
+      every: (ms, sch) => {
+        const p = sch.game.players.get(1)!;
+        if (removedAt < 0 && sch.progressOf(1)!.step === 2 && p.item === 'cut1') {
+          removedAt = ms;
+          p.item = null;
+        } else if (removedAt >= 0 && backAt < 0 && p.item === 'cut1') backAt = ms;
+      },
+    });
     expect(removedAt).toBeGreaterThan(0);
     expect(backAt - removedAt).toBeGreaterThanOrEqual(REGRANT_MS - 1);
     expect(backAt - removedAt).toBeLessThan(REGRANT_MS + 100);
     expect(r.school.everyoneDone).toBe(true);
   });
-  it('the pizza comes out of the oven in the chef\'s hands at once; if the chef loses it, another one appears REGRANT_MS later', () => {
-    let atStep3 = -1, gotDish = -1, lostAt = -1, gotAgain = -1;
-    runSchool(chefs(1), { limitMs: 60_000, every: (ms, sch) => {
-      const p = sch.game.players.get(1)!, step = sch.progressOf(1)!.step;
-      if (step === 3 && atStep3 < 0) atStep3 = ms;
-      if (step === 3 && gotDish < 0 && p.item === 'dish') { gotDish = ms; lostAt = ms; p.item = null; }
-      else if (lostAt >= 0 && gotAgain < 0 && p.item === 'dish') gotAgain = ms;
-    } });
+  it("the pizza comes out of the oven in the chef's hands at once; if the chef loses it, another one appears REGRANT_MS later", () => {
+    let atStep3 = -1,
+      gotDish = -1,
+      lostAt = -1,
+      gotAgain = -1;
+    runSchool(chefs(1), {
+      limitMs: 60_000,
+      every: (ms, sch) => {
+        const p = sch.game.players.get(1)!,
+          step = sch.progressOf(1)!.step;
+        if (step === 3 && atStep3 < 0) atStep3 = ms;
+        if (step === 3 && gotDish < 0 && p.item === 'dish') {
+          gotDish = ms;
+          lostAt = ms;
+          p.item = null;
+        } else if (lostAt >= 0 && gotAgain < 0 && p.item === 'dish') gotAgain = ms;
+      },
+    });
     expect(gotDish - atStep3, 'the same tick the oven step was done').toBeLessThan(TICK_MS * 2);
     expect(gotAgain - lostAt).toBeGreaterThanOrEqual(REGRANT_MS - 1);
     expect(gotAgain - lostAt).toBeLessThan(REGRANT_MS + 100);
   });
   it('an oven shows what a chef put in it for OVEN_SHOW_MS, then empties for the next chef', () => {
-    let filledAt = -1, emptyAt = -1;
-    runSchool(chefs(1), { limitMs: 60_000, until: (ms) => ms > 15_000, every: (ms, sch) => {
-      const busy = sch.game.stations.some((o) => o.kind === 'pot' && o.inputs.length > 0);
-      if (busy && filledAt < 0) filledAt = ms;
-      else if (!busy && filledAt >= 0 && emptyAt < 0) emptyAt = ms;
-    } });
+    let filledAt = -1,
+      emptyAt = -1;
+    runSchool(chefs(1), {
+      limitMs: 60_000,
+      until: (ms) => ms > 15_000,
+      every: (ms, sch) => {
+        const busy = sch.game.stations.some((o) => o.kind === 'pot' && o.inputs.length > 0);
+        if (busy && filledAt < 0) filledAt = ms;
+        else if (!busy && filledAt >= 0 && emptyAt < 0) emptyAt = ms;
+      },
+    });
     expect(filledAt).toBeGreaterThan(0);
     expect(emptyAt - filledAt).toBeGreaterThanOrEqual(OVEN_SHOW_MS - 1);
     expect(emptyAt - filledAt).toBeLessThan(OVEN_SHOW_MS + 100);
@@ -281,7 +356,11 @@ describe('the table is done: how long, and the rows the TV draws', () => {
     const members = chefs(3);
     const s = createSchool({ bus: new Emitter<GameEvents>(), send: () => {} });
     s.step(TICK_MS, members, () => idle);
-    expect(s.rows().map((x) => [x.id, x.step, x.done])).toEqual([[1, 0, false], [2, 0, false], [3, 0, false]]);
+    expect(s.rows().map((x) => [x.id, x.step, x.done])).toEqual([
+      [1, 0, false],
+      [2, 0, false],
+      [3, 0, false],
+    ]);
     expect(s.doneMs).toBe(0);
     for (const m of members) s.skip(m.id);
     for (let i = 0; i < 60; i++) s.step(TICK_MS, members, () => idle);

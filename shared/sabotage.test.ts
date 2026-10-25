@@ -19,18 +19,49 @@ function mk(o: { map?: string; mode?: SabotageMode; difficulty?: Difficulty; tea
   const m = versusMap(o.map ?? 'V1')!;
   const bus = new Emitter<GameEvents>();
   const log: Log = {};
-  const teams = o.teams ?? [[1, 2], [3, 4]];
+  const teams = o.teams ?? [
+    [1, 2],
+    [3, 4],
+  ];
   const g = createGame({
-    mapId: m.id, rows: m.rows, spawns: [...m.versus.spawns[0], ...m.versus.spawns[1]], difficulty: o.difficulty ?? 'normal', seed: o.seed ?? 5, bus,
-    teams: teams.map((playerIds) => ({ playerIds })), handicap: o.handicap, sabotage: o.mode ?? 'soft', sigma: m.versus.sigma,
+    mapId: m.id,
+    rows: m.rows,
+    spawns: [...m.versus.spawns[0], ...m.versus.spawns[1]],
+    difficulty: o.difficulty ?? 'normal',
+    seed: o.seed ?? 5,
+    bus,
+    teams: teams.map((playerIds) => ({ playerIds })),
+    handicap: o.handicap,
+    sabotage: o.mode ?? 'soft',
+    sigma: m.versus.sigma,
   });
-  for (const k of ['sabotage:bagReady', 'sabotage:aim', 'sabotage:launch', 'sabotage:land', 'sabotage:caught', 'sabotage:burst', 'sabotage:blocked', 'chef:slip', 'chef:recover', 'trash:picked', 'trash:binned', 'trash:decayed', 'itemPicked', 'interactInvalid'] as const) {
-    bus.on(k, ((p: never) => { ((log[k] ??= []) as { t: number; p: unknown }[]).push({ t: g.time, p }); }) as never);
+  for (const k of [
+    'sabotage:bagReady',
+    'sabotage:aim',
+    'sabotage:launch',
+    'sabotage:land',
+    'sabotage:caught',
+    'sabotage:burst',
+    'sabotage:blocked',
+    'chef:slip',
+    'chef:recover',
+    'trash:picked',
+    'trash:binned',
+    'trash:decayed',
+    'itemPicked',
+    'interactInvalid',
+  ] as const) {
+    bus.on(k, ((p: never) => {
+      ((log[k] ??= []) as { t: number; p: unknown }[]).push({ t: g.time, p });
+    }) as never);
   }
   teams.forEach((ids) => ids.forEach((id, rank) => addPlayer(g, id, rank, rank)));
   return { g, log, m };
 }
-const run = (g: Game, ms: number, c?: (id: number) => Controls) => { for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, new Map([...g.players.keys()].map((id): [number, Controls] => [id, c ? c(id) : idle]))); };
+const run = (g: Game, ms: number, c?: (id: number) => Controls) => {
+  for (let t = 0; t < ms - 1e-6; t += TICK_MS)
+    tick(g, new Map([...g.players.keys()].map((id): [number, Controls] => [id, c ? c(id) : idle])));
+};
 const only = (id: number, c: Controls) => new Map([[id, c]]);
 const A: Controls = { ...idle, a: 1 };
 /** Puts the chef on a floor tile next to the station, facing it. */
@@ -42,7 +73,10 @@ function face(g: Game, id: number, s: Station) {
 }
 const station = (g: Game, kind: string, team: number) => g.stations.find((s) => s.kind === kind && s.owner === team)!;
 const pressA = (g: Game, id: number) => tick(g, only(id, A));
-const pressB = (g: Game, id: number) => { tick(g, only(id, { ...idle, b: true })); tick(g, only(id, idle)); };
+const pressB = (g: Game, id: number) => {
+  tick(g, only(id, { ...idle, b: true }));
+  tick(g, only(id, idle));
+};
 /** Chef `id` carries a bag to its catapult and loads it (A). */
 function load(g: Game, id: number) {
   const p = g.players.get(id)!;
@@ -53,8 +87,18 @@ function load(g: Game, id: number) {
 }
 const flights = (g: Game, team: number) => g.sab!.teams[team]!.flights;
 /** Throws the bag that is loaded (B), waits for it to land. */
-function throwAndLand(g: Game, id: number) { pressB(g, id); run(g, LAND_AFTER_MS + 40); }
-const hashOf = (g: Game) => JSON.stringify([[...g.players.values()].map((p) => [p.x, p.y, p.item, p.slip, p.immuneUntil, p.inTrash]), g.floor, g.sab, g.time, g.teams.map((t) => [t.score, t.orders.map((o) => o.recipe)])]);
+function throwAndLand(g: Game, id: number) {
+  pressB(g, id);
+  run(g, LAND_AFTER_MS + 40);
+}
+const hashOf = (g: Game) =>
+  JSON.stringify([
+    [...g.players.values()].map((p) => [p.x, p.y, p.item, p.slip, p.immuneUntil, p.inTrash]),
+    g.floor,
+    g.sab,
+    g.time,
+    g.teams.map((t) => [t.score, t.orders.map((o) => o.recipe)]),
+  ]);
 
 describe('the catapult letter and the maps', () => {
   it('Y is a versus-only letter: a coop map refuses it, a versus game accepts it, and no coop map has one', () => {
@@ -66,7 +110,13 @@ describe('the catapult letter and the maps', () => {
   });
   it('V1-V5 carry one catapult per kitchen, twins by sigma, and every kitchen has landing tiles to spare', () => {
     for (const id of ['V1', 'V2', 'V3', 'V4', 'V5']) {
-      const { g } = mk({ map: id, teams: [[1, 2], [3, 4]] });
+      const { g } = mk({
+        map: id,
+        teams: [
+          [1, 2],
+          [3, 4],
+        ],
+      });
       const ys = g.stations.filter((s) => s.kind === 'catapult');
       expect(ys.map((s) => s.owner).sort(), id).toEqual([0, 1]);
       expect(g.sab, id).not.toBeNull();
@@ -75,7 +125,13 @@ describe('the catapult letter and the maps', () => {
     }
   });
   it('a map with no catapult switches the sabotage off by itself (and hazards stay off)', () => {
-    const g = createGame({ rows: versusMap('11-vs')!.rows, spawns: [...versusMap('11-vs')!.versus.spawns[0], ...versusMap('11-vs')!.versus.spawns[1]], teams: [{ playerIds: [1, 2] }, { playerIds: [3, 4] }], sabotage: 'chaos', sigma: versusMap('11-vs')!.versus.sigma });
+    const g = createGame({
+      rows: versusMap('11-vs')!.rows,
+      spawns: [...versusMap('11-vs')!.versus.spawns[0], ...versusMap('11-vs')!.versus.spawns[1]],
+      teams: [{ playerIds: [1, 2] }, { playerIds: [3, 4] }],
+      sabotage: 'chaos',
+      sigma: versusMap('11-vs')!.versus.sigma,
+    });
     expect(g.sab).toBeNull();
     expect(g.hazards).toBe(false);
   });
@@ -85,7 +141,9 @@ describe('the catapult letter and the maps', () => {
     expect(createGame({ n: 2 }).sab).toBeNull();
   });
   it('the modes set the sim: Suave on Fácil only slips, Normal drops the item, Caos spoils raw ingredients', () => {
-    const e = mk({ mode: 'soft', difficulty: 'easy' }).g, n = mk({ mode: 'soft', difficulty: 'normal' }).g, c = mk({ mode: 'chaos', difficulty: 'easy' }).g;
+    const e = mk({ mode: 'soft', difficulty: 'easy' }).g,
+      n = mk({ mode: 'soft', difficulty: 'normal' }).g,
+      c = mk({ mode: 'chaos', difficulty: 'easy' }).g;
     expect([e.slipDrops, e.spoilRaw]).toEqual([false, false]);
     expect([n.slipDrops, n.spoilRaw]).toEqual([true, false]);
     expect([c.slipDrops, c.spoilRaw]).toEqual([true, true]);
@@ -94,16 +152,34 @@ describe('the catapult letter and the maps', () => {
 });
 
 describe('desechos and bags: what fills the bin', () => {
-  const bin = (g: Game, id: number, item: Item) => { const p = face(g, id, station(g, 'trash', g.players.get(id)!.team)); p.item = item; pressA(g, id); };
+  const bin = (g: Game, id: number, item: Item) => {
+    const p = face(g, id, station(g, 'trash', g.players.get(id)!.team));
+    p.item = item;
+    pressA(g, id);
+  };
   it('an item binned is +1, a baked pizza +2, rubbish +1, a caught bag +3; three make a bag', () => {
     const { g, log } = mk({ mode: 'chaos' });
     const st = g.sab!.teams[0]!;
-    bin(g, 1, 'raw0'); expect(st.desechos).toBe(1);
-    bin(g, 1, 'dish'); expect(st.bags).toBe(1); expect(st.desechos).toBe(0); // 1 + 2
-    bin(g, 1, 'trash'); expect(st.desechos).toBe(1);
-    bin(g, 1, 'trashBag'); expect(st.bags).toBe(2); expect(st.desechos).toBe(1); // 1 + 3 = 4: one more bag (stock 2) and 1 left over
-    expect(log['sabotage:bagReady']!.map((e) => [e.p.team, e.p.bags])).toEqual([[0, 1], [0, 2]]);
-    expect(log['trash:binned']!.map((e) => [e.p.gained, e.p.item])).toEqual([[1, 'raw0'], [2, 'dish'], [1, 'trash'], [3, 'trashBag']]);
+    bin(g, 1, 'raw0');
+    expect(st.desechos).toBe(1);
+    bin(g, 1, 'dish');
+    expect(st.bags).toBe(1);
+    expect(st.desechos).toBe(0); // 1 + 2
+    bin(g, 1, 'trash');
+    expect(st.desechos).toBe(1);
+    bin(g, 1, 'trashBag');
+    expect(st.bags).toBe(2);
+    expect(st.desechos).toBe(1); // 1 + 3 = 4: one more bag (stock 2) and 1 left over
+    expect(log['sabotage:bagReady']!.map((e) => [e.p.team, e.p.bags])).toEqual([
+      [0, 1],
+      [0, 2],
+    ]);
+    expect(log['trash:binned']!.map((e) => [e.p.gained, e.p.item])).toEqual([
+      [1, 'raw0'],
+      [2, 'dish'],
+      [1, 'trash'],
+      [3, 'trashBag'],
+    ]);
     expect(g.sab!.teams[1]!.desechos).toBe(0); // the other team's counter is its own
   });
   it('the base trickle gives +1 every 15 s: a bag every 45 s with nobody doing anything', () => {
@@ -125,9 +201,12 @@ describe('desechos and bags: what fills the bin', () => {
   it('the stock is full (Suave: 1 bag): the counter stops adding', () => {
     const { g, log } = mk({ mode: 'soft' });
     const st = g.sab!.teams[0]!;
-    bin(g, 1, 'dish'); bin(g, 1, 'raw0');
+    bin(g, 1, 'dish');
+    bin(g, 1, 'raw0');
     expect(st.bags).toBe(1);
-    bin(g, 1, 'dish'); bin(g, 1, 'dish'); bin(g, 1, 'dish');
+    bin(g, 1, 'dish');
+    bin(g, 1, 'dish');
+    bin(g, 1, 'dish');
     expect(st.bags).toBe(1);
     expect(st.desechos).toBe(0); // it stayed where it was: nothing was added while the stock is full
     expect(log['trash:binned']!.slice(2).map((e) => e.p.gained)).toEqual([0, 0, 0]);
@@ -226,11 +305,12 @@ describe('the catapult: load, aim, throw', () => {
       expect(k1.has(to!.join()), `step ${i} in the rival kitchen`).toBe(true);
       expect(k0.has(to!.join())).toBe(false);
       expect(g.grid[to![1]]![to![0]]).toMatchObject({ kind: 'floor', spawn: false });
-      if ((g.grid[reticleAt(g, 1, i * RETICLE_STEP_MS)[1]]![reticleAt(g, 1, i * RETICLE_STEP_MS)[0]] as { spawn: boolean }).spawn) spawnTargets++;
+      if ((g.grid[reticleAt(g, 1, i * RETICLE_STEP_MS)[1]]![reticleAt(g, 1, i * RETICLE_STEP_MS)[0]] as { spawn: boolean }).spawn)
+        spawnTargets++;
     }
     expect(spawnTargets).toBeGreaterThan(0); // the sweep does cross spawn tiles and they were moved
   });
-  it('the gate of the kitchen: a tile of the thrower\'s own kitchen (or a wall) is never a landing, whatever the aim says', () => {
+  it("the gate of the kitchen: a tile of the thrower's own kitchen (or a wall) is never a landing, whatever the aim says", () => {
     const { g } = mk();
     expect(adjustLanding(g, 1, [3, 3])).toBeNull(); // (3, 3) is on the left, the kitchen of team 0: the bag cannot be sent there
     expect(adjustLanding(g, 0, [12, 2])).toBeNull();
@@ -272,29 +352,48 @@ describe('the catapult: load, aim, throw', () => {
     expect(g.floor).toHaveLength(0);
     expect(log['sabotage:land']).toBeUndefined();
   });
-  it('...but not with a full hand, not from farther than 0.6, and not a chef of the thrower\'s own team', () => {
+  it("...but not with a full hand, not from farther than 0.6, and not a chef of the thrower's own team", () => {
     const attempt = (setup: (c: Player, to: [number, number], g: Game) => void) => {
       const { g, log } = mk();
-      load(g, 1); run(g, 500); pressB(g, 1);
+      load(g, 1);
+      run(g, 500);
+      pressB(g, 1);
       const to = flights(g, 0)[0]!.to;
       setup(g.players.get(3)!, to, g);
       run(g, LAND_AFTER_MS + 40);
       return { caught: log['sabotage:caught']?.length ?? 0, floor: g.floor.length };
     };
-    expect(attempt((c, to) => { Object.assign(c, { x: to[0] + 0.55, y: to[1] + 0.5 }); c.item = 'raw0'; })).toEqual({ caught: 0, floor: 1 });
-    expect(attempt((c, to) => { Object.assign(c, { x: to[0] + 0.5 + 0.7, y: to[1] + 0.5 }); })).toMatchObject({ caught: 0 });
-    expect(attempt((_c, to, g) => { Object.assign(g.players.get(2)!, { x: to[0] + 0.5, y: to[1] + 0.5 }); })).toMatchObject({ caught: 0 }); // chef 2 is in the other kitchen's reach? it is on the thrower's team
+    expect(
+      attempt((c, to) => {
+        Object.assign(c, { x: to[0] + 0.55, y: to[1] + 0.5 });
+        c.item = 'raw0';
+      }),
+    ).toEqual({ caught: 0, floor: 1 });
+    expect(
+      attempt((c, to) => {
+        Object.assign(c, { x: to[0] + 0.5 + 0.7, y: to[1] + 0.5 });
+      }),
+    ).toMatchObject({ caught: 0 });
+    expect(
+      attempt((_c, to, g) => {
+        Object.assign(g.players.get(2)!, { x: to[0] + 0.5, y: to[1] + 0.5 });
+      }),
+    ).toMatchObject({ caught: 0 }); // chef 2 is in the other kitchen's reach? it is on the thrower's team
   });
 });
 
 describe('limits: cooldown, per minute, piles', () => {
-  const nextBag = (g: Game, team: number, n = 1) => { g.sab!.teams[team]!.bags = n; };
+  const nextBag = (g: Game, team: number, n = 1) => {
+    g.sab!.teams[team]!.bags = n;
+  };
   it('Suave: 12 s between two throws of a team; the catapult refuses the bag meanwhile (the chef keeps it)', () => {
     const { g, log } = mk({ mode: 'soft' });
-    load(g, 1); pressB(g, 1);
+    load(g, 1);
+    pressB(g, 1);
     expect(catapultState(g, 0)).toBe('cooldown');
     const p = g.players.get(1)!;
-    p.item = 'trashBag'; face(g, 1, station(g, 'catapult', 0));
+    p.item = 'trashBag';
+    face(g, 1, station(g, 'catapult', 0));
     pressA(g, 1);
     expect(p.item).toBe('trashBag');
     expect(log['sabotage:blocked']!.map((e) => e.p.why)).toEqual(['cooldown']);
@@ -308,7 +407,8 @@ describe('limits: cooldown, per minute, piles', () => {
   });
   it('Caos: 8 s between throws', () => {
     const { g } = mk({ mode: 'chaos' });
-    load(g, 1); pressB(g, 1);
+    load(g, 1);
+    pressB(g, 1);
     run(g, 7000);
     expect(catapultState(g, 0)).toBe('cooldown');
     run(g, 1100);
@@ -316,17 +416,30 @@ describe('limits: cooldown, per minute, piles', () => {
   });
   it('Suave: 3 throws per sliding minute, then "window" until the first one is a minute old', () => {
     const { g, log } = mk({ mode: 'soft' });
-    for (let i = 0; i < 3; i++) { load(g, 1); pressB(g, 1); run(g, RULES.soft.cooldownMs + 100); g.floor.length = 0; } // rubbish removed: this test is about the window
+    for (let i = 0; i < 3; i++) {
+      load(g, 1);
+      pressB(g, 1);
+      run(g, RULES.soft.cooldownMs + 100);
+      g.floor.length = 0;
+    } // rubbish removed: this test is about the window
     expect(g.time).toBeGreaterThan(36_000);
     expect(catapultState(g, 0)).toBe('window');
-    const p = g.players.get(1)!; p.item = 'trashBag'; face(g, 1, station(g, 'catapult', 0)); pressA(g, 1);
+    const p = g.players.get(1)!;
+    p.item = 'trashBag';
+    face(g, 1, station(g, 'catapult', 0));
+    pressA(g, 1);
     expect(log['sabotage:blocked']!.at(-1)!.p.why).toBe('window');
     run(g, 60_000 - g.time + 600);
     expect(catapultState(g, 0)).toBe('ready');
   });
   it('Caos: 5 throws per minute', () => {
     const { g } = mk({ mode: 'chaos' });
-    for (let i = 0; i < 5; i++) { load(g, 1); pressB(g, 1); run(g, RULES.chaos.cooldownMs + 100); g.floor.length = 0; }
+    for (let i = 0; i < 5; i++) {
+      load(g, 1);
+      pressB(g, 1);
+      run(g, RULES.chaos.cooldownMs + 100);
+      g.floor.length = 0;
+    }
     expect(g.time).toBeLessThan(60_000);
     expect(catapultState(g, 0)).toBe('window');
   });
@@ -337,13 +450,17 @@ describe('limits: cooldown, per minute, piles', () => {
     expect(catapultState(g, 0)).toBe('ready');
     addFloorItem(g, { tx: tiles[5]![0], ty: tiles[5]![1], item: 'trash', kind: 'trash', team: 1 });
     expect(catapultState(g, 0)).toBe('piles');
-    const p = g.players.get(1)!; p.item = 'trashBag'; face(g, 1, station(g, 'catapult', 0)); pressA(g, 1);
+    const p = g.players.get(1)!;
+    p.item = 'trashBag';
+    face(g, 1, station(g, 'catapult', 0));
+    pressA(g, 1);
     expect(p.item).toBe('trashBag');
     expect(log['sabotage:blocked']!.map((e) => e.p.why)).toEqual(['piles']);
     // a bag in the air counts as a pile too
     const { g: h } = mk({ mode: 'soft' });
     addFloorItem(h, { tx: tiles[0]![0], ty: tiles[0]![1], item: 'trash', kind: 'trash', team: 1 });
-    load(h, 1); pressB(h, 1);
+    load(h, 1);
+    pressB(h, 1);
     expect(flights(h, 0)).toHaveLength(1);
     expect(pilesIn(h, 1)).toBe(1);
     run(h, RULES.soft.cooldownMs + 100);
@@ -351,20 +468,36 @@ describe('limits: cooldown, per minute, piles', () => {
   });
   it('Caos: the bag leaves a double pile (the target and a neighbour), never above the maximum of 3', () => {
     const { g, log } = mk({ mode: 'chaos' });
-    load(g, 1); pressB(g, 1); run(g, LAND_AFTER_MS + 40);
+    load(g, 1);
+    pressB(g, 1);
+    run(g, LAND_AFTER_MS + 40);
     expect(g.floor).toHaveLength(2);
     expect(log['sabotage:land']![0]!.p.double).toBe(true);
     const [a, b] = g.floor;
     expect(Math.abs(a!.tx - b!.tx) + Math.abs(a!.ty - b!.ty)).toBe(1);
     run(g, RULES.chaos.cooldownMs);
-    load(g, 1); pressB(g, 1); run(g, LAND_AFTER_MS + 40);
+    load(g, 1);
+    pressB(g, 1);
+    run(g, LAND_AFTER_MS + 40);
     expect(pilesIn(g, 1)).toBeLessThanOrEqual(3);
   });
   it('Suave: single piles that last 20 s; Caos 35 s; on the kitchen of a team with k > 1 they last 0.7 times that', () => {
-    const t = (mode: SabotageMode, o: { teams?: number[][] } = {}) => { const { g, log } = mk({ mode, ...o }); load(g, 1); pressB(g, 1); run(g, LAND_AFTER_MS + 40); const born = g.floor[0]!.bornAt; return { life: g.floor[0]!.expiresAt - born, g, log }; };
+    const t = (mode: SabotageMode, o: { teams?: number[][] } = {}) => {
+      const { g, log } = mk({ mode, ...o });
+      load(g, 1);
+      pressB(g, 1);
+      run(g, LAND_AFTER_MS + 40);
+      const born = g.floor[0]!.bornAt;
+      return { life: g.floor[0]!.expiresAt - born, g, log };
+    };
     expect(t('soft').life).toBe(20_000);
     expect(t('chaos').life).toBe(35_000);
-    const small = t('soft', { teams: [[1, 2, 5], [3, 4]] }); // team 1 is the small one: k = 1.22
+    const small = t('soft', {
+      teams: [
+        [1, 2, 5],
+        [3, 4],
+      ],
+    }); // team 1 is the small one: k = 1.22
     expect(small.g.teams[1]!.k).toBeGreaterThan(1);
     expect(small.life).toBeCloseTo(20_000 * 0.7, 3);
     run(small.g, 14_100);
@@ -372,16 +505,31 @@ describe('limits: cooldown, per minute, piles', () => {
     expect(small.log['trash:decayed']).toHaveLength(1);
   });
   it('3 v 2: the big team waits k times as long between throws', () => {
-    const { g } = mk({ mode: 'soft', teams: [[1, 2, 5], [3, 4]] });
+    const { g } = mk({
+      mode: 'soft',
+      teams: [
+        [1, 2, 5],
+        [3, 4],
+      ],
+    });
     const k = g.teams[1]!.k;
     expect(g.teams[0]!.k).toBe(1);
-    load(g, 1); pressB(g, 1);
+    load(g, 1);
+    pressB(g, 1);
     run(g, RULES.soft.cooldownMs * k - 500);
     expect(catapultState(g, 0)).toBe('cooldown');
     run(g, 700);
     expect(catapultState(g, 0)).not.toBe('cooldown');
-    const { g: h } = mk({ mode: 'soft', teams: [[1, 2, 5], [3, 4]] }); // the small team waits the base 12 s
-    load(h, 3); pressB(h, 3); run(h, RULES.soft.cooldownMs + 100);
+    const { g: h } = mk({
+      mode: 'soft',
+      teams: [
+        [1, 2, 5],
+        [3, 4],
+      ],
+    }); // the small team waits the base 12 s
+    load(h, 3);
+    pressB(h, 3);
+    run(h, RULES.soft.cooldownMs + 100);
     expect(catapultState(h, 1)).not.toBe('cooldown');
   });
   it('a chef that drops while it aims gives the bag back to the stock', () => {
@@ -400,14 +548,17 @@ describe('limits: cooldown, per minute, piles', () => {
 describe('the whole duel: throw, slip, clean, throw back', () => {
   it('a rival who steps on the rubbish slips and drops its pizza; its team cleans the rubbish and the bin feeds ITS catapult', () => {
     const { g, log } = mk({ mode: 'soft', difficulty: 'normal' });
-    load(g, 1); pressB(g, 1); run(g, LAND_AFTER_MS + 40);
+    load(g, 1);
+    pressB(g, 1);
+    run(g, LAND_AFTER_MS + 40);
     const trash = g.floor[0]!;
     // chef 3 (rival) walks over it carrying a pizza
     const c = g.players.get(3)!;
     c.item = 'dishQ';
     const from = [trash.tx + 0.5 - 1.6, trash.ty + 0.5] as const;
     Object.assign(c, { x: from[0], y: from[1], fx: 1, fy: 0 });
-    if (!isFloor(g.grid, Math.floor(from[0]), Math.floor(from[1]))) Object.assign(c, { x: trash.tx + 0.5 + 1.6, y: trash.ty + 0.5, fx: -1 });
+    if (!isFloor(g.grid, Math.floor(from[0]), Math.floor(from[1])))
+      Object.assign(c, { x: trash.tx + 0.5 + 1.6, y: trash.ty + 0.5, fx: -1 });
     const dir = c.fx > 0 ? 1 : -1;
     for (let i = 0; i < 120 && !log['chef:slip']; i++) tick(g, new Map([[3, { x: dir, y: 0, a: 0, b: false }]]));
     expect(log['chef:slip']).toHaveLength(1);
@@ -444,23 +595,32 @@ describe('determinism and the guarantee that off is off', () => {
   };
   const play = (mode: SabotageMode) => {
     const { g } = mk({ mode, seed: 9 });
-    g.sab?.teams.forEach((t) => { t.bags = 1; });
+    g.sab?.teams.forEach((t) => {
+      t.bags = 1;
+    });
     for (let i = 0; i < 3000; i++) tick(g, new Map([...g.players.keys()].map((id): [number, Controls] => [id, script(id, i)])));
     return g;
   };
   it('same seed, same inputs: the same state hash, twice (sabotage on)', () => {
     expect(hashOf(play('chaos'))).toBe(hashOf(play('chaos')));
   });
-  it('the sabotage never touches the orders\' random stream: queues are the same with it on, off and in chaos', () => {
+  it("the sabotage never touches the orders' random stream: queues are the same with it on, off and in chaos", () => {
     const q = (g: Game) => JSON.stringify(g.teams.map((t) => t.orders.map((o) => [o.recipe, o.expiresAt, o.id])));
-    const nothing = (mode: SabotageMode) => { const { g } = mk({ mode, seed: 9 }); run(g, 100_000); return q(g); };
+    const nothing = (mode: SabotageMode) => {
+      const { g } = mk({ mode, seed: 9 });
+      run(g, 100_000);
+      return q(g);
+    };
     expect(nothing('soft')).toBe(nothing('off'));
     expect(nothing('chaos')).toBe(nothing('off'));
   });
 });
 
 describe('the labels of the two buttons (no third button)', () => {
-  const hint = (g: Game, id: number) => { const p = g.players.get(id)!; return sabotageHint(g, p, targetStation(g, p), !!floorItemNear(g, p)); };
+  const hint = (g: Game, id: number) => {
+    const p = g.players.get(id)!;
+    return sabotageHint(g, p, targetStation(g, p), !!floorItemNear(g, p));
+  };
   it('A and B are only renamed: Tomar bolsa at the bin with a bag waiting, Cargar at the catapult with the bag, ¡Lanzar! while aiming, Recoger next to rubbish', () => {
     const { g } = mk();
     expect(hint(g, 1)).toEqual({ a: null, b: null });
@@ -474,10 +634,12 @@ describe('the labels of the two buttons (no third button)', () => {
     expect(hint(g, 1)).toEqual({ a: 'Cargar', b: null });
     pressA(g, 1);
     expect(hint(g, 1)).toEqual({ a: null, b: '¡Lanzar!' });
-    const q = g.players.get(2)!; Object.assign(q, { x: 4.5, y: 2.5, fx: 1, fy: 0 });
+    const q = g.players.get(2)!;
+    Object.assign(q, { x: 4.5, y: 2.5, fx: 1, fy: 0 });
     addFloorItem(g, { tx: 5, ty: 2, item: 'trash', kind: 'trash', team: 0 });
     expect(hint(g, 2)).toEqual({ a: 'Recoger', b: null });
-    for (const h of [{ a: 'Tomar bolsa' }, { a: 'Botar bolsa' }, { a: 'Cargar' }, { b: '¡Lanzar!' }, { a: 'Recoger' }]) for (const v of Object.values(h)) expect(v.length).toBeLessThanOrEqual(LABEL_MAX);
+    for (const h of [{ a: 'Tomar bolsa' }, { a: 'Botar bolsa' }, { a: 'Cargar' }, { b: '¡Lanzar!' }, { a: 'Recoger' }])
+      for (const v of Object.values(h)) expect(v.length).toBeLessThanOrEqual(LABEL_MAX);
   });
   it('with the sabotage off there is nothing to rename', () => {
     const { g } = mk({ mode: 'off' });

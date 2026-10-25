@@ -1,7 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ALL_DONE_TEXT, DONE_TEXT, KNOWN_TEXT, SCHOOL_STEPS, SCHOOL_TOTAL, SCHOOL_SUB, SCHOOL_SUB_VERSUS, advance, allDone, completes, focusButton, fresh, instruction, isDone, regrantItem, skipped, wantedItems,
-  type Prog, type SchoolEvent,
+  ALL_DONE_TEXT,
+  DONE_TEXT,
+  KNOWN_TEXT,
+  SCHOOL_STEPS,
+  SCHOOL_TOTAL,
+  SCHOOL_SUB,
+  SCHOOL_SUB_VERSUS,
+  advance,
+  allDone,
+  completes,
+  focusButton,
+  fresh,
+  instruction,
+  isDone,
+  regrantItem,
+  skipped,
+  wantedItems,
+  type Prog,
+  type SchoolEvent,
 } from './steps';
 import { SCHOOL_ROWS } from './schoolMap';
 import { parseMap } from '../maps';
@@ -24,7 +41,10 @@ describe('the four steps', () => {
 });
 
 describe('which event finishes which step', () => {
-  const picked = (item: SchoolEvent extends infer E ? E extends { kind: 'picked'; item: infer I } ? I : never : never, from = 'crate' as const): SchoolEvent => ({ kind: 'picked', item, from });
+  const picked = (
+    item: SchoolEvent extends infer E ? (E extends { kind: 'picked'; item: infer I } ? I : never) : never,
+    from = 'crate' as const,
+  ): SchoolEvent => ({ kind: 'picked', item, from });
   it('step 0: dough taken from a crate, nothing else', () => {
     expect(completes(0, picked('raw0'))).toBe(true);
     expect(completes(0, picked('raw1'))).toBe(false);
@@ -47,7 +67,12 @@ describe('which event finishes which step', () => {
     expect(completes(3, { kind: 'dropped', item: 'dish', at: 'pot' })).toBe(false);
   });
   it('a finished chef (step 4) is finished by nothing', () => {
-    for (const ev of [{ kind: 'delivered' }, { kind: 'chopped', item: 'cut1' }, { kind: 'picked', item: 'raw0', from: 'crate' }] as SchoolEvent[]) expect(completes(4, ev)).toBe(false);
+    for (const ev of [
+      { kind: 'delivered' },
+      { kind: 'chopped', item: 'cut1' },
+      { kind: 'picked', item: 'raw0', from: 'crate' },
+    ] as SchoolEvent[])
+      expect(completes(4, ev)).toBe(false);
   });
 });
 
@@ -55,7 +80,10 @@ describe('progress of one chef and of the table', () => {
   it('advances one step at a time and stops at the total', () => {
     let p: Prog = fresh();
     const seen = [p.step];
-    for (let i = 0; i < 6; i++) { p = advance(p); seen.push(p.step); }
+    for (let i = 0; i < 6; i++) {
+      p = advance(p);
+      seen.push(p.step);
+    }
     expect(seen).toEqual([0, 1, 2, 3, 4, 4, 4]);
     expect(isDone(p)).toBe(true);
     expect(isDone(fresh())).toBe(false);
@@ -67,7 +95,10 @@ describe('progress of one chef and of the table', () => {
     expect(advance({ step: 1, skipped: true }).skipped).toBe(true);
   });
   it('the school ends only when somebody is connected and every connected chef is done', () => {
-    const prog = new Map<number, Prog>([[1, skipped()], [2, { step: 3, skipped: false }]]);
+    const prog = new Map<number, Prog>([
+      [1, skipped()],
+      [2, { step: 3, skipped: false }],
+    ]);
     expect(allDone(prog, [])).toBe(false);
     expect(allDone(prog, [1])).toBe(true);
     expect(allDone(prog, [1, 2])).toBe(false);

@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTIES } from './difficulty';
-import { FIXED_MAPS, MAPS_BY_DIFFICULTY, MAP_H, MAP_W, defaultMap, fixedMap, isFloor, lobbyMaps, lobbyN, mapStatus, parseMap, pickFixedMap, recommendedMaps, replacementMap, spawnPoints } from './maps';
+import {
+  FIXED_MAPS,
+  MAPS_BY_DIFFICULTY,
+  MAP_H,
+  MAP_W,
+  defaultMap,
+  fixedMap,
+  isFloor,
+  lobbyMaps,
+  lobbyN,
+  mapStatus,
+  parseMap,
+  pickFixedMap,
+  recommendedMaps,
+  replacementMap,
+  spawnPoints,
+} from './maps';
 
 describe('fixed maps', () => {
   it('are 16x9 grids with known characters only, ids unique and ascending', () => {
@@ -34,7 +50,12 @@ describe('fixed maps', () => {
 describe('spawnPoints', () => {
   it('starts with the S tiles in reading order; the river maps alternate sides', () => {
     const g = parseMap(fixedMap('3')!.rows);
-    expect(spawnPoints(g, 4)).toEqual([[3, 4], [11, 4], [3, 6], [11, 6]]);
+    expect(spawnPoints(g, 4)).toEqual([
+      [3, 4],
+      [11, 4],
+      [3, 6],
+      [11, 6],
+    ]);
   });
 
   it('8 players get 8 distinct floor tiles; extras sit next to a spawn', () => {

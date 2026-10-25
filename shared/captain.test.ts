@@ -56,7 +56,8 @@ describe('the D-pad speaks the keyboard', () => {
   });
   it('isNavKey is a closed list', () => {
     expect(NAV_KEYS.every(isNavKey)).toBe(true);
-    for (const bad of ['', 'UP', 'Enter', 'ArrowUp', 'start', 7, null, undefined, {}, '__proto__', 'toString']) expect(isNavKey(bad)).toBe(false);
+    for (const bad of ['', 'UP', 'Enter', 'ArrowUp', 'start', 7, null, undefined, {}, '__proto__', 'toString'])
+      expect(isNavKey(bad)).toBe(false);
   });
 });
 

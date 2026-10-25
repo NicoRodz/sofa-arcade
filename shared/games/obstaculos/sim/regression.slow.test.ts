@@ -8,19 +8,32 @@ import { LEVELS } from '../levels';
 import { hashBodies } from './player';
 import { createWorld, hashState, step } from './world';
 
-const noise = (seed = 7) => { let r = seed; return () => { r = (r * 1664525 + 1013904223) >>> 0; return r / 2 ** 32; }; };
+const noise = (seed = 7) => {
+  let r = seed;
+  return () => {
+    r = (r * 1664525 + 1013904223) >>> 0;
+    return r / 2 ** 32;
+  };
+};
 const run = (lv: (typeof LEVELS)[number], mode: 'chain' | 'free', n: number, campaign?: { world: 'beach' | 'glacier' }) => {
   const slots = Array.from({ length: n }, (_, i) => i);
   const w = createWorld({ level: lv, mode, difficulty: 'normal', slots, ...(campaign ? { campaign } : {}) });
   const rnd = noise();
   let throws = 0;
   for (let i = 0; i < 900; i++) {
-    const inputs = slots.map(() => ({ move: [-1, 0, 1, 1][Math.floor(rnd() * 4)]! * (i % 90 < 70 ? 1 : 0), down: rnd() < 0.05, up: false, jump: rnd() < 0.05, grab: rnd() < 0.02 }));
+    const inputs = slots.map(() => ({
+      move: [-1, 0, 1, 1][Math.floor(rnd() * 4)]! * (i % 90 < 70 ? 1 : 0),
+      down: rnd() < 0.05,
+      up: false,
+      jump: rnd() < 0.05,
+      grab: rnd() < 0.02,
+    }));
     throws += step(w, inputs).filter((e) => e.name === 'obst.throw').length;
   }
   return { w, throws };
 };
-const modesOf = (t: string) => (t === 'chainOnly' ? ['chain' as const] : t === 'freeOnly' ? ['free' as const] : ['chain' as const, 'free' as const]);
+const modesOf = (t: string) =>
+  t === 'chainOnly' ? ['chain' as const] : t === 'freeOnly' ? ['free' as const] : ['chain' as const, 'free' as const];
 
 const QUICK = [
   'l01 chain n=2 3943193544 3 playing',
@@ -127,18 +140,22 @@ const CAMPAIGN = [
 describe('A5 regression: what existed before does not move', () => {
   it('quick match: the hash of the 15 levels (2 and 4 players, both modes) after 900 noisy steps is the one master had', () => {
     const got: string[] = [];
-    for (const lv of LEVELS) for (const mode of modesOf(lv.tether)) for (const n of [2, 4]) {
-      const { w } = run(lv, mode, n);
-      got.push(`${lv.id} ${mode} n=${n} ${hashState(w)} ${w.deaths} ${w.status}`);
-    }
+    for (const lv of LEVELS)
+      for (const mode of modesOf(lv.tether))
+        for (const n of [2, 4]) {
+          const { w } = run(lv, mode, n);
+          got.push(`${lv.id} ${mode} n=${n} ${hashState(w)} ${w.deaths} ${w.status}`);
+        }
     expect(got).toEqual(QUICK);
   });
   it('campaign worlds on the old levels: the bodies of every run without a throw are the ones master had (Playa and Glaciar)', () => {
     const got: string[] = [];
-    for (const lv of LEVELS) for (const mode of modesOf(lv.tether)) for (const world of ['beach', 'glacier'] as const) {
-      const { w, throws } = run(lv, mode, 2, { world });
-      if (throws === 0) got.push(`${lv.id} ${mode} ${world} ${hashBodies(w.players.map((p) => p.body))} ${w.deaths} ${w.status}`);
-    }
+    for (const lv of LEVELS)
+      for (const mode of modesOf(lv.tether))
+        for (const world of ['beach', 'glacier'] as const) {
+          const { w, throws } = run(lv, mode, 2, { world });
+          if (throws === 0) got.push(`${lv.id} ${mode} ${world} ${hashBodies(w.players.map((p) => p.body))} ${w.deaths} ${w.status}`);
+        }
     expect(got).toEqual(CAMPAIGN);
   });
 });

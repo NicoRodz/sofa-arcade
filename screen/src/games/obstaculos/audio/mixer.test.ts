@@ -23,7 +23,7 @@ describe('VoiceLimiter', () => {
     const l = new VoiceLimiter();
     let n = 0;
     for (let i = 0; i < 40; i++) if (l.allow(c(i % 2 ? 'death' : 'bubble', `k${i}`, 3), 5)) n++;
-    expect(n).toBe(16); // death x8 and bubble x8 (per-recipe cap) ... 
+    expect(n).toBe(16); // death x8 and bubble x8 (per-recipe cap) ...
     expect(l.size).toBeLessThanOrEqual(24);
     const m = new VoiceLimiter();
     const recipes = ['land', 'grabBox', 'plate', 'gate', 'throw', 'ropeTaut', 'star'] as const;

@@ -5,11 +5,36 @@
 // zonas3 (three rooms) is not generated: the fixed maps 13 and 15 cover it.
 import type { Difficulty } from './difficulty';
 import { teamSize } from './difficulty';
-import { MAPS_BY_DIFFICULTY, MAP_H, MAP_W, fixedMap, parseMap, pickFixedMap, posKey, recommendedMaps, type MapChoice, type MapDef, type Pos, type SigmaName, type VersusMapDef } from './maps';
+import {
+  MAPS_BY_DIFFICULTY,
+  MAP_H,
+  MAP_W,
+  fixedMap,
+  parseMap,
+  pickFixedMap,
+  posKey,
+  recommendedMaps,
+  type MapChoice,
+  type MapDef,
+  type Pos,
+  type SigmaName,
+  type VersusMapDef,
+} from './maps';
 import { PUESTOS, puestosFor, type Features, type PuestoId } from './puestos';
 import { mulberry32, pick, pickWeighted, randInt, type Rng } from './rng';
 import { metric } from './score';
-import { FLOOR_PER_PLAYER, accessTiles, analyze, floorTiles, minPlayers, spawnTiles, teamRange, validateMap, validateVersus, zoneShareProblems } from './validate';
+import {
+  FLOOR_PER_PLAYER,
+  accessTiles,
+  analyze,
+  floorTiles,
+  minPlayers,
+  spawnTiles,
+  teamRange,
+  validateMap,
+  validateVersus,
+  zoneShareProblems,
+} from './validate';
 import { SIGMAS } from './symmetry';
 import { VERSUS_BASE_MAPS } from './versusMaps';
 
@@ -41,32 +66,47 @@ export function stationCounts(n: number, diff: Difficulty, mech: Mech = NO_MECH)
   const t = teamSize(n);
   const boards = Math.max(1, Math.ceil((t + 1) / 3) + (mech.cheese ? 1 : 0) - (diff === 'hard' ? 1 : 0));
   return {
-    boards, ovens: Math.ceil(t / 3), crates: t >= 6 ? 2 : 1, cheese: mech.cheese ? 1 : 0,
-    serve: 1 + Math.floor(t / 5), trash: 1 + Math.floor(t / 4), wash: mech.sink && t >= 5 ? 1 : 0,
+    boards,
+    ovens: Math.ceil(t / 3),
+    crates: t >= 6 ? 2 : 1,
+    cheese: mech.cheese ? 1 : 0,
+    serve: 1 + Math.floor(t / 5),
+    trash: 1 + Math.floor(t / 4),
+    wash: mech.sink && t >= 5 ? 1 : 0,
   };
 }
 
 export type Cells = string[][];
 type Zone = 'A' | 'B';
-export interface Layout { cells: Cells; zoneAt: ((x: number) => Zone) | null; blockX: [number, number] | null }
+export interface Layout {
+  cells: Cells;
+  zoneAt: ((x: number) => Zone) | null;
+  blockX: [number, number] | null;
+}
 
 const shell = (): Cells =>
-  Array.from({ length: MAP_H }, (_, y) => Array.from({ length: MAP_W }, (_, x) => {
-    if (x > 0 && x < MAP_W - 1 && y > 0 && y < MAP_H - 1) return '.';
-    const corner = y === 0 || y === MAP_H - 1 ? x < 2 || x >= MAP_W - 2 : y === 1 || y === MAP_H - 2;
-    return corner ? '#' : 'C';
-  }));
+  Array.from({ length: MAP_H }, (_, y) =>
+    Array.from({ length: MAP_W }, (_, x) => {
+      if (x > 0 && x < MAP_W - 1 && y > 0 && y < MAP_H - 1) return '.';
+      const corner = y === 0 || y === MAP_H - 1 ? x < 2 || x >= MAP_W - 2 : y === 1 || y === MAP_H - 2;
+      return corner ? '#' : 'C';
+    }),
+  );
 
 export function applyArchetype(arch: Archetype, diff: Difficulty, rng: Rng): Layout {
   const cells = shell();
   if (arch === 'island') {
-    const w = randInt(rng, 3, 7), h = randInt(rng, 1, 2);
-    const x0 = Math.floor((MAP_W - w) / 2) + randInt(rng, -1, 1), y0 = h === 2 ? 3 : 4;
+    const w = randInt(rng, 3, 7),
+      h = randInt(rng, 1, 2);
+    const x0 = Math.floor((MAP_W - w) / 2) + randInt(rng, -1, 1),
+      y0 = h === 2 ? 3 : 4;
     for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) cells[y]![x] = 'C';
     return { cells, zoneAt: null, blockX: null };
   }
-  if (arch === 'lanes') { // two counter rows split the kitchen into three lanes joined at both ends (like Tres carriles)
-    const len = randInt(rng, 6, 10), x0 = randInt(rng, 3, 13 - len);
+  if (arch === 'lanes') {
+    // two counter rows split the kitchen into three lanes joined at both ends (like Tres carriles)
+    const len = randInt(rng, 6, 10),
+      x0 = randInt(rng, 3, 13 - len);
     for (const y of [3, 5]) for (let x = x0; x < x0 + len; x++) cells[y]![x] = 'C';
     return { cells, zoneAt: null, blockX: null };
   }
@@ -83,7 +123,9 @@ export function applyArchetype(arch: Archetype, diff: Difficulty, rng: Rng): Lay
     return { cells, zoneAt: (x) => (x < xr ? 'A' : 'B'), blockX: [xr, xr + 1] };
   }
   if (arch === 'corridor') {
-    const len = randInt(rng, 2, 5), a = randInt(rng, 4, 12 - len), gap = randInt(rng, 2, 6);
+    const len = randInt(rng, 2, 5),
+      a = randInt(rng, 4, 12 - len),
+      gap = randInt(rng, 2, 6);
     for (let x = a; x < a + len; x++) for (let y = 0; y < MAP_H; y++) cells[y]![x] = y === gap ? '.' : '#';
     return { cells, zoneAt: (x) => (x < a + len / 2 ? 'A' : 'B'), blockX: [a, a + len] };
   }
@@ -96,14 +138,20 @@ export const shape = (cells: Cells) => {
   return `${a.count}/${a.passes.length}`;
 };
 
-export interface Bounds { x0: number; x1: number; y0: number; y1: number }
+export interface Bounds {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
 const WHOLE_MAP: Bounds = { x0: 2, x1: MAP_W - 3, y0: 2, y1: MAP_H - 3 };
 
 export function scatterObstacles(cells: Cells, count: number, rng: Rng, within: Bounds = WHOLE_MAP) {
   for (let i = 0; i < count; i++) {
     const before = shape(cells);
     for (let tries = 0; tries < 10; tries++) {
-      const x = randInt(rng, within.x0, within.x1), y = randInt(rng, within.y0, within.y1);
+      const x = randInt(rng, within.x0, within.x1),
+        y = randInt(rng, within.y0, within.y1);
       if (cells[y]![x] !== '.') continue;
       cells[y]![x] = 'C';
       if (shape(cells) === before) break;
@@ -133,11 +181,15 @@ export function placeStations(l: Layout, n: number, diff: Difficulty, rng: Rng, 
   ];
   for (const [ch, zone] of order) {
     const slots: { at: Pos; acc: Pos }[] = [];
-    cells.forEach((row, y) => row.forEach((cell, x) => {
-      if (cell !== 'C' || passes.has(posKey(x, y))) return;
-      const acc = accessTiles(parseMap(rowsOf(cells)), x, y).find(([ax, ay]) => !claimed.has(posKey(ax, ay)) && (!zoneAt || zoneAt(ax) === zone));
-      if (acc) slots.push({ at: [x, y], acc });
-    }));
+    cells.forEach((row, y) =>
+      row.forEach((cell, x) => {
+        if (cell !== 'C' || passes.has(posKey(x, y))) return;
+        const acc = accessTiles(parseMap(rowsOf(cells)), x, y).find(
+          ([ax, ay]) => !claimed.has(posKey(ax, ay)) && (!zoneAt || zoneAt(ax) === zone),
+        );
+        if (acc) slots.push({ at: [x, y], acc });
+      }),
+    );
     if (!slots.length) return null;
     const s = pick(rng, slots);
     cells[s.at[1]]![s.at[0]] = ch;
@@ -153,12 +205,14 @@ function placeSpawns(l: Layout, nMax: number, claimed: Set<string>, rng: Rng): b
   for (let i = 0; i < teamSize(nMax); i++) {
     const want: Zone | null = zoneAt ? (i % 2 ? 'B' : 'A') : null;
     const cand: Pos[] = [];
-    cells.forEach((row, y) => row.forEach((c, x) => {
-      if (c !== '.' || claimed.has(posKey(x, y))) return;
-      if (blockX && x >= blockX[0] && x < blockX[1]) return;
-      if (want && zoneAt!(x) !== want) return;
-      if (chosen.every(([cx, cy]) => Math.abs(cx - x) + Math.abs(cy - y) >= 2)) cand.push([x, y]);
-    }));
+    cells.forEach((row, y) =>
+      row.forEach((c, x) => {
+        if (c !== '.' || claimed.has(posKey(x, y))) return;
+        if (blockX && x >= blockX[0] && x < blockX[1]) return;
+        if (want && zoneAt!(x) !== want) return;
+        if (chosen.every(([cx, cy]) => Math.abs(cx - x) + Math.abs(cy - y) >= 2)) cand.push([x, y]);
+      }),
+    );
     if (!cand.length) return false;
     const [x, y] = pick(rng, cand);
     cells[y]![x] = 'S';
@@ -172,17 +226,31 @@ function placeSpawns(l: Layout, nMax: number, claimed: Set<string>, rng: Rng): b
 export function orderSpawns(rows: readonly string[], spawns: readonly Pos[], nMax: number, mech: Mech): Pos[] {
   const g = parseMap(rows);
   const stations: { kind: string; crate: number; x: number; y: number }[] = [];
-  g.forEach((row, y) => row.forEach((t, x) => { if (t.kind === 'station') stations.push({ kind: t.station, crate: t.crate, x, y }); }));
+  g.forEach((row, y) =>
+    row.forEach((t, x) => {
+      if (t.kind === 'station') stations.push({ kind: t.station, crate: t.crate, x, y });
+    }),
+  );
   const left = [...spawns];
   const out: Pos[] = [];
   for (const ids of puestosFor(nMax, mech)) {
     if (!left.length) break;
-    const cost = (sp: Pos) => ids.reduce((sum, id) => sum + PUESTOS[id].picks.reduce((s2, pick2) => {
-      const d = stations.filter((s) => s.kind === pick2.kind && (pick2.crate === undefined || s.crate === pick2.crate)).map((s) => Math.abs(s.x - sp[0]) + Math.abs(s.y - sp[1]));
-      return s2 + (d.length ? Math.min(...d) : 0);
-    }, 0), 0);
+    const cost = (sp: Pos) =>
+      ids.reduce(
+        (sum, id) =>
+          sum +
+          PUESTOS[id].picks.reduce((s2, pick2) => {
+            const d = stations
+              .filter((s) => s.kind === pick2.kind && (pick2.crate === undefined || s.crate === pick2.crate))
+              .map((s) => Math.abs(s.x - sp[0]) + Math.abs(s.y - sp[1]));
+            return s2 + (d.length ? Math.min(...d) : 0);
+          }, 0),
+        0,
+      );
     let best = 0;
-    left.forEach((sp, i) => { if (cost(sp) < cost(left[best]!)) best = i; });
+    left.forEach((sp, i) => {
+      if (cost(sp) < cost(left[best]!)) best = i;
+    });
     out.push(left.splice(best, 1)[0]!);
   }
   return [...out, ...left];
@@ -196,7 +264,7 @@ export function zonePuestos(spawns: readonly Pos[], zoneAt: (x: number) => Zone,
   return spawns.map((_sp, i) => {
     const z = zones[i]!;
     const alone = zones.filter((v) => v === z).length === 1;
-    if (z === 'A') return serveInA && (i === lastOf('A')) ? (alone ? ['prep', 'entrega'] : ['entrega']) : ['prep'];
+    if (z === 'A') return serveInA && i === lastOf('A') ? (alone ? ['prep', 'entrega'] : ['entrega']) : ['prep'];
     const base: PuestoId[] = serveInA ? ['horno', 'platos'] : ['horno', 'reparto'];
     if (mech.sink && i === lastOf('B')) return alone ? [...base, 'lavado'] : ['lavado'];
     return base;
@@ -204,12 +272,22 @@ export function zonePuestos(spawns: readonly Pos[], zoneAt: (x: number) => Zone,
 }
 
 export interface Generated {
-  rows: string[]; archetype: Archetype | 'fixed'; d: number; inBand: boolean; attempts: number;
-  nMin: number; nMax: number; mech: Mech;
+  rows: string[];
+  archetype: Archetype | 'fixed';
+  d: number;
+  inBand: boolean;
+  attempts: number;
+  nMin: number;
+  nMax: number;
+  mech: Mech;
   spawns?: Pos[]; // chef order (spawn i = puesto i); fixed fallbacks use the map's own
   puestos?: PuestoId[][]; // zone maps only
 }
-export interface GenOpts { nMin?: number; nMax?: number; mech?: Mech }
+export interface GenOpts {
+  nMin?: number;
+  nMax?: number;
+  mech?: Mech;
+}
 
 // Cheese from 3 players on (often), washing from 5: decided by the seed so the same seed gives the same kitchen.
 export function pickMech(seed: number, nMax: number): Mech {
@@ -222,7 +300,8 @@ export function pickMech(seed: number, nMax: number): Mech {
 
 export function generate(seed: number, diff: Difficulty, n: number, maxAttempts = MAX_ATTEMPTS, opts: GenOpts = {}): Generated {
   const t = teamSize(n);
-  const nMax = teamSize(opts.nMax ?? t), nMin = Math.min(teamSize(opts.nMin ?? t), nMax);
+  const nMax = teamSize(opts.nMax ?? t),
+    nMin = Math.min(teamSize(opts.nMin ?? t), nMax);
   const mech = opts.mech ?? pickMech(seed, nMax);
   const rng = mulberry32(seed);
   let best: Generated | null = null;
@@ -248,21 +327,45 @@ export function generate(seed: number, diff: Difficulty, n: number, maxAttempts 
   }
   if (best) return best;
   // Nothing validated: the first fixed map of the difficulty that fits N, else any map recommended for N
-  const fits = (id: string) => { const m = fixedMap(id)!; return m.nMin <= nMax && m.nMax >= nMin; };
+  const fits = (id: string) => {
+    const m = fixedMap(id)!;
+    return m.nMin <= nMax && m.nMax >= nMin;
+  };
   const fb = fixedMap(MAPS_BY_DIFFICULTY[diff].find(fits) ?? recommendedMaps(t)[0]?.id ?? MAPS_BY_DIFFICULTY[diff][0]!)!;
-  return { rows: [...fb.rows], archetype: 'fixed', d: metric(parseMap(fb.rows), t).D, inBand: false, attempts: maxAttempts, nMin: fb.nMin, nMax: fb.nMax, mech: { cheese: fb.rows.some((r) => r.includes('3')), sink: fb.rows.some((r) => r.includes('L')) }, spawns: fb.spawns ? [...fb.spawns] : undefined, puestos: fb.puestos?.map((p) => [...p]) };
+  return {
+    rows: [...fb.rows],
+    archetype: 'fixed',
+    d: metric(parseMap(fb.rows), t).D,
+    inBand: false,
+    attempts: maxAttempts,
+    nMin: fb.nMin,
+    nMax: fb.nMax,
+    mech: { cheese: fb.rows.some((r) => r.includes('3')), sink: fb.rows.some((r) => r.includes('L')) },
+    spawns: fb.spawns ? [...fb.spawns] : undefined,
+    puestos: fb.puestos?.map((p) => [...p]),
+  };
 }
 
 // A, B, A, B... by zone, keeping reading order inside each zone (what placeSpawns produced).
 function alternate(spawns: readonly Pos[], zoneAt: (x: number) => Zone): Pos[] {
-  const a = spawns.filter(([x]) => zoneAt(x) === 'A'), b = spawns.filter(([x]) => zoneAt(x) === 'B');
+  const a = spawns.filter(([x]) => zoneAt(x) === 'A'),
+    b = spawns.filter(([x]) => zoneAt(x) === 'B');
   const out: Pos[] = [];
-  for (let i = 0; out.length < spawns.length; i++) { if (a[i]) out.push(a[i]!); if (b[i]) out.push(b[i]!); }
+  for (let i = 0; out.length < spawns.length; i++) {
+    if (a[i]) out.push(a[i]!);
+    if (b[i]) out.push(b[i]!);
+  }
   return out;
 }
 
 // The map a lobby choice stands for. "random" is generated from the lobby seed; the rest are fixed maps.
-export function resolveMap(choice: MapChoice, seed: number, diff: Difficulty, n: number, rand: Rng): { id: string; name: string; rows: readonly string[]; spawns?: readonly Pos[]; puestos?: MapDef['puestos'] } {
+export function resolveMap(
+  choice: MapChoice,
+  seed: number,
+  diff: Difficulty,
+  n: number,
+  rand: Rng,
+): { id: string; name: string; rows: readonly string[]; spawns?: readonly Pos[]; puestos?: MapDef['puestos'] } {
   if (choice === 'random') {
     const g = generate(seed, diff, n);
     return { id: 'random', name: `Aleatorio ${seed}`, rows: g.rows, spawns: g.spawns, puestos: g.puestos };
@@ -270,7 +373,6 @@ export function resolveMap(choice: MapChoice, seed: number, diff: Difficulty, n:
   const m = pickFixedMap(choice, diff, rand, n);
   return { id: m.id, name: m.name, rows: m.rows, spawns: m.spawns, puestos: m.puestos };
 }
-
 
 // --- Versus ----------------------------------------------------------------------------------------------------------------------
 // Design pizzas-modalidades-coop-versus §2 (generator): half a kitchen is generated with the machinery above and reflected through
@@ -293,22 +395,38 @@ const HALF_BOUNDS: Record<VersusTopology, Bounds> = { side: { x0: 2, x1: 5, y0: 
 export function halfLayout(topology: VersusTopology): Layout {
   const cells: Cells = Array.from({ length: MAP_H }, () => Array.from({ length: MAP_W }, () => '#'));
   const [w, h] = topology === 'side' ? [7, MAP_H] : [MAP_W, 4]; // kept area: x < w (column 7 stays wall) and y < h (row 4 stays wall)
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const edgeX = x === 0 || (topology === 'stack' && x === MAP_W - 1), edgeY = y === 0 || (topology === 'side' && y === MAP_H - 1);
-    const corner = edgeX && edgeY;
-    cells[y]![x] = corner ? '#' : edgeX || edgeY ? 'C' : '.';
-  }
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const edgeX = x === 0 || (topology === 'stack' && x === MAP_W - 1),
+        edgeY = y === 0 || (topology === 'side' && y === MAP_H - 1);
+      const corner = edgeX && edgeY;
+      cells[y]![x] = corner ? '#' : edgeX || edgeY ? 'C' : '.';
+    }
   return { cells, zoneAt: null, blockX: null };
 }
 
 function applyHalfArchetype(arch: HalfArchetype, topology: VersusTopology, cells: Cells, rng: Rng) {
-  const fill = (x0: number, y0: number, w: number, h: number) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) cells[y]![x] = 'C'; };
+  const fill = (x0: number, y0: number, w: number, h: number) => {
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) cells[y]![x] = 'C';
+  };
   if (arch === 'island') {
-    if (topology === 'side') { const w = randInt(rng, 2, 3), h = randInt(rng, 1, 2); fill(randInt(rng, 2, 6 - w), randInt(rng, 3, 7 - h), w, h); }
-    else { const w = randInt(rng, 3, 5); fill(randInt(rng, 3, 13 - w), 2, w, 1); }
-  } else if (arch === 'lanes') { // a strip along the kitchen: two lanes joined at both ends
-    if (topology === 'side') { const len = randInt(rng, 3, 5); fill(randInt(rng, 3, 4), randInt(rng, 2, 7 - len), 1, len); }
-    else { const len = randInt(rng, 6, 10); fill(randInt(rng, 3, 13 - len), 2, len, 1); }
+    if (topology === 'side') {
+      const w = randInt(rng, 2, 3),
+        h = randInt(rng, 1, 2);
+      fill(randInt(rng, 2, 6 - w), randInt(rng, 3, 7 - h), w, h);
+    } else {
+      const w = randInt(rng, 3, 5);
+      fill(randInt(rng, 3, 13 - w), 2, w, 1);
+    }
+  } else if (arch === 'lanes') {
+    // a strip along the kitchen: two lanes joined at both ends
+    if (topology === 'side') {
+      const len = randInt(rng, 3, 5);
+      fill(randInt(rng, 3, 4), randInt(rng, 2, 7 - len), 1, len);
+    } else {
+      const len = randInt(rng, 6, 10);
+      fill(randInt(rng, 3, 13 - len), 2, len, 1);
+    }
   }
 }
 
@@ -316,27 +434,43 @@ function applyHalfArchetype(arch: HalfArchetype, topology: VersusTopology, cells
 export function composeVersus(half: readonly string[], topology: VersusTopology): string[] {
   const sigma = SIGMAS[VERSUS_TOPOLOGIES[topology]];
   const out = half.map((r) => [...r]);
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
-    const [tx, ty] = sigma(x, y, MAP_W, MAP_H);
-    const inHalf = topology === 'side' ? x <= 7 : y <= 3;
-    if (!inHalf) out[y]![x] = half[ty]![tx]!;
-  }
+  for (let y = 0; y < MAP_H; y++)
+    for (let x = 0; x < MAP_W; x++) {
+      const [tx, ty] = sigma(x, y, MAP_W, MAP_H);
+      const inHalf = topology === 'side' ? x <= 7 : y <= 3;
+      if (!inHalf) out[y]![x] = half[ty]![tx]!;
+    }
   return out.map((r) => r.join(''));
 }
 
 export interface GeneratedVersus {
-  rows: string[]; topology: VersusTopology; sigma: SigmaName; archetype: HalfArchetype | 'fixed';
+  rows: string[];
+  topology: VersusTopology;
+  sigma: SigmaName;
+  archetype: HalfArchetype | 'fixed';
   d: number; // difficulty metric of one kitchen, reported but not enforced (a half kitchen is calibrated differently from a coop one)
-  attempts: number; fallback: boolean; // fallback: nothing validated and a fixed versus map came back
-  nMin: number; nMax: number; // TOTAL players
+  attempts: number;
+  fallback: boolean; // fallback: nothing validated and a fixed versus map came back
+  nMin: number;
+  nMax: number; // TOTAL players
   mech: Mech;
   spawns: VersusMapDef['versus']['spawns'];
 }
-export interface VersusGenOpts { nMin?: number; topology?: VersusTopology }
+export interface VersusGenOpts {
+  nMin?: number;
+  topology?: VersusTopology;
+}
 
 /** The versus map of a seed for `nMax` total players (`opts.nMin`..`nMax` is the range every candidate is validated for). */
-export function generateVersus(seed: number, diff: Difficulty, nMax: number, maxAttempts = MAX_ATTEMPTS, opts: VersusGenOpts = {}): GeneratedVersus {
-  const hi = Math.max(2, Math.min(8, Math.floor(nMax) || 2)), lo = Math.max(2, Math.min(hi, Math.floor(opts.nMin ?? hi)));
+export function generateVersus(
+  seed: number,
+  diff: Difficulty,
+  nMax: number,
+  maxAttempts = MAX_ATTEMPTS,
+  opts: VersusGenOpts = {},
+): GeneratedVersus {
+  const hi = Math.max(2, Math.min(8, Math.floor(nMax) || 2)),
+    lo = Math.max(2, Math.min(hi, Math.floor(opts.nMin ?? hi)));
   const team = teamRange(lo, hi);
   const mech = pickMech(seed, team.max);
   const rng = mulberry32(seed);
@@ -354,15 +488,42 @@ export function generateVersus(seed: number, diff: Difficulty, nMax: number, max
     const ordered = orderSpawns(half, spawnTiles(halfGrid), team.max, mech);
     const rows = composeVersus(half, topology);
     const def: VersusMapDef = {
-      id: 'gen', name: 'gen', rows, nMin: lo, nMax: hi, minDuro: lo, stars: 2,
+      id: 'gen',
+      name: 'gen',
+      rows,
+      nMin: lo,
+      nMax: hi,
+      minDuro: lo,
+      stars: 2,
       versus: { sigma, spawns: [ordered, ordered.map(([x, y]) => SIGMAS[sigma](x, y, MAP_W, MAP_H))] },
     };
     if (!validateVersus(def).ok) continue;
-    return { rows, topology, sigma, archetype: arch, d: metric(halfGrid, team.max).D, attempts: i, fallback: false, nMin: lo, nMax: hi, mech, spawns: def.versus.spawns };
+    return {
+      rows,
+      topology,
+      sigma,
+      archetype: arch,
+      d: metric(halfGrid, team.max).D,
+      attempts: i,
+      fallback: false,
+      nMin: lo,
+      nMax: hi,
+      mech,
+      spawns: def.versus.spawns,
+    };
   }
   const fb = VERSUS_BASE_MAPS.find((m) => m.versus.sigma === sigma && m.nMin <= lo && m.nMax >= hi) ?? VERSUS_BASE_MAPS[0]!;
   return {
-    rows: [...fb.rows], topology: fb.versus.sigma === 'mirrorX' ? 'side' : 'stack', sigma: fb.versus.sigma, archetype: 'fixed', d: metric(parseMap(fb.rows, true), team.max).D,
-    attempts: maxAttempts, fallback: true, nMin: fb.nMin, nMax: fb.nMax, mech: { cheese: fb.rows.some((r) => r.includes('3')), sink: false }, spawns: fb.versus.spawns,
+    rows: [...fb.rows],
+    topology: fb.versus.sigma === 'mirrorX' ? 'side' : 'stack',
+    sigma: fb.versus.sigma,
+    archetype: 'fixed',
+    d: metric(parseMap(fb.rows, true), team.max).D,
+    attempts: maxAttempts,
+    fallback: true,
+    nMin: fb.nMin,
+    nMax: fb.nMax,
+    mech: { cheese: fb.rows.some((r) => r.includes('3')), sink: false },
+    spawns: fb.versus.spawns,
   };
 }

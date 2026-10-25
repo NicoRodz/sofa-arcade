@@ -15,17 +15,34 @@ type Seen = { [K in keyof GameEvents]?: { t: number; p: GameEvents[K]; x: number
 function mk(o: { difficulty?: Difficulty; hazards?: boolean; n?: number; slipDrops?: boolean; spoilRaw?: boolean } = {}) {
   const bus = new Emitter<GameEvents>();
   const seen: Seen = {};
-  const g = createGame({ rows: ROWS_1, n: 2, difficulty: o.difficulty ?? 'normal', hazards: o.hazards ?? true, slipDrops: o.slipDrops, spoilRaw: o.spoilRaw, bus });
+  const g = createGame({
+    rows: ROWS_1,
+    n: 2,
+    difficulty: o.difficulty ?? 'normal',
+    hazards: o.hazards ?? true,
+    slipDrops: o.slipDrops,
+    spoilRaw: o.spoilRaw,
+    bus,
+  });
   for (const k of ['chef:slip', 'chef:recover', 'trash:picked', 'trash:decayed', 'dash', 'bump'] as const) {
-    bus.on(k, ((p: never) => { const c = [...g.players.values()][0]!; ((seen[k] ??= []) as unknown[]).push({ t: g.time, p, x: c.x, y: c.y }); }) as never);
+    bus.on(k, ((p: never) => {
+      const c = [...g.players.values()][0]!;
+      ((seen[k] ??= []) as unknown[]).push({ t: g.time, p, x: c.x, y: c.y });
+    }) as never);
   }
   for (let i = 1; i <= (o.n ?? 1); i++) addPlayer(g, i, i - 1, i - 1);
   return { g, seen };
 }
-const put = (g: Game, id: number, x: number, y: number, fx = 1, fy = 0) => { const p = g.players.get(id)!; Object.assign(p, { x, y, fx, fy, vx: 0, vy: 0 }); return p; };
-const trash = (g: Game, tx: number, ty: number, ttlMs?: number) => addFloorItem(g, { tx, ty, item: 'trash', kind: 'trash', team: 0, by: 1, ttlMs });
+const put = (g: Game, id: number, x: number, y: number, fx = 1, fy = 0) => {
+  const p = g.players.get(id)!;
+  Object.assign(p, { x, y, fx, fy, vx: 0, vy: 0 });
+  return p;
+};
+const trash = (g: Game, tx: number, ty: number, ttlMs?: number) =>
+  addFloorItem(g, { tx, ty, item: 'trash', kind: 'trash', team: 0, by: 1, ttlMs });
 const step = (g: Game, ms: number, c: Controls | ((id: number) => Controls) = idle, ids = [1]) => {
-  for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, new Map(ids.map((id): [number, Controls] => [id, typeof c === 'function' ? c(id) : c])));
+  for (let t = 0; t < ms - 1e-6; t += TICK_MS)
+    tick(g, new Map(ids.map((id): [number, Controls] => [id, typeof c === 'function' ? c(id) : c])));
 };
 const walkRight: Controls = { x: 1, y: 0, a: 0, b: false };
 /** Walks right along row 4 from x = 2.5 over a banana-skin on tile 6 and reports the slide (where it started, where it ended, when). */
@@ -33,7 +50,11 @@ function slideOnce(difficulty: Difficulty, o: { dash?: boolean; stick?: Controls
   const { g, seen } = mk({ difficulty });
   const p = put(g, 1, 2.5, 4.5);
   trash(g, 6, 4);
-  if (o.dash) { step(g, 600, walkRight); p.x = 4.8; tick(g, new Map([[1, { ...walkRight, b: true }]])); } // a dash press with free hands and nothing in front
+  if (o.dash) {
+    step(g, 600, walkRight);
+    p.x = 4.8;
+    tick(g, new Map([[1, { ...walkRight, b: true }]]));
+  } // a dash press with free hands and nothing in front
   for (let i = 0; i < 400 && !seen['chef:slip']; i++) tick(g, new Map([[1, walkRight]]));
   const start = { x: seen['chef:slip']![0]!.x, y: seen['chef:slip']![0]!.y, t: g.time };
   const stick = o.stick ?? walkRight;
@@ -64,7 +85,13 @@ describe('hazards off (the default): nothing new runs', () => {
     expect(g.floor).toHaveLength(1);
   });
   it('the sim draws no random number for hazards: the order queue of a hazards round is the one of a plain round', () => {
-    const run = (hazards: boolean) => { const { g } = mk({ hazards }); trash(g, 6, 4); put(g, 1, 2.5, 4.5); step(g, 20_000, walkRight); return JSON.stringify(g.teams[0]!.orders.map((o) => [o.recipe, o.expiresAt])); };
+    const run = (hazards: boolean) => {
+      const { g } = mk({ hazards });
+      trash(g, 6, 4);
+      put(g, 1, 2.5, 4.5);
+      step(g, 20_000, walkRight);
+      return JSON.stringify(g.teams[0]!.orders.map((o) => [o.recipe, o.expiresAt]));
+    };
     expect(run(true)).toBe(run(false));
   });
 });
@@ -122,7 +149,8 @@ describe('the slip: dash, wall, buffered B', () => {
     for (let i = 0; i < 400 && !seen['chef:slip']; i++) tick(g, new Map([[1, goLeft]]));
     const t0 = g.time;
     for (let i = 0; i < 400 && !seen['chef:recover']; i++) tick(g, new Map([[1, idle]]));
-    expect(p.x).toBeGreaterThan(1.3); expect(p.x).toBeLessThan(1.4); // the counter column 0 is solid: it stops with its radius against it
+    expect(p.x).toBeGreaterThan(1.3);
+    expect(p.x).toBeLessThan(1.4); // the counter column 0 is solid: it stops with its radius against it
     expect(seen['chef:recover']![0]!.p.wall).toBe(true);
     expect(g.time - t0).toBeGreaterThanOrEqual(controlLostMs('normal') - TICK_MS);
   });
@@ -181,10 +209,18 @@ describe('immunity and no chains', () => {
   });
   it('the slider that bumps into another chef pushes it at half its speed, and the other one never slips from it', () => {
     const { g, seen } = mk({ n: 2 });
-    const a = put(g, 1, 2.5, 4.5), b = put(g, 2, 7.2, 4.5);
+    const a = put(g, 1, 2.5, 4.5),
+      b = put(g, 2, 7.2, 4.5);
     trash(g, 6, 4);
     // chef 2 stands still ahead of the slide path, outside the trash tile
-    for (let i = 0; i < 400 && !seen['chef:recover']; i++) tick(g, new Map([[1, walkRight], [2, idle]]));
+    for (let i = 0; i < 400 && !seen['chef:recover']; i++)
+      tick(
+        g,
+        new Map([
+          [1, walkRight],
+          [2, idle],
+        ]),
+      );
     expect(seen['bump']?.length).toBeGreaterThanOrEqual(1);
     expect(seen['chef:slip']).toHaveLength(1);
     expect(seen['chef:slip']![0]!.p.chef).toBe(1);
@@ -203,7 +239,7 @@ describe('the item that falls', () => {
     for (let i = 0; i < 400 && !seen['chef:slip']; i++) tick(g, new Map([[1, walkRight]]));
     return { g, p, seen };
   };
-  it('Normal: it falls intact on the tile where the slide began, as a floor item of the chef\'s team', () => {
+  it("Normal: it falls intact on the tile where the slide began, as a floor item of the chef's team", () => {
     const { g, p, seen } = slipWith('dishQ', { difficulty: 'normal' });
     expect(p.item).toBeNull();
     const dropped = g.floor.find((f) => f.kind === 'dropped')!;
@@ -226,7 +262,14 @@ describe('the item that falls', () => {
     put(g, 1, 2.5, 4.5).item = 'dish';
     put(g, 2, 9.5, 6.5);
     trash(g, 6, 4);
-    for (let i = 0; i < 400 && !seen['chef:recover']; i++) tick(g, new Map([[1, walkRight], [2, idle]]));
+    for (let i = 0; i < 400 && !seen['chef:recover']; i++)
+      tick(
+        g,
+        new Map([
+          [1, walkRight],
+          [2, idle],
+        ]),
+      );
     const q = put(g, 2, 5.5, 4.5, 1, 0); // next to the tile where the dish fell (tile 6)
     tick(g, new Map([[2, { ...idle, a: 1 }]]));
     expect(q.item).toBe('dish');
@@ -240,7 +283,8 @@ describe('the item that falls', () => {
     p.item = 'raw0';
     tick(g, new Map([[1, { ...idle, a: 1 }]]));
     expect(g.floor).toHaveLength(1); // busy hands: nothing
-    p.item = null; p.immuneUntil = 1e9; // (not to slip on it, it is next to it)
+    p.item = null;
+    p.immuneUntil = 1e9; // (not to slip on it, it is next to it)
     put(g, 1, 3.5, 4.5); // too far
     tick(g, new Map([[1, { ...idle, a: 1 }]]));
     expect(p.item).toBeNull();
@@ -270,7 +314,14 @@ describe('decay, drops and determinism', () => {
     const { g, seen } = mk({ n: 2 });
     const p = put(g, 1, 2.5, 4.5);
     trash(g, 6, 4);
-    for (let i = 0; i < 400 && !seen['chef:slip']; i++) tick(g, new Map([[1, walkRight], [2, idle]]));
+    for (let i = 0; i < 400 && !seen['chef:slip']; i++)
+      tick(
+        g,
+        new Map([
+          [1, walkRight],
+          [2, idle],
+        ]),
+      );
     expect(p.slip).toBeTruthy();
     // dropPlayer only exists in versus; the coop chef has no roster entry: it is refused, the slide just goes on
     expect(dropPlayer(g, 1)).toBe(true);
@@ -280,9 +331,18 @@ describe('decay, drops and determinism', () => {
   it('same seed, same inputs: the same state (hash of chefs and floor), twice', () => {
     const run = () => {
       const { g } = mk({ n: 2, difficulty: 'hard' });
-      put(g, 1, 2.5, 4.5).item = 'dish'; put(g, 2, 3.5, 6.5);
-      trash(g, 6, 4); trash(g, 9, 6, 8000);
-      for (let i = 0; i < 1500; i++) tick(g, new Map<number, Controls>([[1, i % 400 < 200 ? walkRight : { x: -1, y: 0, a: i % 7 === 0 ? 1 : 0, b: i % 90 === 0 }], [2, { x: 1, y: 0, a: 0, b: false }]]));
+      put(g, 1, 2.5, 4.5).item = 'dish';
+      put(g, 2, 3.5, 6.5);
+      trash(g, 6, 4);
+      trash(g, 9, 6, 8000);
+      for (let i = 0; i < 1500; i++)
+        tick(
+          g,
+          new Map<number, Controls>([
+            [1, i % 400 < 200 ? walkRight : { x: -1, y: 0, a: i % 7 === 0 ? 1 : 0, b: i % 90 === 0 }],
+            [2, { x: 1, y: 0, a: 0, b: false }],
+          ]),
+        );
       return JSON.stringify([[...g.players.values()].map((p) => [p.x, p.y, p.item, p.slip, p.immuneUntil]), g.floor, g.time]);
     };
     expect(run()).toBe(run());

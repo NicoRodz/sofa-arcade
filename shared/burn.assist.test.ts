@@ -16,11 +16,16 @@ function mk(assist: number[]) {
   const bus = new Emitter<GameEvents>();
   const log: Log = {};
   const g = createGame({ rows: fixedMap('11')!.rows, mapId: '11', n: 2, seed: 5, bus, burn: true, fire: true, assist });
-  for (const k of ['fire:out', 'douseStart', 'douseStop'] as const) bus.on(k, (() => { (log[k] ??= []).push({ t: g.time }); }) as never);
+  for (const k of ['fire:out', 'douseStart', 'douseStop'] as const)
+    bus.on(k, (() => {
+      (log[k] ??= []).push({ t: g.time });
+    }) as never);
   addPlayer(g, 1, 0, 0);
   return { g, log };
 }
-const run = (g: Game, ms: number, c: Controls = idle) => { for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, new Map([[1, c]])); };
+const run = (g: Game, ms: number, c: Controls = idle) => {
+  for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, new Map([[1, c]]));
+};
 function stand(g: Game, s: Station) {
   const p = g.players.get(1)!;
   const [dx, dy] = DIRS.find(([dx, dy]) => isFloor(g.grid, s.tx + dx, s.ty + dy))!;
@@ -29,7 +34,10 @@ function stand(g: Game, s: Station) {
 }
 function setFire(g: Game) {
   const oven = g.stations.find((s) => s.kind === 'pot')!;
-  oven.inputs = [0, 1]; oven.progress = 1; oven.done = true; oven.readyAt = g.time;
+  oven.inputs = [0, 1];
+  oven.progress = 1;
+  oven.done = true;
+  oven.readyAt = g.time;
   run(g, GRACE_MS.normal + FIRE_DELAY_MS + 100);
   expect(oven.fire).toBeDefined();
   return oven;
@@ -76,10 +84,14 @@ describe('the contextual buttons know the fire', () => {
     const { g } = mk([]);
     const p = g.players.get(1)!;
     const oven = g.stations.find((s) => s.kind === 'pot')!;
-    oven.inputs = [0, 1]; oven.progress = 1; oven.done = true; oven.readyAt = g.time;
+    oven.inputs = [0, 1];
+    oven.progress = 1;
+    oven.done = true;
+    oven.readyAt = g.time;
     run(g, GRACE_MS.normal + 100);
     expect(oven.burnt).toBe(true);
-    stand(g, oven); p.item = 'plate';
+    stand(g, oven);
+    p.item = 'plate';
     expect(chefHint(g, p)).toMatchObject({ a: 'Sacar quemada', aIcon: 'oven' });
     p.item = null;
     run(g, FIRE_DELAY_MS);
@@ -95,7 +107,16 @@ describe('both lobby options in one round', () => {
   it('a versus round with a chef on Ayudante and the events switched on has both: the Ayudante, the burning oven and the event', () => {
     const versus = modeOf(GAMES[0], 'versus');
     const teams = syncTeams(versus, null, [1, 2, 3, 4], 4, false)!;
-    const r = startVersusRound({ teams, choice: 'V1', difficulty: 'hard', seed: 4, modeOptions: { events: true, sabotage: 'off' }, slotOf: (id) => id - 1, rand: mulberry32(1), assist: [2] });
+    const r = startVersusRound({
+      teams,
+      choice: 'V1',
+      difficulty: 'hard',
+      seed: 4,
+      modeOptions: { events: true, sabotage: 'off' },
+      slotOf: (id) => id - 1,
+      rand: mulberry32(1),
+      assist: [2],
+    });
     expect([...r.game.assist]).toEqual([2]);
     expect(r.game.players.get(2)!.assist).toBe(true);
     expect(r.game.burn).toMatchObject({ fire: true });

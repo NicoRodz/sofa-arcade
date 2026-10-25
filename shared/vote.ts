@@ -42,9 +42,14 @@ export const CAPTAIN_MIN_MS = 4_000;
 export const CAST_COOLDOWN_MS = 250;
 
 // ---- registry schema (per-game votable options) ----------------------------------------------------------------------------------
-export interface OptionValue { id: string; label: string; icon?: IconId }
+export interface OptionValue {
+  id: string;
+  label: string;
+  icon?: IconId;
+}
 export interface OptionSpec {
-  key: string; label: string;
+  key: string;
+  label: string;
   type: 'enum' | 'seed'; // seed is voted as "Aleatorio / Repetir / 3 sugeridas": the screen fills `values`
   values: readonly OptionValue[];
   default: string; // value id
@@ -56,14 +61,28 @@ export interface OptionSpec {
 /** Keys that depend (transitively) on `key`: their votes must be cleared when `key` changes. */
 export function dependentKeys(specs: readonly OptionSpec[], key: string): string[] {
   const out: string[] = [];
-  const walk = (k: string) => { for (const s of specs) if (s.parent === k && !out.includes(s.key)) { out.push(s.key); walk(s.key); } };
+  const walk = (k: string) => {
+    for (const s of specs)
+      if (s.parent === k && !out.includes(s.key)) {
+        out.push(s.key);
+        walk(s.key);
+      }
+  };
   walk(key);
   return out;
 }
 
 // ---- roster -----------------------------------------------------------------------------------------------------------------------
-export interface Presence { readonly connected: boolean; readonly afk: boolean; readonly lastInputAt: number; readonly missed: number }
-export interface Roster { readonly players: Readonly<Record<PlayerId, Presence>>; readonly captainId: PlayerId | null }
+export interface Presence {
+  readonly connected: boolean;
+  readonly afk: boolean;
+  readonly lastInputAt: number;
+  readonly missed: number;
+}
+export interface Roster {
+  readonly players: Readonly<Record<PlayerId, Presence>>;
+  readonly captainId: PlayerId | null;
+}
 
 const freshPresence = (now: number): Presence => ({ connected: true, afk: false, lastInputAt: now, missed: 0 });
 const patch = (r: Roster, id: PlayerId, p: Partial<Presence>): Roster => {
@@ -92,12 +111,19 @@ export function touch(r: Roster, id: PlayerId, now: number): Roster {
 }
 export function tickAfk(r: Roster, now: number): Roster {
   let out = r;
-  for (const [k, p] of Object.entries(r.players)) if (p.connected && !p.afk && now - p.lastInputAt >= AFK_IDLE_MS) out = patch(out, Number(k), { afk: true });
+  for (const [k, p] of Object.entries(r.players))
+    if (p.connected && !p.afk && now - p.lastInputAt >= AFK_IDLE_MS) out = patch(out, Number(k), { afk: true });
   return out;
 }
 export const setCaptain = (r: Roster, id: PlayerId | null): Roster => ({ ...r, captainId: id });
 export const eligible = (r: Roster): PlayerId[] =>
-  Object.keys(r.players).map(Number).filter((id) => { const p = r.players[id]!; return p.connected && !p.afk; }).sort((a, b) => a - b);
+  Object.keys(r.players)
+    .map(Number)
+    .filter((id) => {
+      const p = r.players[id]!;
+      return p.connected && !p.afk;
+    })
+    .sort((a, b) => a - b);
 export const majorityOf = (e: number): number => Math.floor(e / 2) + 1;
 
 /** After a pick/destructive vote closed: eligible players who did not vote miss one; two in a row make them AFK. Voters reset. */
@@ -119,12 +145,19 @@ export interface VoteConfig {
   options: readonly OptionId[];
   current?: OptionId; // statu quo; required for 'destructive' and 'item' (the current value / "continue")
   windowMs: number | null; // starts at the FIRST vote; null = no clock (lobby)
-  graceMs?: number; captainMinMs?: number; castCooldownMs?: number;
+  graceMs?: number;
+  captainMinMs?: number;
+  castCooldownMs?: number;
 }
 export type CloseReason = 'all' | 'majority' | 'deadline' | 'captain' | 'keyboard' | 'settle';
-export interface Closing { reason: 'all' | 'majority' | 'captain'; option?: OptionId; closesAt: number } // option only for 'majority'
+export interface Closing {
+  reason: 'all' | 'majority' | 'captain';
+  option?: OptionId;
+  closesAt: number;
+} // option only for 'majority'
 export interface VoteResult {
-  winner: OptionId | null; reason: CloseReason;
+  winner: OptionId | null;
+  reason: CloseReason;
   via: 'plurality' | 'roulette' | 'majority' | 'statu-quo' | 'keyboard' | 'empty';
   counts: Readonly<Record<OptionId, number>>;
   roulette?: { candidates: OptionId[]; ms: number };
@@ -135,16 +168,34 @@ export interface VoteState {
   readonly openedAt: number;
   readonly votes: Readonly<Record<PlayerId, OptionId>>; // by playerId (token), kept while the player is away
   readonly lastCastAt: Readonly<Record<PlayerId, number>>;
-  readonly remainingMs: number | null; readonly lastTickAt: number; readonly running: boolean;
+  readonly remainingMs: number | null;
+  readonly lastTickAt: number;
+  readonly running: boolean;
   readonly closing: Closing | null;
   readonly result: VoteResult | null;
 }
-export interface Ctx { now: number; rng: Rng; roster: Roster }
+export interface Ctx {
+  now: number;
+  rng: Rng;
+  roster: Roster;
+}
 
 export function openVote(cfg: VoteConfig, now: number): VoteState {
   if (cfg.options.length < 1) throw new Error('vote needs options');
-  if (cfg.kind !== 'pick' && (cfg.current === undefined || !cfg.options.includes(cfg.current))) throw new Error(`${cfg.kind} vote needs a current option`);
-  return { cfg, status: 'open', openedAt: now, votes: {}, lastCastAt: {}, remainingMs: cfg.windowMs, lastTickAt: now, running: false, closing: null, result: null };
+  if (cfg.kind !== 'pick' && (cfg.current === undefined || !cfg.options.includes(cfg.current)))
+    throw new Error(`${cfg.kind} vote needs a current option`);
+  return {
+    cfg,
+    status: 'open',
+    openedAt: now,
+    votes: {},
+    lastCastAt: {},
+    remainingMs: cfg.windowMs,
+    lastTickAt: now,
+    running: false,
+    closing: null,
+    result: null,
+  };
 }
 
 /** Counted voters per option: only eligible players count; a disconnected/AFK player's vote is suspended, not lost. */
@@ -152,7 +203,13 @@ function tally(v: VoteState, roster: Roster) {
   const voters: Record<OptionId, PlayerId[]> = Object.fromEntries(v.cfg.options.map((o) => [o, [] as PlayerId[]]));
   const el = eligible(roster);
   let voted = 0;
-  for (const id of el) { const o = v.votes[id]; if (o !== undefined && voters[o]) { voters[o].push(id); voted++; } }
+  for (const id of el) {
+    const o = v.votes[id];
+    if (o !== undefined && voters[o]) {
+      voters[o].push(id);
+      voted++;
+    }
+  }
   const counts: Record<OptionId, number> = Object.fromEntries(v.cfg.options.map((o) => [o, voters[o]!.length]));
   return { voters, counts, voted, E: el.length, M: majorityOf(el.length) };
 }
@@ -178,8 +235,13 @@ function resolve(v: VoteState, ctx: Ctx, reason: CloseReason): VoteResult {
   return { ...base, winner, via: 'roulette', roulette: { candidates: top, ms: ROULETTE_MS } };
 }
 
-const closeWith = (v: VoteState, ctx: Ctx, reason: CloseReason): VoteState =>
-  ({ ...v, status: 'closed', running: false, closing: null, result: resolve(v, ctx, reason) });
+const closeWith = (v: VoteState, ctx: Ctx, reason: CloseReason): VoteState => ({
+  ...v,
+  status: 'closed',
+  running: false,
+  closing: null,
+  result: resolve(v, ctx, reason),
+});
 
 /** The closing the current votes ask for (null = none). Item votes never close by themselves. */
 function wantedClosing(v: VoteState, ctx: Ctx): { reason: 'all' | 'majority'; option?: OptionId } | null {
@@ -209,7 +271,8 @@ export function tick(v: VoteState, ctx: Ctx): VoteState {
   else if (s.closing?.reason !== 'captain') {
     const want = wantedClosing(s, ctx);
     if (!want) s = { ...s, closing: null };
-    else if (s.closing?.reason !== want.reason || s.closing.option !== want.option) s = { ...s, closing: { ...want, closesAt: now + grace } };
+    else if (s.closing?.reason !== want.reason || s.closing.option !== want.option)
+      s = { ...s, closing: { ...want, closesAt: now + grace } };
   }
   // 4. close
   if (s.closing && now >= s.closing.closesAt) return closeWith(s, ctx, s.closing.reason);
@@ -228,7 +291,8 @@ export function cast(v: VoteState, ctx: Ctx, player: PlayerId, voteId: string | 
   const withdraw = option === null || option === mine;
   if (withdraw && mine === undefined) return s;
   const votes = { ...s.votes };
-  if (withdraw) delete votes[player]; else votes[player] = option!;
+  if (withdraw) delete votes[player];
+  else votes[player] = option!;
   return tick({ ...s, votes, lastCastAt: { ...s.lastCastAt, [player]: ctx.now } }, ctx);
 }
 
@@ -236,7 +300,8 @@ export function cast(v: VoteState, ctx: Ctx, player: PlayerId, voteId: string | 
 export function captainGo(v: VoteState, ctx: Ctx, by: PlayerId): VoteState {
   const s = tick(v, ctx);
   if (s.status !== 'open' || s.cfg.kind === 'item' || by !== ctx.roster.captainId || !eligible(ctx.roster).includes(by)) return s;
-  if (ctx.now - s.openedAt < (s.cfg.captainMinMs ?? CAPTAIN_MIN_MS) || tally(s, ctx.roster).voted === 0 || s.closing?.reason === 'captain') return s;
+  if (ctx.now - s.openedAt < (s.cfg.captainMinMs ?? CAPTAIN_MIN_MS) || tally(s, ctx.roster).voted === 0 || s.closing?.reason === 'captain')
+    return s;
   return { ...s, closing: { reason: 'captain', closesAt: ctx.now + (s.cfg.graceMs ?? GRACE_MS) } };
 }
 export function captainCancel(v: VoteState, ctx: Ctx, by: PlayerId): VoteState {
@@ -259,25 +324,45 @@ export const settle = (v: VoteState, ctx: Ctx): VoteState => {
 export const cancel = (v: VoteState): VoteState => (v.status === 'open' ? { ...v, status: 'cancelled', running: false, closing: null } : v);
 /** Parent item changed: drop the votes (and the clock) of a dependent item. */
 export const clearVotes = (v: VoteState, now: number): VoteState =>
-  v.status !== 'open' ? v : { ...v, votes: {}, lastCastAt: {}, remainingMs: v.cfg.windowMs, lastTickAt: now, running: false, closing: null };
+  v.status !== 'open'
+    ? v
+    : { ...v, votes: {}, lastCastAt: {}, remainingMs: v.cfg.windowMs, lastTickAt: now, running: false, closing: null };
 
 export interface VoteSnapshot {
-  voteId: string | number; kind: VoteKind; status: VoteState['status'];
-  counts: Readonly<Record<OptionId, number>>; voters: Readonly<Record<OptionId, readonly PlayerId[]>>;
-  E: number; M: number; voted: number; waiting: PlayerId[]; // waiting: eligible who have not voted ("faltan: ...")
+  voteId: string | number;
+  kind: VoteKind;
+  status: VoteState['status'];
+  counts: Readonly<Record<OptionId, number>>;
+  voters: Readonly<Record<OptionId, readonly PlayerId[]>>;
+  E: number;
+  M: number;
+  voted: number;
+  waiting: PlayerId[]; // waiting: eligible who have not voted ("faltan: ...")
   leader: OptionId | null; // live: the option shown on the TV (item: tie or no votes -> current)
-  tie: boolean; remainingMs: number | null; running: boolean;
-  closing: { reason: Closing['reason']; option?: OptionId; inMs: number } | null; result: VoteResult | null;
+  tie: boolean;
+  remainingMs: number | null;
+  running: boolean;
+  closing: { reason: Closing['reason']; option?: OptionId; inMs: number } | null;
+  result: VoteResult | null;
 }
 export function snapshot(v: VoteState, ctx: Ctx): VoteSnapshot {
   const t = tally(v, ctx.roster);
   const top = leaders(v, t.counts);
   const live = v.running && v.remainingMs !== null ? Math.max(0, v.remainingMs - Math.max(0, ctx.now - v.lastTickAt)) : v.remainingMs;
   return {
-    voteId: v.cfg.voteId, kind: v.cfg.kind, status: v.status, counts: t.counts, voters: t.voters, E: t.E, M: t.M, voted: t.voted,
+    voteId: v.cfg.voteId,
+    kind: v.cfg.kind,
+    status: v.status,
+    counts: t.counts,
+    voters: t.voters,
+    E: t.E,
+    M: t.M,
+    voted: t.voted,
     waiting: eligible(ctx.roster).filter((id) => v.votes[id] === undefined),
-    leader: top.length === 1 ? top[0]! : v.cfg.current ?? null, tie: top.length > 1,
-    remainingMs: live, running: v.running,
+    leader: top.length === 1 ? top[0]! : (v.cfg.current ?? null),
+    tie: top.length > 1,
+    remainingMs: live,
+    running: v.running,
     closing: v.closing ? { reason: v.closing.reason, option: v.closing.option, inMs: Math.max(0, v.closing.closesAt - ctx.now) } : null,
     result: v.result,
   };

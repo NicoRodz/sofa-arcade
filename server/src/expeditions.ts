@@ -7,16 +7,52 @@
 //   rename       <id>.json.tmp -> <id>.json               (atomic: a reader sees the old file or the new one, never half of one)
 // At every point <id>.json is either the old or the new content, so a process that dies anywhere leaves a valid file; the .bak and a leftover .tmp
 // only matter if the disk itself lost the file, and reads fall back to the .bak. Reset moves the file to trash/, where it can be restored.
-import { closeSync, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, readdirSync, renameSync, unlinkSync, writeSync } from 'node:fs';
+import {
+  closeSync,
+  copyFileSync,
+  existsSync,
+  fsyncSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  unlinkSync,
+  writeSync,
+} from 'node:fs';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { EXPEDITION_ID, cleanName, mergeExpedition, newExpedition, parseExpedition, starCount, type Expedition } from '@party/shared/obstaculos/campaign';
+import {
+  EXPEDITION_ID,
+  cleanName,
+  mergeExpedition,
+  newExpedition,
+  parseExpedition,
+  starCount,
+  type Expedition,
+} from '@party/shared/obstaculos/campaign';
 
-export interface ExpeditionSummary { id: string; name: string; updatedAt: number; stars: number; lastLevelId: string | null; active: boolean }
+export interface ExpeditionSummary {
+  id: string;
+  name: string;
+  updatedAt: number;
+  stars: number;
+  lastLevelId: string | null;
+  active: boolean;
+}
 export type StepName = 'write-tmp' | 'copy-bak' | 'rename-bak' | 'rename';
-export interface StoreOpts { dir: string; now?: () => number; onStep?: (step: StepName, id: string) => void; claimTtlMs?: number }
+export interface StoreOpts {
+  dir: string;
+  now?: () => number;
+  onStep?: (step: StepName, id: string) => void;
+  claimTtlMs?: number;
+}
 export type StoreError = 'not_found' | 'invalid' | 'exists' | 'bad_id';
-export class ExpeditionError extends Error { constructor(readonly code: StoreError) { super(code); } }
+export class ExpeditionError extends Error {
+  constructor(readonly code: StoreError) {
+    super(code);
+  }
+}
 
 export const CLAIM_TTL_MS = 10 * 60_000;
 
@@ -39,12 +75,20 @@ export class ExpeditionStore {
   }
 
   private file = (id: string) => path.join(this.dir, `${id}.json`);
-  private checkId(id: string): void { if (!EXPEDITION_ID.test(id)) throw new ExpeditionError('bad_id'); }
+  private checkId(id: string): void {
+    if (!EXPEDITION_ID.test(id)) throw new ExpeditionError('bad_id');
+  }
 
   // On start: delete the leftovers of an interrupted write and restore a file that is missing or unreadable from its .bak.
   private recover(): void {
     for (const f of readdirSync(this.dir)) {
-      if (f.endsWith('.json.tmp') || f.endsWith('.json.bak.tmp')) { try { unlinkSync(path.join(this.dir, f)); } catch { /* gone */ } }
+      if (f.endsWith('.json.tmp') || f.endsWith('.json.bak.tmp')) {
+        try {
+          unlinkSync(path.join(this.dir, f));
+        } catch {
+          /* gone */
+        }
+      }
     }
     for (const f of readdirSync(this.dir)) {
       if (!f.endsWith('.json.bak')) continue;
@@ -57,7 +101,11 @@ export class ExpeditionStore {
   }
 
   private readFile(p: string): Expedition | null {
-    try { return parseExpedition(JSON.parse(readFileSync(p, 'utf8'))); } catch { return null; }
+    try {
+      return parseExpedition(JSON.parse(readFileSync(p, 'utf8')));
+    } catch {
+      return null;
+    }
   }
 
   get(id: string): Expedition | null {
@@ -66,10 +114,18 @@ export class ExpeditionStore {
   }
 
   private write(id: string, e: Expedition): void {
-    const file = this.file(id), tmp = `${file}.tmp`, bak = `${file}.bak`, bakTmp = `${bak}.tmp`;
+    const file = this.file(id),
+      tmp = `${file}.tmp`,
+      bak = `${file}.bak`,
+      bakTmp = `${bak}.tmp`;
     this.onStep('write-tmp', id);
     const fd = openSync(tmp, 'w');
-    try { writeSync(fd, JSON.stringify(e, null, 1)); fsyncSync(fd); } finally { closeSync(fd); }
+    try {
+      writeSync(fd, JSON.stringify(e, null, 1));
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
     if (existsSync(file)) {
       this.onStep('copy-bak', id);
       copyFileSync(file, bakTmp);
@@ -78,7 +134,16 @@ export class ExpeditionStore {
     }
     this.onStep('rename', id);
     renameSync(tmp, file);
-    try { const d = openSync(this.dir, 'r'); try { fsyncSync(d); } finally { closeSync(d); } } catch { /* a directory cannot be flushed everywhere */ }
+    try {
+      const d = openSync(this.dir, 'r');
+      try {
+        fsyncSync(d);
+      } finally {
+        closeSync(d);
+      }
+    } catch {
+      /* a directory cannot be flushed everywhere */
+    }
   }
 
   list(): ExpeditionSummary[] {
@@ -93,12 +158,20 @@ export class ExpeditionStore {
     return out.sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id));
   }
   private summary(e: Expedition): ExpeditionSummary {
-    return { id: e.id, name: e.name, updatedAt: e.updatedAt, stars: Object.values(e.levels).reduce((a, p) => a + starCount(p), 0), lastLevelId: e.lastLevelId, active: this.activeIn(e.id) !== null };
+    return {
+      id: e.id,
+      name: e.name,
+      updatedAt: e.updatedAt,
+      stars: Object.values(e.levels).reduce((a, p) => a + starCount(p), 0),
+      lastLevelId: e.lastLevelId,
+      active: this.activeIn(e.id) !== null,
+    };
   }
 
   create(name: unknown): Expedition {
     let id = '';
-    do id = `exp-${randomBytes(4).toString('hex')}`; while (existsSync(this.file(id)));
+    do id = `exp-${randomBytes(4).toString('hex')}`;
+    while (existsSync(this.file(id)));
     const e = newExpedition(id, cleanName(name) || 'Expedición', this.now());
     this.write(id, e);
     return e;
@@ -122,7 +195,11 @@ export class ExpeditionStore {
     if (!this.get(id)) throw new ExpeditionError('not_found');
     const name = `${id}.${this.now()}.json`;
     renameSync(this.file(id), path.join(this.trashDir, name));
-    try { unlinkSync(`${this.file(id)}.bak`); } catch { /* none */ }
+    try {
+      unlinkSync(`${this.file(id)}.bak`);
+    } catch {
+      /* none */
+    }
     this.claims.delete(id);
     return name;
   }
@@ -149,7 +226,10 @@ export class ExpeditionStore {
   activeIn(id: string): string | null {
     const c = this.claims.get(id);
     if (!c) return null;
-    if (this.now() - c.at > this.ttl) { this.claims.delete(id); return null; }
+    if (this.now() - c.at > this.ttl) {
+      this.claims.delete(id);
+      return null;
+    }
     return c.room;
   }
   claim(id: string, room: string): { ok: true } | { ok: false; room: string } {

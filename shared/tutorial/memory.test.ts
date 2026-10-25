@@ -1,8 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { kvOf, markDone, phoneKey, readDone, roomKey, shouldOffer, type KV } from './memory';
 
-const mem = (): KV & { m: Map<string, string> } => { const m = new Map<string, string>(); return { m, get: (k) => m.get(k) ?? null, set: (k, v) => { m.set(k, v); } }; };
-const blocked: KV = { get: () => { throw new Error('SecurityError'); }, set: () => { throw new Error('SecurityError'); } };
+const mem = (): KV & { m: Map<string, string> } => {
+  const m = new Map<string, string>();
+  return {
+    m,
+    get: (k) => m.get(k) ?? null,
+    set: (k, v) => {
+      m.set(k, v);
+    },
+  };
+};
+const blocked: KV = {
+  get: () => {
+    throw new Error('SecurityError');
+  },
+  set: () => {
+    throw new Error('SecurityError');
+  },
+};
 
 describe('what the school remembers', () => {
   it('a room and a phone remember apart: the room by its code, the phone by its token', () => {
@@ -19,7 +35,8 @@ describe('what the school remembers', () => {
   });
   it('only the value the school writes counts as done', () => {
     const kv = mem();
-    kv.set(roomKey('A'), '0'); kv.set(roomKey('B'), '');
+    kv.set(roomKey('A'), '0');
+    kv.set(roomKey('B'), '');
     expect(readDone(kv, roomKey('A'))).toBe(false);
     expect(readDone(kv, roomKey('B'))).toBe(false);
   });
@@ -32,7 +49,12 @@ describe('what the school remembers', () => {
   });
   it('wraps a Web Storage object', () => {
     const store = new Map<string, string>();
-    const kv = kvOf({ getItem: (k) => store.get(k) ?? null, setItem: (k, v) => { store.set(k, v); } })!;
+    const kv = kvOf({
+      getItem: (k) => store.get(k) ?? null,
+      setItem: (k, v) => {
+        store.set(k, v);
+      },
+    })!;
     markDone(kv, 'k');
     expect(store.get('k')).toBe('1');
     expect(readDone(kv, 'k')).toBe(true);

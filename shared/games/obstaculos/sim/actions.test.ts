@@ -10,7 +10,8 @@ const B = (s: number) => (slot: number) => (slot === s ? inp({ grab: true }) : u
 describe('B is contextual (plan §5): ring > teammate > box/lever > plant', () => {
   it('previewB follows the priority as the options disappear', () => {
     const w = world(level(draw(hall(), [10, 10, 'o'], [10, GROUND, 'x'])), { mode: 'free' });
-    teleport(w, 0, 9, GROUND); teleport(w, 1, 8, GROUND);
+    teleport(w, 0, 9, GROUND);
+    teleport(w, 1, 8, GROUND);
     pl(w, 1).body.x = pl(w, 0).body.x - 36; // a teammate right beside
     run(w, 5);
     expect(previewB(w, 0).action).toBe('anchor');
@@ -25,7 +26,8 @@ describe('B is contextual (plan §5): ring > teammate > box/lever > plant', () =
   });
   it('plant: B stands the player still (stick ignored), B again stands up', () => {
     const w = world(level(hall()), { mode: 'free' });
-    teleport(w, 0, 10, GROUND); teleport(w, 1, 2, GROUND);
+    teleport(w, 0, 10, GROUND);
+    teleport(w, 1, 2, GROUND);
     run(w, 5);
     run(w, 1, B(0));
     expect(pl(w, 0).planted).toBe(true);
@@ -40,7 +42,8 @@ describe('B is contextual (plan §5): ring > teammate > box/lever > plant', () =
   });
   it('A stands a planted player up and jumps', () => {
     const w = world(level(hall()), { mode: 'free' });
-    teleport(w, 0, 10, GROUND); teleport(w, 1, 2, GROUND);
+    teleport(w, 0, 10, GROUND);
+    teleport(w, 1, 2, GROUND);
     run(w, 5);
     run(w, 1, B(0));
     const ev = run(w, 1, (s) => (s === 0 ? inp({ jump: true }) : undefined));
@@ -53,7 +56,8 @@ describe('ring: anchor', () => {
   const lvl = () => level(draw(hall(), [10, 10, 'o']));
   it('B near a ring hangs the player on it (still, no gravity); A jumps off at v0; B releases and drops', () => {
     const w = world(lvl(), { mode: 'free' });
-    teleport(w, 0, 10, GROUND); teleport(w, 1, 2, GROUND);
+    teleport(w, 0, 10, GROUND);
+    teleport(w, 1, 2, GROUND);
     run(w, 5);
     const ev = run(w, 1, B(0));
     expect(of(ev, 'obst.grab')).toEqual([{ player: 0, target: 'ring', targetId: 0 }]);
@@ -80,7 +84,9 @@ describe('ring: anchor', () => {
 describe('teammates: lift, carry, throw', () => {
   const setup = () => {
     const w = world(level(hall()), { mode: 'free', slots: [0, 1, 2] });
-    teleport(w, 0, 10, GROUND); teleport(w, 1, 10, GROUND); teleport(w, 2, 2, GROUND);
+    teleport(w, 0, 10, GROUND);
+    teleport(w, 1, 10, GROUND);
+    teleport(w, 2, 2, GROUND);
     pl(w, 1).body.x = pl(w, 0).body.x + 30;
     run(w, 5);
     return w;
@@ -104,7 +110,11 @@ describe('teammates: lift, carry, throw', () => {
     const x0 = pl(w, 1).body.x;
     let peak = pl(w, 1).body.y;
     let n = 0;
-    do { run(w, 1, (s) => (s === 1 ? inp({ move: -1 }) : undefined)); peak = Math.min(peak, pl(w, 1).body.y); n++; } while (!pl(w, 1).body.grounded && n < 200);
+    do {
+      run(w, 1, (s) => (s === 1 ? inp({ move: -1 }) : undefined));
+      peak = Math.min(peak, pl(w, 1).body.y);
+      n++;
+    } while (!pl(w, 1).body.grounded && n < 200);
     const tiles = (pl(w, 1).body.x - x0) / TILE;
     expect(tiles).toBeGreaterThan(6.5); // measured 7.3: the plan says about 6.6
     expect(tiles).toBeLessThan(8);
@@ -126,9 +136,12 @@ describe('teammates: lift, carry, throw', () => {
     expect(pl(w2, 1).body.vy).toBeLessThan(-500);
   });
   it('the weight of a carried player counts on a plate with its holder', () => {
-    const lvl = level(draw(hall(), [10, GROUND, 'a'], ...vline(15, 8, 11, 'A')), { params: { a: { kind: 'plate', weight: 2, opens: 'A', latch: false }, A: { kind: 'gate' } } });
+    const lvl = level(draw(hall(), [10, GROUND, 'a'], ...vline(15, 8, 11, 'A')), {
+      params: { a: { kind: 'plate', weight: 2, opens: 'A', latch: false }, A: { kind: 'gate' } },
+    });
     const w = world(lvl, { mode: 'free' });
-    teleport(w, 0, 10, GROUND); teleport(w, 1, 10, GROUND);
+    teleport(w, 0, 10, GROUND);
+    teleport(w, 1, 10, GROUND);
     pl(w, 1).body.x = pl(w, 0).body.x + 30;
     run(w, 5);
     run(w, 1, B(0));
@@ -146,9 +159,11 @@ describe('mano amiga (plan §5)', () => {
   };
   it('a planted player at the edge catches a teammate falling beside it and lifts him onto the ledge in 0.4 s', () => {
     const w = cliff();
-    teleport(w, 0, 15, 7); teleport(w, 1, 17, 3);
+    teleport(w, 0, 15, 7);
+    teleport(w, 1, 17, 3);
     const p0 = pl(w, 0).body;
-    p0.x = 16 * TILE - 3; p0.facing = 1;
+    p0.x = 16 * TILE - 3;
+    p0.facing = 1;
     run(w, 3);
     expect(p0.grounded).toBe(true);
     run(w, 1, B(0));
@@ -169,9 +184,11 @@ describe('mano amiga (plan §5)', () => {
     // wall of 4 tiles (top on row 8) with its LEFT face at column 20; the catcher stands on its edge facing the void, the jumper rises beside the wall
     const rows = hall().map((r, y) => (y >= 8 && y <= 11 ? r.slice(0, 20) + '#'.repeat(20) + r.slice(40) : r));
     const w = world(level(rows), { mode: 'free' });
-    teleport(w, 0, 21, 7); teleport(w, 1, 19, GROUND);
+    teleport(w, 0, 21, 7);
+    teleport(w, 1, 19, GROUND);
     const c = pl(w, 0).body;
-    c.x = 20 * TILE - 6; c.facing = -1; // hanging 6 px over the edge, facing the void
+    c.x = 20 * TILE - 6;
+    c.facing = -1; // hanging 6 px over the edge, facing the void
     run(w, 3);
     run(w, 1, B(0));
     expect(pl(w, 0).planted).toBe(true);
@@ -186,16 +203,20 @@ describe('mano amiga (plan §5)', () => {
   });
   it('without planting there is no catch: the teammate just falls', () => {
     const w = cliff();
-    teleport(w, 0, 15, 7); teleport(w, 1, 17, 3);
-    pl(w, 0).body.x = 16 * TILE - 3; pl(w, 0).body.facing = 1;
+    teleport(w, 0, 15, 7);
+    teleport(w, 1, 17, 3);
+    pl(w, 0).body.x = 16 * TILE - 3;
+    pl(w, 0).body.facing = 1;
     const ev = run(w, 120);
     expect(of(ev, 'obst.handCatch')).toEqual([]);
     expect(pl(w, 1).body.y).toBeGreaterThan(8 * TILE);
   });
   it('a teammate who is not falling inside the sensor is left alone', () => {
     const w = cliff();
-    teleport(w, 0, 15, 7); teleport(w, 1, 24, GROUND);
-    pl(w, 0).body.x = 16 * TILE - 3; pl(w, 0).body.facing = 1;
+    teleport(w, 0, 15, 7);
+    teleport(w, 1, 24, GROUND);
+    pl(w, 0).body.x = 16 * TILE - 3;
+    pl(w, 0).body.facing = 1;
     run(w, 3);
     run(w, 1, B(0));
     expect(of(run(w, 60), 'obst.handCatch')).toEqual([]);
@@ -203,10 +224,14 @@ describe('mano amiga (plan §5)', () => {
 });
 
 describe('levers', () => {
-  const lvl = (latch: boolean) => level(draw(hall(), [10, GROUND, 'a'], ...vline(15, 8, 11, 'A')), { params: { a: { kind: 'lever', opens: 'A', latch }, A: { kind: 'gate' } } });
+  const lvl = (latch: boolean) =>
+    level(draw(hall(), [10, GROUND, 'a'], ...vline(15, 8, 11, 'A')), {
+      params: { a: { kind: 'lever', opens: 'A', latch }, A: { kind: 'gate' } },
+    });
   it('holding the lever keeps the gate open; letting go closes it', () => {
     const w = world(lvl(false), { mode: 'free' });
-    teleport(w, 0, 9, GROUND); teleport(w, 1, 2, GROUND);
+    teleport(w, 0, 9, GROUND);
+    teleport(w, 1, 2, GROUND);
     run(w, 5);
     expect(previewB(w, 0).action).toBe('grab');
     const ev = run(w, 1, B(0));
@@ -220,7 +245,8 @@ describe('levers', () => {
   });
   it('a latched lever stays on after the player lets go', () => {
     const w = world(lvl(true), { mode: 'free' });
-    teleport(w, 0, 9, GROUND); teleport(w, 1, 2, GROUND);
+    teleport(w, 0, 9, GROUND);
+    teleport(w, 1, 2, GROUND);
     run(w, 5);
     run(w, 1, B(0));
     run(w, 3);
@@ -233,7 +259,8 @@ describe('levers', () => {
 describe('A lets go of what the hands hold', () => {
   it('A with a box in the hands drops it and jumps', () => {
     const w = world(level(draw(hall(), [10, GROUND, 'x'])), { mode: 'free' });
-    teleport(w, 0, 9, GROUND); teleport(w, 1, 2, GROUND);
+    teleport(w, 0, 9, GROUND);
+    teleport(w, 1, 2, GROUND);
     run(w, 5);
     run(w, 1, B(0));
     expect(pl(w, 0).holding?.kind).toBe('box');
@@ -245,12 +272,18 @@ describe('A lets go of what the hands hold', () => {
   });
   it('dying drops everything: a carried teammate falls free, a held box is let go', () => {
     const w = world(level(draw(hall(), [14, 12, '^^^^'])), { mode: 'free', slots: [0, 1, 2] });
-    teleport(w, 0, 10, GROUND); teleport(w, 1, 10, GROUND); teleport(w, 2, 2, GROUND);
+    teleport(w, 0, 10, GROUND);
+    teleport(w, 1, 10, GROUND);
+    teleport(w, 2, 2, GROUND);
     pl(w, 1).body.x = pl(w, 0).body.x + 30;
     run(w, 5);
     run(w, 1, B(0));
     let died = 0;
-    for (let i = 0; i < 100 && !died; i++) died = of(run(w, 1, (s) => (s === 0 ? inp({ move: 1 }) : undefined)), 'obst.death').length;
+    for (let i = 0; i < 100 && !died; i++)
+      died = of(
+        run(w, 1, (s) => (s === 0 ? inp({ move: 1 }) : undefined)),
+        'obst.death',
+      ).length;
     expect(died).toBe(1);
     expect(pl(w, 0).mode).toBe('dead');
     expect(pl(w, 1).carriedBy).toBe(-1);

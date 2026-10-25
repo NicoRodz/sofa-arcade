@@ -11,8 +11,12 @@ import { ACTIONS, runGame, stationsFor, type Action, type Sim } from '../../shar
 import { startServer } from '../src/server';
 import { Phone, forceEvent, kit, idle, playRound, until } from './rules-kit';
 
-beforeAll(async () => { kit.srv = await startServer({ port: 0, mode: 'none' }); });
-afterAll(async () => { await kit.srv.close(); });
+beforeAll(async () => {
+  kit.srv = await startServer({ port: 0, mode: 'none' });
+});
+afterAll(async () => {
+  await kit.srv.close();
+});
 
 /** Two phones + a Node screen: `sim.tick` sends the chefs' controls through the relay and ticks the sim with what comes back. */
 async function relay(room: string) {
@@ -34,38 +38,66 @@ async function relay(room: string) {
   for (const p of phones) p.sendControls(idle);
   await until(() => phones.every((p) => latest.get(p.id)?.seq === 0), 'baseline inputs');
   for (const p of phones) trackers.get(p.id)!.update(latest.get(p.id)!.presses);
-  let frame = 0, wire = 0;
+  let frame = 0,
+    wire = 0;
   const sim: Sim = {
-    createGame, addPlayer, isFloor, maps: FIXED_MAPS.slice(0, 6),
-    async tick(g, c) { // chef k+1 plays on phone k
+    createGame,
+    addPlayer,
+    isFloor,
+    maps: FIXED_MAPS.slice(0, 6),
+    async tick(g, c) {
+      // chef k+1 plays on phone k
       const want = ++frame;
       phones.forEach((p, k) => p.sendControls(c.get(k + 1) ?? idle));
       await until(() => phones.every((p) => latest.get(p.id)!.seq >= want), `inputs of frame ${want}`, 3000);
       const controls = new Map<number, Controls>();
       phones.forEach((p, k) => {
-        const l = latest.get(p.id)!, d = trackers.get(p.id)!.update(l.presses);
+        const l = latest.get(p.id)!,
+          d = trackers.get(p.id)!.update(l.presses);
         controls.set(k + 1, { x: l.x, y: l.y, a: d[0] ?? 0, b: (l.btn & 2) !== 0, bTaps: d[1] ?? 0 });
         if (d[0] || d[1]) wire++;
       });
       tick(g, controls);
     },
   };
-  return { sim, presses: () => wire, close: () => { screenWs.close(); phones.forEach((p) => p.ws.close()); } };
+  return {
+    sim,
+    presses: () => wire,
+    close: () => {
+      screenWs.close();
+      phones.forEach((p) => p.ws.close());
+    },
+  };
 }
 
 /** The same fixed list of attempts for every configuration: first-press and eventual hit rates of chef 1 (chef 2 plays another interaction beside it). */
 async function attempts(sim: Sim, gameOpts: Record<string, unknown>, n = 30) {
-  let first = 0, hit = 0, k = 0;
+  let first = 0,
+    hit = 0,
+    k = 0;
   const kinds: Action[] = ['take', 'drop', 'pickup', 'place', 'oven', 'chop'];
   for (let i = 0; i < n; i++) {
-    const mi = i % 6, action = kinds[i % kinds.length]!;
+    const mi = i % 6,
+      action = kinds[i % kinds.length]!;
     const probe = createGame({ mapId: sim.maps[mi]!.id, rows: sim.maps[mi]!.rows, spawns: sim.maps[mi]!.spawns });
     const list = stationsFor(probe, action);
     if (!list.length) continue;
     const other = ACTIONS.find((a) => a !== action && a !== 'deliver' && stationsFor(probe, a).length > 1)!;
-    const station = list[(i * 7) % list.length]!, s2 = stationsFor(probe, other).find((s: number) => s !== station)!;
-    const [res] = await runGame(sim, mi, [{ action, station }, { action: other, station: s2 }], 500 + i, { difficulty: 'normal', ...gameOpts });
-    k++; first += res!.first ? 1 : 0; hit += res!.hit ? 1 : 0;
+    const station = list[(i * 7) % list.length]!,
+      s2 = stationsFor(probe, other).find((s: number) => s !== station)!;
+    const [res] = await runGame(
+      sim,
+      mi,
+      [
+        { action, station },
+        { action: other, station: s2 },
+      ],
+      500 + i,
+      { difficulty: 'normal', ...gameOpts },
+    );
+    k++;
+    first += res!.first ? 1 : 0;
+    hit += res!.hit ? 1 : 0;
   }
   return { n: k, first: first / k, hit: hit / k };
 }
@@ -92,7 +124,7 @@ describe('magnetism over the relay', () => {
     expect(assistOn.hit).toBeGreaterThan(0.85);
     expect(assistOff.first).toBeGreaterThan(plainOff.first + 0.1); // the profile is still the profile
   }, 240_000);
-  it('the lobby\'s own rules (roundRules: burn, fire, events, magnet) make a playable round over the relay', async () => {
+  it("the lobby's own rules (roundRules: burn, fire, events, magnet) make a playable round over the relay", async () => {
     const r = await relay('mg3');
     expect(roundRules({}, 'normal').magnet).toBe('normal');
     const res = await attempts(r.sim, { ...roundRules({}, 'normal') }, 12);
@@ -102,9 +134,19 @@ describe('magnetism over the relay', () => {
 });
 
 describe('the gentle rat over the relay', () => {
-  const bait = (g: Parameters<typeof forceEvent>[0]) => { g.stations.filter((s) => s.kind === 'counter')[6]!.item = 'raw1'; };
+  const bait = (g: Parameters<typeof forceEvent>[0]) => {
+    g.stations.filter((s) => s.kind === 'counter')[6]!.item = 'raw1';
+  };
   it('nobody looks: it announces its counter, does not steal in its first second and does not leave before 12 s', async () => {
-    const r = await playRound('mgr1', { roles: ['idle', 'idle'], seconds: 40, flags: { events: true, magnet: true }, setup: (g) => { forceEvent(g, 'rat', 3000); bait(g); } });
+    const r = await playRound('mgr1', {
+      roles: ['idle', 'idle'],
+      seconds: 40,
+      flags: { events: true, magnet: true },
+      setup: (g) => {
+        forceEvent(g, 'rat', 3000);
+        bait(g);
+      },
+    });
     const appear = r.of('rat:appear')[0]!.t;
     expect(r.of('rat:target')).toHaveLength(1);
     expect(r.of('rat:near')).toHaveLength(1);
@@ -113,7 +155,15 @@ describe('the gentle rat over the relay', () => {
     r.close();
   }, 90_000);
   it('a phone that runs at it and dashes scares it and the team is paid', async () => {
-    const on = await playRound('mgr2', { roles: ['ratcatcher', 'idle'], seconds: 30, flags: { events: true, magnet: true }, setup: (g) => { forceEvent(g, 'rat', 3000); bait(g); } });
+    const on = await playRound('mgr2', {
+      roles: ['ratcatcher', 'idle'],
+      seconds: 30,
+      flags: { events: true, magnet: true },
+      setup: (g) => {
+        forceEvent(g, 'rat', 3000);
+        bait(g);
+      },
+    });
     expect(on.of('rat:scared')).toHaveLength(1);
     expect(on.of('rat:scared')[0]!.p).toMatchObject({ bonus: 50 });
     expect(on.game.score).toBeGreaterThanOrEqual(50);

@@ -76,7 +76,14 @@ export type WorldId = 'beach' | 'forest' | 'glacier' | 'mine' | 'volcano' | 'sum
 export const WORLD_ORDER: readonly WorldId[] = ['beach', 'forest', 'glacier', 'mine', 'volcano', 'summit'];
 
 // Plan §3, per world. `rescueSec` is the existing bubbleSec (time out of camera before the bubble). `hearts` Infinity = unlimited.
-interface WorldRow { band: readonly [number, number]; hearts: number; checkpointEverySec: number; forgiveMult: number; rescueSec: number; hazardMult: number }
+interface WorldRow {
+  band: readonly [number, number];
+  hearts: number;
+  checkpointEverySec: number;
+  forgiveMult: number;
+  rescueSec: number;
+  hazardMult: number;
+}
 export const WORLD_TABLE: Record<WorldId, WorldRow> = {
   beach: { band: [0, 0.15], hearts: Infinity, checkpointEverySec: 15, forgiveMult: 1.5, rescueSec: 1, hazardMult: 0.6 },
   forest: { band: [0.15, 0.35], hearts: 6, checkpointEverySec: 25, forgiveMult: 1.3, rescueSec: 2, hazardMult: 0.8 },
@@ -155,21 +162,50 @@ export function campaignParams(n: number, world: WorldId = 'forest'): CampaignPa
   const row = WORLD_TABLE[world];
   const extra = N - 2;
   return {
-    n: N, world,
-    ropeMult: 1.2, ropeLen: ROPE_LEN * 1.2,
-    anchorHolds: N <= 2 ? 1 : 2, slideTilesPerSec: 0.5,
-    edgeAssist: true, edgeReachPx: 24,
-    superJumpWindowMs: 150 + 30 * extra, superJumpMult: 1.3,
+    n: N,
+    world,
+    ropeMult: 1.2,
+    ropeLen: ROPE_LEN * 1.2,
+    anchorHolds: N <= 2 ? 1 : 2,
+    slideTilesPerSec: 0.5,
+    edgeAssist: true,
+    edgeReachPx: 24,
+    superJumpWindowMs: 150 + 30 * extra,
+    superJumpMult: 1.3,
     forgiveMult: row.forgiveMult,
     hearts: Number.isFinite(row.hearts) ? row.hearts + Math.floor(extra / 2) : Infinity,
-    hazardMult: row.hazardMult, rescueSec: row.rescueSec, checkpointEverySec: row.checkpointEverySec, band: row.band,
+    hazardMult: row.hazardMult,
+    rescueSec: row.rescueSec,
+    checkpointEverySec: row.checkpointEverySec,
+    band: row.band,
     restartAtStart: world === 'summit',
-    bubbleMashMax: 4, bubbleMashGain: 0.5,
-    signalShowSec: 2, signalHoldSec: 0.4,
-    camPadTiles: 3, camLookAtGoal: true,
-    balanceTilesPerSec: 2, targetSec: 4 + Math.floor(extra / 2), enemyStunSec: 3, enemyExtra: Math.floor(extra / 2), enemyTilesPerSec: 1.5, enemyPushPxPerSec: 360,
-    iceFriction: 0.15, windPxPerSec: N <= 2 ? 140 : 112, windWarnSec: 1, pickTilesPerSec: 1, throwVxMult: 1.3, throwSlack: 1.5, throwSlackSec: 1.2,
-    lanternRadiusTiles: 4, bungeeMaxMult: 1.6, bungeeStiffness: 40, bungeeDamping: 7, sinkTilesPerSec: 0.5, sinkRiseTilesPerSec: 0.5, geyserWarnSec: 1, geyserLaunchMult: 1.65,
+    bubbleMashMax: 4,
+    bubbleMashGain: 0.5,
+    signalShowSec: 2,
+    signalHoldSec: 0.4,
+    camPadTiles: 3,
+    camLookAtGoal: true,
+    balanceTilesPerSec: 2,
+    targetSec: 4 + Math.floor(extra / 2),
+    enemyStunSec: 3,
+    enemyExtra: Math.floor(extra / 2),
+    enemyTilesPerSec: 1.5,
+    enemyPushPxPerSec: 360,
+    iceFriction: 0.15,
+    windPxPerSec: N <= 2 ? 140 : 112,
+    windWarnSec: 1,
+    pickTilesPerSec: 1,
+    throwVxMult: 1.3,
+    throwSlack: 1.5,
+    throwSlackSec: 1.2,
+    lanternRadiusTiles: 4,
+    bungeeMaxMult: 1.6,
+    bungeeStiffness: 40,
+    bungeeDamping: 7,
+    sinkTilesPerSec: 0.5,
+    sinkRiseTilesPerSec: 0.5,
+    geyserWarnSec: 1,
+    geyserLaunchMult: 1.65,
   };
 }
 
@@ -179,16 +215,32 @@ export const superJumpV0 = (c: CampaignParams): number => JUMP_V0 * Math.sqrt(c.
 export function physicsForCampaign(c: CampaignParams, p90LatencyMs = 0): PhysicsParams {
   const n = DIFFICULTY_PARAMS.normal;
   const coyote = Math.round(n.coyoteBase * c.forgiveMult) + Math.ceil(Math.max(0, p90LatencyMs) / LATENCY_FRAME_MS);
-  return { coyote: Math.min(Math.round(n.coyoteCap * c.forgiveMult), coyote), buffer: Math.round(n.bufferFrames * c.forgiveMult), stickyEdges: c.world === 'beach' };
+  return {
+    coyote: Math.min(Math.round(n.coyoteCap * c.forgiveMult), coyote),
+    buffer: Math.round(n.bufferFrames * c.forgiveMult),
+    stickyEdges: c.world === 'beach',
+  };
 }
 
 // What a campaign world's bodies are stepped with: the world's coyote/buffer (physicsForCampaign, unchanged) plus the ice friction. The sim and the validator use THIS.
-export const physicsOfWorld = (c: CampaignParams, p90LatencyMs = 0): PhysicsParams => ({ ...physicsForCampaign(c, p90LatencyMs), iceFriction: c.iceFriction });
+export const physicsOfWorld = (c: CampaignParams, p90LatencyMs = 0): PhysicsParams => ({
+  ...physicsForCampaign(c, p90LatencyMs),
+  iceFriction: c.iceFriction,
+});
 
 // The legacy DifficultyParams a campaign world runs with (lives, bubble delay, hazard speed come from the world; the rest is Normal's).
 export function dparamsForCampaign(c: CampaignParams): DifficultyParams {
   const n = DIFFICULTY_PARAMS.normal;
-  return { ...n, lives: c.hearts, bubbleSec: c.rescueSec, bubbleCostsLife: false, hazardSpeed: c.hazardMult, handZoneTiles: c.world === 'beach' ? DIFFICULTY_PARAMS.easy.handZoneTiles : n.handZoneTiles, stickyEdges: c.world === 'beach', band: [c.band[0] * 100, c.band[1] * 100] };
+  return {
+    ...n,
+    lives: c.hearts,
+    bubbleSec: c.rescueSec,
+    bubbleCostsLife: false,
+    hazardSpeed: c.hazardMult,
+    handZoneTiles: c.world === 'beach' ? DIFFICULTY_PARAMS.easy.handZoneTiles : n.handZoneTiles,
+    stickyEdges: c.world === 'beach',
+    band: [c.band[0] * 100, c.band[1] * 100],
+  };
 }
 
 // --- signals (dynamic 1)

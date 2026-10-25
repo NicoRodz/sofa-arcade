@@ -1,27 +1,76 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from './rng';
 import {
-  AFK_IDLE_MS, addPlayer, cancel, cast, captainCancel, captainGo, clearVotes, dependentKeys, eligible, keyboardPick, majorityOf, makeRoster,
-  openVote, recordParticipation, removePlayer, setCaptain, setConnected, settle, snapshot, tick, tickAfk, touch,
-  type OptionSpec, type Roster, type VoteConfig, type VoteState,
+  AFK_IDLE_MS,
+  addPlayer,
+  cancel,
+  cast,
+  captainCancel,
+  captainGo,
+  clearVotes,
+  dependentKeys,
+  eligible,
+  keyboardPick,
+  majorityOf,
+  makeRoster,
+  openVote,
+  recordParticipation,
+  removePlayer,
+  setCaptain,
+  setConnected,
+  settle,
+  snapshot,
+  tick,
+  tickAfk,
+  touch,
+  type OptionSpec,
+  type Roster,
+  type VoteConfig,
+  type VoteState,
 } from './vote';
 
 // Fake clock harness: `now` only moves when the test says so. Players 1..n sit, player 1 is the Captain.
 const core = (v: VoteState) => ({ votes: v.votes, closing: v.closing, status: v.status, result: v.result }); // an ignored action may only move the tick time
 
 class Rig {
-  now = 0; roster: Roster; v: VoteState; rng: () => number = () => 0;
+  now = 0;
+  roster: Roster;
+  v: VoteState;
+  rng: () => number = () => 0;
   constructor(n: number, cfg: Partial<VoteConfig> = {}) {
-    this.roster = makeRoster(Array.from({ length: n }, (_x, i) => i + 1), 0);
+    this.roster = makeRoster(
+      Array.from({ length: n }, (_x, i) => i + 1),
+      0,
+    );
     this.v = openVote({ voteId: 'v1', kind: 'pick', options: ['A', 'B', 'C'], windowMs: 15_000, ...cfg }, 0);
   }
-  ctx() { return { now: this.now, rng: this.rng, roster: this.roster }; }
-  at(ms: number) { this.now = ms; this.v = tick(this.v, this.ctx()); return this; }
-  advance(ms: number) { return this.at(this.now + ms); }
-  vote(p: number, o: string | null, id: string | number = 'v1') { this.v = cast(this.v, this.ctx(), p, id, o); return this; }
-  roster2(f: (r: Roster) => Roster) { this.v = tick(this.v, this.ctx()); this.roster = f(this.roster); this.v = tick(this.v, this.ctx()); return this; }
-  snap() { return snapshot(this.v, this.ctx()); }
-  get result() { return this.v.result; }
+  ctx() {
+    return { now: this.now, rng: this.rng, roster: this.roster };
+  }
+  at(ms: number) {
+    this.now = ms;
+    this.v = tick(this.v, this.ctx());
+    return this;
+  }
+  advance(ms: number) {
+    return this.at(this.now + ms);
+  }
+  vote(p: number, o: string | null, id: string | number = 'v1') {
+    this.v = cast(this.v, this.ctx(), p, id, o);
+    return this;
+  }
+  roster2(f: (r: Roster) => Roster) {
+    this.v = tick(this.v, this.ctx());
+    this.roster = f(this.roster);
+    this.v = tick(this.v, this.ctx());
+    return this;
+  }
+  snap() {
+    return snapshot(this.v, this.ctx());
+  }
+  get result() {
+    return this.v.result;
+  }
 }
 
 describe('threshold M and E (section 2: eligibles)', () => {
@@ -199,7 +248,10 @@ describe('tie: roulette with a fixed seed', () => {
     expect(winners).toEqual(new Set(['A', 'B'])); // never C, both reachable
   });
   it('the draw is the injected RNG: 0 -> first tied option, 0.99 -> last', () => {
-    for (const [value, expected] of [[0, 'A'], [0.99, 'C']] as const) {
+    for (const [value, expected] of [
+      [0, 'A'],
+      [0.99, 'C'],
+    ] as const) {
       const r = new Rig(3);
       r.rng = () => value;
       r.vote(1, 'A').vote(2, 'B').vote(3, 'C'); // 3-way tie, all voted
@@ -218,7 +270,8 @@ describe('tie: roulette with a fixed seed', () => {
 });
 
 describe('statu quo', () => {
-  const pause = (n: number) => new Rig(n, { kind: 'destructive', options: ['continue', 'restart', 'lobby', 'home'], current: 'continue', windowMs: 15_000 });
+  const pause = (n: number) =>
+    new Rig(n, { kind: 'destructive', options: ['continue', 'restart', 'lobby', 'home'], current: 'continue', windowMs: 15_000 });
   it('destructive: fewer than M votes at the deadline -> the current option wins', () => {
     const r = pause(5); // M = 3
     r.at(0).vote(1, 'restart').vote(2, 'restart');
@@ -589,7 +642,15 @@ describe('item reset and schema', () => {
     expect(r.snap()).toMatchObject({ running: false, remainingMs: 15_000 });
   });
   it('dependentKeys is transitive and ignores unrelated keys', () => {
-    const spec = (key: string, parent?: string): OptionSpec => ({ key, label: key, type: 'enum', values: [], default: '', votable: true, parent });
+    const spec = (key: string, parent?: string): OptionSpec => ({
+      key,
+      label: key,
+      type: 'enum',
+      values: [],
+      default: '',
+      votable: true,
+      parent,
+    });
     const specs = [spec('mode'), spec('map', 'mode'), spec('seed', 'map'), spec('level')];
     expect(dependentKeys(specs, 'mode')).toEqual(['map', 'seed']);
     expect(dependentKeys(specs, 'level')).toEqual([]);

@@ -12,9 +12,6 @@ const packages = {
 
 export default defineConfig({
   test: {
-    projects: [
-      ...Object.entries(packages).map(([name, dirs]) => packageProject(name, dirs)),
-      slowProject(Object.values(packages).flat()),
-    ],
+    projects: [...Object.entries(packages).map(([name, dirs]) => packageProject(name, dirs)), slowProject(Object.values(packages).flat())],
   },
 });

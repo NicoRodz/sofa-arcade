@@ -39,16 +39,54 @@ export interface MagnetCfg {
   bufferMs: number; // the higher of this and the difficulty's
 }
 export const MAGNET_TUNING: Record<MagnetLevel, MagnetCfg> = {
-  normal: { level: 'normal', reachMult: 1.3, assistExtra: 0.2, coneDeg: 80, facingBonus: 0.1, pullDps: 720, pullGap: 0.6, pullSpeed: 1.5, hugMax: 0.9, hugConeDeg: 30, tauMs: 35, tauStopMs: 30, dashCdMs: 450, bufferMs: 200 },
-  strong: { level: 'strong', reachMult: 1.5, assistExtra: 0.2, coneDeg: 85, facingBonus: 0.08, pullDps: 1080, pullGap: 0.8, pullSpeed: 2, hugMax: 1.1, hugConeDeg: 40, tauMs: 25, tauStopMs: 20, dashCdMs: 400, bufferMs: 250 },
+  normal: {
+    level: 'normal',
+    reachMult: 1.3,
+    assistExtra: 0.2,
+    coneDeg: 80,
+    facingBonus: 0.1,
+    pullDps: 720,
+    pullGap: 0.6,
+    pullSpeed: 1.5,
+    hugMax: 0.9,
+    hugConeDeg: 30,
+    tauMs: 35,
+    tauStopMs: 30,
+    dashCdMs: 450,
+    bufferMs: 200,
+  },
+  strong: {
+    level: 'strong',
+    reachMult: 1.5,
+    assistExtra: 0.2,
+    coneDeg: 85,
+    facingBonus: 0.08,
+    pullDps: 1080,
+    pullGap: 0.8,
+    pullSpeed: 2,
+    hugMax: 1.1,
+    hugConeDeg: 40,
+    tauMs: 25,
+    tauStopMs: 20,
+    dashCdMs: 400,
+    bufferMs: 250,
+  },
 };
 
 /** The lobby's rule for a round: Easy gets the strong magnet, the rest the normal one; `magnet: false` in the mode options turns it off. */
-export const magnetFor = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty): MagnetLevel | false =>
-  modeOptions?.[MAGNET_OPTION] === false ? false : d === 'easy' ? 'strong' : 'normal';
+export const magnetFor = (
+  modeOptions: Readonly<Record<string, boolean | number | string>> | undefined,
+  d: Difficulty,
+): MagnetLevel | false => (modeOptions?.[MAGNET_OPTION] === false ? false : d === 'easy' ? 'strong' : 'normal');
 
 /** The difficulty's feel knobs with the magnet's on top. */
-export const tuneFor = (t: Tuning, m: MagnetCfg): Tuning => ({ ...t, tauMs: Math.min(t.tauMs, m.tauMs), tauStopMs: Math.min(t.tauStopMs, m.tauStopMs), dashCdMs: Math.min(t.dashCdMs, m.dashCdMs), bufferMs: Math.max(t.bufferMs, m.bufferMs) });
+export const tuneFor = (t: Tuning, m: MagnetCfg): Tuning => ({
+  ...t,
+  tauMs: Math.min(t.tauMs, m.tauMs),
+  tauStopMs: Math.min(t.tauStopMs, m.tauStopMs),
+  dashCdMs: Math.min(t.dashCdMs, m.dashCdMs),
+  bufferMs: Math.max(t.bufferMs, m.bufferMs),
+});
 
 /** Switches the magnet on for a round (createGame calls it when its `magnet` option is set). */
 export function applyMagnet(g: Game, level: MagnetLevel) {
@@ -57,46 +95,77 @@ export function applyMagnet(g: Game, level: MagnetLevel) {
   g.params = { ...g.params, tune: tuneFor(g.params.tune, cfg) };
 }
 
-const nearest = (p: Player, s: Station): [number, number] => [Math.max(s.tx, Math.min(p.x, s.tx + 1)), Math.max(s.ty, Math.min(p.y, s.ty + 1))];
+const nearest = (p: Player, s: Station): [number, number] => [
+  Math.max(s.tx, Math.min(p.x, s.tx + 1)),
+  Math.max(s.ty, Math.min(p.y, s.ty + 1)),
+];
 const usable = (p: Player, s: Station) => s.owner === null || s.owner === p.team; // another team's kitchen is not there for this chef
 // A wall (or another station) between the chef and the point it would reach blocks it.
 function clear(g: Game, p: Player, s: Station, nx: number, ny: number) {
-  const dx = nx - p.x, dy = ny - p.y;
-  for (let t = 0.1; t < 0.96; t += 0.1) { const tx = Math.floor(p.x + dx * t), ty = Math.floor(p.y + dy * t); if ((tx !== s.tx || ty !== s.ty) && !isFloor(g.grid, tx, ty)) return false; }
+  const dx = nx - p.x,
+    dy = ny - p.y;
+  for (let t = 0.1; t < 0.96; t += 0.1) {
+    const tx = Math.floor(p.x + dx * t),
+      ty = Math.floor(p.y + dy * t);
+    if ((tx !== s.tx || ty !== s.ty) && !isFloor(g.grid, tx, ty)) return false;
+  }
   return true;
 }
 // Where the chef heads: its facing, plus the way it is moving when it moves with some speed.
 function heading(p: Player): [number, number] {
-  let hx = p.fx, hy = p.fy;
+  let hx = p.fx,
+    hy = p.fy;
   const fl = Math.hypot(hx, hy) || 1;
-  hx /= fl; hy /= fl;
+  hx /= fl;
+  hy /= fl;
   const sp = Math.hypot(p.vx, p.vy);
-  if (sp > 1.2) { hx += (0.6 * p.vx) / sp; hy += (0.6 * p.vy) / sp; const l = Math.hypot(hx, hy) || 1; hx /= l; hy /= l; }
+  if (sp > 1.2) {
+    hx += (0.6 * p.vx) / sp;
+    hy += (0.6 * p.vy) / sp;
+    const l = Math.hypot(hx, hy) || 1;
+    hx /= l;
+    hy /= l;
+  }
   return [hx, hy];
 }
 
 /** The station A / B act on for a chef when the magnet is on: lowest score (distance - bonus * cos) among the usable ones in reach and in the cone. */
 export function magnetStation(g: Game, p: Player): Station | null {
-  const m = g.magnet!, reach = BASE_REACH * m.reachMult, cone = Math.cos((m.coneDeg * Math.PI) / 180);
+  const m = g.magnet!,
+    reach = BASE_REACH * m.reachMult,
+    cone = Math.cos((m.coneDeg * Math.PI) / 180);
   const [hx, hy] = heading(p);
-  let best: Station | null = null, bestKey = Infinity;
+  let best: Station | null = null,
+    bestKey = Infinity;
   for (const s of g.stations) {
     if (!usable(p, s)) continue;
-    const [nx, ny] = nearest(p, s), dx = nx - p.x, dy = ny - p.y, d = Math.hypot(dx, dy);
+    const [nx, ny] = nearest(p, s),
+      dx = nx - p.x,
+      dy = ny - p.y,
+      d = Math.hypot(dx, dy);
     if (d > reach) continue;
     const cos = d > 1e-6 ? (dx * hx + dy * hy) / d : 1;
     if (cos < cone) continue;
     if (d > TOUCH && !clear(g, p, s, nx, ny)) continue;
     const key = d - m.facingBonus * cos;
-    if (key < bestKey) { best = s; bestKey = key; }
+    if (key < bestKey) {
+      best = s;
+      bestKey = key;
+    }
   }
   return best;
 }
 
 /** Turns the chef to the station at once (the press of Tomar / Picar). */
 export function faceStation(p: Player, s: Station) {
-  const [nx, ny] = nearest(p, s), dx = nx - p.x, dy = ny - p.y, d = Math.hypot(dx, dy);
-  if (d > 1e-6) { p.fx = dx / d; p.fy = dy / d; }
+  const [nx, ny] = nearest(p, s),
+    dx = nx - p.x,
+    dy = ny - p.y,
+    d = Math.hypot(dx, dy);
+  if (d > 1e-6) {
+    p.fx = dx / d;
+    p.fy = dy / d;
+  }
 }
 
 /**
@@ -104,15 +173,25 @@ export function faceStation(p: Player, s: Station) {
  */
 export function magnetPull(g: Game, p: Player, s: Station, pressing: boolean, stickIdle: boolean, dtMs: number) {
   const m = g.magnet!;
-  if (pressing) { faceStation(p, s); return; }
+  if (pressing) {
+    faceStation(p, s);
+    return;
+  }
   if (!stickIdle) return; // a held stick is the player's say: no pull
-  const [nx, ny] = nearest(p, s), dx = nx - p.x, dy = ny - p.y, d = Math.hypot(dx, dy);
+  const [nx, ny] = nearest(p, s),
+    dx = nx - p.x,
+    dy = ny - p.y,
+    d = Math.hypot(dx, dy);
   if (d - CHEF_RADIUS > m.pullGap || Math.hypot(p.vx, p.vy) > m.pullSpeed || d < 1e-6) return;
-  const fl = Math.hypot(p.fx, p.fy) || 1, fx = p.fx / fl, fy = p.fy / fl;
+  const fl = Math.hypot(p.fx, p.fy) || 1,
+    fx = p.fx / fl,
+    fy = p.fy / fl;
   const diff = Math.atan2(fx * dy - fy * dx, fx * dx + fy * dy); // signed angle from the facing to the station
-  const step = Math.min(Math.abs(diff), (m.pullDps * Math.PI / 180) * (dtMs / 1000)) * Math.sign(diff);
-  const c = Math.cos(step), sn = Math.sin(step);
-  p.fx = fx * c - fy * sn; p.fy = fx * sn + fy * c;
+  const step = Math.min(Math.abs(diff), ((m.pullDps * Math.PI) / 180) * (dtMs / 1000)) * Math.sign(diff);
+  const c = Math.cos(step),
+    sn = Math.sin(step);
+  p.fx = fx * c - fy * sn;
+  p.fy = fx * sn + fy * c;
 }
 
 /**
@@ -120,15 +199,22 @@ export function magnetPull(g: Game, p: Player, s: Station, pressing: boolean, st
  * Stateless: only a dash that has not been extended yet qualifies (its cooldown still counts from a normal-length dash).
  */
 export function magnetHug(g: Game, p: Player, speed: number, tickMs: number): number {
-  const m = g.magnet!, t = g.params.tune;
+  const m = g.magnet!,
+    t = g.params.tune;
   if (p.dashCd < t.dashCdMs - t.dashMs - tickMs) return 0;
   const cone = Math.cos((m.hugConeDeg * Math.PI) / 180);
-  let ms = 0, bestGap = Infinity;
+  let ms = 0,
+    bestGap = Infinity;
   for (const s of g.stations) {
     if (!usable(p, s)) continue;
-    const [nx, ny] = nearest(p, s), dx = nx - p.x, dy = ny - p.y, d = Math.hypot(dx, dy), gap = d - CHEF_RADIUS;
+    const [nx, ny] = nearest(p, s),
+      dx = nx - p.x,
+      dy = ny - p.y,
+      d = Math.hypot(dx, dy),
+      gap = d - CHEF_RADIUS;
     if (gap < 0.03 || gap > m.hugMax || (dx * p.dashDx + dy * p.dashDy) / d < cone || !clear(g, p, s, nx, ny) || gap >= bestGap) continue;
-    bestGap = gap; ms = (gap / speed) * 1000 + 8;
+    bestGap = gap;
+    ms = (gap / speed) * 1000 + 8;
   }
   return ms;
 }
@@ -139,7 +225,11 @@ export function magnetHug(g: Game, p: Player, speed: number, tickMs: number): nu
  */
 export function floorWins(p: Player, s: Station, f: { tx: number; ty: number } | null): boolean {
   if (!f) return false;
-  const fl = Math.hypot(p.fx, p.fy) || 1, fx = p.fx / fl, fy = p.fy / fl;
-  const [nx, ny] = nearest(p, s), sd = Math.hypot(nx - p.x, ny - p.y) || 1, fd = Math.hypot(f.tx + 0.5 - p.x, f.ty + 0.5 - p.y) || 1;
+  const fl = Math.hypot(p.fx, p.fy) || 1,
+    fx = p.fx / fl,
+    fy = p.fy / fl;
+  const [nx, ny] = nearest(p, s),
+    sd = Math.hypot(nx - p.x, ny - p.y) || 1,
+    fd = Math.hypot(f.tx + 0.5 - p.x, f.ty + 0.5 - p.y) || 1;
   return ((f.tx + 0.5 - p.x) * fx + (f.ty + 0.5 - p.y) * fy) / fd >= ((nx - p.x) * fx + (ny - p.y) * fy) / sd;
 }

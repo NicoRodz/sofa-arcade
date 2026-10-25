@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BPM_GAME, BPM_LOBBY, BPM_RUSH, LOOP_STEPS, RESULTS_STEPS, advance, eighthSeconds, modeFor, newSched, noteFreq, rampBpm, stepEvents, targetBpm,
-  type Mode, type Sched, type Snapshot,
+  BPM_GAME,
+  BPM_LOBBY,
+  BPM_RUSH,
+  LOOP_STEPS,
+  RESULTS_STEPS,
+  advance,
+  eighthSeconds,
+  modeFor,
+  newSched,
+  noteFreq,
+  rampBpm,
+  stepEvents,
+  targetBpm,
+  type Mode,
+  type Sched,
+  type Snapshot,
 } from './music';
 
 const snap = (s: Partial<Snapshot>): Snapshot => ({ phase: 'playing', started: true, timeLeftMs: 120_000, ...s });
@@ -45,7 +59,10 @@ describe('notes', () => {
   it('held notes are re-struck in sixteenths (bar 2: E5 - -)', () => {
     const m = (step: number) => stepEvents(6 + step, 'game').filter((n) => n.voice === 'mandolin');
     expect(m(3).map((n) => n.offset)).toEqual([0, 0.5]);
-    expect(m(4).map((n) => [n.offset, n.freqs[0]])).toEqual([[0, noteFreq('E5')], [0.5, noteFreq('E5')]]);
+    expect(m(4).map((n) => [n.offset, n.freqs[0]])).toEqual([
+      [0, noteFreq('E5')],
+      [0.5, noteFreq('E5')],
+    ]);
   });
   it('harmony: bar 3 is E7 (bass E2), bar 9 is Dm (bass D2)', () => {
     expect(stepEvents(12, 'game').find((n) => n.voice === 'bass')!.freqs[0]).toBeCloseTo(noteFreq('E2'));
@@ -81,15 +98,25 @@ describe('notes', () => {
 
 describe('scheduler', () => {
   const run = (s: Sched, from: number, to: number, mode: Mode, dt = 0.025) => {
-    let st = s; let n = 0;
-    for (let t = from; t <= to + 1e-9; t += dt) { const r = advance(st, t, 0.1, mode); st = r.state; n += r.notes.length; }
+    let st = s;
+    let n = 0;
+    for (let t = from; t <= to + 1e-9; t += dt) {
+      const r = advance(st, t, 0.1, mode);
+      st = r.state;
+      n += r.notes.length;
+    }
     return { st, n };
   };
   it('never schedules a note in the past and keeps a steady 0.2 s eighth at 100 bpm', () => {
-    let st = newSched(0); const times: number[] = [];
+    let st = newSched(0);
+    const times: number[] = [];
     for (let t = 0; t < 3; t += 0.025) {
-      const r = advance(st, t, 0.1, 'game'); st = r.state;
-      for (const n of r.notes) { expect(n.at).toBeGreaterThanOrEqual(t - 1e-9); if (n.note.voice === 'bass') times.push(n.at); }
+      const r = advance(st, t, 0.1, 'game');
+      st = r.state;
+      for (const n of r.notes) {
+        expect(n.at).toBeGreaterThanOrEqual(t - 1e-9);
+        if (n.note.voice === 'bass') times.push(n.at);
+      }
     }
     expect(times[1]! - times[0]!).toBeCloseTo(0.6, 5); // beats 1 and 4 are 3 eighths apart
     expect(times[2]! - times[0]!).toBeCloseTo(1.2, 5);

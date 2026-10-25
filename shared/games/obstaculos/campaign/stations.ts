@@ -2,7 +2,13 @@
 import type { LevelDef } from '../types';
 
 export const S_MOVE: LevelDef = {
-  id: 'p-move', name: 'Mover', biome: 'beach', players: { min: 2, max: 2 }, tether: 'freeOnly', stars: 1, parSec: 30,
+  id: 'p-move',
+  name: 'Mover',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'freeOnly',
+  stars: 1,
+  parSec: 30,
   rows: [
     '#..............................#',
     '#..............................#',
@@ -17,12 +23,18 @@ export const S_MOVE: LevelDef = {
     '#..............................#',
     '#..S......................G....#',
     '################################',
-    '################################'
+    '################################',
   ],
 };
 
 export const S_JUMP: LevelDef = {
-  id: 'p-jump', name: 'Saltar', biome: 'beach', players: { min: 2, max: 2 }, tether: 'freeOnly', stars: 1, parSec: 30,
+  id: 'p-jump',
+  name: 'Saltar',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'freeOnly',
+  stars: 1,
+  parSec: 30,
   rows: [
     '#..............................#',
     '#..............................#',
@@ -37,12 +49,18 @@ export const S_JUMP: LevelDef = {
     '#...............##.............#',
     '#..S......##....##........G....#',
     '################################',
-    '################################'
+    '################################',
   ],
 };
 
 export const S_ROPE: LevelDef = {
-  id: 'p-rope', name: 'Cuerda', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 1, parSec: 30,
+  id: 'p-rope',
+  name: 'Cuerda',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 1,
+  parSec: 30,
   rows: [
     '#..............................#',
     '#..............................#',
@@ -57,12 +75,18 @@ export const S_ROPE: LevelDef = {
     '#..............................#',
     '#..S......................G....#',
     '##########...###################',
-    '##########~~~###################'
+    '##########~~~###################',
   ],
 };
 
 export const S_SIGNALS: LevelDef = {
-  id: 'p-signals', name: 'Señales', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 1, parSec: 30,
+  id: 'p-signals',
+  name: 'Señales',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 1,
+  parSec: 30,
   rows: [
     '#..............................#',
     '#..............................#',
@@ -77,12 +101,18 @@ export const S_SIGNALS: LevelDef = {
     '#..............................#',
     '#..S......................G....#',
     '##########....##################',
-    '##########~~~~##################'
+    '##########~~~~##################',
   ],
 };
 
 export const S_TOWER: LevelDef = {
-  id: 'p-tower', name: 'Torre y mano', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 1, parSec: 30,
+  id: 'p-tower',
+  name: 'Torre y mano',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 1,
+  parSec: 30,
   rows: [
     '#..............................#',
     '#..............................#',
@@ -97,12 +127,18 @@ export const S_TOWER: LevelDef = {
     '#...........######.............#',
     '#..S........######........G....#',
     '################################',
-    '################################'
+    '################################',
   ],
 };
 
 export const S_ANCHOR: LevelDef = {
-  id: 'p-anchor', name: 'Ancla', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 1, parSec: 30,
+  id: 'p-anchor',
+  name: 'Ancla',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 1,
+  parSec: 30,
   rows: [
     '#..................................#',
     '#..................................#',
@@ -117,12 +153,18 @@ export const S_ANCHOR: LevelDef = {
     '#.................######...........#',
     '#..S..^^..........######......G....#',
     '####################################',
-    '####################################'
+    '####################################',
   ],
 };
 
 export const S_THROW: LevelDef = {
-  id: 'p-throw', name: 'Lanzamiento', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 1, parSec: 30,
+  id: 'p-throw',
+  name: 'Lanzamiento',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 1,
+  parSec: 30,
   rows: [
     '#..............................#',
     '#..............................#',
@@ -137,12 +179,18 @@ export const S_THROW: LevelDef = {
     '#...........######.............#',
     '#..S........######........G....#',
     '################################',
-    '################################'
+    '################################',
   ],
 };
 
 export const S_SWING: LevelDef = {
-  id: 'p-swing', name: 'Columpio', biome: 'beach', players: { min: 2, max: 2 }, tether: 'chainOnly', stars: 1, parSec: 30,
+  id: 'p-swing',
+  name: 'Columpio',
+  biome: 'beach',
+  players: { min: 2, max: 2 },
+  tether: 'chainOnly',
+  stars: 1,
+  parSec: 30,
   rows: [
     '#..............................#',
     '#..............................#',
@@ -157,8 +205,17 @@ export const S_SWING: LevelDef = {
     '#..............................#',
     '#..S......................G....#',
     '##########.......###############',
-    '##########~~~~~~~###############'
+    '##########~~~~~~~###############',
   ],
 };
 
-export const STATION_LEVELS = { 'p-move': S_MOVE, 'p-jump': S_JUMP, 'p-rope': S_ROPE, 'p-signals': S_SIGNALS, 'p-tower': S_TOWER, 'p-anchor': S_ANCHOR, 'p-throw': S_THROW, 'p-swing': S_SWING } as const;
+export const STATION_LEVELS = {
+  'p-move': S_MOVE,
+  'p-jump': S_JUMP,
+  'p-rope': S_ROPE,
+  'p-signals': S_SIGNALS,
+  'p-tower': S_TOWER,
+  'p-anchor': S_ANCHOR,
+  'p-throw': S_THROW,
+  'p-swing': S_SWING,
+} as const;

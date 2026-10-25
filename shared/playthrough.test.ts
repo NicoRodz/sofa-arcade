@@ -6,19 +6,29 @@ import { TICK_MS, addPlayer, createGame, recipeBase, tick, type Controls, type G
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const press = (g: Game) => tick(g, new Map([[1, { ...idle, a: 1 }]]));
-const run = (g: Game, ms: number, c: Map<number, Controls> = new Map()) => { for (let t = 0; t < ms; t += TICK_MS) tick(g, c); };
+const run = (g: Game, ms: number, c: Map<number, Controls> = new Map()) => {
+  for (let t = 0; t < ms; t += TICK_MS) tick(g, c);
+};
 const hold = new Map([[1, { ...idle, b: true }]]);
 function face(g: Game, s: Station) {
   const p = g.players.get(1)!;
   const [dx, dy] = DIRS.find(([dx, dy]) => isFloor(g.grid, s.tx + dx, s.ty + dy))!;
-  p.x = s.tx + dx + 0.5; p.y = s.ty + dy + 0.5; p.fx = -dx; p.fy = -dy;
+  p.x = s.tx + dx + 0.5;
+  p.y = s.ty + dy + 0.5;
+  p.fx = -dx;
+  p.fy = -dy;
 }
-const use = (g: Game, s: Station) => { face(g, s); press(g); };
-export const first = (g: Game, kind: string, crate?: number) => g.stations.find((s) => s.kind === kind && (crate === undefined || s.crate === crate))!;
+const use = (g: Game, s: Station) => {
+  face(g, s);
+  press(g);
+};
+export const first = (g: Game, kind: string, crate?: number) =>
+  g.stations.find((s) => s.kind === kind && (crate === undefined || s.crate === crate))!;
 
 /** Marinara by hand: both crates -> board (hold B) -> oven, then plate -> oven -> window. Returns the score gained. */
 export function playMarinara(g: Game): number {
-  const board = first(g, 'board'), pot = first(g, 'pot');
+  const board = first(g, 'board'),
+    pot = first(g, 'pot');
   for (const type of [0, 1]) {
     use(g, first(g, 'crate', type));
     use(g, board);
@@ -36,7 +46,8 @@ export function playMarinara(g: Game): number {
 
 /** Margarita: cheese goes through a board too and joins dough and tomato in the oven. Needs a Margarita order in the queue. */
 export function playMargarita(g: Game): number {
-  const board = first(g, 'board'), pot = first(g, 'pot');
+  const board = first(g, 'board'),
+    pot = first(g, 'pot');
   g.orders = [{ id: 900, expiresAt: g.time + 60_000, warned: false, recipe: 'margarita' }];
   for (const type of [0, 1, 2]) {
     use(g, first(g, 'crate', type));
@@ -77,7 +88,8 @@ describe('playthrough: one Margarita on every map with a cheese crate', () => {
 
 /** The washing loop: a delivered plate comes back dirty, goes through the sink and can be used again. */
 export function washCycle(g: Game) {
-  const ret = first(g, 'dirty'), sink = first(g, 'sink');
+  const ret = first(g, 'dirty'),
+    sink = first(g, 'sink');
   run(g, 6100); // DIRTY_MS after the delivery
   expect(ret.count).toBe(1);
   use(g, ret);

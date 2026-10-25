@@ -22,9 +22,17 @@ describe('coop golden rounds with the new rules on', () => {
     expect(count(b, 'oven:rescued')).toBeGreaterThanOrEqual(1);
     expect(count(c, 'fire:start')).toBe(1);
     expect(count(c, 'fire:spread')).toBeGreaterThanOrEqual(2);
-    const kind = (r: GoldenRun) => r.events.find((e) => e.split('|')[1] === 'event:start')!.split('"kind":"')[1]!.split('"')[0];
+    const kind = (r: GoldenRun) =>
+      r.events
+        .find((e) => e.split('|')[1] === 'event:start')!
+        .split('"kind":"')[1]!
+        .split('"')[0];
     expect([kind(a), kind(b), kind(c)]).toEqual(['rat', 'rush', 'blackout']);
-    for (const r of [a, b, c]) { expect(count(r, 'event:announce')).toBe(1); expect(count(r, 'event:start')).toBe(1); expect(count(r, 'event:end')).toBe(1); }
+    for (const r of [a, b, c]) {
+      expect(count(r, 'event:announce')).toBe(1);
+      expect(count(r, 'event:start')).toBe(1);
+      expect(count(r, 'event:end')).toBe(1);
+    }
     expect(count(a, 'rat:steal')).toBe(1);
     expect(count(a, 'rat:gone')).toBe(1);
     for (const r of [a, b, c]) expect(r.delivered).toBeGreaterThan(0);
@@ -33,7 +41,8 @@ describe('coop golden rounds with the new rules on', () => {
     it(`${sc.name}: score, counters, final chefs and the whole event sequence match the fixture`, () => {
       const want = FIXTURES[sc.name]!;
       const got = runGolden(sc);
-      const { events: ge, ...gr } = got, { events: we, ...wr } = want;
+      const { events: ge, ...gr } = got,
+        { events: we, ...wr } = want;
       expect(gr).toEqual(wr);
       expect(ge).toEqual(we);
     });

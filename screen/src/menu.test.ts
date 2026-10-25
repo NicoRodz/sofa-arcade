@@ -1,10 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { COMING_SOON, GAMES, type GameDef } from '@party/shared/games';
 import { SFX } from './audio/recipes';
-import { GRID_COLS, NAV_SFX, availability, clampSel, lobbyEscGoesBack, menuCards, menuOnKey, menuPick, selectableCount, soundFor } from './menu';
+import {
+  GRID_COLS,
+  NAV_SFX,
+  availability,
+  clampSel,
+  lobbyEscGoesBack,
+  menuCards,
+  menuOnKey,
+  menuPick,
+  selectableCount,
+  soundFor,
+} from './menu';
 
 const pizzas = GAMES[0] as GameDef;
-const mk = (id: string, min: number, max: number): GameDef => ({ ...structuredClone(pizzas), id, name: `Juego ${id}`, minPlayers: min, maxPlayers: max });
+const mk = (id: string, min: number, max: number): GameDef => ({
+  ...structuredClone(pizzas),
+  id,
+  name: `Juego ${id}`,
+  minPlayers: min,
+  maxPlayers: max,
+});
 const liveOne: readonly GameDef[] = [pizzas]; // pizzas alone: the cards below do not depend on how many real games the registry has
 const four = [mk('a', 1, 8), mk('b', 3, 4), mk('c', 2, 8), mk('d', 2, 8)]; // 4 games: a 2nd row of the grid
 const cards4 = (n: number) => menuCards(n, four, []);

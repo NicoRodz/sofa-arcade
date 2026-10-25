@@ -1,11 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import { BIOMES, type Biome } from '@party/shared/obstaculos';
-import { LOOP_STEPS, MUSIC, TEMPO_BOOST, advance, bpmFor, layersFor, newSched, noteVoices, stepNotes, tensionOf, type Layer, type MusicState } from './music';
+import {
+  LOOP_STEPS,
+  MUSIC,
+  TEMPO_BOOST,
+  advance,
+  bpmFor,
+  layersFor,
+  newSched,
+  noteVoices,
+  stepNotes,
+  tensionOf,
+  type Layer,
+  type MusicState,
+} from './music';
 import { SCALES, midiFreq } from './scales';
 
-const calm = (biome: Biome = 'beach'): MusicState => ({ biome, playing: true, progress: 0, danger: 0, stragglers: 0, moving: false, checkpointed: false, maxRopeTension: 0, lavaNear: false });
+const calm = (biome: Biome = 'beach'): MusicState => ({
+  biome,
+  playing: true,
+  progress: 0,
+  danger: 0,
+  stragglers: 0,
+  moving: false,
+  checkpointed: false,
+  maxRopeTension: 0,
+  lavaNear: false,
+});
 const ALL: Layer[] = ['base', 'rhythm', 'melody', 'drone'];
-const loop = (b: Biome, layers: Layer[], tension: number) => Array.from({ length: LOOP_STEPS }, (_, s) => stepNotes(s, b, layers, tension)).flat();
+const loop = (b: Biome, layers: Layer[], tension: number) =>
+  Array.from({ length: LOOP_STEPS }, (_, s) => stepNotes(s, b, layers, tension)).flat();
 
 describe('biome identity', () => {
   it('BPMs follow the plan: 104 92 118 80 128', () => {
@@ -31,7 +55,8 @@ describe('biome identity', () => {
   it('bass and chords stay in the scale too', () => {
     for (const b of BIOMES) {
       const pcs = new Set(SCALES[b].semis.map((s) => (SCALES[b].rootMidi + s) % 12));
-      for (const n of loop(b, ['base'], 0)) for (const f of n.freqs) expect(pcs.has(Math.round(69 + 12 * Math.log2(f / 440)) % 12)).toBe(true);
+      for (const n of loop(b, ['base'], 0))
+        for (const f of n.freqs) expect(pcs.has(Math.round(69 + 12 * Math.log2(f / 440)) % 12)).toBe(true);
       expect(midiFreq(SCALES[b].rootMidi)).toBeGreaterThan(100);
     }
   });
@@ -61,11 +86,12 @@ describe('tension and layers', () => {
     expect(layersFor({ ...calm(), playing: false, moving: true })).toEqual([]);
   });
   it('each layer only emits its own notes and the notes of a layer appear only when it is on', () => {
-    for (const b of BIOMES) for (const l of ALL) {
-      const notes = loop(b, [l], 0.9);
-      expect(notes.length, `${b} ${l}`).toBeGreaterThan(0);
-      expect(new Set(notes.map((n) => n.layer))).toEqual(new Set([l]));
-    }
+    for (const b of BIOMES)
+      for (const l of ALL) {
+        const notes = loop(b, [l], 0.9);
+        expect(notes.length, `${b} ${l}`).toBeGreaterThan(0);
+        expect(new Set(notes.map((n) => n.layer))).toEqual(new Set([l]));
+      }
     expect(loop('beach', [], 1)).toEqual([]);
   });
   it('tension adds hits: sixteenth ticks from 0.6, an octave on the melody from 0.8', () => {
@@ -89,7 +115,7 @@ describe('scheduler', () => {
   });
   it('a loop of 32 eighths lasts 32 * 60 / (2 bpm) seconds', () => {
     const r = run({ ...calm('forest') }, 100);
-    const loopS = 32 * 60 / (2 * 92);
+    const loopS = (32 * 60) / (2 * 92);
     const chords = r.notes.filter((n) => n.note.timbre === 'marimba' && n.note.freqs.length === 3).map((n) => n.at);
     expect(chords[4]! - chords[0]!).toBeCloseTo(loopS, 5); // one chord per bar, 4 bars per loop
   });
@@ -118,12 +144,13 @@ describe('scheduler', () => {
 
 describe('note voices', () => {
   it('every timbre makes finite, positive voices', () => {
-    for (const b of BIOMES) for (const n of loop(b, ALL, 1)) {
-      for (const v of noteVoices(n, 0.2)) {
-        expect(v.gain).toBeGreaterThan(0);
-        expect(v.dur).toBeGreaterThan(0);
-        expect(Number.isFinite(v.f0 ?? 1)).toBe(true);
+    for (const b of BIOMES)
+      for (const n of loop(b, ALL, 1)) {
+        for (const v of noteVoices(n, 0.2)) {
+          expect(v.gain).toBeGreaterThan(0);
+          expect(v.dur).toBeGreaterThan(0);
+          expect(Number.isFinite(v.f0 ?? 1)).toBe(true);
+        }
       }
-    }
   });
 });

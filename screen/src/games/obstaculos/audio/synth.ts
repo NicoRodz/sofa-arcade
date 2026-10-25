@@ -38,8 +38,11 @@ export function playVoice(ctx: BaseAudioContext, chain: Chain, out: AudioNode, v
   const end = t + v.dur + 0.02;
   if (v.src === 'noise') {
     const s = ctx.createBufferSource();
-    s.buffer = chain.noise; s.loop = true;
-    s.connect(head); s.start(t, Math.random() * 0.9); s.stop(end);
+    s.buffer = chain.noise;
+    s.loop = true;
+    s.connect(head);
+    s.start(t, Math.random() * 0.9);
+    s.stop(end);
     return;
   }
   if (v.src === 'pluck') {
@@ -47,7 +50,10 @@ export function playVoice(ctx: BaseAudioContext, chain: Chain, out: AudioNode, v
     const data = karplusStrong(v.f0 ?? 220, v.ks ?? 0.985, v.dur + 0.02, ctx.sampleRate, seedCounter++);
     const buf = ctx.createBuffer(1, data.length, ctx.sampleRate);
     buf.copyToChannel(data as Float32Array<ArrayBuffer>, 0);
-    s.buffer = buf; s.connect(head); s.start(t); s.stop(end);
+    s.buffer = buf;
+    s.connect(head);
+    s.start(t);
+    s.stop(end);
     return;
   }
   const o = ctx.createOscillator();
@@ -58,9 +64,11 @@ export function playVoice(ctx: BaseAudioContext, chain: Chain, out: AudioNode, v
   if (v.vib) {
     const lfo = ctx.createOscillator();
     const depth = ctx.createGain();
-    lfo.frequency.value = v.vib.rate; depth.gain.value = v.vib.depth;
+    lfo.frequency.value = v.vib.rate;
+    depth.gain.value = v.vib.depth;
     lfo.connect(depth).connect(o.frequency);
-    lfo.start(t); lfo.stop(end);
+    lfo.start(t);
+    lfo.stop(end);
   }
   if (v.src === 'fm' && v.fm) {
     const mod = ctx.createOscillator();
@@ -68,9 +76,12 @@ export function playVoice(ctx: BaseAudioContext, chain: Chain, out: AudioNode, v
     mod.frequency.value = f0 * v.fm.ratio;
     ramp(idx.gain, Math.max(0.001, v.fm.i0) * f0 * v.fm.ratio, v.fm.i1 > 0 ? v.fm.i1 * f0 * v.fm.ratio : 0.001, t, v.fm.t);
     mod.connect(idx).connect(o.frequency);
-    mod.start(t); mod.stop(end);
+    mod.start(t);
+    mod.stop(end);
   }
-  o.connect(head); o.start(t); o.stop(end);
+  o.connect(head);
+  o.start(t);
+  o.stop(end);
 }
 
 export function playCue(ctx: BaseAudioContext, chain: Chain, c: Cue, t: number) {

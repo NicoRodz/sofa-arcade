@@ -7,11 +7,17 @@ import { EXPEDITION_LEVELS } from './constants';
 import { LEVELS } from './levels';
 import type { GameMode, LevelDef } from './types';
 
-export interface ObstOptions { tether: GameMode; level: number } // level 0 = random (seeded); 1..15 = the expedition starts there
+export interface ObstOptions {
+  tether: GameMode;
+  level: number;
+} // level 0 = random (seeded); 1..15 = the expedition starts there
 export const RANDOM_LEVEL = 0;
 export const DEFAULT_OBST_OPTIONS: ObstOptions = { tether: 'chain', level: 1 };
 export const MODE_LABEL: Record<GameMode, string> = { chain: 'Encadenados', free: 'Libres' };
-export const MODE_BLURB: Record<GameMode, string> = { chain: 'Con cuerda: se tiran unos a otros', free: 'Sin cuerda: cada uno por su cuenta' };
+export const MODE_BLURB: Record<GameMode, string> = {
+  chain: 'Con cuerda: se tiran unos a otros',
+  free: 'Sin cuerda: cada uno por su cuenta',
+};
 
 export const isMode = (v: unknown): v is GameMode => v === 'chain' || v === 'free';
 
@@ -25,7 +31,8 @@ export function parseObstOptions(o: ModeOptions | Record<string, unknown> | unde
 }
 export const toModeOptions = (o: ObstOptions): ModeOptions => ({ tether: o.tether, level: o.level });
 
-export const tetherAllows = (def: LevelDef, mode: GameMode): boolean => def.tether === 'any' || (def.tether === 'chainOnly' ? mode === 'chain' : mode === 'free');
+export const tetherAllows = (def: LevelDef, mode: GameMode): boolean =>
+  def.tether === 'any' || (def.tether === 'chainOnly' ? mode === 'chain' : mode === 'free');
 
 export type Compat = { ok: true; reason: '' } | { ok: false; reason: string };
 // "The selector hides the incompatible levels" (plan §10): with 2 players 11 remain; with 8 in Encadenados, 12.
@@ -50,7 +57,9 @@ export function resolveLevel(level: number, n: number, mode: GameMode): number {
 export function fixedExpedition(level: number, n: number, mode: GameMode): LevelDef[] {
   const from = resolveLevel(level, n, mode);
   if (from === RANDOM_LEVEL) return [];
-  return LEVELS.slice(from - 1).filter((l) => levelCompat(l, n, mode).ok).slice(0, EXPEDITION_LEVELS);
+  return LEVELS.slice(from - 1)
+    .filter((l) => levelCompat(l, n, mode).ok)
+    .slice(0, EXPEDITION_LEVELS);
 }
 
 // Lobby line under the setup, also what the phones show.

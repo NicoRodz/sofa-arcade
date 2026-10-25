@@ -5,9 +5,15 @@ import type { ClaimResult, ExpeditionSummary, KV } from './api';
 
 export class MemKV implements KV {
   m = new Map<string, string>();
-  getItem(k: string) { return this.m.get(k) ?? null; }
-  setItem(k: string, v: string) { this.m.set(k, v); }
-  removeItem(k: string) { this.m.delete(k); }
+  getItem(k: string) {
+    return this.m.get(k) ?? null;
+  }
+  setItem(k: string, v: string) {
+    this.m.set(k, v);
+  }
+  removeItem(k: string) {
+    this.m.delete(k);
+  }
 }
 
 export class FakeApi implements ApiLike {
@@ -17,12 +23,25 @@ export class FakeApi implements ApiLike {
   merges = 0;
   private n = 0;
   constructor(private clock = () => 1000) {}
-  private guard<T>(v: T, bad: T): T { return this.down ? bad : v; }
+  private guard<T>(v: T, bad: T): T {
+    return this.down ? bad : v;
+  }
   async list(): Promise<ExpeditionSummary[] | null> {
     if (this.down) return null;
-    return [...this.store.values()].sort((a, b) => b.updatedAt - a.updatedAt).map((e) => ({ id: e.id, name: e.name, updatedAt: e.updatedAt, stars: Object.values(e.levels).reduce((a, p) => a + starCount(p), 0), lastLevelId: e.lastLevelId, active: this.claims.has(e.id) }));
+    return [...this.store.values()]
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .map((e) => ({
+        id: e.id,
+        name: e.name,
+        updatedAt: e.updatedAt,
+        stars: Object.values(e.levels).reduce((a, p) => a + starCount(p), 0),
+        lastLevelId: e.lastLevelId,
+        active: this.claims.has(e.id),
+      }));
   }
-  async get(id: string) { return this.guard(this.store.get(id) ?? null, null); }
+  async get(id: string) {
+    return this.guard(this.store.get(id) ?? null, null);
+  }
   async create(name: string) {
     if (this.down) return null;
     const e = newExpedition(`exp-fake${String(++this.n).padStart(4, '0')}`, name, this.clock());
@@ -45,6 +64,11 @@ export class FakeApi implements ApiLike {
     this.claims.set(id, room);
     return { ok: true };
   }
-  async release(id: string, room: string) { if (this.claims.get(id) === room) this.claims.delete(id); }
-  async reset(id: string) { if (this.down) return false; return this.store.delete(id); }
+  async release(id: string, room: string) {
+    if (this.claims.get(id) === room) this.claims.delete(id);
+  }
+  async reset(id: string) {
+    if (this.down) return false;
+    return this.store.delete(id);
+  }
 }

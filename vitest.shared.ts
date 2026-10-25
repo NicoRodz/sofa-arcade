@@ -8,13 +8,19 @@ export const SLOW = '*.slow.test.ts';
 
 // One project per package. `dirs` are the include roots; slow files (*.slow.test.ts) are left to the `slow` project.
 export function packageProject(name: string, dirs: string[]) {
-  return mergeConfig(sharedConfig, defineProject({
-    test: { name, include: dirs.map((d) => `${d}/**/*.test.ts`), exclude: ['**/node_modules/**', `**/${SLOW}`] },
-  }));
+  return mergeConfig(
+    sharedConfig,
+    defineProject({
+      test: { name, include: dirs.map((d) => `${d}/**/*.test.ts`), exclude: ['**/node_modules/**', `**/${SLOW}`] },
+    }),
+  );
 }
 
 export function slowProject(allDirs: string[]) {
-  return mergeConfig(sharedConfig, defineProject({
-    test: { name: 'slow', include: allDirs.map((d) => `${d}/**/${SLOW}`), exclude: ['**/node_modules/**'] },
-  }));
+  return mergeConfig(
+    sharedConfig,
+    defineProject({
+      test: { name: 'slow', include: allDirs.map((d) => `${d}/**/${SLOW}`), exclude: ['**/node_modules/**'] },
+    }),
+  );
 }

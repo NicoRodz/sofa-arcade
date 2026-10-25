@@ -57,10 +57,17 @@ export const recipesOf = (modeOptions: Readonly<Record<string, boolean | number 
 };
 
 /** What the lobby switches on for a round (coop and versus alike): the burning oven always (the sim leaves the fire out on Easy and under the Suave sabotage), the event by the option, the map's card of recipes, the magnetism of the chefs. */
-export const roundRules = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty) => ({ burn: true, fire: true, events: eventsOf(modeOptions, d), recipes: recipesOf(modeOptions), magnet: magnetFor(modeOptions, d) }); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
+export const roundRules = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty) => ({
+  burn: true,
+  fire: true,
+  events: eventsOf(modeOptions, d),
+  recipes: recipesOf(modeOptions),
+  magnet: magnetFor(modeOptions, d),
+}); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
 
 export interface Rat {
-  x: number; y: number; // tile units, centre
+  x: number;
+  y: number; // tile units, centre
   state: 'seek' | 'flee';
   item: Item | null; // what it carries
   from: number; // station index it stole from (-1: nothing yet)
@@ -68,7 +75,12 @@ export interface Rat {
   scared: boolean;
   idleMs: number;
   // the gentle rat only (feel/rat.ts): absent in a round without the magnet
-  born?: number; heading?: number; runMs?: number; pauseMs?: number; target?: number; near?: boolean;
+  born?: number;
+  heading?: number;
+  runMs?: number;
+  pauseMs?: number;
+  target?: number;
+  near?: boolean;
 }
 export interface Mid {
   kind: EventKind;
@@ -82,13 +94,18 @@ export interface Mid {
 }
 
 /** What the sim does for the two events that touch the queues; passed in so this file keeps no value import of the sim (the imports stay acyclic). */
-export interface MidFx { rush(g: Game): void; birthday(g: Game): void }
+export interface MidFx {
+  rush(g: Game): void;
+  birthday(g: Game): void;
+}
 
 const tag = (g: Game, team: number): { team?: number } => (g.versus ? { team } : {});
 
 /** The kinds this round can have: no rat in versus, no inspector without plates to wash, no rat without counters. */
 export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations'>): EventKind[] =>
-  EVENT_KINDS.filter((k) => (k === 'rat' ? !g.versus && g.stations.some((s) => s.kind === 'counter') : k === 'inspector' ? g.finitePlates : true));
+  EVENT_KINDS.filter((k) =>
+    k === 'rat' ? !g.versus && g.stations.some((s) => s.kind === 'counter') : k === 'inspector' ? g.finitePlates : true,
+  );
 
 /** The event of the round: kind and instant from the seed. */
 export function createMid(g: Game, seed: number): Mid {
@@ -110,7 +127,9 @@ function nextTile(g: Game, from: [number, number], goal: (x: number, y: number) 
   for (let i = 0; i < queue.length; i++) {
     const [x, y] = queue[i]!;
     for (const [dx, dy] of DIRS) {
-      const nx = x + dx, ny = y + dy, k = `${nx},${ny}`;
+      const nx = x + dx,
+        ny = y + dy,
+        k = `${nx},${ny}`;
       if (!isFloor(g.grid, nx, ny) || prev.has(k)) continue;
       prev.set(k, `${x},${y}`);
       if (goal(nx, ny)) {
@@ -127,7 +146,11 @@ function nextTile(g: Game, from: [number, number], goal: (x: number, y: number) 
 
 function spawnRat(g: Game, m: Mid) {
   const holes: [number, number][] = [];
-  g.grid.forEach((row, y) => row.forEach((_t, x) => { if (isFloor(g.grid, x, y) && DIRS.some(([dx, dy]) => g.grid[y + dy]?.[x + dx]?.kind === 'wall')) holes.push([x, y]); }));
+  g.grid.forEach((row, y) =>
+    row.forEach((_t, x) => {
+      if (isFloor(g.grid, x, y) && DIRS.some(([dx, dy]) => g.grid[y + dy]?.[x + dx]?.kind === 'wall')) holes.push([x, y]);
+    }),
+  );
   const pool = holes.length ? holes : [[1, 1] as [number, number]];
   const hole = pool[Math.floor(m.rng() * pool.length)]!;
   m.rat = { x: hole[0] + 0.5, y: hole[1] + 0.5, state: 'seek', item: null, from: -1, hole, scared: false, idleMs: 0 };
@@ -143,11 +166,16 @@ function ratGone(g: Game, m: Mid) {
 
 function scareRat(g: Game, m: Mid, playerId: number) {
   const r = m.rat!;
-  r.scared = true; r.state = 'flee';
+  r.scared = true;
+  r.state = 'flee';
   let returned = false;
-  if (r.item) { // the thief drops its loot where it took it from, if that counter is still free
+  if (r.item) {
+    // the thief drops its loot where it took it from, if that counter is still free
     const st: Station | undefined = g.stations[r.from];
-    if (st && st.item === null && st.fire === undefined) { st.item = r.item; returned = true; }
+    if (st && st.item === null && st.fire === undefined) {
+      st.item = r.item;
+      returned = true;
+    }
     r.item = null;
   }
   const bonus = g.magnet ? ratPrize(g) : 0; // the gentle rat pays for being scared
@@ -156,22 +184,29 @@ function scareRat(g: Game, m: Mid, playerId: number) {
 
 function ratStep(g: Game, m: Mid, dtMs: number) {
   const r = m.rat!;
-  if (g.magnet && gentleRatStep(g, m, dtMs, { nextTile, scare: scareRat, gone: ratGone, floor: (gg, x, y) => isFloor(gg.grid, x, y) })) return; // magnetism: the gentle rat (feel/rat.ts); once scared the old flee below takes over
-  if (!r.scared) for (const p of g.players.values()) {
-    if (p.ghost || p.dashMs <= 0 || Math.hypot(p.x - r.x, p.y - r.y) > RAT_SCARE_RADIUS) continue;
-    scareRat(g, m, p.id);
-    break;
-  }
+  if (g.magnet && gentleRatStep(g, m, dtMs, { nextTile, scare: scareRat, gone: ratGone, floor: (gg, x, y) => isFloor(gg.grid, x, y) }))
+    return; // magnetism: the gentle rat (feel/rat.ts); once scared the old flee below takes over
+  if (!r.scared)
+    for (const p of g.players.values()) {
+      if (p.ghost || p.dashMs <= 0 || Math.hypot(p.x - r.x, p.y - r.y) > RAT_SCARE_RADIUS) continue;
+      scareRat(g, m, p.id);
+      break;
+    }
   let goal: (x: number, y: number) => boolean;
   if (r.state === 'seek') {
     // the nearest counter that holds something (ties by station index)
-    let best = -1, bestD = Infinity;
+    let best = -1,
+      bestD = Infinity;
     g.stations.forEach((s, i) => {
       if (s.kind !== 'counter' || !s.item || s.fire !== undefined) return;
       const d = Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y);
-      if (d < bestD) { best = i; bestD = d; }
+      if (d < bestD) {
+        best = i;
+        bestD = d;
+      }
     });
-    if (best < 0) { // nothing to steal: wait for a while and then leave
+    if (best < 0) {
+      // nothing to steal: wait for a while and then leave
       r.idleMs += dtMs;
       if (r.idleMs >= RAT_PATIENCE_MS) r.state = 'flee';
       return;
@@ -179,21 +214,31 @@ function ratStep(g: Game, m: Mid, dtMs: number) {
     r.idleMs = 0;
     const s = g.stations[best]!;
     const [tx, ty] = tileOf(r);
-    if (Math.abs(tx - s.tx) + Math.abs(ty - s.ty) === 1) { // next to it: grab
-      r.item = s.item; r.from = best; s.item = null; r.state = 'flee';
+    if (Math.abs(tx - s.tx) + Math.abs(ty - s.ty) === 1) {
+      // next to it: grab
+      r.item = s.item;
+      r.from = best;
+      s.item = null;
+      r.state = 'flee';
       g.bus.emit('rat:steal', { station: best, item: r.item! });
       return;
     }
     goal = (x, y) => Math.abs(x - s.tx) + Math.abs(y - s.ty) === 1;
   } else {
-    if (tileOf(r)[0] === r.hole[0] && tileOf(r)[1] === r.hole[1]) { ratGone(g, m); return; }
+    if (tileOf(r)[0] === r.hole[0] && tileOf(r)[1] === r.hole[1]) {
+      ratGone(g, m);
+      return;
+    }
     goal = (x, y) => x === r.hole[0] && y === r.hole[1];
   }
   const step = nextTile(g, tileOf(r), goal);
   if (!step) return;
-  const dx = step[0] + 0.5 - r.x, dy = step[1] + 0.5 - r.y, d = Math.hypot(dx, dy) || 1;
+  const dx = step[0] + 0.5 - r.x,
+    dy = step[1] + 0.5 - r.y,
+    d = Math.hypot(dx, dy) || 1;
   const move = Math.min(d, ((r.scared ? RAT_FLEE_SPEED : RAT_SPEED) * dtMs) / 1000);
-  r.x += (dx / d) * move; r.y += (dy / d) * move;
+  r.x += (dx / d) * move;
+  r.y += (dy / d) * move;
 }
 
 // --- The inspector ----------------------------------------------------------------------------------------------------------------------------------
@@ -213,7 +258,11 @@ function inspect(g: Game) {
   for (const t of g.teams) {
     const passed = dirtyPlates(g, t.id) === 0;
     const points = passed ? Math.round(INSPECTOR_BONUS * t.k) : 0;
-    if (passed) { t.score += points; t.gross += INSPECTOR_BONUS; t.reachedAt = g.time; }
+    if (passed) {
+      t.score += points;
+      t.gross += INSPECTOR_BONUS;
+      t.reachedAt = g.time;
+    }
     g.bus.emit('event:inspector', { passed, points, ...tag(g, t.id) });
   }
 }
@@ -222,7 +271,10 @@ function inspect(g: Game) {
 export function midTick(g: Game, dtMs: number, fx: MidFx) {
   const m = g.mid!;
   if (m.phase === 'done') return;
-  if (m.phase === 'wait' && g.time >= m.announceAt) { m.phase = 'announced'; g.bus.emit('event:announce', { kind: m.kind, inMs: ANNOUNCE_MS }); }
+  if (m.phase === 'wait' && g.time >= m.announceAt) {
+    m.phase = 'announced';
+    g.bus.emit('event:announce', { kind: m.kind, inMs: ANNOUNCE_MS });
+  }
   if (m.phase === 'announced' && g.time >= m.startAt) {
     m.phase = 'active';
     m.endAt = m.startAt + ACTIVE_MS[m.kind];

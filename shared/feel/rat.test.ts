@@ -12,17 +12,25 @@ type Log = { t: number; type: string; p: Record<string, unknown> }[];
 /** A coop round of map 1 whose event is the rat at 3 s; `items` counters (by index in reading order) hold a raw tomato. */
 function round(magnet: boolean, items: number[] = [], seed = 5) {
   const g = createGame({ mapId: MAP.id, rows: MAP.rows, spawns: MAP.spawns, n: 2, seed, events: true, magnet });
-  addPlayer(g, 1, 0); addPlayer(g, 2, 1);
+  addPlayer(g, 1, 0);
+  addPlayer(g, 2, 1);
   Object.assign(g.mid!, { kind: 'rat', startAt: 3000, announceAt: 0, endAt: Infinity, phase: 'wait', dark: false, rat: null });
   const counters = g.stations.filter((s) => s.kind === 'counter');
   for (const i of items) counters[i]!.item = 'raw1';
   const log: Log = [];
-  for (const k of ['rat:appear', 'rat:steal', 'rat:scared', 'rat:gone', 'rat:target', 'rat:near'] as const) g.bus.on(k, ((p: never) => log.push({ t: g.time, type: k, p: p as Record<string, unknown> })) as never);
+  for (const k of ['rat:appear', 'rat:steal', 'rat:scared', 'rat:gone', 'rat:target', 'rat:near'] as const)
+    g.bus.on(k, ((p: never) => log.push({ t: g.time, type: k, p: p as Record<string, unknown> })) as never);
   for (const id of [1, 2]) Object.assign(g.players.get(id)!, { x: 14.5, y: 7.5 + (id - 1) * -0.01, fx: 0, fy: 1 }); // out of the way (the bottom right corner)
   return { g, log };
 }
-const step = (g: Game, n: number, c: Map<number, Controls> = new Map()) => { for (let i = 0; i < n; i++) tick(g, c); };
-const until = (g: Game, f: () => boolean, ms = 40_000, c: Map<number, Controls> = new Map()) => { const end = g.time + ms; while (!f() && g.time < end && !g.over) tick(g, c); return f(); };
+const step = (g: Game, n: number, c: Map<number, Controls> = new Map()) => {
+  for (let i = 0; i < n; i++) tick(g, c);
+};
+const until = (g: Game, f: () => boolean, ms = 40_000, c: Map<number, Controls> = new Map()) => {
+  const end = g.time + ms;
+  while (!f() && g.time < end && !g.over) tick(g, c);
+  return f();
+};
 const at = (log: Log, type: string) => log.filter((e) => e.type === type);
 const appear = (g: Game) => until(g, () => !!g.mid!.rat, 5000);
 
@@ -32,13 +40,24 @@ describe('walks gentle', () => {
     const { g } = round(true, [3]);
     appear(g);
     const r = g.mid!.rat!;
-    let max = 0, moving = 0, stopped = 0, longestStop = 0, run = 0;
+    let max = 0,
+      moving = 0,
+      stopped = 0,
+      longestStop = 0,
+      run = 0;
     for (let i = 0; i < 240 && g.mid!.rat?.state === 'seek'; i++) {
       const [x, y] = [r.x, r.y];
       tick(g, new Map());
       const v = (Math.hypot(r.x - x, r.y - y) / TICK_MS) * 1000;
       max = Math.max(max, v);
-      if (v > 0.01) { moving++; run = 0; } else { stopped++; run += TICK_MS; longestStop = Math.max(longestStop, run); }
+      if (v > 0.01) {
+        moving++;
+        run = 0;
+      } else {
+        stopped++;
+        run += TICK_MS;
+        longestStop = Math.max(longestStop, run);
+      }
     }
     expect(max).toBeLessThanOrEqual(RAT_GENTLE.speed + 0.01);
     expect(max).toBeGreaterThan(RAT_GENTLE.speed * 0.9);
@@ -49,8 +68,15 @@ describe('walks gentle', () => {
     const old = round(false, [3]);
     appear(old.g);
     const o = old.g.mid!.rat!;
-    let omax = 0, ostops = 0;
-    for (let i = 0; i < 120 && old.g.mid!.rat?.state === 'seek'; i++) { const [x, y] = [o.x, o.y]; tick(old.g, new Map()); const v = (Math.hypot(o.x - x, o.y - y) / TICK_MS) * 1000; omax = Math.max(omax, v); if (v < 0.01) ostops++; }
+    let omax = 0,
+      ostops = 0;
+    for (let i = 0; i < 120 && old.g.mid!.rat?.state === 'seek'; i++) {
+      const [x, y] = [o.x, o.y];
+      tick(old.g, new Map());
+      const v = (Math.hypot(o.x - x, o.y - y) / TICK_MS) * 1000;
+      omax = Math.max(omax, v);
+      if (v < 0.01) ostops++;
+    }
     expect(omax).toBeGreaterThan(RAT_SPEED * 0.9);
     expect(ostops).toBeLessThan(5);
   });
@@ -58,15 +84,20 @@ describe('walks gentle', () => {
     const { g } = round(true, [20]);
     appear(g);
     const r = g.mid!.rat!;
-    let last: number | null = null, worst = 0;
+    let last: number | null = null,
+      worst = 0;
     for (let i = 0; i < 600 && g.mid!.rat?.state === 'seek'; i++) {
       tick(g, new Map());
       if (r.heading === undefined) continue;
-      if (last !== null) { let d = Math.abs(r.heading - last); if (d > Math.PI) d = 2 * Math.PI - d; worst = Math.max(worst, d); }
+      if (last !== null) {
+        let d = Math.abs(r.heading - last);
+        if (d > Math.PI) d = 2 * Math.PI - d;
+        worst = Math.max(worst, d);
+      }
       last = r.heading;
     }
     expect(last).not.toBeNull();
-    expect(worst).toBeLessThanOrEqual((RAT_GENTLE.turnDps * Math.PI / 180) * (TICK_MS / 1000) + 1e-6);
+    expect(worst).toBeLessThanOrEqual(((RAT_GENTLE.turnDps * Math.PI) / 180) * (TICK_MS / 1000) + 1e-6);
   });
 });
 
@@ -79,14 +110,16 @@ describe('gives you time', () => {
       const r = g.mid!.rat!;
       Object.assign(r, { x: s.tx + 0.5, y: s.ty + 1.5 }); // right below the counter: adjacent
       step(g, 40);
-      if (magnet) expect(at(log, 'rat:steal')).toHaveLength(0); else expect(at(log, 'rat:steal')).toHaveLength(1);
+      if (magnet) expect(at(log, 'rat:steal')).toHaveLength(0);
+      else expect(at(log, 'rat:steal')).toHaveLength(1);
       step(g, 40);
       expect(at(log, 'rat:steal')).toHaveLength(1); // the gentle one takes it once the second is over
       if (magnet) expect(at(log, 'rat:steal')[0]!.t - at(log, 'rat:appear')[0]!.t).toBeGreaterThanOrEqual(RAT_GENTLE.graceMs);
     }
   });
   it('does not leave before 12 s: with nothing to steal it waits 14 s (the old rat left at 10 s)', () => {
-    const gentle = round(true), old = round(false);
+    const gentle = round(true),
+      old = round(false);
     for (const { g } of [gentle, old]) until(g, () => !g.mid!.rat && g.mid!.phase === 'done', 40_000);
     const life = (l: Log) => at(l, 'rat:gone')[0]!.t - at(l, 'rat:appear')[0]!.t;
     expect(life(gentle.log)).toBeGreaterThanOrEqual(RAT_GENTLE.minStayMs);
@@ -107,12 +140,26 @@ describe('gives you time', () => {
 
 describe('easier to scare, and it pays', () => {
   const chefAt = (g: Game, dist: number, o: { dashing?: boolean; item?: string | null; speed?: number } = {}) => {
-    const r = g.mid!.rat!, p = g.players.get(1)!;
-    Object.assign(p, { x: r.x + dist, y: r.y, fx: -1, fy: 0, vx: -(o.speed ?? 0), vy: 0, item: o.item ?? null, dashMs: o.dashing ? 120 : 0, dashDx: -1, dashDy: 0, dashCd: o.dashing ? g.params.tune.dashCdMs - 60 : 0 });
+    const r = g.mid!.rat!,
+      p = g.players.get(1)!;
+    Object.assign(p, {
+      x: r.x + dist,
+      y: r.y,
+      fx: -1,
+      fy: 0,
+      vx: -(o.speed ?? 0),
+      vy: 0,
+      item: o.item ?? null,
+      dashMs: o.dashing ? 120 : 0,
+      dashDx: -1,
+      dashDy: 0,
+      dashCd: o.dashing ? g.params.tune.dashCdMs - 60 : 0,
+    });
   };
   const scaredBy = (magnet: boolean, dist: number, o: Parameters<typeof chefAt>[2]) => {
     const { g, log } = round(magnet, []);
-    appear(g); step(g, 2);
+    appear(g);
+    step(g, 2);
     chefAt(g, dist, o);
     tick(g, new Map());
     return { scared: at(log, 'rat:scared').length === 1, g, log };
@@ -125,7 +172,8 @@ describe('easier to scare, and it pays', () => {
   it('a dash that ended 150 ms ago still counts (within 1.9 tiles); one that ended long ago does not', () => {
     const recent = (magnet: boolean, sinceEnd: number) => {
       const { g, log } = round(magnet, []);
-      appear(g); step(g, 2);
+      appear(g);
+      step(g, 2);
       const t = g.params.tune;
       chefAt(g, 1.7, {});
       Object.assign(g.players.get(1)!, { dashMs: 0, dashCd: t.dashCdMs - t.dashMs - sinceEnd });

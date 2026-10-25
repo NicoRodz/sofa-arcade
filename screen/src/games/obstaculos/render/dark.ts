@@ -4,7 +4,8 @@
 import type Phaser from 'phaser';
 import { TILE } from '@party/shared/obstaculos';
 
-const TW = 320, TH = 180;
+const TW = 320,
+  TH = 180;
 const PLAYER_LIGHT_TILES = 1.5;
 let instances = 0;
 
@@ -22,21 +23,41 @@ export class DarkLayer {
   }
 
   // rect: the visible world rectangle; lights and players in world px (players: the centre of the body).
-  update(rect: { x: number; y: number; w: number; h: number }, dark: { radius: number; lights: { x: number; y: number }[] } | null, players: readonly { x: number; y: number }[], t: number): void {
-    if (!dark) { this.img.setVisible(false); return; }
-    const c = this.tex.getContext(), sx = TW / rect.w, sy = TH / rect.h;
+  update(
+    rect: { x: number; y: number; w: number; h: number },
+    dark: { radius: number; lights: { x: number; y: number }[] } | null,
+    players: readonly { x: number; y: number }[],
+    t: number,
+  ): void {
+    if (!dark) {
+      this.img.setVisible(false);
+      return;
+    }
+    const c = this.tex.getContext(),
+      sx = TW / rect.w,
+      sy = TH / rect.h;
     c.globalCompositeOperation = 'source-over';
     c.clearRect(0, 0, TW, TH);
     c.fillStyle = 'rgba(4,6,20,0.93)';
     c.fillRect(0, 0, TW, TH);
     c.globalCompositeOperation = 'destination-out';
     const hole = (x: number, y: number, r: number, a: number) => {
-      const px = (x - rect.x) * sx, py = (y - rect.y) * sy, pr = r * sx;
+      const px = (x - rect.x) * sx,
+        py = (y - rect.y) * sy,
+        pr = r * sx;
       if (px < -pr || py < -pr * (sy / sx) || px > TW + pr || py > TH + pr * (sy / sx)) return;
-      c.save(); c.translate(px, py); c.scale(1, sy / sx);
+      c.save();
+      c.translate(px, py);
+      c.scale(1, sy / sx);
       const g = c.createRadialGradient(0, 0, pr * 0.15, 0, 0, pr);
-      g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(0.62, `rgba(0,0,0,${a * 0.9})`); g.addColorStop(1, 'rgba(0,0,0,0)');
-      c.fillStyle = g; c.beginPath(); c.arc(0, 0, pr, 0, Math.PI * 2); c.fill(); c.restore();
+      g.addColorStop(0, `rgba(0,0,0,${a})`);
+      g.addColorStop(0.62, `rgba(0,0,0,${a * 0.9})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.arc(0, 0, pr, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
     };
     for (const p of players) hole(p.x, p.y, PLAYER_LIGHT_TILES * TILE, 0.55);
     const flicker = 1 + Math.sin(t * 7) * 0.012 + Math.sin(t * 17.3) * 0.008;
@@ -44,15 +65,27 @@ export class DarkLayer {
     c.globalCompositeOperation = 'source-over';
     // a warm tint inside each lantern's circle
     for (const l of dark.lights) {
-      const px = (l.x - rect.x) * sx, py = (l.y - rect.y) * sy, pr = dark.radius * sx;
-      c.save(); c.translate(px, py); c.scale(1, sy / sx);
+      const px = (l.x - rect.x) * sx,
+        py = (l.y - rect.y) * sy,
+        pr = dark.radius * sx;
+      c.save();
+      c.translate(px, py);
+      c.scale(1, sy / sx);
       const g = c.createRadialGradient(0, 0, 0, 0, 0, pr);
-      g.addColorStop(0, 'rgba(255,190,90,0.16)'); g.addColorStop(1, 'rgba(255,190,90,0)');
-      c.fillStyle = g; c.beginPath(); c.arc(0, 0, pr, 0, Math.PI * 2); c.fill(); c.restore();
+      g.addColorStop(0, 'rgba(255,190,90,0.16)');
+      g.addColorStop(1, 'rgba(255,190,90,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.arc(0, 0, pr, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
     }
     this.tex.refresh();
     this.img.setVisible(true).setPosition(rect.x, rect.y).setDisplaySize(rect.w, rect.h);
   }
 
-  destroy(): void { this.img.destroy(); this.tex.destroy(); }
+  destroy(): void {
+    this.img.destroy();
+    this.tex.destroy();
+  }
 }

@@ -4,7 +4,10 @@ import type { Phase } from '@party/shared';
 export const HOWTO_MS = 10_000;
 // start: shown before the countdown, runs out by itself and Enter skips it. preview: opened from the lobby with H, no timer.
 export type HowToMode = 'start' | 'preview';
-export interface HowToState { mode: HowToMode; startedAt: number }
+export interface HowToState {
+  mode: HowToMode;
+  startedAt: number;
+}
 export type HowToAction = 'open-preview' | 'skip' | 'close' | 'none';
 
 export const secondsLeft = (startedAt: number, now: number, total = HOWTO_MS) => Math.max(0, Math.ceil((startedAt + total - now) / 1000));

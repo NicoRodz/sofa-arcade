@@ -1,7 +1,11 @@
 // Pure pitch material of the game's biomes (plan §14): one scale per biome, one pentatonic-ish degree per player slot.
 import type { Biome } from '@party/shared/obstaculos';
 
-export interface ScaleDef { name: string; rootMidi: number; semis: readonly number[] }
+export interface ScaleDef {
+  name: string;
+  rootMidi: number;
+  semis: readonly number[];
+}
 export const SCALES: Record<Biome, ScaleDef> = {
   beach: { name: 'G mixolydian', rootMidi: 55, semis: [0, 2, 4, 5, 7, 9, 10] },
   forest: { name: 'D dorian', rootMidi: 50, semis: [0, 2, 3, 5, 7, 9, 10] },

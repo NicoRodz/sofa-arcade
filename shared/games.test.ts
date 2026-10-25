@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { COMING_SOON, GAMES, GAME_IDS, HOWTO_MAX_STEPS, HOWTO_MIN_STEPS, LABEL_MAX, defaultModeOf, gameInfo, gameProblems, hasModeChoice, isGameId, modeOf, playersLabel, resolveModes, selectableModes, type GameDef, type ModeSpec } from './games';
+import {
+  COMING_SOON,
+  GAMES,
+  GAME_IDS,
+  HOWTO_MAX_STEPS,
+  HOWTO_MIN_STEPS,
+  LABEL_MAX,
+  defaultModeOf,
+  gameInfo,
+  gameProblems,
+  hasModeChoice,
+  isGameId,
+  modeOf,
+  playersLabel,
+  resolveModes,
+  selectableModes,
+  type GameDef,
+  type ModeSpec,
+} from './games';
 import { ICON_IDS, isIconId } from './icons';
 import { configMsg, DEFAULT_CONFIG } from './protocol';
 
@@ -23,31 +41,49 @@ describe('game registry', () => {
     expect(pizzas).toMatchObject({ minPlayers: 2, maxPlayers: 8 });
     expect(playersLabel(pizzas)).toBe('2 a 8 jugadores');
     expect(playersLabel({ minPlayers: 4, maxPlayers: 4 })).toBe('4 jugadores');
-    for (const [min, max] of [[0, 8], [5, 3], [1.5, 4]] as const) {
+    for (const [min, max] of [
+      [0, 8],
+      [5, 3],
+      [1.5, 4],
+    ] as const) {
       const bad = { ...clone(), minPlayers: min, maxPlayers: max };
-      expect(gameProblems(bad).some((p) => p.startsWith('players')), `${min}-${max}`).toBe(true);
+      expect(
+        gameProblems(bad).some((p) => p.startsWith('players')),
+        `${min}-${max}`,
+      ).toBe(true);
     }
   });
   it('the announced games are not in the registry, so config and phones never see them', () => {
     expect(COMING_SOON.length).toBeGreaterThanOrEqual(1); // obstaculos left the list when F3 published it
-    for (const s of COMING_SOON) { expect(isGameId(s.id)).toBe(false); expect(s.name.length).toBeGreaterThan(0); }
+    for (const s of COMING_SOON) {
+      expect(isGameId(s.id)).toBe(false);
+      expect(s.name.length).toBeGreaterThan(0);
+    }
   });
   it('every icon the registry references exists', () => {
-    for (const g of GAMES) for (const i of [g.controls.stick.icon, g.controls.btn1.icon, g.controls.btn2.icon, ...g.howTo.steps.map((s) => s.icon)]) expect(isIconId(i)).toBe(true);
+    for (const g of GAMES)
+      for (const i of [g.controls.stick.icon, g.controls.btn1.icon, g.controls.btn2.icon, ...g.howTo.steps.map((s) => s.icon)])
+        expect(isIconId(i)).toBe(true);
     expect(ICON_IDS.length).toBeGreaterThan(5);
   });
   it('the authoring check rejects bad entries', () => {
-    const noLabel = clone(); (noLabel.controls.btn1 as { label: string }).label = '  ';
+    const noLabel = clone();
+    (noLabel.controls.btn1 as { label: string }).label = '  ';
     expect(gameProblems(noLabel)).toContain('btn1: empty label');
-    const longLabel = clone(); (longLabel.controls.stick as { label: string }).label = 'x'.repeat(LABEL_MAX + 1);
+    const longLabel = clone();
+    (longLabel.controls.stick as { label: string }).label = 'x'.repeat(LABEL_MAX + 1);
     expect(gameProblems(longLabel)).toContain(`stick: label over ${LABEL_MAX} chars`);
-    const badIcon = clone(); (badIcon.controls.btn2 as { icon: string }).icon = 'nope';
+    const badIcon = clone();
+    (badIcon.controls.btn2 as { icon: string }).icon = 'nope';
     expect(gameProblems(badIcon)).toContain('btn2: unknown icon nope');
-    const few = clone(); (few.howTo as { steps: unknown[] }).steps = few.howTo.steps.slice(0, HOWTO_MIN_STEPS - 1);
+    const few = clone();
+    (few.howTo as { steps: unknown[] }).steps = few.howTo.steps.slice(0, HOWTO_MIN_STEPS - 1);
     expect(gameProblems(few)[0]).toMatch(/steps/);
-    const many = clone(); (many.howTo as { steps: unknown[] }).steps = [...many.howTo.steps, ...many.howTo.steps].slice(0, HOWTO_MAX_STEPS + 1);
+    const many = clone();
+    (many.howTo as { steps: unknown[] }).steps = [...many.howTo.steps, ...many.howTo.steps].slice(0, HOWTO_MAX_STEPS + 1);
     expect(gameProblems(many)[0]).toMatch(/steps/);
-    const longStep = clone(); (longStep.howTo.steps[0] as { text: string }).text = 'y'.repeat(200);
+    const longStep = clone();
+    (longStep.howTo.steps[0] as { text: string }).text = 'y'.repeat(200);
     expect(gameProblems(longStep).some((p) => p.startsWith('step 1'))).toBe(true);
   });
   it('gameInfo and the config message carry the registry labels for every game', () => {
@@ -57,7 +93,15 @@ describe('game registry', () => {
       expect(m).toMatchObject({ t: 'config', game: g.id, controls: g.controls, howTo: g.howTo });
     }
     // a second game defines its own labels and the message follows the chosen one: no controller change involved
-    const other: GameDef = { ...clone(), id: 'other', controls: { stick: { label: 'Girar', icon: 'move' }, btn1: { label: 'Saltar', icon: 'grab' }, btn2: { label: 'Disparar', icon: 'chop' } } };
+    const other: GameDef = {
+      ...clone(),
+      id: 'other',
+      controls: {
+        stick: { label: 'Girar', icon: 'move' },
+        btn1: { label: 'Saltar', icon: 'grab' },
+        btn2: { label: 'Disparar', icon: 'chop' },
+      },
+    };
     const two = [pizzas, other];
     expect(configMsg({ ...DEFAULT_CONFIG, game: 'other' as never }, two).controls.btn1.label).toBe('Saltar');
     expect(configMsg({ ...DEFAULT_CONFIG, game: 'pizzas' }, two).controls.btn1.label).toBe('Tomar / Soltar');
@@ -100,7 +144,10 @@ describe('game modes', () => {
     expect(gameProblems(plain)).toEqual([]);
   });
   it('gameInfo overlays the mode controls and how-to on the game ones', () => {
-    const custom: GameDef = { ...clone(), modes: [{ id: 'coop', label: 'C', players: [2, 8], controls: { btn2: { label: 'Dash', icon: 'chop' } } } as ModeSpec] };
+    const custom: GameDef = {
+      ...clone(),
+      modes: [{ id: 'coop', label: 'C', players: [2, 8], controls: { btn2: { label: 'Dash', icon: 'chop' } } } as ModeSpec],
+    };
     expect(gameInfo('pizzas', [custom], 'coop').controls.btn2.label).toBe('Dash');
     expect(gameInfo('pizzas', [custom], 'coop').controls.btn1.label).toBe('Tomar / Soltar'); // untouched ones stay
     expect(gameInfo('pizzas', [custom]).controls.btn2.label).toBe('Picar / Correr'); // no mode: the game's own
@@ -108,20 +155,64 @@ describe('game modes', () => {
   });
   it('the authoring check rejects broken modes', () => {
     const bad = (f: (m: ModeSpec[]) => void, defaultMode?: GameDef['defaultMode']): string[] => {
-      const g = clone(); const modes = structuredClone(g.modes!) as ModeSpec[]; f(modes);
+      const g = clone();
+      const modes = structuredClone(g.modes!) as ModeSpec[];
+      f(modes);
       return gameProblems({ ...g, modes, defaultMode: defaultMode ?? g.defaultMode });
     };
     expect(gameProblems(pizzas)).toEqual([]);
     expect(bad(() => {}, 'race')).toContain('defaultMode race is not declared');
-    expect(bad((m) => { m[1] = { ...m[0]!, soon: true }; })).toContain('modes: duplicated id');
-    expect(bad((m) => m.forEach((x) => { x.soon = true; }))).toContain('modes: none is selectable');
-    expect(bad((m) => { m[1]!.players = [1, 12]; }).some((p) => p.includes('outside the game'))).toBe(true);
-    expect(bad((m) => { (m[1]!.teams as unknown as { count: [number, number] }).count = [3, 2]; }).some((p) => p.includes('bad team count'))).toBe(true);
-    expect(bad((m) => { (m[1]!.teams as unknown as { count: [number, number] }).count = [2, 4]; }).some((p) => p.includes('styles for up to 4'))).toBe(true);
-    expect(bad((m) => { m[1]!.teams!.maxRatio = 0.5; }).some((p) => p.includes('maxRatio'))).toBe(true);
-    expect(bad((m) => { (m[0]!.teams as unknown as { count: [number, number] }).count = [2, 2]; }).some((p) => p.includes('coop is a single team'))).toBe(true);
-    expect(bad((m) => { m[1]!.howTo!.steps = m[1]!.howTo!.steps.slice(0, 1); }).some((p) => p.includes('howTo 1 steps'))).toBe(true);
-    expect(bad((m) => { m[1]!.options = [...m[1]!.options!, m[1]!.options![0]!]; })).toContain('mode versus: duplicated option id');
-    expect(bad((m) => { m[0]!.label = ' '; })).toContain('mode coop: empty label');
+    expect(
+      bad((m) => {
+        m[1] = { ...m[0]!, soon: true };
+      }),
+    ).toContain('modes: duplicated id');
+    expect(
+      bad((m) =>
+        m.forEach((x) => {
+          x.soon = true;
+        }),
+      ),
+    ).toContain('modes: none is selectable');
+    expect(
+      bad((m) => {
+        m[1]!.players = [1, 12];
+      }).some((p) => p.includes('outside the game')),
+    ).toBe(true);
+    expect(
+      bad((m) => {
+        (m[1]!.teams as unknown as { count: [number, number] }).count = [3, 2];
+      }).some((p) => p.includes('bad team count')),
+    ).toBe(true);
+    expect(
+      bad((m) => {
+        (m[1]!.teams as unknown as { count: [number, number] }).count = [2, 4];
+      }).some((p) => p.includes('styles for up to 4')),
+    ).toBe(true);
+    expect(
+      bad((m) => {
+        m[1]!.teams!.maxRatio = 0.5;
+      }).some((p) => p.includes('maxRatio')),
+    ).toBe(true);
+    expect(
+      bad((m) => {
+        (m[0]!.teams as unknown as { count: [number, number] }).count = [2, 2];
+      }).some((p) => p.includes('coop is a single team')),
+    ).toBe(true);
+    expect(
+      bad((m) => {
+        m[1]!.howTo!.steps = m[1]!.howTo!.steps.slice(0, 1);
+      }).some((p) => p.includes('howTo 1 steps')),
+    ).toBe(true);
+    expect(
+      bad((m) => {
+        m[1]!.options = [...m[1]!.options!, m[1]!.options![0]!];
+      }),
+    ).toContain('mode versus: duplicated option id');
+    expect(
+      bad((m) => {
+        m[0]!.label = ' ';
+      }),
+    ).toContain('mode coop: empty label');
   });
 });

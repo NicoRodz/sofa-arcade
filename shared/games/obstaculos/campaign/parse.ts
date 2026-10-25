@@ -16,7 +16,14 @@ function parseProgress(v: unknown): LevelProgress | null {
   if (!Array.isArray(st) || st.length !== 3 || !st.every((x) => typeof x === 'boolean')) return null;
   if (v.bestTimeMs !== null && !int(v.bestTimeMs, 0, 86_400_000)) return null;
   if (!int(v.collectiblesMask, 0, 0x7fffffff)) return null;
-  return { done: v.done, stars: [st[0], st[1], st[2]] as Stars, bestTimeMs: v.bestTimeMs as number | null, timeMedal: v.timeMedal, collectiblesMask: v.collectiblesMask, skipped: v.skipped };
+  return {
+    done: v.done,
+    stars: [st[0], st[1], st[2]] as Stars,
+    bestTimeMs: v.bestTimeMs as number | null,
+    timeMedal: v.timeMedal,
+    collectiblesMask: v.collectiblesMask,
+    skipped: v.skipped,
+  };
 }
 function parseAssists(v: unknown): Assists | null {
   if (v === undefined) return { ...NO_ASSISTS };
@@ -42,11 +49,26 @@ export function parseExpedition(raw: unknown): Expedition | null {
     if (!lp) return null;
     levels[id] = lp;
   }
-  if (!Array.isArray(raw.unlocked) || raw.unlocked.length > MAX_LEVELS || !raw.unlocked.every((u) => typeof u === 'string' && u.length <= 32)) return null;
+  if (
+    !Array.isArray(raw.unlocked) ||
+    raw.unlocked.length > MAX_LEVELS ||
+    !raw.unlocked.every((u) => typeof u === 'string' && u.length <= 32)
+  )
+    return null;
   const assists = parseAssists(raw.assists);
   if (!assists) return null;
   if (raw.lastLevelId !== null && !(typeof raw.lastLevelId === 'string' && LEVEL_ID.test(raw.lastLevelId))) return null;
-  return { schemaVersion: SCHEMA_VERSION, id: raw.id, name: raw.name, createdAt: raw.createdAt, updatedAt: raw.updatedAt, levels, unlocked: [...new Set(raw.unlocked as string[])], assists, lastLevelId: raw.lastLevelId as string | null };
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    id: raw.id,
+    name: raw.name,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    levels,
+    unlocked: [...new Set(raw.unlocked as string[])],
+    assists,
+    lastLevelId: raw.lastLevelId as string | null,
+  };
 }
 
 export const cleanName = (s: unknown): string => (typeof s === 'string' ? s.replace(/\s+/g, ' ').trim().slice(0, NAME_MAX) : '');

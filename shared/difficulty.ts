@@ -28,8 +28,18 @@ export interface Tuning {
   starPct: readonly [number, number, number]; // R17: share of the expected score for 1, 2 and 3 stars
 }
 const COMMON: Omit<Tuning, 'tauMs' | 'tauStopMs'> = {
-  dashMult: 2.6, dashMs: 180, dashCdMs: 600, bufferMs: 150, pushSpeed: 1.5, yieldAfterMs: 400, yieldSpeed: 0.4,
-  baseComponent: 20, baseProcess: 10, tipPct: 0.5, streakMax: 4, starPct: [0.35, 0.6, 0.85],
+  dashMult: 2.6,
+  dashMs: 180,
+  dashCdMs: 600,
+  bufferMs: 150,
+  pushSpeed: 1.5,
+  yieldAfterMs: 400,
+  yieldSpeed: 0.4,
+  baseComponent: 20,
+  baseProcess: 10,
+  tipPct: 0.5,
+  streakMax: 4,
+  starPct: [0.35, 0.6, 0.85],
 };
 export const TUNING: Record<Difficulty, Tuning> = {
   easy: { ...COMMON, tauMs: 0, tauStopMs: 0 },
@@ -67,7 +77,10 @@ export const teamSize = (n: number) => Math.max(MIN_TEAM, Math.min(MAX_TEAM, Mat
 
 export const orderEveryMs = (d: Difficulty, n: number) => (ORDER_BASE_MS * INTERVAL_K[d]) / (0.6 + 0.2 * teamSize(n));
 export const maxOrders = (n: number) => 2 + Math.ceil(teamSize(n) / 2);
-const band = <T>(n: number, v: [T, T, T, T]): T => { const t = teamSize(n); return t <= 2 ? v[0] : t <= 4 ? v[1] : t <= 6 ? v[2] : v[3]; };
+const band = <T>(n: number, v: [T, T, T, T]): T => {
+  const t = teamSize(n);
+  return t <= 2 ? v[0] : t <= 4 ? v[1] : t <= 6 ? v[2] : v[3];
+};
 
 export function params(d: Difficulty, n: number): Params {
   return {

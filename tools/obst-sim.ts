@@ -19,14 +19,33 @@ export function playLevel(levelIdx: number, n: number, mode: GameMode, difficult
       s.receive(i, { x: o.x, y: o.y, presses: [counters[i]![0]!, counters[i]![1]!] });
     }
     const ev = s.advance(1000 / 60);
-    for (const e of ev) if (['obst.death', 'obst.bubble', 'obst.checkpoint', 'obst.levelClear'].includes(e.name)) events.push(`${(s.world.tick / 60).toFixed(1)}s ${e.name} ${JSON.stringify(e.data)}`);
-    if (verbose && f % 60 === 0) console.log((f / 60).toFixed(0), snap.players.map((p) => `${p.slot}:${(p.x / 48).toFixed(1)},${(p.y / 48).toFixed(1)}${p.planted ? 'P' : ''}`).join(' '));
+    for (const e of ev)
+      if (['obst.death', 'obst.bubble', 'obst.checkpoint', 'obst.levelClear'].includes(e.name))
+        events.push(`${(s.world.tick / 60).toFixed(1)}s ${e.name} ${JSON.stringify(e.data)}`);
+    if (verbose && f % 60 === 0)
+      console.log(
+        (f / 60).toFixed(0),
+        snap.players.map((p) => `${p.slot}:${(p.x / 48).toFixed(1)},${(p.y / 48).toFixed(1)}${p.planted ? 'P' : ''}`).join(' '),
+      );
   }
-  return { status: s.world.status, tick: s.world.tick, cleared: s.world.status === 'cleared', result: s.world.result, events, world: s.world };
+  return {
+    status: s.world.status,
+    tick: s.world.tick,
+    cleared: s.world.status === 'cleared',
+    result: s.world.result,
+    events,
+    world: s.world,
+  };
 }
 
 if (process.argv[1]?.endsWith('obst-sim.ts')) {
-  const [lv, n, mode, diff, max] = [Number(process.argv[2] ?? 1), Number(process.argv[3] ?? 2), (process.argv[4] ?? 'chain') as GameMode, (process.argv[5] ?? 'normal') as Difficulty, Number(process.argv[6] ?? 240)];
+  const [lv, n, mode, diff, max] = [
+    Number(process.argv[2] ?? 1),
+    Number(process.argv[3] ?? 2),
+    (process.argv[4] ?? 'chain') as GameMode,
+    (process.argv[5] ?? 'normal') as Difficulty,
+    Number(process.argv[6] ?? 240),
+  ];
   const r = playLevel(lv, n, mode, diff, max, !!process.env.V);
   console.log(`level ${lv} n=${n} ${mode} ${diff}: ${r.status} in ${(r.tick / 60).toFixed(1)}s`, JSON.stringify(r.result));
   console.log(r.events.slice(0, 30).join('\n'));

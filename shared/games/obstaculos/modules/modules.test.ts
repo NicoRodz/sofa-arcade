@@ -9,7 +9,15 @@ import { GROUND_ROW, MODULE_ROWS } from './types';
 import type { LevelDef, Tether } from '../types';
 
 const wrapPieces = (mid: { w: number; rows: string[]; params?: LevelDef['params'] }, tether: Tether, min = 2): LevelDef =>
-  toLevel([flatCap(6, { ch: 'S', x: 2 }), mid, flatCap(6, { ch: 'G', x: 3 })], { id: 'm', name: 'm', biome: 'beach', players: { min, max: 8 }, tether, stars: 1, parSec: 60 });
+  toLevel([flatCap(6, { ch: 'S', x: 2 }), mid, flatCap(6, { ch: 'G', x: 3 })], {
+    id: 'm',
+    name: 'm',
+    biome: 'beach',
+    players: { min, max: 8 },
+    tether,
+    stars: 1,
+    parSec: 60,
+  });
 
 describe('module catalog', () => {
   it('has a dozen-plus modules with unique ids and the declared shape (18 rows, flat ground on both edges)', () => {
@@ -27,7 +35,22 @@ describe('module catalog', () => {
   });
   it('covers the cooperative roles: towers, plates, levers/movers, ring, ladder, key, and the hazards and timing', () => {
     const ids = MODULES.map((m) => m.id);
-    for (const id of ['wall4', 'wall5', 'platepair', 'latchgate', 'elevator', 'cart', 'ring', 'ladder', 'keydoor', 'crumble', 'boyas', 'spikepit', 'lavahop']) expect(ids).toContain(id);
+    for (const id of [
+      'wall4',
+      'wall5',
+      'platepair',
+      'latchgate',
+      'elevator',
+      'cart',
+      'ring',
+      'ladder',
+      'keydoor',
+      'crumble',
+      'boyas',
+      'spikepit',
+      'lavahop',
+    ])
+      expect(ids).toContain(id);
   });
 
   for (const m of MODULES) {
@@ -42,7 +65,9 @@ describe('module catalog', () => {
   it('a cooperative module really needs its players: the 5-tile wall fails with 2, the ring only works tied, the ladder module needs its plate', () => {
     const solo = (id: string, n: number, mode: 'chain' | 'free') => {
       const m = moduleById(id);
-      return validateLevel(wrapPieces(rename({ w: m.w, rows: m.rows, params: m.params }, new LetterPool())!, 'any', 2), 'hard', [n]).reports.find((r) => r.env.mode === mode)!.ok;
+      return validateLevel(wrapPieces(rename({ w: m.w, rows: m.rows, params: m.params }, new LetterPool())!, 'any', 2), 'hard', [
+        n,
+      ]).reports.find((r) => r.env.mode === mode)!.ok;
     };
     expect(solo('wall5', 2, 'free')).toBe(false);
     expect(solo('wall5', 3, 'free')).toBe(true);
@@ -73,10 +98,13 @@ describe('tramos: jumps sampled inside the validated envelope', () => {
   it('the largest gap is 4 tied and 5 free; every kind at every fraction is solvable in its own mode', () => {
     expect(maxGap('chainOnly')).toBe(4);
     expect(maxGap('freeOnly')).toBe(5);
-    for (const tether of ['chainOnly', 'freeOnly'] as const) for (const kind of TRAMOS) for (const f of FRACTIONS) for (let seed = 1; seed <= 3; seed++) {
-      const p = tramo(kind, f, tether, mulberry32(seed));
-      const v = validateLevel(wrapPieces(p, tether), 'hard', [2]);
-      expect(v.errors, `${kind} f=${f} ${tether} seed ${seed}`).toEqual([]);
-    }
+    for (const tether of ['chainOnly', 'freeOnly'] as const)
+      for (const kind of TRAMOS)
+        for (const f of FRACTIONS)
+          for (let seed = 1; seed <= 3; seed++) {
+            const p = tramo(kind, f, tether, mulberry32(seed));
+            const v = validateLevel(wrapPieces(p, tether), 'hard', [2]);
+            expect(v.errors, `${kind} f=${f} ${tether} seed ${seed}`).toEqual([]);
+          }
   });
 });

@@ -13,10 +13,19 @@ import { validateLevel, validateState } from './validate';
 
 // Level = flat cap with S + the canvas + flat cap with G. Standing row 14, floor top row 15.
 function wrap(c: Canvas, params?: Record<string, EntityParam>, tether: Tether = 'any', extra: Partial<LevelDef> = {}): LevelDef {
-  const lvl = toLevel([flatCap(6, { ch: 'S', x: 2 }), { w: c.w, rows: c.rows(), params }, flatCap(6, { ch: 'G', x: 3 })], { id: 't', name: 't', biome: 'beach', players: { min: 2, max: 8 }, tether, stars: 1, parSec: 60 });
+  const lvl = toLevel([flatCap(6, { ch: 'S', x: 2 }), { w: c.w, rows: c.rows(), params }, flatCap(6, { ch: 'G', x: 3 })], {
+    id: 't',
+    name: 't',
+    biome: 'beach',
+    players: { min: 2, max: 8 },
+    tether,
+    stars: 1,
+    parSec: 60,
+  });
   return { ...lvl, ...extra };
 }
-const ok = (def: LevelDef, n = 2, mode: 'chain' | 'free' = 'free', diff: 'easy' | 'normal' | 'hard' = 'hard') => validateState(def, { n, mode, diff });
+const ok = (def: LevelDef, n = 2, mode: 'chain' | 'free' = 'free', diff: 'easy' | 'normal' | 'hard' = 'hard') =>
+  validateState(def, { n, mode, diff });
 const gapLevel = (g: number) => wrap(new Canvas(g + 8).pit(4, 3 + g, '~'));
 const wallLevel = (h: number) => wrap(new Canvas(12).rect(4, 15 - h, 8, 14, '#'));
 
@@ -70,20 +79,31 @@ describe('plates, levers, gates (OR semantics, holders must be able to follow)',
     expect(r.errors.join()).toMatch(/never opens/);
   });
   it('a held plate with no second plate on the far side strands its holder; latching it fixes that', () => {
-    const held = wrap(gate(new Canvas(20)).rect(4, 14, 6, 14, 'a'), { a: { kind: 'plate', weight: 1, opens: 'A', latch: false }, A: { kind: 'gate' } });
+    const held = wrap(gate(new Canvas(20)).rect(4, 14, 6, 14, 'a'), {
+      a: { kind: 'plate', weight: 1, opens: 'A', latch: false },
+      A: { kind: 'gate' },
+    });
     expect(ok(held, 3).ok).toBe(false);
-    const latched = wrap(gate(new Canvas(20)).rect(4, 14, 6, 14, 'a'), { a: { kind: 'plate', weight: 1, opens: 'A', latch: true }, A: { kind: 'gate' } });
+    const latched = wrap(gate(new Canvas(20)).rect(4, 14, 6, 14, 'a'), {
+      a: { kind: 'plate', weight: 1, opens: 'A', latch: true },
+      A: { kind: 'gate' },
+    });
     expect(ok(latched, 3).ok).toBe(true);
   });
   it('a / b: the second plate beyond the gate takes over the hold (w_a <= n-1, w_b <= n-w_a)', () => {
-    const pair = (wa: 'half-up' | 'all', wb: 'half-down' | 'all') => wrap(gate(new Canvas(22)).rect(4, 14, 6, 14, 'a').rect(14, 14, 16, 14, 'b'),
-      { a: { kind: 'plate', weight: wa, opens: 'A', latch: false }, b: { kind: 'plate', weight: wb, opens: 'A', latch: false }, A: { kind: 'gate' } });
+    const pair = (wa: 'half-up' | 'all', wb: 'half-down' | 'all') =>
+      wrap(gate(new Canvas(22)).rect(4, 14, 6, 14, 'a').rect(14, 14, 16, 14, 'b'), {
+        a: { kind: 'plate', weight: wa, opens: 'A', latch: false },
+        b: { kind: 'plate', weight: wb, opens: 'A', latch: false },
+        A: { kind: 'gate' },
+      });
     for (const n of [2, 3, 4, 7]) expect(ok(pair('half-up', 'half-down'), n).ok, `n=${n}`).toBe(true);
     expect(ok(pair('half-up', 'all'), 4).ok).toBe(false); // b would need everybody, nobody is left
     expect(ok(pair('all', 'half-down'), 4).ok).toBe(false); // a needs everybody, nobody passes
   });
   it('a plate heavier than the team never works', () => {
-    const heavy = (w: number) => wrap(gate(new Canvas(20)).rect(4, 14, 6, 14, 'a'), { a: { kind: 'plate', weight: w, opens: 'A', latch: true }, A: { kind: 'gate' } });
+    const heavy = (w: number) =>
+      wrap(gate(new Canvas(20)).rect(4, 14, 6, 14, 'a'), { a: { kind: 'plate', weight: w, opens: 'A', latch: true }, A: { kind: 'gate' } });
     expect(ok(heavy(5), 3).ok).toBe(false);
     expect(ok(heavy(5), 5).ok).toBe(true);
   });
@@ -97,7 +117,11 @@ describe('plates, levers, gates (OR semantics, holders must be able to follow)',
   });
   it('levers and movers: a bridge mover over a 12-wide pit is crossed only with its lever pair (hold + handoff)', () => {
     const pit = () => new Canvas(26).pit(5, 18, '^', 16).rect(5, 15, 7, 15, 'A').set(3, 14, 'a').set(21, 14, 'b');
-    const params: Record<string, EntityParam> = { a: { kind: 'lever', opens: 'A', latch: false }, b: { kind: 'lever', opens: 'A', latch: false }, A: { kind: 'mover', dx: 11, dy: 0, periodSec: 5 } };
+    const params: Record<string, EntityParam> = {
+      a: { kind: 'lever', opens: 'A', latch: false },
+      b: { kind: 'lever', opens: 'A', latch: false },
+      A: { kind: 'mover', dx: 11, dy: 0, periodSec: 5 },
+    };
     expect(ok(wrap(pit(), params)).ok).toBe(true);
     const oneLever = { ...params };
     delete oneLever.b;
@@ -113,7 +137,11 @@ describe('keys, rings, hazards', () => {
     expect(validateLevel(wrap(door(new Canvas(22))), 'hard').ok).toBe(false); // lint: a door and no key
   });
   it('a ring bridges a 7-wide abyss when tied; without the ring it does not; a ring in a free-only level is a lint error', () => {
-    const abyss = (ring: boolean) => { const c = new Canvas(18).pit(4, 10, '~'); if (ring) c.set(4, 12, 'o'); return c; };
+    const abyss = (ring: boolean) => {
+      const c = new Canvas(18).pit(4, 10, '~');
+      if (ring) c.set(4, 12, 'o');
+      return c;
+    };
     expect(ok(wrap(abyss(true), undefined, 'chainOnly'), 2, 'chain').ok).toBe(true);
     expect(ok(wrap(abyss(false), undefined, 'chainOnly'), 2, 'chain').ok).toBe(false);
     expect(ok(wrap(abyss(true), undefined, 'freeOnly'), 2, 'free').errors.join()).toMatch(/rings only work tied/);
@@ -141,9 +169,10 @@ describe('validateLevel: every mode and the player range', () => {
   });
 });
 
-describe('allow: an explorer that only knows some mechanics (the learning test\'s bot) and the record of what it used', () => {
+describe("allow: an explorer that only knows some mechanics (the learning test's bot) and the record of what it used", () => {
   const only = (...m: Mechanic[]) => new Set<Mechanic>(m);
-  const run = (def: LevelDef, allow: Set<Mechanic>, n = 2, mode: 'chain' | 'free' = 'free') => validateState(def, { n, mode, diff: 'hard', allow });
+  const run = (def: LevelDef, allow: Set<Mechanic>, n = 2, mode: 'chain' | 'free' = 'free') =>
+    validateState(def, { n, mode, diff: 'hard', allow });
   it('no jump, no gap: a 2-tile hole stops a walker, a jumper crosses it and the record shows a jump', () => {
     expect(run(gapLevel(2), only()).ok).toBe(false);
     const r = run(gapLevel(2), only('jump'));
@@ -173,7 +202,10 @@ describe('allow: an explorer that only knows some mechanics (the learning test\'
     expect(r.uses.spring).toBeGreaterThanOrEqual(1);
   });
   it('a latch plate and a key are gadgets of their own: not known, not pressed; known, and the record counts them', () => {
-    const plate = wrap(new Canvas(20).rect(10, 0, 10, 11, '#').rect(10, 12, 10, 14, 'A').rect(4, 14, 6, 14, 'a'), { a: { kind: 'plate', weight: 1, opens: 'A', latch: true }, A: { kind: 'gate' } });
+    const plate = wrap(new Canvas(20).rect(10, 0, 10, 11, '#').rect(10, 12, 10, 14, 'A').rect(4, 14, 6, 14, 'a'), {
+      a: { kind: 'plate', weight: 1, opens: 'A', latch: true },
+      A: { kind: 'gate' },
+    });
     expect(run(plate, only('jump', 'tower', 'hand')).ok).toBe(false);
     const r = run(plate, only('jump', 'plate'));
     expect(r.ok).toBe(true);
@@ -189,14 +221,22 @@ describe('allow: an explorer that only knows some mechanics (the learning test\'
   });
 });
 
-describe('campaign environment: the validator reads S1\'s parameters (sim/campaign.ts), not the legacy difficulty table', () => {
-  it('env.world gives the world\'s coyote/buffer (physicsForCampaign), hand zone and rope (params.ropeLen)', () => {
+describe("campaign environment: the validator reads S1's parameters (sim/campaign.ts), not the legacy difficulty table", () => {
+  it("env.world gives the world's coyote/buffer (physicsForCampaign), hand zone and rope (params.ropeLen)", () => {
     const c = campaignParams(2, 'beach');
-    const g = buildGraph(parseLevel(wallLevel(3)), { n: 2, mode: 'chain', diff: 'hard', world: 'beach' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
+    const g = buildGraph(
+      parseLevel(wallLevel(3)),
+      { n: 2, mode: 'chain', diff: 'hard', world: 'beach' },
+      { open: new Set(), doors: new Set() },
+      [],
+      { pioneer: true },
+    );
     expect(g.params).toEqual({ ...physicsForCampaign(c), iceFriction: c.iceFriction }); // + the ice friction of A5 (physicsOfWorld): coyote, buffer and sticky edges are still the world's
     expect(g.dp.handZoneTiles).toBe(dparamsForCampaign(c).handZoneTiles);
     expect(g.ropeLen).toBeCloseTo(c.ropeLen, 6);
-    const legacy = buildGraph(parseLevel(wallLevel(3)), { n: 2, mode: 'chain', diff: 'hard' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
+    const legacy = buildGraph(parseLevel(wallLevel(3)), { n: 2, mode: 'chain', diff: 'hard' }, { open: new Set(), doors: new Set() }, [], {
+      pioneer: true,
+    });
     expect(legacy.params).toEqual(physicsFor('hard'));
     expect(legacy.ropeLen).toBe(ROPE_LEN);
   });

@@ -5,7 +5,17 @@ import { T } from './legend';
 import { kindAt, parseLevel, parseLevelStrict } from './parse';
 import type { LevelDef } from './types';
 
-const mini = (rows: string[], extra: Partial<LevelDef> = {}): LevelDef => ({ id: 't', name: 't', biome: 'beach', players: { min: 2, max: 4 }, tether: 'any', stars: 1, parSec: 30, rows, ...extra });
+const mini = (rows: string[], extra: Partial<LevelDef> = {}): LevelDef => ({
+  id: 't',
+  name: 't',
+  biome: 'beach',
+  players: { min: 2, max: 4 },
+  tether: 'any',
+  stars: 1,
+  parSec: 30,
+  rows,
+  ...extra,
+});
 const ok = ['#####', '#S.G#', '#####'];
 const cell = (n: number, w: number) => ({ x: n % w, y: Math.floor(n / w) });
 
@@ -16,7 +26,13 @@ describe('parseLevel: the three grids of the plan (§11)', () => {
     expect(p.markers.spawn).toEqual([{ x: 3, y: 11 }]);
     expect(p.markers.checkpoint).toEqual([{ x: 35, y: 8 }]);
     expect(p.markers.goal).toEqual([{ x: 56, y: 7 }]);
-    expect(p.markers.star).toEqual([{ x: 38, y: 4 }, { x: 18, y: 8 }, { x: 45, y: 10 }].sort((a, b) => a.y - b.y || a.x - b.x));
+    expect(p.markers.star).toEqual(
+      [
+        { x: 38, y: 4 },
+        { x: 18, y: 8 },
+        { x: 45, y: 10 },
+      ].sort((a, b) => a.y - b.y || a.x - b.x),
+    );
     // water cols 13-14 row 13, spikes cols 31-33 row 12, one-way cols 36-39 row 6
     expect([13, 14].map((x) => kindAt(p, x, 13))).toEqual([T.Liquid, T.Liquid]);
     expect([31, 32, 33].map((x) => kindAt(p, x, 12))).toEqual([T.Spikes, T.Spikes, T.Spikes]);
@@ -27,7 +43,10 @@ describe('parseLevel: the three grids of the plan (§11)', () => {
   it('B: 56x16, rings, free-mode rocks and the cliff', () => {
     const p = parseLevelStrict(LEVEL_04);
     expect([p.w, p.h]).toEqual([56, 16]);
-    expect(p.markers.ring).toEqual([{ x: 44, y: 7 }, { x: 14, y: 9 }]);
+    expect(p.markers.ring).toEqual([
+      { x: 44, y: 7 },
+      { x: 14, y: 9 },
+    ]);
     expect([17, 47].map((x, i) => kindAt(p, x, [12, 8][i]!))).toEqual([T.FreeSolid, T.FreeSolid]);
     expect(p.markers.goal).toEqual([{ x: 52, y: 7 }]);
     expect(kindAt(p, 34, 8)).toBe(T.FreeSolid); // cliff top at row 8: '%', 4 tiles in Libres and 3 in Encadenados (the rope cannot hold a tower of 2 higher)
@@ -54,7 +73,9 @@ describe('parseLevel: the three grids of the plan (§11)', () => {
     for (const d of LEVELS) {
       const p = parseLevel(d);
       expect(p.errors, d.id).toEqual([]);
-      const all = Object.values(p.markers).flat().map((c) => `${c.x},${c.y}`);
+      const all = Object.values(p.markers)
+        .flat()
+        .map((c) => `${c.x},${c.y}`);
       expect(new Set(all).size, d.id).toBe(all.length);
     }
   });
@@ -86,14 +107,22 @@ describe('parseLevel: errors', () => {
   it('kinds match letter case; opens and partner resolve', () => {
     const p = { a: { kind: 'gate' } as const };
     expect(parseLevel(mini(['#####', '#SaG#', '#####'], { params: p })).errors.join()).toMatch(/activator/);
-    const q = parseLevel(mini(['#####', '#SaG#', '#####'], { params: { a: { kind: 'plate', weight: 1, opens: 'A', latch: false } } })).errors;
+    const q = parseLevel(
+      mini(['#####', '#SaG#', '#####'], { params: { a: { kind: 'plate', weight: 1, opens: 'A', latch: false } } }),
+    ).errors;
     expect(q).toContain("'a' opens 'A', which is not in the grid");
-    const r = parseLevel(mini(['#####', '#SDG#', '#####'], { params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 } } })).errors;
+    const r = parseLevel(
+      mini(['#####', '#SDG#', '#####'], { params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 } } }),
+    ).errors;
     expect(r.join()).toMatch(/partner/);
     // both balances exist but E points at somebody else
-    const twoD = mini(['######', '#SDEG#', '######'], { params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 }, E: { kind: 'balance', partner: 'D', travel: 1, speed: 1 } } });
+    const twoD = mini(['######', '#SDEG#', '######'], {
+      params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 }, E: { kind: 'balance', partner: 'D', travel: 1, speed: 1 } },
+    });
     expect(parseLevel(twoD).errors).toEqual([]);
-    const bad = mini(['######', '#SDEG#', '######'], { params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 }, E: { kind: 'balance', partner: 'E', travel: 1, speed: 1 } } });
+    const bad = mini(['######', '#SDEG#', '######'], {
+      params: { D: { kind: 'balance', partner: 'E', travel: 1, speed: 1 }, E: { kind: 'balance', partner: 'E', travel: 1, speed: 1 } },
+    });
     expect(parseLevel(bad).errors.join()).toMatch(/'D' balance partner 'E'/);
   });
   it('players, par and zones', () => {

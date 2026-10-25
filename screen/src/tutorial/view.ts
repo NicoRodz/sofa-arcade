@@ -5,9 +5,25 @@ import { SCHOOL_STEPS, SCHOOL_TITLE, SCHOOL_TOTAL } from '@party/shared/tutorial
 import { chefCanvas } from '../art/chef';
 import { chefOf } from '../art/tokens';
 
-export interface ChipModel { slot: number; name: string; step: number; done: boolean; skipped: boolean }
-export interface ViewModel { sub: string; chips: readonly ChipModel[]; allDone: boolean; hint: string }
-export interface SchoolView { show(): void; hide(): void; render(m: ViewModel): void; readonly shown: boolean }
+export interface ChipModel {
+  slot: number;
+  name: string;
+  step: number;
+  done: boolean;
+  skipped: boolean;
+}
+export interface ViewModel {
+  sub: string;
+  chips: readonly ChipModel[];
+  allDone: boolean;
+  hint: string;
+}
+export interface SchoolView {
+  show(): void;
+  hide(): void;
+  render(m: ViewModel): void;
+  readonly shown: boolean;
+}
 
 const CSS = `
 #schoolui { z-index: 30; pointer-events: none; }
@@ -51,11 +67,14 @@ export function createSchoolView(doc: Document = document): SchoolView {
   const root = doc.createElement('div');
   root.id = 'schoolui';
   root.className = 'stage off';
-  root.innerHTML = `<div class="sc-bar"><div class="sc-title">${SCHOOL_TITLE}</div><div class="sc-sub"></div>`
-    + `<div class="sc-steps">${SCHOOL_STEPS.map((s, i) => `<span class="sc-step"><i>${icon(s.icon)}</i><b>${i + 1}</b>${s.short}</span>`).join('')}</div>`
-    + `<div class="sc-skip"></div><div class="sc-chips"></div></div><div class="sc-banner">¡Todos listos!<small>Enter para seguir</small></div>`;
+  root.innerHTML =
+    `<div class="sc-bar"><div class="sc-title">${SCHOOL_TITLE}</div><div class="sc-sub"></div>` +
+    `<div class="sc-steps">${SCHOOL_STEPS.map((s, i) => `<span class="sc-step"><i>${icon(s.icon)}</i><b>${i + 1}</b>${s.short}</span>`).join('')}</div>` +
+    `<div class="sc-skip"></div><div class="sc-chips"></div></div><div class="sc-banner">¡Todos listos!<small>Enter para seguir</small></div>`;
   doc.body.appendChild(root);
-  const sub = root.querySelector<HTMLElement>('.sc-sub')!, skip = root.querySelector<HTMLElement>('.sc-skip')!, host = root.querySelector<HTMLElement>('.sc-chips')!;
+  const sub = root.querySelector<HTMLElement>('.sc-sub')!,
+    skip = root.querySelector<HTMLElement>('.sc-skip')!,
+    host = root.querySelector<HTMLElement>('.sc-chips')!;
   // one persistent chip per slot (the avatar is drawn once, like the lobby's chips)
   const chips = Array.from({ length: 8 }, (_v, i) => {
     const el = doc.createElement('div');
@@ -66,11 +85,22 @@ export function createSchoolView(doc: Document = document): SchoolView {
     host.appendChild(el);
     return { el, nm: el.querySelector<HTMLElement>('.nm')!, pips: Array.from(el.querySelectorAll<HTMLElement>('.pip')) };
   });
-  let shown = false, key = '';
+  let shown = false,
+    key = '';
   return {
-    get shown() { return shown; },
-    show() { shown = true; root.classList.remove('off'); },
-    hide() { shown = false; key = ''; root.classList.add('off'); root.classList.remove('all'); },
+    get shown() {
+      return shown;
+    },
+    show() {
+      shown = true;
+      root.classList.remove('off');
+    },
+    hide() {
+      shown = false;
+      key = '';
+      root.classList.add('off');
+      root.classList.remove('all');
+    },
     render(m) {
       const k = JSON.stringify(m);
       if (k === key) return;
@@ -85,7 +115,10 @@ export function createSchoolView(doc: Document = document): SchoolView {
         if (!d) return;
         c.nm.textContent = d.name;
         c.el.classList.toggle('done', d.done);
-        c.pips.forEach((p, j) => { p.classList.toggle('d', j < d.step); p.classList.toggle('now', j === d.step && !d.done); });
+        c.pips.forEach((p, j) => {
+          p.classList.toggle('d', j < d.step);
+          p.classList.toggle('now', j === d.step && !d.done);
+        });
       });
     },
   };

@@ -5,9 +5,20 @@ import type { ClientMsg, ServerMsg } from '@party/shared';
 import { SCHOOL_TOTAL, markDone, phoneKey, readDone, type KV } from '@party/shared/tutorial';
 
 type SchoolServerMsg = Extract<ServerMsg, { t: 'school' }>;
-export interface SchoolUi { apply(m: SchoolServerMsg): void; show(on: boolean): void; announce(): void; refreshCaptain(): void }
+export interface SchoolUi {
+  apply(m: SchoolServerMsg): void;
+  show(on: boolean): void;
+  announce(): void;
+  refreshCaptain(): void;
+}
 
-export function createSchoolUi(o: { doc?: Document; kv: KV | null; token: string; send: (m: ClientMsg) => void; isCaptain: () => boolean }): SchoolUi {
+export function createSchoolUi(o: {
+  doc?: Document;
+  kv: KV | null;
+  token: string;
+  send: (m: ClientMsg) => void;
+  isCaptain: () => boolean;
+}): SchoolUi {
   const doc = o.doc ?? document;
   const $ = (id: string) => doc.getElementById(id) as HTMLElement;
   const key = phoneKey(o.token);
@@ -15,12 +26,32 @@ export function createSchoolUi(o: { doc?: Document; kv: KV | null; token: string
   let done = false;
   const dots = $('schooldots');
   dots.innerHTML = '<i></i>'.repeat(SCHOOL_TOTAL);
-  const press = (id: string, fn: () => void) => $(id).addEventListener('pointerup', (e) => { e.preventDefault(); fn(); });
-  const remember = () => { if (remembered) return; remembered = true; markDone(o.kv, key); o.send({ t: 'schoolDone' }); };
-  press('schoolskip', () => { if (done) return; remembered = true; markDone(o.kv, key); o.send({ t: 'schoolDone', skip: true }); }); // "Ya sé": this chef is done at once, and next time the phone says so
-  press('schoolall', () => { if (o.isCaptain()) o.send({ t: 'nav', key: 'ok' }); });
+  const press = (id: string, fn: () => void) =>
+    $(id).addEventListener('pointerup', (e) => {
+      e.preventDefault();
+      fn();
+    });
+  const remember = () => {
+    if (remembered) return;
+    remembered = true;
+    markDone(o.kv, key);
+    o.send({ t: 'schoolDone' });
+  };
+  press('schoolskip', () => {
+    if (done) return;
+    remembered = true;
+    markDone(o.kv, key);
+    o.send({ t: 'schoolDone', skip: true });
+  }); // "Ya sé": this chef is done at once, and next time the phone says so
+  press('schoolall', () => {
+    if (o.isCaptain()) o.send({ t: 'nav', key: 'ok' });
+  });
   const light = (btn: 'a' | 'b' | undefined) => {
-    for (const [b, id] of [['a', 'A'], ['b', 'B']] as const) for (const el of [$(`btn${id}`), $(`lbl${id}`)]) el.classList.toggle('hl', btn === b);
+    for (const [b, id] of [
+      ['a', 'A'],
+      ['b', 'B'],
+    ] as const)
+      for (const el of [$(`btn${id}`), $(`lbl${id}`)]) el.classList.toggle('hl', btn === b);
   };
   return {
     apply(m) {
@@ -39,7 +70,11 @@ export function createSchoolUi(o: { doc?: Document; kv: KV | null; token: string
       if (!on) light(undefined);
       else this.refreshCaptain();
     },
-    announce() { if (remembered) o.send({ t: 'schoolDone' }); },
-    refreshCaptain() { $('schoolall').style.display = o.isCaptain() ? '' : 'none'; },
+    announce() {
+      if (remembered) o.send({ t: 'schoolDone' });
+    },
+    refreshCaptain() {
+      $('schoolall').style.display = o.isCaptain() ? '' : 'none';
+    },
   };
 }

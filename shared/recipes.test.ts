@@ -3,13 +3,38 @@
 import { describe, expect, it } from 'vitest';
 import type { Emitter, GameEvents } from './events';
 import { DIRS, FIXED_MAPS, fixedMap, isFloor, parseMap } from './maps';
-import { TICK_MS, addPlayer, createGame, recipeBase, tick, tipMultiplier, type Controls, type Game, type Item, type Order, type Station } from './overcooked';
+import {
+  TICK_MS,
+  addPlayer,
+  createGame,
+  recipeBase,
+  tick,
+  tipMultiplier,
+  type Controls,
+  type Game,
+  type Item,
+  type Order,
+  type Station,
+} from './overcooked';
 import { TUNING } from './difficulty';
 import { validateMap, validateVersus } from './validate';
 import { VERSUS_BASE_MAPS, VERSUS_MAPS } from './versusMaps';
 import { CARDS, CARD_MAX, CARD_MIN, cardFor, cardShapeProblems, toppingRecipe } from './recipes/cards';
 import { cardProblems } from './recipes/cardCheck';
-import { CALZONE_COOK_MULT, FOLD_MS, RECIPES, RECIPE_DEFS, RECIPE_PARTS, SLICE_MULT, cutOf, cutType, dishFor, dishRecipe, isDish, type Recipe } from './recipes/defs';
+import {
+  CALZONE_COOK_MULT,
+  FOLD_MS,
+  RECIPES,
+  RECIPE_DEFS,
+  RECIPE_PARTS,
+  SLICE_MULT,
+  cutOf,
+  cutType,
+  dishFor,
+  dishRecipe,
+  isDish,
+  type Recipe,
+} from './recipes/defs';
 import { canFold, createRec, crateItem, pickOrder, pickRecipe } from './recipes/sim';
 import { recipeStarFactor, starsTable } from './recipes/stars';
 import { starThresholds } from './stars';
@@ -24,7 +49,9 @@ const mk = (map = '9', o: { recipes?: boolean; seed?: number; n?: number; bus?: 
   for (let i = 1; i <= (o.n ?? 1); i++) addPlayer(g, i, i - 1, i - 1);
   return g;
 };
-const run = (g: Game, ms: number, c: Controls = idle) => { for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, new Map([...g.players.keys()].map((id): [number, Controls] => [id, c]))); };
+const run = (g: Game, ms: number, c: Controls = idle) => {
+  for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, new Map([...g.players.keys()].map((id): [number, Controls] => [id, c])));
+};
 const kind = (g: Game, k: Station['kind']) => g.stations.filter((s) => s.kind === k);
 function face(g: Game, id: number, s: Station) {
   const p = g.players.get(id)!;
@@ -37,10 +64,17 @@ const order = (id: number, recipe: Recipe, o: Partial<Order> = {}): Order => ({ 
 describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
   const t = TUNING.normal;
   it('Marinara 70 and Margarita 100 exactly as before; Pepperoni and Champiñón 100 (a topping: one more ingredient, one more cut); Calzone 90 (two ingredients, fold and a double bake)', () => {
-    expect(RECIPES.map((r) => [r, recipeBase(r, t)])).toEqual([['marinara', 70], ['margarita', 100], ['pepperoni', 100], ['champinon', 100], ['calzone', 90]]);
+    expect(RECIPES.map((r) => [r, recipeBase(r, t)])).toEqual([
+      ['marinara', 70],
+      ['margarita', 100],
+      ['pepperoni', 100],
+      ['champinon', 100],
+      ['calzone', 90],
+    ]);
     expect(RECIPE_PARTS.marinara).toEqual({ components: 2, processes: 3 });
     expect(RECIPE_PARTS.margarita).toEqual({ components: 3, processes: 4 });
-    for (const r of RECIPES) expect(recipeBase(r, t)).toBe(RECIPE_DEFS[r].components * t.baseComponent + RECIPE_DEFS[r].processes * t.baseProcess);
+    for (const r of RECIPES)
+      expect(recipeBase(r, t)).toBe(RECIPE_DEFS[r].components * t.baseComponent + RECIPE_DEFS[r].processes * t.baseProcess);
   });
   it('only the Calzone adds the verb "doblar"; only the topping recipes need the cheese crate (station 3)', () => {
     expect(RECIPES.filter((r) => RECIPE_DEFS[r].fold)).toEqual(['calzone']);
@@ -50,10 +84,22 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
     expect(['raw0', 'raw1', 'raw2', 'raw3', 'raw4'].map((i) => cutOf(i as Item))).toEqual(['cut0', 'cut1', 'cut2', 'cut3', 'cut4']);
     expect(cutOf('plate')).toBeNull();
     expect(['cut0', 'cut3', 'cut4', 'dish', null].map((i) => cutType(i as Item | null))).toEqual([0, 3, 4, -1, -1]);
-    expect((['dish', 'dishQ', 'dishP', 'dishM', 'dishC'] as Item[]).map(dishRecipe)).toEqual(['marinara', 'margarita', 'pepperoni', 'champinon', 'calzone']);
+    expect((['dish', 'dishQ', 'dishP', 'dishM', 'dishC'] as Item[]).map(dishRecipe)).toEqual([
+      'marinara',
+      'margarita',
+      'pepperoni',
+      'champinon',
+      'calzone',
+    ]);
     expect(isDish('dishC') && isDish('dishP') && isDish('dishM') && isDish('dish') && isDish('dishQ')).toBe(true);
     expect(isDish('burnt') || isDish('plate') || isDish(null)).toBe(false);
-    expect([dishFor([0, 1], false), dishFor([0, 1, 2], false), dishFor([0, 3, 1], false), dishFor([0, 1, 4], false), dishFor([0, 1], true)]).toEqual(['dish', 'dishQ', 'dishP', 'dishM', 'dishC']);
+    expect([
+      dishFor([0, 1], false),
+      dishFor([0, 1, 2], false),
+      dishFor([0, 3, 1], false),
+      dishFor([0, 1, 4], false),
+      dishFor([0, 1], true),
+    ]).toEqual(['dish', 'dishQ', 'dishP', 'dishM', 'dishC']);
   });
 });
 
@@ -72,14 +118,26 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
       expect(card.recipes.length).toBeGreaterThanOrEqual(CARD_MIN);
       expect(card.recipes.length).toBeLessThanOrEqual(CARD_MAX);
     }
-    for (const m of FIXED_MAPS) if (toppingRecipe(cardFor(m.id)!)) expect(m.rows.some((r) => r.includes('3')), `map ${m.id}`).toBe(true);
+    for (const m of FIXED_MAPS)
+      if (toppingRecipe(cardFor(m.id)!))
+        expect(
+          m.rows.some((r) => r.includes('3')),
+          `map ${m.id}`,
+        ).toBe(true);
   });
   it('the validator proves every card on the 15 coop maps and, in each kitchen, on the 5 versus maps (plus the derived one)', () => {
     for (const m of FIXED_MAPS) {
       expect(cardProblems(cardFor(m.id)!, parseMap(m.rows)), `map ${m.id}`).toEqual([]);
-      expect(validateMap(m).errors.filter((e) => /recipe|card/i.test(e)), `map ${m.id}`).toEqual([]);
+      expect(
+        validateMap(m).errors.filter((e) => /recipe|card/i.test(e)),
+        `map ${m.id}`,
+      ).toEqual([]);
     }
-    for (const m of VERSUS_MAPS) expect(validateVersus(m, { requireMirror: false }).errors.filter((e) => /recipe|card/i.test(e)), `map ${m.id}`).toEqual([]);
+    for (const m of VERSUS_MAPS)
+      expect(
+        validateVersus(m, { requireMirror: false }).errors.filter((e) => /recipe|card/i.test(e)),
+        `map ${m.id}`,
+      ).toEqual([]);
   });
   it('a bad card on a versus map is reported once per kitchen, with the kitchen named', () => {
     const v4 = VERSUS_BASE_MAPS.find((m) => m.id === 'V4')!;
@@ -89,7 +147,9 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
       cards.V4 = { recipes: ['calzone', 'pepperoni'] };
       const errors = validateVersus(v4, { requireMirror: false }).errors.filter((e) => /card/i.test(e));
       expect(errors).toEqual(['kitchen A: the card has no Marinara', 'kitchen B: the card has no Marinara']);
-    } finally { cards.V4 = good; }
+    } finally {
+      cards.V4 = good;
+    }
     expect(validateVersus(v4, { requireMirror: false }).errors.filter((e) => /card/i.test(e))).toEqual([]);
   });
   it('the cards are varied: all five recipes show up, and a map without the cheese crate has Marinara + Calzone', () => {
@@ -107,7 +167,9 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
   });
   it('and a card the map cannot serve: a Pepperoni where there is no cheese crate, and a cheese crate no chef can reach', () => {
     const g1 = parseMap(fixedMap('1')!.rows);
-    expect(cardProblems({ recipes: ['marinara', 'pepperoni'] }, g1).join()).toMatch(/pepperoni \(Pepperoni\) needs station 3: it is not on the map/);
+    expect(cardProblems({ recipes: ['marinara', 'pepperoni'] }, g1).join()).toMatch(
+      /pepperoni \(Pepperoni\) needs station 3: it is not on the map/,
+    );
     const walled = fixedMap('9')!.rows.map((r, y) => (y === 1 ? r.slice(0, 6) + '#' + r.slice(7) : r)); // the only tile in front of the '3' at (6, 0) becomes a wall
     expect(walled[0]![6]).toBe('3');
     expect(cardProblems({ recipes: ['marinara', 'pepperoni'] }, parseMap(walled)).join()).toMatch(/needs station 3: no chef can reach it/);
@@ -119,11 +181,14 @@ describe('a round with the card: the orders, the crate, the plates', () => {
   it('without the flag nothing changes: no card, and the same recipe draws as always (Margarita only on a cheese map, a draw only when it has cheese)', () => {
     expect(createGame({ mapId: '9', rows: fixedMap('9')!.rows }).rec).toBeNull();
     expect(createGame({ recipes: true }).rec).toBeNull(); // a generated map has no card
-    for (const map of ['2', '9']) for (const seed of [1, 2, 3]) {
-      const g = mk(map, { recipes: false, seed });
-      const a = mulberry32(seed), b = mulberry32(seed);
-      for (let i = 0; i < 50; i++) expect(pickRecipe(g, a)).toBe(g.hasCheese && b() * 100 < g.params.cheesePct ? 'margarita' : 'marinara');
-    }
+    for (const map of ['2', '9'])
+      for (const seed of [1, 2, 3]) {
+        const g = mk(map, { recipes: false, seed });
+        const a = mulberry32(seed),
+          b = mulberry32(seed);
+        for (let i = 0; i < 50; i++)
+          expect(pickRecipe(g, a)).toBe(g.hasCheese && b() * 100 < g.params.cheesePct ? 'margarita' : 'marinara');
+      }
   });
   it('the card of the map: Marinara 40%, the rest split equally; the crate gives the topping of the card', () => {
     const g = mk('9');
@@ -152,7 +217,11 @@ describe('a round with the card: the orders, the crate, the plates', () => {
     expect(share('marinara')).toBeLessThan(0.44);
     expect(share('pepperoni')).toBeGreaterThan(0.26);
     expect(share('calzone')).toBeGreaterThan(0.26);
-    const q = (seed: number) => { const x = mk('9', { seed }); run(x, 3000 + 60_000); return x.teams[0]!.orders.map((o) => o.recipe); };
+    const q = (seed: number) => {
+      const x = mk('9', { seed });
+      run(x, 3000 + 60_000);
+      return x.teams[0]!.orders.map((o) => o.recipe);
+    };
     expect(q(7)).toEqual(q(7));
     for (const r of q(7)) expect(['marinara', 'pepperoni', 'calzone']).toContain(r);
   });
@@ -184,14 +253,20 @@ describe('a round with the card: the orders, the crate, the plates', () => {
     const bus: GameEvents['delivered'][] = [];
     g.bus.on('delivered', (e) => bus.push(e));
     const win = kind(g, 'window')[0]!;
-    g.teams[0]!.orders = [order(1, 'calzone', { expiresAt: g.time + g.params.orderTtlMs }), order(2, 'pepperoni', { expiresAt: g.time + g.params.orderTtlMs }), order(3, 'marinara', { expiresAt: g.time + g.params.orderTtlMs })];
+    g.teams[0]!.orders = [
+      order(1, 'calzone', { expiresAt: g.time + g.params.orderTtlMs }),
+      order(2, 'pepperoni', { expiresAt: g.time + g.params.orderTtlMs }),
+      order(3, 'marinara', { expiresAt: g.time + g.params.orderTtlMs }),
+    ];
     for (const dish of ['dishC', 'dishP', 'dish'] as const) {
       const p = face(g, 1, win);
       p.item = dish;
       tick(g, new Map([[1, { ...idle, a: 1 }]]));
     }
     expect(bus.map((e) => e.base)).toEqual([90, 100, 70]);
-    expect(bus.map((e) => e.points)).toEqual(bus.map((e, i) => e.base + Math.round(e.base * TUNING.normal.tipPct * 1) * tipMultiplier(i, TUNING.normal)));
+    expect(bus.map((e) => e.points)).toEqual(
+      bus.map((e, i) => e.base + Math.round(e.base * TUNING.normal.tipPct * 1) * tipMultiplier(i, TUNING.normal)),
+    );
     expect(g.delivered).toBe(3);
     expect(g.rejected).toBe(0);
   });
@@ -205,10 +280,14 @@ describe('the Pepperoni: the slices take longer on the board', () => {
       b.item = item;
       face(g, 1, b);
       let t = 0;
-      while (b.item === item && t < 30_000) { tick(g, new Map([[1, { ...idle, b: true }]])); t += TICK_MS; }
+      while (b.item === item && t < 30_000) {
+        tick(g, new Map([[1, { ...idle, b: true }]]));
+        t += TICK_MS;
+      }
       return { t, item: b.item };
     };
-    const tomato = board('raw1'), pepperoni = board('raw3');
+    const tomato = board('raw1'),
+      pepperoni = board('raw3');
     expect(tomato.item).toBe('cut1');
     expect(pepperoni.item).toBe('cut3');
     expect(pepperoni.t / tomato.t).toBeGreaterThan(SLICE_MULT - 0.05);
@@ -217,13 +296,32 @@ describe('the Pepperoni: the slices take longer on the board', () => {
 });
 
 describe('the Calzone: hold Picar at the oven with dough and tomato, and it bakes longer', () => {
-  const loaded = (map = '9') => { const g = mk(map); const o = kind(g, 'pot')[0]!; o.inputs = [0, 1]; return { g, o }; };
+  const loaded = (map = '9') => {
+    const g = mk(map);
+    const o = kind(g, 'pot')[0]!;
+    o.inputs = [0, 1];
+    return { g, o };
+  };
   it('foldable only with a card that has a calzone, dough and tomato (nothing else) loaded, cooking, not folded, not on fire', () => {
     const { g, o } = loaded();
     expect(canFold(g, o)).toBe(true);
-    expect(canFold(mk('9', { recipes: false }), Object.assign(kind(mk('9', { recipes: false }), 'pot')[0]!, { inputs: [0, 1] }))).toBe(false);
+    expect(canFold(mk('9', { recipes: false }), Object.assign(kind(mk('9', { recipes: false }), 'pot')[0]!, { inputs: [0, 1] }))).toBe(
+      false,
+    );
     expect(canFold(mk('14'), Object.assign(kind(mk('14'), 'pot')[0]!, { inputs: [0, 1] }))).toBe(false); // the card of map 14 has no calzone
-    for (const bad of [{ inputs: [0] }, { inputs: [1] }, { inputs: [0, 1, 3] }, { inputs: [] }, { done: true }, { folded: true as const }, { fire: 0 }]) { const { g: g2, o: o2 } = loaded(); Object.assign(o2, bad); expect(canFold(g2, o2), JSON.stringify(bad)).toBe(false); }
+    for (const bad of [
+      { inputs: [0] },
+      { inputs: [1] },
+      { inputs: [0, 1, 3] },
+      { inputs: [] },
+      { done: true },
+      { folded: true as const },
+      { fire: 0 },
+    ]) {
+      const { g: g2, o: o2 } = loaded();
+      Object.assign(o2, bad);
+      expect(canFold(g2, o2), JSON.stringify(bad)).toBe(false);
+    }
     expect(canFold(g, kind(g, 'board')[0]!)).toBe(false);
   });
   it('FOLD_MS of Picar folds it (foldStart, foldDone, foldStop), a shorter one only advances the fold', () => {
@@ -255,10 +353,14 @@ describe('the Calzone: hold Picar at the oven with dough and tomato, and it bake
       const { g, o } = loaded();
       if (fold) o.folded = true;
       let t = 0;
-      while (!o.done && t < 60_000) { run(g, TICK_MS); t += TICK_MS; }
+      while (!o.done && t < 60_000) {
+        run(g, TICK_MS);
+        t += TICK_MS;
+      }
       return { g, o, t };
     };
-    const plain = bake(false), calzone = bake(true);
+    const plain = bake(false),
+      calzone = bake(true);
     expect(calzone.t / plain.t).toBeGreaterThan(CALZONE_COOK_MULT - 0.05);
     expect(calzone.t / plain.t).toBeLessThan(CALZONE_COOK_MULT + 0.05);
     const p = face(calzone.g, 1, calzone.o);
@@ -276,7 +378,10 @@ describe('the Calzone: hold Picar at the oven with dough and tomato, and it bake
     expect(q.item).toBe('cut3');
   });
   it('a pepperoni pizza comes out as a dishP and a champiñón one as a dishM; burnt is still burnt', () => {
-    for (const [top, dish] of [[3, 'dishP'], [4, 'dishM']] as const) {
+    for (const [top, dish] of [
+      [3, 'dishP'],
+      [4, 'dishM'],
+    ] as const) {
       const g = mk('9');
       const o = kind(g, 'pot')[0]!;
       Object.assign(o, { inputs: [0, top, 1], done: true, progress: 1 });
@@ -307,7 +412,12 @@ describe('stars: version 1 stays, version 2 follows the card', () => {
   it('a round with a card is table 2: the old thresholds times a factor near 1 (0.95 to 1.1 on every card of every map)', () => {
     for (const id of Object.keys(CARDS)) {
       const m = fixedMap(id) ?? VERSUS_BASE_MAPS.find((v) => v.id === id)!;
-      const g = createGame({ rows: m.rows.map((r) => r), mapId: id, recipes: true, teams: id.startsWith('V') ? [{ playerIds: [1] }, { playerIds: [2] }] : undefined });
+      const g = createGame({
+        rows: m.rows.map((r) => r),
+        mapId: id,
+        recipes: true,
+        teams: id.startsWith('V') ? [{ playerIds: [1] }, { playerIds: [2] }] : undefined,
+      });
       const f = recipeStarFactor(g);
       expect(f, `card of ${id}`).toBeGreaterThan(0.95);
       expect(f, `card of ${id}`).toBeLessThan(1.1);
@@ -329,7 +439,10 @@ describe('stars: version 1 stays, version 2 follows the card', () => {
 describe('the phone: contextual buttons for the new recipes', () => {
   it('the cheese crate says what it gives (queso, Pepperoni, Champiñón); an oven that can be folded offers Doblar on B, and it greys out once folded', () => {
     const crate2 = (g: Game) => kind(g, 'crate').find((s) => s.crate === 2)!;
-    const label = (g: Game, s: Station) => { face(g, 1, s); return chefHint(g, g.players.get(1)!); };
+    const label = (g: Game, s: Station) => {
+      face(g, 1, s);
+      return chefHint(g, g.players.get(1)!);
+    };
     expect(label(mk('13'), crate2(mk('13'))).a).toBe('Tomar queso');
     const g = mk('9');
     expect(label(g, crate2(g)).a).toBe('Pepperoni');

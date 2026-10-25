@@ -1,22 +1,69 @@
 import { describe, expect, it } from 'vitest';
-import { CAMPAIGN_CATALOG, applyResult, fullMask, newExpedition, openWorld, type Catalog, type Expedition } from '@party/shared/obstaculos/campaign';
+import {
+  CAMPAIGN_CATALOG,
+  applyResult,
+  fullMask,
+  newExpedition,
+  openWorld,
+  type Catalog,
+  type Expedition,
+} from '@party/shared/obstaculos/campaign';
 import { planCatalog } from '../../../../../shared/games/obstaculos/campaign/testkit';
 import type { Hub, Outcome } from './flow';
 import {
-  RESET_HOLD_MS, RESET_WINDOW_MS, campKey, hubItems, initialState, practiceRows, resetReady, resultButtons, startNode, trailPoints, worldNodes, worldTabs,
-  type CampState, type Effect, type KeyCtx,
+  RESET_HOLD_MS,
+  RESET_WINDOW_MS,
+  campKey,
+  hubItems,
+  initialState,
+  practiceRows,
+  resetReady,
+  resultButtons,
+  startNode,
+  trailPoints,
+  worldNodes,
+  worldTabs,
+  type CampState,
+  type Effect,
+  type KeyCtx,
 } from './model';
 import { renderHub, renderMap, renderPick, renderPractice, renderResult, type ViewCtx } from './view';
 import { DIFFICULTIES, DIFFICULTY_LABEL } from '@party/shared/difficulty';
 
 const plan = planCatalog();
 // The real catalog grows with each phase (A5 built Bosque and Glaciar, A6 will add two more): the hub tests that are about "one world built" use this slice of it, so they do not move with the content.
-const oneWorld: Catalog = { ...CAMPAIGN_CATALOG, worlds: CAMPAIGN_CATALOG.worlds.slice(0, 1), levels: CAMPAIGN_CATALOG.levels.filter((l) => l.world === '1') };
+const oneWorld: Catalog = {
+  ...CAMPAIGN_CATALOG,
+  worlds: CAMPAIGN_CATALOG.worlds.slice(0, 1),
+  levels: CAMPAIGN_CATALOG.levels.filter((l) => l.world === '1'),
+};
 let clock = 1000;
 const ex = (name = 'Nico y Angi') => newExpedition('exp-test0001', name, 1000);
-const clearAll = (e: Expedition, c: Catalog, ids: string[], perfect = false) => ids.reduce((a, id) => applyResult(a, c, { levelId: id, cleared: true, timeMs: 1000, collectiblesMask: perfect ? fullMask(3) : 0, deaths: perfect ? 0 : 4 }, ++clock), e);
-const hubOf = (list: Expedition[], last: Expedition | null = list[0] ?? null): Hub => ({ list: list.map((e) => ({ id: e.id, name: e.name, updatedAt: e.updatedAt, stars: 0, lastLevelId: e.lastLevelId, active: false })), last, offline: false });
-const ctx = (o: Partial<KeyCtx> = {}): KeyCtx => ({ now: 10_000, hub: hubOf([ex()]), exp: null, catalog: CAMPAIGN_CATALOG, n: 2, outcome: null, ...o });
+const clearAll = (e: Expedition, c: Catalog, ids: string[], perfect = false) =>
+  ids.reduce(
+    (a, id) =>
+      applyResult(
+        a,
+        c,
+        { levelId: id, cleared: true, timeMs: 1000, collectiblesMask: perfect ? fullMask(3) : 0, deaths: perfect ? 0 : 4 },
+        ++clock,
+      ),
+    e,
+  );
+const hubOf = (list: Expedition[], last: Expedition | null = list[0] ?? null): Hub => ({
+  list: list.map((e) => ({ id: e.id, name: e.name, updatedAt: e.updatedAt, stars: 0, lastLevelId: e.lastLevelId, active: false })),
+  last,
+  offline: false,
+});
+const ctx = (o: Partial<KeyCtx> = {}): KeyCtx => ({
+  now: 10_000,
+  hub: hubOf([ex()]),
+  exp: null,
+  catalog: CAMPAIGN_CATALOG,
+  n: 2,
+  outcome: null,
+  ...o,
+});
 const press = (s: CampState, key: string, c: KeyCtx) => campKey(s, key, c);
 const eff = (s: CampState, key: string, c: KeyCtx): Effect | null => campKey(s, key, c).effect;
 
@@ -29,7 +76,10 @@ describe('hub items', () => {
   it('has no Continuar with nothing saved, and a "pick another" entry from two expeditions on', () => {
     expect(hubItems(hubOf([]), oneWorld, 2).map((i) => i.id)).toEqual(['new', 'practice', 'quick']);
     // the real catalog has Playa, Bosque and Glaciar since A5: "ya sabemos escalar" opens the Bosque
-    expect(hubItems(hubOf([]), CAMPAIGN_CATALOG, 2).find((i) => i.id === 'newSkip')).toMatchObject({ label: 'Nueva · ya sabemos escalar', sub: 'Abre Bosque de entrada' });
+    expect(hubItems(hubOf([]), CAMPAIGN_CATALOG, 2).find((i) => i.id === 'newSkip')).toMatchObject({
+      label: 'Nueva · ya sabemos escalar',
+      sub: 'Abre Bosque de entrada',
+    });
     expect(hubItems(hubOf([]), plan, 2).map((i) => i.id)).toEqual(['new', 'newSkip', 'practice', 'quick']); // with a second world, "ya sabemos escalar" appears
     const two = hubItems(hubOf([ex(), { ...ex('B'), id: 'exp-test0002' }]), CAMPAIGN_CATALOG, 2);
     expect(two.find((i) => i.id === 'pick')?.label).toBe('Otra expedición (2)');
@@ -142,11 +192,29 @@ describe('the practice room', () => {
     expect(press(view(7), 'ArrowDown', c()).state.pracSel).toBe(7);
   });
   it('the buttons after a station are Otra vez and Estaciones, never a next level', () => {
-    const o: Outcome = { levelId: 'p-move', cleared: true, timeMs: 1, deaths: 0, before: { done: false, stars: [false, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false }, after: { done: false, stars: [false, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false }, next: null, failuresInARow: 0, canSkip: false, practice: true as const, saved: true };
+    const o: Outcome = {
+      levelId: 'p-move',
+      cleared: true,
+      timeMs: 1,
+      deaths: 0,
+      before: { done: false, stars: [false, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false },
+      after: { done: false, stars: [false, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false },
+      next: null,
+      failuresInARow: 0,
+      canSkip: false,
+      practice: true as const,
+      saved: true,
+    };
     expect(resultButtons(o).map((b) => b.label)).toEqual(['Otra vez', 'Estaciones']);
   });
   it('the picture lists the stations with their lock', () => {
-    const html = renderPractice(view(0), { ...ctx({ exp: null }), difficulty: 'normal', diffLabels: DIFFICULTY_LABEL, difficulties: DIFFICULTIES, names: [] });
+    const html = renderPractice(view(0), {
+      ...ctx({ exp: null }),
+      difficulty: 'normal',
+      diffLabels: DIFFICULTY_LABEL,
+      difficulties: DIFFICULTIES,
+      names: [],
+    });
     expect(html.match(/data-station=/g)).toHaveLength(8);
     expect(html).toContain('Se abre en 1-2');
   });
@@ -158,7 +226,8 @@ describe('keys on the map', () => {
   const c = () => ctx({ exp: e0, catalog: plan });
   it('left and right walk the nodes and stop at the ends', () => {
     let s = mapState();
-    s = press(s, 'ArrowRight', c()).state; expect(s.node).toBe(3);
+    s = press(s, 'ArrowRight', c()).state;
+    expect(s.node).toBe(3);
     for (let i = 0; i < 12; i++) s = press(s, 'ArrowRight', c()).state;
     expect(s.node).toBe(7);
     for (let i = 0; i < 12; i++) s = press(s, 'ArrowLeft', c()).state;
@@ -185,7 +254,19 @@ describe('keys on the map', () => {
 });
 
 describe('keys in the results', () => {
-  const o = (over: Partial<Outcome> = {}): Outcome => ({ levelId: '1-1', cleared: true, timeMs: 5000, deaths: 0, before: { done: false, stars: [false, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false }, after: { done: true, stars: [true, false, true], bestTimeMs: 5000, timeMedal: true, collectiblesMask: 0, skipped: false }, next: CAMPAIGN_CATALOG.levels[1]!, failuresInARow: 0, canSkip: false, saved: true, ...over });
+  const o = (over: Partial<Outcome> = {}): Outcome => ({
+    levelId: '1-1',
+    cleared: true,
+    timeMs: 5000,
+    deaths: 0,
+    before: { done: false, stars: [false, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false },
+    after: { done: true, stars: [true, false, true], bestTimeMs: 5000, timeMedal: true, collectiblesMask: 0, skipped: false },
+    next: CAMPAIGN_CATALOG.levels[1]!,
+    failuresInARow: 0,
+    canSkip: false,
+    saved: true,
+    ...over,
+  });
   const st = (): CampState => ({ ...initialState(), view: 'result' });
   it('buttons: Siguiente only when it is open, Saltar only when offered', () => {
     expect(resultButtons(o()).map((b) => b.id)).toEqual(['next', 'retry', 'map']);
@@ -237,7 +318,14 @@ describe('the Captain\'s reset: "?" arms it, 3 seconds, OK confirms', () => {
 });
 
 describe('the pictures', () => {
-  const vctx = (o: Partial<ViewCtx> = {}): ViewCtx => ({ ...ctx(), difficulty: 'normal', diffLabels: DIFFICULTY_LABEL, difficulties: DIFFICULTIES, names: ['Nico', 'Angi'], ...o });
+  const vctx = (o: Partial<ViewCtx> = {}): ViewCtx => ({
+    ...ctx(),
+    difficulty: 'normal',
+    diffLabels: DIFFICULTY_LABEL,
+    difficulties: DIFFICULTIES,
+    names: ['Nico', 'Angi'],
+    ...o,
+  });
   it('the hub carries the exact Continuar text and the difficulty pills', () => {
     const html = renderHub(initialState(), vctx());
     expect(html).toContain('data-label="Continuar · Nico y Angi · Playa 1-1 · 0★"');
@@ -264,7 +352,22 @@ describe('the pictures', () => {
     expect(html.match(/data-world=/g)).toHaveLength(5);
   });
   it('the results show the stars earned now as fresh and the buttons', () => {
-    const html = renderResult({ ...initialState(), view: 'result' }, { levelId: '1-1', cleared: true, timeMs: 5000, deaths: 0, before: { done: false, stars: [true, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false }, after: { done: true, stars: [true, true, false], bestTimeMs: 5000, timeMedal: false, collectiblesMask: 1, skipped: false }, next: null, failuresInARow: 0, canSkip: false, saved: false }, CAMPAIGN_CATALOG);
+    const html = renderResult(
+      { ...initialState(), view: 'result' },
+      {
+        levelId: '1-1',
+        cleared: true,
+        timeMs: 5000,
+        deaths: 0,
+        before: { done: false, stars: [true, false, false], bestTimeMs: null, timeMedal: false, collectiblesMask: 0, skipped: false },
+        after: { done: true, stars: [true, true, false], bestTimeMs: 5000, timeMedal: false, collectiblesMask: 1, skipped: false },
+        next: null,
+        failuresInARow: 0,
+        canSkip: false,
+        saved: false,
+      },
+      CAMPAIGN_CATALOG,
+    );
     expect(html.match(/class="rs on fresh"/g)).toHaveLength(1); // only the second star is new
     expect(html).toContain('No se pudo guardar');
     expect(html.match(/data-res=/g)).toHaveLength(2);

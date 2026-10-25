@@ -5,8 +5,12 @@ import { GAMES } from '@party/shared/games';
 import { startServer } from '../src/server';
 
 let srv: Awaited<ReturnType<typeof startServer>>;
-beforeAll(async () => { srv = await startServer({ port: 0, mode: 'none' }); });
-afterAll(async () => { await srv.close(); });
+beforeAll(async () => {
+  srv = await startServer({ port: 0, mode: 'none' });
+});
+afterAll(async () => {
+  await srv.close();
+});
 
 class Client {
   ws: WebSocket;
@@ -15,8 +19,12 @@ class Client {
     this.ws = new WebSocket(`ws://127.0.0.1:${srv.port}/ws${query}`);
     this.ws.on('message', (d) => this.msgs.push(JSON.parse(d.toString())));
   }
-  open() { return new Promise<void>((r) => this.ws.once('open', () => r())); }
-  send(m: ClientMsg | string) { this.ws.send(typeof m === 'string' ? m : JSON.stringify(m)); }
+  open() {
+    return new Promise<void>((r) => this.ws.once('open', () => r()));
+  }
+  send(m: ClientMsg | string) {
+    this.ws.send(typeof m === 'string' ? m : JSON.stringify(m));
+  }
   async next<T extends ServerMsg['t']>(t: T): Promise<Extract<ServerMsg, { t: T }>> {
     // setImmediate + Date.now: keeps working while setTimeout is faked
     const end = Date.now() + 2000;
@@ -29,8 +37,7 @@ class Client {
   }
 }
 
-const input = (n: number, presses = 0): ClientMsg =>
-  ({ t: 'input', seq: n, x: 0.5, y: -1, btn: 0, presses: [presses], ts: Date.now() });
+const input = (n: number, presses = 0): ClientMsg => ({ t: 'input', seq: n, x: 0.5, y: -1, btn: 0, presses: [presses], ts: Date.now() });
 
 describe('relay', () => {
   it('join, input forwarding, ping/pong, rtt report and reconnect with token', async () => {
@@ -92,7 +99,9 @@ describe('relay', () => {
   });
 });
 
-const settle = async () => { for (let i = 0; i < 50; i++) await new Promise((r) => setImmediate(r)); };
+const settle = async () => {
+  for (let i = 0; i < 50; i++) await new Promise((r) => setImmediate(r));
+};
 
 describe('phases', () => {
   it('screen phase changes reach every connected player; late joiners get the current phase; players cannot set it', async () => {
@@ -115,8 +124,21 @@ describe('phases', () => {
     await settle();
     expect(a.msgs.filter((m) => m.t === 'phase')).toEqual([]);
 
-    screen.send({ t: 'phase', phase: 'results', scores: [{ id: 2, score: 5 }, { id: 1, score: 1 }] });
-    expect(await a.next('phase')).toMatchObject({ phase: 'results', scores: [{ id: 2, score: 5 }, { id: 1, score: 1 }] });
+    screen.send({
+      t: 'phase',
+      phase: 'results',
+      scores: [
+        { id: 2, score: 5 },
+        { id: 1, score: 1 },
+      ],
+    });
+    expect(await a.next('phase')).toMatchObject({
+      phase: 'results',
+      scores: [
+        { id: 2, score: 5 },
+        { id: 1, score: 1 },
+      ],
+    });
     expect((await b.next('phase')).phase).toBe('results');
     [screen.ws, a.ws, b.ws].forEach((w) => w.close());
   });
@@ -141,7 +163,11 @@ describe('phases', () => {
 });
 
 describe('puestos', () => {
-  const puestos = { cheese: false, sink: false, assign: [{ id: 1, puestos: ['masa' as const, 'horno' as const], pool: ['masa' as const, 'corte' as const, 'horno' as const] }] };
+  const puestos = {
+    cheese: false,
+    sink: false,
+    assign: [{ id: 1, puestos: ['masa' as const, 'horno' as const], pool: ['masa' as const, 'corte' as const, 'horno' as const] }],
+  };
 
   it('the round puestos reach the phones, late joiners included; "Cambiar" is forwarded to the screen only when the sender joined', async () => {
     const screen = new Client('?role=screen&room=pu1');
@@ -176,8 +202,10 @@ describe('buzz', () => {
     await Promise.all([screen.open(), a.open(), b.open()]);
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     b.send({ t: 'join', name: 'Beto', token: 'b' });
-    const idA = (await a.next('joined')).player.id, idB = (await b.next('joined')).player.id;
-    await a.next('phase'); await b.next('phase');
+    const idA = (await a.next('joined')).player.id,
+      idB = (await b.next('joined')).player.id;
+    await a.next('phase');
+    await b.next('phase');
     a.send({ t: 'buzz', playerId: idB, kind: 'dash' }); // a phone cannot buzz another one
     screen.send({ t: 'buzz', playerId: idA, kind: 'chop' });
     expect(await a.next('buzz')).toEqual({ t: 'buzz', kind: 'chop' });
@@ -198,8 +226,10 @@ describe('hint (the label of A and B, sabotage)', () => {
     await Promise.all([screen.open(), a.open(), b.open()]);
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     b.send({ t: 'join', name: 'Beto', token: 'b' });
-    const idA = (await a.next('joined')).player.id, idB = (await b.next('joined')).player.id;
-    await a.next('phase'); await b.next('phase');
+    const idA = (await a.next('joined')).player.id,
+      idB = (await b.next('joined')).player.id;
+    await a.next('phase');
+    await b.next('phase');
     a.send({ t: 'hint', playerId: idB, a: 'Hack', b: null }); // a phone cannot relabel another one
     screen.send({ t: 'hint', playerId: idA, a: 'Cargar', b: '¡Lanzar!' });
     expect(await a.next('hint')).toEqual({ t: 'hint', a: 'Cargar', b: '¡Lanzar!' });
@@ -217,7 +247,9 @@ describe('hint (the label of A and B, sabotage)', () => {
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     const idA = (await a.next('joined')).player.id;
     await a.next('phase');
-    screen.ws.send(JSON.stringify({ t: 'hint', playerId: idA, a: 'Al horno', b: 'Picar', aIcon: 'oven', bIcon: 'chop', bOff: true, evil: 'x' }));
+    screen.ws.send(
+      JSON.stringify({ t: 'hint', playerId: idA, a: 'Al horno', b: 'Picar', aIcon: 'oven', bIcon: 'chop', bOff: true, evil: 'x' }),
+    );
     expect(await a.next('hint')).toEqual({ t: 'hint', a: 'Al horno', b: 'Picar', aIcon: 'oven', bIcon: 'chop', bOff: true });
     [screen.ws, a.ws].forEach((w) => w.close());
   });
@@ -230,7 +262,8 @@ describe('assist (Ayudante, chosen from the phone in the lobby)', () => {
     await Promise.all([screen.open(), a.open()]);
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     const id = (await a.next('joined')).player.id;
-    await a.next('phase'); await screen.next('player_joined');
+    await a.next('phase');
+    await screen.next('player_joined');
     return { screen, a, id };
   };
   it('a phone switches it on and off: the screen and the phone itself hear the whole choice, once per change', async () => {
@@ -309,7 +342,16 @@ describe('lobby config', () => {
 
     screen.send({ t: 'config', game: 'pizzas', difficulty: 'hard', map: 'random', seed: 99 });
     expect(await a.next('config')).toMatchObject({ difficulty: 'hard', map: 'random', seed: 99 });
-    expect(srv.relay.rooms.get('c1')!.config).toEqual({ game: 'pizzas', difficulty: 'hard', map: 'random', seed: 99, modeId: 'coop', teams: null, teamsLocked: false, modeOptions: {} }); // a v1 screen sends no team fields: cooperative, no teams
+    expect(srv.relay.rooms.get('c1')!.config).toEqual({
+      game: 'pizzas',
+      difficulty: 'hard',
+      map: 'random',
+      seed: 99,
+      modeId: 'coop',
+      teams: null,
+      teamsLocked: false,
+      modeOptions: {},
+    }); // a v1 screen sends no team fields: cooperative, no teams
     const b = new Client('?room=c1');
     await b.open();
     b.send({ t: 'join', name: 'Bo', token: 'b' });
@@ -346,14 +388,20 @@ describe('game choice (menu -> lobby)', () => {
     a.send({ t: 'phase', phase: 'lobby' }); // a phone does not choose: ignored
     a.send({ t: 'config', game: 'pizzas', difficulty: 'hard', map: '3', seed: 1 });
     await settle();
-    expect(a.msgs.filter((m) => m.t === 'phase' || m.t === 'config' && m.difficulty === 'hard')).toEqual([]);
+    expect(a.msgs.filter((m) => m.t === 'phase' || (m.t === 'config' && m.difficulty === 'hard'))).toEqual([]);
     expect(srv.relay.rooms.get('m1')!.phase.phase).toBe('menu');
 
     screen.send({ t: 'config', game: 'pizzas', difficulty: 'normal', map: 'auto', seed: 1 }); // what the screen sends when a card is picked
     screen.send({ t: 'phase', phase: 'lobby' });
     const order = ['config', 'phase'];
     const seen: string[] = [];
-    while (seen.length < 2) { const m = a.msgs.find((x) => order.includes(x.t) && !seen.includes(x.t)); if (m) { seen.push(m.t); a.msgs.splice(a.msgs.indexOf(m), 1); } else await new Promise((r) => setImmediate(r)); }
+    while (seen.length < 2) {
+      const m = a.msgs.find((x) => order.includes(x.t) && !seen.includes(x.t));
+      if (m) {
+        seen.push(m.t);
+        a.msgs.splice(a.msgs.indexOf(m), 1);
+      } else await new Promise((r) => setImmediate(r));
+    }
     expect(seen).toEqual(['config', 'phase']); // the phone knows the game before it leaves the menu
     expect(srv.relay.rooms.get('m1')!.phase.phase).toBe('lobby');
 
@@ -375,7 +423,18 @@ describe('teams', () => {
     { id: 1, name: 'Frescos', color: '#1E6BD6', icon: '●', playerIds: b },
   ];
   const cfg = (t: ReturnType<typeof teams> | null, extra: object = {}): ClientMsg =>
-    ({ t: 'config', game: 'pizzas', difficulty: 'normal', map: 'auto', seed: 1, modeId: 'versus', teams: t, teamsLocked: false, modeOptions: {}, ...extra }) as ClientMsg;
+    ({
+      t: 'config',
+      game: 'pizzas',
+      difficulty: 'normal',
+      map: 'auto',
+      seed: 1,
+      modeId: 'versus',
+      teams: t,
+      teamsLocked: false,
+      modeOptions: {},
+      ...extra,
+    }) as ClientMsg;
 
   it('each phone learns its team from the screen config, the screen sees teamId per player, and the protocol version is announced', async () => {
     const screen = new Client('?role=screen&room=tm1');
@@ -384,12 +443,15 @@ describe('teams', () => {
     await Promise.all([screen.open(), a.open(), b.open()]);
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     b.send({ t: 'join', name: 'Beto', token: 'b' });
-    const ja = await a.next('joined'), jb = await b.next('joined');
+    const ja = await a.next('joined'),
+      jb = await b.next('joined');
     expect(ja.v).toBe(PROTOCOL_VERSION);
     expect(ja.player.teamId).toBeNull(); // no teams yet
-    await a.next('phase'); await b.next('phase');
+    await a.next('phase');
+    await b.next('phase');
     expect(a.msgs.filter((m) => m.t === 'you')).toEqual([]); // cooperative / unassigned: nothing to tell
-    a.msgs = a.msgs.filter((m) => m.t !== 'config'); b.msgs = b.msgs.filter((m) => m.t !== 'config'); // the join-time config
+    a.msgs = a.msgs.filter((m) => m.t !== 'config');
+    b.msgs = b.msgs.filter((m) => m.t !== 'config'); // the join-time config
     screen.send(cfg(teams([ja.player.id], [jb.player.id])));
     expect(await a.next('you')).toEqual({ t: 'you', teamId: 0, color: '#F26A1B', icon: '▲', sideLabel: 'izquierda' });
     expect(await b.next('you')).toEqual({ t: 'you', teamId: 1, color: '#1E6BD6', icon: '●' });
@@ -401,7 +463,11 @@ describe('teams', () => {
     expect(late.msgs.filter((m) => m.t === 'you')).toEqual([]);
     const s2 = new Client('?role=screen&room=tm1');
     await s2.open();
-    expect((await s2.next('state')).players.map((p) => [p.name, p.teamId])).toEqual([['Ana', 0], ['Beto', 1], ['Cata', null]]);
+    expect((await s2.next('state')).players.map((p) => [p.name, p.teamId])).toEqual([
+      ['Ana', 0],
+      ['Beto', 1],
+      ['Cata', null],
+    ]);
     [screen.ws, a.ws, b.ws, late.ws, s2.ws].forEach((w) => w.close());
   });
 
@@ -410,8 +476,16 @@ describe('teams', () => {
     const a = new Client('?room=tm4');
     await Promise.all([screen.open(), a.open()]);
     a.send({ t: 'join', name: 'Ana', token: 'a' });
-    await a.next('joined'); await a.next('phase');
-    const result = { verdict: 'win' as const, winner: 1, scores: [{ team: 0, score: 340 }, { team: 1, score: 410 }] };
+    await a.next('joined');
+    await a.next('phase');
+    const result = {
+      verdict: 'win' as const,
+      winner: 1,
+      scores: [
+        { team: 0, score: 340 },
+        { team: 1, score: 410 },
+      ],
+    };
     screen.send({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result });
     expect(await a.next('phase')).toEqual({ t: 'phase', phase: 'results', scores: [{ id: 1, score: 410 }], result });
     a.ws.close();
@@ -455,8 +529,10 @@ describe('teams', () => {
     a.send({ t: 'setTeam', teamId: 1 }); // before joining: dropped
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     b.send({ t: 'join', name: 'Beto', token: 'b' });
-    const ia = (await a.next('joined')).player.id, ib = (await b.next('joined')).player.id;
-    await screen.next('player_joined'); await screen.next('player_joined');
+    const ia = (await a.next('joined')).player.id,
+      ib = (await b.next('joined')).player.id;
+    await screen.next('player_joined');
+    await screen.next('player_joined');
     a.send({ t: 'setTeam', teamId: 1 });
     expect(await screen.next('setTeam')).toEqual({ t: 'setTeam', playerId: ia, teamId: 1 });
     expect(screen.msgs.filter((m) => m.t === 'setTeam')).toEqual([]); // the pre-join one never arrived
@@ -464,7 +540,7 @@ describe('teams', () => {
     a.send(cfg(teams([ia], [ib]))); // a phone cannot set the lobby
     await settle();
     expect(screen.msgs.filter((m) => m.t === 'setTeam')).toEqual([]);
-    expect(b.msgs.filter((m) => m.t === 'you' || m.t === 'config' && m.teams !== null)).toEqual([]);
+    expect(b.msgs.filter((m) => m.t === 'you' || (m.t === 'config' && m.teams !== null))).toEqual([]);
     expect(srv.relay.rooms.get('tm3')!.config.teams).toBeNull();
     // the screen answers by publishing the new teams: only the phones that have one are told
     screen.send(cfg(teams([ib], [ia])));
@@ -481,7 +557,14 @@ describe('teams', () => {
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     const id = (await a.next('joined')).player.id;
     await a.next('phase');
-    const match = { gameId: 'pizzas', modeId: 'versus', mapId: '8', difficulty: 'normal', teams: teams([id], [50]), modeOptions: { hiddenScore: true } };
+    const match = {
+      gameId: 'pizzas',
+      modeId: 'versus',
+      mapId: '8',
+      difficulty: 'normal',
+      teams: teams([id], [50]),
+      modeOptions: { hiddenScore: true },
+    };
     screen.send({ t: 'phase', phase: 'playing', match } as ClientMsg);
     expect(await a.next('phase')).toMatchObject({ phase: 'playing', match });
     a.ws.close();
@@ -496,7 +579,9 @@ describe('teams', () => {
 });
 
 describe('slot expiry', () => {
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   const dropped = async (room: string) => {
     const screen = new Client(`?role=screen&room=${room}`);
@@ -626,7 +711,9 @@ describe('the Captain (F0 of the menus from the phone)', () => {
     const b = await joinAs('c4', 'Bo', 'b');
     const c = await joinAs('c4', 'Cy', 'c');
     await settle();
-    screen.msgs.length = 0; b.c.msgs.length = 0; c.c.msgs.length = 0;
+    screen.msgs.length = 0;
+    b.c.msgs.length = 0;
+    c.c.msgs.length = 0;
     a.c.ws.close();
     expect(await screen.next('captain')).toEqual({ t: 'captain', playerId: b.id });
     expect(await b.c.next('captain')).toEqual({ t: 'captain', playerId: b.id });
@@ -651,7 +738,8 @@ describe('the Captain (F0 of the menus from the phone)', () => {
     const screen = new Client('?role=screen&room=c5');
     await screen.open();
     const a = await joinAs('c5', 'Ana', 'a');
-    await screen.next('captain'); await screen.next('captain');
+    await screen.next('captain');
+    await screen.next('captain');
     screen.msgs.length = 0;
     a.c.ws.close();
     expect(await screen.next('captain')).toEqual({ t: 'captain', playerId: null });

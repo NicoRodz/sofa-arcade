@@ -1,8 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { CAMPAIGN, CAMPAIGN_CATALOG, campaignOrder, levelById, pathOf, summitNeed } from './index';
 import {
-  SKIP_AFTER_FAILURES, applyResult, canOfferSkip, continueLevel, emptyProgress, fullMask, isUnlocked, isWorldUnlocked, mergeExpedition, newExpedition, nextLevel, openWorld,
-  progressOf, skipLevel, starCount, summitState, totalStars, unlockedLevels, worldStars, type Expedition, type LevelOutcome,
+  SKIP_AFTER_FAILURES,
+  applyResult,
+  canOfferSkip,
+  continueLevel,
+  emptyProgress,
+  fullMask,
+  isUnlocked,
+  isWorldUnlocked,
+  mergeExpedition,
+  newExpedition,
+  nextLevel,
+  openWorld,
+  progressOf,
+  skipLevel,
+  starCount,
+  summitState,
+  totalStars,
+  unlockedLevels,
+  worldStars,
+  type Expedition,
+  type LevelOutcome,
 } from './index';
 import { continueLabel } from './index';
 import { parseExpedition } from './index';
@@ -10,7 +29,14 @@ import { planCatalog } from './testkit';
 
 const T0 = 1_000;
 const plan = planCatalog();
-const res = (levelId: string, o: Partial<LevelOutcome> = {}): LevelOutcome => ({ levelId, cleared: true, timeMs: 50_000, collectiblesMask: 0, deaths: 3, ...o });
+const res = (levelId: string, o: Partial<LevelOutcome> = {}): LevelOutcome => ({
+  levelId,
+  cleared: true,
+  timeMs: 50_000,
+  collectiblesMask: 0,
+  deaths: 3,
+  ...o,
+});
 const fresh = (name = 'Nico y Angi') => newExpedition('exp-test0001', name, T0);
 let clock = T0;
 const play = (e: Expedition, r: LevelOutcome) => applyResult(e, plan, r, ++clock);
@@ -20,14 +46,19 @@ function clearWorld(e: Expedition, w: string, upTo = 7, perfect = true): Expedit
   return e;
 }
 
-describe('S2\'s catalog adapted to the interface', () => {
+describe("S2's catalog adapted to the interface", () => {
   it('has the built levels only (Playa, Bosque and Glaciar, 1-1..3-7), one boss each, the world order of the plan and the practice stations', () => {
     const c = CAMPAIGN_CATALOG;
     expect(c.worlds.map((w) => w.biome)).toEqual(['beach', 'forest', 'glacier']); // Mina and Volcán appear as their levels get built (A6)
     expect(pathOf(c, '1').map((l) => l.id)).toEqual(['1-1', '1-2', '1-3', '1-4', '1-5', '1-6', '1-7']);
     expect(pathOf(c, '2').map((l) => l.id)).toEqual(['2-1', '2-2', '2-3', '2-4', '2-5', '2-6', '2-7']);
     expect(pathOf(c, '3').map((l) => l.id)).toEqual(['3-1', '3-2', '3-3', '3-4', '3-5', '3-6', '3-7']);
-    for (const w of ['1', '2', '3']) expect(pathOf(c, w).filter((l) => l.kind === 'boss').map((l) => l.id)).toEqual([`${w}-7`]);
+    for (const w of ['1', '2', '3'])
+      expect(
+        pathOf(c, w)
+          .filter((l) => l.kind === 'boss')
+          .map((l) => l.id),
+      ).toEqual([`${w}-7`]);
     expect(levelById(c, '2-6')?.mode).toBe('free'); // Escarabajos is Libres, 2-5 (E/L) plays Encadenados
     expect(new Set(c.levels.map((l) => l.id)).size).toBe(c.levels.length);
     expect(c.levels.every((l) => l.validatedFor.includes(2) && l.collectibles === 3 && l.botMs! > 0)).toBe(true);
@@ -89,22 +120,35 @@ describe('monotone merge', () => {
     expect(progressOf(m, '2-1').done).toBe(true);
   });
   it('is commutative, associative and idempotent', () => {
-    const x = a(), y = b(), z = skipLevel(play(fresh(), res('1-1')), plan, '1-2', ++clock);
+    const x = a(),
+      y = b(),
+      z = skipLevel(play(fresh(), res('1-1')), plan, '1-2', ++clock);
     expect(mergeExpedition(x, y)).toEqual(mergeExpedition(y, x));
     expect(mergeExpedition(mergeExpedition(x, y), z)).toEqual(mergeExpedition(x, mergeExpedition(y, z)));
     expect(mergeExpedition(x, x)).toEqual(x);
   });
   it('never lowers anything: stars, medal, mask, done and the unlocked list only grow, the best time only shrinks', () => {
     let seed = 7;
-    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
     let e = fresh();
     for (let i = 0; i < 300; i++) {
       const lvl = `${1 + Math.floor(rnd() * 5)}-${1 + Math.floor(rnd() * 7)}`;
       const before = e;
-      const r = res(lvl, { cleared: rnd() < 0.7, timeMs: 20_000 + Math.floor(rnd() * 120_000), collectiblesMask: Math.floor(rnd() * 8), deaths: Math.floor(rnd() * 3) });
-      e = rnd() < 0.15 ? mergeExpedition(e, applyResult(fresh(), plan, r, ++clock)) : rnd() < 0.1 ? skipLevel(e, plan, lvl, ++clock) : applyResult(e, plan, r, ++clock);
+      const r = res(lvl, {
+        cleared: rnd() < 0.7,
+        timeMs: 20_000 + Math.floor(rnd() * 120_000),
+        collectiblesMask: Math.floor(rnd() * 8),
+        deaths: Math.floor(rnd() * 3),
+      });
+      e =
+        rnd() < 0.15
+          ? mergeExpedition(e, applyResult(fresh(), plan, r, ++clock))
+          : rnd() < 0.1
+            ? skipLevel(e, plan, lvl, ++clock)
+            : applyResult(e, plan, r, ++clock);
       for (const id of Object.keys(before.levels)) {
-        const p = progressOf(e, id), q = before.levels[id]!;
+        const p = progressOf(e, id),
+          q = before.levels[id]!;
         expect(p.done || !q.done).toBe(true);
         expect(starCount(p)).toBeGreaterThanOrEqual(starCount(q));
         q.stars.forEach((s, k) => expect(p.stars[k] || !s).toBe(true));
@@ -176,7 +220,10 @@ describe('unlocks (plan §3)', () => {
     for (let o = 1; o <= 7; o++) e = play(e, res(`1-${o}`, { collectiblesMask: o <= 4 ? fullMask(3) : 0, deaths: o <= 4 ? 0 : 5 })); // 4 x 3 + 3 x 1 = 15
     expect(worldStars(e, plan, '1')).toBe(15);
     expect(isUnlocked(e, plan, 'C1')).toBe(true);
-    const e14 = { ...e, levels: { ...e.levels, '1-1': { ...e.levels['1-1']!, stars: [true, true, false] as [boolean, boolean, boolean] } } };
+    const e14 = {
+      ...e,
+      levels: { ...e.levels, '1-1': { ...e.levels['1-1']!, stars: [true, true, false] as [boolean, boolean, boolean] } },
+    };
     expect(worldStars(e14, plan, '1')).toBe(14);
     expect(isUnlocked(e14, plan, 'C1')).toBe(false);
   });
@@ -237,22 +284,41 @@ describe('what "Continuar" and "Siguiente" offer', () => {
   it('the legacy catalog walks the same rules', () => {
     const c = CAMPAIGN_CATALOG;
     let e = fresh();
-    for (const l of campaignOrder(c)) { expect(continueLevel(e, c)?.id).toBe(l.id); e = applyResult(e, c, { levelId: l.id, cleared: true, timeMs: 1, collectiblesMask: 0, deaths: 0 }, ++clock); }
+    for (const l of campaignOrder(c)) {
+      expect(continueLevel(e, c)?.id).toBe(l.id);
+      e = applyResult(e, c, { levelId: l.id, cleared: true, timeMs: 1, collectiblesMask: 0, deaths: 0 }, ++clock);
+    }
     expect(continueLevel(e, c)).toBeNull();
   });
 });
 
 describe('parseExpedition refuses what is not an expedition', () => {
   const good = () => JSON.parse(JSON.stringify(clearWorld(fresh(), '1', 2)));
-  it('round-trips a real one', () => { const e = clearWorld(fresh(), '1', 2); expect(parseExpedition(JSON.parse(JSON.stringify(e)))).toEqual(e); });
+  it('round-trips a real one', () => {
+    const e = clearWorld(fresh(), '1', 2);
+    expect(parseExpedition(JSON.parse(JSON.stringify(e)))).toEqual(e);
+  });
   it.each([
-    ['null', null], ['an array', []], ['a wrong schema version', { ...good(), schemaVersion: 2 }], ['an id that climbs out of the folder', { ...good(), id: '../x' }],
-    ['an empty name', { ...good(), name: '' }], ['a level key with a slash', { ...good(), levels: { 'a/b': emptyProgress() } }],
-    ['three stars as numbers', { ...good(), levels: { '1-1': { ...emptyProgress(), stars: [1, 0, 0] } } }], ['a negative mask', { ...good(), levels: { '1-1': { ...emptyProgress(), collectiblesMask: -1 } } }],
-    ['unlocked that is not a list', { ...good(), unlocked: 'world:2' }], ['assists that is not an object', { ...good(), assists: 3 }],
-  ])('%s', (_n, v) => { expect(parseExpedition(v)).toBeNull(); });
+    ['null', null],
+    ['an array', []],
+    ['a wrong schema version', { ...good(), schemaVersion: 2 }],
+    ['an id that climbs out of the folder', { ...good(), id: '../x' }],
+    ['an empty name', { ...good(), name: '' }],
+    ['a level key with a slash', { ...good(), levels: { 'a/b': emptyProgress() } }],
+    ['three stars as numbers', { ...good(), levels: { '1-1': { ...emptyProgress(), stars: [1, 0, 0] } } }],
+    ['a negative mask', { ...good(), levels: { '1-1': { ...emptyProgress(), collectiblesMask: -1 } } }],
+    ['unlocked that is not a list', { ...good(), unlocked: 'world:2' }],
+    ['assists that is not an object', { ...good(), assists: 3 }],
+  ])('%s', (_n, v) => {
+    expect(parseExpedition(v)).toBeNull();
+  });
   it('fills the assists a file written by an older version does not have', () => {
     const { assists: _a, ...old } = good();
-    expect(parseExpedition(old)?.assists).toEqual({ infiniteHearts: false, slowMotion: false, instantBubble: false, permanentSilhouette: false });
+    expect(parseExpedition(old)?.assists).toEqual({
+      infiniteHearts: false,
+      slowMotion: false,
+      instantBubble: false,
+      permanentSilhouette: false,
+    });
   });
 });

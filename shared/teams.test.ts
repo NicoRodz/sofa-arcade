@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { GAMES, modeOf, type ModeSpec } from './games';
 import {
-  GHOST_MS, balanceTeams, compareTeams, handicapK, holdsPlace, joinSmallestTeam, leaveTeams, makeTeams, matchStatus, modeAvailability,
-  movePlayer, pauseOutcome, rankTeams, reshuffleTeams, teamMultipliers, teamOf, validateTeamSetup, type RosterEntry, type TeamInfo, type TeamResult,
+  GHOST_MS,
+  balanceTeams,
+  compareTeams,
+  handicapK,
+  holdsPlace,
+  joinSmallestTeam,
+  leaveTeams,
+  makeTeams,
+  matchStatus,
+  modeAvailability,
+  movePlayer,
+  pauseOutcome,
+  rankTeams,
+  reshuffleTeams,
+  teamMultipliers,
+  teamOf,
+  validateTeamSetup,
+  type RosterEntry,
+  type TeamInfo,
+  type TeamResult,
 } from './teams';
 
 const pizzas = GAMES[0];
@@ -21,8 +39,14 @@ describe('balanceTeams', () => {
     });
   }
   it('N=3..8 into 3 or 4 teams stays even too, and coop (one team) holds everybody', () => {
-    for (let n = 3; n <= 8; n++) { const s = sizes(balanceTeams(ids(n), 3, 1)); expect(Math.max(...s) - Math.min(...s)).toBeLessThanOrEqual(1); }
-    for (let n = 4; n <= 8; n++) { const s = sizes(balanceTeams(ids(n), 4, 1)); expect(Math.max(...s) - Math.min(...s)).toBeLessThanOrEqual(1); }
+    for (let n = 3; n <= 8; n++) {
+      const s = sizes(balanceTeams(ids(n), 3, 1));
+      expect(Math.max(...s) - Math.min(...s)).toBeLessThanOrEqual(1);
+    }
+    for (let n = 4; n <= 8; n++) {
+      const s = sizes(balanceTeams(ids(n), 4, 1));
+      expect(Math.max(...s) - Math.min(...s)).toBeLessThanOrEqual(1);
+    }
     expect(balanceTeams(ids(6), 1, 1)).toEqual([ids(6)]);
   });
   it('is deterministic by seed, independent of the order the ids arrive in, and different seeds deal differently', () => {
@@ -32,7 +56,10 @@ describe('balanceTeams', () => {
     expect(deals.size).toBeGreaterThan(3);
   });
   it('a rematch keeps the previous teams when the sizes allow, and fills in newcomers where there is room', () => {
-    const prev = [[1, 2, 5], [3, 4, 6]];
+    const prev = [
+      [1, 2, 5],
+      [3, 4, 6],
+    ];
     for (let seed = 0; seed < 10; seed++) expect(balanceTeams(ids(6), 2, seed, prev)).toEqual(prev);
     // 7 players now (7 is new): the team that was bigger keeps the extra seat only if it had one
     for (let seed = 0; seed < 10; seed++) {
@@ -42,7 +69,10 @@ describe('balanceTeams', () => {
       expect(t.some((x) => prev[1]!.every((p) => x.includes(p)))).toBe(true);
     }
     // one of them left: the rest stay, and the teams are rebalanced by moving only whoever must move
-    const t = balanceTeams([1, 2, 3, 4], 2, 3, [[1, 2, 5], [3, 4]]);
+    const t = balanceTeams([1, 2, 3, 4], 2, 3, [
+      [1, 2, 5],
+      [3, 4],
+    ]);
     expect(sizes(t)).toEqual([2, 2]);
     expect(t.map((x) => x.join())).toEqual(['1,2', '3,4']);
   });
@@ -97,15 +127,24 @@ describe('mode availability and team setup', () => {
       const v = validateTeamSetup(versus, split);
       expect(v.problems, `N=${n}`).toEqual([]);
       const small = split[0]!.length < split[1]!.length ? 0 : 1;
-      const k = [...v.k]; if (small === 1) k.reverse();
-      expect(k.sort((a, b) => b - a), `N=${n}`).toEqual(want[n]!.slice().sort((a, b) => b - a));
+      const k = [...v.k];
+      if (small === 1) k.reverse();
+      expect(
+        k.sort((a, b) => b - a),
+        `N=${n}`,
+      ).toEqual(want[n]!.slice().sort((a, b) => b - a));
     }
   });
   it('refuses 3v1, an empty team, a wrong team count, a duplicated player and a crowd', () => {
     expect(validateTeamSetup(versus, [[1, 2, 3], [4]])).toMatchObject({ ok: false, problems: [expect.stringContaining('desiguales')] });
     expect(validateTeamSetup(versus, [[1, 2], []]).problems).toContain('Hay un equipo vacío');
     expect(validateTeamSetup(versus, [[1, 2, 3, 4]]).problems).toContain('Hacen falta 2 equipos');
-    expect(validateTeamSetup(versus, [[1, 2], [2, 3]]).problems).toContain('Un jugador está en dos equipos');
+    expect(
+      validateTeamSetup(versus, [
+        [1, 2],
+        [2, 3],
+      ]).problems,
+    ).toContain('Un jugador está en dos equipos');
     expect(validateTeamSetup(versus, [ids(5), [6, 7, 8, 9, 10]]).ok).toBe(false);
   });
   it('coop is one team with everybody and no handicap; a mode without teams takes none', () => {
@@ -131,7 +170,8 @@ describe('team lists', () => {
   });
   it('a rematch with the previous teams keeps them', () => {
     const first = makeTeams(versus, ids(5), 1)!;
-    for (let seed = 2; seed < 8; seed++) expect(makeTeams(versus, ids(5), seed, first)!.map((t) => t.playerIds)).toEqual(first.map((t) => t.playerIds));
+    for (let seed = 2; seed < 8; seed++)
+      expect(makeTeams(versus, ids(5), seed, first)!.map((t) => t.playerIds)).toEqual(first.map((t) => t.playerIds));
   });
   it('someone who enters goes to the smallest team (the lowest id on a tie), and only once', () => {
     const t = makeTeams(versus, ids(3), 1)!;
@@ -144,7 +184,8 @@ describe('team lists', () => {
   });
   it('a player moves to another team unless the teams are locked or the team does not exist', () => {
     const t: TeamInfo[] = makeTeams(versus, ids(4), 1)!;
-    const from = teamOf(t, 1)!, to = t.find((x) => x.id !== from.id)!;
+    const from = teamOf(t, 1)!,
+      to = t.find((x) => x.id !== from.id)!;
     const moved = movePlayer(t, 1, to.id, false);
     expect(moved.ok).toBe(true);
     if (moved.ok) {
@@ -172,7 +213,14 @@ describe('team lists', () => {
 
 describe('a chef drops', () => {
   const roster = (drops: Record<number, number> = {}): RosterEntry[] =>
-    [[1, 0], [2, 0], [3, 0], [4, 1], [5, 1], [6, 1]].map(([id, teamId]) => ({ id: id!, teamId: teamId!, droppedAt: drops[id!] ?? null }));
+    [
+      [1, 0],
+      [2, 0],
+      [3, 0],
+      [4, 1],
+      [5, 1],
+      [6, 1],
+    ].map(([id, teamId]) => ({ id: id!, teamId: teamId!, droppedAt: drops[id!] ?? null }));
 
   it('holds the place for 20 s (the boundary counts), then gives it up', () => {
     const e: RosterEntry = { id: 1, teamId: 0, droppedAt: 100_000 };
@@ -204,7 +252,14 @@ describe('a chef drops', () => {
   });
   it('a chef that comes back inside the window is the same entry: same team, nothing recomputed', () => {
     const r = roster({ 2: 50_000 });
-    expect(matchStatus([0, 1], r.map((e) => (e.id === 2 ? { ...e, droppedAt: null } : e)), 90_000, 'score-k').counts).toEqual([3, 3]);
+    expect(
+      matchStatus(
+        [0, 1],
+        r.map((e) => (e.id === 2 ? { ...e, droppedAt: null } : e)),
+        90_000,
+        'score-k',
+      ).counts,
+    ).toEqual([3, 3]);
   });
 });
 
@@ -216,13 +271,17 @@ describe('ranking', () => {
     expect(rankTeams([r({ teamId: 0 }), r({ teamId: 1, vip: 2 })]).winner).toBe(1);
     expect(rankTeams([r({ teamId: 0, reachedAt: 150_000 }), r({ teamId: 1, reachedAt: 140_000 })]).winner).toBe(1);
     expect(rankTeams([r({ teamId: 0, delivered: 6, vip: 0 }), r({ teamId: 1, delivered: 5, vip: 2 })]).winner).toBe(0); // deliveries before VIPs
-    expect(rankTeams([r({ teamId: 0, score: 100, delivered: 1 }), r({ teamId: 1, score: 99, delivered: 9, vip: 9, reachedAt: 1 })]).winner).toBe(0); // the score rule comes first
+    expect(
+      rankTeams([r({ teamId: 0, score: 100, delivered: 1 }), r({ teamId: 1, score: 99, delivered: 9, vip: 9, reachedAt: 1 })]).winner,
+    ).toBe(0); // the score rule comes first
   });
   it('a tie on every rule is a draw; one team always wins', () => {
     expect(rankTeams([r({ teamId: 0 }), r({ teamId: 1 })]).winner).toBeNull();
     expect(rankTeams([r({ teamId: 3 })]).winner).toBe(3);
     expect(rankTeams([]).winner).toBeNull();
     expect(compareTeams(r({ score: 1 }), r({ score: 2 }))).toBeGreaterThan(0);
-    expect(rankTeams([r({ teamId: 0, score: 1 }), r({ teamId: 1, score: 3 }), r({ teamId: 2, score: 2 })]).order.map((x) => x.teamId)).toEqual([1, 2, 0]);
+    expect(
+      rankTeams([r({ teamId: 0, score: 1 }), r({ teamId: 1, score: 3 }), r({ teamId: 2, score: 2 })]).order.map((x) => x.teamId),
+    ).toEqual([1, 2, 0]);
   });
 });

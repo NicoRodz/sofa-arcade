@@ -8,7 +8,18 @@
 // under sigma. It is a legend letter only versus maps have: parseMap(rows, true). The design's 'P' for it was taken (P is the tray pile here).
 // Design's 'L' (sink) is dropped from V1 and V3: a sink also needs the dirty-plate return U and turns washing on for the whole
 // map, and coop only does that from 5 players (teams here are 1 to 4 chefs). Those tiles became counters.
-import { FIXED_MAPS, MAP_H, MAP_W, parseMap, spawnPoints, type HalfName, type MapDef, type Pos, type SigmaName, type VersusMapDef } from './maps';
+import {
+  FIXED_MAPS,
+  MAP_H,
+  MAP_W,
+  parseMap,
+  spawnPoints,
+  type HalfName,
+  type MapDef,
+  type Pos,
+  type SigmaName,
+  type VersusMapDef,
+} from './maps';
 import { SIGMAS } from './symmetry';
 
 const twin = (sigma: SigmaName, [x, y]: Pos): Pos => SIGMAS[sigma](x, y, MAP_W, MAP_H);
@@ -20,8 +31,21 @@ const spawnsFor = (sigma: SigmaName, a: readonly Pos[]): VersusMapDef['versus'][
 export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
   {
     // Design V1. Axis between columns 7 and 8; each side holds every station on its walls and four starts.
-    id: 'V1', name: 'Duelo clásico', nMin: 2, nMax: 8, minDuro: 2, stars: 1,
-    versus: { sigma: 'mirrorX', spawns: spawnsFor('mirrorX', [[2, 5], [2, 6], [5, 5], [5, 6]]) },
+    id: 'V1',
+    name: 'Duelo clásico',
+    nMin: 2,
+    nMax: 8,
+    minDuro: 2,
+    stars: 1,
+    versus: {
+      sigma: 'mirrorX',
+      spawns: spawnsFor('mirrorX', [
+        [2, 5],
+        [2, 6],
+        [5, 5],
+        [5, 6],
+      ]),
+    },
     rows: [
       '#123#OO##OO#321#',
       'C......##......C',
@@ -37,8 +61,25 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
   {
     // Design V2: V1 without its own cheese crate. The two '3' in the barrier, (7, 4) for the left team and (8, 4) for the right one,
     // are the shared pantry (F5): both crates draw from one stock of 4 units that gets +1 every 6 s (PANTRY_MAX / PANTRY_EVERY_MS in versus.ts).
-    id: 'V2', name: 'Despensa', nMin: 4, nMax: 8, minDuro: 4, stars: 2,
-    versus: { sigma: 'mirrorX', spawns: spawnsFor('mirrorX', [[2, 5], [5, 5], [5, 6], [2, 6]]), shared: [[7, 4], [8, 4]] },
+    id: 'V2',
+    name: 'Despensa',
+    nMin: 4,
+    nMax: 8,
+    minDuro: 4,
+    stars: 2,
+    versus: {
+      sigma: 'mirrorX',
+      spawns: spawnsFor('mirrorX', [
+        [2, 5],
+        [5, 5],
+        [5, 6],
+        [2, 6],
+      ]),
+      shared: [
+        [7, 4],
+        [8, 4],
+      ],
+    },
     rows: [
       '#12C#OO##OO#C21#',
       'C......##......C',
@@ -53,8 +94,20 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
   },
   {
     // Design V3: one kitchen above the other, a 14-tile corridor each; sigma is the half turn (x, y) -> (15 - x, 8 - y).
-    id: 'V3', name: 'Dos pisos', nMin: 2, nMax: 6, minDuro: 2, stars: 2,
-    versus: { sigma: 'rot180', spawns: spawnsFor('rot180', [[3, 2], [7, 2], [11, 2]]) },
+    id: 'V3',
+    name: 'Dos pisos',
+    nMin: 2,
+    nMax: 6,
+    minDuro: 2,
+    stars: 2,
+    versus: {
+      sigma: 'rot180',
+      spawns: spawnsFor('rot180', [
+        [3, 2],
+        [7, 2],
+        [11, 2],
+      ]),
+    },
     rows: [
       '#123COOCKKCPCCX#',
       'C..............E',
@@ -70,8 +123,21 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
   {
     // V4 (no grid in the design): the ovens are a two-tile island in the middle of each kitchen; boards and plates sit at opposite corners,
     // crates against the barrier, delivery on the outer wall. Its route is 34 steps against V1's 32.
-    id: 'V4', name: 'Isla doble', nMin: 4, nMax: 8, minDuro: 4, stars: 2,
-    versus: { sigma: 'mirrorX', spawns: spawnsFor('mirrorX', [[2, 6], [4, 6], [2, 7], [4, 7]]) },
+    id: 'V4',
+    name: 'Isla doble',
+    nMin: 4,
+    nMax: 8,
+    minDuro: 4,
+    stars: 2,
+    versus: {
+      sigma: 'mirrorX',
+      spawns: spawnsFor('mirrorX', [
+        [2, 6],
+        [4, 6],
+        [2, 7],
+        [4, 7],
+      ]),
+    },
     rows: [
       '#CX321####123XC#',
       'C.....C##C.....C',
@@ -87,8 +153,19 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
   {
     // V5 (no grid in the design): compact 5x5 kitchens, side by side but turned half a turn, for 1v1 and 2v2: crates in the top left
     // corner, ovens down the right wall, delivery in the bottom right corner (B has them the other way round).
-    id: 'V5', name: 'Esquinas', nMin: 2, nMax: 4, minDuro: 2, stars: 1,
-    versus: { sigma: 'rot180', spawns: spawnsFor('rot180', [[2, 4], [4, 4]]) },
+    id: 'V5',
+    name: 'Esquinas',
+    nMin: 2,
+    nMax: 4,
+    minDuro: 2,
+    stars: 1,
+    versus: {
+      sigma: 'rot180',
+      spawns: spawnsFor('rot180', [
+        [2, 4],
+        [4, 4],
+      ]),
+    },
     rows: [
       '################',
       '#123CK####CCCCC#',
@@ -113,13 +190,16 @@ export const VERSUS_BASE_MAPS: readonly VersusMapDef[] = [
 export function mirrorize(rows: readonly string[], half: HalfName): { rows: string[]; sigma: SigmaName; kept: (p: Pos) => boolean } {
   const side = half === 'left' || half === 'right';
   const sigma: SigmaName = side ? 'mirrorX' : 'rot180';
-  const kept = (([x, y]: Pos) => (half === 'left' ? x <= 6 : half === 'right' ? x >= 9 : half === 'top' ? y <= 3 : y >= 5)) satisfies (p: Pos) => boolean;
+  const kept = (([x, y]: Pos) => (half === 'left' ? x <= 6 : half === 'right' ? x >= 9 : half === 'top' ? y <= 3 : y >= 5)) satisfies (
+    p: Pos,
+  ) => boolean;
   const out = rows.map((r) => [...r]);
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) {
-    if (kept([x, y])) continue;
-    const [tx, ty] = twin(sigma, [x, y]);
-    out[y]![x] = kept([tx, ty]) ? rows[ty]![tx]! : '#'; // the barrier is walls
-  }
+  for (let y = 0; y < MAP_H; y++)
+    for (let x = 0; x < MAP_W; x++) {
+      if (kept([x, y])) continue;
+      const [tx, ty] = twin(sigma, [x, y]);
+      out[y]![x] = kept([tx, ty]) ? rows[ty]![tx]! : '#'; // the barrier is walls
+    }
   return { rows: out.map((r) => r.join('')), sigma, kept };
 }
 
@@ -128,7 +208,13 @@ export function deriveVersus(m: MapDef, half: HalfName): VersusMapDef {
   const { rows, sigma, kept } = mirrorize(m.rows, half);
   const a = spawnPoints(parseMap(m.rows), 8, m.spawns).filter(kept);
   return {
-    id: `${m.id}-vs`, name: `${m.name} (versus)`, rows, nMin: 2, nMax: Math.max(2, Math.min(8, 2 * a.length)), minDuro: 2, stars: m.stars,
+    id: `${m.id}-vs`,
+    name: `${m.name} (versus)`,
+    rows,
+    nMin: 2,
+    nMax: Math.max(2, Math.min(8, 2 * a.length)),
+    minDuro: 2,
+    stars: m.stars,
     versus: { sigma, spawns: spawnsFor(sigma, a) },
   };
 }

@@ -31,8 +31,11 @@ export const RECIPE_DEFS: Record<Recipe, RecipeDef> = {
   calzone: { name: 'Calzone', components: 2, processes: 5, effort: 1.2, topping: null, fold: true, needs: BASIC }, // stretch, cut, fold, bake x2 (the long oven)
 };
 // R13: what a recipe is worth before the tip: points per ingredient plus points per process. Marinara 70, Margarita / Pepperoni / Champiñón 100, Calzone 90.
-export const RECIPE_PARTS: Record<Recipe, { components: number; processes: number }> = Object.fromEntries(RECIPES.map((r) => [r, { components: RECIPE_DEFS[r].components, processes: RECIPE_DEFS[r].processes }])) as Record<Recipe, { components: number; processes: number }>;
-export const recipeBase = (r: Recipe, t: Tuning) => RECIPE_PARTS[r].components * t.baseComponent + RECIPE_PARTS[r].processes * t.baseProcess;
+export const RECIPE_PARTS: Record<Recipe, { components: number; processes: number }> = Object.fromEntries(
+  RECIPES.map((r) => [r, { components: RECIPE_DEFS[r].components, processes: RECIPE_DEFS[r].processes }]),
+) as Record<Recipe, { components: number; processes: number }>;
+export const recipeBase = (r: Recipe, t: Tuning) =>
+  RECIPE_PARTS[r].components * t.baseComponent + RECIPE_PARTS[r].processes * t.baseProcess;
 
 // The pizza a topping makes, and the other way round.
 export const TOPPING_RECIPE: Readonly<Record<number, Recipe>> = { 2: 'margarita', 3: 'pepperoni', 4: 'champinon' };
@@ -41,16 +44,21 @@ export const toppingOf = (r: Recipe): number | null => RECIPE_DEFS[r].topping;
 // Items. A crate gives raw<type>; the board turns raw<type> into cut<type>.
 export const RAW_OF: readonly Item[] = ['raw0', 'raw1', 'raw2', 'raw3', 'raw4'];
 export const CUT_OF: readonly Item[] = ['cut0', 'cut1', 'cut2', 'cut3', 'cut4'];
-export const cutOf = (i: Item): Item | null => { const t = RAW_OF.indexOf(i); return t >= 0 ? CUT_OF[t]! : null; };
+export const cutOf = (i: Item): Item | null => {
+  const t = RAW_OF.indexOf(i);
+  return t >= 0 ? CUT_OF[t]! : null;
+};
 export const cutType = (i: Item | null): number => (i ? CUT_OF.indexOf(i) : -1);
 
 // A pizza on a plate: the marinara dish, the one with a topping (cheese, pepperoni, mushroom) and the folded calzone.
 export const DISHES: readonly Item[] = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC'];
 export const isDish = (i: Item | null): boolean => !!i && DISHES.includes(i);
 /** The recipe a plate holds. */
-export const dishRecipe = (i: Item): Recipe => (i === 'dishQ' ? 'margarita' : i === 'dishP' ? 'pepperoni' : i === 'dishM' ? 'champinon' : i === 'dishC' ? 'calzone' : 'marinara');
+export const dishRecipe = (i: Item): Recipe =>
+  i === 'dishQ' ? 'margarita' : i === 'dishP' ? 'pepperoni' : i === 'dishM' ? 'champinon' : i === 'dishC' ? 'calzone' : 'marinara';
 /** The plate for a pot's contents (the burnt pizza is another item: the oven decides that first). */
-export const dishFor = (inputs: readonly number[], folded: boolean): Item => (folded ? 'dishC' : inputs.includes(3) ? 'dishP' : inputs.includes(4) ? 'dishM' : inputs.includes(2) ? 'dishQ' : 'dish');
+export const dishFor = (inputs: readonly number[], folded: boolean): Item =>
+  folded ? 'dishC' : inputs.includes(3) ? 'dishP' : inputs.includes(4) ? 'dishM' : inputs.includes(2) ? 'dishQ' : 'dish';
 
 export const FOLD_MS = 2000; // of Picar at the oven to fold the calzone
 export const CALZONE_COOK_MULT = 1.6; // a folded calzone bakes this much longer

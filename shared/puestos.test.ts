@@ -13,10 +13,22 @@ describe('puesto table', () => {
     expect(puestosFor(8, none).map((p) => p[0])).toEqual(['masa', 'corte', 'horno', 'reparto', 'apoyo', 'corte', 'horno', 'reparto']);
   });
   it('with cheese the sixth chef is Queso; with a sink the fifth is Lavado', () => {
-    expect(puestosFor(8, { cheese: true, sink: true }).map((p) => p[0])).toEqual(['masa', 'corte', 'horno', 'reparto', 'lavado', 'queso', 'horno', 'reparto']);
+    expect(puestosFor(8, { cheese: true, sink: true }).map((p) => p[0])).toEqual([
+      'masa',
+      'corte',
+      'horno',
+      'reparto',
+      'lavado',
+      'queso',
+      'horno',
+      'reparto',
+    ]);
   });
   it('small teams double up so the whole recipe is covered', () => {
-    expect(puestosFor(2, none)).toEqual([['masa', 'horno'], ['corte', 'reparto']]);
+    expect(puestosFor(2, none)).toEqual([
+      ['masa', 'horno'],
+      ['corte', 'reparto'],
+    ]);
     expect(puestosFor(3, none)).toEqual([['masa'], ['corte'], ['horno', 'reparto']]);
     expect(puestosFor(4, { cheese: false, sink: true })[3]).toEqual(['reparto', 'lavado']); // nobody else would wash
   });
@@ -34,17 +46,23 @@ describe('puesto table', () => {
   });
   it('assignPuestos hands one entry per chef, with the cycle pool', () => {
     const m = assignPuestos([11, 12, 13], none);
-    expect(m.assign.map((a) => [a.id, a.puestos])).toEqual([[11, ['masa']], [12, ['corte']], [13, ['horno', 'reparto']]]);
+    expect(m.assign.map((a) => [a.id, a.puestos])).toEqual([
+      [11, ['masa']],
+      [12, ['corte']],
+      [13, ['horno', 'reparto']],
+    ]);
     expect(m.assign[0]!.pool).toEqual(expect.arrayContaining(['masa', 'corte', 'horno', 'reparto', 'apoyo']));
     expect(m.assign[0]!.pool).not.toContain('queso');
   });
 });
 
 describe('puesto stations', () => {
-  it('lights the nearest instance of each station of the puesto, on the chef\'s own side', () => {
+  it("lights the nearest instance of each station of the puesto, on the chef's own side", () => {
     const g = createGame({ rows: fixedMap('3')!.rows }); // river: crates on the left bank, ovens on the right
-    const left = g.spawns[0]!, right = g.spawns[1]!;
-    const kinds = (idx: number[]) => idx.map((i) => `${g.stations[i]!.kind}${g.stations[i]!.crate}@${g.stations[i]!.tx},${g.stations[i]!.ty}`);
+    const left = g.spawns[0]!,
+      right = g.spawns[1]!;
+    const kinds = (idx: number[]) =>
+      idx.map((i) => `${g.stations[i]!.kind}${g.stations[i]!.crate}@${g.stations[i]!.tx},${g.stations[i]!.ty}`);
     const prep = kinds(puestoStations(g.grid, g.stations, ['prep'], left));
     expect(prep.every((k) => Number(k.split('@')[1]!.split(',')[0]) < 7)).toBe(true);
     expect(prep.length).toBeGreaterThanOrEqual(3); // both crates and a board

@@ -88,7 +88,11 @@ describe('softClip safety stage', () => {
   });
   it('is monotonic and odd', () => {
     let prev = -Infinity;
-    for (let x = -3; x <= 3; x += 0.01) { const y = softClip(x); expect(y).toBeGreaterThanOrEqual(prev); prev = y; }
+    for (let x = -3; x <= 3; x += 0.01) {
+      const y = softClip(x);
+      expect(y).toBeGreaterThanOrEqual(prev);
+      prev = y;
+    }
     expect(softClip(-1.3)).toBe(-softClip(1.3));
   });
 });

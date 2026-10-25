@@ -35,9 +35,12 @@ export interface PlayerView {
   slot: number; // 0-7: colour, accessory, number tag
   name: string;
   connected: boolean;
-  x: number; y: number; // hitbox top-left after the latest step
-  prevX: number; prevY: number; // same, one step earlier: the renderer interpolates with WorldView.alpha
-  vx: number; vy: number;
+  x: number;
+  y: number; // hitbox top-left after the latest step
+  prevX: number;
+  prevY: number; // same, one step earlier: the renderer interpolates with WorldView.alpha
+  vx: number;
+  vy: number;
   facing: 1 | -1;
   grounded: boolean;
   dead: boolean; // between death and respawn: not drawn (the 'obst.death' event draws the burst)
@@ -55,17 +58,50 @@ export interface PlayerView {
   signal?: SignalKind | null; // campaign: the signal shown over the head (arrow, wait, go); also from the bubble
 }
 
-export interface RopeLink { a: number; b: number; tension: number; active: boolean; elastic?: boolean } // elastic: hanging from a bungee ring (campaign A6, drawn as a spring, never red). a, b = player ids; tension = distance / ROPE_LEN; inactive = bubble valve
-export interface RopeView { id: number; cordada: number; links: RopeLink[]; base?: number } // base: rest length in px (the campaign's rope is longer than ROPE_LEN)
+export interface RopeLink {
+  a: number;
+  b: number;
+  tension: number;
+  active: boolean;
+  elastic?: boolean;
+} // elastic: hanging from a bungee ring (campaign A6, drawn as a spring, never red). a, b = player ids; tension = distance / ROPE_LEN; inactive = bubble valve
+export interface RopeView {
+  id: number;
+  cordada: number;
+  links: RopeLink[];
+  base?: number;
+} // base: rest length in px (the campaign's rope is longer than ROPE_LEN)
 
 export type EntityKind =
-  | 'star' | 'checkpoint' | 'goal' | 'ring' | 'box' | 'heavyBox' | 'key'
-  | 'plate' | 'lever' | 'gate' | 'ladder' | 'mover' | 'balance' | 'crumble' | 'rock' | 'saw'
-  | 'target' | 'enemy' | 'pickaxe' | 'lantern' | 'sinker' | 'geyser'; // campaign A6: lantern = the item (on = held, holder = who), sinker = a rock that sinks (value = how far down, 0..1), geyser = a vent (value = 0 calm, 0.5 bubbling, 1 erupting). A5: target = diana (on = its gate is open, value = clock left 0..1), enemy = soft beetle (on = stunned, value = 1 walking right / 0 left), pickaxe = the item (on = held, holder = who)
+  | 'star'
+  | 'checkpoint'
+  | 'goal'
+  | 'ring'
+  | 'box'
+  | 'heavyBox'
+  | 'key'
+  | 'plate'
+  | 'lever'
+  | 'gate'
+  | 'ladder'
+  | 'mover'
+  | 'balance'
+  | 'crumble'
+  | 'rock'
+  | 'saw'
+  | 'target'
+  | 'enemy'
+  | 'pickaxe'
+  | 'lantern'
+  | 'sinker'
+  | 'geyser'; // campaign A6: lantern = the item (on = held, holder = who), sinker = a rock that sinks (value = how far down, 0..1), geyser = a vent (value = 0 calm, 0.5 bubbling, 1 erupting). A5: target = diana (on = its gate is open, value = clock left 0..1), enemy = soft beetle (on = stunned, value = 1 walking right / 0 left), pickaxe = the item (on = held, holder = who)
 export interface EntityView {
   id: string; // stable across frames
   kind: EntityKind;
-  x: number; y: number; w: number; h: number; // px, top-left (moving things update this every step)
+  x: number;
+  y: number;
+  w: number;
+  h: number; // px, top-left (moving things update this every step)
   tag: string; // activator/objective letter 'a'-'f' / 'A'-'F' ('' if none): pairs share a colour
   on: boolean; // star taken / checkpoint active / plate pressed / lever thrown / gate open / ring held / key taken / goal reached by all
   value: number; // 0..1: plate sink, crumble shake, balance travel, rock warning, level progress for anything animated
@@ -73,7 +109,11 @@ export interface EntityView {
   holder: number; // player id that holds it (box, key, ring), -1
 }
 
-export interface HazardView { kind: 'risingLava' | 'tide' | 'avalanche'; pos: number; frozen: boolean } // pos: surface y (lava, tide) or front x (avalanche), px
+export interface HazardView {
+  kind: 'risingLava' | 'tide' | 'avalanche';
+  pos: number;
+  frozen: boolean;
+} // pos: surface y (lava, tide) or front x (avalanche), px
 
 export interface HudView {
   timeSec: number; // level clock
@@ -103,12 +143,20 @@ export interface WorldView {
   dark?: { radius: number; lights: { x: number; y: number }[] } | null; // campaign dynamic 10: a level with a lantern is dark; the renderer shows a circle of `radius` px around each light (world px) and a faint one around each player
 }
 
-export const BIOME_NAME = { beach: 'Playa', forest: 'Bosque valdiviano', mine: 'Mina del norte', glacier: 'Glaciar', volcano: 'Volcán' } as const;
+export const BIOME_NAME = {
+  beach: 'Playa',
+  forest: 'Bosque valdiviano',
+  mine: 'Mina del norte',
+  glacier: 'Glaciar',
+  volcano: 'Volcán',
+} as const;
 
 // Contract check for adapters: returns the problems found in a WorldView snapshot (empty = fine). Call it in the adapter's tests, every N steps.
 export function checkWorldView(w: WorldView): string[] {
   const errs: string[] = [];
-  const num = (name: string, v: number, allowInf = false) => { if (!(Number.isFinite(v) || (allowInf && v === Infinity))) errs.push(`${name} is not finite: ${v}`); };
+  const num = (name: string, v: number, allowInf = false) => {
+    if (!(Number.isFinite(v) || (allowInf && v === Infinity))) errs.push(`${name} is not finite: ${v}`);
+  };
   if (!(w.alpha >= 0 && w.alpha <= 1)) errs.push(`alpha ${w.alpha} outside [0, 1]`);
   const ids = new Set<number>();
   for (const p of w.players) {
@@ -121,11 +169,12 @@ export function checkWorldView(w: WorldView): string[] {
     if (p.bubble && !(p.bubble.t >= 0)) errs.push(`player ${p.id}: bubble.t ${p.bubble.t}`);
     if (p.bubble && p.dead) errs.push(`player ${p.id} is both dead and in a bubble`);
   }
-  for (const r of w.ropes) for (const l of r.links) {
-    if (!ids.has(l.a) || !ids.has(l.b)) errs.push(`rope ${r.id}: link ${l.a}-${l.b} names an unknown player`);
-    num(`rope ${r.id} tension`, l.tension);
-    if (l.tension < 0) errs.push(`rope ${r.id}: negative tension`);
-  }
+  for (const r of w.ropes)
+    for (const l of r.links) {
+      if (!ids.has(l.a) || !ids.has(l.b)) errs.push(`rope ${r.id}: link ${l.a}-${l.b} names an unknown player`);
+      num(`rope ${r.id} tension`, l.tension);
+      if (l.tension < 0) errs.push(`rope ${r.id}: negative tension`);
+    }
   const eids = new Set<string>();
   for (const e of w.entities) {
     if (eids.has(e.id)) errs.push(`duplicate entity id ${e.id}`);
@@ -133,7 +182,8 @@ export function checkWorldView(w: WorldView): string[] {
     for (const k of ['x', 'y', 'w', 'h', 'value'] as const) num(`entity ${e.id}.${k}`, e[k]);
     if (e.holder >= 0 && !ids.has(e.holder)) errs.push(`entity ${e.id} held by unknown player ${e.holder}`);
   }
-  num('hud.timeSec', w.hud.timeSec); num('hud.lives', w.hud.lives, true);
+  num('hud.timeSec', w.hud.timeSec);
+  num('hud.lives', w.hud.lives, true);
   if (w.grid.cells.length !== w.grid.w * w.grid.h) errs.push('grid size does not match w * h');
   if (w.grid.w !== w.level.w || w.grid.h !== w.level.h) errs.push('grid and level sizes differ');
   return errs;

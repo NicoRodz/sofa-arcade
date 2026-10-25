@@ -11,12 +11,27 @@ const level = CAMPAIGN_CATALOG.levels.find((l) => l.id === '1-1')!;
 function start() {
   const ends: LevelEnd[] = [];
   let over = 0;
-  const run = new ObstRun({ mode: 'free', difficulty: 'normal', level: 1, seed: 1, slots: [0, 1], levels: [level.def] }, { names: (s) => `J${s}`, bus: { emit: () => {} }, onOver: () => { over++; }, onLevelEnd: (e) => ends.push(e) });
-  const adv = (ms: number) => { for (let t = 0; t < ms; t += FRAME) run.step(FRAME); };
+  const run = new ObstRun(
+    { mode: 'free', difficulty: 'normal', level: 1, seed: 1, slots: [0, 1], levels: [level.def] },
+    {
+      names: (s) => `J${s}`,
+      bus: { emit: () => {} },
+      onOver: () => {
+        over++;
+      },
+      onLevelEnd: (e) => ends.push(e),
+    },
+  );
+  const adv = (ms: number) => {
+    for (let t = 0; t < ms; t += FRAME) run.step(FRAME);
+  };
   adv(COUNTDOWN_MS + 100);
   const w = () => run.session.world;
   const goal = () => w().level.markers.goal[0]!;
-  const winNow = () => { for (const p of w().players) teleport(w(), p.slot, goal().x, goal().y); adv(300); };
+  const winNow = () => {
+    for (const p of w().players) teleport(w(), p.slot, goal().x, goal().y);
+    adv(300);
+  };
   return { run, ends, adv, w, winNow, over: () => over };
 }
 
@@ -51,14 +66,20 @@ describe('the level end reaches the campaign at once', () => {
     const second = w().ent.stars[1]!.cell;
     teleport(w(), 0, second.x, second.y);
     adv(100);
-    for (let i = 0; i < 200 && w().status === 'playing'; i++) { for (const p of w().players) if (p.connected && p.mode === 'active') p.body.y = w().level.h * 48 + 300; adv(40); }
+    for (let i = 0; i < 200 && w().status === 'playing'; i++) {
+      for (const p of w().players) if (p.connected && p.mode === 'active') p.body.y = w().level.h * 48 + 300;
+      adv(40);
+    }
     expect(ends).toHaveLength(1);
     expect(ends[0]).toMatchObject({ cleared: false, collectiblesMask: 0 });
     expect(ends[0]!.deaths).toBeGreaterThan(0);
   });
   it('exactly once per level: the second attempt of a failed run reports again, the banners do not', () => {
     const { ends, adv, w, winNow } = start();
-    for (let i = 0; i < 200 && w().status === 'playing'; i++) { for (const p of w().players) if (p.connected && p.mode === 'active') p.body.y = w().level.h * 48 + 300; adv(40); }
+    for (let i = 0; i < 200 && w().status === 'playing'; i++) {
+      for (const p of w().players) if (p.connected && p.mode === 'active') p.body.y = w().level.h * 48 + 300;
+      adv(40);
+    }
     adv(5000); // the pause ends and the retry starts
     adv(3200);
     winNow();

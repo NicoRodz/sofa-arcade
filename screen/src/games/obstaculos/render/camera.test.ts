@@ -2,12 +2,33 @@ import { describe, expect, it } from 'vitest';
 import { TILE, ZOOM_MAX, ZOOM_MIN, buildGrid, parseLevelStrict, type Rect } from '@party/shared/obstaculos';
 import { LEVEL_01 } from '../../../../../shared/games/obstaculos/levels';
 import {
-  BOTTOM_STRIP, StragglerTracker, VIEW_H, VIEW_W, arrowPoint, chooseFocus, computeCamera, progressAt, progressField, type CamInput, type CamPlayer, type CamState,
+  BOTTOM_STRIP,
+  StragglerTracker,
+  VIEW_H,
+  VIEW_W,
+  arrowPoint,
+  chooseFocus,
+  computeCamera,
+  progressAt,
+  progressField,
+  type CamInput,
+  type CamPlayer,
+  type CamState,
 } from './camera';
 
-const P = (id: number, x: number, progress: number, o: Partial<CamPlayer> = {}): CamPlayer => ({ id, x, y: 500, vx: 0, progress, active: true, visibleCheck: true, ...o });
+const P = (id: number, x: number, progress: number, o: Partial<CamPlayer> = {}): CamPlayer => ({
+  id,
+  x,
+  y: 500,
+  vx: 0,
+  progress,
+  active: true,
+  visibleCheck: true,
+  ...o,
+});
 // level big enough that the clamp never interferes unless a test wants it to
-const W_ = 20000, H_ = 3000;
+const W_ = 20000,
+  H_ = 3000;
 const input = (players: CamPlayer[], extra: Partial<CamInput> = {}): CamInput => ({ players, boundsW: W_, boundsH: H_, ...extra });
 const settle = (inp: CamInput, from: CamState | null, seconds: number): CamState => {
   let s = from;
@@ -97,7 +118,11 @@ describe('computeCamera: zones, clamp and springs', () => {
   });
 
   it('a level shorter than the view sits near the bottom, with a strip of ground under it', () => {
-    const r = computeCamera({ players: [P(0, 1000, 10, { y: 300 }), P(1, 1100, 11, { y: 300 })], boundsW: 60 * TILE, boundsH: 14 * TILE }, null, 0);
+    const r = computeCamera(
+      { players: [P(0, 1000, 10, { y: 300 }), P(1, 1100, 11, { y: 300 })], boundsW: 60 * TILE, boundsH: 14 * TILE },
+      null,
+      0,
+    );
     const bottom = r.rect.y + r.rect.h;
     expect(bottom).toBeCloseTo(14 * TILE + BOTTOM_STRIP / r.state.zoom, 1);
   });
@@ -117,7 +142,12 @@ describe('computeCamera: zones, clamp and springs', () => {
   it('is deterministic: same inputs, same state (no Date, no random)', () => {
     const seq = (): CamState => {
       let s: CamState | null = null;
-      for (let i = 0; i < 300; i++) s = computeCamera(input([P(0, 5000 + i * 7, 10, { vx: 330 }), P(1, 5300 + i * 5, 12, { vx: 250 }), P(2, 4800 + i * 9, 14, { vx: 330 })]), s, 1 / 60).state;
+      for (let i = 0; i < 300; i++)
+        s = computeCamera(
+          input([P(0, 5000 + i * 7, 10, { vx: 330 }), P(1, 5300 + i * 5, 12, { vx: 250 }), P(2, 4800 + i * 9, 14, { vx: 330 })]),
+          s,
+          1 / 60,
+        ).state;
       return s!;
     };
     expect(seq()).toEqual(seq());
@@ -127,7 +157,7 @@ describe('computeCamera: zones, clamp and springs', () => {
     const still = settle(input([P(0, 5000, 10), P(1, 5100, 12)]), null, 2);
     const run = settle(input([P(0, 5000, 10, { vx: 330 }), P(1, 5100, 12, { vx: 330 })]), null, 2);
     expect(run.cx).toBeGreaterThan(still.cx + 50);
-    expect(run.cx - still.cx).toBeLessThan(0.15 * VIEW_W / 2 + 1);
+    expect(run.cx - still.cx).toBeLessThan((0.15 * VIEW_W) / 2 + 1);
   });
 });
 
@@ -142,14 +172,16 @@ describe('StragglerTracker', () => {
   });
   it('counts each player on their own and reset clears one', () => {
     const t = new StragglerTracker();
-    t.update(1, [1, 2], 3); t.update(1, [2], 3);
+    t.update(1, [1, 2], 3);
+    t.update(1, [2], 3);
     expect(t.seconds(1)).toBe(0);
     expect(t.seconds(2)).toBe(2);
     t.reset(2);
     expect(t.seconds(2)).toBe(0);
   });
   it('the limit comes from the difficulty: 1 s easy, 3 s hard', () => {
-    const easy = new StragglerTracker(), hard = new StragglerTracker();
+    const easy = new StragglerTracker(),
+      hard = new StragglerTracker();
     expect(easy.update(1, [0], 1)).toEqual([0]);
     expect(hard.update(1, [0], 3)).toEqual([]);
   });
@@ -158,9 +190,11 @@ describe('StragglerTracker', () => {
 describe('arrowPoint', () => {
   it('puts the arrow on the border, inset, along the direction', () => {
     const a = arrowPoint(-1, 0, 1920, 1080, 70);
-    expect(a.x).toBeCloseTo(70, 5); expect(a.y).toBeCloseTo(540, 5);
+    expect(a.x).toBeCloseTo(70, 5);
+    expect(a.y).toBeCloseTo(540, 5);
     const b = arrowPoint(0, 1, 1920, 1080, 70);
-    expect(b.x).toBeCloseTo(960, 5); expect(b.y).toBeCloseTo(1010, 5);
+    expect(b.x).toBeCloseTo(960, 5);
+    expect(b.y).toBeCloseTo(1010, 5);
     const c = arrowPoint(Math.SQRT1_2, -Math.SQRT1_2, 1920, 1080, 70);
     expect(c.y).toBeCloseTo(70, 5); // the shorter axis wins: the top border
     expect(c.x).toBeLessThan(1850);
@@ -170,12 +204,15 @@ describe('arrowPoint', () => {
 describe('progressField (BFS from the goal)', () => {
   const p = parseLevelStrict(LEVEL_01);
   const grid = buildGrid(p, 'chain');
-  const goal = p.markers.goal[0]!, spawn = p.markers.spawn[0]!;
+  const goal = p.markers.goal[0]!,
+    spawn = p.markers.spawn[0]!;
   const f = progressField(grid, goal);
 
   it('is 0 at the goal and grows with the walking distance', () => {
     expect(f[goal.y * grid.w + goal.x]).toBe(0);
-    expect(progressAt(f, grid, (spawn.x + 0.5) * TILE, (spawn.y + 0.5) * TILE)).toBeGreaterThan(progressAt(f, grid, (35 + 0.5) * TILE, (8 + 0.5) * TILE)); // spawn is farther than the checkpoint
+    expect(progressAt(f, grid, (spawn.x + 0.5) * TILE, (spawn.y + 0.5) * TILE)).toBeGreaterThan(
+      progressAt(f, grid, (35 + 0.5) * TILE, (8 + 0.5) * TILE),
+    ); // spawn is farther than the checkpoint
     expect(progressAt(f, grid, (35 + 0.5) * TILE, (8 + 0.5) * TILE)).toBeGreaterThan(progressAt(f, grid, (52 + 0.5) * TILE, 7.5 * TILE));
   });
   it('cells inside solid rock are not reachable and sort after everything reachable', () => {
@@ -203,7 +240,7 @@ describe('computeCamera: campaign look (plan §5.1)', () => {
     expect(settle(input(still, { look: look({ goalX: 1000 }) }), null, 3).cx).toBeLessThan(mid - 50);
     expect(settle(input(still), null, 3).cx).toBeCloseTo(mid, 0); // quick match: still group, no look-ahead
   });
-  it('the margin is the hint\'s padTiles around both players', () => {
+  it("the margin is the hint's padTiles around both players", () => {
     const ps = [P(0, 5000, 30), P(1, 6800, 28)];
     const a = computeCamera(input(ps, { look: look({ padTiles: 3 }) }), null, 0).state.zoom;
     const b = computeCamera(input(ps, { look: look({ padTiles: 6 }) }), null, 0).state.zoom;

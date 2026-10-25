@@ -6,25 +6,63 @@ import { markDone, phoneKey, readDone, type KV } from '@party/shared/tutorial';
 import { createSchoolUi } from './school';
 
 class El {
-  textContent = ''; innerHTML = ''; disabled = false; style: Record<string, string> = {}; children: El[] = [];
-  private cls = new Set<string>(); private handlers = new Map<string, ((e: { preventDefault(): void }) => void)[]>();
-  classList = { toggle: (c: string, on?: boolean) => { if (on ?? !this.cls.has(c)) this.cls.add(c); else this.cls.delete(c); }, contains: (c: string) => this.cls.has(c) };
-  addEventListener(t: string, fn: (e: { preventDefault(): void }) => void) { this.handlers.set(t, [...(this.handlers.get(t) ?? []), fn]); }
-  tap() { for (const fn of this.handlers.get('pointerup') ?? []) fn({ preventDefault() {} }); }
+  textContent = '';
+  innerHTML = '';
+  disabled = false;
+  style: Record<string, string> = {};
+  children: El[] = [];
+  private cls = new Set<string>();
+  private handlers = new Map<string, ((e: { preventDefault(): void }) => void)[]>();
+  classList = {
+    toggle: (c: string, on?: boolean) => {
+      if (on ?? !this.cls.has(c)) this.cls.add(c);
+      else this.cls.delete(c);
+    },
+    contains: (c: string) => this.cls.has(c),
+  };
+  addEventListener(t: string, fn: (e: { preventDefault(): void }) => void) {
+    this.handlers.set(t, [...(this.handlers.get(t) ?? []), fn]);
+  }
+  tap() {
+    for (const fn of this.handlers.get('pointerup') ?? []) fn({ preventDefault() {} });
+  }
 }
 function fakeDoc() {
   const els = new Map<string, El>();
-  const get = (id: string) => { let e = els.get(id); if (!e) { e = new El(); els.set(id, e); } return e; };
+  const get = (id: string) => {
+    let e = els.get(id);
+    if (!e) {
+      e = new El();
+      els.set(id, e);
+    }
+    return e;
+  };
   const dots = get('schooldots');
-  Object.defineProperty(dots, 'innerHTML', { set(v: string) { dots.children = Array.from({ length: (v.match(/<i>/g) ?? []).length }, () => new El()); }, get: () => '' });
+  Object.defineProperty(dots, 'innerHTML', {
+    set(v: string) {
+      dots.children = Array.from({ length: (v.match(/<i>/g) ?? []).length }, () => new El());
+    },
+    get: () => '',
+  });
   const body = { dataset: {} as Record<string, string> };
   return { doc: { getElementById: get, body } as unknown as Document, el: get, body };
 }
-const mem = (): KV & { m: Map<string, string> } => { const m = new Map<string, string>(); return { m, get: (k) => m.get(k) ?? null, set: (k, v) => { m.set(k, v); } }; };
+const mem = (): KV & { m: Map<string, string> } => {
+  const m = new Map<string, string>();
+  return {
+    m,
+    get: (k) => m.get(k) ?? null,
+    set: (k, v) => {
+      m.set(k, v);
+    },
+  };
+};
 type SchoolMsg = Extract<ServerMsg, { t: 'school' }>;
 const msg = (o: Partial<SchoolMsg> = {}): SchoolMsg => ({ t: 'school', step: 0, total: 4, text: 'Toma masa del cajón', btn: 'a', ...o });
 function rig(o: { captain?: boolean; kv?: KV | null } = {}) {
-  const f = fakeDoc(), sent: ClientMsg[] = [], kv = o.kv === undefined ? mem() : o.kv;
+  const f = fakeDoc(),
+    sent: ClientMsg[] = [],
+    kv = o.kv === undefined ? mem() : o.kv;
   const ui = createSchoolUi({ doc: f.doc, kv, token: 'tok', send: (m) => sent.push(m), isCaptain: () => !!o.captain });
   ui.show(true);
   return { ...f, ui, sent, kv };
@@ -79,15 +117,20 @@ describe('what the phone remembers and tells', () => {
     expect(r.sent).toEqual([{ t: 'schoolDone' }]);
   });
   it('a phone that remembers says so when it (re)joins; one that does not says nothing', () => {
-    const kv = mem(); markDone(kv, phoneKey('tok'));
-    const a = rig({ kv }); a.ui.announce();
+    const kv = mem();
+    markDone(kv, phoneKey('tok'));
+    const a = rig({ kv });
+    a.ui.announce();
     expect(a.sent).toEqual([{ t: 'schoolDone' }]);
-    const b = rig(); b.ui.announce();
+    const b = rig();
+    b.ui.announce();
     expect(b.sent).toEqual([]);
   });
   it('another phone (another token) does not inherit it', () => {
-    const kv = mem(); markDone(kv, phoneKey('somebody-else'));
-    const r = rig({ kv }); r.ui.announce();
+    const kv = mem();
+    markDone(kv, phoneKey('somebody-else'));
+    const r = rig({ kv });
+    r.ui.announce();
     expect(r.sent).toEqual([]);
   });
   it('"Ya sé · saltar": tells the relay to skip THIS chef (with the skip flag) and remembers; once done it does nothing', () => {
@@ -101,7 +144,14 @@ describe('what the phone remembers and tells', () => {
     expect(r.sent).toEqual([]);
   });
   it('storage blocked or missing: it still works, it just cannot remember', () => {
-    const blocked: KV = { get: () => { throw new Error('x'); }, set: () => { throw new Error('x'); } };
+    const blocked: KV = {
+      get: () => {
+        throw new Error('x');
+      },
+      set: () => {
+        throw new Error('x');
+      },
+    };
     for (const kv of [blocked, null]) {
       const r = rig({ kv });
       expect(() => r.ui.apply(msg({ step: 4, done: true }))).not.toThrow();

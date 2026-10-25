@@ -46,7 +46,10 @@ describe('isometryCheck', () => {
     rows[0] = '#MTT#HH||HH#QTM#'; // the Q at column 3 becomes a T
     const r = isometryCheck(rows, SIGMAS.mirrorX, startsAsOne);
     expect(r.s).toBeLessThan(1);
-    expect(r.mismatches).toEqual([[3, 0], [12, 0]]);
+    expect(r.mismatches).toEqual([
+      [3, 0],
+      [12, 0],
+    ]);
     expect(r.s).toBeCloseTo(1 - 2 / (16 * 9), 10);
   });
   it('the right sigma matters: V3 is not a left-right or top-bottom mirror', () => {
@@ -65,11 +68,12 @@ describe('isometryCheck', () => {
     expect(() => isometryCheck([], SIGMAS.mirrorX)).toThrow(RangeError);
   });
   it('measures the real maps: every fixed map gets an s between 0 and 1 and a valid sigma', () => {
-    for (const m of FIXED_MAPS) for (const sigma of Object.values(SIGMAS)) {
-      const r = isometryCheck(m.rows, sigma);
-      expect(r.valid, m.id).toBe(true);
-      expect(r.s, m.id).toBeGreaterThan(0);
-      expect(r.s, m.id).toBeLessThanOrEqual(1);
-    }
+    for (const m of FIXED_MAPS)
+      for (const sigma of Object.values(SIGMAS)) {
+        const r = isometryCheck(m.rows, sigma);
+        expect(r.valid, m.id).toBe(true);
+        expect(r.s, m.id).toBeGreaterThan(0);
+        expect(r.s, m.id).toBeLessThanOrEqual(1);
+      }
   });
 });

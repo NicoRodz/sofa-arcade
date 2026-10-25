@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { karplusStrong } from './ks';
 
-const rms = (a: Float32Array, from: number, to: number) => { let s = 0; for (let i = from; i < to; i++) s += a[i]! * a[i]!; return Math.sqrt(s / (to - from)); };
+const rms = (a: Float32Array, from: number, to: number) => {
+  let s = 0;
+  for (let i = from; i < to; i++) s += a[i]! * a[i]!;
+  return Math.sqrt(s / (to - from));
+};
 describe('karplusStrong', () => {
   const sr = 44100;
   it('is finite, bounded by 1, deterministic per seed', () => {

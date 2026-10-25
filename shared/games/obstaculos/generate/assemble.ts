@@ -2,14 +2,21 @@
 import type { Biome, EntityParam, LevelDef, Tether } from '../types';
 import { GROUND_ROW, MODULE_ROWS } from '../modules/types';
 
-export interface Piece { w: number; rows: string[]; params?: Record<string, EntityParam> }
+export interface Piece {
+  w: number;
+  rows: string[];
+  params?: Record<string, EntityParam>;
+}
 
-const ACT = 'abcdef', OBJ = 'ABCDEF';
+const ACT = 'abcdef',
+  OBJ = 'ABCDEF';
 
 export class LetterPool {
   private act = 0;
   private obj = 0;
-  free(kind: 'act' | 'obj'): number { return 6 - (kind === 'act' ? this.act : this.obj); }
+  free(kind: 'act' | 'obj'): number {
+    return 6 - (kind === 'act' ? this.act : this.obj);
+  }
   take(kind: 'act' | 'obj'): string | null {
     if (kind === 'act') return this.act < 6 ? ACT[this.act++]! : null;
     return this.obj < 6 ? OBJ[this.obj++]! : null;
@@ -17,7 +24,12 @@ export class LetterPool {
 }
 
 export const lettersOf = (p: Piece): { act: string[]; obj: string[] } => {
-  const set = new Set<string>(p.rows.join('').split('').filter((c) => ACT.includes(c) || OBJ.includes(c)));
+  const set = new Set<string>(
+    p.rows
+      .join('')
+      .split('')
+      .filter((c) => ACT.includes(c) || OBJ.includes(c)),
+  );
   return { act: [...set].filter((c) => ACT.includes(c)), obj: [...set].filter((c) => OBJ.includes(c)) };
 };
 
@@ -33,7 +45,12 @@ export function rename(p: Piece, pool: LetterPool): Piece | null {
   const params: Record<string, EntityParam> = {};
   for (const [k, v] of Object.entries(p.params ?? {})) {
     const nk = map.get(k) ?? k;
-    params[nk] = 'opens' in v ? { ...v, opens: map.get(v.opens) ?? v.opens } : v.kind === 'balance' ? { ...v, partner: map.get(v.partner) ?? v.partner } : v;
+    params[nk] =
+      'opens' in v
+        ? { ...v, opens: map.get(v.opens) ?? v.opens }
+        : v.kind === 'balance'
+          ? { ...v, partner: map.get(v.partner) ?? v.partner }
+          : v;
   }
   return { w: p.w, rows, params };
 }
@@ -48,14 +65,24 @@ export function glue(pieces: Piece[]): { rows: string[]; params: Record<string, 
   const rows: string[] = Array.from({ length: MODULE_ROWS }, () => '#');
   const params: Record<string, EntityParam> = {};
   for (const p of pieces) {
-    p.rows.forEach((r, y) => { rows[y] += r; });
+    p.rows.forEach((r, y) => {
+      rows[y] += r;
+    });
     Object.assign(params, p.params);
   }
   const out = rows.map((r) => r + '#');
   return { rows: out, params, width: out[0]!.length };
 }
 
-export interface BuildMeta { id: string; name: string; biome: Biome; players: { min: number; max: number }; tether: Tether; stars: 1 | 2 | 3 | 4 | 5; parSec: number }
+export interface BuildMeta {
+  id: string;
+  name: string;
+  biome: Biome;
+  players: { min: number; max: number };
+  tether: Tether;
+  stars: 1 | 2 | 3 | 4 | 5;
+  parSec: number;
+}
 export function toLevel(pieces: Piece[], meta: BuildMeta): LevelDef {
   const g = glue(pieces);
   return { ...meta, rows: g.rows, ...(Object.keys(g.params).length ? { params: g.params } : {}) };

@@ -24,7 +24,10 @@ export function gap(frac: number, tether: Tether, rng: Rng): Piece {
   const kind = randInt(rng, 0, 2);
   if (kind === 0) c.pit(3, 2 + g, '~');
   else if (kind === 1) c.pit(3, 2 + g, '~', G + 2);
-  else { c.pit(3, 2 + g, '^', G + 1); c.rect(3, 16, 2 + g, 17, '#'); }
+  else {
+    c.pit(3, 2 + g, '^', G + 1);
+    c.rect(3, 16, 2 + g, 17, '#');
+  }
   return piece(c);
 }
 
@@ -51,7 +54,10 @@ export function hops(frac: number, tether: Tether, rng: Rng): Piece {
   const c = new Canvas(w);
   c.pit(3, w - 4, rng() < 0.5 ? '~' : '^', G + 1);
   if (c.g[16]![3] === '^') c.rect(3, 16, w - 4, 17, '#');
-  for (let i = 0; i < n - 1; i++) { const x = 3 + g + i * (g + 2); c.rect(x, G + 1, x + 1, G + 1, '#'); }
+  for (let i = 0; i < n - 1; i++) {
+    const x = 3 + g + i * (g + 2);
+    c.rect(x, G + 1, x + 1, G + 1, '#');
+  }
   return piece(c);
 }
 
@@ -60,11 +66,16 @@ export type TramoKind = (typeof TRAMOS)[number];
 
 export function tramo(kind: TramoKind, frac: number, tether: Tether, rng: Rng): Piece {
   switch (kind) {
-    case 'gap': return gap(frac, tether, rng);
-    case 'hill': return hill(frac, rng);
-    case 'strip': return strip(frac, tether, rng);
-    case 'hops': return hops(frac, tether, rng);
-    default: return flat(randInt(rng, 4, 8));
+    case 'gap':
+      return gap(frac, tether, rng);
+    case 'hill':
+      return hill(frac, rng);
+    case 'strip':
+      return strip(frac, tether, rng);
+    case 'hops':
+      return hops(frac, tether, rng);
+    default:
+      return flat(randInt(rng, 4, 8));
   }
 }
 export const randomFraction = (rng: Rng, allowed: readonly number[]): number => pick(rng, allowed);

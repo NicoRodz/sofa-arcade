@@ -30,7 +30,8 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
   if (s.fire !== undefined) return off('En llamas', 'oven'); // burn: nothing works on a station on fire until it is put out (B does that)
   switch (s.kind) {
     case 'crate': {
-      const verb = (s.crate === 2 && g.rec ? TOPPING_VERB[g.rec.topping - 2] : CRATE_VERB[s.crate]) ?? 'Tomar', icon = CRATE_ICON[s.crate] ?? 'crate';
+      const verb = (s.crate === 2 && g.rec ? TOPPING_VERB[g.rec.topping - 2] : CRATE_VERB[s.crate]) ?? 'Tomar',
+        icon = CRATE_ICON[s.crate] ?? 'crate';
       if (full) return off('Manos llenas', icon);
       if (s.pantry && g.pantry!.stock <= 0) return off('Despensa vacía', icon); // 14 chars
       return on(verb, icon);
@@ -56,7 +57,10 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       return off(full ? 'Ocupado' : 'Tabla vacía', 'chop');
     case 'pot': {
       const t = cutType(p.item);
-      if (t >= 0) return !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < 3 ? on('Al horno', 'oven') : off(s.done ? 'Aún no listo' : 'Ya lleva eso', 'oven');
+      if (t >= 0)
+        return !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < 3
+          ? on('Al horno', 'oven')
+          : off(s.done ? 'Aún no listo' : 'Ya lleva eso', 'oven');
       if (p.item === 'plate') return s.done ? on(s.burnt ? 'Sacar quemada' : 'Sacar pizza', 'oven') : off('Aún no listo', 'oven'); // burn: a burnt pizza comes out too, to go to the bin
       if (full) return RAW.has(p.item!) ? off('Pica primero', 'oven') : off('Manos llenas', 'oven');
       return off(s.done ? 'Falta plato' : s.inputs.length ? 'Cocinando' : 'Horno', 'oven');
@@ -74,7 +78,8 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
 }
 
 /** What B does: hold on a board with a raw ingredient or at a sink with dirty plates; a tap with free hands and nothing in front is the dash. */
-function buttonB(g: Game, p: Player, s: Station | null, front: Station | null = s): Btn { // front: what stops a dash (the old probe when the magnet is on)
+function buttonB(g: Game, p: Player, s: Station | null, front: Station | null = s): Btn {
+  // front: what stops a dash (the old probe when the magnet is on)
   if (s?.kind === 'board' && s.item && RAW.has(s.item)) return on(CUT_VERB[s.item]!, 'chop');
   if (s?.fire !== undefined) return on('Apagar', 'oven'); // burn: Picar puts the fire out (an Ayudante taps it once and it goes on)
   if (s?.kind === 'sink' && s.count > 0) return on('Lavar', 'wash');
@@ -87,11 +92,16 @@ function buttonB(g: Game, p: Player, s: Station | null, front: Station | null = 
 export function chefHint(g: Game, p: Player): HintLabels {
   if (p.ghost) return { a: null, b: null };
   if (p.slip) return { a: 'Sin control', b: 'Sin control', aIcon: 'grab', bIcon: 'chop', aOff: true, bOff: true };
-  const s = targetStation(g, p), near = !!floorItemNear(g, p);
+  const s = targetStation(g, p),
+    near = !!floorItemNear(g, p);
   const aiming = isAiming(g, p);
   const sa = aStation(g, p); // A's station: the rubbish beside a counter can win it under the magnet
   const sab = sabotageHint(g, p, sa, near); // the catapult and the bags: it names what only versus has
-  const a = aiming ? off('Apuntando', 'grab') : sab.a ? on(sab.a, sab.a === 'Cargar' || sab.a === 'Recoger' ? 'grab' : 'trash') : buttonA(g, p, sa, near);
+  const a = aiming
+    ? off('Apuntando', 'grab')
+    : sab.a
+      ? on(sab.a, sab.a === 'Cargar' || sab.a === 'Recoger' ? 'grab' : 'trash')
+      : buttonA(g, p, sa, near);
   const b = aiming ? on('¡Lanzar!', 'star') : buttonB(g, p, s, g.magnet && !p.assist ? targetStation(g, p, true) : s);
   return { a: a.label, b: b.label, aIcon: a.icon, bIcon: b.icon, ...(a.off ? { aOff: true } : {}), ...(b.off ? { bOff: true } : {}) };
 }
@@ -110,10 +120,16 @@ export function createHintSync(send: (m: HintMsg) => void) {
   const sent = new Map<number, { key: string; at: number }>();
   return {
     sync(g: Game | null, now: number) {
-      for (const id of [...sent.keys()]) if (!g || !g.players.has(id)) { send({ t: 'hint', playerId: id, a: null, b: null }); sent.delete(id); }
+      for (const id of [...sent.keys()])
+        if (!g || !g.players.has(id)) {
+          send({ t: 'hint', playerId: id, a: null, b: null });
+          sent.delete(id);
+        }
       if (!g) return;
       for (const p of g.players.values()) {
-        const h = chefHint(g, p), key = JSON.stringify(h), last = sent.get(p.id);
+        const h = chefHint(g, p),
+          key = JSON.stringify(h),
+          last = sent.get(p.id);
         if (last && !(key !== last.key && now - last.at >= HINT_MIN_MS) && now - last.at < HINT_REFRESH_MS) continue;
         sent.set(p.id, { key, at: now });
         send({ t: 'hint', playerId: p.id, ...h });

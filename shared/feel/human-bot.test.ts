@@ -6,13 +6,20 @@ import { ACTIONS, HUMAN, runGame, stationsFor, type Sim } from './human-bot';
 
 const sim: Sim = { createGame, addPlayer, tick, isFloor, maps: FIXED_MAPS.slice(0, 4) };
 async function rate(opts: Record<string, unknown>, reps = 3) {
-  let n = 0, first = 0, hit = 0, k = 1;
+  let n = 0,
+    first = 0,
+    hit = 0,
+    k = 1;
   for (let mi = 0; mi < sim.maps.length; mi++) {
     const probe = createGame({ mapId: sim.maps[mi]!.id, rows: sim.maps[mi]!.rows, spawns: sim.maps[mi]!.spawns });
-    for (const a of ACTIONS) for (const station of stationsFor(probe, a).slice(0, 2)) for (let r = 0; r < reps; r++) {
-      const [res] = await runGame(sim, mi, [{ action: a, station }], k++, opts);
-      n++; first += res!.first ? 1 : 0; hit += res!.hit ? 1 : 0;
-    }
+    for (const a of ACTIONS)
+      for (const station of stationsFor(probe, a).slice(0, 2))
+        for (let r = 0; r < reps; r++) {
+          const [res] = await runGame(sim, mi, [{ action: a, station }], k++, opts);
+          n++;
+          first += res!.first ? 1 : 0;
+          hit += res!.hit ? 1 : 0;
+        }
   }
   return { n, first: first / n, hit: hit / n };
 }
@@ -33,6 +40,10 @@ describe('human bot', () => {
   it('a perfect human (no error, no latency, no noise) lands almost every press: the bot measures the sim, not itself', async () => {
     const saved = { ...HUMAN };
     Object.assign(HUMAN, { aimErrDeg: 0, noiseDeg: 0, latMs: [0, 0] as const });
-    try { expect((await rate({ difficulty: 'easy' })).hit).toBeGreaterThan(0.8); } finally { Object.assign(HUMAN, saved); }
+    try {
+      expect((await rate({ difficulty: 'easy' })).hit).toBeGreaterThan(0.8);
+    } finally {
+      Object.assign(HUMAN, saved);
+    }
   });
 });

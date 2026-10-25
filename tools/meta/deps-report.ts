@@ -6,10 +6,25 @@ import { resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const DIRS = ['shared', 'screen/src', 'controller/src', 'server/src', 'tools'];
-const r = spawnSync('npx', ['depcruise', '--config', '.dependency-cruiser.cjs', ...DIRS, '--output-type', 'json'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
-const json = JSON.parse(r.stdout) as { summary: { totalCruised: number; violations: { rule: { name: string; severity: string }; from: string; to: string }[] } };
+const r = spawnSync('npx', ['depcruise', '--config', '.dependency-cruiser.cjs', ...DIRS, '--output-type', 'json'], {
+  cwd: ROOT,
+  encoding: 'utf8',
+  maxBuffer: 1 << 28,
+});
+const json = JSON.parse(r.stdout) as {
+  summary: { totalCruised: number; violations: { rule: { name: string; severity: string }; from: string; to: string }[] };
+};
 const sha = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
-const RULES = ['no-cross-game', 'platform-not-games', 'only-apps-compose', 'pure-sim', 'pure-sim-node-core', 'public-api', 'no-circular', 'no-test-in-prod'];
+const RULES = [
+  'no-cross-game',
+  'platform-not-games',
+  'only-apps-compose',
+  'pure-sim',
+  'pure-sim-node-core',
+  'public-api',
+  'no-circular',
+  'no-test-in-prod',
+];
 const by = new Map<string, typeof json.summary.violations>(RULES.map((n) => [n, []]));
 for (const v of json.summary.violations) by.get(v.rule.name)?.push(v);
 
@@ -20,16 +35,21 @@ const lines = [
   '',
   '| Rule | Warnings | Reads as |',
   '|---|---:|---|',
-  ...RULES.map((n) => `| ${n} | ${by.get(n)!.length} | ${{
-    'no-cross-game': 'games/X imports games/Y',
-    'platform-not-games': 'platform code (shared core, kits) imports a game or a main.ts',
-    'only-apps-compose': 'someone imports a main.ts',
-    'pure-sim': 'shared/ imports phaser, ws, express or screen/controller/server',
-    'pure-sim-node-core': 'shared/ imports a Node core module (node:*)',
-    'public-api': 'cross-package import that is not an index.ts (today: @party/shared subpath exports)',
-    'no-circular': 'import cycles (one row per module in a cycle)',
-    'no-test-in-prod': 'production code imports a test file or test harness',
-  }[n]} |`),
+  ...RULES.map(
+    (n) =>
+      `| ${n} | ${by.get(n)!.length} | ${
+        {
+          'no-cross-game': 'games/X imports games/Y',
+          'platform-not-games': 'platform code (shared core, kits) imports a game or a main.ts',
+          'only-apps-compose': 'someone imports a main.ts',
+          'pure-sim': 'shared/ imports phaser, ws, express or screen/controller/server',
+          'pure-sim-node-core': 'shared/ imports a Node core module (node:*)',
+          'public-api': 'cross-package import that is not an index.ts (today: @party/shared subpath exports)',
+          'no-circular': 'import cycles (one row per module in a cycle)',
+          'no-test-in-prod': 'production code imports a test file or test harness',
+        }[n]
+      } |`,
+  ),
   '',
   `Total: ${json.summary.violations.length}.`,
   '',
@@ -37,11 +57,25 @@ const lines = [
 for (const n of RULES) {
   const vs = by.get(n)!;
   if (!vs.length || n === 'public-api') continue;
-  lines.push(`## ${n}`, '', ...vs.slice(0, 40).map((v) => `- \`${v.from}\` -> \`${v.to}\``), vs.length > 40 ? `- ... +${vs.length - 40} more` : '', '');
+  lines.push(
+    `## ${n}`,
+    '',
+    ...vs.slice(0, 40).map((v) => `- \`${v.from}\` -> \`${v.to}\``),
+    vs.length > 40 ? `- ... +${vs.length - 40} more` : '',
+    '',
+  );
 }
 const api = by.get('public-api')!;
 const perTarget = new Map<string, number>();
 for (const v of api) perTarget.set(v.to, (perTarget.get(v.to) ?? 0) + 1);
-lines.push('## public-api, by target', '', ...[...perTarget].sort((a, b) => b[1] - a[1]).slice(0, 15).map(([t, c]) => `- ${c} x \`${t}\``), '');
+lines.push(
+  '## public-api, by target',
+  '',
+  ...[...perTarget]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([t, c]) => `- ${c} x \`${t}\``),
+  '',
+);
 writeFileSync(resolve(ROOT, 'docs/refactor/depcruise-report.md'), lines.join('\n'));
 console.log(Object.fromEntries([...by].map(([n, v]) => [n, v.length])));

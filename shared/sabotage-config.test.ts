@@ -4,7 +4,18 @@ import type { GameEvents } from './events';
 import { Emitter } from './events';
 import { DIFFICULTIES } from './difficulty';
 import {
-  CATAPULT_CHAR, DESECHOS_PER_BAG, LAND_AFTER_MS, RULES, SABOTAGE_LABEL, SABOTAGE_MODES, SLIP, controlLostMs, defaultSabotage, dropsItem, isSabotageMode, sabotageOf,
+  CATAPULT_CHAR,
+  DESECHOS_PER_BAG,
+  LAND_AFTER_MS,
+  RULES,
+  SABOTAGE_LABEL,
+  SABOTAGE_MODES,
+  SLIP,
+  controlLostMs,
+  defaultSabotage,
+  dropsItem,
+  isSabotageMode,
+  sabotageOf,
   type SabotageEvents,
 } from './sabotage-config';
 
@@ -43,7 +54,20 @@ describe('sabotage config', () => {
     expect(CATAPULT_CHAR).toBe('Y');
   });
   it('the events are part of GameEvents and an Emitter carries them typed', () => {
-    const names: (keyof SabotageEvents)[] = ['sabotage:bagReady', 'sabotage:aim', 'sabotage:launch', 'sabotage:land', 'sabotage:caught', 'sabotage:burst', 'sabotage:blocked', 'chef:slip', 'chef:recover', 'trash:picked', 'trash:binned', 'trash:decayed'];
+    const names: (keyof SabotageEvents)[] = [
+      'sabotage:bagReady',
+      'sabotage:aim',
+      'sabotage:launch',
+      'sabotage:land',
+      'sabotage:caught',
+      'sabotage:burst',
+      'sabotage:blocked',
+      'chef:slip',
+      'chef:recover',
+      'trash:picked',
+      'trash:binned',
+      'trash:decayed',
+    ];
     expectTypeOf<keyof SabotageEvents>().toExtend<keyof GameEvents>();
     const bus = new Emitter<GameEvents>();
     const seen: string[] = [];

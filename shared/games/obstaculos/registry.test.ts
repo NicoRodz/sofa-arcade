@@ -37,14 +37,30 @@ describe('registry entry (published by F3)', () => {
 
 describe('the lobby choices travel in the generic config (modeOptions) and reach the phones', () => {
   it('mode and level survive the screen -> relay -> phone trip, and a malformed one falls back to the defaults on the phone side', () => {
-    const raw = JSON.stringify({ t: 'config', game: GAME_ID, difficulty: 'hard', map: DEFAULT_CONFIG.map, seed: 4242, modeOptions: toModeOptions({ tether: 'free', level: 9 }) });
+    const raw = JSON.stringify({
+      t: 'config',
+      game: GAME_ID,
+      difficulty: 'hard',
+      map: DEFAULT_CONFIG.map,
+      seed: 4242,
+      modeOptions: toModeOptions({ tether: 'free', level: 9 }),
+    });
     const m = parseClientMessage(raw);
     expect(m).toMatchObject({ t: 'config', game: GAME_ID, modeOptions: { tether: 'free', level: 9 } });
     const { t: _t, ...cfg } = m as Extract<NonNullable<typeof m>, { t: 'config' }>;
     const msg = configMsg({ ...DEFAULT_CONFIG, ...cfg });
-    expect(setupLabel(parseObstOptions(msg.modeOptions), msg.difficulty, msg.seed, DIFFICULTY_LABEL)).toBe('Difícil · Libres · Desde el nivel 9');
+    expect(setupLabel(parseObstOptions(msg.modeOptions), msg.difficulty, msg.seed, DIFFICULTY_LABEL)).toBe(
+      'Difícil · Libres · Desde el nivel 9',
+    );
     expect(parseObstOptions({ tether: 7, level: -3 })).toEqual({ tether: 'chain', level: 1 });
-    const bad = JSON.stringify({ t: 'config', game: GAME_ID, difficulty: 'hard', map: DEFAULT_CONFIG.map, seed: 1, modeOptions: { a: { nested: true } } });
+    const bad = JSON.stringify({
+      t: 'config',
+      game: GAME_ID,
+      difficulty: 'hard',
+      map: DEFAULT_CONFIG.map,
+      seed: 1,
+      modeOptions: { a: { nested: true } },
+    });
     expect(parseClientMessage(bad)).toBeNull();
   });
 });

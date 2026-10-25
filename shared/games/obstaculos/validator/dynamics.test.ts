@@ -11,16 +11,47 @@ import { lint, validateState } from './validate';
 
 const only = (...m: Mechanic[]) => new Set<Mechanic>(m);
 // 18 rows: floor on 15..17 (standing row 14), S at column 2 and G three columns from the right.
-function flat(w: number, params?: Record<string, EntityParam>, extra: Partial<LevelDef> = {}, tether: LevelDef['tether'] = 'any'): string[] {
+function flat(
+  w: number,
+  params?: Record<string, EntityParam>,
+  extra: Partial<LevelDef> = {},
+  tether: LevelDef['tether'] = 'any',
+): string[] {
   const rows = Array.from({ length: 18 }, (_, y) => (y >= 15 ? '#'.repeat(w) : '.'.repeat(w)));
   rows[14] = rows[14]!.slice(0, 2) + 'S' + rows[14]!.slice(3, w - 3) + 'G' + rows[14]!.slice(w - 2);
-  void params; void extra; void tether;
+  void params;
+  void extra;
+  void tether;
   return rows;
 }
-const set = (rows: string[], x: number, y: number, s: string): string[] => { const r = [...rows]; r[y] = r[y]!.slice(0, x) + s + r[y]!.slice(x + s.length); return r; };
-const rect = (rows: string[], x0: number, y0: number, x1: number, y1: number, ch: string): string[] => { let r = rows; for (let y = y0; y <= y1; y++) r = set(r, x0, y, ch.repeat(x1 - x0 + 1)); return r; };
-const def = (rows: string[], o: Partial<LevelDef> = {}): LevelDef => ({ id: 't', name: 't', biome: 'glacier', players: { min: 2, max: 2 }, tether: 'any', stars: 1, parSec: 60, rows, ...o });
-const camp = (mode: 'chain' | 'free' = 'chain', allow?: ReadonlySet<Mechanic>) => ({ n: 2, mode, diff: 'hard' as const, world: 'forest' as const, ...(allow ? { allow } : {}) });
+const set = (rows: string[], x: number, y: number, s: string): string[] => {
+  const r = [...rows];
+  r[y] = r[y]!.slice(0, x) + s + r[y]!.slice(x + s.length);
+  return r;
+};
+const rect = (rows: string[], x0: number, y0: number, x1: number, y1: number, ch: string): string[] => {
+  let r = rows;
+  for (let y = y0; y <= y1; y++) r = set(r, x0, y, ch.repeat(x1 - x0 + 1));
+  return r;
+};
+const def = (rows: string[], o: Partial<LevelDef> = {}): LevelDef => ({
+  id: 't',
+  name: 't',
+  biome: 'glacier',
+  players: { min: 2, max: 2 },
+  tether: 'any',
+  stars: 1,
+  parSec: 60,
+  rows,
+  ...o,
+});
+const camp = (mode: 'chain' | 'free' = 'chain', allow?: ReadonlySet<Mechanic>) => ({
+  n: 2,
+  mode,
+  diff: 'hard' as const,
+  world: 'forest' as const,
+  ...(allow ? { allow } : {}),
+});
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 describe('throw niche: the campaign throw crosses a pit that no jump or tower crosses when tied', () => {
@@ -33,12 +64,21 @@ describe('throw niche: the campaign throw crosses a pit that no jump or tower cr
         else if (y === hazardRow) cs[x] = '~';
         else if (y > hazardRow) cs[x] = '#';
       }
-      if (y === 14) { cs[2] = 'S'; cs[46] = 'G'; }
+      if (y === 14) {
+        cs[2] = 'S';
+        cs[46] = 'G';
+      }
       return cs.join('');
     });
     return def(rows, { tether: 'chainOnly', biome: 'beach' });
   };
-  const beach = (allow?: ReadonlySet<Mechanic>) => ({ n: 2, mode: 'chain' as const, diff: 'hard' as const, world: 'beach' as const, ...(allow ? { allow } : {}) });
+  const beach = (allow?: ReadonlySet<Mechanic>) => ({
+    n: 2,
+    mode: 'chain' as const,
+    diff: 'hard' as const,
+    world: 'beach' as const,
+    ...(allow ? { allow } : {}),
+  });
   it('a 5-tile pit: the bot without the throw cannot cross, the one with it crosses and the record shows the throw', () => {
     const d = pit(5, 22);
     const without = validateState(d, beach(only('jump', 'tower', 'hand')));
@@ -80,7 +120,10 @@ describe('throw niche: the campaign throw crosses a pit that no jump or tower cr
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 describe('balance with 2 players in the campaign: alone on a plate it goes down (rides are one-way down); outside the campaign it needs 3', () => {
-  const bparams: Record<string, EntityParam> = { D: { kind: 'balance', partner: 'E', travel: 3, speed: 1 }, E: { kind: 'balance', partner: 'D', travel: 3, speed: 1 } };
+  const bparams: Record<string, EntityParam> = {
+    D: { kind: 'balance', partner: 'E', travel: 3, speed: 1 },
+    E: { kind: 'balance', partner: 'D', travel: 3, speed: 1 },
+  };
   const rows = set(set(flat(40), 10, 10, 'DD'), 20, 10, 'EE');
   const d = def(rows, { params: bparams });
   const edges = (env: Parameters<typeof buildGraph>[1]) => {
@@ -103,7 +146,9 @@ describe('balance with 2 players in the campaign: alone on a plate it goes down 
   });
   it('the far positions of the plates exist in the terrain of a campaign validation (the rider lands on the lower one), not outside it', () => {
     const p = parseLevel(d);
-    const gc = buildGraph(p, { n: 2, mode: 'chain', diff: 'hard', world: 'forest' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
+    const gc = buildGraph(p, { n: 2, mode: 'chain', diff: 'hard', world: 'forest' }, { open: new Set(), doors: new Set() }, [], {
+      pioneer: true,
+    });
     const gl = buildGraph(p, { n: 2, mode: 'chain', diff: 'hard' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
     const lowRow = 10 + 3; // the lower position of D
     expect(gc.grid.cells[lowRow * gc.grid.w + 10]).not.toBe(0);
@@ -115,7 +160,8 @@ describe('balance with 2 players in the campaign: alone on a plate it goes down 
 describe('target: a gate that only opens when somebody flies through the diana', () => {
   const tparams: Record<string, EntityParam> = { a: { kind: 'target', opens: 'A' }, A: { kind: 'gate' } };
   // a 7-tall gate in the way (column 24), the target in the air in front of it (columns 18-19, rows 11-12: a jump from the floor passes through it)
-  const level = (targetCol = 18) => def(rect(rect(flat(40), 24, 7, 24, 14, 'A'), targetCol, 11, targetCol + 1, 12, 'a'), { params: tparams });
+  const level = (targetCol = 18) =>
+    def(rect(rect(flat(40), 24, 7, 24, 14, 'A'), targetCol, 11, targetCol + 1, 12, 'a'), { params: tparams });
   it('without the target the gate stays shut; knowing it, the bot opens the gate and the record counts one use', () => {
     const closed = validateState(level(), camp('free', only('jump')));
     expect(closed.ok).toBe(false);
@@ -140,7 +186,8 @@ describe('target: a gate that only opens when somebody flies through the diana',
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 describe('pickaxe: an ice wall taller than any tower is climbed by whoever carries it, and the partner follows', () => {
   // a 7-tall wall (rows 8..14) with ice on its left face (column 20) and rock behind; the pickaxe lies on the floor in front of it
-  const wall = (pick = true) => def(set(rect(rect(flat(40), 20, 8, 20, 14, 'I'), 21, 8, 24, 14, '#'), 10, 14, pick ? 'p' : '.'), { tether: 'chainOnly' });
+  const wall = (pick = true) =>
+    def(set(rect(rect(flat(40), 20, 8, 20, 14, 'I'), 21, 8, 24, 14, '#'), 10, 14, pick ? 'p' : '.'), { tether: 'chainOnly' });
   it('without the pickaxe the wall is out of reach; with it the pioneer climbs and the record shows the climb (followers use the edge too)', () => {
     const none = validateState(wall(), camp('chain', only('jump', 'tower', 'hand', 'throw')));
     expect(none.ok).toBe(false);
@@ -171,7 +218,9 @@ describe('ice in the validator: the trajectories run with the campaign friction'
     const p = parseLevel(def(flat(40)));
     const legacy = buildGraph(p, { n: 2, mode: 'chain', diff: 'hard' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
     expect(legacy.params.iceFriction).toBeUndefined();
-    const c = buildGraph(p, { n: 2, mode: 'chain', diff: 'hard', world: 'forest' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
+    const c = buildGraph(p, { n: 2, mode: 'chain', diff: 'hard', world: 'forest' }, { open: new Set(), doors: new Set() }, [], {
+      pioneer: true,
+    });
     expect(c.params.iceFriction).toBe(0.15);
   });
 });
@@ -184,9 +233,11 @@ describe('super jump: a gap and a ledge that no jump, tower, hand or throw reach
     const rows = Array.from({ length: 24 }, (_, y) => {
       const cs = '.'.repeat(60).split('');
       for (let x = 0; x < 60; x++) {
-        if (x < 15) { if (y >= 18) cs[x] = '#'; }
-        else if (x < 15 + gap) { if (y >= 22) cs[x] = '~'; }
-        else if (y >= 18 - rise) cs[x] = '#';
+        if (x < 15) {
+          if (y >= 18) cs[x] = '#';
+        } else if (x < 15 + gap) {
+          if (y >= 22) cs[x] = '~';
+        } else if (y >= 18 - rise) cs[x] = '#';
       }
       if (y === 17) cs[3] = 'S';
       if (y === 17 - rise) cs[55] = 'G';
@@ -212,11 +263,19 @@ describe('super jump: a gap and a ledge that no jump, tower, hand or throw reach
   it('free mode gets it too; outside a campaign world, or with other than 2 players, it is not modelled', () => {
     expect(validateState({ ...ledge(4, 4), tether: 'freeOnly' }, camp('free', only('jump', 'superjump'))).ok).toBe(true);
     expect(validateState(ledge(4, 4), { n: 2, mode: 'chain', diff: 'hard' }).ok).toBe(false);
-    expect(validateState({ ...ledge(4, 4), players: { min: 3, max: 3 } }, { n: 3, mode: 'chain', diff: 'hard', world: 'forest' }).ok).toBe(false);
+    expect(validateState({ ...ledge(4, 4), players: { min: 3, max: 3 } }, { n: 3, mode: 'chain', diff: 'hard', world: 'forest' }).ok).toBe(
+      false,
+    );
   });
   it('every super jump plan carries the pessimistic delay (the 150 ms window = 9 steps), needs a partner and is a timing edge', () => {
     // delaying the boost lowers the peak, so the validator's reach is the safe one: the real sim's simultaneous pair is at least that good (campaign/realsim.test.ts runs it)
-    const g = buildGraph(parseLevel(ledge(4, 4)), { n: 2, mode: 'chain', diff: 'hard', world: 'forest' }, { open: new Set(), doors: new Set() }, [], { pioneer: true });
+    const g = buildGraph(
+      parseLevel(ledge(4, 4)),
+      { n: 2, mode: 'chain', diff: 'hard', world: 'forest' },
+      { open: new Set(), doors: new Set() },
+      [],
+      { pioneer: true },
+    );
     const sj = g.adj.flat().filter((e) => e.kind === 'superjump');
     expect(sj.length).toBeGreaterThan(0);
     expect(sj.every((e) => e.plan!.boost! > 0 && e.plan!.boostDelay === 9 && e.coop && e.timing)).toBe(true);

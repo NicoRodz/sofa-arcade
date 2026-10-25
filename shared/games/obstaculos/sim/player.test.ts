@@ -9,8 +9,13 @@ import { buildGrid, type TileGrid } from './tiles';
 
 const NORMAL = physicsFor('normal');
 const idle: StepInput = { move: 0, down: false, jump: false };
-const grid = (rows: string[]): TileGrid => ({ w: rows[0]!.length, h: rows.length, cells: Uint8Array.from(rows.flatMap((r) => [...r].map((c) => TILE_CHARS[c] ?? 0))) });
-const solo = (g: TileGrid, b: Body, input: StepInput, params: PhysicsParams = NORMAL) => stepPlayer(b, input, { grid: g, platforms: [], params });
+const grid = (rows: string[]): TileGrid => ({
+  w: rows[0]!.length,
+  h: rows.length,
+  cells: Uint8Array.from(rows.flatMap((r) => [...r].map((c) => TILE_CHARS[c] ?? 0))),
+});
+const solo = (g: TileGrid, b: Body, input: StepInput, params: PhysicsParams = NORMAL) =>
+  stepPlayer(b, input, { grid: g, platforms: [], params });
 
 // 12 rows of 40 columns, floor on row 9 (top at y = 432), a few rows of void below.
 const FLOOR_Y = 9 * TILE;
@@ -26,10 +31,14 @@ describe('jump (plan §2)', () => {
     const g = flat();
     const b = standAt(0, 200, g);
     const y0 = b.y;
-    let minY = b.y, apex = 0;
+    let minY = b.y,
+      apex = 0;
     for (let i = 1; i <= 80; i++) {
       solo(g, b, { ...idle, jump: i === 1 });
-      if (b.y < minY) { minY = b.y; apex = i; }
+      if (b.y < minY) {
+        minY = b.y;
+        apex = i;
+      }
     }
     expect(y0 - minY).toBeGreaterThanOrEqual(JUMP_PEAK_PX - 2);
     expect(y0 - minY).toBeLessThanOrEqual(JUMP_PEAK_PX + 2);
@@ -40,11 +49,20 @@ describe('jump (plan §2)', () => {
   it('hangs at the top (g x0.5 while |vy| < 80) and falls faster than it rises: 45 steps in the air, landing at terminal speed', () => {
     const g = flat();
     const b = standAt(0, 200, g);
-    let hang = 0, air = 0, landed = 0, landOn = '';
+    let hang = 0,
+      air = 0,
+      landed = 0,
+      landOn = '';
     for (let i = 0; i < 100; i++) {
       const ev = solo(g, b, { ...idle, jump: i === 0 });
-      if (!b.grounded) { air++; if (Math.abs(b.vy) < 80) hang++; }
-      if (ev.land) { landed = ev.land; landOn = ev.landOn; }
+      if (!b.grounded) {
+        air++;
+        if (Math.abs(b.vy) < 80) hang++;
+      }
+      if (ev.land) {
+        landed = ev.land;
+        landOn = ev.landOn;
+      }
     }
     expect(hang).toBeGreaterThanOrEqual(6); // 4 without the hang
     expect(air).toBeGreaterThanOrEqual(43); // 0.72 s up and down; with the same g both ways it would be 38
@@ -54,12 +72,15 @@ describe('jump (plan §2)', () => {
   });
   it('the height is fixed: pressing A on every step gives the same arc and no double jump', () => {
     const g = flat();
-    const a = standAt(0, 200, g), c = standAt(1, 400, g);
-    let minA = a.y, minC = c.y;
+    const a = standAt(0, 200, g),
+      c = standAt(1, 400, g);
+    let minA = a.y,
+      minC = c.y;
     for (let i = 1; i <= 80; i++) {
       solo(g, a, { ...idle, jump: i === 1 });
       solo(g, c, { ...idle, jump: true });
-      minA = Math.min(minA, a.y); minC = Math.min(minC, c.y);
+      minA = Math.min(minA, a.y);
+      minC = Math.min(minC, c.y);
     }
     expect(minC).toBeCloseTo(minA, 6); // the spam only re-jumps after landing, never in the air
   });
@@ -71,8 +92,13 @@ describe('jump (plan §2)', () => {
     expect(b.vy).toBeLessThan(-JUMP_V0 + 100); // after one step of gravity, still near v0
     const tall = grid([...Array(100).fill('.'.repeat(10)), '#'.repeat(10)]);
     const f = newBody(0, 100, 0);
-    let vmax = 0, grounded = false;
-    for (let i = 0; i < 600 && !grounded; i++) { solo(tall, f, idle); vmax = Math.max(vmax, f.vy); grounded = f.grounded; }
+    let vmax = 0,
+      grounded = false;
+    for (let i = 0; i < 600 && !grounded; i++) {
+      solo(tall, f, idle);
+      vmax = Math.max(vmax, f.vy);
+      grounded = f.grounded;
+    }
     expect(vmax).toBe(MAX_FALL);
     expect(grounded).toBe(true); // 16 px per step never tunnels a one-tile floor
     expect(f.y + PLAYER_H).toBe(100 * TILE);
@@ -100,7 +126,8 @@ describe('running (plan §2)', () => {
     solo(g, air, { ...idle, move: 1 });
     expect(ground.vx).toBeCloseTo(330 / 0.08 / 60, 6);
     expect(air.vx / ground.vx).toBeCloseTo(0.65, 6);
-    const brake = newBody(2, 100, 100); brake.vx = 330;
+    const brake = newBody(2, 100, 100);
+    brake.vx = 330;
     solo(g, brake, idle);
     expect(330 - brake.vx).toBeCloseTo((330 / 0.06 / 60) * 0.3, 6);
   });
@@ -117,7 +144,12 @@ describe('running (plan §2)', () => {
 
 describe('what the jump reaches (plan §2): walls, towers, gaps', () => {
   // wall of `n` tiles at columns 10.., floor on row 9; the climber hugs the wall and jumps once
-  const wallGrid = (n: number) => grid(Array.from({ length: 12 }, (_, y) => (y === 9 ? '#'.repeat(40) : y >= 9 - n && y < 9 ? '.'.repeat(10) + '#'.repeat(30) : '.'.repeat(40))));
+  const wallGrid = (n: number) =>
+    grid(
+      Array.from({ length: 12 }, (_, y) =>
+        y === 9 ? '#'.repeat(40) : y >= 9 - n && y < 9 ? '.'.repeat(10) + '#'.repeat(30) : '.'.repeat(40),
+      ),
+    );
   const WALL_X = 10 * TILE - PLAYER_W;
   // `bases` players stacked at the wall (each pinned to it holding right), then a climber on top of them jumps
   function climb(wallTiles: number, bases: number): boolean {
@@ -128,13 +160,24 @@ describe('what the jump reaches (plan §2): walls, towers, gaps', () => {
       bodies.push(b);
     }
     const hold: StepInput = { move: 1, down: false, jump: false };
-    for (let i = 0; i < 30; i++) stepPlayers(bodies, bodies.map(() => hold), g, NORMAL); // settle into the tower
+    for (let i = 0; i < 30; i++)
+      stepPlayers(
+        bodies,
+        bodies.map(() => hold),
+        g,
+        NORMAL,
+      ); // settle into the tower
     const topId = bases;
     for (let i = 0; i < bases; i++) expect(bodies[i]!.grounded, `base ${i} settled`).toBe(true);
     expect(bodies[topId]!.grounded).toBe(true);
     const wallTop = FLOOR_Y - wallTiles * TILE;
     for (let i = 0; i < 150; i++) {
-      stepPlayers(bodies, bodies.map((_, k) => ({ ...hold, jump: k === topId && i === 0 })), g, NORMAL);
+      stepPlayers(
+        bodies,
+        bodies.map((_, k) => ({ ...hold, jump: k === topId && i === 0 })),
+        g,
+        NORMAL,
+      );
       const t = bodies[topId]!;
       if (t.grounded && t.x > WALL_X + 1 && t.y + PLAYER_H === wallTop) return true;
     }
@@ -154,10 +197,13 @@ describe('what the jump reaches (plan §2): walls, towers, gaps', () => {
   // Gap of n tiles on row 9, run up from the left holding right, press A `rel` steps after the body is fully off the edge (negative: before).
   function crosses(gapTiles: number, rel: number, params = NORMAL): boolean {
     const edge = 20 * TILE;
-    const rows = Array.from({ length: 12 }, (_, y) => (y >= 9 ? '#'.repeat(20) + '.'.repeat(gapTiles) + '#'.repeat(40 - 20 - gapTiles) : '.'.repeat(40)));
+    const rows = Array.from({ length: 12 }, (_, y) =>
+      y >= 9 ? '#'.repeat(20) + '.'.repeat(gapTiles) + '#'.repeat(40 - 20 - gapTiles) : '.'.repeat(40),
+    );
     const g = grid(rows);
     const b = standAt(0, 3 * TILE, g);
-    let off = -1, pressed = false;
+    let off = -1,
+      pressed = false;
     for (let i = 0; i < 300; i++) {
       if (off < 0 && b.x >= edge) off = i;
       const lead = rel < 0 && off < 0 && edge - b.x <= -rel * 5.5;
@@ -170,7 +216,11 @@ describe('what the jump reaches (plan §2): walls, towers, gaps', () => {
     }
     return false;
   }
-  const window = (gap: number) => { let n = 0; for (let rel = -20; rel <= 8; rel++) if (crosses(gap, rel)) n++; return n; };
+  const window = (gap: number) => {
+    let n = 0;
+    for (let rel = -20; rel <= 8; rel++) if (crosses(gap, rel)) n++;
+    return n;
+  };
   it('a 4-tile gap is comfortable (a wide timing window, also without coyote)', () => {
     expect(window(4)).toBeGreaterThanOrEqual(15);
     expect(crosses(4, -8)).toBe(true);
@@ -221,7 +271,10 @@ describe('coyote time and jump buffer (plan §2)', () => {
     const g = flat();
     const probe = newBody(0, 200, 200);
     let first = 0;
-    while (!probe.grounded) { solo(g, probe, idle, params); first++; }
+    while (!probe.grounded) {
+      solo(g, probe, idle, params);
+      first++;
+    }
     const startsGrounded = first; // the step index (0-based) at whose start the body is on the floor
     const b = newBody(0, 200, 200);
     const out: string[] = [];
@@ -241,19 +294,28 @@ describe('coyote time and jump buffer (plan §2)', () => {
   });
   it('physicsFor reads the difficulty table', () => {
     for (const d of ['easy', 'normal', 'hard'] as const) {
-      expect(physicsFor(d)).toEqual({ coyote: DIFFICULTY_PARAMS[d].coyoteBase, buffer: DIFFICULTY_PARAMS[d].bufferFrames, stickyEdges: DIFFICULTY_PARAMS[d].stickyEdges });
+      expect(physicsFor(d)).toEqual({
+        coyote: DIFFICULTY_PARAMS[d].coyoteBase,
+        buffer: DIFFICULTY_PARAMS[d].bufferFrames,
+        stickyEdges: DIFFICULTY_PARAMS[d].stickyEdges,
+      });
     }
   });
 });
 
 describe('forgiving corners and edges', () => {
   it('a ceiling corner overlapping 6 px is nudged around, 12 px stops the jump', () => {
-    const rows = Array.from({ length: 12 }, (_, y) => (y === 9 ? '#'.repeat(40) : y === 5 ? '.'.repeat(10) + '#'.repeat(30) : '.'.repeat(40)));
+    const rows = Array.from({ length: 12 }, (_, y) =>
+      y === 9 ? '#'.repeat(40) : y === 5 ? '.'.repeat(10) + '#'.repeat(30) : '.'.repeat(40),
+    );
     const g = grid(rows);
     const peak = (overlap: number) => {
       const b = standAt(0, 10 * TILE - PLAYER_W + overlap, g);
       let minY = b.y;
-      for (let i = 1; i <= 80; i++) { solo(g, b, { ...idle, jump: i === 1 }); minY = Math.min(minY, b.y); }
+      for (let i = 1; i <= 80; i++) {
+        solo(g, b, { ...idle, jump: i === 1 });
+        minY = Math.min(minY, b.y);
+      }
       return minY;
     };
     expect(peak(6)).toBeLessThan(6 * TILE - 20); // went up past the block (its underside is y = 288)
@@ -292,7 +354,12 @@ describe('forgiving corners and edges', () => {
 });
 
 describe('one-way platforms, heads and trampolines', () => {
-  const oneway = () => grid(Array.from({ length: 12 }, (_, y) => (y === 9 ? '#'.repeat(40) : y === 7 ? '.'.repeat(5) + '='.repeat(6) + '.'.repeat(29) : '.'.repeat(40))));
+  const oneway = () =>
+    grid(
+      Array.from({ length: 12 }, (_, y) =>
+        y === 9 ? '#'.repeat(40) : y === 7 ? '.'.repeat(5) + '='.repeat(6) + '.'.repeat(29) : '.'.repeat(40),
+      ),
+    );
   it('a one-way is crossed going up and landed on from above; down + A drops through it', () => {
     const g = oneway();
     const b = standAt(0, 7 * TILE, g);
@@ -320,9 +387,19 @@ describe('one-way platforms, heads and trampolines', () => {
   });
   it('players cross each other sideways', () => {
     const g = flat();
-    const a = standAt(0, 100, g), c = standAt(1, 400, g);
+    const a = standAt(0, 100, g),
+      c = standAt(1, 400, g);
     const bodies = [a, c];
-    for (let i = 0; i < 120; i++) stepPlayers(bodies, [{ ...idle, move: 1 }, { ...idle, move: -1 }], g, NORMAL);
+    for (let i = 0; i < 120; i++)
+      stepPlayers(
+        bodies,
+        [
+          { ...idle, move: 1 },
+          { ...idle, move: -1 },
+        ],
+        g,
+        NORMAL,
+      );
     expect(a.x).toBeGreaterThan(c.x);
     expect(a.grounded && c.grounded).toBe(true);
   });
@@ -355,7 +432,9 @@ describe('one-way platforms, heads and trampolines', () => {
 
 describe('landing events and surfaces', () => {
   it('land reports the fall speed once, and where: ground, one-way tile or head', () => {
-    const g = grid(Array.from({ length: 12 }, (_, y) => (y === 9 ? '#'.repeat(40) : y === 7 ? '='.repeat(4) + '.'.repeat(36) : '.'.repeat(40))));
+    const g = grid(
+      Array.from({ length: 12 }, (_, y) => (y === 9 ? '#'.repeat(40) : y === 7 ? '='.repeat(4) + '.'.repeat(36) : '.'.repeat(40))),
+    );
     const onTile = newBody(0, 1 * TILE, 4 * TILE);
     const evs: { land: number; landOn: string }[] = [];
     for (let i = 0; i < 80; i++) evs.push(solo(g, onTile, idle));
@@ -368,10 +447,16 @@ describe('landing events and surfaces', () => {
     expect(m.onOneWay).toBe(false);
     expect(solo(mixed, m, { move: 0, down: true, jump: true }).jump).toBe('ground');
     // on a head
-    const base = standAt(2, 600), top = newBody(3, 600, 6 * TILE);
+    const base = standAt(2, 600),
+      top = newBody(3, 600, 6 * TILE);
     const bodies = [base, top];
     const heads: string[] = [];
-    for (let i = 0; i < 60; i++) heads.push(...stepPlayers(bodies, [idle, idle], flat(), NORMAL).filter((e) => e.land > 0).map((e) => e.landOn));
+    for (let i = 0; i < 60; i++)
+      heads.push(
+        ...stepPlayers(bodies, [idle, idle], flat(), NORMAL)
+          .filter((e) => e.land > 0)
+          .map((e) => e.landOn),
+      );
     expect(heads).toEqual(['head']);
   });
 });
@@ -381,10 +466,22 @@ describe('determinism', () => {
     const base = () => [newBody(0, 100, 200), newBody(1, 300, 200)];
     const h0 = hashBodies(base());
     expect(hashBodies(base())).toBe(h0);
-    const fields: [keyof Body, number][] = [['id', 5], ['x', 1], ['y', 1], ['vx', 1], ['vy', 1], ['grounded', 1], ['supportId', 3], ['air', 3], ['jumpAge', 3], ['dropFrames', 3], ['facing', -1]];
+    const fields: [keyof Body, number][] = [
+      ['id', 5],
+      ['x', 1],
+      ['y', 1],
+      ['vx', 1],
+      ['vy', 1],
+      ['grounded', 1],
+      ['supportId', 3],
+      ['air', 3],
+      ['jumpAge', 3],
+      ['dropFrames', 3],
+      ['facing', -1],
+    ];
     for (const [f, v] of fields) {
       const bs = base();
-      (bs[1]![f] as number | boolean) = typeof bs[1]![f] === 'boolean' ? true : (f === 'facing' ? v : (bs[1]![f] as number) + v);
+      (bs[1]![f] as number | boolean) = typeof bs[1]![f] === 'boolean' ? true : f === 'facing' ? v : (bs[1]![f] as number) + v;
       expect(hashBodies(bs), String(f)).not.toBe(h0);
     }
   });
@@ -397,7 +494,12 @@ describe('determinism', () => {
       for (let s = 0; s < 3600; s++) {
         const inputs = bodies.map(() => ({ move: [-1, -0.45, 0, 0.45, 1][Math.floor(rng() * 5)]!, down: rng() < 0.1, jump: rng() < 0.08 }));
         stepPlayers(bodies, inputs, grid1, params);
-        for (const b of bodies) { if (b.y > 20 * TILE) { b.y = 11 * TILE - PLAYER_H; b.vy = 0; } } // fell in the water: caller respawns
+        for (const b of bodies) {
+          if (b.y > 20 * TILE) {
+            b.y = 11 * TILE - PLAYER_H;
+            b.vy = 0;
+          }
+        } // fell in the water: caller respawns
       }
       for (const b of bodies) expect(Number.isFinite(b.x + b.y + b.vx + b.vy)).toBe(true);
       return hashBodies(bodies);

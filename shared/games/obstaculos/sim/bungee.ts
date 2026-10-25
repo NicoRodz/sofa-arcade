@@ -6,7 +6,11 @@ import type { CampaignParams } from './campaign';
 import type { ElasticParams } from './rope';
 import { playerOf, isActive, type World } from './state';
 
-export const elasticOf = (c: CampaignParams): ElasticParams => ({ max: c.bungeeMaxMult, stiffness: c.bungeeStiffness, damping: c.bungeeDamping });
+export const elasticOf = (c: CampaignParams): ElasticParams => ({
+  max: c.bungeeMaxMult,
+  stiffness: c.bungeeStiffness,
+  damping: c.bungeeDamping,
+});
 
 // Is this player hanging its end of a rope from an elastic ring?
 export function onBungee(w: World, slot: number): boolean {

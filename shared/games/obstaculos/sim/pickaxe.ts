@@ -20,7 +20,9 @@ export const ownsPickaxe = (w: World, slot: number): boolean => w.ent.pickaxes.s
 // How far B can hand the pickaxe: the length of the rope when the two are tied (it travels along the rope: the climber at the top of a wall passes it down to the partner
 // dangling below), the grab range otherwise.
 const reachTo = (w: World, p: PlayerState, q: PlayerState): number => {
-  for (const r of w.ropes) for (const l of r.links) if (l.active && ((l.a === p.slot && l.b === q.slot) || (l.a === q.slot && l.b === p.slot))) return Math.max(GRAB_RANGE, l.base);
+  for (const r of w.ropes)
+    for (const l of r.links)
+      if (l.active && ((l.a === p.slot && l.b === q.slot) || (l.a === q.slot && l.b === p.slot))) return Math.max(GRAB_RANGE, l.base);
   return GRAB_RANGE;
 };
 
@@ -28,11 +30,15 @@ const reachTo = (w: World, p: PlayerState, q: PlayerState): number => {
 export function passTarget(w: World, p: PlayerState): PlayerState | null {
   if (!w.camp || !(ownsPickaxe(w, p.slot) || ownsLantern(w, p.slot))) return null;
   const br = bodyRect(p.body);
-  let best: PlayerState | null = null, bd = Infinity;
+  let best: PlayerState | null = null,
+    bd = Infinity;
   for (const q of w.players) {
     if (q.slot === p.slot || !isActive(q) || q.carriedBy >= 0 || q.lift) continue;
     const d = rectGap(br, bodyRect(q.body));
-    if (d <= reachTo(w, p, q) && d < bd) { best = q; bd = d; }
+    if (d <= reachTo(w, p, q) && d < bd) {
+      best = q;
+      bd = d;
+    }
   }
   return best;
 }
@@ -49,13 +55,29 @@ export function passPickaxe(w: World, from: PlayerState, to: PlayerState): void 
 export function stepPickaxes(w: World): void {
   for (const k of w.ent.pickaxes) {
     if (k.heldBy < 0) {
-      const p = w.players.find((q) => isActive(q) && !ownsPickaxe(w, q.slot) && Math.abs(q.body.x + PLAYER_W / 2 - k.x) < PLAYER_W / 2 + PICK_TAKE_REACH && Math.abs(q.body.y + PLAYER_H / 2 - k.y) < PLAYER_H / 2 + PICK_TAKE_REACH);
-      if (p) { k.heldBy = p.slot; emit(w, 'obst.pickaxe', { player: p.slot, action: 'take' }); }
+      const p = w.players.find(
+        (q) =>
+          isActive(q) &&
+          !ownsPickaxe(w, q.slot) &&
+          Math.abs(q.body.x + PLAYER_W / 2 - k.x) < PLAYER_W / 2 + PICK_TAKE_REACH &&
+          Math.abs(q.body.y + PLAYER_H / 2 - k.y) < PLAYER_H / 2 + PICK_TAKE_REACH,
+      );
+      if (p) {
+        k.heldBy = p.slot;
+        emit(w, 'obst.pickaxe', { player: p.slot, action: 'take' });
+      }
       continue;
     }
     const p = w.players.find((q) => q.slot === k.heldBy);
-    if (!p || !isActive(p)) { k.heldBy = -1; k.x = k.homeX; k.y = k.homeY; if (p) p.camp.pick = 0; continue; }
-    k.x = p.body.x + PLAYER_W / 2; k.y = p.body.y - 6;
+    if (!p || !isActive(p)) {
+      k.heldBy = -1;
+      k.x = k.homeX;
+      k.y = k.homeY;
+      if (p) p.camp.pick = 0;
+      continue;
+    }
+    k.x = p.body.x + PLAYER_W / 2;
+    k.y = p.body.y - 6;
   }
 }
 
@@ -65,30 +87,53 @@ const iceBeside = (w: World, p: PlayerState, dir: -1 | 1, yOff: number, h: numbe
 // The climb state machine of one player for this step. Returns true when it consumed the step (the caller skips the normal physics).
 export function stepPick(w: World, p: PlayerState, inp: PlayerStep): boolean {
   const c = w.camp!;
-  const b = p.body, k = p.camp;
+  const b = p.body,
+    k = p.camp;
   const has = ownsPickaxe(w, p.slot);
   if (k.pick === 0) {
     if (!has || !inp.up || p.thrown > 0 || p.holding || p.climbing || k.assist > 0) return false; // (assist > 0: still mantling over the top of the wall it just climbed)
     for (const dir of [b.facing, (b.facing === 1 ? -1 : 1) as -1 | 1]) {
       if (!iceBeside(w, p, dir, 4, PLAYER_H - 8)) continue;
-      k.pick = dir; p.planted = false; b.vx = 0; b.vy = 0;
+      k.pick = dir;
+      p.planted = false;
+      b.vx = 0;
+      b.vy = 0;
       emit(w, 'obst.pickaxe', { player: p.slot, action: 'climb' });
       return true;
     }
     return false;
   }
   const dir = k.pick;
-  if (!has || p.holding || p.carriedBy >= 0 || p.lift || !iceBeside(w, p, dir, 4, PLAYER_H - 8)) { k.pick = 0; return false; }
-  if (inp.up && !iceBeside(w, p, dir, 0, PLAYER_H * 0.5)) { // top of the wall: mantle over it
-    k.pick = 0; b.vy = -JUMP_V0 * PICK_HOP; b.grounded = false; b.supportId = -1; b.air = NONE;
-    k.assist = PICK_ASSIST_STEPS; k.assistDir = dir;
+  if (!has || p.holding || p.carriedBy >= 0 || p.lift || !iceBeside(w, p, dir, 4, PLAYER_H - 8)) {
+    k.pick = 0;
+    return false;
+  }
+  if (inp.up && !iceBeside(w, p, dir, 0, PLAYER_H * 0.5)) {
+    // top of the wall: mantle over it
+    k.pick = 0;
+    b.vy = -JUMP_V0 * PICK_HOP;
+    b.grounded = false;
+    b.supportId = -1;
+    b.air = NONE;
+    k.assist = PICK_ASSIST_STEPS;
+    k.assistDir = dir;
     emit(w, 'obst.pickaxe', { player: p.slot, action: 'top' });
     return false;
   }
-  if (inp.move * dir < 0) { k.pick = 0; return false; } // pushing away from the wall: lets go
+  if (inp.move * dir < 0) {
+    k.pick = 0;
+    return false;
+  } // pushing away from the wall: lets go
   const dy = ((inp.down ? 1 : 0) - (inp.up ? 1 : 0)) * c.pickTilesPerSec * TILE * DT;
   const moved = pushBody(b, 0, dy, w.grid);
-  b.vx = 0; b.vy = 0; b.grounded = false; b.supportId = -1; b.onOneWay = false; b.air = NONE; b.dx = 0; b.dy = moved.y;
+  b.vx = 0;
+  b.vy = 0;
+  b.grounded = false;
+  b.supportId = -1;
+  b.onOneWay = false;
+  b.air = NONE;
+  b.dx = 0;
+  b.dy = moved.y;
   if (dy > 0 && moved.y < dy - 0.01) k.pick = 0; // reached the floor
   return true;
 }

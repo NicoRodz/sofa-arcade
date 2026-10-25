@@ -4,7 +4,12 @@
 import type { IconId } from '../icons';
 import type { Item, StationKind } from '../overcooked';
 
-export interface SchoolStep { id: 'dough' | 'tomato' | 'oven' | 'serve'; short: string; text: string; icon: IconId }
+export interface SchoolStep {
+  id: 'dough' | 'tomato' | 'oven' | 'serve';
+  short: string;
+  text: string;
+  icon: IconId;
+}
 // text: what the phone says (at most 8 words, a test pins it). short: the name in the TV's strip.
 export const SCHOOL_STEPS: readonly SchoolStep[] = [
   { id: 'dough', short: 'Masa', text: 'Toma masa del cajón', icon: 'dough' },
@@ -21,7 +26,10 @@ export const SCHOOL_SUB = 'Sin tiempo ni puntos · cada quien a su ritmo';
 export const SCHOOL_SUB_VERSUS = 'Equipos juntos, sin competir · cada quien a su ritmo';
 
 /** Progress of one chef: step = the step it is on (0-based); SCHOOL_TOTAL = finished. */
-export interface Prog { step: number; skipped: boolean }
+export interface Prog {
+  step: number;
+  skipped: boolean;
+}
 export const fresh = (): Prog => ({ step: 0, skipped: false });
 export const isDone = (p: Prog | undefined): boolean => !!p && p.step >= SCHOOL_TOTAL;
 export const advance = (p: Prog): Prog => ({ step: Math.min(SCHOOL_TOTAL, p.step + 1), skipped: p.skipped });
@@ -42,22 +50,32 @@ export type SchoolEvent =
 /** Does this event finish step `step`? Taking dough from the crate; chopping a tomato; putting a chopped tomato in the oven; delivering a pizza. */
 export function completes(step: number, ev: SchoolEvent): boolean {
   switch (step) {
-    case 0: return ev.kind === 'picked' && ev.item === 'raw0' && ev.from === 'crate';
-    case 1: return ev.kind === 'chopped' && ev.item === 'cut1';
-    case 2: return ev.kind === 'dropped' && ev.item === 'cut1' && ev.at === 'pot';
-    case 3: return ev.kind === 'delivered';
-    default: return false;
+    case 0:
+      return ev.kind === 'picked' && ev.item === 'raw0' && ev.from === 'crate';
+    case 1:
+      return ev.kind === 'chopped' && ev.item === 'cut1';
+    case 2:
+      return ev.kind === 'dropped' && ev.item === 'cut1' && ev.at === 'pot';
+    case 3:
+      return ev.kind === 'delivered';
+    default:
+      return false;
   }
 }
 
 /** The items that belong in a chef's hands at each step. Anything else is taken away after a moment (nobody stays stuck holding the wrong thing). */
 export function wantedItems(step: number): readonly Item[] {
   switch (step) {
-    case 0: return ['raw0'];
-    case 1: return ['raw1'];
-    case 2: return ['cut1'];
-    case 3: return ['dish'];
-    default: return ['raw0', 'raw1', 'raw2', 'cut0', 'cut1', 'cut2', 'plate', 'dish']; // done: free to play around
+    case 0:
+      return ['raw0'];
+    case 1:
+      return ['raw1'];
+    case 2:
+      return ['cut1'];
+    case 3:
+      return ['dish'];
+    default:
+      return ['raw0', 'raw1', 'raw2', 'cut0', 'cut1', 'cut2', 'plate', 'dish']; // done: free to play around
   }
 }
 /** The item a chef is given back when its hands are empty at the step (a chopped tomato it put down, the pizza it left on a counter); null: it fetches its own. */
@@ -76,6 +94,7 @@ export function focusButton(step: number, hint: { bIcon?: string; bOff?: boolean
 /** What a phone is told about its chef: the instruction, which step, and the button to light. */
 export function instruction(prog: Prog | undefined, everyoneDone: boolean): { step: number; text: string; done: boolean } {
   const step = prog?.step ?? 0;
-  if (step >= SCHOOL_TOTAL) return { step: SCHOOL_TOTAL, done: true, text: everyoneDone ? ALL_DONE_TEXT : prog?.skipped ? KNOWN_TEXT : DONE_TEXT };
+  if (step >= SCHOOL_TOTAL)
+    return { step: SCHOOL_TOTAL, done: true, text: everyoneDone ? ALL_DONE_TEXT : prog?.skipped ? KNOWN_TEXT : DONE_TEXT };
   return { step, done: false, text: SCHOOL_STEPS[step]!.text };
 }

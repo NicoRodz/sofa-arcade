@@ -18,16 +18,46 @@ type Log = { [K in keyof GameEvents]?: { t: number; p: GameEvents[K] }[] };
 function mk(o: { map?: string; difficulty?: Difficulty; n?: number; burn?: boolean; fire?: boolean; seed?: number } = {}) {
   const bus = new Emitter<GameEvents>();
   const log: Log = {};
-  const g = createGame({ rows: fixedMap(o.map ?? '1')!.rows, mapId: o.map ?? '1', n: 2, difficulty: o.difficulty ?? 'normal', seed: o.seed ?? 5, bus, burn: o.burn ?? true, fire: o.fire ?? true });
-  const kinds = ['oven:warn', 'oven:burnt', 'oven:rescued', 'fire:start', 'fire:spread', 'fire:out', 'fire:end', 'douseStart', 'douseStop', 'potReady', 'itemPicked', 'interactInvalid', 'delivered', 'chopStart', 'chopStop'] as const;
-  for (const k of kinds) bus.on(k, ((p: never) => { ((log[k] ??= []) as { t: number; p: unknown }[]).push({ t: g.time, p }); }) as never);
+  const g = createGame({
+    rows: fixedMap(o.map ?? '1')!.rows,
+    mapId: o.map ?? '1',
+    n: 2,
+    difficulty: o.difficulty ?? 'normal',
+    seed: o.seed ?? 5,
+    bus,
+    burn: o.burn ?? true,
+    fire: o.fire ?? true,
+  });
+  const kinds = [
+    'oven:warn',
+    'oven:burnt',
+    'oven:rescued',
+    'fire:start',
+    'fire:spread',
+    'fire:out',
+    'fire:end',
+    'douseStart',
+    'douseStop',
+    'potReady',
+    'itemPicked',
+    'interactInvalid',
+    'delivered',
+    'chopStart',
+    'chopStop',
+  ] as const;
+  for (const k of kinds)
+    bus.on(k, ((p: never) => {
+      ((log[k] ??= []) as { t: number; p: unknown }[]).push({ t: g.time, p });
+    }) as never);
   for (let i = 1; i <= (o.n ?? 1); i++) addPlayer(g, i, i - 1, i - 1);
   return { g, log };
 }
 const ovens = (g: Game) => g.stations.filter((s) => s.kind === 'pot');
 const counters = (g: Game) => g.stations.filter((s) => s.kind === 'counter');
 const at = (g: Game, s: Station) => g.stations.indexOf(s);
-const run = (g: Game, ms: number, c: (id: number) => Controls = () => idle) => { for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, new Map([...g.players.keys()].map((id): [number, Controls] => [id, c(id)]))); };
+const run = (g: Game, ms: number, c: (id: number) => Controls = () => idle) => {
+  for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, new Map([...g.players.keys()].map((id): [number, Controls] => [id, c(id)])));
+};
 const only = (id: number, c: Controls) => new Map([[id, c]]);
 const pressA = (g: Game, id: number) => tick(g, only(id, { ...idle, a: 1 }));
 function face(g: Game, id: number, s: Station) {
@@ -37,9 +67,19 @@ function face(g: Game, id: number, s: Station) {
   return p;
 }
 /** A baked pizza in the oven, ready at this instant. */
-const bake = (g: Game, s: Station, cheese = false) => { s.inputs = cheese ? [0, 1, 2] : [0, 1]; s.progress = 1; s.done = true; s.readyAt = g.time; };
+const bake = (g: Game, s: Station, cheese = false) => {
+  s.inputs = cheese ? [0, 1, 2] : [0, 1];
+  s.progress = 1;
+  s.done = true;
+  s.readyAt = g.time;
+};
 /** The chef takes the pizza out (it must hold a plate). */
-function take(g: Game, id: number, s: Station) { const p = face(g, id, s); p.item = 'plate'; pressA(g, id); return p; }
+function take(g: Game, id: number, s: Station) {
+  const p = face(g, id, s);
+  p.item = 'plate';
+  pressA(g, id);
+  return p;
+}
 const times = (log: Log, k: keyof GameEvents) => (log[k] ?? []).map((e) => e.t);
 /** `a` is within one tick (plus a hair) of `b`. */
 const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(TICK_MS + 1);
@@ -93,7 +133,8 @@ describe('the grace window: 8 s on Normal and Hard, 15 s on Easy, with a warning
   it('with a real bake (dough and tomato through the board) it is the potReady event that starts the clock', () => {
     const { g, log } = mk({ difficulty: 'normal' });
     const oven = ovens(g)[0]!;
-    oven.inputs = [0, 1]; oven.progress = 0;
+    oven.inputs = [0, 1];
+    oven.progress = 0;
     run(g, g.params.cookMs + 500);
     expect(log.potReady).toHaveLength(1);
     near(oven.readyAt!, log.potReady![0]!.t);
@@ -123,9 +164,13 @@ describe('a burnt pizza cannot be delivered: it goes to the bin', () => {
     bake(g, oven);
     run(g, GRACE_MS.normal + 100);
     expect(take(g, 1, oven).item).toBe('burnt');
-    expect(oven.done).toBe(false); expect(oven.inputs).toEqual([]); expect(oven.burnt).toBeUndefined();
+    expect(oven.done).toBe(false);
+    expect(oven.inputs).toEqual([]);
+    expect(oven.burnt).toBeUndefined();
     expect(log['oven:rescued']).toBeUndefined();
-    const orders = g.orders.length, score = g.score, invalid = (log.interactInvalid ?? []).length; // (taking a dish off the oven already logs one: plate in, dish out)
+    const orders = g.orders.length,
+      score = g.score,
+      invalid = (log.interactInvalid ?? []).length; // (taking a dish off the oven already logs one: plate in, dish out)
     const w = g.stations.find((s) => s.kind === 'window')!;
     const p = face(g, 1, w);
     pressA(g, 1);
@@ -153,7 +198,8 @@ describe('a burnt pizza cannot be delivered: it goes to the bin', () => {
     const oven = ovens(g)[0]!;
     bake(g, oven);
     run(g, GRACE_MS.normal + 100);
-    const p = face(g, 1, oven); p.item = 'cut0';
+    const p = face(g, 1, oven);
+    p.item = 'cut0';
     pressA(g, 1);
     expect(p.item).toBe('cut0');
     expect(oven.inputs).toEqual([0, 1]);
@@ -172,14 +218,18 @@ describe('fire', () => {
     expect(log['fire:start']![0]!.p.station).toBe(at(g, oven));
     near(times(log, 'fire:start')[0]! - times(log, 'oven:burnt')[0]!, FIRE_DELAY_MS);
     expect(ovenStage(oven)).toBe('fire');
-    expect(oven.inputs).toEqual([]); expect(oven.done).toBe(false);
+    expect(oven.inputs).toEqual([]);
+    expect(oven.done).toBe(false);
     // A on the burning oven: nothing moves
-    const p = face(g, 1, oven); p.item = 'plate';
+    const p = face(g, 1, oven);
+    p.item = 'plate';
     pressA(g, 1);
     expect(p.item).toBe('plate');
     expect(log.interactInvalid).toHaveLength(1);
     // ... and it does not cook: ingredients cannot go in
-    p.item = 'cut0'; pressA(g, 1); expect(oven.inputs).toEqual([]);
+    p.item = 'cut0';
+    pressA(g, 1);
+    expect(oven.inputs).toEqual([]);
   });
   it('Easy has no fire: the pizza burns and stays burnt for ever', () => {
     const { g, log } = mk({ difficulty: 'easy' });
@@ -198,13 +248,31 @@ describe('fire', () => {
   });
   it('fireAllowed: not on Easy, not under the Suave sabotage (the chaos cap), yes on Normal and Hard with Caos or without sabotage', () => {
     const cases: [Difficulty, SabotageMode | undefined, boolean][] = [
-      ['easy', undefined, false], ['easy', 'chaos', false], ['normal', undefined, true], ['normal', 'off', true], ['normal', 'soft', false], ['normal', 'chaos', true], ['hard', 'soft', false], ['hard', 'chaos', true],
+      ['easy', undefined, false],
+      ['easy', 'chaos', false],
+      ['normal', undefined, true],
+      ['normal', 'off', true],
+      ['normal', 'soft', false],
+      ['normal', 'chaos', true],
+      ['hard', 'soft', false],
+      ['hard', 'chaos', true],
     ];
     for (const [d, s, want] of cases) expect(fireAllowed(d, s), `${d} ${s}`).toBe(want);
   });
   it('a versus round under Suave sabotage never has fire (createGame applies the cap); under Caos it can', () => {
     const m = versusMap('V1')!;
-    const mkv = (sabotage: SabotageMode) => createGame({ mapId: m.id, rows: m.rows, spawns: [...m.versus.spawns[0], ...m.versus.spawns[1]], difficulty: 'hard', teams: [{ playerIds: [1, 2] }, { playerIds: [3, 4] }], sabotage, sigma: m.versus.sigma, burn: true, fire: true });
+    const mkv = (sabotage: SabotageMode) =>
+      createGame({
+        mapId: m.id,
+        rows: m.rows,
+        spawns: [...m.versus.spawns[0], ...m.versus.spawns[1]],
+        difficulty: 'hard',
+        teams: [{ playerIds: [1, 2] }, { playerIds: [3, 4] }],
+        sabotage,
+        sigma: m.versus.sigma,
+        burn: true,
+        fire: true,
+      });
     expect(mkv('soft').burn!.fire).toBe(false);
     expect(mkv('chaos').burn!.fire).toBe(true);
     expect(mkv('off').burn!.fire).toBe(true);
@@ -234,7 +302,8 @@ describe('fire', () => {
   it('one active fire per kitchen: a second oven that burns waits, and catches fire only after the kitchen is out', () => {
     const { g, log } = mk({ n: 2 });
     const [a, b] = ovens(g) as [Station, Station];
-    bake(g, a); bake(g, b);
+    bake(g, a);
+    bake(g, b);
     run(g, GRACE_MS.normal + FIRE_DELAY_MS + 100);
     expect(log['fire:start']).toHaveLength(1); // only one of them
     expect(g.stations.filter((s) => s.kind === 'pot' && s.fire === undefined)).toHaveLength(1);
@@ -246,12 +315,17 @@ describe('fire', () => {
     let guard = 0;
     while (g.stations.some((s) => s.fire !== undefined && s.kind !== 'pot') && guard++ < 20) {
       const s = g.stations.find((x) => x.fire !== undefined && x.kind !== 'pot')!;
-      faceAt(g, 1, s, 0); faceAt(g, 2, s, 1);
+      faceAt(g, 1, s, 0);
+      faceAt(g, 2, s, 1);
       run(g, DOUSE_MS, () => ({ ...idle, b: true }));
     }
     expect(g.stations.some((s) => s.fire !== undefined && s.kind !== 'pot')).toBe(false);
     const first = g.stations.find((s) => s.kind === 'pot' && s.fire !== undefined);
-    if (first) { faceAt(g, 1, first, 0); faceAt(g, 2, first, 1); run(g, DOUSE_MS, () => ({ ...idle, b: true })); }
+    if (first) {
+      faceAt(g, 1, first, 0);
+      faceAt(g, 2, first, 1);
+      run(g, DOUSE_MS, () => ({ ...idle, b: true }));
+    }
     expect(log['fire:end']).toHaveLength(1);
     expect(g.burn!.fires[0]).not.toBeNull(); // ... and the waiting oven caught fire right then
     expect(log['fire:start']).toHaveLength(2);
@@ -297,7 +371,8 @@ describe('putting it out: hold Picar (B) in front of the fire, DOUSE_MS in total
   });
   it('two chefs add up: 1.5 s each', () => {
     const { g, log, oven } = fireAt({ n: 2 });
-    faceAt(g, 1, oven, 0); faceAt(g, 2, oven, 1);
+    faceAt(g, 1, oven, 0);
+    faceAt(g, 2, oven, 1);
     run(g, DOUSE_MS / 2 + 120, () => ({ ...idle, b: true }));
     expect(oven.fire).toBeUndefined();
     expect(log['fire:out']).toHaveLength(1);
@@ -318,7 +393,8 @@ describe('putting it out: hold Picar (B) in front of the fire, DOUSE_MS in total
     face(g, 1, c);
     run(g, DOUSE_MS + 120, () => ({ ...idle, b: true }));
     expect(c.fire).toBeUndefined();
-    const p = g.players.get(1)!; p.item = 'raw1';
+    const p = g.players.get(1)!;
+    p.item = 'raw1';
     pressA(g, 1);
     expect(c.item).toBe('raw1');
   });
@@ -347,7 +423,8 @@ describe('putting it out: hold Picar (B) in front of the fire, DOUSE_MS in total
 describe('the lobby turns the rules on', () => {
   const versus = modeOf(GAMES[0], 'versus');
   const teams = syncTeams(versus, null, [1, 2, 3, 4], 4, false)!;
-  const round = (difficulty: Difficulty, modeOptions: Record<string, boolean | string>) => startVersusRound({ teams, choice: 'V1', difficulty, seed: 4, modeOptions, slotOf: (id) => id - 1, rand: mulberry32(1) }).game;
+  const round = (difficulty: Difficulty, modeOptions: Record<string, boolean | string>) =>
+    startVersusRound({ teams, choice: 'V1', difficulty, seed: 4, modeOptions, slotOf: (id) => id - 1, rand: mulberry32(1) }).game;
   it('a versus round from the lobby has the burning oven; the fire follows the difficulty and the sabotage level (Easy no, Suave no, Caos yes)', () => {
     expect(round('normal', { sabotage: 'soft' }).burn).toMatchObject({ fire: false, graceMs: 8000 });
     expect(round('easy', { sabotage: 'chaos' }).burn).toMatchObject({ fire: false, graceMs: 15_000 });

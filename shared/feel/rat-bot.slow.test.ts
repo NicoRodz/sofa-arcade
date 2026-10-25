@@ -10,14 +10,19 @@ import { RAT_GENTLE } from './rat';
 const sim: Sim = { createGame, addPlayer, tick, isFloor, maps: FIXED_MAPS.slice(0, 15) };
 async function events(opts: Record<string, unknown>, seeds = 4): Promise<RatRun[]> {
   const out: RatRun[] = [];
-  for (let mi = 0; mi < sim.maps.length; mi++) for (let s = 1; s <= seeds; s++) { const r = await runRat(sim, mi, s, { difficulty: 'normal', ...opts }); if (r) out.push(r); }
+  for (let mi = 0; mi < sim.maps.length; mi++)
+    for (let s = 1; s <= seeds; s++) {
+      const r = await runRat(sim, mi, s, { difficulty: 'normal', ...opts });
+      if (r) out.push(r);
+    }
   return out;
 }
 const rate = (rs: RatRun[]) => rs.filter((r) => r.caught).length / rs.length;
 
 describe('the imperfect chef against the rat', () => {
   it('reaches the gentle rat in at least 70% of the events, hands full or not; the old rat in under 40%', async () => {
-    const on = await events({ magnet: true }), off = await events({});
+    const on = await events({ magnet: true }),
+      off = await events({});
     expect(on.length).toBeGreaterThanOrEqual(50);
     expect(rate(on)).toBeGreaterThanOrEqual(0.7);
     expect(rate(on.filter((r) => r.carry))).toBeGreaterThanOrEqual(0.7);
@@ -25,7 +30,8 @@ describe('the imperfect chef against the rat', () => {
     expect(rate(off.filter((r) => r.carry))).toBe(0); // a dash needs free hands: the old rat is out of reach of a cook
   });
   it('the gentle rat never steals in the first second and a rat nobody scares stays 12 s; the old one does steal at once and leaves earlier', async () => {
-    const on = await events({ magnet: true }), off = await events({});
+    const on = await events({ magnet: true }),
+      off = await events({});
     const steals = on.filter((r) => r.stolen).map((r) => r.stealMs);
     expect(steals.length).toBeGreaterThan(10);
     expect(Math.min(...steals)).toBeGreaterThanOrEqual(RAT_GENTLE.graceMs);

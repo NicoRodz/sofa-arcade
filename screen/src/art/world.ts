@@ -37,7 +37,16 @@ export class World {
   private magnet: MagnetView | null = null; // the bracket around each chef's target station (only when the round has the magnet)
   private burn: BurnView | null = null; // the oven that burns: warning bubble, flames, extinguisher (only when the round has it)
 
-  constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, private puestos: () => Map<number, PuestoView>, bus: Emitter<GameEvents>, mapId: string, seed: number, private view?: RoundView) {
+  constructor(
+    private scene: Phaser.Scene,
+    private game: Game,
+    private players: () => Map<number, PublicPlayer>,
+    private puestos: () => Map<number, PuestoView>,
+    bus: Emitter<GameEvents>,
+    mapId: string,
+    seed: number,
+    private view?: RoundView,
+  ) {
     this.bg = buildBackground(scene, game.grid, mapId, seed, game.rec?.topping);
     if (game.versus && view?.teams) this.tintKitchens(view);
     this.fx = new Fx(scene);
@@ -46,12 +55,17 @@ export class World {
     if (game.sab) this.sabotage = new SabotageView(scene, game, view, this.fx, bus);
     if (game.burn) this.burn = new BurnView(scene, game, this.fx, bus);
     if (game.mid) this.events = new EventsView(scene, game, view, this.fx, bus);
-    if (game.magnet) { this.magnet = new MagnetView(scene, game); if (game.mid) this.ratSignal = new RatSignal(scene, game, this.fx, bus); }
+    if (game.magnet) {
+      this.magnet = new MagnetView(scene, game);
+      if (game.mid) this.ratSignal = new RatSignal(scene, game, this.fx, bus);
+    }
     this.marks = new PuestoMarks(scene, game, puestos);
     this.wire(bus);
   }
 
-  private chefOf(id: number) { return this.chefs.get(id); }
+  private chefOf(id: number) {
+    return this.chefs.get(id);
+  }
 
   // Versus: each kitchen's floor takes its team's colour, with the team's glyph big and faint in the middle (colour alone never says whose it is).
   // The tint is a flat wash plus a stripe of the team's colour along the barrier, so even from the sofa the two halves read as two teams.
@@ -63,15 +77,18 @@ export class World {
       const region = k.regions[i];
       const tiles: [number, number][] = [];
       g.fillStyle(hexNum(team.color), 0.24);
-      k.comp.forEach((row, y) => row.forEach((c, x) => {
-        if (c !== region) return;
-        g.fillRect(OX + x * TILE, OY + y * TILE, TILE, TILE);
-        tiles.push([x + 0.5, y + 0.5]);
-      }));
+      k.comp.forEach((row, y) =>
+        row.forEach((c, x) => {
+          if (c !== region) return;
+          g.fillRect(OX + x * TILE, OY + y * TILE, TILE, TILE);
+          tiles.push([x + 0.5, y + 0.5]);
+        }),
+      );
       this.kitchenTiles[i] = tiles;
       if (!tiles.length) return;
       // the glyph sits on the floor tile closest to the middle of the kitchen (never over a counter island)
-      const mx = tiles.reduce((a, t) => a + t[0], 0) / tiles.length, my = tiles.reduce((a, t) => a + t[1], 0) / tiles.length;
+      const mx = tiles.reduce((a, t) => a + t[0], 0) / tiles.length,
+        my = tiles.reduce((a, t) => a + t[1], 0) / tiles.length;
       const [gx, gy] = tiles.reduce((a, t) => (Math.hypot(t[0] - mx, t[1] - my) < Math.hypot(a[0] - mx, a[1] - my) ? t : a));
       makeText(this.scene, OX + gx * TILE, OY + gy * TILE, team.icon, { size: 150, color: team.color, stroke: 0, depth: 2 }).setAlpha(0.3);
     });
@@ -80,18 +97,30 @@ export class World {
     view.teams!.forEach((team, i) => {
       edge.fillStyle(hexNum(team.color), 0.9);
       for (const [cx, cy] of this.kitchenTiles[i] ?? []) {
-        const x = Math.floor(cx), y = Math.floor(cy);
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const x = Math.floor(cx),
+          y = Math.floor(cy);
+        for (const [dx, dy] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as const) {
           const t = this.game.grid[y + dy]?.[x + dx];
           if (t?.kind !== 'wall') continue; // only the barrier and the outer wall, not the stations
-          const px = OX + x * TILE, py = OY + y * TILE, w = 8;
-          if (dx === 1) edge.fillRect(px + TILE - w, py, w, TILE); else if (dx === -1) edge.fillRect(px, py, w, TILE);
-          else if (dy === 1) edge.fillRect(px, py + TILE - w, TILE, w); else edge.fillRect(px, py, TILE, w);
+          const px = OX + x * TILE,
+            py = OY + y * TILE,
+            w = 8;
+          if (dx === 1) edge.fillRect(px + TILE - w, py, w, TILE);
+          else if (dx === -1) edge.fillRect(px, py, w, TILE);
+          else if (dy === 1) edge.fillRect(px, py + TILE - w, TILE, w);
+          else edge.fillRect(px, py, TILE, w);
         }
       }
     });
   }
-  private feet(gp: { x: number; y: number }) { return { x: OX + gp.x * TILE, y: OY + (gp.y + 0.3) * TILE }; }
+  private feet(gp: { x: number; y: number }) {
+    return { x: OX + gp.x * TILE, y: OY + (gp.y + 0.3) * TILE };
+  }
 
   private wire(bus: Emitter<GameEvents>) {
     const on = <K extends keyof GameEvents>(k: K, fn: (p: GameEvents[K]) => void) => this.off.push(bus.on(k, fn));
@@ -100,7 +129,13 @@ export class World {
     on('interactInvalid', (e) => this.chefOf(e.player)?.fail());
     on('dash', (e) => {
       this.chefOf(e.player)?.dash();
-      const puff = () => { const q = g.players.get(e.player); if (q) { const f = this.feet(q); this.fx.dashDust(f.x, f.y); } };
+      const puff = () => {
+        const q = g.players.get(e.player);
+        if (q) {
+          const f = this.feet(q);
+          this.fx.dashDust(f.x, f.y);
+        }
+      };
       puff();
       for (const ms of [45, 90, 135]) this.scene.time.delayedCall(ms, puff);
     });
@@ -118,9 +153,20 @@ export class World {
       this.fx.dustPoof(p.x, p.y);
       this.chefOf(e.player)?.bump();
     });
-    on('washDone', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y, 0x7fd0f2, 0.4, 1.3); this.fx.bubbles(p.x, p.y); this.chefOf(e.player)?.bump(); });
-    on('dirtyNew', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y, 0xd7263d, 0.3, 1.1); });
-    on('potStart', (e) => { const p = this.stations.pos(e.station); this.fx.ring(p.x, p.y + TILE * 0.2, 0xff8a1f, 0.5, 1.5); });
+    on('washDone', (e) => {
+      const p = this.stations.pos(e.station);
+      this.fx.ring(p.x, p.y, 0x7fd0f2, 0.4, 1.3);
+      this.fx.bubbles(p.x, p.y);
+      this.chefOf(e.player)?.bump();
+    });
+    on('dirtyNew', (e) => {
+      const p = this.stations.pos(e.station);
+      this.fx.ring(p.x, p.y, 0xd7263d, 0.3, 1.1);
+    });
+    on('potStart', (e) => {
+      const p = this.stations.pos(e.station);
+      this.fx.ring(p.x, p.y + TILE * 0.2, 0xff8a1f, 0.5, 1.5);
+    });
     on('orderWarning', (e) => this.hud.orderWarning(ticketKey(e.order, e.team)));
     on('orderExpired', (e) => {
       const key = ticketKey(e.order, e.team);
@@ -139,8 +185,15 @@ export class World {
       this.stations.ding(wi);
       if (ch) {
         this.fx.starBurst(ch.root.x, ch.root.y - TILE * 0.5, 5);
-        this.fx.float(ch.root.x, ch.root.y - TILE * 1.15, this.view?.school ? '¡Bien!' : `+${e.points}`, C.cheese, this.view?.school ? 60 : 52); // the school pays no points
-        if (e.mult > 1 && !this.view?.school) this.fx.float(ch.root.x, ch.root.y - TILE * 1.55, `propina x${e.mult}`, e.mult >= 4 ? C.tomato : C.fire, 30);
+        this.fx.float(
+          ch.root.x,
+          ch.root.y - TILE * 1.15,
+          this.view?.school ? '¡Bien!' : `+${e.points}`,
+          C.cheese,
+          this.view?.school ? 60 : 52,
+        ); // the school pays no points
+        if (e.mult > 1 && !this.view?.school)
+          this.fx.float(ch.root.x, ch.root.y - TILE * 1.55, `propina x${e.mult}`, e.mult >= 4 ? C.tomato : C.fire, 30);
       }
       this.fx.ring(w.x, w.y, 0xffc93c, 0.5, 2);
       const box = place(this.scene, foodKey('box'), w.x, w.y - TILE * 0.1, 1.0).setDepth(1300);
@@ -152,8 +205,13 @@ export class World {
       this.chefOf(e.player)?.fail();
       this.fx.shake(90, 0.003);
     });
-    on('streak', (e) => { if (!g.versus && !this.view?.school) this.hud.streak(e.n, e.mult); }); // versus: each plate reads its team's streak from the sim
-    on('countdownTick', (e) => { if (e.kind === 'start') this.hud.countdown(e.n); else this.hud.clockPulse(); });
+    on('streak', (e) => {
+      if (!g.versus && !this.view?.school) this.hud.streak(e.n, e.mult);
+    }); // versus: each plate reads its team's streak from the sim
+    on('countdownTick', (e) => {
+      if (e.kind === 'start') this.hud.countdown(e.n);
+      else this.hud.clockPulse();
+    });
     on('roundEnd', (e) => {
       this.hud.timeUp();
       this.fx.shake(250, 0.006);
@@ -166,17 +224,26 @@ export class World {
     on('vipWon', (e) => {
       this.hud.vs?.vipWon(e.team, e.tie);
       const w = this.stations.pos(this.stations.windowIdx(e.team));
-      this.fx.confettiBurst(w.x, w.y); this.fx.starBurst(w.x, w.y - TILE * 0.4, 8);
+      this.fx.confettiBurst(w.x, w.y);
+      this.fx.starBurst(w.x, w.y - TILE * 0.4, 8);
       this.fx.ring(w.x, w.y, 0xffd23f, 0.6, 2.8);
       this.fx.shake(120, 0.003);
     });
     on('vipLost', (e) => this.hud.vs?.vipLost(e.team));
     on('comeback', (e) => this.hud.vs?.notice(`¡Remontada de ${teamName(e.team)}!`, C.cheese));
-    on('teamK', (e) => { if (e.k > 1) this.hud.vs?.notice(`Ventaja ${kText(e.k)} para ${teamName(e.team)}`, C.cheese); });
+    on('teamK', (e) => {
+      if (e.k > 1) this.hud.vs?.notice(`Ventaja ${kText(e.k)} para ${teamName(e.team)}`, C.cheese);
+    });
     on('playerDropped', (e) => this.hud.vs?.notice(`${chefName(e.player)} se cayó`, '#FF8D8D'));
     on('playerBack', (e) => this.hud.vs?.notice(`${chefName(e.player)} volvió`, '#8BE59A'));
     on('playerGone', (e) => this.hud.vs?.notice(`${chefName(e.player)} salió de la partida`, '#C9BBA7'));
-    on('pantryRefill', () => { for (const s of g.stations) if (s.pantry) { const p = this.stations.pos(g.stations.indexOf(s)); this.fx.ring(p.x, p.y, 0xffd23f, 0.3, 1.2); } });
+    on('pantryRefill', () => {
+      for (const s of g.stations)
+        if (s.pantry) {
+          const p = this.stations.pos(g.stations.indexOf(s));
+          this.fx.ring(p.x, p.y, 0xffd23f, 0.3, 1.2);
+        }
+    });
   }
 
   // Versus, the round just ended: the scoreboard reveals, the winner's kitchen celebrates under a waving flag and the other one slumps under a flag at half mast.
@@ -187,10 +254,21 @@ export class World {
       const team = this.view?.teams?.[t.id];
       const tiles = this.kitchenTiles[t.id];
       if (!team || !tiles?.length) return;
-      const mx = tiles.reduce((a, p) => a + p[0], 0) / tiles.length, my = tiles.reduce((a, p) => a + p[1], 0) / tiles.length;
+      const mx = tiles.reduce((a, p) => a + p[0], 0) / tiles.length,
+        my = tiles.reduce((a, p) => a + p[1], 0) / tiles.length;
       const [gx, gy] = tiles.reduce((a, p) => (Math.hypot(p[0] - mx, p[1] - my) < Math.hypot(a[0] - mx, a[1] - my) ? p : a));
       const mood = winner === null ? 'idle' : t.id === winner ? 'wave' : 'droop';
-      const f = new FlagView(this.scene, `flag_${t.id}`, team.color, team.icon, mood, OX + gx * TILE, OY + (gy + 0.4) * TILE, 100 + OY + (gy + 1) * TILE, TILE * (mood === 'droop' ? 1.5 : 2.1));
+      const f = new FlagView(
+        this.scene,
+        `flag_${t.id}`,
+        team.color,
+        team.icon,
+        mood,
+        OX + gx * TILE,
+        OY + (gy + 0.4) * TILE,
+        100 + OY + (gy + 1) * TILE,
+        TILE * (mood === 'droop' ? 1.5 : 2.1),
+      );
       f.raise();
       this.flags.push(f);
       if (winner !== null && t.id !== winner) {
@@ -212,12 +290,16 @@ export class World {
     for (const [id, chef] of this.chefs) {
       const team = this.game.players.get(id)?.team;
       if (f.winner === null) continue;
-      if (team === f.winner) chef.celebrate(); else chef.fail();
+      if (team === f.winner) chef.celebrate();
+      else chef.fail();
     }
     if (f.winner !== null && f.ms < 2400) {
       const tiles = this.kitchenTiles[f.winner] ?? [];
       const at = tiles[Math.floor(Math.random() * tiles.length)];
-      if (at) { this.fx.confettiBurst(OX + at[0] * TILE, OY + at[1] * TILE); this.fx.starBurst(OX + at[0] * TILE, OY + at[1] * TILE, 4); }
+      if (at) {
+        this.fx.confettiBurst(OX + at[0] * TILE, OY + at[1] * TILE);
+        this.fx.starBurst(OX + at[0] * TILE, OY + at[1] * TILE, 4);
+      }
     }
   }
 
@@ -237,7 +319,13 @@ export class World {
           const p = this.stations.pos(cur.chopAt);
           if (g.stations[cur.chopAt]?.kind === 'sink') this.fx.bubbles(p.x, p.y);
           else if (kind === 'stretch') this.fx.flourPuff(p.x, p.y);
-          else this.fx.chop(p.x, p.y, { raw0: 0, raw1: 1, raw2: 2, raw3: 1, raw4: 0 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2' | 'raw3' | 'raw4'] ?? 1);
+          else
+            this.fx.chop(
+              p.x,
+              p.y,
+              { raw0: 0, raw1: 1, raw2: 2, raw3: 1, raw4: 0 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2' | 'raw3' | 'raw4'] ??
+                1,
+            );
         };
         const team = g.versus ? this.view?.teams?.[gp.team] : undefined;
         if (team) chef.setTeam(hexNum(team.color));
@@ -245,18 +333,32 @@ export class World {
       }
       chef.setName(info.name);
       let action: 'none' | 'chop' | 'stretch' = 'none';
-      if (gp.cutting && gp.chopAt >= 0 && !gp.dousing) { // (a chef putting a fire out holds the extinguisher: BurnView draws it, the knife stays put)
+      if (gp.cutting && gp.chopAt >= 0 && !gp.dousing) {
+        // (a chef putting a fire out holds the extinguisher: BurnView draws it, the knife stays put)
         const at = g.stations[gp.chopAt];
         action = at?.kind === 'sink' || at?.kind === 'pot' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough, and folding the calzone kneads it
         chop.set(gp.chopAt, action);
       }
       const f = this.feet(gp);
       chef.update(dtMs, {
-        x: f.x, y: f.y, fx: gp.fx, fy: gp.fy, item: gp.item, action, connected: info.connected && !gp.ghost, ghost: gp.crossing, ...(gp.assist ? { assist: true } : {}),
-        ...(gp.slip ? { slipT: g.time - gp.slip.t0, slideMs: gp.slip.slideMs } : {}), ...(g.hazards && !gp.slip && (gp.immuneUntil ?? 0) > g.time ? { immune: true } : {}),
+        x: f.x,
+        y: f.y,
+        fx: gp.fx,
+        fy: gp.fy,
+        item: gp.item,
+        action,
+        connected: info.connected && !gp.ghost,
+        ghost: gp.crossing,
+        ...(gp.assist ? { assist: true } : {}),
+        ...(gp.slip ? { slipT: g.time - gp.slip.t0, slideMs: gp.slip.slideMs } : {}),
+        ...(g.hazards && !gp.slip && (gp.immuneUntil ?? 0) > g.time ? { immune: true } : {}),
       });
     }
-    for (const [id, c] of this.chefs) if (!g.players.has(id)) { c.destroy(); this.chefs.delete(id); }
+    for (const [id, c] of this.chefs)
+      if (!g.players.has(id)) {
+        c.destroy();
+        this.chefs.delete(id);
+      }
     this.stations.update(dtMs, chop);
     this.marks.update(dtMs, this.chefs);
     this.sabotage?.update(dtMs);

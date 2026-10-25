@@ -8,8 +8,13 @@ import { SOUND_EVENTS, cuesFor, type SoundEvents } from './recipes';
 import { createChain, playCue, playMusicNote } from './synth';
 
 /** What the scene's bus offers: Emitter<GameEvents & AllObstEvents> satisfies it. */
-export interface ObstBus { on<K extends keyof SoundEvents>(type: K, fn: (p: SoundEvents[K]) => void): () => void }
-export interface ObstAudio { toggleMute(): void; dispose(): void }
+export interface ObstBus {
+  on<K extends keyof SoundEvents>(type: K, fn: (p: SoundEvents[K]) => void): () => void;
+}
+export interface ObstAudio {
+  toggleMute(): void;
+  dispose(): void;
+}
 const NOOP: ObstAudio = { toggleMute() {}, dispose() {} };
 const NAMES = SOUND_EVENTS;
 
@@ -23,7 +28,9 @@ export function initObstAudio(bus: ObstBus, biome: () => Biome, state: () => Mus
   let sched = newSched(0);
   let muted = false;
   chain.master.gain.value = masterGain(muted);
-  const unlock = () => { if (ctx.state !== 'running') void ctx.resume().catch(() => {}); };
+  const unlock = () => {
+    if (ctx.state !== 'running') void ctx.resume().catch(() => {});
+  };
   window.addEventListener('pointerdown', unlock);
   window.addEventListener('keydown', unlock);
   const duck = (t: number) => {
@@ -31,15 +38,16 @@ export function initObstAudio(bus: ObstBus, biome: () => Biome, state: () => Mus
     g.setTargetAtTime(BUS_GAIN.music * DUCK_GAIN, t, 0.03);
     g.setTargetAtTime(BUS_GAIN.music, t + DUCK_S, 0.1);
   };
-  const listen = <K extends keyof SoundEvents>(name: K) => bus.on(name, (p) => {
-    if (ctx.state !== 'running') return;
-    const now = ctx.currentTime;
-    for (const c of cuesFor(name as never, p as never, biome())) {
-      if (!limiter.allow(c, now)) continue;
-      playCue(ctx, chain, c, now);
-      if (c.duck) duck(now);
-    }
-  });
+  const listen = <K extends keyof SoundEvents>(name: K) =>
+    bus.on(name, (p) => {
+      if (ctx.state !== 'running') return;
+      const now = ctx.currentTime;
+      for (const c of cuesFor(name as never, p as never, biome())) {
+        if (!limiter.allow(c, now)) continue;
+        playCue(ctx, chain, c, now);
+        if (c.duck) duck(now);
+      }
+    });
   const offs = NAMES.map((n) => listen(n));
   const timer = setInterval(() => {
     if (ctx.state !== 'running') return;
@@ -49,7 +57,10 @@ export function initObstAudio(bus: ObstBus, biome: () => Biome, state: () => Mus
     for (const n of r.notes) playMusicNote(ctx, chain, n);
   }, TICK_MS);
   return {
-    toggleMute() { muted = !muted; chain.master.gain.setTargetAtTime(masterGain(muted), ctx.currentTime, 0.02); },
+    toggleMute() {
+      muted = !muted;
+      chain.master.gain.setTargetAtTime(masterGain(muted), ctx.currentTime, 0.02);
+    },
     dispose() {
       clearInterval(timer);
       for (const off of offs) off();

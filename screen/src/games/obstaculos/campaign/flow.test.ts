@@ -6,10 +6,16 @@ import { CampaignFlow, joinNames } from './flow';
 import { FakeApi, MemKV } from './testkit';
 
 const mk = (room = 'MAIN', catalog: Catalog = CAMPAIGN_CATALOG) => {
-  const api = new FakeApi(), kv = new MemKV();
+  const api = new FakeApi(),
+    kv = new MemKV();
   let t = 5000;
   const flow = new CampaignFlow({ api, catalog, room, kv, now: () => ++t });
-  return { api, kv, flow, other: (r: string) => new CampaignFlow({ api, catalog: CAMPAIGN_CATALOG, room: r, kv: new MemKV(), now: () => ++t }) };
+  return {
+    api,
+    kv,
+    flow,
+    other: (r: string) => new CampaignFlow({ api, catalog: CAMPAIGN_CATALOG, room: r, kv: new MemKV(), now: () => ++t }),
+  };
 };
 const clear = { cleared: true, timeMs: 8000, collectiblesMask: 0, deaths: 0 };
 const fail = { cleared: false, timeMs: 30_000, collectiblesMask: 0, deaths: 12 };
@@ -28,8 +34,10 @@ describe('the hub: who is there to continue', () => {
   it('offers the remembered expedition; the most recent one when nothing is remembered; nothing when the server is down', async () => {
     const { api, kv, flow } = mk();
     expect((await flow.hub()).last).toBeNull();
-    const a = await api.create('A'); await api.merge({ ...a!, updatedAt: 2000 });
-    const b = await api.create('B'); await api.merge({ ...b!, updatedAt: 3000 });
+    const a = await api.create('A');
+    await api.merge({ ...a!, updatedAt: 2000 });
+    const b = await api.create('B');
+    await api.merge({ ...b!, updatedAt: 3000 });
     expect((await flow.hub()).last?.name).toBe('B'); // nothing remembered: the most recent
     kv.setItem(LAST_KEY, a!.id);
     expect((await flow.hub()).last?.name).toBe('A'); // the remembered one wins even if it is older
@@ -95,7 +103,10 @@ describe('what a level asks and what it gives back', () => {
   it('the sim world of a level is its biome, one world down for Fácil and one up for Difícil, clamped at the ends', async () => {
     const { flow } = mk();
     await flow.create(['A', 'B']);
-    const w = (d: 'easy' | 'normal' | 'hard') => { const s = flow.spec('1-1', 2, d); return 'ok' in s ? null : s.world; };
+    const w = (d: 'easy' | 'normal' | 'hard') => {
+      const s = flow.spec('1-1', 2, d);
+      return 'ok' in s ? null : s.world;
+    };
     expect([w('easy'), w('normal'), w('hard')]).toEqual(['beach', 'beach', 'forest']);
   });
   it('a clear is saved on the server at once and offers Siguiente', async () => {
@@ -123,7 +134,8 @@ describe('what a level asks and what it gives back', () => {
     await flow.create(['A', 'B']);
     for (let i = 1; i <= 5; i++) {
       flow.begin('1-1');
-      await flow.levelEnd(fail); await flow.levelEnd(fail);
+      await flow.levelEnd(fail);
+      await flow.levelEnd(fail);
       flow.failed();
       expect(flow.outcome).toMatchObject({ cleared: false, failuresInARow: i, canSkip: i >= 5 });
     }
@@ -135,16 +147,23 @@ describe('what a level asks and what it gives back', () => {
   it('a clear after failures resets the streak', async () => {
     const { flow } = mk();
     await flow.create(['A', 'B']);
-    flow.begin('1-1'); await flow.levelEnd(fail); await flow.levelEnd(fail); flow.failed();
+    flow.begin('1-1');
+    await flow.levelEnd(fail);
+    await flow.levelEnd(fail);
+    flow.failed();
     expect(flow.failures.get('1-1')).toBe(1);
-    flow.begin('1-1'); await flow.levelEnd(clear);
+    flow.begin('1-1');
+    await flow.levelEnd(clear);
     expect(flow.failures.has('1-1')).toBe(false);
   });
   it('a failed session saves nothing', async () => {
     const { api, flow } = mk();
     await flow.create(['A', 'B']);
     const before = api.merges;
-    flow.begin('1-1'); await flow.levelEnd(fail); await flow.levelEnd(fail); flow.failed();
+    flow.begin('1-1');
+    await flow.levelEnd(fail);
+    await flow.levelEnd(fail);
+    flow.failed();
     expect(api.merges).toBe(before);
   });
   it('with the server down the clear stays in memory, says so, and goes up with the next save', async () => {
@@ -152,12 +171,14 @@ describe('what a level asks and what it gives back', () => {
     await flow.create(['A', 'B']);
     const id = flow.exp!.id;
     api.down = true;
-    flow.begin('1-1'); await flow.levelEnd(clear);
+    flow.begin('1-1');
+    await flow.levelEnd(clear);
     expect(flow.outcome!.saved).toBe(false);
     expect(progressOf(flow.exp!, '1-1').done).toBe(true); // the group can keep playing
     expect(api.store.get(id)!.levels['1-1']).toBeUndefined();
     api.down = false;
-    flow.begin('1-2'); await flow.levelEnd(clear);
+    flow.begin('1-2');
+    await flow.levelEnd(clear);
     expect(flow.outcome!.saved).toBe(true);
     expect(Object.keys(api.store.get(id)!.levels).sort()).toEqual(['1-1', '1-2']); // the whole expedition travels, so nothing was lost
   });
@@ -167,8 +188,23 @@ describe('what a level asks and what it gives back', () => {
     const id = flow.exp!.id;
     // someone else (another screen, earlier) already beat 1-1 with 3 stars on the server
     const server = api.store.get(id)!;
-    api.store.set(id, applyResult(server, CAMPAIGN_CATALOG, { levelId: '1-1', cleared: true, timeMs: 5000, collectiblesMask: fullMask(levelById(CAMPAIGN_CATALOG, '1-1')!.collectibles), deaths: 0 }, 9000));
-    flow.begin('1-1'); await flow.levelEnd({ ...clear, deaths: 5, timeMs: 9000 });
+    api.store.set(
+      id,
+      applyResult(
+        server,
+        CAMPAIGN_CATALOG,
+        {
+          levelId: '1-1',
+          cleared: true,
+          timeMs: 5000,
+          collectiblesMask: fullMask(levelById(CAMPAIGN_CATALOG, '1-1')!.collectibles),
+          deaths: 0,
+        },
+        9000,
+      ),
+    );
+    flow.begin('1-1');
+    await flow.levelEnd({ ...clear, deaths: 5, timeMs: 9000 });
     expect(progressOf(flow.exp!, '1-1')).toMatchObject({ stars: [true, true, true], bestTimeMs: 5000 });
   });
 
@@ -182,7 +218,8 @@ describe('what a level asks and what it gives back', () => {
     expect(flow.outcome).toMatchObject({ levelId: 'p-move', cleared: true, practice: true, next: null, saved: true });
     expect(api.merges).toBe(0);
     flow.begin('p-jump');
-    await flow.levelEnd(fail); flow.failed();
+    await flow.levelEnd(fail);
+    flow.failed();
     expect(flow.outcome).toMatchObject({ cleared: false, practice: true, canSkip: false });
     expect(flow.failures.size).toBe(0);
   });

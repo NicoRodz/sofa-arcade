@@ -17,7 +17,10 @@ const PHASES: GeyserPhase[] = ['calm', 'warn', 'gush'];
 
 export function geyserPhaseAt(w: World, o: Objective): GeyserPhase {
   const prm = o.param as Extract<Objective['param'], { kind: 'geyser' }>;
-  const per = steps(prm.periodSec), active = steps(prm.activeSec ?? 0.5), gushAt = per - active, t = w.tick % per;
+  const per = steps(prm.periodSec),
+    active = steps(prm.activeSec ?? 0.5),
+    gushAt = per - active,
+    t = w.tick % per;
   return t >= gushAt ? 'gush' : t >= gushAt - steps(w.camp!.geyserWarnSec) ? 'warn' : 'calm';
 }
 
@@ -30,7 +33,8 @@ export function stepSinkers(w: World): void {
     const oy0 = o.oy;
     if (o.load > 0) o.oy = Math.min(prm.travel * TILE, o.oy + o.load * c.sinkTilesPerSec * TILE * DT);
     else o.oy = Math.max(0, o.oy - c.sinkRiseTilesPerSec * TILE * DT);
-    o.dx = 0; o.dy = o.oy - oy0;
+    o.dx = 0;
+    o.dy = o.oy - oy0;
     const sinking = o.dy > 1e-9;
     if (sinking && !o.moving) emit(w, 'obst.sinker', { id: o.letter, load: o.load });
     o.moving = sinking;
@@ -43,14 +47,32 @@ export function stepGeysers(w: World): void {
   for (const p of w.players) if (p.camp.geyserCool > 0) p.camp.geyserCool--;
   for (const o of w.ent.objectives) {
     if (o.kind !== 'geyser') continue;
-    const ph = geyserPhaseAt(w, o), n = PHASES.indexOf(ph);
-    if (n !== o.phase) { o.phase = n; emit(w, 'obst.geyser', { id: o.letter, phase: ph }); }
+    const ph = geyserPhaseAt(w, o),
+      n = PHASES.indexOf(ph);
+    if (n !== o.phase) {
+      o.phase = n;
+      emit(w, 'obst.geyser', { id: o.letter, phase: ph });
+    }
     if (ph !== 'gush') continue;
     for (const p of w.players) {
-      if (!isActive(p) || p.camp.geyserCool > 0 || p.climbing || p.carriedBy >= 0 || p.lift || p.camp.pick !== 0 || p.holding?.kind === 'ring') continue;
+      if (
+        !isActive(p) ||
+        p.camp.geyserCool > 0 ||
+        p.climbing ||
+        p.carriedBy >= 0 ||
+        p.lift ||
+        p.camp.pick !== 0 ||
+        p.holding?.kind === 'ring'
+      )
+        continue;
       if (!overlaps(o.rect, bodyRect(p.body))) continue;
       const b = p.body;
-      b.vy = -JUMP_V0 * c.geyserLaunchMult; b.grounded = false; b.supportId = -1; b.air = NONE; p.planted = false; p.ropeJump = true;
+      b.vy = -JUMP_V0 * c.geyserLaunchMult;
+      b.grounded = false;
+      b.supportId = -1;
+      b.air = NONE;
+      p.planted = false;
+      p.ropeJump = true;
       p.camp.geyserCool = GEYSER_COOL_STEPS;
     }
   }

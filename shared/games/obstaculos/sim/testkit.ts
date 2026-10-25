@@ -18,7 +18,10 @@ export function level(rows: string[], extra: Partial<LevelDef> & { params?: Reco
 export function hall(w = 60, h = 14, extra: Record<number, string> = {}): string[] {
   const rows: string[] = [];
   for (let y = 0; y < h; y++) {
-    if (y >= h - 2) { rows.push('#'.repeat(w)); continue; }
+    if (y >= h - 2) {
+      rows.push('#'.repeat(w));
+      continue;
+    }
     let r = `#${'.'.repeat(w - 2)}#`;
     if (y === h - 3) r = `#.S${'.'.repeat(w - 6)}G.#`;
     if (extra[y]) r = extra[y]!;
@@ -28,13 +31,30 @@ export function hall(w = 60, h = 14, extra: Record<number, string> = {}): string
 }
 export const put = (row: string, col: number, s: string): string => row.slice(0, col) + s + row.slice(col + s.length);
 
-export interface Opts { mode?: GameMode; difficulty?: Difficulty; slots?: number[]; campaign?: WorldOptions['campaign'] }
+export interface Opts {
+  mode?: GameMode;
+  difficulty?: Difficulty;
+  slots?: number[];
+  campaign?: WorldOptions['campaign'];
+}
 export function world(def: LevelDef, o: Opts = {}): World {
-  return createWorld({ level: def, mode: o.mode ?? 'chain', difficulty: o.difficulty ?? 'normal', slots: o.slots ?? [0, 1], campaign: o.campaign });
+  return createWorld({
+    level: def,
+    mode: o.mode ?? 'chain',
+    difficulty: o.difficulty ?? 'normal',
+    slots: o.slots ?? [0, 1],
+    campaign: o.campaign,
+  });
 }
 
 export type InputFn = (slot: number, tick: number) => PlayerStep | undefined;
-export function run(w: World, steps: number, f: InputFn = () => undefined, onStep?: (events: ObstEvent[]) => void, off?: (tick: number) => boolean[]): ObstEvent[] {
+export function run(
+  w: World,
+  steps: number,
+  f: InputFn = () => undefined,
+  onStep?: (events: ObstEvent[]) => void,
+  off?: (tick: number) => boolean[],
+): ObstEvent[] {
   const all: ObstEvent[] = [];
   for (let i = 0; i < steps; i++) {
     const inputs: (PlayerStep | undefined)[] = [];
@@ -46,13 +66,17 @@ export function run(w: World, steps: number, f: InputFn = () => undefined, onSte
   return all;
 }
 export const names = (ev: ObstEvent[]): string[] => ev.map((e) => e.name);
-export const of = <K extends ObstEventName>(ev: ObstEvent[], name: K): AllObstEvents[K][] => ev.filter((e) => e.name === name).map((e) => e.data as AllObstEvents[K]);
+export const of = <K extends ObstEventName>(ev: ObstEvent[], name: K): AllObstEvents[K][] =>
+  ev.filter((e) => e.name === name).map((e) => e.data as AllObstEvents[K]);
 export const pl = (w: World, slot: number) => w.players.find((p) => p.slot === slot)!;
 export const feetOnFloor = (w: World, slot: number, floorRow: number) => Math.abs(pl(w, slot).body.y + 46 - floorRow * TILE) < 0.7;
 // Put a player at tile coords (feet on the bottom of the cell row), for set-ups.
 export function teleport(w: World, slot: number, col: number, row: number): void {
   const b = pl(w, slot).body;
-  b.x = col * TILE + (TILE - 34) / 2; b.y = (row + 1) * TILE - 46; b.vx = 0; b.vy = 0;
+  b.x = col * TILE + (TILE - 34) / 2;
+  b.y = (row + 1) * TILE - 46;
+  b.vx = 0;
+  b.vy = 0;
 }
 
 // Draws chars into a copy of rows: draw(rows, [col, row, 'abc'] ...) writes the string starting at (col, row).
@@ -61,7 +85,8 @@ export function draw(rows: string[], ...items: [number, number, string][]): stri
   for (const [col, row, s] of items) out[row] = put(out[row]!, col, s);
   return out;
 }
-export const vline = (col: number, from: number, to: number, ch: string): [number, number, string][] => Array.from({ length: to - from + 1 }, (_, i) => [col, from + i, ch] as [number, number, string]);
+export const vline = (col: number, from: number, to: number, ch: string): [number, number, string][] =>
+  Array.from({ length: to - from + 1 }, (_, i) => [col, from + i, ch] as [number, number, string]);
 export const tile = (w: World, col: number, row: number) => w.grid.cells[row * w.grid.w + col];
 export const obj = (w: World, letter: string) => w.ent.objectives.find((o) => o.letter === letter)!;
 

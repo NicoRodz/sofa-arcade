@@ -19,18 +19,29 @@ export interface IsometryReport {
  * `same` decides when two tiles count as the same type (default: the same character); a design with start tiles marked per
  * side ("a"/"b") passes a comparison that reads both as one type.
  */
-export function isometryCheck(rows: readonly string[], sigma: Sigma, same: (a: string, b: string) => boolean = (a, b) => a === b): IsometryReport {
-  const h = rows.length, w = rows[0]?.length ?? 0;
+export function isometryCheck(
+  rows: readonly string[],
+  sigma: Sigma,
+  same: (a: string, b: string) => boolean = (a, b) => a === b,
+): IsometryReport {
+  const h = rows.length,
+    w = rows[0]?.length ?? 0;
   if (!h || !w || rows.some((r) => r.length !== w)) throw new RangeError('map must be a non-empty rectangle');
-  let valid = true, match = 0;
+  let valid = true,
+    match = 0;
   const mismatches: Pos[] = [];
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const [tx, ty] = sigma(x, y, w, h);
-    const inside = Number.isInteger(tx) && Number.isInteger(ty) && tx >= 0 && tx < w && ty >= 0 && ty < h;
-    if (!inside) { valid = false; continue; }
-    const [bx, by] = sigma(tx, ty, w, h);
-    if (bx !== x || by !== y) valid = false;
-    if (same(rows[y]![x]!, rows[ty]![tx]!)) match++; else mismatches.push([x, y]);
-  }
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const [tx, ty] = sigma(x, y, w, h);
+      const inside = Number.isInteger(tx) && Number.isInteger(ty) && tx >= 0 && tx < w && ty >= 0 && ty < h;
+      if (!inside) {
+        valid = false;
+        continue;
+      }
+      const [bx, by] = sigma(tx, ty, w, h);
+      if (bx !== x || by !== y) valid = false;
+      if (same(rows[y]![x]!, rows[ty]![tx]!)) match++;
+      else mismatches.push([x, y]);
+    }
   return { valid, s: match / (w * h), mismatches };
 }

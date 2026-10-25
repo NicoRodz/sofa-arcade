@@ -5,7 +5,11 @@ import { LOOKAHEAD_S, TICK_MS, advance, modeFor, newSched, type Snapshot } from 
 import { ACTIONS, type Action, type SfxId } from './recipes';
 import { createChain, playNote, playSfx } from './synth';
 
-export interface AudioController { playerJoined(): void; toggleMute(): void; ui(id: SfxId): void }
+export interface AudioController {
+  playerJoined(): void;
+  toggleMute(): void;
+  ui(id: SfxId): void;
+}
 const NOOP: AudioController = { playerJoined() {}, toggleMute() {}, ui() {} };
 const MUTE_KEY = 'pg.muted';
 
@@ -18,11 +22,16 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
   const loops = new LoopTable();
   let sched = newSched(0);
   let muted = false;
-  try { muted = localStorage.getItem(MUTE_KEY) === '1'; } catch { /* storage blocked: start unmuted */ }
+  try {
+    muted = localStorage.getItem(MUTE_KEY) === '1';
+  } catch {
+    /* storage blocked: start unmuted */
+  }
   chain.master.gain.value = masterGain(muted);
 
   const hint = document.createElement('div');
-  hint.style.cssText = 'position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:5;padding:6px 14px;border-radius:8px;background:#000a;color:#ccc;font:13px system-ui,sans-serif;pointer-events:none';
+  hint.style.cssText =
+    'position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:5;padding:6px 14px;border-radius:8px;background:#000a;color:#ccc;font:13px system-ui,sans-serif;pointer-events:none';
   document.body.appendChild(hint);
   const refreshHint = () => {
     const text = hintText({ running: ctx.state === 'running', muted });
@@ -33,14 +42,23 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
 
   let confirmed = false;
   ctx.addEventListener('statechange', () => {
-    if (ctx.state === 'running' && !confirmed) { confirmed = true; playSfx(ctx, chain, 'join', ctx.currentTime + 0.02); }
+    if (ctx.state === 'running' && !confirmed) {
+      confirmed = true;
+      playSfx(ctx, chain, 'join', ctx.currentTime + 0.02);
+    }
     refreshHint();
   });
-  const unlock = () => { if (ctx.state !== 'running') void ctx.resume().catch(() => {}); };
+  const unlock = () => {
+    if (ctx.state !== 'running') void ctx.resume().catch(() => {});
+  };
   const toggleMute = () => {
     muted = !muted;
     chain.master.gain.setTargetAtTime(masterGain(muted), ctx.currentTime, 0.02);
-    try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
     refreshHint();
   };
   window.addEventListener('pointerdown', unlock);
@@ -58,8 +76,9 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
     if (ctx.state !== 'running') return; // the game never depends on audio
     const now = ctx.currentTime;
     for (const a of actions) {
-      if (a.kind === 'play') { if (limiter.allow(a.id, now)) playSfx(ctx, chain, a.id, now, rateFor(a.id, Math.random()) * 2 ** ((a.semis ?? 0) / 12)); }
-      else if (a.kind === 'duck') duck(now);
+      if (a.kind === 'play') {
+        if (limiter.allow(a.id, now)) playSfx(ctx, chain, a.id, now, rateFor(a.id, Math.random()) * 2 ** ((a.semis ?? 0) / 12));
+      } else if (a.kind === 'duck') duck(now);
       else loops.apply(a, now);
     }
   };

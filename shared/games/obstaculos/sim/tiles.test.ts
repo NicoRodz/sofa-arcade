@@ -5,7 +5,16 @@ import { parseLevelStrict } from '../parse';
 import type { LevelDef } from '../types';
 import { boxHitsHazard, boxHitsSolid, buildGrid, setTile, tileAt, tileOf } from './tiles';
 
-const def: LevelDef = { id: 't', name: 't', biome: 'beach', players: { min: 2, max: 4 }, tether: 'any', stars: 1, parSec: 30, rows: ['#######', '#S.%.G#', '#..^..#', '#######'] };
+const def: LevelDef = {
+  id: 't',
+  name: 't',
+  biome: 'beach',
+  players: { min: 2, max: 4 },
+  tether: 'any',
+  stars: 1,
+  parSec: 30,
+  rows: ['#######', '#S.%.G#', '#..^..#', '#######'],
+};
 
 describe('buildGrid', () => {
   it("'%' is solid in Libres and empty in Encadenados; the parsed tiles are not modified", () => {
@@ -44,7 +53,8 @@ describe('box queries', () => {
     expect(boxHitsSolid(g, TILE, 3 * TILE - 46 + 1, 34, 46)).toBe(true); // 1 px into the floor row
   });
   it('hazards need more than a graze (4 px shrink)', () => {
-    const spikesX = 3 * TILE, spikesY = 2 * TILE;
+    const spikesX = 3 * TILE,
+      spikesY = 2 * TILE;
     expect(boxHitsHazard(g, spikesX - 34 + 3, spikesY, 34, 46)).toBe(false); // 3 px of overlap
     expect(boxHitsHazard(g, spikesX - 34 + 6, spikesY, 34, 46)).toBe(true);
   });

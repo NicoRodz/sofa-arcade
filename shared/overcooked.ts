@@ -1,17 +1,73 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
 import { Emitter, type GameEvents } from './events';
 import { FIXED_MAPS, MAP_H, MAP_W, isFloor, parseMap, spawnPoints, type Grid, type Pos, type SigmaName, type StationKind } from './maps';
-import { DEFAULT_DIFFICULTY, DIRTY_MS, WASH_MS, params as difficultyParams, teamSize, type Difficulty, type Params, type Tuning } from './difficulty';
+import {
+  DEFAULT_DIFFICULTY,
+  DIRTY_MS,
+  WASH_MS,
+  params as difficultyParams,
+  teamSize,
+  type Difficulty,
+  type Params,
+  type Tuning,
+} from './difficulty';
 import { mulberry32, type Rng } from './rng';
-import { holdsPlace, matchStatus, rankTeams, teamMultipliers, type PauseChoice, type RosterEntry, type TeamId, type TeamResult } from './teams';
-import { PANTRY_EVERY_MS, PANTRY_MAX, VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS, kitchenRegions, stationOwner, teamStarts, type Kitchens } from './versus';
-import { SLIP, SLIP_DASH_EXTRA, SLIP_MIN_SPEED, SLIP_PUSH, SLIP_TRIGGER, type FloorItem, type Sabotage, type SabotageMode, type Slip } from './sabotage-config';
-import { createSabotage, isAiming, sabotageAimPress, sabotageBinned, sabotageCancelAim, sabotageLoad, sabotageTakeBag, sabotageTick } from './sabotage';
+import {
+  holdsPlace,
+  matchStatus,
+  rankTeams,
+  teamMultipliers,
+  type PauseChoice,
+  type RosterEntry,
+  type TeamId,
+  type TeamResult,
+} from './teams';
+import {
+  PANTRY_EVERY_MS,
+  PANTRY_MAX,
+  VIP_EVERY_MS,
+  VIP_MULT,
+  VIP_TTL_MS,
+  kitchenRegions,
+  stationOwner,
+  teamStarts,
+  type Kitchens,
+} from './versus';
+import {
+  SLIP,
+  SLIP_DASH_EXTRA,
+  SLIP_MIN_SPEED,
+  SLIP_PUSH,
+  SLIP_TRIGGER,
+  type FloorItem,
+  type Sabotage,
+  type SabotageMode,
+  type Slip,
+} from './sabotage-config';
+import {
+  createSabotage,
+  isAiming,
+  sabotageAimPress,
+  sabotageBinned,
+  sabotageCancelAim,
+  sabotageLoad,
+  sabotageTakeBag,
+  sabotageTick,
+} from './sabotage';
 import { addFloorItem, removeFloorItem } from './floor';
 import { burnTick, clearPot, createBurn, douse, fireAllowed, isDark, type Burn } from './burn';
 import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, createMid, midTick, type Mid, type MidFx } from './midround';
 import { ASSIST_FACING_BONUS, ASSIST_REACH_MULT, ASSIST_STICK_CANCEL } from './assist';
-import { applyMagnet, faceStation as magnetFace, floorWins, magnetHug, magnetPull, magnetStation, type MagnetCfg, type MagnetLevel } from './feel/magnet';
+import {
+  applyMagnet,
+  faceStation as magnetFace,
+  floorWins,
+  magnetHug,
+  magnetPull,
+  magnetStation,
+  type MagnetCfg,
+  type MagnetLevel,
+} from './feel/magnet';
 import { RAW_OF, RECIPE_PARTS, cutOf, cutType, dishFor, isDish, recipeBase, type Recipe } from './recipes/defs';
 import { canFold, cookMsOf, crateItem, createRec, cutMsOf, foldStep, pickOrder, pickRecipe, type Rec } from './recipes/sim';
 
@@ -26,7 +82,27 @@ export type { StationKind } from './maps';
 // raw2/cut2 = cheese (Margarita), raw3/cut3 = pepperoni, raw4/cut4 = mushroom (a round with a Carta del día: the cheese crate gives the card's topping). dishQ / dishP / dishM = a pizza that baked with cheese / pepperoni / mushroom, dishC = a folded calzone.
 // trash / trashBag exist only in a round with hazards on (sabotage): rubbish picked off the floor, and the bag a team throws.
 // burnt: a pizza that burnt in the oven (a round with `burn` on), taken on a plate: it cannot be delivered, it goes to the bin.
-export type Item = 'raw0' | 'raw1' | 'raw2' | 'raw3' | 'raw4' | 'cut0' | 'cut1' | 'cut2' | 'cut3' | 'cut4' | 'plate' | 'dish' | 'dishQ' | 'dishP' | 'dishM' | 'dishC' | 'dirty' | 'trash' | 'trashBag' | 'burnt';
+export type Item =
+  | 'raw0'
+  | 'raw1'
+  | 'raw2'
+  | 'raw3'
+  | 'raw4'
+  | 'cut0'
+  | 'cut1'
+  | 'cut2'
+  | 'cut3'
+  | 'cut4'
+  | 'plate'
+  | 'dish'
+  | 'dishQ'
+  | 'dishP'
+  | 'dishM'
+  | 'dishC'
+  | 'dirty'
+  | 'trash'
+  | 'trashBag'
+  | 'burnt';
 export { RAW_OF, RECIPE_PARTS, recipeBase, type Recipe }; // recipes/defs.ts: the five recipes (marinara, margarita; a Carta del día adds pepperoni, champiñón and calzone) and what each is worth (R13)
 // R15: the tip multiplier for a delivery made after `streak` correct ones in a row.
 export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax, 1 + Math.max(0, streak));
@@ -49,7 +125,8 @@ export interface Station {
   warned?: true; // pot: the warning beep sounded
   burnt?: true; // pot: the ready pizza burnt (smoke): it only serves for the bin
   fire?: number; // on fire: the ms of Picar already spent putting it out (present = burning, the station is out of use)
-  fold?: number; folded?: true; // a round with a Carta del día, pot only: 0..1 of Picar folding the dough and tomato; folded = a calzone (it bakes longer)
+  fold?: number;
+  folded?: true; // a round with a Carta del día, pot only: 0..1 of Picar folding the dough and tomato; folded = a calzone (it bakes longer)
 }
 export interface Player {
   id: number;
@@ -87,9 +164,22 @@ export interface Player {
   inTrash?: number[]; // rubbish items whose trigger disc the chef is inside of now: slipping counts entering, not standing there
   dousing?: boolean; // burn only: the chef's Picar is going into a fire (the extinguisher), not into a board or a sink
 }
-export interface Order { id: number; expiresAt: number; warned: boolean; recipe: Recipe; vip?: boolean; birthday?: boolean } // birthday: the mid-round event's order, worth BIRTHDAY_POINTS flat
+export interface Order {
+  id: number;
+  expiresAt: number;
+  warned: boolean;
+  recipe: Recipe;
+  vip?: boolean;
+  birthday?: boolean;
+} // birthday: the mid-round event's order, worth BIRTHDAY_POINTS flat
 // a = new A presses since last tick; bTaps = new B presses since last tick (a quick tap can start and end between two ticks)
-export interface Controls { x: number; y: number; a: number; b: boolean; bTaps?: number }
+export interface Controls {
+  x: number;
+  y: number;
+  a: number;
+  b: boolean;
+  bTaps?: number;
+}
 export const COLS = MAP_W;
 export const ROWS = MAP_H;
 export const MAX_SLOTS = 8;
@@ -180,11 +270,35 @@ export interface TeamState {
   dirtyDue: number[];
 }
 /** The shared pantry: `stock` units both teams take from; below PANTRY_MAX one unit returns every PANTRY_EVERY_MS (`nextAt`, match time; Infinity when full). */
-export interface Pantry { stock: number; nextAt: number }
-export interface VipRound { recipe: Recipe; winners: { team: TeamId; at: number }[]; settled: boolean }
-export interface MatchResult { order: TeamResult[]; winner: TeamId | null; aborted: boolean } // aborted: the host ended it from the pause
+export interface Pantry {
+  stock: number;
+  nextAt: number;
+}
+export interface VipRound {
+  recipe: Recipe;
+  winners: { team: TeamId; at: number }[];
+  settled: boolean;
+}
+export interface MatchResult {
+  order: TeamResult[];
+  winner: TeamId | null;
+  aborted: boolean;
+} // aborted: the host ended it from the pause
 
-const LEGACY = ['score', 'delivered', 'streak', 'bestStreak', 'tips', 'expired', 'rejected', 'orders', 'rng', 'dirtyDue', 'nextOrderAt', 'orderSeq'] as const;
+const LEGACY = [
+  'score',
+  'delivered',
+  'streak',
+  'bestStreak',
+  'tips',
+  'expired',
+  'rejected',
+  'orders',
+  'rng',
+  'dirtyDue',
+  'nextOrderAt',
+  'orderSeq',
+] as const;
 
 export const isSolid = (g: Game, tx: number, ty: number) => !isFloor(g.grid, tx, ty);
 
@@ -224,13 +338,44 @@ function settleVip(g: Game) {
   for (const t of g.teams) {
     if (r.winners.some((w) => w.team === t.id)) continue;
     const o = t.orders.find((x) => x.vip);
-    if (o) { delete o.vip; g.bus.emit('vipLost', { team: t.id }); }
+    if (o) {
+      delete o.vip;
+      g.bus.emit('vipLost', { team: t.id });
+    }
   }
 }
 
-export interface TeamSeat { playerIds: readonly number[] } // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
+export interface TeamSeat {
+  playerIds: readonly number[];
+} // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
 
-export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName; assist?: readonly number[]; burn?: boolean; fire?: boolean; events?: boolean; eventsSeed?: number; recipes?: boolean; magnet?: boolean | MagnetLevel } = {}): Game {
+export function createGame(
+  opts: {
+    mapId?: string;
+    difficulty?: Difficulty;
+    n?: number;
+    rows?: readonly string[];
+    spawns?: readonly [number, number][];
+    seed?: number;
+    countdownMs?: number;
+    bus?: Emitter<GameEvents>;
+    teams?: readonly TeamSeat[];
+    handicap?: boolean;
+    shared?: readonly Pos[];
+    hazards?: boolean;
+    slipDrops?: boolean;
+    spoilRaw?: boolean;
+    sabotage?: SabotageMode;
+    sigma?: SigmaName;
+    assist?: readonly number[];
+    burn?: boolean;
+    fire?: boolean;
+    events?: boolean;
+    eventsSeed?: number;
+    recipes?: boolean;
+    magnet?: boolean | MagnetLevel;
+  } = {},
+): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
@@ -244,36 +389,121 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
   const kitchens = versus ? kitchenRegions(grid, teamCount, opts.spawns) : null;
   const stations: Station[] = [];
   const pantryAt = new Set(versus ? (opts.shared ?? []).map(([x, y]) => `${x},${y}`) : []); // only a versus round has a pantry; coop ignores the declaration
-  grid.forEach((row, ty) => row.forEach((t, tx) => {
-    if (t.kind !== 'station') return;
-    const pantry = t.station === 'crate' && pantryAt.has(`${tx},${ty}`);
-    stations.push({ kind: t.station, tx, ty, crate: t.crate, item: null, progress: 0, inputs: [], done: false, count: 0, clean: 0, owner: pantry ? null : kitchens ? stationOwner(grid, kitchens, tx, ty) : 0, ...(pantry ? { pantry: true as const } : {}) });
-  }));
+  grid.forEach((row, ty) =>
+    row.forEach((t, tx) => {
+      if (t.kind !== 'station') return;
+      const pantry = t.station === 'crate' && pantryAt.has(`${tx},${ty}`);
+      stations.push({
+        kind: t.station,
+        tx,
+        ty,
+        crate: t.crate,
+        item: null,
+        progress: 0,
+        inputs: [],
+        done: false,
+        count: 0,
+        clean: 0,
+        owner: pantry ? null : kitchens ? stationOwner(grid, kitchens, tx, ty) : 0,
+        ...(pantry ? { pantry: true as const } : {}),
+      });
+    }),
+  );
   const handicap = versus && (opts.handicap ?? true);
   const assist = new Set(opts.assist ?? []);
-  const ks = handicap ? teamMultipliers(seats!.map((t) => t.playerIds.length), Infinity, assist.size ? seats!.map((t) => t.playerIds.filter((id) => assist.has(id)).length) : undefined) : null; // null: an empty team, or no handicap
+  const ks = handicap
+    ? teamMultipliers(
+        seats!.map((t) => t.playerIds.length),
+        Infinity,
+        assist.size ? seats!.map((t) => t.playerIds.filter((id) => assist.has(id)).length) : undefined,
+      )
+    : null; // null: an empty team, or no handicap
   const teams: TeamState[] = Array.from({ length: teamCount }, (_v, id) => ({
-    id, n: seats ? seats[id]!.playerIds.length : teamSize(n), score: 0, gross: 0, delivered: 0, streak: 0, bestStreak: 0, tips: 0, expired: 0, rejected: 0, vips: 0, reachedAt: 0,
-    k: ks?.[id] ?? 1, orders: [], orderSeq: 0, nextOrderAt: p.orderEveryMs, rng: mulberry32(seed), dirtyDue: [],
+    id,
+    n: seats ? seats[id]!.playerIds.length : teamSize(n),
+    score: 0,
+    gross: 0,
+    delivered: 0,
+    streak: 0,
+    bestStreak: 0,
+    tips: 0,
+    expired: 0,
+    rejected: 0,
+    vips: 0,
+    reachedAt: 0,
+    k: ks?.[id] ?? 1,
+    orders: [],
+    orderSeq: 0,
+    nextOrderAt: p.orderEveryMs,
+    rng: mulberry32(seed),
+    dirtyDue: [],
   }));
   const g = {
-    bus: opts.bus ?? new Emitter<GameEvents>(), countdown: opts.countdownMs ?? 0, started: false, counting: false, endTick: Infinity, grid, spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns), difficulty, n: teamSize(n), params: p, time: 0, over: false, mapId: opts.mapId, players: new Map(), stations,
-    hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(),
-    teams, versus, roster: [], paused: null, noWinner: false, result: null, vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null }, pantry: stations.some((s) => s.pantry) ? { stock: PANTRY_MAX, nextAt: Infinity } : null,
-    teamIds: seats ? seats.map((t) => [...t.playerIds]) : [], open: !seats, handicap, pauseDismissed: false, kitchens, teamSpawns: [],
-    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null, burn: null, mid: null, rec: opts.recipes ? createRec(stations, opts.mapId) : null, assist, magnet: null, // rec: before the first orders are drawn
+    bus: opts.bus ?? new Emitter<GameEvents>(),
+    countdown: opts.countdownMs ?? 0,
+    started: false,
+    counting: false,
+    endTick: Infinity,
+    grid,
+    spawns: spawnPoints(grid, MAX_SLOTS, opts.spawns),
+    difficulty,
+    n: teamSize(n),
+    params: p,
+    time: 0,
+    over: false,
+    mapId: opts.mapId,
+    players: new Map(),
+    stations,
+    hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2),
+    finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'),
+    crowd: new Map(),
+    teams,
+    versus,
+    roster: [],
+    paused: null,
+    noWinner: false,
+    result: null,
+    vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null },
+    pantry: stations.some((s) => s.pantry) ? { stock: PANTRY_MAX, nextAt: Infinity } : null,
+    teamIds: seats ? seats.map((t) => [...t.playerIds]) : [],
+    open: !seats,
+    handicap,
+    pauseDismissed: false,
+    kitchens,
+    teamSpawns: [],
+    hazards: opts.hazards ?? false,
+    floor: [],
+    floorSeq: 0,
+    slipDrops: opts.slipDrops ?? true,
+    spoilRaw: opts.spoilRaw ?? false,
+    sab: null,
+    burn: null,
+    mid: null,
+    rec: opts.recipes ? createRec(stations, opts.mapId) : null,
+    assist,
+    magnet: null, // rec: before the first orders are drawn
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0
-  for (const key of LEGACY) Object.defineProperty(g, key, { get: () => teams[0]![key], set: (v) => { (teams[0] as unknown as Record<string, unknown>)[key] = v; }, enumerable: true, configurable: true });
-  if (kitchens) g.teamSpawns = teams.map((t) => {
-    const starts = teamStarts(grid, kitchens, t.id, opts.spawns);
-    if (!starts.length) throw new Error(`team ${t.id} has no start tile in its kitchen`);
-    return spawnPoints(grid, MAX_SLOTS, starts);
-  });
-  if (g.finitePlates) for (const t of teams) {
-    const piles = stations.filter((s) => s.kind === 'plates' && s.owner === t.id);
-    for (let i = 0; i < p.plates && piles.length; i++) piles[i % piles.length]!.count++;
-  }
+  for (const key of LEGACY)
+    Object.defineProperty(g, key, {
+      get: () => teams[0]![key],
+      set: (v) => {
+        (teams[0] as unknown as Record<string, unknown>)[key] = v;
+      },
+      enumerable: true,
+      configurable: true,
+    });
+  if (kitchens)
+    g.teamSpawns = teams.map((t) => {
+      const starts = teamStarts(grid, kitchens, t.id, opts.spawns);
+      if (!starts.length) throw new Error(`team ${t.id} has no start tile in its kitchen`);
+      return spawnPoints(grid, MAX_SLOTS, starts);
+    });
+  if (g.finitePlates)
+    for (const t of teams) {
+      const piles = stations.filter((s) => s.kind === 'plates' && s.owner === t.id);
+      for (let i = 0; i < p.plates && piles.length; i++) piles[i % piles.length]!.count++;
+    }
   for (const t of teams) for (let i = 0; i < p.initialOrders; i++) spawnOrder(g, t);
   if (opts.sabotage && opts.sabotage !== 'off') g.sab = createSabotage(g, opts.sabotage, opts.sigma); // null when the map cannot host it: the round plays without
   // the new rules, each behind its own flag (off by default): a pizza that waits burns (and, from Normal up and not under the Suave sabotage, sets the oven on fire); one event per round
@@ -300,7 +530,35 @@ export function addPlayer(g: Game, id: number, slot: number, spawn = slot): bool
     const found = g.spawns.findIndex(([x, y]) => x === sx && y === sy);
     at = found >= 0 ? found : rank;
   }
-  g.players.set(id, { id, slot, spawn: at, x: sx + 0.5, y: sy + 0.5, fx: 0, fy: 1, vx: 0, vy: 0, item: null, cutting: false, chopAt: -1, bHeld: false, dashMs: 0, dashCd: 0, dashDx: 0, dashDy: 0, dashHit: [], kx: 0, ky: 0, buffA: 0, buffAge: 0, buffB: 0, crossing: false, team, ghost: false, ...(g.assist.has(id) ? { assist: true as const } : {}) });
+  g.players.set(id, {
+    id,
+    slot,
+    spawn: at,
+    x: sx + 0.5,
+    y: sy + 0.5,
+    fx: 0,
+    fy: 1,
+    vx: 0,
+    vy: 0,
+    item: null,
+    cutting: false,
+    chopAt: -1,
+    bHeld: false,
+    dashMs: 0,
+    dashCd: 0,
+    dashDx: 0,
+    dashDy: 0,
+    dashHit: [],
+    kx: 0,
+    ky: 0,
+    buffA: 0,
+    buffAge: 0,
+    buffB: 0,
+    crossing: false,
+    team,
+    ghost: false,
+    ...(g.assist.has(id) ? { assist: true as const } : {}),
+  });
   g.roster.push({ id, teamId: team, droppedAt: null, ...(g.assist.has(id) ? { assist: true as const } : {}) });
   return true;
 }
@@ -318,19 +576,30 @@ function steer(p: Player, c: Controls, g: Game, dtMs: number) {
   const k = tau > 0 ? 1 - Math.exp(-dtMs / tau) : 1;
   p.vx += (c.x * SPEED - p.vx) * k;
   p.vy += (c.y * SPEED - p.vy) * k;
-  if (!moving && Math.hypot(p.vx, p.vy) < 0.02) { p.vx = 0; p.vy = 0; } // the tail of the exponential is a stop
+  if (!moving && Math.hypot(p.vx, p.vy) < 0.02) {
+    p.vx = 0;
+    p.vy = 0;
+  } // the tail of the exponential is a stop
 }
 
 const KNOCK_FADE_MS = 90; // R5: the push a dash gives fades with this time constant
 const idleControls: Controls = { x: 0, y: 0, a: 0, b: false };
-const unit = (x: number, y: number): [number, number] => { const l = Math.hypot(x, y) || 1; return [x / l, y / l]; };
+const unit = (x: number, y: number): [number, number] => {
+  const l = Math.hypot(x, y) || 1;
+  return [x / l, y / l];
+};
 
 // R2 (phase 1: no third button): B pressed with empty hands and no station in front. Returns true when the dash started.
 function startDash(g: Game, p: Player, c: Controls) {
   const [dx, dy] = unit(c.x || c.y ? c.x : p.fx, c.x || c.y ? c.y : p.fy);
   const { dashMs, dashCdMs } = g.params.tune;
-  p.dashMs = dashMs; p.dashCd = dashCdMs; p.dashDx = dx; p.dashDy = dy; p.dashHit = [];
-  p.fx = dx; p.fy = dy;
+  p.dashMs = dashMs;
+  p.dashCd = dashCdMs;
+  p.dashDx = dx;
+  p.dashDy = dy;
+  p.dashHit = [];
+  p.fx = dx;
+  p.fy = dy;
   g.bus.emit('dash', { player: p.id, dx, dy });
 }
 
@@ -339,14 +608,18 @@ function pushNeighbours(g: Game, p: Player) {
   for (const o of g.players.values()) {
     if (o.id === p.id || o.ghost || p.dashHit.includes(o.id) || Math.hypot(o.x - p.x, o.y - p.y) > 2 * RADIUS + 0.1) continue;
     p.dashHit.push(o.id);
-    if (!o.cutting) { o.kx += p.dashDx * g.params.tune.pushSpeed; o.ky += p.dashDy * g.params.tune.pushSpeed; }
+    if (!o.cutting) {
+      o.kx += p.dashDx * g.params.tune.pushSpeed;
+      o.ky += p.dashDy * g.params.tune.pushSpeed;
+    }
     g.bus.emit('bump', { player: p.id, other: o.id });
   }
 }
 
 // Moves a chef along (ux, uy) up to `amt`, axis by axis so a wall only stops the component that hits it. Returns the distance gained.
 function moveAway(g: Game, p: Player, ux: number, uy: number, amt: number): number {
-  const ox = p.x, oy = p.y;
+  const ox = p.x,
+    oy = p.y;
   if (!blocked(g, p.x + ux * amt, p.y)) p.x += ux * amt;
   if (!blocked(g, p.x, p.y + uy * amt)) p.y += uy * amt;
   return (p.x - ox) * ux + (p.y - oy) * uy;
@@ -366,38 +639,60 @@ function separate(g: Game, controls: Map<number, Controls>, dtMs: number) {
   const list = [...g.players.values()].filter((p) => !p.ghost); // a ghost has no body
   for (const p of g.players.values()) p.crossing = false;
   const { yieldAfterMs } = g.params.tune;
-  for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
-    const a = list[i]!, b = list[j]!;
-    const key = a.id < b.id ? `${a.id}:${b.id}` : `${b.id}:${a.id}`;
-    let st = g.crowd.get(key);
-    const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy), min = 2 * RADIUS;
-    const ca = controls.get(a.id) ?? idleControls, cb = controls.get(b.id) ?? idleControls;
-    if (st?.ghost) {
-      const still = Math.hypot(ca.x, ca.y) < 0.2 && Math.hypot(cb.x, cb.y) < 0.2;
-      if (d >= min + 0.05 || (still && d < min)) g.crowd.delete(key); // clear, or both stopped halfway: solid again, they get pushed apart
-      else { a.crossing = true; b.crossing = true; continue; }
-      st = undefined;
+  for (let i = 0; i < list.length; i++)
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i]!,
+        b = list[j]!;
+      const key = a.id < b.id ? `${a.id}:${b.id}` : `${b.id}:${a.id}`;
+      let st = g.crowd.get(key);
+      const dx = a.x - b.x,
+        dy = a.y - b.y,
+        d = Math.hypot(dx, dy),
+        min = 2 * RADIUS;
+      const ca = controls.get(a.id) ?? idleControls,
+        cb = controls.get(b.id) ?? idleControls;
+      if (st?.ghost) {
+        const still = Math.hypot(ca.x, ca.y) < 0.2 && Math.hypot(cb.x, cb.y) < 0.2;
+        if (d >= min + 0.05 || (still && d < min))
+          g.crowd.delete(key); // clear, or both stopped halfway: solid again, they get pushed apart
+        else {
+          a.crossing = true;
+          b.crossing = true;
+          continue;
+        }
+        st = undefined;
+      }
+      if (d >= min) {
+        if (st) {
+          st.ms = Math.max(0, st.ms - dtMs);
+          if (st.ms === 0) g.crowd.delete(key);
+        }
+        continue;
+      }
+      const [ux, uy] = d > 1e-6 ? [dx / d, dy / d] : [a.id < b.id ? 1 : -1, 0]; // from b towards a
+      const overlap = min - d;
+      const wa = a.cutting ? 0 : b.cutting ? 1 : 0.5;
+      let moved = 0;
+      if (wa > 0) moved += moveAway(g, a, ux, uy, overlap * wa);
+      if (wa < 1) moved += moveAway(g, b, -ux, -uy, overlap * (1 - wa) + (overlap * wa - moved));
+      if (wa > 0 && wa < 1 && overlap - moved > 1e-3) moved += moveAway(g, a, ux, uy, overlap - moved);
+      const stuck = overlap - moved > 1e-3 || wa === 0 || wa === 1; // nobody gave way: a wall, or a chef who is cutting
+      const pa = pushing(a, b, ca),
+        pb = pushing(b, a, cb);
+      if ((pa && pb) || (stuck && (pa || pb))) {
+        st ??= { ms: 0, ghost: false };
+        st.ms += dtMs;
+        if (st.ms >= yieldAfterMs) {
+          st.ghost = true;
+          a.crossing = true;
+          b.crossing = true;
+        }
+        g.crowd.set(key, st);
+      } else if (st) {
+        st.ms = Math.max(0, st.ms - dtMs);
+        if (st.ms === 0) g.crowd.delete(key);
+      }
     }
-    if (d >= min) {
-      if (st) { st.ms = Math.max(0, st.ms - dtMs); if (st.ms === 0) g.crowd.delete(key); }
-      continue;
-    }
-    const [ux, uy] = d > 1e-6 ? [dx / d, dy / d] : [a.id < b.id ? 1 : -1, 0]; // from b towards a
-    const overlap = min - d;
-    const wa = a.cutting ? 0 : b.cutting ? 1 : 0.5;
-    let moved = 0;
-    if (wa > 0) moved += moveAway(g, a, ux, uy, overlap * wa);
-    if (wa < 1) moved += moveAway(g, b, -ux, -uy, overlap * (1 - wa) + (overlap * wa - moved));
-    if (wa > 0 && wa < 1 && overlap - moved > 1e-3) moved += moveAway(g, a, ux, uy, overlap - moved);
-    const stuck = overlap - moved > 1e-3 || wa === 0 || wa === 1; // nobody gave way: a wall, or a chef who is cutting
-    const pa = pushing(a, b, ca), pb = pushing(b, a, cb);
-    if ((pa && pb) || (stuck && (pa || pb))) {
-      st ??= { ms: 0, ghost: false };
-      st.ms += dtMs;
-      if (st.ms >= yieldAfterMs) { st.ghost = true; a.crossing = true; b.crossing = true; }
-      g.crowd.set(key, st);
-    } else if (st) { st.ms = Math.max(0, st.ms - dtMs); if (st.ms === 0) g.crowd.delete(key); }
-  }
 }
 
 const blocked = (g: Game, x: number, y: number) => {
@@ -413,11 +708,19 @@ const blocked = (g: Game, x: number, y: number) => {
 // `immuneMs` after getting up, and the rubbish stays where it was: it does not chain, it does not punish in a loop.
 const onTile = (p: Player): [number, number] => [Math.floor(p.x), Math.floor(p.y)];
 // The event that ends what a chef's Picar was doing: putting a fire out, scrubbing plates at a sink, or chopping.
-const stopKind = (g: Game, p: Player) => (p.dousing ? 'douseStop' : g.stations[p.chopAt]?.kind === 'sink' ? 'washStop' : g.stations[p.chopAt]?.kind === 'pot' ? 'foldStop' : 'chopStop');
+const stopKind = (g: Game, p: Player) =>
+  p.dousing
+    ? 'douseStop'
+    : g.stations[p.chopAt]?.kind === 'sink'
+      ? 'washStop'
+      : g.stations[p.chopAt]?.kind === 'pot'
+        ? 'foldStop'
+        : 'chopStop';
 
 function startSlip(g: Game, p: Player) {
   const sp = SLIP[g.difficulty];
-  const vx = p.vx + p.kx, vy = p.vy + p.ky;
+  const vx = p.vx + p.kx,
+    vy = p.vy + p.ky;
   const fast = Math.hypot(vx, vy) >= SLIP_MIN_SPEED * SPEED;
   const [dx, dy] = fast ? unit(vx, vy) : unit(p.fx, p.fy);
   const dist = sp.dist + (p.dashMs > 0 ? SLIP_DASH_EXTRA : 0);
@@ -445,27 +748,37 @@ function slipStep(g: Game, p: Player, c: Controls, dtMs: number) {
   const bEdge = (c.b && !p.bHeld) || (c.bTaps ?? 0) > 0;
   p.bHeld = c.b;
   p.buffA = 0; // the stick and A are ignored; B does not dash now, but it is remembered like any early press (R6) and goes off when the chef is up
-  if (bEdge) p.buffB = tune.bufferMs; else p.buffB = Math.max(0, p.buffB - dtMs);
+  if (bEdge) p.buffB = tune.bufferMs;
+  else p.buffB = Math.max(0, p.buffB - dtMs);
   const f = (s: number) => 2 * s - s * s;
-  const s0 = Math.min(1, Math.max(0, (g.time - dtMs - sl.t0) / sl.slideMs)), s1 = Math.min(1, Math.max(0, (g.time - sl.t0) / sl.slideMs));
+  const s0 = Math.min(1, Math.max(0, (g.time - dtMs - sl.t0) / sl.slideMs)),
+    s1 = Math.min(1, Math.max(0, (g.time - sl.t0) / sl.slideMs));
   const step = sl.dist * (f(s1) - f(s0));
   if (step > 0 && !sl.stopped) {
-    const ox = p.x, oy = p.y;
+    const ox = p.x,
+      oy = p.y;
     if (!blocked(g, p.x + sl.dir[0] * step, p.y)) p.x += sl.dir[0] * step;
     if (!blocked(g, p.x, p.y + sl.dir[1] * step)) p.y += sl.dir[1] * step;
-    if (p.x === ox && p.y === oy) { sl.stopped = true; } // a wall or a station: it stops dead (no extra damage)
-    const v = (2 * sl.dist / (sl.slideMs / 1000)) * (1 - s1);
-    for (const o of g.players.values()) { // a chef in the way gets half the slider's speed, once, and never slips from it
+    if (p.x === ox && p.y === oy) {
+      sl.stopped = true;
+    } // a wall or a station: it stops dead (no extra damage)
+    const v = ((2 * sl.dist) / (sl.slideMs / 1000)) * (1 - s1);
+    for (const o of g.players.values()) {
+      // a chef in the way gets half the slider's speed, once, and never slips from it
       if (o.id === p.id || o.ghost || o.cutting || sl.hit.includes(o.id) || Math.hypot(o.x - p.x, o.y - p.y) > 2 * RADIUS + 0.1) continue;
       sl.hit.push(o.id);
-      o.kx += sl.dir[0] * v * SLIP_PUSH; o.ky += sl.dir[1] * v * SLIP_PUSH;
+      o.kx += sl.dir[0] * v * SLIP_PUSH;
+      o.ky += sl.dir[1] * v * SLIP_PUSH;
       g.bus.emit('bump', { player: p.id, other: o.id });
     }
   }
   const fade = Math.exp(-dtMs / KNOCK_FADE_MS);
-  p.kx = Math.abs(p.kx) < 0.02 ? 0 : p.kx * fade; p.ky = Math.abs(p.ky) < 0.02 ? 0 : p.ky * fade;
+  p.kx = Math.abs(p.kx) < 0.02 ? 0 : p.kx * fade;
+  p.ky = Math.abs(p.ky) < 0.02 ? 0 : p.ky * fade;
   if (g.time - sl.t0 >= sl.slideMs + sl.recoverMs - 1e-6) {
-    p.slip = null; p.vx = 0; p.vy = 0;
+    p.slip = null;
+    p.vx = 0;
+    p.vy = 0;
     g.bus.emit('chef:recover', { chef: p.id, team: p.team, wall: sl.stopped });
   }
 }
@@ -481,10 +794,11 @@ function aimStep(g: Game, p: Player, c: Controls, dtMs: number) {
 
 // End of the tick (hazards only): rubbish that ran out disappears, and a chef that ENTERED a rubbish tile slips.
 function hazardsTick(g: Game) {
-  for (const f of [...g.floor]) if (g.time >= f.expiresAt) {
-    removeFloorItem(g, f.id);
-    if (f.kind === 'trash') g.bus.emit('trash:decayed', { team: f.team, tile: [f.tx, f.ty] });
-  }
+  for (const f of [...g.floor])
+    if (g.time >= f.expiresAt) {
+      removeFloorItem(g, f.id);
+      if (f.kind === 'trash') g.bus.emit('trash:decayed', { team: f.team, tile: [f.tx, f.ty] });
+    }
   for (const p of g.players.values()) {
     if (p.ghost || p.slip || p.assist) continue; // Ayudante: the banana-skin never makes it slip
     const now = g.floor.filter((f) => f.kind === 'trash' && Math.hypot(p.x - (f.tx + 0.5), p.y - (f.ty + 0.5)) <= SLIP_TRIGGER);
@@ -500,13 +814,19 @@ function hazardsTick(g: Game) {
 export function floorItemNear(g: Game, p: Player): FloorItem | null {
   if (p.item || !g.floor.length) return null;
   const len = Math.hypot(p.fx, p.fy) || 1;
-  let best: FloorItem | null = null, bestKey = Infinity;
+  let best: FloorItem | null = null,
+    bestKey = Infinity;
   for (const f of g.floor) {
     if (f.team !== p.team) continue;
-    const dx = f.tx + 0.5 - p.x, dy = f.ty + 0.5 - p.y, d = Math.hypot(dx, dy);
+    const dx = f.tx + 0.5 - p.x,
+      dy = f.ty + 0.5 - p.y,
+      d = Math.hypot(dx, dy);
     if (d > 1.1 || (d > 0.6 && (dx * p.fx + dy * p.fy) / (len * d) < 0.5)) continue;
     const key = d * 1000 + (f.kind === 'dropped' ? 0 : 1) * 10 + f.id * 1e-6;
-    if (key < bestKey) { best = f; bestKey = key; }
+    if (key < bestKey) {
+      best = f;
+      bestKey = key;
+    }
   }
   return best;
 }
@@ -521,7 +841,8 @@ function pickFloor(g: Game, p: Player): boolean {
 }
 
 // The station in front of the chef, among the ones it may use (its own team's, or shared).
-export function targetStation(g: Game, p: Player, plain = false): Station | null { // plain: the old probe even with the magnet on (what blocks a dash)
+export function targetStation(g: Game, p: Player, plain = false): Station | null {
+  // plain: the old probe even with the magnet on (what blocks a dash)
   if (p.assist) return assistStation(g, p);
   if (g.magnet && !plain) return magnetStation(g, p);
   const len = Math.hypot(p.fx, p.fy) || 1;
@@ -532,7 +853,10 @@ export function targetStation(g: Game, p: Player, plain = false): Station | null
   for (const s of g.stations) {
     if (s.owner !== null && s.owner !== p.team) continue; // another team's kitchen: its stations are not there for this chef
     const d = Math.hypot(px - Math.max(s.tx, Math.min(px, s.tx + 1)), py - Math.max(s.ty, Math.min(py, s.ty + 1)));
-    if (d < bestD) { best = s; bestD = d; }
+    if (d < bestD) {
+      best = s;
+      bestD = d;
+    }
   }
   return best;
 }
@@ -545,35 +869,56 @@ export function aStation(g: Game, p: Player): Station | null {
 
 // Ayudante (assist.ts): the nearest usable station within ASSIST_REACH_MULT times the usual radius, whichever way the chef faces (a near tie goes to the one it
 // already faces), and never through a wall. The normal rule measures from a probe in front of the chef; this one from the chef's centre to the station's tile.
-const nearestPoint = (p: Player, s: Station): [number, number] => [Math.max(s.tx, Math.min(p.x, s.tx + 1)), Math.max(s.ty, Math.min(p.y, s.ty + 1))];
+const nearestPoint = (p: Player, s: Station): [number, number] => [
+  Math.max(s.tx, Math.min(p.x, s.tx + 1)),
+  Math.max(s.ty, Math.min(p.y, s.ty + 1)),
+];
 function assistStation(g: Game, p: Player): Station | null {
   const reach = (REACH + REACH_SLACK) * (ASSIST_REACH_MULT + (g.magnet?.assistExtra ?? 0));
   const len = Math.hypot(p.fx, p.fy) || 1;
-  let best: Station | null = null, bestKey = Infinity;
+  let best: Station | null = null,
+    bestKey = Infinity;
   for (const s of g.stations) {
     if (s.owner !== null && s.owner !== p.team) continue;
     const [nx, ny] = nearestPoint(p, s);
-    const dx = nx - p.x, dy = ny - p.y, d = Math.hypot(dx, dy);
+    const dx = nx - p.x,
+      dy = ny - p.y,
+      d = Math.hypot(dx, dy);
     if (d > reach) continue;
     let clear = true; // a wall (or another station) between the chef and the point it would reach blocks it
-    for (let t = 0.05; t < 0.96 && clear; t += 0.05) { const tx = Math.floor(p.x + dx * t), ty = Math.floor(p.y + dy * t); if ((tx !== s.tx || ty !== s.ty) && isSolid(g, tx, ty)) clear = false; }
+    for (let t = 0.05; t < 0.96 && clear; t += 0.05) {
+      const tx = Math.floor(p.x + dx * t),
+        ty = Math.floor(p.y + dy * t);
+      if ((tx !== s.tx || ty !== s.ty) && isSolid(g, tx, ty)) clear = false;
+    }
     if (!clear) continue;
     const key = d - ASSIST_FACING_BONUS * (d > 1e-6 ? (dx * p.fx + dy * p.fy) / (len * d) : 1);
-    if (key < bestKey) { best = s; bestKey = key; }
+    if (key < bestKey) {
+      best = s;
+      bestKey = key;
+    }
   }
   return best;
 }
 // Ayudante: is the stick pushing into the station (within 60 degrees of the way to it)? Walking into what you are chopping is not walking away.
 function pushesInto(p: Player, s: Station, c: Controls) {
   const [nx, ny] = nearestPoint(p, s);
-  const dx = nx - p.x, dy = ny - p.y, d = Math.hypot(dx, dy), m = Math.hypot(c.x, c.y);
+  const dx = nx - p.x,
+    dy = ny - p.y,
+    d = Math.hypot(dx, dy),
+    m = Math.hypot(c.x, c.y);
   return d > 1e-6 && m > 1e-6 && (c.x * dx + c.y * dy) / (m * d) > 0.5;
 }
 // Ayudante, stick idle: the chef turns to the station it will use (the screen draws it facing it).
 function faceStation(p: Player, s: Station) {
   const [nx, ny] = nearestPoint(p, s);
-  const dx = nx - p.x, dy = ny - p.y;
-  if (Math.hypot(dx, dy) > 1e-6) { const [ux, uy] = unit(dx, dy); p.fx = ux; p.fy = uy; }
+  const dx = nx - p.x,
+    dy = ny - p.y;
+  if (Math.hypot(dx, dy) > 1e-6) {
+    const [ux, uy] = unit(dx, dy);
+    p.fx = ux;
+    p.fy = uy;
+  }
 }
 
 // A pizza cooks once it has dough and tomato; cheese can still go on until it is done (then it is a Margarita).
@@ -584,7 +929,8 @@ function interact(g: Game, p: Player, s: Station) {
   switch (s.kind) {
     case 'crate':
       if (p.item) break;
-      if (s.pantry) { // the shared pantry: a unit of the common stock, or nothing when it ran out (the other team may have emptied it)
+      if (s.pantry) {
+        // the shared pantry: a unit of the common stock, or nothing when it ran out (the other team may have emptied it)
         const pantry = g.pantry!;
         if (pantry.stock <= 0) break;
         if (pantry.stock === PANTRY_MAX) pantry.nextAt = g.time + PANTRY_EVERY_MS; // the refill clock starts when the stock leaves the maximum
@@ -593,25 +939,56 @@ function interact(g: Game, p: Player, s: Station) {
       p.item = crateItem(g, s.crate);
       break;
     case 'plates':
-      if (!g.finitePlates) { if (!p.item) p.item = 'plate'; }
-      else if (!p.item) { if (s.count > 0) { s.count--; p.item = 'plate'; } }
-      else if (p.item === 'plate') { s.count++; p.item = null; } // put a clean plate back on the pile
+      if (!g.finitePlates) {
+        if (!p.item) p.item = 'plate';
+      } else if (!p.item) {
+        if (s.count > 0) {
+          s.count--;
+          p.item = 'plate';
+        }
+      } else if (p.item === 'plate') {
+        s.count++;
+        p.item = null;
+      } // put a clean plate back on the pile
       break;
     case 'dirty': // return window: take one dirty plate
-      if (!p.item && s.count > 0) { s.count--; p.item = 'dirty'; }
+      if (!p.item && s.count > 0) {
+        s.count--;
+        p.item = 'dirty';
+      }
       break;
     case 'sink':
-      if (p.item === 'dirty') { s.count++; p.item = null; }
-      else if (p.item === 'plate') { s.clean++; p.item = null; } // the sink also works as a pile of clean plates
-      else if (!p.item && s.clean > 0) { s.clean--; p.item = 'plate'; }
+      if (p.item === 'dirty') {
+        s.count++;
+        p.item = null;
+      } else if (p.item === 'plate') {
+        s.clean++;
+        p.item = null;
+      } // the sink also works as a pile of clean plates
+      else if (!p.item && s.clean > 0) {
+        s.clean--;
+        p.item = 'plate';
+      }
       break;
     case 'counter':
-      if (p.item && !s.item) { s.item = p.item; p.item = null; }
-      else if (!p.item && s.item) { p.item = s.item; s.item = null; }
+      if (p.item && !s.item) {
+        s.item = p.item;
+        p.item = null;
+      } else if (!p.item && s.item) {
+        p.item = s.item;
+        s.item = null;
+      }
       break;
     case 'board':
-      if (p.item && !s.item && cutOf(p.item)) { s.item = p.item; s.progress = 0; p.item = null; }
-      else if (!p.item && s.item) { p.item = s.item; s.item = null; s.progress = 0; }
+      if (p.item && !s.item && cutOf(p.item)) {
+        s.item = p.item;
+        s.progress = 0;
+        p.item = null;
+      } else if (!p.item && s.item) {
+        p.item = s.item;
+        s.item = null;
+        s.progress = 0;
+      }
       break;
     case 'pot': {
       const t = cutType(p.item);
@@ -620,14 +997,18 @@ function interact(g: Game, p: Player, s: Station) {
         if (!baked(s)) s.progress = 0;
         p.item = null;
       } else if (p.item === 'plate' && s.done) {
-        if (g.burn && s.warned && !s.burnt) g.bus.emit('oven:rescued', { player: p.id, station: g.stations.indexOf(s), ...tag(g, s.owner) }); // out of the oven after the warning, before it burnt
+        if (g.burn && s.warned && !s.burnt)
+          g.bus.emit('oven:rescued', { player: p.id, station: g.stations.indexOf(s), ...tag(g, s.owner) }); // out of the oven after the warning, before it burnt
         p.item = s.burnt ? 'burnt' : dishFor(s.inputs, !!s.folded);
         clearPot(s);
       }
       break;
     }
     case 'trash':
-      if (g.sab && !p.item) { sabotageTakeBag(g, p); break; } // sabotage: empty hands take the bag that is waiting
+      if (g.sab && !p.item) {
+        sabotageTakeBag(g, p);
+        break;
+      } // sabotage: empty hands take the bag that is waiting
       if (g.finitePlates && (p.item === 'plate' || p.item === 'dirty')) break; // plates are not rubbish: they would be lost for good
       if (g.finitePlates && (isDish(p.item) || p.item === 'burnt')) g.teams[p.team]!.dirtyDue.push(g.time + DIRTY_MS); // the plate under the pizza comes back
       if (g.sab && p.item) sabotageBinned(g, p, p.item); // what is binned feeds the team's catapult
@@ -640,7 +1021,8 @@ function interact(g: Game, p: Player, s: Station) {
       if (isDish(p.item) && g.teams[p.team]!.orders.length) {
         const team = g.teams[p.team]!;
         const at = pickOrder(g, team.orders, p.item!); // recipes/sim.ts: the golden order first, then the birthday one, then the order that asked for this plate (a Margarita also satisfies a Marinara order, never the other way round)
-        if (at < 0) { // R16: the wrong plate is refused, goes back dirty and pays nothing
+        if (at < 0) {
+          // R16: the wrong plate is refused, goes back dirty and pays nothing
           if (g.finitePlates) team.dirtyDue.push(g.time + DIRTY_MS);
           p.item = null;
           team.rejected++;
@@ -667,7 +1049,14 @@ function interact(g: Game, p: Player, s: Station) {
         team.bestStreak = Math.max(team.bestStreak, team.streak);
         if (g.finitePlates) team.dirtyDue.push(g.time + DIRTY_MS);
         p.item = null;
-        g.bus.emit('delivered', { player: p.id, points: gain, tip, base, mult, ...(g.versus ? { team: team.id, k: team.k, ...(vip ? { vip: true as const } : {}) } : {}) });
+        g.bus.emit('delivered', {
+          player: p.id,
+          points: gain,
+          tip,
+          base,
+          mult,
+          ...(g.versus ? { team: team.id, k: team.k, ...(vip ? { vip: true as const } : {}) } : {}),
+        });
         g.bus.emit('streak', { n: team.streak, mult: tipMultiplier(team.streak, tune), ...tag(g, team.id) });
         if (vip) {
           const round = g.vip.round!;
@@ -700,7 +1089,10 @@ function act(g: Game, p: Player, s: Station) {
 
 function countdown(g: Game, dtMs: number) {
   const prev = Math.ceil(g.countdown / 1000);
-  if (!g.counting) { g.counting = true; g.bus.emit('countdownTick', { n: prev, kind: 'start' }); }
+  if (!g.counting) {
+    g.counting = true;
+    g.bus.emit('countdownTick', { n: prev, kind: 'start' });
+  }
   g.countdown = Math.max(0, g.countdown - dtMs);
   const now = Math.ceil(g.countdown / 1000);
   if (now !== prev) g.bus.emit('countdownTick', { n: now, kind: 'start' });
@@ -708,11 +1100,14 @@ function countdown(g: Game, dtMs: number) {
 
 // The two mid-round events that touch the queues: a rush is three orders in every queue (drawn at every slot, so the twin queues stay twins); the birthday order is worth BIRTHDAY_POINTS flat.
 const MID_FX: MidFx = {
-  rush(g) { for (const t of g.teams) for (let i = 0; i < RUSH_ORDERS; i++) spawnOrder(g, t, true); },
+  rush(g) {
+    for (const t of g.teams) for (let i = 0; i < RUSH_ORDERS; i++) spawnOrder(g, t, true);
+  },
   birthday(g) {
     for (const t of g.teams) {
       const o: Order = { id: t.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe: 'marinara', birthday: true };
-      if (t.orders.length >= EVENT_MAX_QUEUE) t.orders.unshift(o); else t.orders.push(o); // a full strip still shows it
+      if (t.orders.length >= EVENT_MAX_QUEUE) t.orders.unshift(o);
+      else t.orders.push(o); // a full strip still shows it
       g.bus.emit('orderNew', { order: o.id, recipe: 'marinara', ...tag(g, t.id), birthday: true });
     }
   },
@@ -720,8 +1115,14 @@ const MID_FX: MidFx = {
 
 export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   if (g.over) return;
-  if (g.countdown > 0) { countdown(g, dtMs); return; }
-  if (!g.started) { g.started = true; g.bus.emit('roundStart', {}); }
+  if (g.countdown > 0) {
+    countdown(g, dtMs);
+    return;
+  }
+  if (!g.started) {
+    g.started = true;
+    g.bus.emit('roundStart', {});
+  }
   if (g.versus && !refreshRoster(g)) return; // an empty team stopped the clock
   const dt = dtMs / 1000;
   g.time += dtMs;
@@ -729,49 +1130,88 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   for (const p of g.players.values()) {
     if (p.ghost) continue;
     const c = controls.get(p.id) ?? idleControls;
-    if (g.hazards && p.slip) { slipStep(g, p, c, dtMs); continue; } // sliding: the stick and the buttons do nothing
-    if (g.sab && isAiming(g, p)) { aimStep(g, p, c, dtMs); continue; } // loaded the catapult: anchored there until B (or 3 s)
+    if (g.hazards && p.slip) {
+      slipStep(g, p, c, dtMs);
+      continue;
+    } // sliding: the stick and the buttons do nothing
+    if (g.sab && isAiming(g, p)) {
+      aimStep(g, p, c, dtMs);
+      continue;
+    } // loaded the catapult: anchored there until B (or 3 s)
     const tune = g.params.tune;
     const target = targetStation(g, p);
     if (p.assist && target && !c.x && !c.y) faceStation(p, target); // Ayudante: turns to its station by itself
     p.dashCd = Math.max(0, p.dashCd - dtMs);
     const bEdge = (c.b && !p.bHeld) || (c.bTaps ?? 0) > 0;
     p.bHeld = c.b;
-    const wasCutting = p.cutting, wasDousing = !!p.dousing;
+    const wasCutting = p.cutting,
+      wasDousing = !!p.dousing;
     // B held: cut / grate / stretch on a board with a raw item, or scrub plates at a sink with dirty ones; with a fire in front (burn only), put it out
     const burning = !!(g.burn && target && target.fire !== undefined);
-    const cuttable = !!(target && ((target.kind === 'board' && target.item && cutOf(target.item)) || (target.kind === 'sink' && target.count > 0) || burning || canFold(g, target)));
+    const cuttable = !!(
+      target &&
+      ((target.kind === 'board' && target.item && cutOf(target.item)) ||
+        (target.kind === 'sink' && target.count > 0) ||
+        burning ||
+        canFold(g, target))
+    );
     if (g.magnet && target && !p.assist) magnetPull(g, p, target, cuttable && (c.b || (c.bTaps ?? 0) > 0), !c.x && !c.y, dtMs); // magnetism: Picar turns the chef to its board (or the oven it folds at); a slow chef beside a station drifts to face it
-    if (p.assist) { // Ayudante: a tap of B starts the chop (or the extinguisher: the same latch, it goes on until the fire is out) and it goes on while the chef stays and there is something to do; the stick (or the item being done) ends it
+    if (p.assist) {
+      // Ayudante: a tap of B starts the chop (or the extinguisher: the same latch, it goes on until the fire is out) and it goes on while the chef stays and there is something to do; the stick (or the item being done) ends it
       if (bEdge && cuttable) p.chopLatch = true;
-      else if (p.chopLatch && (!cuttable || (Math.hypot(c.x, c.y) > ASSIST_STICK_CANCEL && !pushesInto(p, target!, c)))) p.chopLatch = false;
+      else if (p.chopLatch && (!cuttable || (Math.hypot(c.x, c.y) > ASSIST_STICK_CANCEL && !pushesInto(p, target!, c))))
+        p.chopLatch = false;
     }
     p.cutting = !!((c.b || p.chopLatch) && cuttable);
     if (g.burn) p.dousing = p.cutting && burning;
     const at = target ? g.stations.indexOf(target) : -1;
     const wasAt = p.chopAt;
-    if (wasCutting && (!p.cutting || at !== wasAt)) g.bus.emit(wasDousing ? 'douseStop' : g.stations[wasAt]?.kind === 'sink' ? 'washStop' : g.stations[wasAt]?.kind === 'pot' ? 'foldStop' : 'chopStop', { player: p.id, station: wasAt });
-    if (p.cutting && (!wasCutting || at !== wasAt)) g.bus.emit(p.dousing ? 'douseStart' : target!.kind === 'sink' ? 'washStart' : target!.kind === 'pot' ? 'foldStart' : 'chopStart', { player: p.id, station: at });
+    if (wasCutting && (!p.cutting || at !== wasAt))
+      g.bus.emit(
+        wasDousing
+          ? 'douseStop'
+          : g.stations[wasAt]?.kind === 'sink'
+            ? 'washStop'
+            : g.stations[wasAt]?.kind === 'pot'
+              ? 'foldStop'
+              : 'chopStop',
+        { player: p.id, station: wasAt },
+      );
+    if (p.cutting && (!wasCutting || at !== wasAt))
+      g.bus.emit(p.dousing ? 'douseStart' : target!.kind === 'sink' ? 'washStart' : target!.kind === 'pot' ? 'foldStart' : 'chopStart', {
+        player: p.id,
+        station: at,
+      });
     p.chopAt = p.cutting ? at : -1;
-    if (p.cutting) { p.vx = 0; p.vy = 0; p.kx = 0; p.ky = 0; p.dashMs = 0; }
+    if (p.cutting) {
+      p.vx = 0;
+      p.vy = 0;
+      p.kx = 0;
+      p.ky = 0;
+      p.dashMs = 0;
+    }
     // R2 + R6: a B press with free hands and nothing in front is a dash; if the cooldown ends within bufferMs it still goes
     const free = !p.item && !(g.magnet && !p.assist ? cuttable || targetStation(g, p, true) : target) && !p.cutting; // magnetism: only what the old probe finds (or a chop) stops a dash
     const ready = p.dashMs <= 0 && p.dashCd <= 0;
     if (!free) p.buffB = 0;
     else if (bEdge && ready) startDash(g, p, c);
     else if (bEdge) p.buffB = tune.bufferMs;
-    else if (p.buffB > 0 && ready) { startDash(g, p, c); p.buffB = 0; }
-    else p.buffB = Math.max(0, p.buffB - dtMs);
+    else if (p.buffB > 0 && ready) {
+      startDash(g, p, c);
+      p.buffB = 0;
+    } else p.buffB = Math.max(0, p.buffB - dtMs);
     if (p.cutting && target?.kind === 'sink') {
       target.progress += dtMs / WASH_MS;
       if (target.progress >= 1) {
-        target.count--; target.clean++;
+        target.count--;
+        target.clean++;
         target.progress = 0;
         g.bus.emit('washDone', { player: p.id, station: at });
       }
     } else if (p.cutting && target && p.dousing) {
       douse(g, p.id, target, dtMs); // the fire is out when the Picar of the chefs in front of it adds up to DOUSE_MS
-    } else if (p.cutting && target?.kind === 'pot') { foldStep(g, p.id, target, dtMs); // recipes/sim.ts: Picar at an oven with dough and tomato folds the calzone
+    } else if (p.cutting && target?.kind === 'pot') {
+      foldStep(g, p.id, target, dtMs); // recipes/sim.ts: Picar at an oven with dough and tomato folds the calzone
     } else if (p.cutting && target) {
       target.progress += dtMs / cutMsOf(g, target.item);
       if (target.progress >= 1) {
@@ -780,36 +1220,60 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
         g.bus.emit('chopDone', { player: p.id, station: at });
       }
     } else {
-      if (c.x || c.y) { p.fx = c.x; p.fy = c.y; }
+      if (c.x || c.y) {
+        p.fx = c.x;
+        p.fy = c.y;
+      }
       if (p.dashMs > 0) {
         const v = SPEED * g.params.tune.dashMult;
-        p.vx = p.dashDx * v; p.vy = p.dashDy * v;
+        p.vx = p.dashDx * v;
+        p.vy = p.dashDy * v;
         p.dashMs = Math.max(0, p.dashMs - dtMs);
-        if (p.dashMs <= 0 && !(g.magnet && (p.dashMs = magnetHug(g, p, v, TICK_MS)) > 0)) { p.vx = p.dashDx * SPEED; p.vy = p.dashDy * SPEED; } // back to walking pace; R1 takes it from there (magnetism: a station right ahead keeps the dash going until it touches it)
+        if (p.dashMs <= 0 && !(g.magnet && (p.dashMs = magnetHug(g, p, v, TICK_MS)) > 0)) {
+          p.vx = p.dashDx * SPEED;
+          p.vy = p.dashDy * SPEED;
+        } // back to walking pace; R1 takes it from there (magnetism: a station right ahead keeps the dash going until it touches it)
       } else steer(p, c, g, dtMs);
       const slow = p.crossing ? g.params.tune.yieldSpeed : 1;
       const nx = p.x + (p.vx + p.kx) * dt * slow;
-      if (!blocked(g, nx, p.y)) p.x = nx; else { p.vx = 0; p.kx = 0; }
+      if (!blocked(g, nx, p.y)) p.x = nx;
+      else {
+        p.vx = 0;
+        p.kx = 0;
+      }
       const ny = p.y + (p.vy + p.ky) * dt * slow;
-      if (!blocked(g, p.x, ny)) p.y = ny; else { p.vy = 0; p.ky = 0; }
+      if (!blocked(g, p.x, ny)) p.y = ny;
+      else {
+        p.vy = 0;
+        p.ky = 0;
+      }
       const fade = Math.exp(-dtMs / KNOCK_FADE_MS);
       p.kx = Math.abs(p.kx) < 0.02 ? 0 : p.kx * fade;
       p.ky = Math.abs(p.ky) < 0.02 ? 0 : p.ky * fade;
       if (p.dashMs > 0) pushNeighbours(g, p);
     }
     // R6: an A press with no station in front waits bufferMs for one to show up
-    if (c.a > 0) { p.buffA += c.a; p.buffAge = 0; }
+    if (c.a > 0) {
+      p.buffA += c.a;
+      p.buffAge = 0;
+    }
     while (p.buffA > 0) {
       const s = aStation(g, p);
       if (!s) {
-        if (g.hazards && pickFloor(g, p)) { p.buffA--; continue; } // nothing in front: whatever lies on the floor close by
+        if (g.hazards && pickFloor(g, p)) {
+          p.buffA--;
+          continue;
+        } // nothing in front: whatever lies on the floor close by
         break;
       }
       p.buffA--;
       if (g.magnet) magnetFace(p, s); // Tomar turns the chef to what it takes
       act(g, p, s);
     }
-    if (p.buffA > 0) { p.buffAge += dtMs; if (p.buffAge > tune.bufferMs) p.buffA = 0; }
+    if (p.buffA > 0) {
+      p.buffAge += dtMs;
+      if (p.buffAge > tune.bufferMs) p.buffA = 0;
+    }
   }
 
   separate(g, controls, dtMs);
@@ -821,17 +1285,27 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   for (const s of g.stations) {
     if (s.kind === 'pot' && !s.done && baked(s) && !dark) {
       s.progress += dtMs / cookMsOf(g, s);
-      if (s.progress >= 1) { s.progress = 1; s.done = true; if (g.burn) s.readyAt = g.time; g.bus.emit('potReady', { station: g.stations.indexOf(s) }); }
+      if (s.progress >= 1) {
+        s.progress = 1;
+        s.done = true;
+        if (g.burn) s.readyAt = g.time;
+        g.bus.emit('potReady', { station: g.stations.indexOf(s) });
+      }
     }
   }
   if (g.burn) burnTick(g, dtMs);
   if (g.mid) midTick(g, dtMs, MID_FX);
 
-  for (const team of g.teams) while (team.dirtyDue.length && team.dirtyDue[0]! <= g.time) { // delivered plates come back dirty, to the team's own return
-    team.dirtyDue.shift();
-    const back = g.stations.filter((s) => s.kind === 'dirty' && s.owner === team.id).sort((a, b) => a.count - b.count)[0];
-    if (back) { back.count++; g.bus.emit('dirtyNew', { station: g.stations.indexOf(back), ...tag(g, team.id) }); }
-  }
+  for (const team of g.teams)
+    while (team.dirtyDue.length && team.dirtyDue[0]! <= g.time) {
+      // delivered plates come back dirty, to the team's own return
+      team.dirtyDue.shift();
+      const back = g.stations.filter((s) => s.kind === 'dirty' && s.owner === team.id).sort((a, b) => a.count - b.count)[0];
+      if (back) {
+        back.count++;
+        g.bus.emit('dirtyNew', { station: g.stations.indexOf(back), ...tag(g, team.id) });
+      }
+    }
 
   const pantry = g.pantry;
   while (pantry && pantry.stock < PANTRY_MAX && g.time >= pantry.nextAt) {
@@ -852,24 +1326,43 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     const before = team.score;
     team.score = Math.max(0, team.score + lost * g.params.penalty); // the penalty is not multiplied by k
     if (team.score !== before) team.reachedAt = g.time;
-    if (lost) { team.expired += lost; resetStreak(g, team); }
+    if (lost) {
+      team.expired += lost;
+      resetStreak(g, team);
+    }
     team.orders = alive;
-    for (const o of alive) if (!o.warned && o.expiresAt - g.time < WARNING_MS) { o.warned = true; g.bus.emit('orderWarning', { order: o.id, ...tag(g, team.id) }); }
+    for (const o of alive)
+      if (!o.warned && o.expiresAt - g.time < WARNING_MS) {
+        o.warned = true;
+        g.bus.emit('orderWarning', { order: o.id, ...tag(g, team.id) });
+      }
   }
 
   const left = Math.ceil((g.params.roundMs - g.time) / 1000);
-  if (left <= 10 && left > 0 && left < g.endTick) { g.endTick = left; g.bus.emit('countdownTick', { n: left, kind: 'end' }); }
+  if (left <= 10 && left > 0 && left < g.endTick) {
+    g.endTick = left;
+    g.bus.emit('countdownTick', { n: left, kind: 'end' });
+  }
   if (g.time >= g.params.roundMs) finish(g, false);
 }
 
-const resultOf = (t: TeamState): TeamResult => ({ teamId: t.id, score: t.score, delivered: t.delivered, vip: t.vips, reachedAt: t.reachedAt });
+const resultOf = (t: TeamState): TeamResult => ({
+  teamId: t.id,
+  score: t.score,
+  delivered: t.delivered,
+  vip: t.vips,
+  reachedAt: t.reachedAt,
+});
 
 // Ends the round: ranks the teams (score, deliveries, VIPs, who got there first; a draw has no winner). `aborted`: the host ended it from the pause.
 function finish(g: Game, aborted: boolean) {
   g.over = true;
   const { order, winner } = rankTeams(g.teams.map(resultOf));
   g.result = { order, winner: aborted || g.noWinner ? null : winner, aborted };
-  if (!g.versus) { g.bus.emit('roundEnd', { score: g.score, delivered: g.delivered }); return; }
+  if (!g.versus) {
+    g.bus.emit('roundEnd', { score: g.score, delivered: g.delivered });
+    return;
+  }
   const lead = order[0]!;
   g.bus.emit('roundEnd', { score: lead.score, delivered: lead.delivered, winner: g.result.winner, results: order });
 }
@@ -885,7 +1378,12 @@ function refreshRoster(g: Game): boolean {
     for (const k of [...g.crowd.keys()]) if (k.split(':').includes(String(e.id))) g.crowd.delete(k);
     g.bus.emit('playerGone', { player: e.id, team: e.teamId });
   }
-  const st = matchStatus(g.teams.map((t) => t.id), g.roster, g.time, g.handicap ? 'score-k' : 'none');
+  const st = matchStatus(
+    g.teams.map((t) => t.id),
+    g.roster,
+    g.time,
+    g.handicap ? 'score-k' : 'none',
+  );
   if (st.paused && !g.pauseDismissed) {
     g.paused = { teams: st.emptyTeams };
     g.bus.emit('matchPaused', { teams: st.emptyTeams });
@@ -916,9 +1414,14 @@ export function dropPlayer(g: Game, id: number): boolean {
   if (g.sab) sabotageCancelAim(g, p); // the bag it had loaded goes back to its team's bin
   for (const k of [...g.crowd.keys()]) if (k.split(':').includes(String(id))) g.crowd.delete(k);
   if (p.item) {
-    const free = g.stations.filter((s) => s.kind === 'counter' && !s.item && s.fire === undefined && (s.owner === null || s.owner === p.team));
+    const free = g.stations.filter(
+      (s) => s.kind === 'counter' && !s.item && s.fire === undefined && (s.owner === null || s.owner === p.team),
+    );
     const near = free.sort((a, b) => Math.hypot(a.tx + 0.5 - p.x, a.ty + 0.5 - p.y) - Math.hypot(b.tx + 0.5 - p.x, b.ty + 0.5 - p.y))[0];
-    if (near) { near.item = p.item; p.item = null; }
+    if (near) {
+      near.item = p.item;
+      p.item = null;
+    }
   }
   g.bus.emit('playerDropped', { player: id, team: p.team });
   return true;
@@ -939,7 +1442,10 @@ export function rejoinPlayer(g: Game, id: number): boolean {
 export function resolvePause(g: Game, choice: PauseChoice) {
   if (!g.paused) return;
   g.paused = null;
-  if (choice === 'end') { finish(g, true); return; }
+  if (choice === 'end') {
+    finish(g, true);
+    return;
+  }
   g.noWinner = true;
   g.pauseDismissed = true;
   g.bus.emit('matchResumed', {});

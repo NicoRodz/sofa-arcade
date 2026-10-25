@@ -93,9 +93,42 @@ export interface DifficultyParams {
   band: readonly [number, number]; // generator difficulty D
 }
 export const DIFFICULTY_PARAMS: Record<Difficulty, DifficultyParams> = {
-  easy: { coyoteBase: 9, coyoteCap: 14, bufferFrames: 12, lives: Infinity, bubbleSec: 1, bubbleCostsLife: false, hazardSpeed: 0.7, handZoneTiles: 3, stickyEdges: true, band: [10, 35] },
-  normal: { coyoteBase: 7, coyoteCap: 12, bufferFrames: 9, lives: 12, bubbleSec: 2, bubbleCostsLife: false, hazardSpeed: 1, handZoneTiles: 2.5, stickyEdges: false, band: [35, 60] },
-  hard: { coyoteBase: 6, coyoteCap: 10, bufferFrames: 8, lives: 6, bubbleSec: 3, bubbleCostsLife: true, hazardSpeed: 1.25, handZoneTiles: 2, stickyEdges: false, band: [60, 85] },
+  easy: {
+    coyoteBase: 9,
+    coyoteCap: 14,
+    bufferFrames: 12,
+    lives: Infinity,
+    bubbleSec: 1,
+    bubbleCostsLife: false,
+    hazardSpeed: 0.7,
+    handZoneTiles: 3,
+    stickyEdges: true,
+    band: [10, 35],
+  },
+  normal: {
+    coyoteBase: 7,
+    coyoteCap: 12,
+    bufferFrames: 9,
+    lives: 12,
+    bubbleSec: 2,
+    bubbleCostsLife: false,
+    hazardSpeed: 1,
+    handZoneTiles: 2.5,
+    stickyEdges: false,
+    band: [35, 60],
+  },
+  hard: {
+    coyoteBase: 6,
+    coyoteCap: 10,
+    bufferFrames: 8,
+    lives: 6,
+    bubbleSec: 3,
+    bubbleCostsLife: true,
+    hazardSpeed: 1.25,
+    handZoneTiles: 2,
+    stickyEdges: false,
+    band: [60, 85],
+  },
 };
 
 // Adaptive coyote (plan §2): base + ceil(p90 latency / one frame), capped. No rollback, it would break the rope.

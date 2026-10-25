@@ -28,7 +28,8 @@ describe('coop golden rounds with the magnetism on', () => {
       expect(want.delivered).toBeGreaterThan(0);
       expect(want.events.length).toBeGreaterThan(500);
       const got = runGolden(sc);
-      const { events: ge, ...gr } = got, { events: we, ...wr } = want;
+      const { events: ge, ...gr } = got,
+        { events: we, ...wr } = want;
       expect(gr).toEqual(wr);
       expect(ge).toEqual(we);
       const plain = runGolden({ ...sc, flags: sc.flags && { ...sc.flags, magnet: false } });

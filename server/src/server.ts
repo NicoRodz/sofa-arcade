@@ -21,7 +21,10 @@ export async function startServer(opts: { port: number; mode: Mode; dataDir?: st
   app.get('/', (_req, res) => res.redirect('/screen'));
   // Campaign progress of "Obstaculos en cadena": one JSON per expedition under data/ (override with PG_DATA_DIR or opts.dataDir).
   let expeditions: ExpeditionStore | undefined;
-  mountExpeditions(app, () => (expeditions ??= new ExpeditionStore({ dir: opts.dataDir ?? process.env.PG_DATA_DIR ?? path.join(root, 'data', 'expeditions') })));
+  mountExpeditions(
+    app,
+    () => (expeditions ??= new ExpeditionStore({ dir: opts.dataDir ?? process.env.PG_DATA_DIR ?? path.join(root, 'data', 'expeditions') })),
+  );
 
   app.get('/api/info', async (req, res) => {
     const port = req.socket.localPort ?? opts.port;

@@ -39,14 +39,17 @@ export interface RatKit {
 export function scareReach(g: Game, p: Player): number {
   if (Math.hypot(p.vx, p.vy) >= RAT_GENTLE.touchSpeed && !(p.dashMs > 0)) return RAT_GENTLE.touchRadius;
   if (p.dashMs > 0) return RAT_GENTLE.scareRadius;
-  const t = g.params.tune, sinceStart = t.dashCdMs - p.dashCd;
+  const t = g.params.tune,
+    sinceStart = t.dashCdMs - p.dashCd;
   return p.dashCd > 0 && sinceStart > 0 && sinceStart <= t.dashMs + RAT_GENTLE.afterDashMs ? RAT_GENTLE.afterRadius : 0;
 }
 
 /** The prize for scaring the rat (the single team of a coop round). Returns the points. */
 export function ratPrize(g: Game): number {
   const t = g.teams[0]!;
-  t.score += RAT_BONUS; t.gross += RAT_BONUS; t.reachedAt = g.time;
+  t.score += RAT_BONUS;
+  t.gross += RAT_BONUS;
+  t.reachedAt = g.time;
   return RAT_BONUS;
 }
 
@@ -54,23 +57,40 @@ const tileOf = (r: Rat): [number, number] => [Math.floor(r.x), Math.floor(r.y)];
 
 // One tick of walking towards `goal`: straight runs with a limited turn rate, a pause after each run. Returns true while it moved.
 function walk(g: Game, r: Rat, goal: (x: number, y: number) => boolean, dtMs: number, kit: RatKit): boolean {
-  if ((r.pauseMs ?? 0) > 0) { r.pauseMs = Math.max(0, r.pauseMs! - dtMs); return false; }
+  if ((r.pauseMs ?? 0) > 0) {
+    r.pauseMs = Math.max(0, r.pauseMs! - dtMs);
+    return false;
+  }
   const step = kit.nextTile(g, tileOf(r), goal);
   if (!step) return false;
-  const dx = step[0] + 0.5 - r.x, dy = step[1] + 0.5 - r.y, d = Math.hypot(dx, dy) || 1;
+  const dx = step[0] + 0.5 - r.x,
+    dy = step[1] + 0.5 - r.y,
+    d = Math.hypot(dx, dy) || 1;
   const want = Math.atan2(dy, dx);
   let h = r.heading ?? want;
   let diff = want - h;
   while (diff > Math.PI) diff -= 2 * Math.PI;
   while (diff < -Math.PI) diff += 2 * Math.PI;
-  h += Math.sign(diff) * Math.min(Math.abs(diff), (RAT_GENTLE.turnDps * Math.PI / 180) * (dtMs / 1000));
+  h += Math.sign(diff) * Math.min(Math.abs(diff), ((RAT_GENTLE.turnDps * Math.PI) / 180) * (dtMs / 1000));
   r.heading = h;
   const move = (RAT_GENTLE.speed * dtMs) / 1000;
-  const nx = r.x + Math.cos(h) * move, ny = r.y + Math.sin(h) * move;
-  if (kit.floor(g, Math.floor(nx), Math.floor(ny))) { r.x = nx; r.y = ny; } // a bend that would cut a corner into a wall goes straight to the tile's centre instead
-  else { const k = Math.min(d, move); r.x += (dx / d) * k; r.y += (dy / d) * k; r.heading = want; }
+  const nx = r.x + Math.cos(h) * move,
+    ny = r.y + Math.sin(h) * move;
+  if (kit.floor(g, Math.floor(nx), Math.floor(ny))) {
+    r.x = nx;
+    r.y = ny;
+  } // a bend that would cut a corner into a wall goes straight to the tile's centre instead
+  else {
+    const k = Math.min(d, move);
+    r.x += (dx / d) * k;
+    r.y += (dy / d) * k;
+    r.heading = want;
+  }
   r.runMs = (r.runMs ?? 0) + dtMs;
-  if (r.runMs >= RAT_GENTLE.runMs) { r.runMs = 0; r.pauseMs = RAT_GENTLE.pauseMs; }
+  if (r.runMs >= RAT_GENTLE.runMs) {
+    r.runMs = 0;
+    r.pauseMs = RAT_GENTLE.pauseMs;
+  }
   return true;
 }
 
@@ -85,14 +105,21 @@ export function gentleRatStep(g: Game, m: Mid, dtMs: number, kit: RatKit): boole
   for (const p of g.players.values()) {
     if (p.ghost) continue;
     const reach = scareReach(g, p);
-    if (reach > 0 && Math.hypot(p.x - r.x, p.y - r.y) <= reach) { kit.scare(g, m, p.id); return false; }
+    if (reach > 0 && Math.hypot(p.x - r.x, p.y - r.y) <= reach) {
+      kit.scare(g, m, p.id);
+      return false;
+    }
   }
   if (r.state === 'seek') {
-    let best = -1, bestD = Infinity;
+    let best = -1,
+      bestD = Infinity;
     g.stations.forEach((s, i) => {
       if (s.kind !== 'counter' || !s.item || s.fire !== undefined) return;
       const d = Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y) - (i === r.target ? 0.5 : 0); // it keeps the counter it picked unless another is clearly nearer
-      if (d < bestD) { best = i; bestD = d; }
+      if (d < bestD) {
+        best = i;
+        bestD = d;
+      }
     });
     if (best < 0) {
       r.idleMs += dtMs;
@@ -101,12 +128,22 @@ export function gentleRatStep(g: Game, m: Mid, dtMs: number, kit: RatKit): boole
     }
     r.idleMs = 0;
     const s = g.stations[best]!;
-    if (r.target !== best) { r.target = best; r.near = false; g.bus.emit('rat:target', { station: best }); }
+    if (r.target !== best) {
+      r.target = best;
+      r.near = false;
+      g.bus.emit('rat:target', { station: best });
+    }
     const [tx, ty] = tileOf(r);
-    if (!r.near && Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y) <= RAT_GENTLE.nearTiles) { r.near = true; g.bus.emit('rat:near', { station: best }); }
+    if (!r.near && Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y) <= RAT_GENTLE.nearTiles) {
+      r.near = true;
+      g.bus.emit('rat:near', { station: best });
+    }
     if (Math.abs(tx - s.tx) + Math.abs(ty - s.ty) === 1) {
       if (age < RAT_GENTLE.graceMs) return true; // it is there, but not in its first second
-      r.item = s.item; r.from = best; s.item = null; r.state = 'flee';
+      r.item = s.item;
+      r.from = best;
+      s.item = null;
+      r.state = 'flee';
       g.bus.emit('rat:steal', { station: best, item: r.item! });
       return true;
     }
@@ -114,7 +151,10 @@ export function gentleRatStep(g: Game, m: Mid, dtMs: number, kit: RatKit): boole
     return true;
   }
   if (age < RAT_GENTLE.minStayMs) return true; // flee: it stays gnawing at the counter until it has been here MIN_STAY
-  if (tileOf(r)[0] === r.hole[0] && tileOf(r)[1] === r.hole[1]) { kit.gone(g, m); return true; }
+  if (tileOf(r)[0] === r.hole[0] && tileOf(r)[1] === r.hole[1]) {
+    kit.gone(g, m);
+    return true;
+  }
   walk(g, r, (x, y) => x === r.hole[0] && y === r.hole[1], dtMs, kit);
   return true;
 }

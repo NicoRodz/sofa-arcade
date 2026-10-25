@@ -5,7 +5,13 @@ import { describe, expect, it } from 'vitest';
 import { WORLD1 as WORLD1_LEVELS } from '../campaign/world1';
 import { createWorld, hashState, step } from './world';
 
-const noise = (seed: number) => { let r = seed; return () => { r = (r * 1664525 + 1013904223) >>> 0; return r / 2 ** 32; }; };
+const noise = (seed: number) => {
+  let r = seed;
+  return () => {
+    r = (r * 1664525 + 1013904223) >>> 0;
+    return r / 2 ** 32;
+  };
+};
 const WORLD1 = [
   '1-1 free s3 3425913049 0 playing',
   '1-1 free s11 2149430116 0 playing',
@@ -26,16 +32,23 @@ const WORLD1 = [
 describe('A6 regression: Mundo 1 does not move', () => {
   it('the hash of the 7 levels of Mundo 1 (campaign Playa, 2 players, 2 seeds) after 1200 noisy steps is the one master had', () => {
     const got: string[] = [];
-    for (const d of WORLD1_LEVELS) for (const seed of [3, 11]) {
-      const mode = d.tether === 'freeOnly' ? 'free' : 'chain';
-      const w = createWorld({ level: d, mode, difficulty: 'normal', slots: [0, 1], campaign: { world: 'beach' } });
-      const rnd = noise(seed);
-      for (let i = 0; i < 1200; i++) {
-        const inputs = [0, 1].map(() => ({ move: [-1, 0, 1, 1][Math.floor(rnd() * 4)]! * (i % 90 < 70 ? 1 : 0), down: rnd() < 0.05, up: rnd() < 0.05, jump: rnd() < 0.05, grab: rnd() < 0.02 }));
-        step(w, inputs);
+    for (const d of WORLD1_LEVELS)
+      for (const seed of [3, 11]) {
+        const mode = d.tether === 'freeOnly' ? 'free' : 'chain';
+        const w = createWorld({ level: d, mode, difficulty: 'normal', slots: [0, 1], campaign: { world: 'beach' } });
+        const rnd = noise(seed);
+        for (let i = 0; i < 1200; i++) {
+          const inputs = [0, 1].map(() => ({
+            move: [-1, 0, 1, 1][Math.floor(rnd() * 4)]! * (i % 90 < 70 ? 1 : 0),
+            down: rnd() < 0.05,
+            up: rnd() < 0.05,
+            jump: rnd() < 0.05,
+            grab: rnd() < 0.02,
+          }));
+          step(w, inputs);
+        }
+        got.push(`${d.id} ${mode} s${seed} ${hashState(w)} ${w.deaths} ${w.status}`);
       }
-      got.push(`${d.id} ${mode} s${seed} ${hashState(w)} ${w.deaths} ${w.status}`);
-    }
     expect(got).toEqual(WORLD1);
   });
 });

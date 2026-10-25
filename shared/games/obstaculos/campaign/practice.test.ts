@@ -36,7 +36,10 @@ describe('Sala de practica: one station per action, opening when its mechanic de
   });
   it('sabotage: a tower station with no wall is finished without the tower (red); a station with a hint is red', () => {
     const tower = PRACTICE.find((s) => s.id === 'p-tower')!;
-    const flat: PracticeStation = { ...tower, def: { ...tower.def, rows: tower.def.rows.map((r, y) => (y >= 8 && y <= 11 ? r.replace(/#{6}/, '......') : r)) } };
+    const flat: PracticeStation = {
+      ...tower,
+      def: { ...tower.def, rows: tower.def.rows.map((r, y) => (y >= 8 && y <= 11 ? r.replace(/#{6}/, '......') : r)) },
+    };
     expect(learnStation(flat).errors.join()).toMatch(/finishes without tower/);
     const hinted: PracticeStation = { ...tower, def: { ...tower.def, hints: [{ x: 3, y: 9, text: 'Hola' }] } };
     expect(learnStation(hinted).errors.join()).toMatch(/no hints/);

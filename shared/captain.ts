@@ -9,7 +9,15 @@ export type NavKey = (typeof NAV_KEYS)[number];
 export const isNavKey = (v: unknown): v is NavKey => typeof v === 'string' && (NAV_KEYS as readonly string[]).includes(v);
 
 // KeyboardEvent.key of the key each intent replaces: the screen feeds it to the same handler as a real key press.
-export const NAV_TO_KEY: Record<NavKey, string> = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', ok: 'Enter', back: 'Escape', help: 'h' };
+export const NAV_TO_KEY: Record<NavKey, string> = {
+  up: 'ArrowUp',
+  down: 'ArrowDown',
+  left: 'ArrowLeft',
+  right: 'ArrowRight',
+  ok: 'Enter',
+  back: 'Escape',
+  help: 'h',
+};
 export const navToKey = (k: NavKey): string => NAV_TO_KEY[k];
 
 // The Captain is the first player who joined and is connected now (lowest id: ids only grow, a rejoin with the token keeps its id).
@@ -26,8 +34,10 @@ export const acceptNav = (captainId: number | null, from: unknown): boolean => t
 
 // The Mac keyboard keeps the last word: a remote intent that lands right after a key press is dropped, so the two never pile up.
 export const KEYBOARD_QUIET_MS = 300;
-export const remoteBlocked = (lastKeyAt: number | null, now: number, quietMs = KEYBOARD_QUIET_MS): boolean => lastKeyAt !== null && now - lastKeyAt < quietMs;
+export const remoteBlocked = (lastKeyAt: number | null, now: number, quietMs = KEYBOARD_QUIET_MS): boolean =>
+  lastKeyAt !== null && now - lastKeyAt < quietMs;
 
 // The D-pad lives on the Captain's phone in every screen but the round itself and the Cocina escuela (there the stick and the buttons own the screen; the Captain's
 // "Saltar para todos" button sends the same 'ok' from the school card).
-export const remoteVisible = (isCaptain: boolean, joined: boolean, phase: string): boolean => isCaptain && joined && phase !== 'playing' && phase !== 'school';
+export const remoteVisible = (isCaptain: boolean, joined: boolean, phase: string): boolean =>
+  isCaptain && joined && phase !== 'playing' && phase !== 'school';

@@ -21,7 +21,10 @@ export const FIRE_SPREAD_MS = 3000; // the fire jumps to the neighbours this oft
 export const FIRE_RINGS = 2; // ... and stops after this many jumps
 export const DOUSE_MS = 3000; // of Picar to put one station out
 
-export interface Fire { spreadAt: number; rings: number }
+export interface Fire {
+  spreadAt: number;
+  rings: number;
+}
 export interface Burn {
   graceMs: number;
   fire: boolean; // false: the pizza burns but the oven never catches fire
@@ -31,7 +34,11 @@ export interface Burn {
 /** Fire exists from Normal up, and not under the Suave sabotage (the chaos cap: bags and banana-skins already fill that kitchen). */
 export const fireAllowed = (d: Difficulty, sabotage: SabotageMode | undefined): boolean => d !== 'easy' && sabotage !== 'soft';
 
-export const createBurn = (d: Difficulty, fire: boolean, teams: number): Burn => ({ graceMs: GRACE_MS[d], fire, fires: Array.from({ length: teams }, () => null) });
+export const createBurn = (d: Difficulty, fire: boolean, teams: number): Burn => ({
+  graceMs: GRACE_MS[d],
+  fire,
+  fires: Array.from({ length: teams }, () => null),
+});
 
 const tag = (g: Game, team: number | null): { team?: number } => (g.versus && team !== null ? { team } : {});
 const kitchenOf = (s: Station) => s.owner ?? 0;
@@ -42,13 +49,20 @@ export const isDark = (g: Pick<Game, 'mid'>) => !!g.mid?.dark;
 
 /** The oven is empty again (a chef took the pizza, or the fire ate it). */
 export function clearPot(s: Station) {
-  s.inputs = []; s.done = false; s.progress = 0;
-  delete s.readyAt; delete s.warned; delete s.burnt; delete s.fold; delete s.folded;
+  s.inputs = [];
+  s.done = false;
+  s.progress = 0;
+  delete s.readyAt;
+  delete s.warned;
+  delete s.burnt;
+  delete s.fold;
+  delete s.folded;
 }
 
 function ignite(g: Game, s: Station, origin: boolean) {
   s.fire = 0;
-  if (s.kind === 'pot') clearPot(s); else s.item = null;
+  if (s.kind === 'pot') clearPot(s);
+  else s.item = null;
   g.bus.emit(origin ? 'fire:start' : 'fire:spread', { station: g.stations.indexOf(s), ...tag(g, s.owner) });
 }
 
@@ -59,14 +73,16 @@ export function douse(g: Game, playerId: number, s: Station, dtMs: number) {
   delete s.fire;
   const k = kitchenOf(s);
   g.bus.emit('fire:out', { player: playerId, station: g.stations.indexOf(s), ...tag(g, s.owner) });
-  if (!g.stations.some((o) => o.fire !== undefined && kitchenOf(o) === k)) { // the last flame of the kitchen: it may catch fire again
+  if (!g.stations.some((o) => o.fire !== undefined && kitchenOf(o) === k)) {
+    // the last flame of the kitchen: it may catch fire again
     g.burn!.fires[k] = null;
     g.bus.emit('fire:end', { ...tag(g, s.owner) });
   }
 }
 
 /** How an oven stands: on fire, with a burnt pizza, with a ready one, or neither (empty or cooking). The art and the tests read it. */
-export const ovenStage = (s: Station): 'idle' | 'ready' | 'burnt' | 'fire' => (s.fire !== undefined ? 'fire' : s.burnt ? 'burnt' : s.done ? 'ready' : 'idle');
+export const ovenStage = (s: Station): 'idle' | 'ready' | 'burnt' | 'fire' =>
+  s.fire !== undefined ? 'fire' : s.burnt ? 'burnt' : s.done ? 'ready' : 'idle';
 
 /** End of the tick: pizzas that wait too long burn, burnt ones set the oven on fire, fire jumps. */
 export function burnTick(g: Game, dtMs: number) {
@@ -74,13 +90,23 @@ export function burnTick(g: Game, dtMs: number) {
   const dark = isDark(g);
   for (const s of g.stations) {
     if (s.kind !== 'pot' || s.fire !== undefined || !s.done || s.readyAt === undefined) continue;
-    if (dark) { s.readyAt += dtMs; continue; } // lights out: the grace time does not run
+    if (dark) {
+      s.readyAt += dtMs;
+      continue;
+    } // lights out: the grace time does not run
     const age = g.time - s.readyAt;
     const at = g.stations.indexOf(s);
     if (!s.burnt) {
-      if (!s.warned && age >= b.graceMs - WARN_BEFORE_MS) { s.warned = true; g.bus.emit('oven:warn', { station: at, msLeft: Math.max(0, b.graceMs - age), ...tag(g, s.owner) }); }
-      if (age >= b.graceMs) { s.burnt = true; g.bus.emit('oven:burnt', { station: at, ...tag(g, s.owner) }); }
-    } else if (b.fire && age >= b.graceMs + FIRE_DELAY_MS && !b.fires[kitchenOf(s)]) { // one active fire per kitchen: a second oven waits
+      if (!s.warned && age >= b.graceMs - WARN_BEFORE_MS) {
+        s.warned = true;
+        g.bus.emit('oven:warn', { station: at, msLeft: Math.max(0, b.graceMs - age), ...tag(g, s.owner) });
+      }
+      if (age >= b.graceMs) {
+        s.burnt = true;
+        g.bus.emit('oven:burnt', { station: at, ...tag(g, s.owner) });
+      }
+    } else if (b.fire && age >= b.graceMs + FIRE_DELAY_MS && !b.fires[kitchenOf(s)]) {
+      // one active fire per kitchen: a second oven waits
       b.fires[kitchenOf(s)] = { spreadAt: g.time + FIRE_SPREAD_MS, rings: 0 };
       ignite(g, s, true);
     }
@@ -91,7 +117,9 @@ export function burnTick(g: Game, dtMs: number) {
     if (fire.rings >= FIRE_RINGS) return;
     fire.rings++;
     const burning = g.stations.filter((s) => s.fire !== undefined && kitchenOf(s) === k);
-    const next = g.stations.filter((s) => s.kind === 'counter' && s.fire === undefined && kitchenOf(s) === k && burning.some((f) => adjacent(f, s)));
+    const next = g.stations.filter(
+      (s) => s.kind === 'counter' && s.fire === undefined && kitchenOf(s) === k && burning.some((f) => adjacent(f, s)),
+    );
     for (const s of next) ignite(g, s, false);
   });
 }

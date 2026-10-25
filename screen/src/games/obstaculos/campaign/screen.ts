@@ -31,11 +31,20 @@ export class CampaignScreen {
   private busy = false;
   private readonly deps: ScreenDeps;
 
-  constructor(deps: ScreenDeps) { this.deps = deps; this.flow = new CampaignFlow(deps); }
+  constructor(deps: ScreenDeps) {
+    this.deps = deps;
+    this.flow = new CampaignFlow(deps);
+  }
 
-  private get now() { return (this.deps.now ?? Date.now)(); }
-  private get catalog(): Catalog { return this.deps.catalog; }
-  private ctx(): KeyCtx { return { now: this.now, hub: this.hub, exp: this.flow.exp, catalog: this.catalog, n: this.deps.count(), outcome: this.flow.outcome }; }
+  private get now() {
+    return (this.deps.now ?? Date.now)();
+  }
+  private get catalog(): Catalog {
+    return this.deps.catalog;
+  }
+  private ctx(): KeyCtx {
+    return { now: this.now, hub: this.hub, exp: this.flow.exp, catalog: this.catalog, n: this.deps.count(), outcome: this.flow.outcome };
+  }
   private viewCtx(): ViewCtx {
     const d = this.deps.difficulty();
     return { ...this.ctx(), difficulty: d.value, diffLabels: d.labels, difficulties: d.all, names: this.deps.names() };
@@ -43,24 +52,51 @@ export class CampaignScreen {
 
   // The lobby opens on the campaign: the hub, with what "Continuar" offers.
   async enter(): Promise<void> {
-    this.on = true; this.resultOn = false;
+    this.on = true;
+    this.resultOn = false;
     this.state = initialState();
     this.deps.refresh();
     await this.reloadHub();
   }
-  async reloadHub(): Promise<void> { this.hub = await this.flow.hub(); this.deps.refresh(); }
-  async exit(): Promise<void> { this.on = false; this.resultOn = false; await this.flow.leave(); }
-  quickGame(): void { this.on = false; this.resultOn = false; void this.flow.leave(); this.deps.quick(); }
+  async reloadHub(): Promise<void> {
+    this.hub = await this.flow.hub();
+    this.deps.refresh();
+  }
+  async exit(): Promise<void> {
+    this.on = false;
+    this.resultOn = false;
+    await this.flow.leave();
+  }
+  quickGame(): void {
+    this.on = false;
+    this.resultOn = false;
+    void this.flow.leave();
+    this.deps.quick();
+  }
 
-  shows(phase: string): boolean { return (phase === 'lobby' && this.on) || (phase === 'results' && this.resultOn); }
-  get isBusy(): boolean { return this.busy; }
-  get armed(): boolean { return this.state.resetArmedAt !== null; }
+  shows(phase: string): boolean {
+    return (phase === 'lobby' && this.on) || (phase === 'results' && this.resultOn);
+  }
+  get isBusy(): boolean {
+    return this.busy;
+  }
+  get armed(): boolean {
+    return this.state.resetArmedAt !== null;
+  }
 
   render(): void {
     if (!this.on) return;
     const c = this.viewCtx();
     const s = this.state;
-    this.deps.host.set(s.view === 'pick' ? renderPick(s, c) : s.view === 'practice' ? renderPractice(s, c) : s.view === 'map' && c.exp ? renderMap(s, c) : renderHub(s.view === 'hub' ? s : { ...s, view: 'hub' }, c));
+    this.deps.host.set(
+      s.view === 'pick'
+        ? renderPick(s, c)
+        : s.view === 'practice'
+          ? renderPractice(s, c)
+          : s.view === 'map' && c.exp
+            ? renderMap(s, c)
+            : renderHub(s.view === 'hub' ? s : { ...s, view: 'hub' }, c),
+    );
   }
   renderResults(): void {
     const o = this.flow.outcome;
@@ -68,8 +104,12 @@ export class CampaignScreen {
   }
 
   // ---- what a campaign round needs from main.ts
-  runSpec(levelId: string) { return this.flow.spec(levelId, this.deps.count(), this.deps.difficulty().value); }
-  levelEnd(e: LevelEnd): void { void this.flow.levelEnd(e); }
+  runSpec(levelId: string) {
+    return this.flow.spec(levelId, this.deps.count(), this.deps.difficulty().value);
+  }
+  levelEnd(e: LevelEnd): void {
+    void this.flow.levelEnd(e);
+  }
   // The session ended (cleared and the banners are over, or out of hearts twice): wait for the save, then the results show the outcome.
   async over(): Promise<void> {
     this.flow.failed();
@@ -86,42 +126,94 @@ export class CampaignScreen {
     if (this.busy) return true;
     const out = campKey(this.state, key, this.ctx());
     this.state = out.state;
-    this.render(); this.renderResultsIf();
+    this.render();
+    this.renderResultsIf();
     if (out.effect) void this.run(out.effect);
     this.deps.refresh();
     return true;
   }
-  private renderResultsIf() { if (this.resultOn) this.renderResults(); }
+  private renderResultsIf() {
+    if (this.resultOn) this.renderResults();
+  }
   // Mouse: a click is the same as moving there and pressing Enter.
   click(el: HTMLElement | null): void {
     if (!el || this.busy) return;
     const hit = (sel: string) => el.closest<HTMLElement>(sel);
     const diff = hit('[data-diff]')?.dataset.diff;
-    if (diff) { const d = this.deps.difficulty().all.find((x) => x === diff); if (d) { this.deps.difficulty().set(d); } return; }
-    const set = (patch: Partial<CampState>, press = true) => { this.state = { ...this.state, ...patch, resetArmedAt: null }; if (press) this.key('Enter', false); else { this.render(); this.deps.refresh(); } };
+    if (diff) {
+      const d = this.deps.difficulty().all.find((x) => x === diff);
+      if (d) {
+        this.deps.difficulty().set(d);
+      }
+      return;
+    }
+    const set = (patch: Partial<CampState>, press = true) => {
+      this.state = { ...this.state, ...patch, resetArmedAt: null };
+      if (press) this.key('Enter', false);
+      else {
+        this.render();
+        this.deps.refresh();
+      }
+    };
     const h = hit('[data-hub]')?.dataset.hub;
-    if (h && this.state.view === 'hub') { const idx = hubItems(this.hub, this.catalog, this.deps.count()).findIndex((x) => x.id === h); if (idx >= 0) set({ hubSel: idx }); return; }
+    if (h && this.state.view === 'hub') {
+      const idx = hubItems(this.hub, this.catalog, this.deps.count()).findIndex((x) => x.id === h);
+      if (idx >= 0) set({ hubSel: idx });
+      return;
+    }
     const st = hit('[data-station]')?.dataset.station;
-    if (st && this.state.view === 'practice') { const idx = this.catalog.practice.findIndex((x) => x.id === st); if (idx >= 0) set({ pracSel: idx }); return; }
+    if (st && this.state.view === 'practice') {
+      const idx = this.catalog.practice.findIndex((x) => x.id === st);
+      if (idx >= 0) set({ pracSel: idx });
+      return;
+    }
     const p = hit('[data-pick]')?.dataset.pick;
-    if (p) { const idx = this.hub.list.findIndex((x) => x.id === p); if (idx >= 0) set({ pickSel: idx }); return; }
+    if (p) {
+      const idx = this.hub.list.findIndex((x) => x.id === p);
+      if (idx >= 0) set({ pickSel: idx });
+      return;
+    }
     const nd = hit('[data-node]')?.dataset.node;
-    if (nd !== undefined) { set({ node: Number(nd) }); return; }
+    if (nd !== undefined) {
+      set({ node: Number(nd) });
+      return;
+    }
     const w = hit('[data-world]')?.dataset.world;
-    if (w && this.flow.exp) { set({ world: w, node: startNode(this.flow.exp, this.catalog, w, this.deps.count()) }, false); return; }
+    if (w && this.flow.exp) {
+      set({ world: w, node: startNode(this.flow.exp, this.catalog, w, this.deps.count()) }, false);
+      return;
+    }
     const r = hit('[data-res]')?.dataset.res;
-    if (r) { const o = this.flow.outcome; if (o) void this.run({ t: 'result', button: r as 'next' | 'retry' | 'skip' | 'map' }); }
+    if (r) {
+      const o = this.flow.outcome;
+      if (o) void this.run({ t: 'result', button: r as 'next' | 'retry' | 'skip' | 'map' });
+    }
   }
 
   // ---- effects
-  private notice(text: string) { this.state = { ...this.state, notice: text }; this.render(); this.deps.refresh(); }
+  private notice(text: string) {
+    this.state = { ...this.state, notice: text };
+    this.render();
+    this.deps.refresh();
+  }
   private async run(e: Effect): Promise<void> {
     if (this.busy) return;
     this.busy = true;
-    try { await this.perform(e); } finally { this.busy = false; this.render(); this.renderResultsIf(); this.deps.refresh(); }
+    try {
+      await this.perform(e);
+    } finally {
+      this.busy = false;
+      this.render();
+      this.renderResultsIf();
+      this.deps.refresh();
+    }
   }
   private async openMap(r: { ok: true } | { ok: false; reason: string }): Promise<void> {
-    if (!r.ok) { this.deps.sfx('refuse'); this.notice(r.reason); return; }
+    if (!r.ok) {
+      this.deps.sfx('refuse');
+      this.notice(r.reason);
+      return;
+    }
     const e = this.flow.exp!;
     const at = this.flow.continueAt();
     const world = (at ? at.world : this.catalog.worlds[0]?.id) ?? '';
@@ -131,17 +223,44 @@ export class CampaignScreen {
   private async perform(e: Effect): Promise<void> {
     const d = this.deps;
     switch (e.t) {
-      case 'move': d.sfx('move'); return;
-      case 'refuse': d.sfx('refuse'); this.state = { ...this.state, notice: e.reason }; return;
-      case 'menu': d.sfx('back'); d.leaveToMenu(); return;
-      case 'quick': d.sfx('pick'); this.quickGame(); return;
-      case 'continue': if (this.hub.last) await this.openMap(await this.flow.open(this.hub.last.id)); return;
-      case 'open': await this.openMap(await this.flow.open(e.id)); return;
-      case 'new': await this.openMap(await this.flow.create(d.names(), e.skipIntro && this.catalog.worlds[1] ? [this.catalog.worlds[1].id] : [])); await this.reloadHubQuiet(); return;
-      case 'leave': d.sfx('back'); await this.flow.leave(); this.state = { ...this.state, view: 'hub', notice: '' }; await this.reloadHubQuiet(); return;
+      case 'move':
+        d.sfx('move');
+        return;
+      case 'refuse':
+        d.sfx('refuse');
+        this.state = { ...this.state, notice: e.reason };
+        return;
+      case 'menu':
+        d.sfx('back');
+        d.leaveToMenu();
+        return;
+      case 'quick':
+        d.sfx('pick');
+        this.quickGame();
+        return;
+      case 'continue':
+        if (this.hub.last) await this.openMap(await this.flow.open(this.hub.last.id));
+        return;
+      case 'open':
+        await this.openMap(await this.flow.open(e.id));
+        return;
+      case 'new':
+        await this.openMap(await this.flow.create(d.names(), e.skipIntro && this.catalog.worlds[1] ? [this.catalog.worlds[1].id] : []));
+        await this.reloadHubQuiet();
+        return;
+      case 'leave':
+        d.sfx('back');
+        await this.flow.leave();
+        this.state = { ...this.state, view: 'hub', notice: '' };
+        await this.reloadHubQuiet();
+        return;
       case 'practicePlay': {
         const spec = this.flow.spec(e.levelId, d.count(), d.difficulty().value);
-        if ('ok' in spec) { d.sfx('refuse'); this.state = { ...this.state, notice: spec.reason }; return; }
+        if ('ok' in spec) {
+          d.sfx('refuse');
+          this.state = { ...this.state, notice: spec.reason };
+          return;
+        }
         d.sfx('pick');
         this.flow.begin(e.levelId);
         this.resultOn = false;
@@ -150,7 +269,11 @@ export class CampaignScreen {
       }
       case 'play': {
         const spec = this.flow.spec(e.levelId, d.count());
-        if ('ok' in spec) { d.sfx('refuse'); this.state = { ...this.state, notice: spec.reason }; return; }
+        if ('ok' in spec) {
+          d.sfx('refuse');
+          this.state = { ...this.state, notice: spec.reason };
+          return;
+        }
         d.sfx('pick');
         this.flow.begin(e.levelId);
         this.resultOn = false;
@@ -167,10 +290,30 @@ export class CampaignScreen {
       case 'result': {
         const o = this.flow.outcome;
         if (!o) return;
-        if (o.practice && e.button === 'map') { d.sfx('back'); this.resultOn = false; this.state = { ...this.state, view: 'practice', notice: '' }; d.toLobby(); return; }
-        if (e.button === 'skip') { await this.flow.skip(o.levelId); }
-        if (e.button === 'next' && o.next) { d.sfx('pick'); this.flow.begin(o.next.id); this.resultOn = false; d.play(o.next.id); return; }
-        if (e.button === 'retry') { d.sfx('pick'); this.flow.begin(o.levelId); this.resultOn = false; d.play(o.levelId); return; }
+        if (o.practice && e.button === 'map') {
+          d.sfx('back');
+          this.resultOn = false;
+          this.state = { ...this.state, view: 'practice', notice: '' };
+          d.toLobby();
+          return;
+        }
+        if (e.button === 'skip') {
+          await this.flow.skip(o.levelId);
+        }
+        if (e.button === 'next' && o.next) {
+          d.sfx('pick');
+          this.flow.begin(o.next.id);
+          this.resultOn = false;
+          d.play(o.next.id);
+          return;
+        }
+        if (e.button === 'retry') {
+          d.sfx('pick');
+          this.flow.begin(o.levelId);
+          this.resultOn = false;
+          d.play(o.levelId);
+          return;
+        }
         // Mapa (and Saltar, which lands there with the next level open)
         d.sfx('back');
         // the cursor lands on the next open level after a clear or a skip, on the same level after a failure
@@ -178,12 +321,27 @@ export class CampaignScreen {
         const at = forward ?? this.catalogLevel(o.levelId);
         this.resultOn = false;
         const world = at?.world ?? this.state.world;
-        this.state = { ...this.state, view: 'map', world, node: this.flow.exp ? Math.max(0, worldNodes(this.flow.exp, this.catalog, world, d.count()).findIndex((x) => x.levelId === (at?.id ?? o.levelId))) : 0, notice: '' };
+        this.state = {
+          ...this.state,
+          view: 'map',
+          world,
+          node: this.flow.exp
+            ? Math.max(
+                0,
+                worldNodes(this.flow.exp, this.catalog, world, d.count()).findIndex((x) => x.levelId === (at?.id ?? o.levelId)),
+              )
+            : 0,
+          notice: '',
+        };
         d.toLobby();
         return;
       }
     }
   }
-  private catalogLevel(id: string): CatalogLevel | undefined { return this.catalog.levels.find((l) => l.id === id); }
-  private async reloadHubQuiet(): Promise<void> { this.hub = await this.flow.hub(); }
+  private catalogLevel(id: string): CatalogLevel | undefined {
+    return this.catalog.levels.find((l) => l.id === id);
+  }
+  private async reloadHubQuiet(): Promise<void> {
+    this.hub = await this.flow.hub();
+  }
 }

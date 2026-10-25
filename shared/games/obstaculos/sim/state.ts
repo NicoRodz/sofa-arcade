@@ -16,8 +16,19 @@ export type ObstEvent = { [K in ObstEventName]: { name: K; data: AllObstEvents[K
 export type PlayerMode = 'active' | 'dead' | 'bubble';
 // What the hands hold (plan §5). 'ring' = anchored; 'player' = lifted a teammate; id = ring index / slot / box id / lever index.
 export type Holding = { kind: 'ring' | 'player' | 'box' | 'lever'; id: number };
-export interface Crumb { x: number; y: number; tick: number }
-export interface PlayerStats { deaths: number; stars: number; anchoredSteps: number; throws: number; catches: number; offCameraSteps: number }
+export interface Crumb {
+  x: number;
+  y: number;
+  tick: number;
+}
+export interface PlayerStats {
+  deaths: number;
+  stars: number;
+  anchoredSteps: number;
+  throws: number;
+  catches: number;
+  offCameraSteps: number;
+}
 
 export interface PlayerState {
   slot: number;
@@ -90,16 +101,69 @@ export interface Objective {
   moving: boolean; // balance: it moved in the last step (the start rings obst.balance); sinker: it was sinking in the last step (the start rings obst.sinker)
   // geyser: `phase` is 0 calm, 1 warning, 2 erupting (campaignrules-style transitions ring obst.geyser)
 }
-export interface BoxE { id: number; heavy: boolean; x: number; y: number; vy: number; homeX: number; homeY: number; holders: number[]; dx: number; dy: number; grounded: boolean }
-export interface KeyE { x: number; y: number; homeX: number; homeY: number; heldBy: number; used: boolean }
-export interface CrumbleE { x: number; y: number; state: 0 | 1 | 2; t: number } // 0 solid, 1 falling (0.5 s), 2 gone (3 s)
-export interface HazardE { kind: 'risingLava' | 'tide' | 'avalanche'; speed: number; pos: number; frozen: number; phase: number } // pos: y (lava, tide) or x (avalanche), px
+export interface BoxE {
+  id: number;
+  heavy: boolean;
+  x: number;
+  y: number;
+  vy: number;
+  homeX: number;
+  homeY: number;
+  holders: number[];
+  dx: number;
+  dy: number;
+  grounded: boolean;
+}
+export interface KeyE {
+  x: number;
+  y: number;
+  homeX: number;
+  homeY: number;
+  heldBy: number;
+  used: boolean;
+}
+export interface CrumbleE {
+  x: number;
+  y: number;
+  state: 0 | 1 | 2;
+  t: number;
+} // 0 solid, 1 falling (0.5 s), 2 gone (3 s)
+export interface HazardE {
+  kind: 'risingLava' | 'tide' | 'avalanche';
+  speed: number;
+  pos: number;
+  frozen: number;
+  phase: number;
+} // pos: y (lava, tide) or x (avalanche), px
 // Campaign dynamics 6 and 9 (sim/enemies.ts, sim/campaignrules.ts). x/y = top-left, px.
-export interface EnemyE { x: number; y: number; w: number; h: number; homeX: number; range: number; dir: 1 | -1; stun: number; cool: number; vy: number }
-export interface PickE { x: number; y: number; homeX: number; homeY: number; heldBy: number }
+export interface EnemyE {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  homeX: number;
+  range: number;
+  dir: 1 | -1;
+  stun: number;
+  cool: number;
+  vy: number;
+}
+export interface PickE {
+  x: number;
+  y: number;
+  homeX: number;
+  homeY: number;
+  heldBy: number;
+}
 export type WindPhase = 'calm' | 'warn' | 'gust';
-export interface CheckpointE { cell: Cell; activated: boolean }
-export interface StarE { cell: Cell; taken: boolean }
+export interface CheckpointE {
+  cell: Cell;
+  activated: boolean;
+}
+export interface StarE {
+  cell: Cell;
+  taken: boolean;
+}
 
 export interface Entities {
   activators: Activator[];
@@ -124,8 +188,19 @@ export interface Entities {
 export type WorldStatus = 'playing' | 'cleared' | 'failed';
 // `campaign` only exists in a campaign world: heartsLost = deaths-steps that cost a heart (also counted with infinite hearts), refills = times the
 // hearts ran out and were refilled, perfect = both zero (the plan's third star, before the Captain's assists are applied by the caller).
-export interface CampaignResult { heartsLost: number; refills: number; perfect: boolean }
-export interface LevelResult { timeSec: number; medal: 'gold' | 'silver' | 'bronze'; stars: number; deaths: number; livesLeft: number; campaign?: CampaignResult }
+export interface CampaignResult {
+  heartsLost: number;
+  refills: number;
+  perfect: boolean;
+}
+export interface LevelResult {
+  timeSec: number;
+  medal: 'gold' | 'silver' | 'bronze';
+  stars: number;
+  deaths: number;
+  livesLeft: number;
+  campaign?: CampaignResult;
+}
 
 export interface World {
   level: ParsedLevel;
@@ -153,7 +228,9 @@ export interface World {
   wind: { phase: WindPhase; dir: -1 | 1 } | null; // campaign: only in a level with `wind`
 }
 
-export const emit = <K extends ObstEventName>(w: World, name: K, data: AllObstEvents[K]): void => { w.events.push({ name, data } as ObstEvent); };
+export const emit = <K extends ObstEventName>(w: World, name: K, data: AllObstEvents[K]): void => {
+  w.events.push({ name, data } as ObstEvent);
+};
 export const playerOf = (w: World, slot: number): PlayerState | undefined => w.players.find((p) => p.slot === slot);
 export const isActive = (p: PlayerState): boolean => p.connected && p.mode === 'active';
 export const connectedCount = (w: World): number => w.players.filter((p) => p.connected).length;

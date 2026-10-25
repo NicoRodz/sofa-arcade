@@ -10,11 +10,21 @@ const FRAME = 1000 / 60;
 const def = (n: number): LevelDef => LEVELS[n - 1]!;
 const mk = (levels: LevelDef[], n: number, mode: 'chain' | 'free' = 'free', difficulty: 'easy' | 'normal' | 'hard' = 'normal') =>
   new ObstSession({ mode, difficulty, level: 0, seed: 1, slots: Array.from({ length: n }, (_, i) => i), levels });
-const play = (s: ObstSession, ms: number, each?: () => void) => { const out: ObstEvent[] = []; for (let t = 0; t < ms; t += FRAME) { each?.(); out.push(...s.advance(FRAME)); } return out; };
+const play = (s: ObstSession, ms: number, each?: () => void) => {
+  const out: ObstEvent[] = [];
+  for (let t = 0; t < ms; t += FRAME) {
+    each?.();
+    out.push(...s.advance(FRAME));
+  }
+  return out;
+};
 // scripted phones that wander, jump and grab at random (the same noise the world's own tests use)
 function wander(s: ObstSession, seed = 5) {
   let r = seed;
-  const rnd = () => { r = (r * 1664525 + 1013904223) >>> 0; return r / 2 ** 32; };
+  const rnd = () => {
+    r = (r * 1664525 + 1013904223) >>> 0;
+    return r / 2 ** 32;
+  };
   const taps = Array.from({ length: 8 }, () => [0, 0]);
   const dir = Array<number>(8).fill(1);
   return () => {
@@ -29,7 +39,19 @@ function wander(s: ObstSession, seed = 5) {
 
 describe('SimWorldView: the real world seen as a WorldView', () => {
   it('passes checkWorldView every 15 frames on levels with rings, plates, balance, keys, hazards and movers, with 2 and 8 players, in both modes', () => {
-    const picks: [number, number, 'chain' | 'free'][] = [[1, 2, 'chain'], [1, 8, 'chain'], [4, 6, 'chain'], [8, 8, 'free'], [8, 4, 'free'], [9, 4, 'free'], [14, 4, 'chain'], [11, 8, 'free'], [3, 8, 'chain'], [5, 2, 'free'], [12, 5, 'chain']];
+    const picks: [number, number, 'chain' | 'free'][] = [
+      [1, 2, 'chain'],
+      [1, 8, 'chain'],
+      [4, 6, 'chain'],
+      [8, 8, 'free'],
+      [8, 4, 'free'],
+      [9, 4, 'free'],
+      [14, 4, 'chain'],
+      [11, 8, 'free'],
+      [3, 8, 'chain'],
+      [5, 2, 'free'],
+      [12, 5, 'chain'],
+    ];
     for (const [lv, n, mode] of picks) {
       const s = mk([def(lv)], n, mode);
       const feed = wander(s);
@@ -45,12 +67,16 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
   it('one PlayerView per player of the world: id and slot are the slot (so the obst.* events, which carry slots, line up), name from the lobby', () => {
     const s = mk([def(1)], 3);
     const v = new SimWorldView(s, s.world, (slot) => ['Nico', 'Angi', 'Pablo'][slot]!);
-    expect(v.players.map((p) => [p.id, p.slot, p.name])).toEqual([[0, 0, 'Nico'], [1, 1, 'Angi'], [2, 2, 'Pablo']]);
+    expect(v.players.map((p) => [p.id, p.slot, p.name])).toEqual([
+      [0, 0, 'Nico'],
+      [1, 1, 'Angi'],
+      [2, 2, 'Pablo'],
+    ]);
     expect(v.mode).toBe('free');
     expect(v.level).toBe(s.world.level);
     expect(v.grid).toBe(s.world.grid); // the live grid: doors and crumbling tiles are repainted by the renderer
   });
-  it('prevX/prevY are where the body was before the latest step, and alpha is the session\'s leftover', () => {
+  it("prevX/prevY are where the body was before the latest step, and alpha is the session's leftover", () => {
     const s = mk([def(1)], 2);
     const v = new SimWorldView(s);
     play(s, 3300);
@@ -85,17 +111,26 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
     play(s, 3100);
     const on = (id: string) => v.entities.find((e) => e.id === id)!.on;
     expect([on('star0'), on('cp0'), on('goal0')]).toEqual([false, false, false]);
-    const star = s.world.level.markers.star[0]!, cp = s.world.level.markers.checkpoint[0]!;
+    const star = s.world.level.markers.star[0]!,
+      cp = s.world.level.markers.checkpoint[0]!;
     const b0 = s.world.players[0]!.body;
-    b0.x = star.x * TILE + 7; b0.y = star.y * TILE;
-    play(s, 100); v.sync();
+    b0.x = star.x * TILE + 7;
+    b0.y = star.y * TILE;
+    play(s, 100);
+    v.sync();
     expect(on('star0')).toBe(true);
-    b0.x = cp.x * TILE + 7; b0.y = cp.y * TILE;
-    play(s, 100); v.sync();
+    b0.x = cp.x * TILE + 7;
+    b0.y = cp.y * TILE;
+    play(s, 100);
+    v.sync();
     expect(on('cp0')).toBe(true);
     const g = s.world.level.markers.goal[0]!;
-    for (const p of s.world.players) { p.body.x = g.x * TILE + 7; p.body.y = (g.y + 1) * TILE - 46; }
-    play(s, 100); v.sync();
+    for (const p of s.world.players) {
+      p.body.x = g.x * TILE + 7;
+      p.body.y = (g.y + 1) * TILE - 46;
+    }
+    play(s, 100);
+    v.sync();
     expect(on('goal0')).toBe(true);
     expect(v.hud.starsTaken).toBe(1);
   });
@@ -107,12 +142,18 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
     expect(plate('a').on).toBe(false);
     const a = s.world.ent.activators.find((x) => x.letter === 'a')!;
     // four players on plate a: half-up of 8 is 4
-    for (let i = 0; i < 4; i++) { const b = s.world.players[i]!.body; b.x = a.rect.x + 2 + i * 7; b.y = a.rect.y + a.rect.h - 46; }
-    play(s, 500); v.sync();
+    for (let i = 0; i < 4; i++) {
+      const b = s.world.players[i]!.body;
+      b.x = a.rect.x + 2 + i * 7;
+      b.y = a.rect.y + a.rect.h - 46;
+    }
+    play(s, 500);
+    v.sync();
     expect(plate('a').on).toBe(a.pressed);
     expect(plate('a').value).toBeGreaterThan(0);
     const bal = s.world.ent.objectives.find((o) => o.letter === 'D')!;
-    bal.oy = 40; v.sync();
+    bal.oy = 40;
+    v.sync();
     expect(v.entities.find((e) => e.tag === 'D')!.y).toBe(bal.rect.y + 40);
   });
   it('crumbling planks get a shaking sprite while they fall and none while they are whole (level 2)', () => {
@@ -120,7 +161,8 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
     const v = new SimWorldView(s);
     expect(v.entities.some((e) => e.kind === 'crumble')).toBe(false);
     const c = s.world.ent.crumbles[0]!;
-    c.state = 1; c.t = 10;
+    c.state = 1;
+    c.t = 10;
     v.sync();
     const e = v.entities.find((x) => x.kind === 'crumble')!;
     expect(e).toBeDefined();
@@ -142,8 +184,11 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
     const v = new SimWorldView(s);
     play(s, 3100);
     const w = s.world;
-    const p1 = w.players[1]!, p2 = w.players[2]!, p0 = w.players[0]!;
-    p1.mode = 'bubble'; p1.bubble = { tx: 0, ty: 0, arrived: false };
+    const p1 = w.players[1]!,
+      p2 = w.players[2]!,
+      p0 = w.players[0]!;
+    p1.mode = 'bubble';
+    p1.bubble = { tx: 0, ty: 0, arrived: false };
     v.sync();
     expect(v.players[1]!.bubble).toMatchObject({ phase: 'fly', t: 0 });
     w.tick += 12; // 0.2 s of flight
@@ -151,7 +196,8 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
     const fly = v.players[1]!.bubble;
     expect(fly?.phase).toBe('fly');
     expect(fly!.t).toBeCloseTo(0.2, 6);
-    p1.bubble = { tx: 0, ty: 0, arrived: true }; p1.timer = 6;
+    p1.bubble = { tx: 0, ty: 0, arrived: true };
+    p1.timer = 6;
     v.sync();
     expect(v.players[1]!.bubble).toMatchObject({ phase: 'pop' });
     expect(v.players[1]!.bubble!.t).toBeCloseTo(6 * DT, 6);
@@ -170,9 +216,11 @@ describe('SimWorldView: the real world seen as a WorldView', () => {
     const v = new SimWorldView(s);
     play(s, 3300);
     s.world.players[1]!.body.x -= 600; // away from the other
-    play(s, 300); v.sync();
+    play(s, 300);
+    v.sync();
     expect(v.players[0]!.hint).toBe('plant');
-    s.world.players[0]!.body.grounded = false; s.world.players[0]!.body.vx = 0;
+    s.world.players[0]!.body.grounded = false;
+    s.world.players[0]!.body.vx = 0;
     v.sync();
     expect(v.players[0]!.hint).toBe('none');
   });
@@ -193,16 +241,41 @@ describe('SimWorldView: campaign A5 entities', () => {
   const rows = Array.from({ length: 16 }, (_, y) => {
     const cs = ('#' + '.'.repeat(38) + '#').split('');
     if (y >= 14) cs.fill('#');
-    if (y === 13) { cs[2] = 'S'; cs[36] = 'G'; cs[10] = 'p'; }
-    if (y === 6) { cs[20] = 'a'; cs[21] = 'a'; }
+    if (y === 13) {
+      cs[2] = 'S';
+      cs[36] = 'G';
+      cs[10] = 'p';
+    }
+    if (y === 6) {
+      cs[20] = 'a';
+      cs[21] = 'a';
+    }
     if (y >= 10 && y <= 13) cs[30] = y === 13 ? 'I' : 'A';
     return cs.join('');
   });
   const level: LevelDef = {
-    id: 'a5', name: 'a5', biome: 'glacier', players: { min: 2, max: 2 }, tether: 'freeOnly', stars: 1, parSec: 60, rows,
-    params: { a: { kind: 'target', opens: 'A' }, A: { kind: 'gate' } }, enemies: [{ x: 25, y: 13, range: 2 }], wind: { dir: 1, periodSec: 4, gustSec: 1 },
+    id: 'a5',
+    name: 'a5',
+    biome: 'glacier',
+    players: { min: 2, max: 2 },
+    tether: 'freeOnly',
+    stars: 1,
+    parSec: 60,
+    rows,
+    params: { a: { kind: 'target', opens: 'A' }, A: { kind: 'gate' } },
+    enemies: [{ x: 25, y: 13, range: 2 }],
+    wind: { dir: 1, periodSec: 4, gustSec: 1 },
   };
-  const mkc = () => new ObstSession({ mode: 'free', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [level], campaign: { world: 'glacier' } });
+  const mkc = () =>
+    new ObstSession({
+      mode: 'free',
+      difficulty: 'normal',
+      level: 0,
+      seed: 1,
+      slots: [0, 1],
+      levels: [level],
+      campaign: { world: 'glacier' },
+    });
   it('the view lists the enemy, the pickaxe and the target, passes checkWorldView, and the enemy walks', () => {
     const s = mkc();
     const v = new SimWorldView(s);
@@ -213,23 +286,29 @@ describe('SimWorldView: campaign A5 entities', () => {
     expect(by('pick0')?.kind).toBe('pickaxe');
     expect(by('obja')?.kind).toBe('target');
     const x0 = by('enemy0')!.x;
-    play(s, 1000); v.sync();
+    play(s, 1000);
+    v.sync();
     expect(by('enemy0')!.x).not.toBe(x0);
     expect(checkWorldView(v)).toEqual([]);
   });
-  it('a player on the pickaxe takes it: held, with the holder\'s id; the target shows its clock once hit; the wind phase is reported', () => {
+  it("a player on the pickaxe takes it: held, with the holder's id; the target shows its clock once hit; the wind phase is reported", () => {
     const s = mkc();
     const v = new SimWorldView(s);
     play(s, 3300);
     const p = s.world.players[0]!;
-    p.body.x = 10 * TILE + 7; p.body.y = 14 * TILE - 46; // standing in the cell of the pickaxe
-    play(s, 300); v.sync();
+    p.body.x = 10 * TILE + 7;
+    p.body.y = 14 * TILE - 46; // standing in the cell of the pickaxe
+    play(s, 300);
+    v.sync();
     const k = v.entities.find((e) => e.id === 'pick0')!;
     expect(k.on).toBe(true);
     expect(k.holder).toBe(0);
     const q = s.world.players[1]!;
-    q.body.x = 20 * TILE + 7; q.body.y = 6 * TILE; q.body.vy = 0;
-    play(s, 60); v.sync();
+    q.body.x = 20 * TILE + 7;
+    q.body.y = 6 * TILE;
+    q.body.vy = 0;
+    play(s, 60);
+    v.sync();
     const t = v.entities.find((e) => e.id === 'obja')!;
     expect(t.on).toBe(true);
     expect(t.value).toBeGreaterThan(0.5);
@@ -241,14 +320,19 @@ describe('SimWorldView: campaign A5 entities', () => {
     const v = new SimWorldView(s);
     play(s, 3300);
     const seen = new Set<string>();
-    for (let t = 0; t < 270; t++) { s.advance(FRAME); v.sync(); seen.add(v.wind!.phase); }
+    for (let t = 0; t < 270; t++) {
+      s.advance(FRAME);
+      v.sync();
+      seen.add(v.wind!.phase);
+    }
     expect([...seen].sort()).toEqual(['calm', 'gust', 'warn']);
     expect(v.wind).toMatchObject({ dir: 1, zone: null });
   });
   it('a quick-match session has no wind and no enemies in its view', () => {
     const s = new ObstSession({ mode: 'free', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [level] });
     const v = new SimWorldView(s);
-    play(s, 3500); v.sync();
+    play(s, 3500);
+    v.sync();
     expect(v.wind).toBeNull();
     expect(v.entities.some((e) => e.kind === 'enemy')).toBe(false);
   });
@@ -258,21 +342,40 @@ describe('SimWorldView: campaign A6 entities (lantern, crystals, elastic ring, s
   const rows = Array.from({ length: 16 }, (_, y) => {
     const cs = ('#' + '.'.repeat(38) + '#').split('');
     if (y >= 14) cs.fill('#');
-    if (y === 13) { cs[2] = 'S'; cs[36] = 'G'; cs[8] = 'l'; cs[30] = 'E'; cs[22] = 'Y'; }
+    if (y === 13) {
+      cs[2] = 'S';
+      cs[36] = 'G';
+      cs[8] = 'l';
+      cs[30] = 'E';
+      cs[22] = 'Y';
+    }
     if (y === 5) cs[16] = 'u';
     if (y === 6) cs[16] = 'o';
-    if (y === 9) { cs[12] = 'D'; cs[13] = 'D'; cs[14] = 'D'; }
+    if (y === 9) {
+      cs[12] = 'D';
+      cs[13] = 'D';
+      cs[14] = 'D';
+    }
     return cs.join('');
   });
   const level: LevelDef = {
-    id: 'a6', name: 'a6', biome: 'mine', players: { min: 2, max: 2 }, tether: 'any', stars: 1, parSec: 60, rows,
+    id: 'a6',
+    name: 'a6',
+    biome: 'mine',
+    players: { min: 2, max: 2 },
+    tether: 'any',
+    stars: 1,
+    parSec: 60,
+    rows,
     params: { D: { kind: 'sinker', travel: 3 }, E: { kind: 'geyser', periodSec: 4 } },
   };
-  const mkc = () => new ObstSession({ mode: 'free', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [level], campaign: { world: 'mine' } });
+  const mkc = () =>
+    new ObstSession({ mode: 'free', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [level], campaign: { world: 'mine' } });
   it('the view lists the lantern, the sinker, the geyser and an elastic ring after the plain one; passes checkWorldView; the darkness has a light on the lantern', () => {
     const s = mkc();
     const v = new SimWorldView(s);
-    play(s, 3300); v.sync();
+    play(s, 3300);
+    v.sync();
     const by = (id: string) => v.entities.find((e) => e.id === id);
     expect(by('lantern0')?.kind).toBe('lantern');
     expect(by('objD')?.kind).toBe('sinker');
@@ -287,25 +390,35 @@ describe('SimWorldView: campaign A6 entities (lantern, crystals, elastic ring, s
     const s = mkc();
     const v = new SimWorldView(s);
     play(s, 3300);
-    const p = s.world.players[0]!, q = s.world.players[1]!;
-    p.body.x = 8 * TILE + 7; p.body.y = 14 * TILE - 46;
-    play(s, 120); v.sync();
+    const p = s.world.players[0]!,
+      q = s.world.players[1]!;
+    p.body.x = 8 * TILE + 7;
+    p.body.y = 14 * TILE - 46;
+    play(s, 120);
+    v.sync();
     expect(v.entities.find((e) => e.id === 'lantern0')).toMatchObject({ on: true, holder: 0 });
     expect(v.dark!.lights[0]!.x).toBeCloseTo(p.body.x + 17, 0);
-    q.body.x = 12 * TILE + 7; q.body.y = 9 * TILE - 46; q.body.vy = 0;
-    play(s, 1500); v.sync(); // 1.5 s on the rock = 0.75 tile down of 3
+    q.body.x = 12 * TILE + 7;
+    q.body.y = 9 * TILE - 46;
+    q.body.vy = 0;
+    play(s, 1500);
+    v.sync(); // 1.5 s on the rock = 0.75 tile down of 3
     expect(v.entities.find((e) => e.id === 'objD')!.value).toBeGreaterThan(0.15);
     const seen = new Set<number>();
-    for (let t = 0; t < 280; t++) { s.advance(FRAME); v.sync(); seen.add(v.entities.find((e) => e.id === 'objE')!.value); }
+    for (let t = 0; t < 280; t++) {
+      s.advance(FRAME);
+      v.sync();
+      seen.add(v.entities.find((e) => e.id === 'objE')!.value);
+    }
     expect([...seen].sort()).toEqual([0, 0.5, 1]);
   });
   it('a quick-match session shows none of it: no dark, no elastic ring link', () => {
     const s = new ObstSession({ mode: 'chain', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1], levels: [level] });
     const v = new SimWorldView(s);
-    play(s, 3500); v.sync();
+    play(s, 3500);
+    v.sync();
     expect(v.dark).toBeNull();
     expect(v.ropes[0]!.links[0]!.elastic).toBe(false);
-    
   });
 });
 
@@ -315,7 +428,10 @@ describe('ObstRun: what main.ts wires to the scene, the bus and the phones', () 
     const seen: string[] = [];
     for (const k of ['obst.jump', 'obst.land', 'obst.levelClear', 'obst.runEnd', 'obst.goalEnter'] as const) bus.on(k, () => seen.push(k));
     let over = 0;
-    const r = new ObstRun({ mode: 'free', difficulty: 'normal', level: 0, seed: 1, slots: Array.from({ length: n }, (_, i) => i), levels }, { names: (s) => `J${s}`, bus, onOver: () => over++ });
+    const r = new ObstRun(
+      { mode: 'free', difficulty: 'normal', level: 0, seed: 1, slots: Array.from({ length: n }, (_, i) => i), levels },
+      { names: (s) => `J${s}`, bus, onOver: () => over++ },
+    );
     return { r, seen, over: () => over };
   };
   it('step() publishes the obst.* events of the world on the bus, as they happen', () => {
@@ -333,7 +449,10 @@ describe('ObstRun: what main.ts wires to the scene, the bus and the phones', () 
     for (let t = 0; t < 3200; t += FRAME) r.step(FRAME);
     expect(r.world()).toBe(first);
     const g = r.session.world.level.markers.goal[0]!;
-    for (const p of r.session.world.players) { p.body.x = g.x * TILE + 7; p.body.y = (g.y + 1) * TILE - 46; }
+    for (const p of r.session.world.players) {
+      p.body.x = g.x * TILE + 7;
+      p.body.y = (g.y + 1) * TILE - 46;
+    }
     for (let t = 0; t < 5000; t += FRAME) r.step(FRAME);
     expect(r.session.levelIndex).toBe(1);
     expect(r.world()).not.toBe(first);
@@ -344,7 +463,10 @@ describe('ObstRun: what main.ts wires to the scene, the bus and the phones', () 
     const { r, over, seen } = run([def(1)]);
     for (let t = 0; t < 3200; t += FRAME) r.step(FRAME);
     const g = r.session.world.level.markers.goal[0]!;
-    for (const p of r.session.world.players) { p.body.x = g.x * TILE + 7; p.body.y = (g.y + 1) * TILE - 46; }
+    for (const p of r.session.world.players) {
+      p.body.x = g.x * TILE + 7;
+      p.body.y = (g.y + 1) * TILE - 46;
+    }
     for (let t = 0; t < 4500; t += FRAME) r.step(FRAME);
     expect(seen).toContain('obst.runEnd');
     expect(over()).toBe(0);
@@ -352,14 +474,19 @@ describe('ObstRun: what main.ts wires to the scene, the bus and the phones', () 
     expect(over()).toBe(1);
     expect(r.session.summary()!.reason).toBe('complete');
   });
-  it('the camera verdict goes to the world: a player out of the picture long enough turns into a bubble (by the world\'s own clock)', () => {
+  it("the camera verdict goes to the world: a player out of the picture long enough turns into a bubble (by the world's own clock)", () => {
     const { r } = run([def(1)], 3);
     for (let t = 0; t < 3200; t += FRAME) r.step(FRAME);
     const w = r.session.world;
     w.players[2]!.body.x = 8 * TILE; // far behind the other two, who stay at the start
-    const fakeView = { camera: { result: { offscreen: [{ id: 2 }] } }, banner: () => {} } as unknown as Parameters<ObstRun['afterRender']>[0];
+    const fakeView = { camera: { result: { offscreen: [{ id: 2 }] } }, banner: () => {} } as unknown as Parameters<
+      ObstRun['afterRender']
+    >[0];
     const events: string[] = [];
-    for (let t = 0; t < 3000 && w.players[2]!.mode === 'active'; t += FRAME) { r.step(FRAME); r.afterRender(fakeView); }
+    for (let t = 0; t < 3000 && w.players[2]!.mode === 'active'; t += FRAME) {
+      r.step(FRAME);
+      r.afterRender(fakeView);
+    }
     events.push(w.players[2]!.mode);
     expect(events).toEqual(['bubble']);
   });
@@ -367,16 +494,28 @@ describe('ObstRun: what main.ts wires to the scene, the bus and the phones', () 
     const { r } = run([def(1), def(2)]);
     const shown: string[] = [];
     const v = { camera: { result: null }, banner: (t: string) => shown.push(t) } as unknown as Parameters<ObstRun['afterRender']>[0];
-    for (let t = 0; t < 3300; t += FRAME) { r.step(FRAME); r.afterRender(v); }
+    for (let t = 0; t < 3300; t += FRAME) {
+      r.step(FRAME);
+      r.afterRender(v);
+    }
     expect(shown.slice(0, 4)).toEqual(['3', '2', '1', '¡VAMOS!']);
     const g = r.session.world.level.markers.goal[0]!;
-    for (const p of r.session.world.players) { p.body.x = g.x * TILE + 7; p.body.y = (g.y + 1) * TILE - 46; }
-    for (let t = 0; t < 5000; t += FRAME) { r.step(FRAME); r.afterRender(v); }
+    for (const p of r.session.world.players) {
+      p.body.x = g.x * TILE + 7;
+      p.body.y = (g.y + 1) * TILE - 46;
+    }
+    for (let t = 0; t < 5000; t += FRAME) {
+      r.step(FRAME);
+      r.afterRender(v);
+    }
     expect(shown.filter((x) => x.startsWith('NIVEL 2'))).toHaveLength(1);
   });
   it('the music state: nothing while counting down, the biome and movement once the group runs, tension from the rope', () => {
     const bus = new Emitter<ObstEvents>();
-    const r = new ObstRun({ mode: 'chain', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1, 2, 3], levels: [def(1)] }, { names: String, bus, onOver: () => {} });
+    const r = new ObstRun(
+      { mode: 'chain', difficulty: 'normal', level: 0, seed: 1, slots: [0, 1, 2, 3], levels: [def(1)] },
+      { names: String, bus, onOver: () => {} },
+    );
     expect(r.musicState()).toMatchObject({ playing: false, biome: 'beach' });
     for (let t = 0; t < 3300; t += FRAME) r.step(FRAME);
     const idle = r.musicState();
@@ -389,7 +528,12 @@ describe('ObstRun: what main.ts wires to the scene, the bus and the phones', () 
       if (f === 30) sawMoving = r.musicState().moving;
       const snap = snapshot(r.session.world);
       const view = { tick: r.session.world.tick, grid: r.session.world.grid, players: snap.players, goal: snap.goal };
-      bots.forEach((b, i) => { const o = b.decide(view); if (o.jump) taps[i]![0]!++; if (o.grab) taps[i]![1]!++; r.receive(i, { x: o.x, y: o.y, presses: [taps[i]![0]!, taps[i]![1]!] }); });
+      bots.forEach((b, i) => {
+        const o = b.decide(view);
+        if (o.jump) taps[i]![0]!++;
+        if (o.grab) taps[i]![1]!++;
+        r.receive(i, { x: o.x, y: o.y, presses: [taps[i]![0]!, taps[i]![1]!] });
+      });
       r.step(FRAME);
     }
     const run1 = r.musicState();

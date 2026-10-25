@@ -14,8 +14,24 @@ import { isDish } from './recipes/defs';
 import { addFloorItem, pilesIn } from './floor';
 import type { Game, Item, Player, Station } from './overcooked';
 import {
-  ADJUST_MAX, AIM_MAX_MS, CATCH_RADIUS, COMEBACK_BEHIND, COMEBACK_RATE, DESECHOS_DRIP_MS, DESECHOS_OF, DESECHOS_PER_BAG, LAND_AFTER_MS, RETICLE_STEP_MS, RULES,
-  SMALL_KITCHEN_DECAY, WINDOW_MS, dropsItem, type Flight, type Sabotage, type SabotageMode, type SabTeam,
+  ADJUST_MAX,
+  AIM_MAX_MS,
+  CATCH_RADIUS,
+  COMEBACK_BEHIND,
+  COMEBACK_RATE,
+  DESECHOS_DRIP_MS,
+  DESECHOS_OF,
+  DESECHOS_PER_BAG,
+  LAND_AFTER_MS,
+  RETICLE_STEP_MS,
+  RULES,
+  SMALL_KITCHEN_DECAY,
+  WINDOW_MS,
+  dropsItem,
+  type Flight,
+  type Sabotage,
+  type SabotageMode,
+  type SabTeam,
 } from './sabotage-config';
 
 const key = (x: number, y: number) => `${x},${y}`;
@@ -29,14 +45,25 @@ export function createSabotage(g: Game, mode: SabotageMode, sigma: SigmaName | u
   const tiles = (t: number) => kitchenTiles(g, t);
   const a = new Set(tiles(0).map(([x, y]) => key(x, y)));
   const b = tiles(1);
-  if (a.size !== b.length || !b.every(([x, y]) => { const [tx, ty] = f(x, y, MAP_W, MAP_H); return a.has(key(tx, ty)); })) return null; // not twins: no fair sabotage
+  if (
+    a.size !== b.length ||
+    !b.every(([x, y]) => {
+      const [tx, ty] = f(x, y, MAP_W, MAP_H);
+      return a.has(key(tx, ty));
+    })
+  )
+    return null; // not twins: no fair sabotage
   const rules = RULES[mode];
   g.hazards = true;
   g.slipDrops = dropsItem(mode, g.difficulty);
   g.spoilRaw = rules.spoilRaw;
   return {
-    mode, rules, sigma,
-    teams: g.teams.map((): SabTeam => ({ desechos: 0, bags: 0, dripAt: DESECHOS_DRIP_MS, cooldownUntil: 0, launches: [], aim: null, flights: [] })),
+    mode,
+    rules,
+    sigma,
+    teams: g.teams.map(
+      (): SabTeam => ({ desechos: 0, bags: 0, dripAt: DESECHOS_DRIP_MS, cooldownUntil: 0, launches: [], aim: null, flights: [] }),
+    ),
     catapults: catapults.map((s) => [s!.tx, s!.ty] as Pos),
   };
 }
@@ -46,7 +73,11 @@ export function createSabotage(g: Game, mode: SabotageMode, sigma: SigmaName | u
 export function kitchenTiles(g: Game, team: number): Pos[] {
   const k = g.kitchens!;
   const out: Pos[] = [];
-  g.grid.forEach((row, y) => row.forEach((_t, x) => { if (isFloor(g.grid, x, y) && k.comp[y]![x] === k.regions[team]) out.push([x, y]); }));
+  g.grid.forEach((row, y) =>
+    row.forEach((_t, x) => {
+      if (isFloor(g.grid, x, y) && k.comp[y]![x] === k.regions[team]) out.push([x, y]);
+    }),
+  );
   return out;
 }
 /** Team 1's kitchen is the canonical frame: a tile of kitchen 0 goes through sigma, one of kitchen 1 stays. (sigma is its own inverse: the same call maps back.) */
@@ -66,7 +97,8 @@ export function sweepOrder(g: Game, target: number): Pos[] {
 /** Where the reticle is `elapsedMs` after the bag was loaded: one tile per RETICLE_STEP_MS, back and forth along the sweep. */
 export function reticleAt(g: Game, target: number, elapsedMs: number): Pos {
   const list = sweepOrder(g, target);
-  const n = list.length, cycle = Math.max(1, 2 * n - 2);
+  const n = list.length,
+    cycle = Math.max(1, 2 * n - 2);
   const k = Math.floor(Math.max(0, elapsedMs) / RETICLE_STEP_MS) % cycle;
   return list[k < n ? k : cycle - k]!;
 }
@@ -87,13 +119,18 @@ export function adjustLanding(g: Game, target: number, want: Pos, ignore?: Fligh
   let ring: Pos[] = [want];
   for (let d = 1; d <= ADJUST_MAX; d++) {
     const next: Pos[] = [];
-    for (const [x, y] of ring) for (const [dx, dy] of DIRS) {
-      const nx = x + dx, ny = y + dy;
-      if (seen.has(key(nx, ny)) || !isFloor(g.grid, nx, ny) || g.kitchens!.comp[ny]![nx] !== g.kitchens!.regions[target]) continue;
-      seen.add(key(nx, ny));
-      next.push([nx, ny]);
-    }
-    const ok = next.filter((p) => isValidLanding(g, target, p, ignore)).map((p) => ({ p, c: frame(g, target, p) })).sort((a, b) => a.c[1] - b.c[1] || a.c[0] - b.c[0]);
+    for (const [x, y] of ring)
+      for (const [dx, dy] of DIRS) {
+        const nx = x + dx,
+          ny = y + dy;
+        if (seen.has(key(nx, ny)) || !isFloor(g.grid, nx, ny) || g.kitchens!.comp[ny]![nx] !== g.kitchens!.regions[target]) continue;
+        seen.add(key(nx, ny));
+        next.push([nx, ny]);
+      }
+    const ok = next
+      .filter((p) => isValidLanding(g, target, p, ignore))
+      .map((p) => ({ p, c: frame(g, target, p) }))
+      .sort((a, b) => a.c[1] - b.c[1] || a.c[0] - b.c[0]);
     if (ok.length) return ok[0]!.p;
     ring = next;
   }
@@ -105,7 +142,9 @@ export const landingTiles = (g: Game, target: number): Pos[] => kitchenTiles(g, 
 // --- The catapult: can it take a bag now? -----------------------------------------------------------------------------------------------------
 export type CatapultState = 'ready' | 'busy' | 'cooldown' | 'window' | 'piles';
 export function catapultState(g: Game, team: number): CatapultState {
-  const sab = g.sab!, st = sab.teams[team]!, target = targetOf(g, team);
+  const sab = g.sab!,
+    st = sab.teams[team]!,
+    target = targetOf(g, team);
   if (st.aim) return 'busy';
   if (g.time < st.cooldownUntil) return 'cooldown';
   if (st.launches.filter((t) => g.time - t < WINDOW_MS).length >= sab.rules.perMinute) return 'window';
@@ -120,7 +159,8 @@ const cooldownOf = (g: Game, team: number) => {
 
 // --- Desechos and bags ------------------------------------------------------------------------------------------------------------------------
 function addDesechos(g: Game, team: number, n: number) {
-  const sab = g.sab!, st = sab.teams[team]!;
+  const sab = g.sab!,
+    st = sab.teams[team]!;
   if (st.bags >= sab.rules.stock) return 0; // the stock is full: the counter does not go on
   const before = st.desechos + st.bags * DESECHOS_PER_BAG;
   st.desechos += n;
@@ -132,7 +172,14 @@ function addDesechos(g: Game, team: number, n: number) {
   if (st.bags >= sab.rules.stock) st.desechos = Math.min(st.desechos, DESECHOS_PER_BAG - 1);
   return st.desechos + st.bags * DESECHOS_PER_BAG - before;
 }
-const worth = (item: Item) => (item === 'trashBag' ? DESECHOS_OF.bag : isDish(item) || item === 'burnt' ? DESECHOS_OF.pizza : item === 'trash' ? DESECHOS_OF.trash : DESECHOS_OF.item);
+const worth = (item: Item) =>
+  item === 'trashBag'
+    ? DESECHOS_OF.bag
+    : isDish(item) || item === 'burnt'
+      ? DESECHOS_OF.pizza
+      : item === 'trash'
+        ? DESECHOS_OF.trash
+        : DESECHOS_OF.item;
 
 /** A chef bins an item at X: it feeds the team's desechos (an item 1, a baked pizza 2, rubbish 1, a caught bag 3). */
 export function sabotageBinned(g: Game, p: Player, item: Item) {
@@ -150,10 +197,14 @@ export function sabotageTakeBag(g: Game, p: Player) {
 // --- Loading, aiming, throwing ----------------------------------------------------------------------------------------------------------------
 /** A with a bag at the catapult of the chef's kitchen. The bag is loaded and the reticle starts, or the catapult refuses it (the chef keeps the bag). */
 export function sabotageLoad(g: Game, p: Player, s: Station) {
-  const sab = g.sab!, st = sab.teams[p.team]!;
+  const sab = g.sab!,
+    st = sab.teams[p.team]!;
   if (p.item !== 'trashBag' || s.owner !== p.team) return;
   const state = catapultState(g, p.team);
-  if (state !== 'ready') { g.bus.emit('sabotage:blocked', { team: p.team, player: p.id, why: state }); return; }
+  if (state !== 'ready') {
+    g.bus.emit('sabotage:blocked', { team: p.team, player: p.id, why: state });
+    return;
+  }
   p.item = null;
   st.aim = { player: p.id, t0: g.time, step: 0 };
   Object.assign(p, { vx: 0, vy: 0, kx: 0, ky: 0, dashMs: 0 });
@@ -162,7 +213,10 @@ export function sabotageLoad(g: Game, p: Player, s: Station) {
 export const isAiming = (g: Game, p: Player) => !!g.sab && g.sab.teams[p.team]?.aim?.player === p.id;
 
 function launch(g: Game, team: number) {
-  const sab = g.sab!, st = sab.teams[team]!, aim = st.aim!, target = targetOf(g, team);
+  const sab = g.sab!,
+    st = sab.teams[team]!,
+    aim = st.aim!,
+    target = targetOf(g, team);
   const want = reticleAt(g, target, g.time - aim.t0);
   st.aim = null;
   st.cooldownUntil = g.time + cooldownOf(g, team);
@@ -170,7 +224,10 @@ function launch(g: Game, team: number) {
   st.launches.push(g.time);
   const from = sab.catapults[team]!;
   const to = adjustLanding(g, target, want);
-  if (!to) { g.bus.emit('sabotage:burst', { team, at: from }); return; } // nothing valid near: it bursts on the barrier, and the cooldown runs anyway
+  if (!to) {
+    g.bus.emit('sabotage:burst', { team, at: from });
+    return;
+  } // nothing valid near: it bursts on the barrier, and the cooldown runs anyway
   st.flights.push({ from, to, launchAt: g.time, landAt: g.time + LAND_AFTER_MS, by: team, target, double: sab.rules.double });
   g.bus.emit('sabotage:launch', { team, player: aim.player, from, landAt: to, ms: LAND_AFTER_MS });
 }
@@ -191,14 +248,21 @@ export function sabotageCancelAim(g: Game, p: Player) {
 function land(g: Game, f: Flight) {
   const st = g.sab!.teams[f.by]!;
   st.flights.splice(st.flights.indexOf(f), 1);
-  const to = adjustLanding(g, f.target, f.to) ; // something may have landed there meanwhile
-  if (!to) { g.bus.emit('sabotage:burst', { team: f.by, at: f.to }); return; }
+  const to = adjustLanding(g, f.target, f.to); // something may have landed there meanwhile
+  if (!to) {
+    g.bus.emit('sabotage:burst', { team: f.by, at: f.to });
+    return;
+  }
   // an empty-handed rival chef close to the landing tile catches the bag: no rubbish falls
-  let catcher: Player | null = null, best = CATCH_RADIUS + 1e-9;
+  let catcher: Player | null = null,
+    best = CATCH_RADIUS + 1e-9;
   for (const c of g.players.values()) {
     if (c.ghost || c.slip || c.item || c.team !== f.target) continue;
     const d = Math.hypot(c.x - (to[0] + 0.5), c.y - (to[1] + 0.5));
-    if (d < best) { catcher = c; best = d; }
+    if (d < best) {
+      catcher = c;
+      best = d;
+    }
   }
   if (catcher) {
     catcher.item = 'trashBag';
@@ -209,9 +273,16 @@ function land(g: Game, f: Flight) {
   const decay = rules.decayMs * (g.teams[f.target]!.k > 1 ? SMALL_KITCHEN_DECAY : 1);
   addFloorItem(g, { tx: to[0], ty: to[1], item: 'trash', kind: 'trash', team: f.target, by: f.by, ttlMs: decay });
   let extra: Pos | null = null;
-  if (f.double && pilesIn(g, f.target) + pendingAt(g, f.target) < rules.maxPiles) { // Caos: a second one on the neighbour that comes first in the canonical frame
-    const near = DIRS.map(([dx, dy]): Pos => [to[0] + dx, to[1] + dy]).filter((p) => isValidLanding(g, f.target, p)).map((p) => ({ p, c: frame(g, f.target, p) })).sort((a, b) => a.c[1] - b.c[1] || a.c[0] - b.c[0]);
-    if (near.length) { extra = near[0]!.p; addFloorItem(g, { tx: extra[0], ty: extra[1], item: 'trash', kind: 'trash', team: f.target, by: f.by, ttlMs: decay }); }
+  if (f.double && pilesIn(g, f.target) + pendingAt(g, f.target) < rules.maxPiles) {
+    // Caos: a second one on the neighbour that comes first in the canonical frame
+    const near = DIRS.map(([dx, dy]): Pos => [to[0] + dx, to[1] + dy])
+      .filter((p) => isValidLanding(g, f.target, p))
+      .map((p) => ({ p, c: frame(g, f.target, p) }))
+      .sort((a, b) => a.c[1] - b.c[1] || a.c[0] - b.c[0]);
+    if (near.length) {
+      extra = near[0]!.p;
+      addFloorItem(g, { tx: extra[0], ty: extra[1], item: 'trash', kind: 'trash', team: f.target, by: f.by, ttlMs: decay });
+    }
   }
   g.bus.emit('sabotage:land', { team: f.by, target: f.target, tile: to, double: !!extra, extra });
 }
@@ -221,7 +292,8 @@ function land(g: Game, f: Flight) {
 export function sabotageHint(g: Game, p: Player, target: Station | null, nearFloor: boolean): { a: string | null; b: string | null } {
   if (!g.sab || p.ghost) return { a: null, b: null };
   if (isAiming(g, p)) return { a: null, b: '¡Lanzar!' };
-  if (p.item === 'trashBag') return { a: target?.kind === 'catapult' ? 'Cargar' : target?.kind === 'trash' ? 'Botar bolsa' : null, b: null };
+  if (p.item === 'trashBag')
+    return { a: target?.kind === 'catapult' ? 'Cargar' : target?.kind === 'trash' ? 'Botar bolsa' : null, b: null };
   if (!p.item) {
     if (target?.kind === 'trash' && g.sab.teams[p.team]!.bags > 0) return { a: 'Tomar bolsa', b: null };
     if (!target && nearFloor) return { a: 'Recoger', b: null };
@@ -245,10 +317,14 @@ export function sabotageTick(g: Game) {
       if (g.time - st.aim.t0 >= AIM_MAX_MS) launch(g, i);
       else {
         const step = Math.floor((g.time - st.aim.t0) / RETICLE_STEP_MS);
-        if (step !== st.aim.step) { st.aim.step = step; g.bus.emit('sabotage:aim', { team: i, player: st.aim.player, at: reticleAt(g, targetOf(g, i), g.time - st.aim.t0) }); }
+        if (step !== st.aim.step) {
+          st.aim.step = step;
+          g.bus.emit('sabotage:aim', { team: i, player: st.aim.player, at: reticleAt(g, targetOf(g, i), g.time - st.aim.t0) });
+        }
       }
     }
   });
   // landings, in a fixed order: team by team, by landing time (they fall in different kitchens, so they do not depend on each other)
-  for (let i = 0; i < g.teams.length; i++) for (const f of [...sab.teams[i]!.flights].sort((a, b) => a.landAt - b.landAt)) if (g.time >= f.landAt) land(g, f);
+  for (let i = 0; i < g.teams.length; i++)
+    for (const f of [...sab.teams[i]!.flights].sort((a, b) => a.landAt - b.landAt)) if (g.time >= f.landAt) land(g, f);
 }

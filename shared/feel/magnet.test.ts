@@ -5,7 +5,20 @@ import { DIRS, fixedMap, isFloor } from '../maps';
 import { FOLD_MS } from '../recipes/defs';
 import { createSchool } from '../tutorial/school';
 import { Emitter, type GameEvents } from '../events';
-import { RADIUS, REACH, REACH_SLACK, SPEED, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player } from '../overcooked';
+import {
+  RADIUS,
+  REACH,
+  REACH_SLACK,
+  SPEED,
+  TICK_MS,
+  addPlayer,
+  createGame,
+  targetStation,
+  tick,
+  type Controls,
+  type Game,
+  type Player,
+} from '../overcooked';
 import { ASSIST_REACH_MULT } from '../assist';
 import { chefHint } from '../hints';
 import { addFloorItem } from '../floor';
@@ -15,16 +28,19 @@ const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const MAP = fixedMap('1')!; // the open kitchen: crates, boards and ovens along the top row, counters on both sides
 const round = (opts: Record<string, unknown> = {}, rows: readonly string[] = MAP.rows) => {
   const g = createGame({ mapId: MAP.id, rows, spawns: MAP.spawns, n: 2, seed: 3, ...opts });
-  addPlayer(g, 1, 0); addPlayer(g, 2, 1);
+  addPlayer(g, 1, 0);
+  addPlayer(g, 2, 1);
   return g;
 };
 const put = (p: Player, x: number, y: number, fx: number, fy: number) => Object.assign(p, { x, y, fx, fy, vx: 0, vy: 0 });
-const run = (g: Game, ms: number, c: Map<number, Controls> = new Map()) => { for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, c); };
+const run = (g: Game, ms: number, c: Map<number, Controls> = new Map()) => {
+  for (let t = 0; t < ms - 1e-6; t += TICK_MS) tick(g, c);
+};
 const at = (g: Game, tx: number, ty: number) => g.stations.find((s) => s.tx === tx && s.ty === ty)!;
 const away = (g: Game) => put(g.players.get(2)!, 14.5, 7.5, 0, 1); // the other chef, out of the way
 
 describe('the flag', () => {
-  it('is off by default, on by option, and the constants it scales are the sim\'s', () => {
+  it("is off by default, on by option, and the constants it scales are the sim's", () => {
     expect(round().magnet).toBeNull();
     expect(round({ magnet: true }).magnet).toBe(MAGNET_TUNING.normal);
     expect(round({ magnet: 'strong' }).magnet).toBe(MAGNET_TUNING.strong);
@@ -61,8 +77,12 @@ describe('target by score', () => {
   });
   it('reaches further than the plain rule (x1.3)', () => {
     const gap = 1.3; // body to the crate's edge
-    const off = round(), on = round({ magnet: true });
-    for (const g of [off, on]) { away(g); put(g.players.get(1)!, 3.5, 1 + gap + 0.0, 0, -1); }
+    const off = round(),
+      on = round({ magnet: true });
+    for (const g of [off, on]) {
+      away(g);
+      put(g.players.get(1)!, 3.5, 1 + gap + 0.0, 0, -1);
+    }
     expect(targetStation(off, off.players.get(1)!)).toBeNull();
     expect(targetStation(on, on.players.get(1)!)?.kind).toBe('crate');
     put(on.players.get(1)!, 3.5, 1 + 1.6, 0, -1);
@@ -70,8 +90,12 @@ describe('target by score', () => {
   });
   it('does not reach through a wall (the same crate with and without a wall tile in between)', () => {
     const rows = MAP.rows.map((r, y) => (y === 1 ? r.slice(0, 3) + '#' + r.slice(4) : r));
-    const open = round({ magnet: true }), walled = round({ magnet: true }, rows);
-    for (const g of [open, walled]) { away(g); put(g.players.get(1)!, 3.5, 2.3, 0, -1); } // 1.3 under the crate, a wall tile at (3,1) in the walled kitchen
+    const open = round({ magnet: true }),
+      walled = round({ magnet: true }, rows);
+    for (const g of [open, walled]) {
+      away(g);
+      put(g.players.get(1)!, 3.5, 2.3, 0, -1);
+    } // 1.3 under the crate, a wall tile at (3,1) in the walled kitchen
     expect(targetStation(open, open.players.get(1)!)?.tx).toBe(3);
     expect(targetStation(walled, walled.players.get(1)!)).toBeNull();
   });
@@ -84,7 +108,7 @@ describe('target by score', () => {
     put(p, 7.5, 1.5, 0, 1); // the same, looking down into the room: the whole row is behind
     expect(targetStation(g, p)).toBeNull();
   });
-  it('another team\'s station is never the target', () => {
+  it("another team's station is never the target", () => {
     const g = round({ magnet: true });
     away(g);
     const p = g.players.get(1)!;
@@ -136,7 +160,9 @@ describe('auto-orient and the pull', () => {
     put(p, 3.5, 1.5, 0.5, -0.5);
     run(g, 120, new Map([[1, { ...idle, x: 0.7, y: -0.7 }]])); // the stick says 45 degrees: that stays (the chef is blocked by the crate row anyway)
     expect(p.fx).toBeGreaterThan(0.6);
-    put(p, 3.5, 3, 0.5, -0.5); p.vx = 0; p.vy = -4; // fast and 1 tile from the row: no pull
+    put(p, 3.5, 3, 0.5, -0.5);
+    p.vx = 0;
+    p.vy = -4; // fast and 1 tile from the row: no pull
     const f0 = [p.fx, p.fy];
     tick(g, new Map());
     expect([p.fx, p.fy]).toEqual(f0);
@@ -164,7 +190,8 @@ describe('the dash hugs the station', () => {
     return { g, p };
   };
   it('a dash that ends 0.6 tiles from a station goes on until it touches it; without the flag it stops short', () => {
-    const on = dashAt(true), off = dashAt(false);
+    const on = dashAt(true),
+      off = dashAt(false);
     expect(on.p.y - 1).toBeLessThan(CHEF_RADIUS + 0.03); // pressed against the board row (y of the edge = 1)
     expect(off.p.y - 1).toBeGreaterThan(CHEF_RADIUS + 0.4);
     expect(on.p.y).toBeGreaterThan(CHEF_RADIUS + 0.99); // never through it
@@ -188,10 +215,14 @@ describe('the dash hugs the station', () => {
   });
 });
 
-describe('the phone\'s labels follow what the buttons will do', () => {
+describe("the phone's labels follow what the buttons will do", () => {
   it('beside a crate that only the magnet finds, A says what it takes and B still says Correr (the dash is free there)', () => {
-    const off = round(), on = round({ magnet: true });
-    for (const g of [off, on]) { away(g); put(g.players.get(1)!, 3.7, 1.95, 0.7, -0.7); } // 45 degrees, 0.95 under the crate: the old probe (0.8 ahead) falls short
+    const off = round(),
+      on = round({ magnet: true });
+    for (const g of [off, on]) {
+      away(g);
+      put(g.players.get(1)!, 3.7, 1.95, 0.7, -0.7);
+    } // 45 degrees, 0.95 under the crate: the old probe (0.8 ahead) falls short
     expect(targetStation(off, off.players.get(1)!)).toBeNull();
     expect(chefHint(off, off.players.get(1)!).a).not.toBe('Tomar masa');
     expect(chefHint(on, on.players.get(1)!).a).toBe('Tomar masa');
@@ -218,7 +249,7 @@ describe('rubbish beside a counter (hazards)', () => {
     put(g.players.get(1)!, 5.5, 7.3, 0.9, 0.44);
     expect(targetStation(g, g.players.get(1)!)?.kind).toBe('counter'); // the magnet does find a station here: the rubbish rule is what makes the pick-up work
   });
-  it('and the phone says Recoger, not the counter\'s label', () => {
+  it("and the phone says Recoger, not the counter's label", () => {
     const g = round({ magnet: true, hazards: true });
     away(g);
     addFloorItem(g, { tx: 6, ty: 7, item: 'trash', kind: 'trash', team: 0 });
@@ -236,12 +267,23 @@ describe('the Carta del día and the school with the magnet', () => {
     const oven = g.stations.find((x) => x.kind === 'pot')!;
     oven.inputs = [0, 1];
     const [dx, dy] = DIRS.find(([x, y]) => isFloor(g.grid, oven.tx + x, oven.ty + y))!;
-    const a = (50 * Math.PI) / 180, [fx, fy] = [-dx, -dy], c = Math.cos(a), sn = Math.sin(a);
-    Object.assign(g.players.get(1)!, { x: oven.tx + dx + 0.5 + dx * 0.4, y: oven.ty + dy + 0.5 + dy * 0.4, fx: fx * c - fy * sn, fy: fx * sn + fy * c, vx: 0, vy: 0 }); // 0.9 from the oven's edge
+    const a = (50 * Math.PI) / 180,
+      [fx, fy] = [-dx, -dy],
+      c = Math.cos(a),
+      sn = Math.sin(a);
+    Object.assign(g.players.get(1)!, {
+      x: oven.tx + dx + 0.5 + dx * 0.4,
+      y: oven.ty + dy + 0.5 + dy * 0.4,
+      fx: fx * c - fy * sn,
+      fy: fx * sn + fy * c,
+      vx: 0,
+      vy: 0,
+    }); // 0.9 from the oven's edge
     return { g, oven };
   };
   it('Picar at the oven folds the calzone although the chef is not looking straight at it; the old probe does not reach, and the label says Doblar', () => {
-    const on = folding(true), off = folding(false);
+    const on = folding(true),
+      off = folding(false);
     expect(targetStation(on.g, on.g.players.get(1)!)).toBe(on.oven);
     expect(targetStation(off.g, off.g.players.get(1)!)).toBeNull();
     expect(chefHint(on.g, on.g.players.get(1)!).b).toBe('Doblar');
@@ -282,7 +324,12 @@ describe('Ayudante and the magnet live together', () => {
     tick(g, new Map([[1, { ...idle, b: true }]]));
     tick(g, new Map());
     expect(p.chopLatch).toBe(true);
-    const speedAfter = (() => { put(p, 7.5, 4, 0, 1); p.chopLatch = false; tick(g, new Map([[1, { ...idle, x: 1 }]])); return p.vx; })();
+    const speedAfter = (() => {
+      put(p, 7.5, 4, 0, 1);
+      p.chopLatch = false;
+      tick(g, new Map([[1, { ...idle, x: 1 }]]));
+      return p.vx;
+    })();
     expect(speedAfter).toBeCloseTo(SPEED, 5);
   });
 });

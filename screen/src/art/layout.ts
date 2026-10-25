@@ -24,12 +24,13 @@ export const VS_CLOCK_HALF = 52; // the clock (88 px disc, ring inside) spans 44
  * a horizontal wall and the card sits at its middle. Returns tile units: x in [0, 16], y in [0, 9].
  */
 export function vipCardAt(centres: readonly { x: number; y: number }[], cols: number, rows: number): { x: number; y: number } {
-  const xs = centres.map((c) => c.x), ys = centres.map((c) => c.y);
-  const spreadX = Math.max(...xs) - Math.min(...xs), spreadY = Math.max(...ys) - Math.min(...ys);
+  const xs = centres.map((c) => c.x),
+    ys = centres.map((c) => c.y);
+  const spreadX = Math.max(...xs) - Math.min(...xs),
+    spreadY = Math.max(...ys) - Math.min(...ys);
   return spreadX >= spreadY ? { x: cols / 2, y: 2.5 } : { x: cols / 2, y: rows / 2 };
 }
 export const clockText = (ms: number) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
-

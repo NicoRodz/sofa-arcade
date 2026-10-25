@@ -74,7 +74,12 @@ export const SLIP_TRIGGER = 0.35; // tiles: the chef's centre this close to the 
 export const SLIP_MIN_SPEED = 0.2; // share of SPEED under which the slide goes along the facing instead of the velocity
 export const SLIP_DASH_EXTRA = 0.5; // tiles added when the chef enters dashing
 export const SLIP_PUSH = 0.5; // the chef a slider runs into gets half of the slider's speed, and never slips from it
-export interface SlipParams { dist: number; slideMs: number; recoverMs: number; immuneMs: number }
+export interface SlipParams {
+  dist: number;
+  slideMs: number;
+  recoverMs: number;
+  immuneMs: number;
+}
 export const SLIP: Record<Difficulty, SlipParams> = {
   easy: { dist: 1.5, slideMs: 450, recoverMs: 100, immuneMs: 2000 },
   normal: { dist: 2.5, slideMs: 600, recoverMs: 150, immuneMs: 1500 },
@@ -97,10 +102,30 @@ export interface FloorItem {
   expiresAt: number; // match time; Infinity = stays
 }
 /** What a chef who slips is doing: the slide starts at `t0` along `dir`, goes `dist` tiles in `slideMs`, then gets up for `recoverMs`. */
-export interface Slip { t0: number; dir: Pos; dist: number; slideMs: number; recoverMs: number; stopped: boolean; hit: number[] }
+export interface Slip {
+  t0: number;
+  dir: Pos;
+  dist: number;
+  slideMs: number;
+  recoverMs: number;
+  stopped: boolean;
+  hit: number[];
+}
 
-export interface Aim { player: number; t0: number; step: number } // step: last reticle index announced
-export interface Flight { from: Pos; to: Pos; launchAt: number; landAt: number; by: number; target: number; double: boolean }
+export interface Aim {
+  player: number;
+  t0: number;
+  step: number;
+} // step: last reticle index announced
+export interface Flight {
+  from: Pos;
+  to: Pos;
+  launchAt: number;
+  landAt: number;
+  by: number;
+  target: number;
+  double: boolean;
+}
 export interface SabTeam {
   desechos: number; // 0..DESECHOS_PER_BAG (fractional while the comeback trickle is faster)
   bags: number; // bags waiting at the bin

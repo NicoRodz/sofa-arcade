@@ -20,7 +20,9 @@ export interface Host {
 export class MainScene extends Phaser.Scene {
   private world: World | null = null;
   private pending: { game: Game; mapId: string; seed: number; view?: RoundView } | null = null;
-  constructor(private host: Host) { super('main'); }
+  constructor(private host: Host) {
+    super('main');
+  }
 
   create() {
     buildFoodTextures(this);
@@ -29,15 +31,34 @@ export class MainScene extends Phaser.Scene {
     buildPuestoIcons(this);
     buildEventTextures(this);
     this.cameras.main.setBackgroundColor(C.cocoa);
-    if (this.pending) { const p = this.pending; this.pending = null; this.startRound(p.game, p.mapId, p.seed, p.view); }
+    if (this.pending) {
+      const p = this.pending;
+      this.pending = null;
+      this.startRound(p.game, p.mapId, p.seed, p.view);
+    }
   }
 
   startRound(game: Game, mapId: string, seed: number, view?: RoundView) {
-    if (!this.sys.isActive() || !this.textures.exists('chef_shadow')) { this.pending = { game, mapId, seed, view }; return; }
+    if (!this.sys.isActive() || !this.textures.exists('chef_shadow')) {
+      this.pending = { game, mapId, seed, view };
+      return;
+    }
     this.endRound();
-    this.world = new World(this, game, () => this.host.players(), () => this.host.puestos(), gameBus, mapId, seed, view);
+    this.world = new World(
+      this,
+      game,
+      () => this.host.players(),
+      () => this.host.puestos(),
+      gameBus,
+      mapId,
+      seed,
+      view,
+    );
   }
-  endRound() { this.world?.destroy(); this.world = null; }
+  endRound() {
+    this.world?.destroy();
+    this.world = null;
+  }
 
   update(_t: number, delta: number) {
     this.host.step(delta);

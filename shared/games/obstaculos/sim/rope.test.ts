@@ -22,8 +22,14 @@ describe('cordadas (plan §4)', () => {
   });
   it('buildRopes links consecutive slots of each cordada in slot order, whatever order the slots come in', () => {
     const r = buildRopes([6, 1, 3, 0, 2, 5], undefined);
-    expect(r.map((x) => x.members)).toEqual([[0, 1, 2], [3, 5, 6]]);
-    expect(r[0]!.links.map((l) => [l.a, l.b])).toEqual([[0, 1], [1, 2]]);
+    expect(r.map((x) => x.members)).toEqual([
+      [0, 1, 2],
+      [3, 5, 6],
+    ]);
+    expect(r[0]!.links.map((l) => [l.a, l.b])).toEqual([
+      [0, 1],
+      [1, 2],
+    ]);
   });
   it('a free-mode world has no ropes; a chain world has them', () => {
     expect(world(level(hall()), { mode: 'free' }).ropes).toHaveLength(0);
@@ -36,21 +42,32 @@ describe('cordadas (plan §4)', () => {
 describe('rope invariants', () => {
   const randomWalk = (seed: number) => {
     const rng = mulberry32(seed);
-    const dir = Array<number>(8).fill(0), until = Array<number>(8).fill(0);
+    const dir = Array<number>(8).fill(0),
+      until = Array<number>(8).fill(0);
     return (s: number, t: number) => {
-      if (t >= until[s]!) { dir[s] = [-1, 0, 1][Math.floor(rng() * 3)]!; until[s] = t + 20 + Math.floor(rng() * 60); }
+      if (t >= until[s]!) {
+        dir[s] = [-1, 0, 1][Math.floor(rng() * 3)]!;
+        until[s] = t + 20 + Math.floor(rng() * 60);
+      }
       return inp({ move: dir[s]!, jump: rng() < 0.03, down: rng() < 0.05 });
     };
   };
   it('8 players, 3600 steps of random input: no link ever exceeds 1.05 L and nothing explodes', () => {
     const w = world(level(hall(80, 16)), { slots: [0, 1, 2, 3, 4, 5, 6, 7] });
-    let maxT = 0, maxV = 0, links = 0;
+    let maxT = 0,
+      maxV = 0,
+      links = 0;
     run(w, 3600, randomWalk(7), () => {
-      for (const r of w.ropes) for (const l of r.links) { maxT = Math.max(maxT, dist(pl(w, l.a).body, pl(w, l.b).body) / ROPE_LEN); links++; }
+      for (const r of w.ropes)
+        for (const l of r.links) {
+          maxT = Math.max(maxT, dist(pl(w, l.a).body, pl(w, l.b).body) / ROPE_LEN);
+          links++;
+        }
       for (const p of w.players) {
         expect(Number.isFinite(p.body.x + p.body.y + p.body.vx + p.body.vy)).toBe(true);
         maxV = Math.max(maxV, Math.abs(p.body.vx), Math.abs(p.body.vy));
-        expect(p.body.x).toBeGreaterThan(0); expect(p.body.x).toBeLessThan(80 * TILE);
+        expect(p.body.x).toBeGreaterThan(0);
+        expect(p.body.x).toBeLessThan(80 * TILE);
       }
     });
     expect(links).toBe(3600 * 6); // two cordadas of 4: 3 links each, all of them active all the time
@@ -61,9 +78,14 @@ describe('rope invariants', () => {
   it('a chain of 4 dragged by its tail end stays inside 1.05 L per link', () => {
     const w = world(level(hall(80, 16)), { slots: [0, 1, 2, 3] });
     let maxT = 0;
-    run(w, 600, (s) => (s === 3 ? inp({ move: 1 }) : inp({ move: 0 })), () => {
-      for (const l of w.ropes[0]!.links) maxT = Math.max(maxT, dist(pl(w, l.a).body, pl(w, l.b).body) / ROPE_LEN);
-    });
+    run(
+      w,
+      600,
+      (s) => (s === 3 ? inp({ move: 1 }) : inp({ move: 0 })),
+      () => {
+        for (const l of w.ropes[0]!.links) maxT = Math.max(maxT, dist(pl(w, l.a).body, pl(w, l.b).body) / ROPE_LEN);
+      },
+    );
     expect(maxT).toBeLessThanOrEqual(1.05);
     expect(pl(w, 0).body.x).toBeGreaterThan(pl(w, 0).body.x - 1); // sanity: finite
     expect(pl(w, 3).body.x - pl(w, 0).body.x).toBeLessThanOrEqual(3 * ROPE_LEN * 1.05);
@@ -73,7 +95,8 @@ describe('rope invariants', () => {
 describe('unilateral link', () => {
   it('a slack rope moves nobody: two players closer than L keep their positions exactly', () => {
     const w = world(level(hall()), { slots: [0, 1] });
-    teleport(w, 0, 10, 11); teleport(w, 1, 12, 11);
+    teleport(w, 0, 10, 11);
+    teleport(w, 1, 12, 11);
     run(w, 5);
     const x0 = [pl(w, 0).body.x, pl(w, 1).body.x];
     run(w, 30);
@@ -81,7 +104,8 @@ describe('unilateral link', () => {
   });
   it('a rope never pushes: walking toward each other, nobody is shoved away', () => {
     const w = world(level(hall()), { slots: [0, 1] });
-    teleport(w, 0, 10, 11); teleport(w, 1, 14, 11);
+    teleport(w, 0, 10, 11);
+    teleport(w, 1, 14, 11);
     run(w, 5);
     const gap0 = pl(w, 1).body.x - pl(w, 0).body.x;
     run(w, 30, (s) => inp({ move: s === 0 ? 1 : -1 }));
@@ -89,7 +113,8 @@ describe('unilateral link', () => {
   });
   it('pulls the far one back: a runner stopped at L, the other ends at the end of the rope', () => {
     const w = world(level(hall()), { slots: [0, 1] });
-    teleport(w, 0, 10, 11); teleport(w, 1, 11, 11);
+    teleport(w, 0, 10, 11);
+    teleport(w, 1, 11, 11);
     run(w, 200, (s) => (s === 1 ? inp({ move: 1 }) : undefined));
     const d = dist(pl(w, 0).body, pl(w, 1).body);
     expect(d).toBeGreaterThan(ROPE_LEN * 0.9);
@@ -101,7 +126,8 @@ describe('unilateral link', () => {
 describe('inverse masses (ground 1/3, air 1, planted 1/8, anchored 0)', () => {
   const pullTest = (plantFirst: boolean) => {
     const w = world(level(hall()), { slots: [0, 1] });
-    teleport(w, 0, 10, 11); teleport(w, 1, 12, 11);
+    teleport(w, 0, 10, 11);
+    teleport(w, 1, 12, 11);
     run(w, 5);
     if (plantFirst) run(w, 1, (s) => (s === 0 ? inp({ grab: true }) : undefined));
     const x0 = pl(w, 0).body.x;
@@ -109,7 +135,8 @@ describe('inverse masses (ground 1/3, air 1, planted 1/8, anchored 0)', () => {
     return { dragged: pl(w, 0).body.x - x0, planted: pl(w, 0).planted };
   };
   it('a planted player is dragged much less than a standing one (1/8 against 1/3)', () => {
-    const free = pullTest(false), planted = pullTest(true);
+    const free = pullTest(false),
+      planted = pullTest(true);
     expect(planted.planted).toBe(true);
     expect(planted.dragged).toBeLessThan(free.dragged * 0.5);
     expect(free.dragged).toBeGreaterThan(100);
@@ -117,7 +144,8 @@ describe('inverse masses (ground 1/3, air 1, planted 1/8, anchored 0)', () => {
   it('an anchored player does not move at all and the rope stops the other at L', () => {
     const rows = hall(60, 14, { 5: put(hall(60, 14)[5]!, 10, 'o') });
     const w = world(level(rows), { slots: [0, 1] });
-    teleport(w, 0, 10, 6); teleport(w, 1, 9, 11);
+    teleport(w, 0, 10, 6);
+    teleport(w, 1, 9, 11);
     run(w, 1, (s) => (s === 0 ? inp({ grab: true }) : undefined));
     expect(pl(w, 0).holding?.kind).toBe('ring');
     const a = { x: pl(w, 0).body.x, y: pl(w, 0).body.y };
@@ -127,8 +155,12 @@ describe('inverse masses (ground 1/3, air 1, planted 1/8, anchored 0)', () => {
   });
   it('the correction of one iteration is capped at 24 px', () => {
     const g = buildGrid(parseLevelStrict(level(hall())), 'chain');
-    const A = newBody(0, 100, 100), B = newBody(1, 100 + 600, 100);
-    const nodes: RopeNode[] = [{ body: A, w: 1, active: true }, { body: B, w: 1, active: true }];
+    const A = newBody(0, 100, 100),
+      B = newBody(1, 100 + 600, 100);
+    const nodes: RopeNode[] = [
+      { body: A, w: 1, active: true },
+      { body: B, w: 1, active: true },
+    ];
     const rope = buildRopes([0, 1], undefined);
     solveRopes(rope, nodes, g, () => 0);
     const moved = Math.abs(A.x - 100) + Math.abs(B.x - 700);
@@ -159,8 +191,11 @@ describe('rope jump, relink and valve', () => {
   it('hangingOnRope: true only for the lower end of a taut link, airborne', () => {
     const w = world(level(hall()), { slots: [0, 1] });
     const bodies = [pl(w, 0).body, pl(w, 1).body];
-    bodies[0]!.y = 100; bodies[1]!.y = 100 + 150; bodies[0]!.x = bodies[1]!.x;
-    w.ropes[0]!.links[0]!.active = true; w.ropes[0]!.links[0]!.taut = true;
+    bodies[0]!.y = 100;
+    bodies[1]!.y = 100 + 150;
+    bodies[0]!.x = bodies[1]!.x;
+    w.ropes[0]!.links[0]!.active = true;
+    w.ropes[0]!.links[0]!.taut = true;
     expect(hangingOnRope(w.ropes, 1, bodies)).toBe(true);
     expect(hangingOnRope(w.ropes, 0, bodies)).toBe(false);
     w.ropes[0]!.links[0]!.taut = false;
@@ -168,7 +203,9 @@ describe('rope jump, relink and valve', () => {
   });
   it('when a middle player leaves, the neighbours hook up and the new link eases to L in 0.5 s', () => {
     const w = world(level(hall(80, 16)), { slots: [0, 1, 2] });
-    teleport(w, 0, 10, 13); teleport(w, 1, 12, 13); teleport(w, 2, 20, 13);
+    teleport(w, 0, 10, 13);
+    teleport(w, 1, 12, 13);
+    teleport(w, 2, 20, 13);
     run(w, 3);
     setConnected(w, 1, false);
     const link = w.ropes[0]!.links[0]!;
@@ -185,7 +222,8 @@ describe('rope jump, relink and valve', () => {
     // a 6-tile wall between them: the rope cannot pull through it
     const rows = hall(60, 14).map((r, y) => (y < 12 ? put(r, 20, '######') : r));
     const w = world(level(rows), { slots: [0, 1] });
-    teleport(w, 0, 19, 11); teleport(w, 1, 26, 11);
+    teleport(w, 0, 19, 11);
+    teleport(w, 1, 26, 11);
     const ev = run(w, 120);
     const b = of(ev, 'obst.bubble');
     expect(b).toHaveLength(1);
@@ -194,7 +232,11 @@ describe('rope jump, relink and valve', () => {
     expect(run(w, 1).length).toBeGreaterThanOrEqual(0);
   });
   it('same inputs, same hash: the rope is deterministic', () => {
-    const mk = () => { const w = world(level(hall(80, 16)), { slots: [0, 1, 2, 3, 4] }); run(w, 600, (s, t) => inp({ move: Math.sin((t + s * 17) / 40) > 0 ? 1 : -1, jump: (t + s * 7) % 50 === 0 })); return hashState(w); };
+    const mk = () => {
+      const w = world(level(hall(80, 16)), { slots: [0, 1, 2, 3, 4] });
+      run(w, 600, (s, t) => inp({ move: Math.sin((t + s * 17) / 40) > 0 ? 1 : -1, jump: (t + s * 7) % 50 === 0 }));
+      return hashState(w);
+    };
     expect(mk()).toBe(mk());
   });
 });

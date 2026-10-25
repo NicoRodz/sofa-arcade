@@ -15,14 +15,28 @@ export function createEnemies(p: ParsedLevel, camp: CampaignParams): EnemyE[] {
   const make = (i: number, dir: 1 | -1): EnemyE => {
     const d = list[i % list.length]!;
     const cx = (d.x + 0.5) * TILE;
-    return { x: cx - ENEMY_W / 2, y: (d.y + 1) * TILE - ENEMY_H, w: ENEMY_W, h: ENEMY_H, homeX: cx, range: d.range * TILE, dir, stun: 0, cool: 0, vy: 0 };
+    return {
+      x: cx - ENEMY_W / 2,
+      y: (d.y + 1) * TILE - ENEMY_H,
+      w: ENEMY_W,
+      h: ENEMY_H,
+      homeX: cx,
+      range: d.range * TILE,
+      dir,
+      stun: 0,
+      cool: 0,
+      vy: 0,
+    };
   };
   const out = list.map((_, i) => make(i, 1));
   if (list.length) for (let i = 0; i < camp.enemyExtra; i++) out.push(make(i, -1));
   return out;
 }
 
-const floorAt = (g: TileGrid, x: number, row: number): boolean => { const k = tileAt(g, tileOf(x), row); return isSolidKind(k) || isOneWayKind(k); };
+const floorAt = (g: TileGrid, x: number, row: number): boolean => {
+  const k = tileAt(g, tileOf(x), row);
+  return isSolidKind(k) || isOneWayKind(k);
+};
 
 export function stepEnemies(w: World): void {
   const c = w.camp;
@@ -31,14 +45,28 @@ export function stepEnemies(w: World): void {
   const push = c.enemyPushPxPerSec * DT;
   w.ent.enemies.forEach((e, i) => {
     if (e.cool > 0) e.cool--;
-    const feet = e.y + e.h, cx = e.x + e.w / 2;
-    if (!(floorAt(w.grid, cx, Math.round(feet / TILE)) && Math.abs(feet - Math.round(feet / TILE) * TILE) < 0.5)) { // no floor under it: fall until there is one
+    const feet = e.y + e.h,
+      cx = e.x + e.w / 2;
+    if (!(floorAt(w.grid, cx, Math.round(feet / TILE)) && Math.abs(feet - Math.round(feet / TILE) * TILE) < 0.5)) {
+      // no floor under it: fall until there is one
       e.vy = Math.min(MAX_FALL, e.vy + ENEMY_GRAVITY * DT);
-      const dy = e.vy * DT, feetNew = feet + dy;
+      const dy = e.vy * DT,
+        feetNew = feet + dy;
       let land = -1;
-      for (let ty = Math.ceil((feet - 0.01) / TILE); ty <= Math.floor(feetNew / TILE); ty++) if (floorAt(w.grid, cx, ty)) { land = ty; break; }
-      if (land >= 0) { e.y = land * TILE - e.h; e.vy = 0; } else e.y += dy;
-      if (e.y > (w.level.h + 1) * TILE) { e.x = e.homeX - e.w / 2; e.y = 0; e.vy = 0; } // fell out of the level: back over its home
+      for (let ty = Math.ceil((feet - 0.01) / TILE); ty <= Math.floor(feetNew / TILE); ty++)
+        if (floorAt(w.grid, cx, ty)) {
+          land = ty;
+          break;
+        }
+      if (land >= 0) {
+        e.y = land * TILE - e.h;
+        e.vy = 0;
+      } else e.y += dy;
+      if (e.y > (w.level.h + 1) * TILE) {
+        e.x = e.homeX - e.w / 2;
+        e.y = 0;
+        e.vy = 0;
+      } // fell out of the level: back over its home
     } else e.vy = 0;
     if (e.stun > 0) e.stun--;
     else if (e.vy === 0) {
@@ -55,15 +83,22 @@ export function stepEnemies(w: World): void {
       if (!isActive(p) || p.carriedBy >= 0 || p.lift) continue;
       const b = p.body;
       if (!overlaps(bodyRect(b), er)) continue;
-      if (b.vy > 0 && b.y + PLAYER_H - e.y <= e.h * 0.6 + b.vy * DT) { // landed on top: stun it, hop
+      if (b.vy > 0 && b.y + PLAYER_H - e.y <= e.h * 0.6 + b.vy * DT) {
+        // landed on top: stun it, hop
         e.stun = Math.round(c.enemyStunSec / DT);
-        b.vy = -JUMP_V0 * ENEMY_STOMP_BOUNCE; b.grounded = false; b.supportId = -1; b.air = 255;
+        b.vy = -JUMP_V0 * ENEMY_STOMP_BOUNCE;
+        b.grounded = false;
+        b.supportId = -1;
+        b.air = 255;
         emit(w, 'obst.enemy', { enemy: i, action: 'stun', player: p.slot });
         return;
       }
       const dir = b.x + PLAYER_W / 2 >= e.x + e.w / 2 ? 1 : -1;
       pushBody(b, dir * push, 0, w.grid);
-      if (e.cool === 0) { e.cool = ENEMY_PUSH_COOL; emit(w, 'obst.enemy', { enemy: i, action: 'push', player: p.slot }); }
+      if (e.cool === 0) {
+        e.cool = ENEMY_PUSH_COOL;
+        emit(w, 'obst.enemy', { enemy: i, action: 'push', player: p.slot });
+      }
     }
   });
 }

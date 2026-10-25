@@ -10,7 +10,15 @@ export const BUDGET_PATH = join(ROOT, 'size-budget.json');
 export type Limit = { soft: number; hard: number };
 export type Entry = { max: number; until: string };
 export type Budget = {
-  limits: { code: Limit; test: Limit; markup: Limit; index: { hard: number }; folder: Limit; shrinkSlack: number; folderShrinkSlack: number };
+  limits: {
+    code: Limit;
+    test: Limit;
+    markup: Limit;
+    index: { hard: number };
+    folder: Limit;
+    shrinkSlack: number;
+    folderShrinkSlack: number;
+  };
   exemptDirs: string[];
   files: Record<string, Entry>;
   folders: Record<string, Entry>;
@@ -40,7 +48,10 @@ export function kindOf(path: string): 'index' | 'test' | 'code' | 'markup' | nul
 
 // index.ts must hold re-exports only: drop comments and every `export ... from '...'`, nothing else may remain.
 export function onlyReexports(src: string): boolean {
-  const noComments = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/.*$/gm, '');
+  const noComments = src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+    .replace(/\s\/\/.*$/gm, '');
   const rest = noComments.replace(/export\s+(type\s+)?(\*(\s+as\s+\w+)?|\{[^}]*\})\s+from\s+['"][^'"]+['"]\s*;?/g, '');
   return rest.trim() === '';
 }
@@ -58,7 +69,8 @@ export function evaluate(files: FileInfo[], b: Budget, today: string): Result {
     if (!e) return false;
     if (e.until < today) errors.push(`${path}: exception expired on ${e.until} (${n} ${what}); split it or renew the date on purpose`);
     if (n > e.max) errors.push(`${path}: grew to ${n} ${what}, above its exception max ${e.max}`);
-    else if (n < e.max - slack) errors.push(`${path}: shrank to ${n} ${what}, more than ${slack} below max ${e.max}; lower max (npm run size:ratchet)`);
+    else if (n < e.max - slack)
+      errors.push(`${path}: shrank to ${n} ${what}, more than ${slack} below max ${e.max}; lower max (npm run size:ratchet)`);
     return true;
   };
 
@@ -72,17 +84,22 @@ export function evaluate(files: FileInfo[], b: Budget, today: string): Result {
     }
     const entry = b.files[f.path];
     if (kind === 'index') {
-      const bad = f.lines > L.index.hard ? `${f.lines} lines (hard ${L.index.hard})` : f.reexportOnly === false ? 'holds more than re-exports' : '';
-      if (!checkEntry(f.path, f.lines, entry, L.shrinkSlack, 'lines') && bad) errors.push(`${f.path}: index.ts ${bad} and is not in the exception list`);
+      const bad =
+        f.lines > L.index.hard ? `${f.lines} lines (hard ${L.index.hard})` : f.reexportOnly === false ? 'holds more than re-exports' : '';
+      if (!checkEntry(f.path, f.lines, entry, L.shrinkSlack, 'lines') && bad)
+        errors.push(`${f.path}: index.ts ${bad} and is not in the exception list`);
       continue;
     }
     const lim = kind === 'test' ? L.test : kind === 'markup' ? L.markup : L.code;
     if (checkEntry(f.path, f.lines, entry, L.shrinkSlack, 'lines')) continue;
-    if (f.lines > lim.hard) errors.push(`${f.path}: ${f.lines} lines, over the hard limit ${lim.hard} (${kind}) and not in the exception list`);
+    if (f.lines > lim.hard)
+      errors.push(`${f.path}: ${f.lines} lines, over the hard limit ${lim.hard} (${kind}) and not in the exception list`);
     else if (f.lines > lim.soft) warnings.push(`${f.path}: ${f.lines} lines, over the soft limit ${lim.soft} (${kind})`);
   }
 
-  for (const path of Object.keys(b.files)) if (!seen.has(path)) errors.push(`${path}: listed in size-budget.json but the file no longer exists; remove the entry (or update the path)`);
+  for (const path of Object.keys(b.files))
+    if (!seen.has(path))
+      errors.push(`${path}: listed in size-budget.json but the file no longer exists; remove the entry (or update the path)`);
 
   for (const [dir, n] of dirCount) {
     const entry = b.folders[dir];
@@ -90,7 +107,9 @@ export function evaluate(files: FileInfo[], b: Budget, today: string): Result {
     if (n > L.folder.hard) errors.push(`${dir}/: ${n} code files, over the hard limit ${L.folder.hard} and not in the exception list`);
     else if (n > L.folder.soft) warnings.push(`${dir}/: ${n} code files, over the soft limit ${L.folder.soft}`);
   }
-  for (const dir of Object.keys(b.folders)) if (!dirCount.has(dir)) errors.push(`${dir}/: listed in size-budget.json (folders) but it has no code files any more; remove the entry`);
+  for (const dir of Object.keys(b.folders))
+    if (!dirCount.has(dir))
+      errors.push(`${dir}/: listed in size-budget.json (folders) but it has no code files any more; remove the entry`);
 
   return { errors, warnings };
 }
@@ -101,13 +120,21 @@ export function loadBudget(): Budget {
 
 // every non-ignored file of the checkout, tracked or not, so a new big file is seen before it is committed
 export function scan(b: Budget): FileInfo[] {
-  const out = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26 });
+  const out = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 1 << 26,
+  });
   const files: FileInfo[] = [];
   for (const path of out.split('\0')) {
     const kind = path && kindOf(path);
     if (!kind) continue;
     let src: string;
-    try { src = readFileSync(join(ROOT, path), 'utf8'); } catch { continue; } // deleted in the working tree
+    try {
+      src = readFileSync(join(ROOT, path), 'utf8');
+    } catch {
+      continue;
+    } // deleted in the working tree
     files.push({ path, lines: lineCount(src), reexportOnly: kind === 'index' && !isExempt(path, b) ? onlyReexports(src) : undefined });
   }
   return files;
@@ -116,7 +143,16 @@ export function scan(b: Budget): FileInfo[] {
 export const todayISO = () => process.env.SIZE_BUDGET_TODAY ?? new Date().toISOString().slice(0, 10);
 
 // Files the plan splits in F3-F5 get a short fuse; the rest (300-400 lines, long tests) wait for a task that touches them.
-const SPLIT_PLANNED = new Set(['screen/src/main.ts', 'shared/overcooked.ts', 'tools/capture.ts', 'screen/index.html', 'shared/games/obstaculos/validator/graph.ts', 'shared/maps.ts', 'controller/src/main.ts', 'shared/validate.ts']);
+const SPLIT_PLANNED = new Set([
+  'screen/src/main.ts',
+  'shared/overcooked.ts',
+  'tools/capture.ts',
+  'screen/index.html',
+  'shared/games/obstaculos/validator/graph.ts',
+  'shared/maps.ts',
+  'controller/src/main.ts',
+  'shared/validate.ts',
+]);
 
 // ---- CLI: init (first list from the current state) / ratchet (lower max, drop entries that are healthy again)
 function cli(mode: string) {
@@ -125,27 +161,56 @@ function cli(mode: string) {
   const L = b.limits;
   const now = new Map(files.map((f) => [f.path, f]));
   if (mode === 'init') {
-    b.files = {}; b.folders = {};
+    b.files = {};
+    b.folders = {};
     const dirs = new Map<string, number>();
     for (const f of files) {
       const kind = kindOf(f.path);
       if (!kind || isExempt(f.path, b)) continue;
       if (kind === 'code') dirs.set(dirname(f.path), (dirs.get(dirname(f.path)) ?? 0) + 1);
-      const lim = kind === 'test' ? L.test : kind === 'markup' ? L.markup : kind === 'code' ? L.code : { soft: L.index.hard, hard: L.index.hard };
+      const lim =
+        kind === 'test' ? L.test : kind === 'markup' ? L.markup : kind === 'code' ? L.code : { soft: L.index.hard, hard: L.index.hard };
       const bad = f.lines > lim.soft || (kind === 'index' && f.reexportOnly === false);
       if (bad) b.files[f.path] = { max: f.lines, until: SPLIT_PLANNED.has(f.path) ? '2026-12-31' : '2027-03-31' };
     }
     for (const [d, n] of dirs) if (n > L.folder.soft) b.folders[d] = { max: n, until: '2026-12-31' };
   } else if (mode === 'ratchet') {
     const dirs = new Map<string, number>();
-    for (const f of files) if (kindOf(f.path) === 'code' && !isExempt(f.path, b)) dirs.set(dirname(f.path), (dirs.get(dirname(f.path)) ?? 0) + 1);
-    for (const [p, e] of Object.entries(b.files)) { const f = now.get(p); if (!f) delete b.files[p]; else e.max = Math.min(e.max, f.lines); }
-    for (const [d, e] of Object.entries(b.folders)) { const n = dirs.get(d); if (!n) delete b.folders[d]; else e.max = Math.min(e.max, n); }
-  } else { console.error('usage: tsx tools/meta/size-budget.ts init|ratchet'); process.exit(2); }
+    for (const f of files)
+      if (kindOf(f.path) === 'code' && !isExempt(f.path, b)) dirs.set(dirname(f.path), (dirs.get(dirname(f.path)) ?? 0) + 1);
+    for (const [p, e] of Object.entries(b.files)) {
+      const f = now.get(p);
+      if (!f) delete b.files[p];
+      else e.max = Math.min(e.max, f.lines);
+    }
+    for (const [d, e] of Object.entries(b.folders)) {
+      const n = dirs.get(d);
+      if (!n) delete b.folders[d];
+      else e.max = Math.min(e.max, n);
+    }
+  } else {
+    console.error('usage: tsx tools/meta/size-budget.ts init|ratchet');
+    process.exit(2);
+  }
   const sorted = (o: Record<string, Entry>) => Object.fromEntries(Object.entries(o).sort(([a], [c]) => a.localeCompare(c)));
-  b.files = sorted(b.files); b.folders = sorted(b.folders);
-  const block = (o: Record<string, Entry>) => '{\n' + Object.entries(o).map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v).replace(/([:,])/g, '$1 ').replace('{', '{ ').replace('}', ' }')}`).join(',\n') + '\n }';
-  writeFileSync(BUDGET_PATH, `{\n "limits": ${JSON.stringify(b.limits)},\n "exemptDirs": ${JSON.stringify(b.exemptDirs)},\n "files": ${block(b.files)},\n "folders": ${block(b.folders)}\n}\n`);
+  b.files = sorted(b.files);
+  b.folders = sorted(b.folders);
+  const block = (o: Record<string, Entry>) =>
+    '{\n' +
+    Object.entries(o)
+      .map(
+        ([k, v]) =>
+          `  ${JSON.stringify(k)}: ${JSON.stringify(v)
+            .replace(/([:,])/g, '$1 ')
+            .replace('{', '{ ')
+            .replace('}', ' }')}`,
+      )
+      .join(',\n') +
+    '\n }';
+  writeFileSync(
+    BUDGET_PATH,
+    `{\n "limits": ${JSON.stringify(b.limits)},\n "exemptDirs": ${JSON.stringify(b.exemptDirs)},\n "files": ${block(b.files)},\n "folders": ${block(b.folders)}\n}\n`,
+  );
   console.log(`size-budget.json: ${Object.keys(b.files).length} file exceptions, ${Object.keys(b.folders).length} folder exceptions`);
 }
 
