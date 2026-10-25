@@ -4,6 +4,7 @@ import type { Grid } from '../../../sim/maps';
 import { H, OX, OY, TILE, U, W, floorPair } from '@pichi/screen-kit/art/tokens';
 import { outerWall, floorPass, waterPass, masses } from './floor';
 import { crate, board, oven, plates } from './work-stations';
+import { addSurfaces } from '../surfaces/surface-view';
 import { trashCan, catapult, dirtyReturn, sinkStation, windowStation } from './service-stations';
 
 const BG_R = 1.5;
@@ -49,6 +50,7 @@ export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, see
   c.fillStyle = v;
   c.fillRect(0, 0, W, H);
   tex.refresh();
+  addSurfaces(scene, g);
   return scene.add
     .image(0, 0, key)
     .setOrigin(0, 0)

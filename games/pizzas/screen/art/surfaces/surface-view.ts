@@ -1,7 +1,8 @@
-// Ice and floor belts, drawn by code over the floor (surfaces/ in the sim is the rules). Exists only in a round with `game.surf`.
+// Ice and floor belts, drawn by code over the floor (surfaces/ in the sim is the rules). Created by the background builder for a map that has them;
+// it animates itself on the scene's update event and goes away with the scene's children (the round's teardown removes them all).
 // Ice: a pale blue sheet with bevelled edges, a few diagonal glints that pulse. Belt: a dark rubber lane with side rails and chevrons that scroll at the belt's own speed.
 import type Phaser from 'phaser';
-import type { Game } from '../../../sim/overcooked';
+import type { Grid } from '../../../sim/maps';
 import { BELT_SPEED } from '../../../sim/surfaces/config';
 import { OX, OY, TILE } from '@pichi/screen-kit/art/tokens';
 
@@ -22,9 +23,9 @@ export class SurfaceView {
 
   constructor(
     scene: Phaser.Scene,
-    private game: Game,
+    private grid: Grid,
   ) {
-    game.grid.forEach((row, y) =>
+    grid.forEach((row, y) =>
       row.forEach((t, x) => {
         if (t.kind !== 'floor' || !t.surface) return;
         if (t.surface.kind === 'ice') this.ice.push({ x, y });
@@ -34,6 +35,9 @@ export class SurfaceView {
     this.still = scene.add.graphics().setDepth(DEPTH);
     this.moving = scene.add.graphics().setDepth(DEPTH);
     this.drawStill();
+    const tick = (_time: number, dtMs: number) => this.update(dtMs);
+    scene.events.on('update', tick);
+    this.moving.once('destroy', () => scene.events.off('update', tick));
   }
 
   private px = (t: Tile) => ({ x: OX + t.x * TILE, y: OY + t.y * TILE });
@@ -42,7 +46,7 @@ export class SurfaceView {
   private drawStill() {
     const g = this.still;
     const has = (x: number, y: number, kind: 'ice' | 'belt') => {
-      const t = this.game.grid[y]?.[x];
+      const t = this.grid[y]?.[x];
       return t?.kind === 'floor' && t.surface?.kind === kind;
     };
     for (const t of this.ice) {
@@ -71,7 +75,7 @@ export class SurfaceView {
     }
   }
 
-  update(dtMs: number) {
+  private update(dtMs: number) {
     this.t += dtMs;
     const g = this.moving;
     g.clear();
@@ -115,9 +119,9 @@ export class SurfaceView {
     g.lineTo(x - dx * d - px * a, y - dy * d - py * a);
     g.strokePath();
   }
+}
 
-  destroy() {
-    this.still.destroy();
-    this.moving.destroy();
-  }
+/** Draws the surfaces of a grid if it has any. */
+export function addSurfaces(scene: Phaser.Scene, g: Grid) {
+  if (g.some((row) => row.some((t) => t.kind === 'floor' && t.surface))) new SurfaceView(scene, g);
 }
