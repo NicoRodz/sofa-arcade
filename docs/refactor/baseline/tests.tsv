@@ -63,11 +63,17 @@ server/test/relay.test.ts	passed	assist (Ayudante, chosen from the phone in the 
 server/test/relay.test.ts	passed	assist (Ayudante, chosen from the phone in the lobby) anything but a boolean is refused
 server/test/relay.test.ts	passed	assist (Ayudante, chosen from the phone in the lobby) it stays with the slot: a screen that connects later sees it in the player list, and a phone that reconnects with its token is told
 server/test/relay.test.ts	passed	assist (Ayudante, chosen from the phone in the lobby) once the round has started the choice is frozen: the relay ignores it until the lobby is back
+shared/feel/magnet.test.ts	passed	auto-orient and the pull a slow chef beside a station turns to it by itself, gradually; a held stick keeps the last word; a fast one is left alone
+shared/feel/magnet.test.ts	passed	auto-orient and the pull Picar turns the chef to the board and the cut starts
+shared/feel/magnet.test.ts	passed	auto-orient and the pull the control: without the flag nothing turns
+shared/feel/magnet.test.ts	passed	auto-orient and the pull Tomar turns the chef to the crate before taking
 screen/src/games/obstaculos/render/render.test.ts	passed	autotile mask a ground cell with open sky above misses N; a deep one has all four
 screen/src/games/obstaculos/render/render.test.ts	passed	autotile mask the corner of a block is open on two sides
 screen/src/games/obstaculos/render/render.test.ts	passed	autotile mask the wall column, an edge of the world, counts as closed to the outside
 shared/burn.assist.test.ts	passed	Ayudante and the fire one tap of B in front of the fire and it goes on by itself until it is out (a normal chef has to hold)
 shared/burn.assist.test.ts	passed	Ayudante and the fire walking away with the stick ends it (the progress stays); the Ayudante never slips but burns its pizzas like everybody
+shared/feel/magnet.test.ts	passed	Ayudante and the magnet live together the Ayudante keeps its any-direction reach, and has a little more of it with the magnet (x1.7 instead of x1.5)
+shared/feel/magnet.test.ts	passed	Ayudante and the magnet live together the Ayudante still has no inertia, and a one-tap chop still goes on, with the magnet on
 server/test/assist.ws.slow.test.ts	passed	Ayudante over the relay (bots on websockets) a mixed table: the chef with Ayudante chops with taps while the other chef (who taps too) does not
 server/test/assist.ws.slow.test.ts	passed	Ayudante over the relay (bots on websockets) cooking with B held (the usual way) works with and without it, and both teams of bots deliver pizzas
 server/test/assist.ws.slow.test.ts	passed	Ayudante over the relay (bots on websockets) ONE TAP of B per chop, sent through the wire as a single press: nothing gets chopped without Ayudante, everything does with it
@@ -260,6 +266,11 @@ shared/coop.golden.slow.test.ts	passed	coop golden rounds coop-n2-map2-normal: s
 shared/coop.golden.slow.test.ts	passed	coop golden rounds coop-n4-map9-hard: score, counters, final chefs and the whole event sequence match the fixture
 shared/coop.golden.slow.test.ts	passed	coop golden rounds coop-n6-map11-easy: score, counters, final chefs and the whole event sequence match the fixture
 shared/coop.golden.slow.test.ts	passed	coop golden rounds covers 2, 4 and 6 players on three different maps
+shared/magnet.golden.slow.test.ts	passed	coop golden rounds with the magnetism on coop-n2-map2-normal-magnet: the whole event sequence matches the fixture, and it is not the round without the flag
+shared/magnet.golden.slow.test.ts	passed	coop golden rounds with the magnetism on coop-n4-map9-hard-magnet: the whole event sequence matches the fixture, and it is not the round without the flag
+shared/magnet.golden.slow.test.ts	passed	coop golden rounds with the magnetism on coop-n6-map11-easy-magnet: the whole event sequence matches the fixture, and it is not the round without the flag
+shared/magnet.golden.slow.test.ts	passed	coop golden rounds with the magnetism on every scenario has its fixture and sets the flag; the older scenarios never do
+shared/magnet.golden.slow.test.ts	passed	coop golden rounds with the magnetism on the first fixture is a round with the gentle rat: it announces its counter, is scared off and the team is paid
 shared/burn.golden.slow.test.ts	passed	coop golden rounds with the new rules on coop-n2-map2-normal-rules: score, counters, final chefs and the whole event sequence match the fixture
 shared/burn.golden.slow.test.ts	passed	coop golden rounds with the new rules on coop-n4-map2-hard-rules: score, counters, final chefs and the whole event sequence match the fixture
 shared/burn.golden.slow.test.ts	passed	coop golden rounds with the new rules on coop-n6-map11-normal-rules: score, counters, final chefs and the whole event sequence match the fixture
@@ -444,6 +455,10 @@ shared/vote.test.ts	passed	early close: everyone voted (1.5 s grace to correct) 
 shared/vote.test.ts	passed	early close: everyone voted (1.5 s grace to correct) a vote withdrawn during the grace cancels it (not everyone has voted anymore)
 shared/vote.test.ts	passed	early close: everyone voted (1.5 s grace to correct) closes 1.5 s after the last vote, not before
 shared/vote.test.ts	passed	early close: everyone voted (1.5 s grace to correct) the player that disconnects without voting can complete "all voted"
+shared/feel/rat.test.ts	passed	easier to scare, and it pays a chef that simply runs into it scares it, even carrying; standing still next to it does not; the old rat ignores it
+shared/feel/rat.test.ts	passed	easier to scare, and it pays a dash 1.3 tiles away scares the gentle rat and not the old one (radius 1.5 against 1.1)
+shared/feel/rat.test.ts	passed	easier to scare, and it pays a dash that ended 150 ms ago still counts (within 1.9 tiles); one that ended long ago does not
+shared/feel/rat.test.ts	passed	easier to scare, and it pays scaring it pays RAT_BONUS to the team (and the event says so); the old rat pays nothing; the stolen item still goes back
 shared/games/obstaculos/sim/campaign.test.ts	passed	edge assist (plan §5.1) a hanger far below the ledge (head 2 tiles under it) is not helped
 shared/games/obstaculos/sim/campaign.test.ts	passed	edge assist (plan §5.1) a hanger whose head reaches the ledge climbs on by itself (event, then it stands on the ledge); quick match leaves it hanging
 shared/games/obstaculos/sim/campaign.test.ts	passed	edge assist (plan §5.1) it is a hanger-only help: a free fall past the cliff (no rope) does not trigger it
@@ -584,6 +599,9 @@ shared/generate.versus.slow.test.ts	passed	generateVersus with no attempts at al
 shared/generate.versus.slow.test.ts	passed	generateVersus works for a range of players: the half is validated for the smallest team (1 chef) and the biggest
 shared/generate.versus.reject.test.ts	passed	generateVersus: retries a rejected candidate is retried with the same stream: 3 rejections give the 4th attempt, still valid and not a fallback
 shared/generate.versus.reject.test.ts	passed	generateVersus: retries when every candidate is rejected the attempts are bounded and a fixed map comes back
+shared/feel/rat.test.ts	passed	gives you time a rat that stole stays at the counter gnawing until 12 s, so a chef still has time to scare it and get the item back
+shared/feel/rat.test.ts	passed	gives you time does not leave before 12 s: with nothing to steal it waits 14 s (the old rat left at 10 s)
+shared/feel/rat.test.ts	passed	gives you time never steals in its first second, even standing next to a counter with an item; the old rat does at once
 shared/recipes.cook.test.ts	passed	golden rounds with the cards on every scenario has its fixture, and each fixture delivers what its card brings
 shared/recipes.cook.test.ts	passed	golden rounds with the cards on recipes-n2-map2-normal: score, counters, final chefs and every event match the fixture
 shared/recipes.cook.test.ts	passed	golden rounds with the cards on recipes-n2-map9-normal: score, counters, final chefs and every event match the fixture
@@ -630,6 +648,9 @@ screen/src/games/obstaculos/campaign/model.test.ts	passed	hub items the practice
 screen/src/games/obstaculos/campaign/model.test.ts	passed	hub items with fewer than two players the campaign cannot start, but the quick game entry is not blocked here
 screen/src/games/obstaculos/render/render.test.ts	passed	hud helpers clock text and medal thresholds follow the par (gold <= par, silver <= 1.5 par)
 screen/src/games/obstaculos/render/render.test.ts	passed	hud helpers type check: Biome list
+shared/feel/human-bot.test.ts	passed	human bot a perfect human (no error, no latency, no noise) lands almost every press: the bot measures the sim, not itself
+shared/feel/human-bot.test.ts	passed	human bot is deterministic: the same seeds give the same records
+shared/feel/human-bot.test.ts	passed	human bot is imperfect on a plain chef (first press well below 90%) and better with Ayudante
 shared/games/obstaculos/validator/dynamics.test.ts	passed	ice in the validator: the trajectories run with the campaign friction the legacy parameters have no friction field: ice tiles grip like rock
 shared/assist.test.ts	passed	immune to the banana-skin standing on it, or having it land at its feet, is no different
 shared/assist.test.ts	passed	immune to the banana-skin the chef keeps what it carries (it would have dropped it) and the rubbish stays on the floor for the team to clean
@@ -783,6 +804,9 @@ screen/src/audio/mixer.test.ts	passed	LoopTable chop hits every 250 ms inside th
 screen/src/audio/mixer.test.ts	passed	LoopTable never schedules in the past after a stall
 screen/src/audio/mixer.test.ts	passed	LoopTable stop removes the stream and a duplicate start is ignored
 screen/src/audio/mixer.test.ts	passed	LoopTable stopLoops clears everything
+server/test/magnet.ws.slow.test.ts	passed	magnetism over the relay an Ayudante beside a plain chef: both work with the magnet on, and the Ayudante still beats the plain chef without it
+server/test/magnet.ws.slow.test.ts	passed	magnetism over the relay lands more first presses with the magnet on than off, through the wire (phones -> relay -> screen -> sim)
+server/test/magnet.ws.slow.test.ts	passed	magnetism over the relay the lobby's own rules (roundRules: burn, fire, events, magnet) make a playable round over the relay
 shared/games/obstaculos/sim/actions.test.ts	passed	mano amiga (plan §5) a planted player at the edge catches a teammate falling beside it and lifts him onto the ledge in 0.4 s
 shared/games/obstaculos/sim/actions.test.ts	passed	mano amiga (plan §5) a teammate caught from BELOW the ledge is lifted up first and then across: it does not cut through the corner of the block and die crushed (level 1)
 shared/games/obstaculos/sim/actions.test.ts	passed	mano amiga (plan §5) a teammate who is not falling inside the sensor is left alone
@@ -1214,6 +1238,8 @@ shared/games/obstaculos/sim/rope.test.ts	passed	rope jump, relink and valve same
 shared/games/obstaculos/sim/rope.test.ts	passed	rope jump, relink and valve valve: a link held beyond 1.6 L for 1 s sends the one behind to a bubble (reason rope)
 shared/games/obstaculos/sim/rope.test.ts	passed	rope jump, relink and valve when a middle player leaves, the neighbours hook up and the new link eases to L in 0.5 s
 shared/overcooked.test.ts	passed	round ends after ROUND_MS and ignores further ticks
+shared/feel/magnet.test.ts	passed	rubbish beside a counter (hazards) a janitor facing the rubbish picks it up although the magnet also finds the counter; facing the counter it uses the counter
+shared/feel/magnet.test.ts	passed	rubbish beside a counter (hazards) and the phone says Recoger, not the counter's label
 shared/games/obstaculos/sim/player.test.ts	passed	running (plan §2) a half stick (0.45) runs at 148.5 px/s
 shared/games/obstaculos/sim/player.test.ts	passed	running (plan §2) in the air acceleration is x0.65 and braking x0.3
 shared/games/obstaculos/sim/player.test.ts	passed	running (plan §2) reaches 330 px/s in 0.08 s and stops in 0.06 s on the ground
@@ -1380,6 +1406,11 @@ shared/versusLobby.test.ts	passed	syncTeams: the lobby teams follow the connecte
 shared/versusLobby.test.ts	passed	syncTeams: the lobby teams follow the connected players nothing changed: the same array comes back (no re-render, no re-send)
 shared/versusLobby.test.ts	passed	syncTeams: the lobby teams follow the connected players the first player alone fills team 0 and the second goes to the other team (the smallest)
 shared/versusLobby.test.ts	passed	syncTeams: the lobby teams follow the connected players untouched teams are rebalanced keeping the previous ones as far as sizes allow
+shared/feel/magnet.test.ts	passed	target by score a station behind the chef, or at its side beyond touching, is not the target
+shared/feel/magnet.test.ts	passed	target by score another team's station is never the target
+shared/feel/magnet.test.ts	passed	target by score does not reach through a wall (the same crate with and without a wall tile in between)
+shared/feel/magnet.test.ts	passed	target by score reaches further than the plain rule (x1.3)
+shared/feel/magnet.test.ts	passed	target by score the station you stand under wins over the neighbour your facing leans to (the old probe picked the neighbour)
 shared/games/obstaculos/validator/dynamics.test.ts	passed	target: a gate that only opens when somebody flies through the diana a target too far from its gate for the 4 s it stays open is a lint error (20 tiles at the run speed with a quarter in hand)
 shared/games/obstaculos/validator/dynamics.test.ts	passed	target: a gate that only opens when somebody flies through the diana the gate is not a gadget with no opener any more: a gate with only a target counts as having an activator
 shared/games/obstaculos/validator/dynamics.test.ts	passed	target: a gate that only opens when somebody flies through the diana without the target the gate stays shut; knowing it, the bot opens the gate and the record counts one use
@@ -1407,6 +1438,7 @@ shared/protocol.test.ts	passed	teams on the wire (protocol v2) the version was b
 shared/protocol.test.ts	passed	teams on the wire (protocol v2) youMsg tells a phone its team (and nothing when it has none)
 server/test/relay.test.ts	passed	teams the match start travels with the playing phase and a late joiner still gets it
 server/test/relay.test.ts	passed	teams the results phase carries the versus result to every phone, and a phone that reconnects at the results still gets it
+shared/feel/rat.test.ts	passed	telegraphs says which counter it goes for, once, and when it is about to arrive
 screen/src/games/obstaculos/audio/music.test.ts	passed	tension and layers each layer only emits its own notes and the notes of a layer appear only when it is on
 screen/src/games/obstaculos/audio/music.test.ts	passed	tension and layers layers: base always; rhythm moving; melody after checkpoint; drone over 0.85 rope tension or lava
 screen/src/games/obstaculos/audio/music.test.ts	passed	tension and layers tempo rises 15% from calm to full tension
@@ -1459,6 +1491,8 @@ shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated every
 shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated the cards are varied: all five recipes show up, and a map without the cheese crate has Marinara + Calzone
 shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated the validator proves every card on the 15 coop maps and, in each kitchen, on the 5 versus maps (plus the derived one)
 shared/recipes.test.ts	passed	the cards: 2 or 3 recipes per map, validated the validator rejects a bad card: wrong size, a repeat, no Marinara, two toppings
+shared/feel/magnet.test.ts	passed	the Carta del día and the school with the magnet Picar at the oven folds the calzone although the chef is not looking straight at it; the old probe does not reach, and the label says Doblar
+shared/feel/magnet.test.ts	passed	the Carta del día and the school with the magnet the school teaches with the magnet the lobby gives (Easy: strong)
 shared/games/obstaculos/campaign/campaign.test.ts	passed	the catalog: 5 worlds x 7 + 5 Cumbres = 40 (plan §2) every built level has 3 collectibles on its tilemap and a world-valid id
 shared/games/obstaculos/campaign/campaign.test.ts	passed	the catalog: 5 worlds x 7 + 5 Cumbres = 40 (plan §2) every level of Mundos 2 and 3 has at most 2 hints of at most 6 words, none in levels 6 and 7, and a hint on the level that introduces something with a modelled rule
 shared/games/obstaculos/campaign/campaign.test.ts	passed	the catalog: 5 worlds x 7 + 5 Cumbres = 40 (plan §2) has 40 levels in order, 7 per world, 5 Cumbres, a boss at the end of each world
@@ -1497,6 +1531,9 @@ shared/burn.assist.test.ts	passed	the contextual buttons know the fire on a burn
 shared/captain.test.ts	passed	the D-pad speaks the keyboard has exactly the keys of the plan: 4 arrows, OK, Atrás, ? (help)
 shared/captain.test.ts	passed	the D-pad speaks the keyboard isNavKey is a closed list
 shared/captain.test.ts	passed	the D-pad speaks the keyboard maps each button to the KeyboardEvent.key the Mac keyboard already sends
+shared/feel/magnet.test.ts	passed	the dash hugs the station a dash that ends 0.6 tiles from a station goes on until it touches it; without the flag it stops short
+shared/feel/magnet.test.ts	passed	the dash hugs the station and the hug never extends a dash twice or past its reach
+shared/feel/magnet.test.ts	passed	the dash hugs the station B along a counter row is still a dash (the stations beside the chef are not "in front")
 shared/games/obstaculos/sim/rules.test.ts	passed	the expedition: 3 levels, one retry a world still playing does nothing
 shared/games/obstaculos/sim/rules.test.ts	passed	the expedition: 3 levels, one retry the first failure repeats the level at x0.5; the second failure closes the expedition
 shared/games/obstaculos/sim/rules.test.ts	passed	the expedition: 3 levels, one retry three clears end the run as complete with the sum of the scores
@@ -1509,12 +1546,17 @@ shared/games/obstaculos/session.test.ts	passed	the expedition: levels, pauses, r
 shared/validate.test.ts	passed	the fifteen maps are all there, valid, with unique ids 1..15 and names
 shared/validate.test.ts	passed	the fifteen maps every team size from 2 to 8 has at least 4 maps to play, and 7-8 players have maps 11-14
 shared/validate.test.ts	passed	the fifteen maps match the design availability table by N
+shared/feel/magnet.test.ts	passed	the flag is off by default, on by option, and the constants it scales are the sim's
 shared/assist.test.ts	passed	the flag is per chef and costs nothing when it is off a round that names an Ayudante nobody plays (or nobody at all) is the golden round, event for event
 shared/assist.test.ts	passed	the flag is per chef and costs nothing when it is off only the chef that chose it carries the flag, and the roster knows
 shared/assist.test.ts	passed	the flag is per chef and costs nothing when it is off the same round with a real Ayudante is NOT the golden one (the control proves the flag does something) but still cooks and delivers
+shared/feel/magnet.test.ts	passed	the flag quickens the stick (lower tau) but never adds inertia to a difficulty that is already instant
+shared/feel/magnet.test.ts	passed	the flag the lobby rule: Easy stronger, the rest normal, and the option can switch it off
 shared/tutorial/steps.test.ts	passed	the four steps are exactly: take dough, chop tomato, bake, deliver
 shared/tutorial/steps.test.ts	passed	the four steps every instruction the phone can show has at most 8 words, in Spanish
 shared/tutorial/steps.test.ts	passed	the four steps the TV subtitles say there is no clock and no points, and the versus one says the teams play together
+server/test/magnet.ws.slow.test.ts	passed	the gentle rat over the relay a phone that runs at it and dashes scares it and the team is paid
+server/test/magnet.ws.slow.test.ts	passed	the gentle rat over the relay nobody looks: it announces its counter, does not steal in its first second and does not leave before 12 s
 shared/versusReport.test.ts	passed	the golden order card is up from the moment the golden order shows up until a team wins it or it runs out
 shared/burn.test.ts	passed	the grace window: 8 s on Normal and Hard, 15 s on Easy, with a warning beep before it ends easy: warn 3000 ms before the grace ends, burnt when it does
 shared/burn.test.ts	passed	the grace window: 8 s on Normal and Hard, 15 s on Easy, with a warning beep before it ends hard: warn 3000 ms before the grace ends, burnt when it does
@@ -1538,6 +1580,8 @@ shared/tutorial/school.test.ts	passed	the hands and the wire when the school end
 server/test/expeditions.test.ts	passed	the HTTP API, and "Continuar" after the server restarts a server that never plays the campaign leaves no folder behind
 server/test/expeditions.test.ts	passed	the HTTP API, and "Continuar" after the server restarts serves create / merge / claim / reset / restore, and a new server on the same folder offers the right level
 screen/src/games/obstaculos/campaign/flow.test.ts	passed	the hub: who is there to continue offers the remembered expedition; the most recent one when nothing is remembered; nothing when the server is down
+shared/feel/rat-bot.slow.test.ts	passed	the imperfect chef against the rat reaches the gentle rat in at least 70% of the events, hands full or not; the old rat in under 40%
+shared/feel/rat-bot.slow.test.ts	passed	the imperfect chef against the rat the gentle rat never steals in the first second and a rat nobody scares stays 12 s; the old one does steal at once and leaves earlier
 shared/hazards.test.ts	passed	the item that falls Normal: it falls intact on the tile where the slide began, as a floor item of the chef's team
 shared/hazards.test.ts	passed	the item that falls rubbish is picked up as the item "trash" and can be binned; hands must be empty and it has to be close
 shared/hazards.test.ts	passed	the item that falls slipDrops off (Suave on Fácil): it only slips and keeps what it carries
@@ -1561,6 +1605,11 @@ shared/midround.test.ts	passed	the lobby option Eventos is Sí on Normal and Dif
 shared/midround.test.ts	passed	the lobby option roundRules: the burning oven always, the event by the option
 shared/midround.test.ts	passed	the lobby option the constants are the council numbers: 3 orders, +100, 150 (a triple of a Marinara), 3 s of warning, a window of 1:00 to 2:00
 shared/burn.test.ts	passed	the lobby turns the rules on a versus round from the lobby has the burning oven; the fire follows the difficulty and the sabotage level (Easy no, Suave no, Caos yes)
+shared/magnet.mirror.slow.test.ts	passed	the mirror proof with magnetism the flag is live in the round: the same seed without it is a different round
+shared/magnet.mirror.slow.test.ts	passed	the mirror proof with magnetism V1 2v2 Easy (strong magnet): both teams end tied, event for event
+shared/magnet.mirror.slow.test.ts	passed	the mirror proof with magnetism V1 3v3 Normal: both teams end tied, event for event
+shared/magnet.mirror.slow.test.ts	passed	the mirror proof with magnetism V1 3v3 with the Carta del día (calzone folded at the oven) and every lobby rule on: still an exact tie, three seeds
+shared/magnet.mirror.slow.test.ts	passed	the mirror proof with magnetism V3 2v2 Normal with burn, fire and events: both teams end tied, event for event
 server/test/recipes.ws.test.ts	passed	the new recipes over the relay a phone that holds Picar at an oven with dough and tomato for FOLD_MS folds the calzone
 server/test/recipes.ws.test.ts	passed	the new recipes over the relay two phones cook calzone on map 9 from raw ingredients: it is delivered, it pays 90 base and nothing is refused
 server/test/recipes.ws.test.ts	passed	the new recipes over the relay two phones cook champinon on map 12 from raw ingredients: it is delivered, it pays 100 base and nothing is refused
@@ -1572,6 +1621,7 @@ shared/pantry.test.ts	passed	the pantry only exists where the map declares it th
 shared/pantry.test.ts	passed	the pantry only exists where the map declares it V1 and the other versus maps have no pantry: crates give for free, as before
 shared/recipes.test.ts	passed	the Pepperoni: the slices take longer on the board a raw pepperoni needs SLICE_MULT times the board time of a tomato, and ends as cut3
 shared/recipes.test.ts	passed	the phone: contextual buttons for the new recipes the cheese crate says what it gives (queso, Pepperoni, Champiñón); an oven that can be folded offers Doblar on B, and it greys out once folded
+shared/feel/magnet.test.ts	passed	the phone's labels follow what the buttons will do beside a crate that only the magnet finds, A says what it takes and B still says Correr (the dash is free there)
 screen/src/tutorial/host.test.ts	passed	the phones during the school a skip with no school running is ignored
 screen/src/tutorial/host.test.ts	passed	the phones during the school each frame tells every connected phone its step; a phone that pressed "Saltar" is done on the TV at once
 screen/src/tutorial/host.test.ts	passed	the phones during the school the presses a phone sent before the school started are not carried into it
@@ -1796,6 +1846,8 @@ screen/src/games/obstaculos/audio/mixer.test.ts	passed	VoiceLimiter drops a repe
 screen/src/games/obstaculos/audio/mixer.test.ts	passed	VoiceLimiter frees voices when their sounds end
 screen/src/games/obstaculos/audio/mixer.test.ts	passed	VoiceLimiter lets 8 players jump in the same instant and refuses a 9th jump
 screen/src/games/obstaculos/audio/mixer.test.ts	passed	VoiceLimiter never holds more than 24 voices; low priorities give way earlier than high ones
+shared/feel/rat.test.ts	passed	walks gentle 70% of the old speed, in runs with a pause after each
+shared/feel/rat.test.ts	passed	walks gentle its path bends: the heading never jumps more than the turn rate allows
 shared/games/obstaculos/campaign/progress.test.ts	passed	what "Continuar" and "Siguiente" offer a skipped level is passed: Continuar moves on to the next one
 shared/games/obstaculos/campaign/progress.test.ts	passed	what "Continuar" and "Siguiente" offer Continuar is the first open level not yet passed, across worlds
 shared/games/obstaculos/campaign/progress.test.ts	passed	what "Continuar" and "Siguiente" offer replaying an old level does not move Continuar back
