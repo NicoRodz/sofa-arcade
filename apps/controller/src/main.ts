@@ -34,6 +34,7 @@ import {
   type TeamInfo,
 } from '@pichi/core';
 import type { IconId } from '@pichi/core/icons';
+import { attend } from '@pichi/controller-kit/attention';
 import { outcomeFor, type Outcome, type PhoneResult } from '@pichi/game-pizzas/sim/versus/report';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -211,7 +212,7 @@ $('howtoopen').addEventListener('pointerup', () => setHowTo(true));
 
 // R7: vibrate where the browser can (Android), flash the phone's colour where it cannot (iOS Safari has no vibration API).
 let flashTimer: ReturnType<typeof setTimeout> | undefined;
-let slipTimer: ReturnType<typeof setTimeout> | undefined;
+let slipTimer: typeof flashTimer;
 function buzz(kind: BuzzKind) {
   if (phase !== 'playing' && phase !== 'school') return; // the school buzzes like a round
   if (kind === 'slip') {
@@ -404,6 +405,7 @@ function connect() {
   };
   sock.onmessage = (ev) => {
     const m = JSON.parse(ev.data) as ServerMsg;
+    attend(m, myId);
     if (m.t === 'joined') {
       joined = true;
       myId = m.player.id;
@@ -429,11 +431,9 @@ function connect() {
         m.game === 'obstaculos'
           ? setupLabel(parseObstOptions(m.modeOptions), m.difficulty, m.seed, DIFFICULTY_LABEL)
           : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}${m.modeId === 'versus' ? ` · Sabotaje ${SABOTAGE_LABEL[sabotageOf(m.modeOptions)]}` : ''}`;
-    } else if (m.t === 'assist') {
-      if (m.playerId === myId) showAssist(m.on);
-    } else if (m.t === 'school') {
-      schoolUi.apply(m);
-    } else if (m.t === 'you') {
+    } else if (m.t === 'assist' && m.playerId === myId) showAssist(m.on);
+    else if (m.t === 'school') schoolUi.apply(m);
+    else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {
       showPhase(m.phase, m.scores, m.puestos, m.result, m.match?.modeOptions.campaign === true);

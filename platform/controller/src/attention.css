@@ -1,0 +1,5 @@
+/* The attention cue: the whole phone pulses in its player's colour so the eyes leave the big screen */
+#cue { position: fixed; inset: 0; z-index: 9; pointer-events: none; background: var(--c, #fff); opacity: 0; }
+#cue.on { animation: cuepulse .9s ease-out; }
+#cue.on.long { animation: cuepulse 1.6s ease-out; }
+@keyframes cuepulse { 0% { opacity: 0; } 12% { opacity: .75; } 30% { opacity: .1; } 45% { opacity: .65; } 100% { opacity: 0; } }
