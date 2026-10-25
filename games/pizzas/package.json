@@ -9,6 +9,7 @@
     "./sim/maps": "./sim/maps/index.ts",
     "./sim/generate": "./sim/generate/index.ts",
     "./sim/validate": "./sim/validate/index.ts",
+    "./screen/art/food": "./screen/art/food/index.ts",
     "./*": "./*.ts"
   },
   "scripts": {
