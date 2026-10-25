@@ -20,6 +20,7 @@ export interface ChefState {
   slideMs?: number; // ... and how long the slide lasts (the spin follows it)
   immune?: boolean; // sabotage: rubbish cannot make it slip now (it blinks)
   assist?: boolean; // Ayudante: wears the propeller
+  skate?: boolean; // on ice: no steps, arms out, leaning into the slide
 }
 
 type Face = 'down' | 'side' | 'up';
@@ -179,6 +180,7 @@ export class Chef {
     this.ly = s.y;
     const speed = dt > 0 ? Math.hypot(dxp, dyp) / dt / TILE : 0;
     const moving = speed > 0.7 && s.action === 'none';
+    const skating = moving && !!s.skate; // the feet do not walk on ice: they glide
 
     // facing
     const ax = Math.abs(s.fx),
@@ -191,7 +193,7 @@ export class Chef {
     const len = Math.hypot(s.fx, s.fy) || 1;
 
     // walk cycle
-    if (moving) this.phase += dt * (HOUR / 0.3) * Math.min(1.15, Math.max(0.5, speed / 4.5));
+    if (moving && !skating) this.phase += dt * (HOUR / 0.3) * Math.min(1.15, Math.max(0.5, speed / 4.5));
     else this.phase = 0;
     if (this.wasMoving && !moving && s.action === 'none') {
       this.sx = 0.12;
@@ -206,8 +208,8 @@ export class Chef {
       this.vy = 0;
     }
     this.wasMoving = moving;
-    const bounce = moving ? Math.abs(Math.sin(this.phase)) * 6 : 0;
-    const lean = moving ? Math.sin(this.phase / 2) * 6 * (HOUR / 180) : 0;
+    const bounce = moving && !skating ? Math.abs(Math.sin(this.phase)) * 6 : 0;
+    const lean = skating ? 0.14 * this.flip : moving ? Math.sin(this.phase / 2) * 6 * (HOUR / 180) : 0;
 
     // spring toward rest scale
     const k = 420,
@@ -271,9 +273,9 @@ export class Chef {
       }
     } else {
       this.hitT = 0;
-      const sw = moving ? Math.sin(this.phase / 2) * 0.45 : 0;
+      const sw = skating ? 0.7 : moving ? Math.sin(this.phase / 2) * 0.45 : 0; // on ice both arms go out for balance
       armA = rest[0]! + sw;
-      armB = rest[1]! + sw;
+      armB = rest[1]! + (skating ? -sw : sw);
       if (carrying) {
         if (this.face === 'side') {
           armA = -1.05;

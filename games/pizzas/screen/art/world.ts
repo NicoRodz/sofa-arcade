@@ -17,6 +17,7 @@ import { BurnView } from './burn';
 import { EventsView } from './events';
 import { MagnetView } from './feel/magnet-view';
 import { RatSignal } from './feel/rat-signal';
+import { chefFlags } from './surfaces/chef-flags';
 import { kText } from '../../sim/versus/report';
 
 export class World {
@@ -339,17 +340,15 @@ export class World {
         action = at?.kind === 'sink' || at?.kind === 'pot' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough, and folding the calzone kneads it
         chop.set(gp.chopAt, action);
       }
-      const f = this.feet(gp);
       chef.update(dtMs, {
-        x: f.x,
-        y: f.y,
+        ...this.feet(gp),
         fx: gp.fx,
         fy: gp.fy,
         item: gp.item,
         action,
         connected: info.connected && !gp.ghost,
         ghost: gp.crossing,
-        ...(gp.assist ? { assist: true } : {}),
+        ...chefFlags(g, gp),
         ...(gp.slip ? { slipT: g.time - gp.slip.t0, slideMs: gp.slip.slideMs } : {}),
         ...(g.hazards && !gp.slip && (gp.immuneUntil ?? 0) > g.time ? { immune: true } : {}),
       });
