@@ -16,7 +16,6 @@ import { SabotageView } from './sabotage';
 import { BurnView } from './burn';
 import { EventsView } from './events';
 import { MagnetView } from './feel/magnet-view';
-import { SurfaceView } from './surfaces/surface-view';
 import { RatSignal } from './feel/rat-signal';
 import { kText } from '../../sim/versus/report';
 
@@ -36,7 +35,6 @@ export class World {
   private events: EventsView | null = null; // the mid-round event: banner, pill, blackout, balloons, the rat (only when the round has one)
   private ratSignal: RatSignal | null = null; // the gentle rat's arrow and alarm (only with the magnet and the events)
   private magnet: MagnetView | null = null; // the bracket around each chef's target station (only when the round has the magnet)
-  private surfaces: SurfaceView | null = null; // ice and floor belts (only when the round has them)
   private burn: BurnView | null = null; // the oven that burns: warning bubble, flames, extinguisher (only when the round has it)
 
   constructor(
@@ -54,7 +52,6 @@ export class World {
     this.fx = new Fx(scene);
     this.stations = new StationViews(scene, game, this.fx);
     this.hud = new Hud(scene, game, view);
-    if (game.surf) this.surfaces = new SurfaceView(scene, game);
     if (game.sab) this.sabotage = new SabotageView(scene, game, view, this.fx, bus);
     if (game.burn) this.burn = new BurnView(scene, game, this.fx, bus);
     if (game.mid) this.events = new EventsView(scene, game, view, this.fx, bus);
@@ -368,7 +365,6 @@ export class World {
     this.burn?.update(dtMs);
     this.events?.update(dtMs);
     this.magnet?.update(dtMs);
-    this.surfaces?.update(dtMs);
     this.ratSignal?.update(dtMs);
     this.hud.update(dtMs);
   }
@@ -385,7 +381,6 @@ export class World {
     this.burn?.destroy();
     this.events?.destroy();
     this.magnet?.destroy();
-    this.surfaces?.destroy();
     this.ratSignal?.destroy();
     for (const f of this.flags) f.destroy();
     this.flags = [];
