@@ -14,8 +14,9 @@ export interface Ctl { x: number; y: number; a: number; b: boolean }
 export interface Sim {
   createGame(o: any): any;
   addPlayer(g: any, id: number, slot: number, spawn?: number): any;
-  tick(g: any, c: Map<number, Ctl>): void;
+  tick(g: any, c: Map<number, Ctl>): void | Promise<void>; // a promise when the controls travel over a real relay (server/test/magnet.ws.test.ts)
   isFloor(grid: any, x: number, y: number): boolean;
+  targetStation?(g: any, p: any): any; // optional: lets a record say which station the sim would have chosen when the first press landed
   maps: readonly { id: string; rows: readonly string[]; spawns?: readonly [number, number][] }[];
 }
 export type Action = 'take' | 'chop' | 'place' | 'oven' | 'deliver' | 'drop' | 'pickup';
@@ -33,7 +34,7 @@ const between = (r: Rng, [a, b]: readonly [number, number]) => a + (b - a) * r()
 const gauss = (r: Rng) => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
 const rot = (x: number, y: number, deg: number): [number, number] => { const t = (deg * Math.PI) / 180, c = Math.cos(t), s = Math.sin(t); return [x * c - y * s, x * s + y * c]; };
 
-export interface Attempt { map: string; action: Action; station: number; hit: boolean; first: boolean; wrong: boolean; ms: number; presses: number; dashes: number; fromPressMs: number; dist0: number; gap: number; angle: number } // gap: tiles from the chef's centre to the station's edge when the first press lands; angle: degrees between the facing and the station's centre
+export interface Attempt { seed: number; mapIdx: number; map: string; action: Action; station: number; hit: boolean; first: boolean; wrong: boolean; ms: number; presses: number; dashes: number; fromPressMs: number; dist0: number; gap: number; angle: number; pick: number; px: number; py: number; fx: number; fy: number } // gap: tiles from the chef's centre to the station's edge when the first press lands; angle: degrees between the facing and the station's centre
 export interface Spec { action: Action; station: number; start?: [number, number] }
 interface Probe { ok(g: any, p: any, st: any): boolean; setup(g: any, p: any, st: any): void }
 const hold = (item: string | null) => (_g: any, p: any) => { p.item = item; };
@@ -63,7 +64,7 @@ class Human {
   noise = 0; mag: number; lat: number; stopR: number; comp: number; off: [number, number];
   aimUntil = 0; pressAt = 0; pressTick = -1; presses = 0; keepPush: boolean; aimDeg = 0; lastPress = -1e9; bHoldUntil = 0;
   queue: Ctl[] = []; px = NaN; py = NaN; // the speed it SEES comes from how far the chef moved (older sims have no velocity field)
-  first: boolean | null = null; pressT0 = 0; hitAt = -1; startDist = 0; gap = NaN; angle = NaN;
+  first: boolean | null = null; pressT0 = 0; hitAt = -1; startDist = 0; gap = NaN; angle = NaN; pick = -2; pose: [number, number, number, number] = [0, 0, 0, 0];
   constructor(private r: Rng, public st: any, public field: Map<string, number>, public action: Action) {
     this.mag = between(r, [HUMAN.magMin, HUMAN.magMax]);
     this.lat = Math.round(between(r, HUMAN.latMs) / (1000 / 60));
@@ -124,7 +125,7 @@ class Human {
 }
 
 /** Runs one game with one or two chefs, each attempting its own interaction. Returns one record per chef. */
-export function runGame(sim: Sim, mapIdx: number, specs: readonly Spec[], seed: number, gameOpts: Record<string, unknown> = {}): Attempt[] {
+export async function runGame(sim: Sim, mapIdx: number, specs: readonly Spec[], seed: number, gameOpts: Record<string, unknown> = {}): Promise<Attempt[]> {
   const map = sim.maps[mapIdx]!, r = mulberry32(seed * 7919 + mapIdx);
   const g = sim.createGame({ mapId: map.id, rows: map.rows, spawns: map.spawns, n: Math.max(2, specs.length), seed, countdownMs: 0, ...gameOpts });
   const floor: [number, number][] = [];
@@ -137,7 +138,7 @@ export function runGame(sim: Sim, mapIdx: number, specs: readonly Spec[], seed: 
     const reach = floor.filter(([x, y]) => (field.get(`${x},${y}`) ?? -1) >= 3 && !used.has(`${x},${y}`));
     const [sx, sy] = sp.start ?? (reach.length ? reach[Math.floor(r() * reach.length)]! : floor[Math.floor(r() * floor.length)]!);
     used.add(`${sx},${sy}`);
-    Object.assign(p, { x: sx + 0.5 + (r() - 0.5) * 0.4, y: sy + 0.5 + (r() - 0.5) * 0.4 });
+    Object.assign(p, { x: sx + 0.5 + (r() - 0.5) * 0.28, y: sy + 0.5 + (r() - 0.5) * 0.28 }); // within +-0.14 of the tile centre: the body (radius 0.35) never starts inside a wall, where the sim cannot move it
     const [fx, fy] = rot(1, 0, r() * 360); p.fx = fx; p.fy = fy;
     PROBES[sp.action].setup(g, p, st);
     item0.push(p.item);
@@ -154,7 +155,7 @@ export function runGame(sim: Sim, mapIdx: number, specs: readonly Spec[], seed: 
       h.queue.push(h.hitAt >= 0 ? { x: 0, y: 0, a: 0, b: false } : h.decide(g, g.players.get(id), now, t));
       c.set(id, h.queue.shift()!);
     });
-    sim.tick(g, c);
+    await sim.tick(g, c);
     ids.forEach((id, k) => {
       const h = humans[k]!, p = g.players.get(id), dashing = (p.dashMs ?? 0) > 0;
       if (dashing && !wasDash[k]) dashSeen[k]!++;
@@ -162,6 +163,8 @@ export function runGame(sim: Sim, mapIdx: number, specs: readonly Spec[], seed: 
       if (h.presses === 1 && t === h.pressTick + h.lat && Number.isNaN(h.gap)) { // where the chef really is when the first press reaches the sim
         const st = g.stations[specs[k]!.station], nx = Math.max(st.tx, Math.min(p.x, st.tx + 1)), ny = Math.max(st.ty, Math.min(p.y, st.ty + 1));
         h.gap = Math.hypot(p.x - nx, p.y - ny);
+        h.pose = [p.x, p.y, p.fx, p.fy];
+        if (sim.targetStation) h.pick = g.stations.indexOf(sim.targetStation(g, p));
         const ex = st.tx + 0.5 - p.x, ey = st.ty + 0.5 - p.y;
         h.angle = Math.abs((Math.atan2(p.fx * ey - p.fy * ex, p.fx * ex + p.fy * ey) * 180) / Math.PI);
       }
@@ -172,6 +175,6 @@ export function runGame(sim: Sim, mapIdx: number, specs: readonly Spec[], seed: 
     const h = humans[k]!, p = g.players.get(id), hit = h.hitAt >= 0;
     const wrong = !hit && h.presses > 0 && (p.item !== item0[k] || (!!p.cutting && g.stations[p.chopAt] !== g.stations[specs[k]!.station]));
     const first = hit && h.hitAt - h.pressT0 <= h.lat * frame + 300; // a hit that the first press (plus its buffer) can explain: the retry comes later
-    return { map: map.id, action: specs[k]!.action, station: specs[k]!.station, hit, first, wrong, ms: hit ? h.hitAt : HUMAN.giveUpMs, presses: h.presses, dashes: dashSeen[k]!, fromPressMs: hit ? h.hitAt - h.pressT0 : NaN, dist0: h.startDist, gap: h.gap, angle: h.angle };
+    return { seed, mapIdx, map: map.id, action: specs[k]!.action, station: specs[k]!.station, hit, first, wrong, ms: hit ? h.hitAt : HUMAN.giveUpMs, presses: h.presses, dashes: dashSeen[k]!, fromPressMs: hit ? h.hitAt - h.pressT0 : NaN, dist0: h.startDist, gap: h.gap, angle: h.angle, pick: h.pick, px: h.pose[0], py: h.pose[1], fx: h.pose[2], fy: h.pose[3] };
   });
 }

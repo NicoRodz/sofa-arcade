@@ -55,7 +55,7 @@ export function twinSpawns(rows: readonly string[], sigma: Sigma, half: (x: numb
 export interface VersusRun {
   rows: readonly string[]; sigma: Sigma; half: (x: number, y: number) => boolean;
   difficulty: Difficulty; seed: number; teams: number[][]; handicap?: boolean;
-  flags?: { burn?: boolean; fire?: boolean; events?: boolean }; // the new rules (off by default: the original proofs stay exact)
+  flags?: { burn?: boolean; fire?: boolean; events?: boolean; magnet?: boolean | 'strong' }; // the new rules (off by default: the original proofs stay exact)
 }
 export const MIRRORS = {
   v1: { rows: MIRROR_V1, sigma: SIGMAS.mirrorX, half: (x: number) => x < MAP_W / 2 },

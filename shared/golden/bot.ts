@@ -6,7 +6,7 @@ import { Emitter, type GameEvents } from '../events';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player, type Station } from '../overcooked';
 import type { Difficulty } from '../difficulty';
 
-export interface RuleFlags { burn?: boolean; fire?: boolean; events?: boolean } // the new rules of the sim, all off by default: the three original goldens never set them
+export interface RuleFlags { burn?: boolean; fire?: boolean; events?: boolean; magnet?: boolean | 'strong' } // the new rules of the sim, all off by default: the three original goldens never set them
 export interface Scenario { name: string; mapId: string; difficulty: Difficulty; n: number; seed: number; teams?: readonly { playerIds: readonly number[] }[]; assist?: readonly number[]; flags?: RuleFlags } // teams: declared roster (a single team must play exactly like none)
 export const SCENARIOS: readonly Scenario[] = [
   { name: 'coop-n2-map2-normal', mapId: '2', difficulty: 'normal', n: 2, seed: 11 },
@@ -23,6 +23,14 @@ export const RULES_SCENARIOS: readonly Scenario[] = [
   { name: 'coop-n2-map2-normal-rules', mapId: '2', difficulty: 'normal', n: 2, seed: 11, flags: FLAGS },
   { name: 'coop-n4-map2-hard-rules', mapId: '2', difficulty: 'hard', n: 4, seed: 2, flags: FLAGS },
   { name: 'coop-n6-map11-normal-rules', mapId: '11', difficulty: 'normal', n: 6, seed: 1, flags: FLAGS },
+];
+
+// Rounds with the magnetism on (feel/magnet.ts), their own fixtures; the six above never set it and stay byte for byte. Normal and Hard get the normal magnet, Easy the strong one;
+// the first also has the lobby's other rules on (burning oven, fire, the rat event: the gentle rat is part of the magnet's feel rules).
+export const MAGNET_SCENARIOS: readonly Scenario[] = [
+  { name: 'coop-n2-map2-normal-magnet', mapId: '2', difficulty: 'normal', n: 2, seed: 11, flags: { ...FLAGS, magnet: true } },
+  { name: 'coop-n4-map9-hard-magnet', mapId: '9', difficulty: 'hard', n: 4, seed: 22, flags: { magnet: true } },
+  { name: 'coop-n6-map11-easy-magnet', mapId: '11', difficulty: 'easy', n: 6, seed: 33, flags: { magnet: 'strong' } },
 ];
 
 export interface GoldenRun {

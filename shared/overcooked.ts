@@ -11,6 +11,7 @@ import { addFloorItem, removeFloorItem } from './floor';
 import { burnTick, clearPot, createBurn, douse, fireAllowed, isDark, type Burn } from './burn';
 import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, createMid, midTick, type Mid, type MidFx } from './midround';
 import { ASSIST_FACING_BONUS, ASSIST_REACH_MULT, ASSIST_STICK_CANCEL } from './assist';
+import { applyMagnet, faceStation as magnetFace, magnetHug, magnetPull, magnetStation, type MagnetCfg, type MagnetLevel } from './feel/magnet';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -156,6 +157,7 @@ export interface Game {
   burn: Burn | null; // the oven that burns and the fire (burn.ts): null (the default, and every golden round) = the oven never burns
   mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none
   assist: ReadonlySet<number>; // ids of the chefs that play on Ayudante (assist.ts); empty in a round that has none
+  magnet: MagnetCfg | null; // magnetism for every chef (feel/magnet.ts): null (the default, and every golden round) = the plain targeting and feel
 }
 
 /** One team's side of the round. */
@@ -230,7 +232,7 @@ function settleVip(g: Game) {
 
 export interface TeamSeat { playerIds: readonly number[] } // a declared team: the chefs that play for it (TeamInfo from teams.ts fits). Team id = position.
 
-export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName; assist?: readonly number[]; burn?: boolean; fire?: boolean; events?: boolean; eventsSeed?: number } = {}): Game {
+export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: number; rows?: readonly string[]; spawns?: readonly [number, number][]; seed?: number; countdownMs?: number; bus?: Emitter<GameEvents>; teams?: readonly TeamSeat[]; handicap?: boolean; shared?: readonly Pos[]; hazards?: boolean; slipDrops?: boolean; spoilRaw?: boolean; sabotage?: SabotageMode; sigma?: SigmaName; assist?: readonly number[]; burn?: boolean; fire?: boolean; events?: boolean; eventsSeed?: number; magnet?: boolean | MagnetLevel } = {}): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
@@ -261,7 +263,7 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
     hasCheese: stations.some((s) => s.kind === 'crate' && s.crate === 2), finitePlates: stations.some((s) => s.kind === 'dirty') && stations.some((s) => s.kind === 'sink'), crowd: new Map(),
     teams, versus, roster: [], paused: null, noWinner: false, result: null, vip: { nextAt: VIP_EVERY_MS[difficulty], rng: mulberry32((seed ^ 0x9e3779b9) >>> 0), round: null }, pantry: stations.some((s) => s.pantry) ? { stock: PANTRY_MAX, nextAt: Infinity } : null,
     teamIds: seats ? seats.map((t) => [...t.playerIds]) : [], open: !seats, handicap, pauseDismissed: false, kitchens, teamSpawns: [],
-    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null, burn: null, mid: null, assist,
+    hazards: opts.hazards ?? false, floor: [], floorSeq: 0, slipDrops: opts.slipDrops ?? true, spoilRaw: opts.spoilRaw ?? false, sab: null, burn: null, mid: null, assist, magnet: null,
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0
   for (const key of LEGACY) Object.defineProperty(g, key, { get: () => teams[0]![key], set: (v) => { (teams[0] as unknown as Record<string, unknown>)[key] = v; }, enumerable: true, configurable: true });
@@ -278,6 +280,7 @@ export function createGame(opts: { mapId?: string; difficulty?: Difficulty; n?: 
   if (opts.sabotage && opts.sabotage !== 'off') g.sab = createSabotage(g, opts.sabotage, opts.sigma); // null when the map cannot host it: the round plays without
   // the new rules, each behind its own flag (off by default): a pizza that waits burns (and, from Normal up and not under the Suave sabotage, sets the oven on fire); one event per round
   if (opts.burn) g.burn = createBurn(difficulty, !!opts.fire && fireAllowed(difficulty, g.sab?.mode), teamCount);
+  if (opts.magnet) applyMagnet(g, opts.magnet === true ? 'normal' : opts.magnet); // magnetism: off unless the round's config asks
   if (opts.events) g.mid = createMid(g, opts.eventsSeed ?? seed); // `eventsSeed`: the coop lobby does not seed its orders (they are the same every round), but the event must still vary
   return g;
 }
@@ -520,8 +523,9 @@ function pickFloor(g: Game, p: Player): boolean {
 }
 
 // The station in front of the chef, among the ones it may use (its own team's, or shared).
-export function targetStation(g: Game, p: Player): Station | null {
+export function targetStation(g: Game, p: Player, plain = false): Station | null { // plain: the old probe even with the magnet on (what blocks a dash)
   if (p.assist) return assistStation(g, p);
+  if (g.magnet && !plain) return magnetStation(g, p);
   const len = Math.hypot(p.fx, p.fy) || 1;
   const px = p.x + (p.fx / len) * REACH;
   const py = p.y + (p.fy / len) * REACH;
@@ -539,7 +543,7 @@ export function targetStation(g: Game, p: Player): Station | null {
 // already faces), and never through a wall. The normal rule measures from a probe in front of the chef; this one from the chef's centre to the station's tile.
 const nearestPoint = (p: Player, s: Station): [number, number] => [Math.max(s.tx, Math.min(p.x, s.tx + 1)), Math.max(s.ty, Math.min(p.y, s.ty + 1))];
 function assistStation(g: Game, p: Player): Station | null {
-  const reach = (REACH + REACH_SLACK) * ASSIST_REACH_MULT;
+  const reach = (REACH + REACH_SLACK) * (ASSIST_REACH_MULT + (g.magnet?.assistExtra ?? 0));
   const len = Math.hypot(p.fx, p.fy) || 1;
   let best: Station | null = null, bestKey = Infinity;
   for (const s of g.stations) {
@@ -740,6 +744,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     // B held: cut / grate / stretch on a board with a raw item, or scrub plates at a sink with dirty ones; with a fire in front (burn only), put it out
     const burning = !!(g.burn && target && target.fire !== undefined);
     const cuttable = !!(target && ((target.kind === 'board' && target.item && cutOf(target.item)) || (target.kind === 'sink' && target.count > 0) || burning));
+    if (g.magnet && target && !p.assist) magnetPull(g, p, target, cuttable && (c.b || (c.bTaps ?? 0) > 0), !c.x && !c.y, dtMs); // magnetism: Picar turns the chef to its board; a slow chef beside a station drifts to face it
     if (p.assist) { // Ayudante: a tap of B starts the chop (or the extinguisher: the same latch, it goes on until the fire is out) and it goes on while the chef stays and there is something to do; the stick (or the item being done) ends it
       if (bEdge && cuttable) p.chopLatch = true;
       else if (p.chopLatch && (!cuttable || (Math.hypot(c.x, c.y) > ASSIST_STICK_CANCEL && !pushesInto(p, target!, c)))) p.chopLatch = false;
@@ -753,7 +758,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     p.chopAt = p.cutting ? at : -1;
     if (p.cutting) { p.vx = 0; p.vy = 0; p.kx = 0; p.ky = 0; p.dashMs = 0; }
     // R2 + R6: a B press with free hands and nothing in front is a dash; if the cooldown ends within bufferMs it still goes
-    const free = !p.item && !target && !p.cutting;
+    const free = !p.item && !(g.magnet && !p.assist ? cuttable || targetStation(g, p, true) : target) && !p.cutting; // magnetism: only what the old probe finds (or a chop) stops a dash
     const ready = p.dashMs <= 0 && p.dashCd <= 0;
     if (!free) p.buffB = 0;
     else if (bEdge && ready) startDash(g, p, c);
@@ -782,7 +787,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
         const v = SPEED * g.params.tune.dashMult;
         p.vx = p.dashDx * v; p.vy = p.dashDy * v;
         p.dashMs = Math.max(0, p.dashMs - dtMs);
-        if (p.dashMs <= 0) { p.vx = p.dashDx * SPEED; p.vy = p.dashDy * SPEED; } // back to walking pace; R1 takes it from there
+        if (p.dashMs <= 0 && !(g.magnet && (p.dashMs = magnetHug(g, p, v, TICK_MS)) > 0)) { p.vx = p.dashDx * SPEED; p.vy = p.dashDy * SPEED; } // back to walking pace; R1 takes it from there (magnetism: a station right ahead keeps the dash going until it touches it)
       } else steer(p, c, g, dtMs);
       const slow = p.crossing ? g.params.tune.yieldSpeed : 1;
       const nx = p.x + (p.vx + p.kx) * dt * slow;
@@ -803,6 +808,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
         break;
       }
       p.buffA--;
+      if (g.magnet) magnetFace(p, s); // Tomar turns the chef to what it takes
       act(g, p, s);
     }
     if (p.buffA > 0) { p.buffAge += dtMs; if (p.buffAge > tune.bufferMs) p.buffA = 0; }

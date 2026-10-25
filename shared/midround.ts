@@ -12,6 +12,7 @@
 import { DIRS, isFloor } from './maps';
 import { mulberry32, type Rng } from './rng';
 import type { Difficulty } from './difficulty';
+import { magnetFor } from './feel/magnet';
 import type { Game, Item, Station } from './overcooked';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat';
@@ -47,8 +48,8 @@ export const eventsOf = (modeOptions: Readonly<Record<string, boolean | number |
   return typeof v === 'boolean' ? v : defaultEvents(d);
 };
 
-/** What the lobby switches on for a round (coop and versus alike): the burning oven always (the sim leaves the fire out on Easy and under the Suave sabotage), the event by the option. */
-export const roundRules = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty) => ({ burn: true, fire: true, events: eventsOf(modeOptions, d) });
+/** What the lobby switches on for a round (coop and versus alike): the burning oven always (the sim leaves the fire out on Easy and under the Suave sabotage), the event by the option, the magnetism of the chefs. */
+export const roundRules = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty) => ({ burn: true, fire: true, events: eventsOf(modeOptions, d), magnet: magnetFor(modeOptions, d) }); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
 
 export interface Rat {
   x: number; y: number; // tile units, centre

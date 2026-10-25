@@ -72,11 +72,11 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
 }
 
 /** What B does: hold on a board with a raw ingredient or at a sink with dirty plates; a tap with free hands and nothing in front is the dash. */
-function buttonB(p: Player, s: Station | null): Btn {
+function buttonB(p: Player, s: Station | null, front: Station | null = s): Btn { // front: what stops a dash (the old probe when the magnet is on)
   if (s?.kind === 'board' && s.item && RAW.has(s.item)) return on(CUT_VERB[s.item]!, 'chop');
   if (s?.fire !== undefined) return on('Apagar', 'oven'); // burn: Picar puts the fire out (an Ayudante taps it once and it goes on)
   if (s?.kind === 'sink' && s.count > 0) return on('Lavar', 'wash');
-  if (!p.item && !s) return p.dashMs <= 0 && p.dashCd <= 0 ? on('Correr', 'move') : off('Correr', 'move');
+  if (!p.item && !front) return p.dashMs <= 0 && p.dashCd <= 0 ? on('Correr', 'move') : off('Correr', 'move');
   return off('Picar', 'chop');
 }
 
@@ -88,7 +88,7 @@ export function chefHint(g: Game, p: Player): HintLabels {
   const aiming = isAiming(g, p);
   const sab = sabotageHint(g, p, s, near); // the catapult and the bags: it names what only versus has
   const a = aiming ? off('Apuntando', 'grab') : sab.a ? on(sab.a, sab.a === 'Cargar' || sab.a === 'Recoger' ? 'grab' : 'trash') : buttonA(g, p, s, near);
-  const b = aiming ? on('¡Lanzar!', 'star') : buttonB(p, s);
+  const b = aiming ? on('¡Lanzar!', 'star') : buttonB(p, s, g.magnet && !p.assist ? targetStation(g, p, true) : s);
   return { a: a.label, b: b.label, aIcon: a.icon, bIcon: b.icon, ...(a.off ? { aOff: true } : {}), ...(b.off ? { bOff: true } : {}) };
 }
 
