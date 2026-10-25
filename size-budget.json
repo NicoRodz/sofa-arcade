@@ -7,7 +7,6 @@
   "apps/controller/test/checks.ts": { "max": 328, "until": "2027-03-31" },
   "apps/controller/test/harness.ts": { "max": 815, "until": "2027-03-31" },
   "apps/screen/index.html": { "max": 500, "until": "2026-12-31" },
-  "apps/screen/src/main.ts": { "max": 2177, "until": "2026-12-31" },
   "apps/server/test/relay.test.ts": { "max": 750, "until": "2027-03-31" },
   "games/obstaculos/screen/adapter.test.ts": { "max": 545, "until": "2027-03-31" },
   "games/obstaculos/screen/audio/recipes.ts": { "max": 383, "until": "2027-03-31" },
