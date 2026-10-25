@@ -1,5 +1,5 @@
 // Visual check: serves the app on :3200, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn|events|events-vs|assist> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn|events|events-vs|assist|magnet> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -590,6 +590,33 @@ async function main() {
       for (let i = 0; i < 12 && !((await snap()) as any).mid?.rat; i++) await sleep(200);
       await sleep(1500); await cdp.shot('ev-rat-3-running');
       await untilDone(12_000); await cdp.shot('ev-rat-4-gone');
+      bots.splice(0).forEach((b) => b.close());
+    }
+    if (what === 'magnet') {
+      // Magnetism and the gentle rat on map 1 (Normal, 2 chefs: the lobby rules switch the magnet on): the bracket on the station each chef's Tomar will use (a chef at 45 degrees to a crate,
+      // two chefs on one crate), then the rat: the arrow over it, the dashed line to the counter it goes for, the alarm when it is about to arrive. Driven by hand (window.__pg).
+      const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
+      const rows = fixedMap('1')!.rows;
+      await open('MAGN'); await join('MAGN', 2, rows);
+      await click('[data-diff="normal"]'); await click('[data-map="1"]'); await sleep(400);
+      await click('#start'); await sleep(1500); await key('Enter');
+      await waitFor((s) => s.countdown <= 0 && s.time > 1500, 20_000);
+      const kit = (expr: string) => cdp.eval<any>(`window.__pg.kit.${expr}`);
+      const ids = (await snap()).players.map((p) => p.id);
+      console.log('magnet on in the round:', await cdp.eval('!!window.__pg.snapshot().magnet'));
+      await cdp.eval(`window.__pg.sab.place(${ids[0]}, 3.85, 1.35, 0.55, -0.84)`); // under the crate, looking up and to the right: the old probe would pick the counter beside it
+      await cdp.eval(`window.__pg.sab.place(${ids[1]}, 10.5, 3.2, 0, -1)`);
+      await sleep(400); await cdp.shot('mag-1-bracket');
+      await cdp.eval(`window.__pg.sab.place(${ids[1]}, 3.4, 1.55, 0, -1)`);
+      await sleep(400); await cdp.shot('mag-2-two-chefs');
+      await cdp.eval(`window.__pg.sab.place(${ids[0]}, 12.5, 6.5, 0, 1)`); await cdp.eval(`window.__pg.sab.place(${ids[1]}, 1.5, 6.5, 0, 1)`);
+      const counters = (await kit('counters()')).filter((c: any) => c.kind === 'counter');
+      await kit(`setItem(${counters[3].i}, 'raw1')`); await kit(`setItem(${counters[9].i}, 'cut0')`);
+      await kit(`event('rat')`);
+      for (let i = 0; i < 40 && !((await snap()) as any).mid?.rat; i++) await sleep(200);
+      await sleep(1600); await cdp.shot('mag-3-rat-arrow');
+      await sleep(2000); await cdp.shot('mag-4-rat-closer');
+      for (let i = 0; i < 40 && (await cdp.eval<boolean>('(() => { const r = window.__pg.snapshot().mid; return !r.rat; })()')); i++) await sleep(100);
       bots.splice(0).forEach((b) => b.close());
     }
     if (what === 'events-vs') {

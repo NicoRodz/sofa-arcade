@@ -75,3 +75,16 @@ Qué hace: (1) estación objetivo por puntaje (distancia del cuerpo al borde men
 Barrido de τ con el magnetismo encendido (acierto no cambia dentro del ruido; el tiempo sí): 60/50 → 2267 ms, 45/40 → 2250, 35/30 → 2200, 20/20 → 2167, 0/0 → 2150. Se eligió 35/30: -67 ms sin perder el deslizamiento.
 
 Reproducir: `npx tsx tools/feel-measure.ts <checkout> --reps 8 [--chefs 4] [--difficulty easy] [--opts '{"magnet":true}']`; los checkouts viejos con `git archive <sha> shared | tar -x -C <dir>`.
+
+## La rata (shared/feel/rat.ts, detrás del mismo flag `magnet`)
+
+Bot imperfecto (`shared/feel/rat-bot.ts`, `tools/rat-measure.ts`): 15 mapas × 12 semillas, el chef nota la rata a los 0,5-1,5 s, la persigue con palo ruidoso y 60-150 ms de retraso, hace dash a 1,5-2,6 tiles; la mitad de las veces con las manos llenas (el dash exige manos libres). El evento se fuerza a los 3 s con 2 mesones con ítem.
+
+| Normal | espantada en su ventana | manos libres | manos llenas | robó | ítem perdido (robó y nadie la espantó) | robo más temprano | vida mínima de una rata no espantada |
+|---|---|---|---|---|---|---|---|
+| rata vieja (flag apagado) | 23,3 % | 50,0 % | **0,0 %** | 80,0 % | 73,3 % | 17 ms | 33 ms |
+| rata gentil (flag encendido) | **84,4 %** | 84,5 % | 84,4 % | 41,7 % | 12,2 % | 1033 ms | 12 033 ms |
+
+Por qué costaba: la rata nace en un hoyo pegado a un mesón, roba en el primer tick (17 ms) y ya está en la salida (33 ms de ventana); va a 2,4 tiles/s en zigzag por centros de casilla; solo la espanta un dash a menos de 1,1 tile, y un cocinero con las manos llenas no puede hacer dash nunca.
+
+Qué cambia (`RAT_GENTLE`): velocidad 2,4 → 1,68 (70 %), tramos rectos de 1,6 s con giro suave (360°/s) y pausa de 0,7 s; no roba en su primer segundo y no se va antes de 12 s (con botín se queda comiendo en el mesón, sin botín espera 14 s; antes 10 s); radio de espanto con dash 1,1 → 1,5, un dash terminado hace menos de 250 ms sigue valiendo hasta 1,9 tiles, y chocar corriendo con ella (≥1,2 tiles/s a menos de 0,6) la espanta aunque lleves las manos llenas; premio de 50 puntos al equipo (más un ding); telegrafía: evento `rat:target` (flecha sobre la rata, línea punteada y aro hasta el mesón que va a robar, sonido `ratTarget`) y `rat:near` a 2,2 tiles (destello de alarma, tres pitidos). El texto de la píldora dice "Dash o choca con ella: +50".

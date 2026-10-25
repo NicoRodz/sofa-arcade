@@ -13,6 +13,7 @@ import { DIRS, isFloor } from './maps';
 import { mulberry32, type Rng } from './rng';
 import type { Difficulty } from './difficulty';
 import { magnetFor } from './feel/magnet';
+import { gentleRatStep, ratPrize } from './feel/rat';
 import type { Game, Item, Station } from './overcooked';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat';
@@ -59,6 +60,8 @@ export interface Rat {
   hole: [number, number]; // where it came in and where it leaves
   scared: boolean;
   idleMs: number;
+  // the gentle rat only (feel/rat.ts): absent in a round without the magnet
+  born?: number; heading?: number; runMs?: number; pauseMs?: number; target?: number; near?: boolean;
 }
 export interface Mid {
   kind: EventKind;
@@ -140,11 +143,13 @@ function scareRat(g: Game, m: Mid, playerId: number) {
     if (st && st.item === null && st.fire === undefined) { st.item = r.item; returned = true; }
     r.item = null;
   }
-  g.bus.emit('rat:scared', { player: playerId, returned });
+  const bonus = g.magnet ? ratPrize(g) : 0; // the gentle rat pays for being scared
+  g.bus.emit('rat:scared', { player: playerId, returned, ...(bonus ? { bonus } : {}) });
 }
 
 function ratStep(g: Game, m: Mid, dtMs: number) {
   const r = m.rat!;
+  if (g.magnet && gentleRatStep(g, m, dtMs, { nextTile, scare: scareRat, gone: ratGone, floor: (gg, x, y) => isFloor(gg.grid, x, y) })) return; // magnetism: the gentle rat (feel/rat.ts); once scared the old flee below takes over
   if (!r.scared) for (const p of g.players.values()) {
     if (p.ghost || p.dashMs <= 0 || Math.hypot(p.x - r.x, p.y - r.y) > RAT_SCARE_RADIUS) continue;
     scareRat(g, m, p.id);

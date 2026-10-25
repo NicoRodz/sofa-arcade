@@ -118,6 +118,8 @@ export const SFX = {
   ratAppear: { bus: 'sfx', voices: [osc('sine', 2300, 0.07, 0.2, { f1: 3100 }), osc('sine', 2500, 0.08, 0.2, { at: 0.11, f1: 3400 })] },
   ratSteal: { bus: 'sfx', pitchVar: 0.05, voices: [noise(0.04, 0.3, { type: 'bandpass', f0: 1800, q: 1.4 }), osc('sine', 2600, 0.09, 0.22, { at: 0.05, f1: 3300 })] },
   ratScared: { bus: 'sfx', voices: [osc('sine', 3400, 0.22, 0.26, { f1: 1200, vib: { rate: 24, depth: 120 } }), noise(0.1, 0.18, { type: 'bandpass', f0: 1800, f1: 5000, q: 0.8 }, { att: 0.03 })] },
+  ratTarget: { bus: 'sfx', voices: [osc('triangle', 520, 0.09, 0.2, { f1: 610 }), osc('triangle', 700, 0.11, 0.2, { at: 0.12, f1: 820 })] }, // the gentle rat has picked a counter: a question
+  ratNear: { bus: 'sfx', voices: [0, 0.1, 0.2].map((at) => osc('square', 1250, 0.05, 0.16, { at, filter: { type: 'lowpass', f0: 3000 } })) }, // ...and is nearly there: three quick blips
 } as const satisfies Record<string, Sfx>;
 export type SfxId = keyof typeof SFX;
 
@@ -217,6 +219,8 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   'event:inspector': (p) => [play(p.passed ? 'inspectorPass' : 'inspectorFail')],
   'rat:appear': () => [play('ratAppear')],
   'rat:steal': () => [play('ratSteal')],
-  'rat:scared': () => [play('ratScared')],
+  'rat:scared': (p) => (p.bonus ? [play('ratScared'), play('ding')] : [play('ratScared')]), // the prize for scaring the gentle rat is a ding
+  'rat:target': () => [play('ratTarget')],
+  'rat:near': () => [play('ratNear')],
   'rat:gone': () => [],
 };

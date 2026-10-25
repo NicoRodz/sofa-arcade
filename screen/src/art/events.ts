@@ -12,6 +12,7 @@ import { circle, drawOutlined, makeTex, rr, vgrad, type Ctx } from './gfx';
 import { foodKey, ITEM_KIND } from './food';
 import { type Fx, makeText } from './fx';
 import { place } from './stations';
+import { RatSignal } from './ratSignal';
 
 /** Colour of each event: the banner, its pill and its badge. */
 export const EVENT_COLOR: Record<EventKind, { main: string; dark: string }> = {
@@ -128,10 +129,12 @@ export class EventsView {
   private edgeT = 0;
   private rat: { img: Phaser.GameObjects.Image; item: Phaser.GameObjects.Image | null; itemKey: string; lastX: number; face: 1 | -1; bob: number } | null = null;
   private stamps: Phaser.GameObjects.Text[] = [];
+  private signal: RatSignal; // the gentle rat's arrow, dashed line and alarm (draws nothing without the magnet)
 
   constructor(private scene: Phaser.Scene, private game: Game, private view: { teams: readonly TeamInfo[] | null } | undefined, private fx: Fx, bus: Emitter<GameEvents>) {
     this.dark = scene.add.rectangle(W / 2, 104 + (H - 104) / 2, W, H - 104, 0x080b18).setDepth(1850).setAlpha(0).setVisible(false);
     this.edges = scene.add.graphics().setDepth(1860).setVisible(false);
+    this.signal = new RatSignal(scene, game, fx, bus);
     const on = <K extends keyof GameEvents>(k: K, fn: (p: GameEvents[K]) => void) => this.off.push(bus.on(k, fn));
     const winTile = (team?: number) => { const s = game.stations.find((x) => x.kind === 'window' && (team === undefined || x.owner === team)); return s ? { x: OX + (s.tx + 0.5) * TILE, y: OY + (s.ty + 0.5) * TILE } : { x: W / 2, y: H / 2 }; };
     const tilePx = (tx: number, ty: number) => ({ x: OX + (tx + 0.5) * TILE, y: OY + (ty + 0.5) * TILE });
@@ -251,7 +254,7 @@ export class EventsView {
         const label = g.versus ? g.teams.map((t, i) => `${this.view?.teams?.[i]?.icon ?? ''} ${counts[i]}`).join('   ') : String(counts[0]);
         p.text.setText(counts.every((n) => n === 0) ? '¡INSPECTOR! Todo limpio' : `¡INSPECTOR! Platos sucios: ${label}`);
         p.text.setColor(counts.every((n) => n === 0) ? '#B8F0C0' : C.cream);
-      } else if (p.kind === 'rat') p.text.setText(m.rat?.item ? '¡Se llevó algo! Dash para espantarla' : '¡UNA RATA! Dash para espantarla');
+      } else if (p.kind === 'rat') p.text.setText(m.rat?.item ? '¡Se llevó algo! Dash para espantarla' : g.magnet ? '¡UNA RATA! Dash o choca con ella: +50' : '¡UNA RATA! Dash para espantarla');
       else if (p.kind === 'blackout') p.text.setText(`¡CORTE DE LUZ! ${Math.ceil(left / 1000)} s`);
       else if (p.kind === 'rush') p.text.setText('¡HORA PUNTA! +3 pedidos');
       else if (p.kind === 'birthday') p.text.setText('¡CUMPLEAÑOS! Pedido de 150');
@@ -276,6 +279,7 @@ export class EventsView {
       e.setVisible(true);
     } else this.edges.setVisible(false);
     this.updateRat(dtMs);
+    this.signal.update(dtMs);
   }
 
   private updateRat(dtMs: number) {
@@ -301,7 +305,7 @@ export class EventsView {
     this.off = [];
     this.banner?.destroy(); this.pill?.root.destroy(); this.dark.destroy(); this.edges.destroy();
     for (const b of this.bolts) b.destroy();
-    this.rat?.img.destroy(); this.rat?.item?.destroy();
+    this.rat?.img.destroy(); this.rat?.item?.destroy(); this.signal.destroy();
     for (const s of this.stamps) s.destroy();
     this.banner = null; this.pill = null; this.bolts = []; this.rat = null; this.stamps = [];
   }

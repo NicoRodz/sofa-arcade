@@ -181,6 +181,11 @@ describe('mid-round event sounds', () => {
     expect(ids(ACTIONS['rat:steal']({ station: 4, item: 'raw1' }))).toEqual(['ratSteal']);
     expect(ids(ACTIONS['rat:scared']({ player: 1, returned: true }))).toEqual(['ratScared']);
     expect(ACTIONS['rat:gone']({ stolen: true })).toEqual([]);
+    expect(ids(ACTIONS['rat:scared']({ player: 1, returned: false, bonus: 50 }))).toEqual(['ratScared', 'ding']); // the gentle rat pays: a ding after the squeak
+    expect(ids(ACTIONS['rat:target']({ station: 4 }))).toEqual(['ratTarget']);
+    expect(ids(ACTIONS['rat:near']({ station: 4 }))).toEqual(['ratNear']);
+    expect(SFX.ratNear.voices).toHaveLength(3); // three blips, the urgent one
+    expect(sfxDuration('ratTarget')).toBeLessThan(0.4);
     const squeak = SFX.ratScared.voices.find((v) => v.src === 'sine')!;
     expect(squeak.f1!).toBeLessThan(squeak.f0! / 2);
     expect(sfxDuration('ratSteal')).toBeLessThan(0.2);

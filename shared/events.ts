@@ -61,7 +61,9 @@ export interface GameEvents extends SabotageEvents {
   'event:inspector': { passed: boolean; points: number; team?: number }; // the verdict for a team when the inspector leaves
   'rat:appear': { at: [number, number] }; // coop only
   'rat:steal': { station: number; item: Item };
-  'rat:scared': { player: number; returned: boolean }; // a dash scared it; returned: it dropped the item back on its counter
+  'rat:scared': { player: number; returned: boolean; bonus?: number }; // a dash scared it; returned: it dropped the item back on its counter; bonus: points the gentle rat pays
+  'rat:target': { station: number }; // the gentle rat picked this counter (the screen draws an arrow to it)
+  'rat:near': { station: number }; // ...and is about to get there
   'rat:gone': { stolen: boolean }; // it left (stolen: with an item)
 }
 

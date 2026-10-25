@@ -632,7 +632,7 @@ phaser.events.on(Phaser.Core.Events.POST_RENDER, () => {
     setCount: (i: number, n: number) => { game.stations[i]!.count = n; },
     counters: () => game.stations.map((s, i) => ({ i, kind: s.kind, tx: s.tx, ty: s.ty, fire: s.fire, burnt: !!s.burnt, done: s.done })).filter((s) => s.kind === 'pot' || s.kind === 'counter'),
   },
-  snapshot: () => ({ mid: game.mid && { kind: game.mid.kind, phase: game.mid.phase, dark: game.mid.dark, rat: !!game.mid.rat }, versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
+  snapshot: () => ({ magnet: !!game.magnet, mid: game.mid && { kind: game.mid.kind, phase: game.mid.phase, dark: game.mid.dark, rat: !!game.mid.rat }, versus: game.versus, over: game.over, teams: game.teams.map((t) => ({ id: t.id, n: t.n, score: t.score, delivered: t.delivered, k: t.k, vips: t.vips, orders: t.orders.length })), winner: game.result?.winner ?? null, paused: !!game.paused, fps: phaser.loop.actualFps, phase, players: [...game.players.values()], stations: game.stations, orders: game.orders, time: game.time, score: game.score, countdown: game.countdown, streak: game.streak, bestStreak: game.bestStreak, crowd: [...game.crowd.keys()] }),
 };
 
 $('code').textContent = room;
