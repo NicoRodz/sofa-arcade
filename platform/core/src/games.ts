@@ -1,72 +1,23 @@
 // Game registry: the lobby lists these and the choice travels to the phones as an id.
 // Each game also declares its controls (what the stick and the two buttons are called) and its quick "how to play" steps:
 // the relay sends both to the phones with the lobby config, so a new game needs no change in the controller.
-import { isIconId, type IconId } from './icons';
-import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_MODES, SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
+// F4a: the types live in ./contract (the game contract, EXPERIMENTAL) and each game's entry in games/<id>/manifest.ts; this file keeps the
+// list (GAMES), what is derived from it and the authoring checks, and re-exports every name it used to declare.
+import { isIconId } from './icons';
+import { pizzasManifest, VERSUS_STYLES } from '@pichi/game-pizzas/manifest';
+import { obstaculosManifest } from '@pichi/game-obstaculos/manifest';
+import { COOP_STYLE, COOP_TEAMS, DEFAULT_MODE, MODE_IDS, isModeId } from './contract/options';
+import type { ChoiceSpec, ModeId, ModeSpec } from './contract/options';
+import type { ControlLabel, GameControls, GameInfo, HowTo, HowToStep } from './contract/controls';
+import type { GameManifest } from './contract/game';
 import type { OptionSpec as VoteOptionSpec } from './lobby/vote';
+
+export { COOP_STYLE, COOP_TEAMS, DEFAULT_MODE, MODE_IDS, VERSUS_STYLES, isModeId };
+export type { ChoiceSpec, ModeId, ModeSpec, ControlLabel, GameControls, GameInfo, HowTo, HowToStep };
+export type { ChoiceValue, OptionSpec, TeamSpec, TeamStyle } from './contract/options';
 
 export const PLATFORM = 'Pichiclub';
 
-export interface ControlLabel {
-  label: string;
-  icon: IconId;
-  hold?: boolean;
-} // hold: the button is meant to be kept pressed
-export interface GameControls {
-  stick: ControlLabel;
-  btn1: ControlLabel;
-  btn2: ControlLabel;
-} // btn1 = bit 0 / presses[0], btn2 = bit 1 / presses[1]
-export interface HowToStep {
-  icon: IconId;
-  text: string;
-}
-export interface HowTo {
-  steps: readonly HowToStep[];
-  note?: string;
-}
-export interface GameInfo {
-  controls: GameControls;
-  howTo: HowTo;
-}
-
-// Modes (design pizzas-modalidades-coop-versus §4). A game may declare several ways to play; the lobby shows a selector only when
-// it declares more than one. Cooperative = the team mechanism with a single team, so there is one code path for every mode.
-export const MODE_IDS = ['coop', 'versus', 'ffa', 'teams', 'race'] as const;
-export type ModeId = (typeof MODE_IDS)[number];
-export const DEFAULT_MODE: ModeId = 'coop';
-export const isModeId = (v: unknown): v is ModeId => MODE_IDS.includes(v as ModeId);
-export interface TeamStyle {
-  name: string;
-  color: string;
-  icon: string;
-} // icon is a glyph: colour alone must not tell the teams apart
-// count: how many teams (inclusive range). maxRatio: biggest team / smallest team the lobby accepts (1 = even teams only).
-// handicap: what helps the smaller team: 'score-k' multiplies its points, 'game' is the game's own rule, 'none' nothing.
-export interface TeamSpec {
-  count: readonly [min: number, max: number];
-  maxRatio: number;
-  handicap: 'score-k' | 'none' | 'game';
-  styles?: readonly TeamStyle[];
-}
-export interface OptionSpec {
-  id: string;
-  label: string;
-  default: boolean;
-} // lobby toggles of a mode; the values travel as the opaque modeOptions
-// A lobby choice among a few named values (the sabotage: Apagado / Suave / Caos). It travels in modeOptions as the value's id, and it is the same shape a
-// phone vote needs (choiceVoteSpec): the lobby changes it with the pills, with Left / Right (the Captain's D-pad sends those keys), and a vote could too.
-export interface ChoiceValue {
-  id: string;
-  label: string;
-  blurb?: string;
-}
-export interface ChoiceSpec {
-  id: string;
-  label: string;
-  values: readonly ChoiceValue[];
-  default: string;
-}
 /** The choice as a vote.ts option (menus voting engine), so a vote and the lobby read the same registry. */
 export const choiceVoteSpec = (c: ChoiceSpec, votable = true): VoteOptionSpec => ({
   key: c.id,
@@ -76,111 +27,9 @@ export const choiceVoteSpec = (c: ChoiceSpec, votable = true): VoteOptionSpec =>
   default: c.default,
   votable,
 });
-export interface ModeSpec {
-  id: ModeId;
-  label: string;
-  players: readonly [min: number, max: number]; // total players the mode admits
-  teams?: TeamSpec; // absent: the mode has no teams (free for all)
-  howTo?: HowTo;
-  controls?: Partial<GameControls>; // override the game's own when the mode changes them
-  options?: readonly OptionSpec[];
-  choices?: readonly ChoiceSpec[]; // lobby choices among named values (the sabotage level)
-  soon?: boolean; // declared but not selectable yet (the lobby does not offer it)
-}
-export const COOP_STYLE: TeamStyle = { name: 'Equipo', color: '#F4C430', icon: '★' };
-export const VERSUS_STYLES: readonly TeamStyle[] = [
-  // chili red-orange + triangle against navy + circle: apart for colour-blind players too. Both are darker than every chef colour (palette in
-  // protocol.ts COLORS): the first draft (#F26A1B, #1E6BD6) sat at a perceptual distance of 7 and 9 from the orange and blue chefs, these at 22 and 31.
-  { name: 'Picantes', color: '#A8330A', icon: '▲' },
-  { name: 'Frescos', color: '#14338A', icon: '●' },
-];
-export const COOP_TEAMS: TeamSpec = { count: [1, 1], maxRatio: 1, handicap: 'none', styles: [COOP_STYLE] };
+export type GameDef = GameManifest; // the registry entry is the contract's manifest
 
-export interface GameDef extends GameInfo {
-  id: string;
-  name: string;
-  blurb: string;
-  minPlayers: number;
-  maxPlayers: number;
-  modes?: readonly ModeSpec[];
-  defaultMode?: ModeId;
-} // the range is inclusive; the menu card shows it and disables itself outside it
-
-export const GAMES = [
-  {
-    id: 'pizzas',
-    name: '¡Que salgan las pizzas!',
-    blurb: 'Estira la masa, corta, hornea y entrega antes de que se acabe la paciencia.',
-    minPlayers: 2,
-    maxPlayers: 8,
-    controls: {
-      stick: { label: 'Mover', icon: 'move' },
-      btn1: { label: 'Tomar / Soltar', icon: 'grab' },
-      btn2: { label: 'Picar / Correr', icon: 'chop' }, // held to chop; a tap with empty hands and no station in front dashes (R2). No "hold" hint: it would not fit under the longer label
-    },
-    howTo: {
-      steps: [
-        { icon: 'crate', text: 'Toma masa y tomate de las cajas' },
-        { icon: 'chop', text: 'Pícalos en la tabla manteniendo el botón' },
-        { icon: 'oven', text: 'Llévalos al horno y sácala a tiempo: si se pasa, se quema' },
-        { icon: 'bell', text: 'Entrega la pizza en el mostrador antes de que venza el pedido' },
-      ],
-      note: 'Todos cooperan por el puntaje de equipo',
-    },
-    modes: [
-      { id: 'coop', label: 'Cooperativo', players: [2, 8], teams: COOP_TEAMS },
-      {
-        id: 'versus',
-        label: 'Duelo de cocinas',
-        players: [2, 8], // the lobby only offers it from 4 (even) or an odd count with a valid handicap: see versusAvailability
-        teams: { count: [2, 2], maxRatio: 2, handicap: 'score-k', styles: VERSUS_STYLES },
-        howTo: {
-          steps: [
-            { icon: 'crate', text: 'Cada equipo tiene su cocina, con los mismos pedidos' },
-            { icon: 'chop', text: 'Prepara las pizzas más rápido que el otro equipo' },
-            { icon: 'oven', text: 'El pedido dorado es para el primero que lo entregue' },
-            { icon: 'bell', text: 'Gana el equipo con más puntos al acabar el tiempo' },
-          ],
-          note: 'Con sabotaje: junta basura en el cubo, lánzala desde la catapulta y limpia la que te caiga. Si los equipos son desiguales, el chico gana un multiplicador',
-        },
-        options: [
-          { id: 'hiddenScore', label: 'Marcador oculto al final', default: true },
-          { id: 'handicap', label: 'Ventaja para el equipo chico', default: true },
-        ],
-        choices: [
-          {
-            id: SABOTAGE_OPTION,
-            label: 'Sabotaje',
-            values: SABOTAGE_MODES.map((m) => ({ id: m, label: SABOTAGE_LABEL[m], blurb: SABOTAGE_BLURB[m] })),
-            default: 'soft',
-          },
-        ],
-      },
-    ],
-    defaultMode: 'coop',
-  },
-  {
-    id: 'obstaculos',
-    name: 'Obstáculos en cadena',
-    blurb: 'Una cuadrilla de exploradores cruza cinco paisajes: salten, suban sobre sus compañeros y lleguen TODOS a la meta.',
-    minPlayers: 2,
-    maxPlayers: 8,
-    controls: {
-      stick: { label: 'Moverse', icon: 'move' },
-      btn1: { label: 'Saltar', icon: 'jump' },
-      btn2: { label: 'Agarrar', icon: 'grab' },
-    },
-    howTo: {
-      steps: [
-        { icon: 'star', text: 'Lleguen TODOS a la meta' },
-        { icon: 'jump', text: 'Súbete sobre un compañero para llegar más alto' },
-        { icon: 'grab', text: 'B agarra; con un compañero, B otra vez lo lanza. Sin nada, te planta' },
-        { icon: 'plate', text: 'Si te quedas fuera de cámara, vuelves en burbuja' },
-      ],
-      note: 'Todos cooperan por el equipo',
-    },
-  },
-] as const satisfies readonly GameDef[];
+export const GAMES = [pizzasManifest, obstaculosManifest] as const satisfies readonly GameDef[];
 
 // Announced games: the menu shows them as a "Próximamente" card (not selectable). Not in GAMES, so config and phones never see them.
 // Once a game with the same id is published in GAMES, its announcement stops showing by itself.

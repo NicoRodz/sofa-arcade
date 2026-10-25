@@ -1,0 +1,1 @@
+export { obstaculosScreen } from './game';
