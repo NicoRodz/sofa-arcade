@@ -49,6 +49,7 @@ function readRows(env: FocusEnv): { rows: FocusRow[]; els: Map<string, FocusEl[]
       sel: items.findIndex((e) => e.classList.contains('sel')),
       live: s.live,
       start: s.start,
+      cols: s.cols,
     });
   }
   return { rows, els };

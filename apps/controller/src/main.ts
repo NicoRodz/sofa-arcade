@@ -35,6 +35,7 @@ import {
 } from '@pichi/core';
 import type { IconId } from '@pichi/core/icons';
 import { attend } from '@pichi/controller-kit/attention';
+import { bindRemote } from '@pichi/controller-kit/remote';
 import { outcomeFor, type Outcome, type PhoneResult } from '@pichi/game-pizzas/sim/versus/report';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -310,23 +311,11 @@ function renderCaptain() {
   $('who').textContent = crown + myName;
   $('who2').textContent = crown + myName;
 }
-for (const b of Array.from(document.querySelectorAll<HTMLElement>('#remote [data-nav]'))) {
-  const up = () => b.classList.remove('down');
-  // pointerdown (not click): the D-pad answers the instant the thumb lands, like the pad's buttons
-  b.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    const key = b.dataset.nav;
-    if (!isNavKey(key) || !isCaptain()) return;
-    b.classList.add('down');
-    try {
-      navigator.vibrate?.(8);
-    } catch {
-      /* no vibration API (iOS) */
-    }
-    tx({ t: 'nav', key }); // no id in it: the relay knows which phone this socket is
-  });
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, up);
-}
+bindRemote(Array.from(document.querySelectorAll<HTMLElement>('#remote [data-nav]')), {
+  isCaptain,
+  isNavKey,
+  send: (key) => tx({ t: 'nav', key }),
+});
 
 // Suggested station card: informs, never blocks. "Cambiar" cycles to another puesto and tells the screen.
 let puestoPool: PuestoId[] = [];

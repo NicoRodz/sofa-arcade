@@ -6,6 +6,7 @@ export interface RowSpec {
   items: string; // selector of the focusable items inside it
   live: boolean; // left/right picks the neighbour at once (a segmented choice); false: they only move the cursor, Enter picks
   start?: boolean;
+  cols?: number; // grid rows: the columns of the CSS grid (index.html #maps, #obstlevels)
 }
 
 export const LOBBY_ROWS: readonly RowSpec[] = [
@@ -15,8 +16,8 @@ export const LOBBY_ROWS: readonly RowSpec[] = [
   { id: 'sabs', root: 'sabs', items: '[data-sab]', live: true },
   { id: 'evs', root: 'evs', items: '[data-ev]', live: true },
   { id: 'muts', root: 'muts', items: '[data-mut]', live: true },
-  { id: 'maps', root: 'maps', items: '[data-map]', live: false },
-  { id: 'obstlevels', root: 'obstlevels', items: '[data-level]', live: false },
+  { id: 'maps', root: 'maps', items: '[data-map]', live: false, cols: 7 },
+  { id: 'obstlevels', root: 'obstlevels', items: '[data-level]', live: false, cols: 6 },
   { id: 'teambar', root: 'teambar', items: 'button', live: false },
   { id: 'howto', root: 'howtobtn', items: ':scope', live: false },
   { id: 'start', root: 'start', items: ':scope', live: false, start: true },

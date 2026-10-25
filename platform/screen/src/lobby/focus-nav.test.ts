@@ -64,3 +64,24 @@ describe('pressFocus', () => {
     expect(pressFocus(at('diffs'), [], 'ArrowDown').handled).toBe(false);
   });
 });
+
+describe('grid rows: up/down walk the lines of the map grid before leaving it', () => {
+  const grid: FocusRow = { id: 'maps', count: 17, disabled: Array(17).fill(false), sel: -1, live: false, cols: 7 };
+  const top: FocusRow = { id: 'diffs', count: 3, disabled: [false, false, false], sel: 1, live: true };
+  const bottom: FocusRow = { id: 'start', count: 1, disabled: [false], sel: -1, live: false, start: true };
+  const rowsG = [top, grid, bottom];
+  const on = (cursor: number) => ({ row: 'maps', cursor: { maps: cursor } });
+  it('down moves a line in the same column, the short last line takes its last item, then the row changes', () => {
+    expect(pressFocus(on(2), rowsG, 'ArrowDown').state.cursor.maps).toBe(9);
+    expect(pressFocus(on(9), rowsG, 'ArrowDown').state.cursor.maps).toBe(16);
+    expect(pressFocus(on(16), rowsG, 'ArrowDown').state.row).toBe('start');
+  });
+  it('up walks back and leaves the row from the first line', () => {
+    expect(pressFocus(on(9), rowsG, 'ArrowUp').state.cursor.maps).toBe(2);
+    expect(pressFocus(on(2), rowsG, 'ArrowUp').state.row).toBe('diffs');
+  });
+  it('skips a disabled item in the column', () => {
+    const blocked = { ...grid, disabled: grid.disabled.map((_, i) => i === 9) };
+    expect(pressFocus(on(2), [top, blocked, bottom], 'ArrowDown').state.cursor.maps).toBe(16);
+  });
+});

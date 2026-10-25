@@ -10,6 +10,7 @@ export interface FocusRow {
   sel: number;
   live: boolean;
   start?: boolean;
+  cols?: number; // a grid row laid out in this many columns: up/down walk its lines before they leave the row
 }
 export interface FocusState {
   row: string;
@@ -38,6 +39,15 @@ export function stepItem(r: FocusRow, from: number, dir: 1 | -1): number {
   return -1;
 }
 
+// The item one line up/down in a grid row (same column; the short last line takes its last item), or -1 when the cursor is already on the first/last line.
+export function stepLine(r: FocusRow, from: number, dir: 1 | -1): number {
+  const cols = r.cols ?? r.count;
+  for (let i = from + dir * cols; i >= 0 && i < r.count; i += dir * cols) if (!r.disabled[i]) return i;
+  const last = r.count - 1;
+  if (dir === 1 && Math.floor(from / cols) < Math.floor(last / cols) && !r.disabled[last]) return last;
+  return -1;
+}
+
 export function pressFocus(state: FocusState, rows: readonly FocusRow[], key: string, repeat = false): FocusResult {
   const nav = navigable(rows);
   const miss: FocusResult = { state, handled: false };
@@ -47,6 +57,8 @@ export function pressFocus(state: FocusState, rows: readonly FocusRow[], key: st
   const row = nav[at]!;
   const here: FocusState = { ...state, row: row.id };
   if (key === 'ArrowUp' || key === 'ArrowDown') {
+    const inGrid = row.cols ? stepLine(row, cursorOf(here, row), key === 'ArrowUp' ? -1 : 1) : -1;
+    if (inGrid >= 0) return { state: { ...here, cursor: { ...here.cursor, [row.id]: inGrid } }, handled: true };
     const next = nav[Math.max(0, Math.min(nav.length - 1, at + (key === 'ArrowUp' ? -1 : 1)))]!;
     return { state: { ...here, row: next.id }, handled: true };
   }
