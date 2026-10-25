@@ -15,7 +15,6 @@
   "games/obstaculos/screen/campaign/screen.ts": { "max": 347, "until": "2027-03-31" },
   "games/obstaculos/screen/harness/capture.ts": { "max": 459, "until": "2027-03-31" },
   "games/obstaculos/screen/render/adapter.ts": { "max": 304, "until": "2027-03-31" },
-  "games/obstaculos/screen/render/entities.ts": { "max": 896, "until": "2027-03-31" },
   "games/obstaculos/screen/render/obstacles-view.ts": { "max": 514, "until": "2027-03-31" },
   "games/obstaculos/screen/render/parallax.ts": { "max": 490, "until": "2027-03-31" },
   "games/obstaculos/screen/render/rig.ts": { "max": 593, "until": "2027-03-31" },
@@ -69,7 +68,7 @@
  },
  "folders": {
   "games/obstaculos/campaign": { "max": 15, "until": "2026-12-31" },
-  "games/obstaculos/screen/render": { "max": 18, "until": "2026-12-31" },
+  "games/obstaculos/screen/render": { "max": 17, "until": "2026-12-31" },
   "games/obstaculos/sim": { "max": 18, "until": "2026-12-31" },
   "games/pizzas/screen/art": { "max": 16, "until": "2026-12-31" },
   "games/pizzas/sim": { "max": 17, "until": "2026-12-31" },
