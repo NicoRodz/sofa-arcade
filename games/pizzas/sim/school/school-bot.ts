@@ -2,7 +2,8 @@
 // any number of them. The browser screen and the ws tests use the same createSchool; this is only the hands.
 import { DIRS, isFloor } from '../maps';
 import { Emitter, type GameEvents } from '@pichi/core/events';
-import { TICK_MS, targetStation, type Controls, type Game, type Player, type Station } from '../overcooked';
+import { TICK_MS, type Controls, type Game, type Player, type Station } from '../round/state';
+import { targetStation } from '../round/targeting';
 import type { ClientMsg } from '@pichi/core';
 import { createSchool, type School, type SchoolMember } from './school';
 import { SCHOOL_TOTAL } from './steps';

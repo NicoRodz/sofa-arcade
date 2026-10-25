@@ -1,10 +1,10 @@
-// What the sim does differently in a round with a Carta del día (`createGame({ recipes: true })`). overcooked.ts keeps only one-line hooks into these functions;
+// What the sim does differently in a round with a Carta del día (`createGame({ recipes: true })`). round/ keeps only one-line hooks into these functions;
 // every one of them does exactly what the old code did when `g.rec` is null, which is what keeps the golden rounds and the mirror proofs byte for byte.
 //   - the orders draw their recipe from the card (one draw of the team's own stream per slot: both teams of a versus round see twin queues);
 //   - the cheese crate gives the topping of the card's recipe (cheese, pepperoni or mushroom);
 //   - slicing pepperoni takes longer; a pot with dough and tomato can be FOLDED (hold Picar at the oven) into a calzone, which bakes longer;
 //   - the window matches a plate to an order by recipe.
-import type { Game, Item, Order, Station } from '../overcooked';
+import type { Game, Item, Order, Station } from '../round/state';
 import type { Rng } from '@pichi/core/rng';
 import { cardFor, type Card } from './cards';
 import { CALZONE_COOK_MULT, FOLD_MS, RAW_OF, RECIPE_DEFS, SLICE_MULT, TOPPING_RECIPE, dishRecipe, type Recipe } from './defs';

@@ -13,7 +13,7 @@
 // The Ayudante keeps its own rules (assist.ts) and reach x1.5, plus `assistExtra` of reach more when the magnet is on.
 import { isFloor } from '../maps';
 import type { Difficulty, Tuning } from '@pichi/core/difficulty';
-import type { Game, Player, Station } from '../overcooked';
+import type { Game, Player, Station } from '../round/state';
 
 export type MagnetLevel = 'normal' | 'strong';
 export const MAGNET_OPTION = 'magnet'; // lobby option (false switches it off for the round); missing = the difficulty's default

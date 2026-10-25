@@ -8,7 +8,7 @@
 //  - it announces itself: `rat:target` when it picks a counter and `rat:near` when it is about to arrive (the screen draws an arrow and sounds a cue)
 //  - a prize for scaring it: RAT_BONUS points to the team
 // The sim hands over its helpers (`RatKit`), so this file imports nothing from it but types.
-import type { Game, Player } from '../overcooked';
+import type { Game, Player } from '../round/state';
 import type { Mid, Rat } from '../midround';
 
 export const RAT_GENTLE = {

@@ -2,7 +2,7 @@
 // easier for ONE chef without touching anyone else's. Pure constants and rules; the sim reads them only for a chef whose `assist` flag is set,
 // so a round with nobody on Ayudante runs exactly as before (the coop golden rounds and the mirror proof pin that).
 //
-// What it gives (all of it behind the flag, see overcooked.ts):
+// What it gives (all of it behind the flag, see round/targeting.ts and round/chef.ts):
 //  - reach x1.5 and auto-aim: A / B work on the NEAREST usable station within the bigger radius, and the chef turns to it by itself (auto-grab)
 //  - no inertia: the stick moves the chef at once (the 'normal' difficulty smooths the speed; this chef never feels that)
 //  - one-tap chopping: a tap of B starts the cut / the wash and it goes on while the chef stays at the station (the stick pulling away, or the item done, ends it)

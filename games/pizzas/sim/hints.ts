@@ -5,7 +5,9 @@
 // It mirrors interact() / the B rules of overcooked.ts; hints.test.ts pins each case against what the sim really does.
 import type { IconId } from '@pichi/core/icons';
 import type { ClientMsg, HintLabels } from '@pichi/core';
-import { aStation, floorItemNear, targetStation, type Game, type Item, type Player, type Station } from './overcooked';
+import { aStation, targetStation } from './round/targeting';
+import { floorItemNear } from './round/hazards';
+import type { Game, Item, Player, Station } from './round/state';
 import { isAiming, sabotageHint } from './sabotage';
 import { RAW_OF, cutType, isDish } from './recipes/defs';
 import { canFold } from './recipes/sim';

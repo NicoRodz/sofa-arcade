@@ -5,7 +5,7 @@
 // Value = the recipe's base points (recipeBase); effort = RECIPE_DEFS[r].effort (how much longer it takes to make than a Marinara). Both mixes use the same
 // weights as the orders. With a card like Marinara + Pepperoni + Calzone this is about 0.98; Marinara + Calzone on a map with no cheese about 1.05.
 // The efforts are design estimates (no playtest yet): they are the numbers to calibrate with real rounds.
-import type { Game } from '../overcooked';
+import type { Game } from '../round/state';
 import { RECIPE_DEFS, recipeBase, type Recipe } from './defs';
 
 export const STARS_TABLE_LEGACY = 1;

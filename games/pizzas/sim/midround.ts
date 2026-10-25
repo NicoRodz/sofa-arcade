@@ -14,7 +14,7 @@ import { mulberry32, type Rng } from '@pichi/core/rng';
 import type { Difficulty } from '@pichi/core/difficulty';
 import { magnetFor } from './feel/magnet';
 import { gentleRatStep, ratPrize } from './feel/rat';
-import type { Game, Item, Station } from './overcooked';
+import type { Game, Item, Station } from './round/state';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat';
 export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat'];

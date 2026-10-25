@@ -1,7 +1,8 @@
 // What the Versus screens show, as plain data (design pizzas-modalidades-coop-versus §3 "HUD" and "Resultados"): the verdict of a round,
 // the numbers of each team, its MVP, the series of the session, the hidden scoreboard and the lead changes. Pure: no clock, no I/O, no DOM.
 import type { Emitter, GameEvents } from '@pichi/core/events';
-import type { Game, Recipe } from '../overcooked';
+import type { Game } from '../round/state';
+import type { Recipe } from '../recipes/defs';
 import { summarizeTeam, type TeamSummary } from '../results';
 import { compareTeams, type TeamId, type TeamInfo, type TeamResult } from '@pichi/core/lobby/teams';
 

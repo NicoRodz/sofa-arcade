@@ -1,4 +1,4 @@
-// Versus sabotage rules (plan versus-sabotaje-basura, sections 2, 3 and 5), on top of the generic floor hazards of the sim (overcooked.ts).
+// Versus sabotage rules (plan versus-sabotaje-basura, sections 2, 3 and 5), on top of the generic floor hazards of the sim (round/hazards.ts).
 // Pure and deterministic: no clock, no I/O, no RNG. The sim calls these hooks only when `g.sab` exists, i.e. a versus round with the
 // option on and a catapult in each kitchen; otherwise none of this runs.
 //
@@ -12,7 +12,7 @@ import { DIRS, MAP_H, MAP_W, isFloor, type Pos, type SigmaName } from './maps';
 import { SIGMAS } from './symmetry';
 import { isDish } from './recipes/defs';
 import { addFloorItem, pilesIn } from './floor';
-import type { Game, Item, Player, Station } from './overcooked';
+import type { Game, Item, Player, Station } from './round/state';
 import {
   ADJUST_MAX,
   AIM_MAX_MS,

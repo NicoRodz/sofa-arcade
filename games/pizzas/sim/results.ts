@@ -1,5 +1,5 @@
 // What the results screen shows, as plain data (R17 + the numbers that explain the score).
-import type { Game } from './overcooked';
+import type { Game } from './round/state';
 import { starThresholds, stars } from './stars';
 import { recipeStarFactor, starsTable } from './recipes/stars';
 

@@ -4,7 +4,9 @@
 // school messages to the phones).
 import type { Emitter, GameEvents } from '@pichi/core/events';
 import { chefHint, createHintSync } from '../hints';
-import { TICK_MS, addPlayer, createGame, removePlayer, tick, type Controls, type Game } from '../overcooked';
+import { TICK_MS, type Controls, type Game } from '../round/state';
+import { addPlayer, createGame, removePlayer } from '../round/create';
+import { tick } from '../round/step';
 import { clearPot } from '../burn';
 import type { ClientMsg } from '@pichi/core';
 import { SCHOOL_MAP_ID, SCHOOL_ROWS } from './school-map';

@@ -2,7 +2,8 @@
 // This file is the data and the pure rules of one chef's progress: which events finish a step, which item belongs in the hands at each step,
 // which phone button to light. The session that runs them over the real sim is school.ts.
 import type { IconId } from '@pichi/core/icons';
-import type { Item, StationKind } from '../overcooked';
+import type { Item } from '../round/state';
+import type { StationKind } from '../maps';
 
 export interface SchoolStep {
   id: 'dough' | 'tomato' | 'oven' | 'serve';
