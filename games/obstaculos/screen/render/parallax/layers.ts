@@ -1,128 +1,10 @@
-// Background: sky gradient, three parallax layers drawn once per biome from seeded periodic noise, and the "outside the level" fill.
-import type Phaser from 'phaser';
-import type { Biome } from '../../index';
-import { INK, PALETTES, hexToInt, lerpColor, type Palette } from './biome';
-const lerpHex = (a: string, b: string, t: number): string => {
-  const m = /rgb\((\d+),(\d+),(\d+)\)/.exec(lerpColor(a, b, t))!;
-  return '#' + [m[1], m[2], m[3]].map((v) => Number(v).toString(16).padStart(2, '0')).join('');
-};
-import type { Ctx } from './tiledraw';
+// The three parallax layers (far, mid, near), drawn once per biome onto a tileable canvas.
+import { TW, ground, palm, peaks, profile, rngOf, tree } from './noise';
+import type { Biome } from '../../../index';
+import { lerpColor, type Palette } from '../biome';
+import type { Ctx } from '../tiledraw';
 
-const TW = 1024,
-  TH = 512;
-export const LAYER_FACTORS = [0.12, 0.3, 0.58] as const;
-
-function rngOf(seed: number) {
-  let s = seed >>> 0 || 1;
-  return () => {
-    s ^= s << 13;
-    s >>>= 0;
-    s ^= s >>> 17;
-    s ^= s << 5;
-    s >>>= 0;
-    return s / 4294967296;
-  };
-}
-// Seamless height profile in [-1, 1]: integer frequencies over the texture width.
-function profile(seed: number, harmonics: number[]) {
-  const r = rngOf(seed);
-  const parts = harmonics.map((k, i) => ({ k, a: 1 / (1 + i * 0.9), ph: r() * Math.PI * 2 }));
-  const norm = parts.reduce((s, p) => s + p.a, 0);
-  return (x: number) => parts.reduce((s, p) => s + Math.sin((x / TW) * Math.PI * 2 * p.k + p.ph) * p.a, 0) / norm;
-}
-function ground(c: Ctx, f: (x: number) => number, base: number, amp: number, color: string) {
-  c.beginPath();
-  c.moveTo(0, TH);
-  for (let x = 0; x <= TW; x += 8) c.lineTo(x, base + f(x) * amp);
-  c.lineTo(TW, TH);
-  c.closePath();
-  c.fillStyle = color;
-  c.fill();
-}
-function peaks(
-  c: Ctx,
-  seed: number,
-  n: number,
-  baseY: number,
-  hMin: number,
-  hMax: number,
-  wMin: number,
-  wMax: number,
-  color: string,
-  snow?: string,
-) {
-  const r = rngOf(seed);
-  for (let i = 0; i < n; i++) {
-    const cx = (i + r() * 0.8) * (TW / n),
-      w = wMin + r() * (wMax - wMin),
-      h = hMin + r() * (hMax - hMin);
-    for (const off of [0, -TW, TW]) {
-      // wrap
-      const x0 = cx + off;
-      if (x0 + w < 0 || x0 - w > TW) continue;
-      c.beginPath();
-      c.moveTo(x0 - w, baseY + 40);
-      c.lineTo(x0 - w * 0.12, baseY - h);
-      c.lineTo(x0 + w * 0.2, baseY - h * 0.92);
-      c.lineTo(x0 + w, baseY + 40);
-      c.closePath();
-      c.fillStyle = color;
-      c.fill();
-      if (snow) {
-        c.beginPath();
-        c.moveTo(x0 - w * 0.12, baseY - h);
-        c.lineTo(x0 + w * 0.2, baseY - h * 0.92);
-        c.lineTo(x0 + w * 0.34, baseY - h * 0.66);
-        c.lineTo(x0 + w * 0.12, baseY - h * 0.72);
-        c.lineTo(x0 - w * 0.02, baseY - h * 0.6);
-        c.lineTo(x0 - w * 0.3, baseY - h * 0.66);
-        c.closePath();
-        c.fillStyle = snow;
-        c.fill();
-      }
-    }
-  }
-}
-const tree = (c: Ctx, x: number, baseY: number, h: number, w: number, trunk: string, leaf: string) => {
-  c.fillStyle = trunk;
-  c.fillRect(x - w / 2, baseY - h, w, h + 4);
-  c.fillStyle = leaf;
-  for (let i = 0; i < 4; i++) {
-    const yy = baseY - h * (0.35 + i * 0.2);
-    c.beginPath();
-    c.moveTo(x - w * (3.4 - i * 0.6), yy + h * 0.14);
-    c.lineTo(x, yy - h * 0.2);
-    c.lineTo(x + w * (3.4 - i * 0.6), yy + h * 0.14);
-    c.closePath();
-    c.fill();
-  }
-};
-const palm = (c: Ctx, x: number, baseY: number, h: number, trunk: string, leaf: string) => {
-  c.strokeStyle = trunk;
-  c.lineWidth = 9;
-  c.lineCap = 'round';
-  c.beginPath();
-  c.moveTo(x, baseY + 6);
-  c.quadraticCurveTo(x + h * 0.12, baseY - h * 0.5, x + h * 0.22, baseY - h);
-  c.stroke();
-  c.strokeStyle = leaf;
-  c.lineWidth = 7;
-  const tx = x + h * 0.22,
-    ty = baseY - h;
-  for (const a of [-2.7, -2.1, -1.4, -0.7, -0.1]) {
-    c.beginPath();
-    c.moveTo(tx, ty);
-    c.quadraticCurveTo(
-      tx + Math.cos(a) * h * 0.3,
-      ty + Math.sin(a) * h * 0.3 - 10,
-      tx + Math.cos(a) * h * 0.5,
-      ty + Math.sin(a) * h * 0.5 + 14,
-    );
-    c.stroke();
-  }
-};
-
-function layerFar(c: Ctx, b: Biome, p: Palette) {
+export function layerFar(c: Ctx, b: Biome, p: Palette) {
   const haze = p.haze;
   const col = lerpColor(p.far, haze, 0.25);
   switch (b) {
@@ -185,7 +67,7 @@ function layerFar(c: Ctx, b: Biome, p: Palette) {
     }
   }
 }
-function layerMid(c: Ctx, b: Biome, p: Palette) {
+export function layerMid(c: Ctx, b: Biome, p: Palette) {
   const r = rngOf(7 + b.length);
   const col = lerpColor(p.mid, p.haze, 0.18);
   switch (b) {
@@ -278,7 +160,7 @@ function layerMid(c: Ctx, b: Biome, p: Palette) {
     }
   }
 }
-function layerNear(c: Ctx, b: Biome, p: Palette) {
+export function layerNear(c: Ctx, b: Biome, p: Palette) {
   const r = rngOf(99 + b.length);
   const dark = lerpColor(p.near, '#000000', 0.1);
   switch (b) {
@@ -386,105 +268,5 @@ function layerNear(c: Ctx, b: Biome, p: Palette) {
       ground(c, profile(74, [3, 6]), 509, 4, dark);
       break;
     }
-  }
-}
-
-export function buildParallaxTextures(scene: Phaser.Scene, biome: Biome): string[] {
-  const p = PALETTES[biome];
-  const keys: string[] = [];
-  [layerFar, layerMid, layerNear].forEach((fn, i) => {
-    const key = `obt_bg_${biome}_${i}`;
-    keys.push(key);
-    if (scene.textures.exists(key)) return;
-    const tex = scene.textures.createCanvas(key, TW, TH);
-    if (!tex) throw new Error('parallax texture not created');
-    const c = tex.getContext();
-    c.lineJoin = 'round';
-    c.lineCap = 'round';
-    for (const dx of [0, -TW, TW]) {
-      c.save();
-      c.translate(dx, 0);
-      fn(c, biome, p);
-      c.restore();
-    } // three passes: whatever crosses the edge wraps around
-    c.clearRect(0, 0, TW, 2);
-    c.clearRect(0, TH - 2, TW, 2); // transparent rim: the vertical wrap must not blend ground into sky
-    tex.refresh();
-  });
-  const sky = `obt_sky_${biome}`;
-  if (!scene.textures.exists(sky)) {
-    const tex = scene.textures.createCanvas(sky, 4, 256)!;
-    const c = tex.getContext();
-    const g = c.createLinearGradient(0, 0, 0, 256);
-    g.addColorStop(0, p.skyTop);
-    g.addColorStop(1, p.skyBottom);
-    c.fillStyle = g;
-    c.fillRect(0, 0, 4, 256);
-    tex.refresh();
-  }
-  return keys;
-}
-
-export class Background {
-  private sky: Phaser.GameObjects.Image;
-  private layers: Phaser.GameObjects.TileSprite[];
-  private outside: Phaser.GameObjects.Graphics;
-
-  constructor(
-    scene: Phaser.Scene,
-    layer: Phaser.GameObjects.Layer,
-    outsideLayer: Phaser.GameObjects.Layer,
-    private biome: Biome,
-    private worldW: number,
-    private worldH: number,
-  ) {
-    const keys = buildParallaxTextures(scene, biome);
-    this.sky = scene.add.image(0, 0, `obt_sky_${biome}`).setOrigin(0.5, 0.5);
-    layer.add(this.sky);
-    this.layers = keys.map((k) => {
-      const t = scene.add.tileSprite(0, 0, 3600, TH, k).setOrigin(0.5, 1);
-      layer.add(t);
-      return t;
-    });
-    this.outside = scene.add.graphics();
-    outsideLayer.add(this.outside);
-  }
-
-  update(cx: number, cy: number, viewW: number, viewH: number): void {
-    const margin = 120;
-    this.sky.setPosition(cx, cy).setDisplaySize(viewW + margin, viewH + margin);
-    const H = this.worldH;
-    const bases = [H * 0.86, H * 0.97, H * 1.06];
-    this.layers.forEach((l, i) => {
-      const f = LAYER_FACTORS[i]!;
-      l.setPosition(cx, bases[i]! + (cy - H / 2) * (1 - f) * 0.35);
-      l.setSize(Math.ceil(viewW + margin), TH);
-      l.tilePositionX = cx * f + TW / 2;
-      l.tilePositionY = 0;
-    });
-    // outside the level: dark ground below and dark walls at the sides
-    const pal = PALETTES[this.biome],
-      g = this.outside;
-    g.clear();
-    const x0 = cx - viewW / 2 - 200,
-      x1 = cx + viewW / 2 + 200,
-      y1 = cy + viewH / 2 + 200;
-    g.fillStyle(hexToInt(pal.bodyDark), 1);
-    if (x0 < 0) g.fillRect(x0, cy - viewH / 2 - 200, -x0, y1 - (cy - viewH / 2 - 200));
-    if (x1 > this.worldW) g.fillRect(this.worldW, cy - viewH / 2 - 200, x1 - this.worldW, y1 - (cy - viewH / 2 - 200));
-    if (y1 > this.worldH) {
-      const dark = hexToInt(lerpHex(pal.bodyDark, '#000000', 0.45));
-      g.fillGradientStyle(hexToInt(pal.bodyDark), hexToInt(pal.bodyDark), dark, dark, 1);
-      g.fillRect(x0, this.worldH, x1 - x0, y1 - this.worldH);
-      g.fillStyle(0x2b1b17, 1);
-      g.fillRect(x0, this.worldH - 1, x1 - x0, 3);
-    }
-    void INK;
-  }
-
-  destroy(): void {
-    this.sky.destroy();
-    this.layers.forEach((l) => l.destroy());
-    this.outside.destroy();
   }
 }
