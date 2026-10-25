@@ -3,7 +3,7 @@
 // usage: npx tsx tools/obst-e2e.ts <play|soak|shots|fps|drop|switch|phone> [n=4] [outDir]     env: PORT (3700) PG_CDP_PORT (9444 + PORT % 50) MODE (free|chain) LEVEL (1) DIFF (normal) SOAK_S (300) LAG=1 (150 +- 60 ms, spikes to 370)
 import type { ChildProcess } from 'node:child_process';
 import { startServer } from '../../apps/server/src/server';
-import { killTree } from '../kill-tree';
+import { killTree } from '../proc/kill-tree';
 import { type Cdp, connectCdp, launchChrome } from './browser';
 import { PORT, what } from './config';
 import type { Phone } from './phone';

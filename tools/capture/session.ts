@@ -1,7 +1,7 @@
 import type { ChildProcess } from 'node:child_process';
 import { startServer } from '../../apps/server/src/server';
 import { Bot } from './bots';
-import { killTree } from '../kill-tree';
+import { killTree } from '../proc/kill-tree';
 import { type Cdp, connectCdp, launchChrome } from './browser';
 import { PORT, sleep } from './config';
 import { logSnap } from './report';

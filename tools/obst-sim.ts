@@ -8,7 +8,7 @@ export function playLevel(levelIdx: number, n: number, mode: GameMode, difficult
   const bots = slots.map((i) => new ObstBot(i));
   const counters = slots.map(() => [0, 0]);
   const frames = Math.round(maxSec * 60);
-  let events: string[] = [];
+  const events: string[] = [];
   for (let f = 0; f < frames && s.status !== 'between' && !s.over; f++) {
     const snap = snapshot(s.world);
     const view = { tick: s.world.tick, grid: s.world.grid, players: snap.players, goal: snap.goal };
