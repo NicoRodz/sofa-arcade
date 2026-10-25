@@ -9,7 +9,7 @@ import { FIXED_MAPS, isFloor } from '@party/shared/maps';
 import { roundRules } from '@party/shared/midround';
 import { ACTIONS, runGame, stationsFor, type Action, type Sim } from '../../shared/feel/human-bot';
 import { startServer } from '../src/server';
-import { Phone, kit, idle, until } from './rules-kit';
+import { Phone, forceEvent, kit, idle, playRound, until } from './rules-kit';
 
 beforeAll(async () => { kit.srv = await startServer({ port: 0, mode: 'none' }); });
 afterAll(async () => { await kit.srv.close(); });
@@ -99,4 +99,24 @@ describe('magnetism over the relay', () => {
     r.close();
     expect(res.first).toBeGreaterThan(0.7);
   }, 120_000);
+});
+
+describe('the gentle rat over the relay', () => {
+  const bait = (g: Parameters<typeof forceEvent>[0]) => { g.stations.filter((s) => s.kind === 'counter')[6]!.item = 'raw1'; };
+  it('nobody looks: it announces its counter, does not steal in its first second and does not leave before 12 s', async () => {
+    const r = await playRound('mgr1', { roles: ['idle', 'idle'], seconds: 40, flags: { events: true, magnet: true }, setup: (g) => { forceEvent(g, 'rat', 3000); bait(g); } });
+    const appear = r.of('rat:appear')[0]!.t;
+    expect(r.of('rat:target')).toHaveLength(1);
+    expect(r.of('rat:near')).toHaveLength(1);
+    expect(r.of('rat:steal')[0]!.t - appear).toBeGreaterThanOrEqual(1000);
+    expect(r.of('rat:gone')[0]!.t - appear).toBeGreaterThanOrEqual(12_000);
+    r.close();
+  }, 90_000);
+  it('a phone that runs at it and dashes scares it and the team is paid', async () => {
+    const on = await playRound('mgr2', { roles: ['ratcatcher', 'idle'], seconds: 30, flags: { events: true, magnet: true }, setup: (g) => { forceEvent(g, 'rat', 3000); bait(g); } });
+    expect(on.of('rat:scared')).toHaveLength(1);
+    expect(on.of('rat:scared')[0]!.p).toMatchObject({ bonus: 50 });
+    expect(on.game.score).toBeGreaterThanOrEqual(50);
+    on.close();
+  }, 90_000);
 });

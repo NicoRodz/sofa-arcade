@@ -81,7 +81,7 @@ export function ratcatcher(g: Game, p: Player, frame: number): Controls {
 export type Role = 'cook' | 'firefighter' | 'ratcatcher' | 'idle';
 export interface RoundOpts {
   roles: Role[]; seconds: number; map?: string; difficulty?: 'easy' | 'normal' | 'hard'; seed?: number;
-  flags: { burn?: boolean; fire?: boolean; events?: boolean };
+  flags: { burn?: boolean; fire?: boolean; events?: boolean; magnet?: boolean | 'strong' };
   setup?: (g: Game) => void; // right after createGame and addPlayer
   before?: (g: Game, frame: number) => void; // before each frame is sent
 }
@@ -102,7 +102,7 @@ export async function playRound(room: string, o: RoundOpts) {
   const map = fixedMap(o.map ?? '1')!;
   const game = createGame({ mapId: map.id, rows: map.rows, spawns: map.spawns, difficulty: o.difficulty ?? 'normal', n: phones.length, seed: o.seed ?? 9, bus, countdownMs: COUNTDOWN_MS, ...o.flags });
   game.params.roundMs = o.seconds * 1000;
-  for (const k of ['oven:warn', 'oven:burnt', 'oven:rescued', 'fire:start', 'fire:spread', 'fire:out', 'fire:end', 'douseStart', 'douseStop', 'delivered', 'orderNew', 'event:announce', 'event:start', 'event:end', 'event:inspector', 'rat:appear', 'rat:steal', 'rat:scared', 'rat:gone', 'dash'] as const) bus.on(k, ((p: never) => { log.push({ t: game.time, type: k, p: p as Record<string, unknown> }); }) as never);
+  for (const k of ['oven:warn', 'oven:burnt', 'oven:rescued', 'fire:start', 'fire:spread', 'fire:out', 'fire:end', 'douseStart', 'douseStop', 'delivered', 'orderNew', 'event:announce', 'event:start', 'event:end', 'event:inspector', 'rat:appear', 'rat:steal', 'rat:scared', 'rat:gone', 'rat:target', 'rat:near', 'dash'] as const) bus.on(k, ((p: never) => { log.push({ t: game.time, type: k, p: p as Record<string, unknown> }); }) as never);
   phones.forEach((p, rank) => addPlayer(game, p.id, rank, rank));
   o.setup?.(game);
   screenWs.send(JSON.stringify({ t: 'config', ...DEFAULT_CONFIG }));
