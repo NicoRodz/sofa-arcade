@@ -28,7 +28,7 @@ export const navigable = (rows: readonly FocusRow[]): FocusRow[] => rows.filter(
 
 // Where the cursor is in a row: the stored one for grids, the picked item for live rows; clamped to the row.
 export function cursorOf(state: FocusState, r: FocusRow): number {
-  const c = r.live ? (r.sel >= 0 ? r.sel : 0) : (state.cursor[r.id] ?? (r.sel >= 0 ? r.sel : 0));
+  const c = r.live ? Math.max(0, r.sel) : (state.cursor[r.id] ?? Math.max(0, r.sel));
   return Math.max(0, Math.min(r.count - 1, c));
 }
 
