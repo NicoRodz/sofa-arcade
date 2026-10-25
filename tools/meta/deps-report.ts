@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '../..');
-const DIRS = ['shared', 'screen/src', 'controller/src', 'server/src', 'tools'];
+const DIRS = ['platform', 'games', 'apps', 'tools'];
 const r = spawnSync('npx', ['depcruise', '--config', '.dependency-cruiser.cjs', ...DIRS, '--output-type', 'json'], {
   cwd: ROOT,
   encoding: 'utf8',

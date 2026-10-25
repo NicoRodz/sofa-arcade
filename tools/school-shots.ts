@@ -7,10 +7,10 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { startServer } from '../server/src/server';
-import { createGame, addPlayer, TICK_MS, type Game } from '../shared/overcooked';
-import { SCHOOL_ROWS, SCHOOL_MAP_ID, SCHOOL_TOTAL } from '../shared/tutorial';
-import { botControls, type BotMem } from '../shared/tutorial/schoolBot';
+import { startServer } from '../apps/server/src/server';
+import { createGame, addPlayer, TICK_MS, type Game } from '@pichi/game-pizzas/sim';
+import { SCHOOL_ROWS, SCHOOL_MAP_ID, SCHOOL_TOTAL } from '@pichi/game-pizzas/sim/school';
+import { botControls, type BotMem } from '@pichi/game-pizzas/sim/school/school-bot';
 
 const PORT = Number(process.env.PG_PORT ?? 5100),
   CDP = Number(process.env.PG_CDP ?? 9791);

@@ -1,7 +1,0 @@
-{
-  "name": "screen",
-  "private": true,
-  "type": "module",
-  "scripts": { "build": "vite build", "typecheck": "tsc -p ." },
-  "dependencies": { "@party/shared": "*", "phaser": "^4.2.1" }
-}

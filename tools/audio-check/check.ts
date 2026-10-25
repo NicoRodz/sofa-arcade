@@ -1,7 +1,7 @@
 // Runs in headless Chrome: renders every sound offline and reports peak / RMS / duration.
-import { createChain, playNote, playSfx } from '../../screen/src/audio/synth';
-import { advance, newSched, type Mode } from '../../screen/src/audio/music';
-import { SFX, sfxDuration, type SfxId } from '../../screen/src/audio/recipes';
+import { createChain, playNote, playSfx } from '@pichi/screen-kit/audio/synth';
+import { advance, newSched, type Mode } from '@pichi/screen-kit/audio/music';
+import { SFX, sfxDuration, type SfxId } from '@pichi/screen-kit/audio/recipes';
 
 const SR = 44100;
 const START = 0.1;

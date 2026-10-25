@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { percentile } from '@party/shared/stats';
+import { percentile } from '@pichi/core/stats';
 
 // CSV: kind,player,t_ms,value_ms  (kind = rtt | lag)
 const file = process.argv[2];

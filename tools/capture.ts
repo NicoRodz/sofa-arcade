@@ -5,9 +5,9 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { startServer } from '../server/src/server';
-import { fixedMap } from '../shared/maps';
-import { versusMap } from '../shared/versusMaps';
+import { startServer } from '../apps/server/src/server';
+import { fixedMap } from '@pichi/game-pizzas/sim/maps';
+import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 
 const PORT = Number(process.env.PG_PORT ?? 3200),
   CDP = Number(process.env.PG_CDP ?? 9333);

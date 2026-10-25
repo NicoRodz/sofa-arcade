@@ -1,6 +1,6 @@
 // "Feel" of the A5 numbers that the design assumed (wind 140 px/s, enemy shove 360 px/s, anchor slide 0.5 tile/s) measured with scripted bots on the real sim: success rate and times.
-// usage: npx tsx tools/s1-feel.ts [wind|enemy|anchor]   (no argument = all). The numbers it printed are written down in shared/games/obstaculos/sim/tuning.ts ("A6 feel").
-import { anchorTrial, enemyLevel, playBots, windLevel } from '../shared/games/obstaculos/sim/feelkit';
+// usage: npx tsx tools/s1-feel.ts [wind|enemy|anchor]   (no argument = all). The numbers it printed are written down in games/obstaculos/sim/tuning.ts ("A6 feel").
+import { anchorTrial, enemyLevel, playBots, windLevel } from '@pichi/game-obstaculos/sim/feelkit';
 
 const which = process.argv[2];
 const mean = (a: number[]) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN);

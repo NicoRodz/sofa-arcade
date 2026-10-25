@@ -1,6 +1,6 @@
 // Headless run of the expedition with scripted explorers: usage: npx tsx tools/obst-sim.ts <level> <n> <chain|free> [difficulty] [maxSeconds]
-import { ObstBot, ObstSession, snapshot, LEVELS, type GameMode } from '../shared/games/obstaculos';
-import type { Difficulty } from '../shared/difficulty';
+import { ObstBot, ObstSession, snapshot, LEVELS, type GameMode } from '@pichi/game-obstaculos';
+import type { Difficulty } from '@pichi/core/difficulty';
 
 export function playLevel(levelIdx: number, n: number, mode: GameMode, difficulty: Difficulty = 'normal', maxSec = 240, verbose = false) {
   const slots = Array.from({ length: n }, (_, i) => i);

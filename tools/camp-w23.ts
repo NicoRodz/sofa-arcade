@@ -9,10 +9,10 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { startServer } from '../server/src/server';
-import { ObstBot, type BotView } from '../shared/games/obstaculos';
-import { LEVELS } from '../shared/games/obstaculos/levels';
-import { CAMPAIGN, CAMPAIGN_CATALOG, applyResult, fullMask, newExpedition, type Expedition } from '../shared/games/obstaculos/campaign';
+import { startServer } from '../apps/server/src/server';
+import { ObstBot, type BotView } from '@pichi/game-obstaculos';
+import { LEVELS } from '@pichi/game-obstaculos/levels';
+import { CAMPAIGN, CAMPAIGN_CATALOG, applyResult, fullMask, newExpedition, type Expedition } from '@pichi/game-obstaculos/campaign';
 
 const PORT = Number(process.env.PORT ?? 4800),
   CDP = Number(process.env.CDP ?? 9770);

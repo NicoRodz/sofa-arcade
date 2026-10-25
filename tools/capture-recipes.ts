@@ -6,7 +6,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { startServer } from '../server/src/server';
+import { startServer } from '../apps/server/src/server';
 
 const PORT = Number(process.env.PG_PORT ?? 5000),
   CDP = Number(process.env.PG_CDP ?? 9790);
@@ -144,7 +144,7 @@ interface Snap {
   orders: { recipe: string }[];
 }
 
-// the playfield: 16x9 tiles of TILE px from (OX, OY) on the 1920x1080 canvas (screen/src/art/tokens.ts)
+// the playfield: 16x9 tiles of TILE px from (OX, OY) on the 1920x1080 canvas (platform/screen/src/art/tokens.ts)
 const TILE = Math.floor((1080 - 104) / 9),
   OX = Math.floor((1920 - TILE * 16) / 2),
   OY = 104 + Math.floor((1080 - 104 - TILE * 9) / 2);

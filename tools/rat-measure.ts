@@ -1,9 +1,9 @@
-// How often the imperfect chef (shared/feel/rat-bot.ts) scares the mid-round rat inside its window, with the plain rat and with the gentle one.
+// How often the imperfect chef (games/pizzas/sim/feel/rat-bot.ts) scares the mid-round rat inside its window, with the plain rat and with the gentle one.
 //   npx tsx tools/rat-measure.ts [--seeds 12] [--opts '{"magnet":true}'] [--difficulty normal]
-import { FIXED_MAPS, isFloor } from '../shared/maps';
-import { addPlayer, createGame, tick } from '../shared/overcooked';
-import { runRat } from '../shared/feel/rat-bot';
-import type { Sim } from '../shared/feel/human-bot';
+import { FIXED_MAPS, isFloor } from '@pichi/game-pizzas/sim/maps';
+import { addPlayer, createGame, tick } from '@pichi/game-pizzas/sim';
+import { runRat } from '@pichi/game-pizzas/sim/feel/rat-bot';
+import type { Sim } from '@pichi/game-pizzas/sim/feel/human-bot';
 
 const args = process.argv.slice(2);
 const flag = (n: string) => {

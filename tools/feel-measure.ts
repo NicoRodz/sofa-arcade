@@ -1,10 +1,10 @@
-// Interaction hit rate of a human-like bot (shared/feel/human-bot.ts) on ANY checkout of the sim.
+// Interaction hit rate of a human-like bot (games/pizzas/sim/feel/human-bot.ts) on ANY checkout of the sim.
 //   npx tsx tools/feel-measure.ts [root] [--difficulty normal] [--reps 6] [--chefs 1] [--human '{"latMs":[0,0]}'] [--cfg '{"facingBonus":0.2}'] [--opts '{"magnet":true}'] [--json file] [--maps 15]
-// `root` is a checkout holding shared/overcooked.ts and shared/maps.ts (default: this repo). The bot is always this repo's.
+// `root` is a checkout holding games/pizzas/sim/overcooked.ts and games/pizzas/sim/maps.ts (default: this repo). The bot is always this repo's.
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { ACTIONS, HUMAN, runGame, stationsFor, type Action, type Attempt, type Sim } from '../shared/feel/human-bot';
+import { ACTIONS, HUMAN, runGame, stationsFor, type Action, type Attempt, type Sim } from '@pichi/game-pizzas/sim/feel/human-bot';
 
 const args = process.argv.slice(2);
 const flag = (n: string) => {
@@ -19,7 +19,7 @@ const reps = Number(flag('reps') ?? 6),
 const gameOpts = { difficulty: flag('difficulty') ?? 'normal', ...JSON.parse(flag('opts') ?? '{}') };
 
 Object.assign(HUMAN, JSON.parse(flag('human') ?? '{}')); // ablations of the bot: --human '{"aimErrDeg":0}'
-const imp = async (f: string) => import(pathToFileURL(`${root}/shared/${f}.ts`).href);
+const imp = async (f: string) => import(pathToFileURL(`${root}/games/pizzas/sim/${f}.ts`).href);
 const [oc, mp] = await Promise.all([imp('overcooked'), imp('maps')]);
 if (flag('cfg')) {
   const mg = await imp('feel/magnet');

@@ -144,14 +144,14 @@ export const todayISO = () => process.env.SIZE_BUDGET_TODAY ?? new Date().toISOS
 
 // Files the plan splits in F3-F5 get a short fuse; the rest (300-400 lines, long tests) wait for a task that touches them.
 const SPLIT_PLANNED = new Set([
-  'screen/src/main.ts',
-  'shared/overcooked.ts',
+  'apps/screen/src/main.ts',
+  'games/pizzas/sim/overcooked.ts',
   'tools/capture.ts',
-  'screen/index.html',
-  'shared/games/obstaculos/validator/graph.ts',
-  'shared/maps.ts',
-  'controller/src/main.ts',
-  'shared/validate.ts',
+  'apps/screen/index.html',
+  'games/obstaculos/validator/graph.ts',
+  'games/pizzas/sim/maps.ts',
+  'apps/controller/src/main.ts',
+  'games/pizzas/sim/validate.ts',
 ]);
 
 // ---- CLI: init (first list from the current state) / ratchet (lower max, drop entries that are healthy again)

@@ -6,8 +6,8 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSyn
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { startServer } from '../server/src/server';
-import { ObstBot, type BotView } from '../shared/games/obstaculos';
+import { startServer } from '../apps/server/src/server';
+import { ObstBot, type BotView } from '@pichi/game-obstaculos';
 
 const PORT = Number(process.env.PORT ?? 4400),
   CDP = Number(process.env.CDP ?? 9730);

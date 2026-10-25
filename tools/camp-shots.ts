@@ -6,18 +6,18 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { DIFFICULTIES, DIFFICULTY_LABEL } from '../shared/difficulty';
-import { applyResult, fullMask, newExpedition, openWorld, type Expedition } from '../shared/games/obstaculos/campaign';
-import { planCatalog } from '../shared/games/obstaculos/campaign/testkit';
-import { initialState, type CampState } from '../screen/src/games/obstaculos/campaign/model';
-import { renderHub, renderMap, renderPick, renderResult, type ViewCtx } from '../screen/src/games/obstaculos/campaign/view';
+import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core/difficulty';
+import { applyResult, fullMask, newExpedition, openWorld, type Expedition } from '@pichi/game-obstaculos/campaign';
+import { planCatalog } from '@pichi/game-obstaculos/campaign/testkit';
+import { initialState, type CampState } from '@pichi/game-obstaculos/screen/campaign/model';
+import { renderHub, renderMap, renderPick, renderResult, type ViewCtx } from '@pichi/game-obstaculos/screen/campaign/view';
 
 const CDP = Number(process.env.CDP ?? 9730);
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const outDir = path.resolve(process.argv[2] ?? 'docs/screens/camp');
 mkdirSync(outDir, { recursive: true });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const css = readFileSync(path.resolve('screen/index.html'), 'utf8').match(/<style>([\s\S]*?)<\/style>/)![1]!;
+const css = readFileSync(path.resolve('apps/screen/index.html'), 'utf8').match(/<style>([\s\S]*?)<\/style>/)![1]!;
 
 const plan = planCatalog();
 let t = 1000;

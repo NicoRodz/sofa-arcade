@@ -1,7 +1,15 @@
 {
-  "name": "latency-report",
+  "name": "@pichi/latency-report",
   "private": true,
   "type": "module",
-  "scripts": { "typecheck": "tsc -p ." },
-  "dependencies": { "@party/shared": "*" }
+  "exports": {
+    "./src": "./src/index.ts",
+    "./*": "./*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pichi/core": "*"
+  }
 }

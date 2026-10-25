@@ -1,0 +1,26 @@
+{
+  "name": "@pichi/game-obstaculos",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./campaign": "./campaign/index.ts",
+    "./generate": "./generate/index.ts",
+    "./levels": "./levels/index.ts",
+    "./metric": "./metric/index.ts",
+    "./modules": "./modules/index.ts",
+    "./screen/audio": "./screen/audio/index.ts",
+    "./validator": "./validator/index.ts",
+    "./*": "./*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p . && tsc -p server"
+  },
+  "dependencies": {
+    "@pichi/core": "*",
+    "@pichi/screen-kit": "*",
+    "express": "^5.2.0",
+    "phaser": "^4.2.1",
+    "ws": "^8.18.0"
+  }
+}

@@ -15,7 +15,7 @@ const OUT = join(ROOT, 'docs/refactor/baseline');
 const TMP = join(ROOT, '.vitest/baseline.json');
 const HASHED = [
   { dir: 'docs/screens', ext: '.png' },
-  { dir: 'shared/golden', ext: '' },
+  { dir: 'games/pizzas/test/golden', ext: '' },
 ];
 
 type Row = { file: string; status: string; name: string; ms: number };
@@ -98,6 +98,20 @@ function projectOfFiles(): Map<string, string> {
 async function configuredProjects(): Promise<string[]> {
   const cfg = (await import('../../vitest.config')).default as { test?: { projects?: { test?: { name?: string } }[] } };
   return (cfg.test?.projects ?? []).map((p) => p.test?.name ?? '?');
+}
+
+// The baseline was written before F3 moved the files: translate its paths through scripts/moves.json. Golden JSON is compared byte for byte at its new
+// path; the golden bots (.ts) had their import lines rewritten by the move, so they are checked with `git diff -M` (only import lines may differ).
+function translateHashes(h: Record<string, string>): Record<string, string> {
+  const file = join(ROOT, 'scripts/moves.json');
+  const moved: Record<string, string> = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).files : {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(h)) {
+    const nk = existsSync(join(ROOT, k)) ? k : (moved[k] ?? k);
+    if (nk !== k && k.endsWith('.ts')) continue;
+    out[nk] = v;
+  }
+  return out;
 }
 
 function walk(dir: string, ext: string, acc: string[] = []): string[] {
@@ -193,7 +207,7 @@ async function check() {
       const [file, status, ...n] = l.split('\t');
       return { file: file!, status: status!, name: n.join('\t') };
     });
-  const baseHashes: Record<string, string> = JSON.parse(readFileSync(join(OUT, 'captures.json'), 'utf8'));
+  const baseHashes = translateHashes(JSON.parse(readFileSync(join(OUT, 'captures.json'), 'utf8')));
   const rep = runWithRetry();
   const errors: string[] = [];
   const notes: string[] = [];

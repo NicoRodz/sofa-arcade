@@ -1,0 +1,19 @@
+{
+  "name": "@pichi/game-pizzas",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./sim": "./sim/index.ts",
+    "./screen/audio": "./screen/audio/index.ts",
+    "./sim/school": "./sim/school/index.ts",
+    "./*": "./*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pichi/core": "*",
+    "@pichi/screen-kit": "*",
+    "phaser": "^4.2.1"
+  }
+}

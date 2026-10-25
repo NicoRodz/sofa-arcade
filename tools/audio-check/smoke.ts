@@ -1,6 +1,6 @@
 // Runs in headless Chrome with a real AudioContext: gesture unlock, hint, mute key and bus -> sound wiring.
-import { Emitter, type GameEvents } from '../../shared/events';
-import { initAudio } from '../../screen/src/audio';
+import { Emitter, type GameEvents } from '@pichi/core/events';
+import { initAudio } from '@pichi/game-pizzas/screen/audio';
 
 const w = window as unknown as Record<string, unknown>;
 const Orig = window.AudioContext;

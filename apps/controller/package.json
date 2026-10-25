@@ -1,0 +1,17 @@
+{
+  "name": "@pichi/app-controller",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "typecheck": "tsc -p . && tsc -p test"
+  },
+  "dependencies": {
+    "@pichi/controller-kit": "*",
+    "@pichi/core": "*",
+    "@pichi/game-obstaculos": "*",
+    "@pichi/game-pizzas": "*",
+    "nipplejs": "^1.0.4",
+    "ws": "^8.18.0"
+  }
+}

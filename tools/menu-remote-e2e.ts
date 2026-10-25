@@ -7,8 +7,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { startServer } from '../server/src/server';
-import type { ClientMsg, ServerMsg } from '../shared/protocol';
+import { startServer } from '../apps/server/src/server';
+import type { ClientMsg, ServerMsg } from '@pichi/core';
 
 const PORT = Number(process.env.E2E_PORT ?? 3900),
   CDP = Number(process.env.E2E_CDP ?? 9390);

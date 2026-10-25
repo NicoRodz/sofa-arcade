@@ -1,0 +1,14 @@
+{
+  "name": "@pichi/controller-kit",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pichi/core": "*"
+  }
+}
