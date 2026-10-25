@@ -1,0 +1,906 @@
+{
+ "decisions": {
+  "expeditions": "server/src/expeditions.ts + expeditionsApi.ts are the persistence of the Obstaculos campaign (atomic JSON file per expedition under data/expeditions + the /api/expeditions HTTP API); they import @party/shared/obstaculos/campaign only. Owner = Obstaculos: games/obstaculos/server/ (with their test and crash-writer). apps/server/src/server.ts mounts them. Not in platform/server because platform must not import a game.",
+  "purity": "render.ts (HTML strings from icons and HowTo: no DOM API), floor.ts (floor items of the Pizzas sim) and teams.ts (team/roster logic) have no DOM, Node or Phaser; all three are pure. render.ts and teams.ts go to platform/core (the plan tree; render has no Pizzas import, teams imports assist.ts and games.ts), floor.ts goes to games/pizzas/sim (only the Pizzas sim imports it, it types against Game).",
+  "npm-names": "before: @party/shared, screen, controller, server, latency-report. after: @pichi/core, @pichi/screen-kit, @pichi/controller-kit, @pichi/server-kit, @pichi/game-pizzas, @pichi/game-obstaculos, @pichi/app-screen, @pichi/app-controller, @pichi/app-server, @pichi/latency-report. tools/*.ts and tools/meta are loose scripts, not packages.",
+  "simulation": "The simulation runs on the screen (screen/src/main.ts imports createGame/tick from shared/overcooked and the Obstaculos session); server/src/relay.ts is a relay that only imports protocol (shared) and never calls tick. Sim code therefore lives in games/*/sim and platform/core, never in platform/server.",
+  "server-runtime": "The server runs with tsx from source (npm run dev/start: tsx apps/server/src/main.ts) and resolves the workspace packages through node_modules/@pichi/* and their package.json exports to .ts sources, exactly as it resolved @party/shared/* before. It is not compiled to dist. Checked in the F3 gate: the server starts on :5600 and answers /screen/, /c/ and /api/info.",
+  "classification": "shared/ files: imported by both games (obstaculos code and Pizzas code) -> platform/core: protocol, difficulty, events (the Emitter), rng; named platform in the plan tree: games (registry), icons, render, stats, lobby/{vote,captain,teams}. Everything else in shared/*.ts is imported only by Pizzas code -> games/pizzas/sim. screen/src/art: fx, gfx, tokens, chef, chefdraw are imported by the Obstaculos renderer -> platform/screen/src/art; screen/src/audio: mixer, synth (+ recipes, music, their dependencies) -> platform/screen/src/audio; the rest of art/audio, scene.ts and tutorial/ are Pizzas-only -> games/pizzas/screen.",
+  "known-violations": "A mechanical move leaves platform -> game imports that F4/F5 must cut (all rules stay \"warn\"): core/protocol imports maps, puestos, versus*, obstaculos sim/campaign; core/teams imports assist; core/events imports Pizzas types; core/games imports sabotage-config; screen-kit chef imports Pizzas food. See docs/refactor/depcruise-report.md.",
+  "barrels": "platform/core/src/index.ts = export * from ./protocol (the old @party/shared main entry); games/pizzas/sim/index.ts = export * from ./overcooked (the old @party/shared/game entry). Cross-package imports of those two files go through the index; every other cross-package import uses the file path through the package exports pattern, so module evaluation order is the one of today (core and Pizzas import each other, a barrel of everything would create runtime cycles).",
+  "folders": "obstaculos keeps its own layout: shared/games/obstaculos/** -> games/obstaculos/** verbatim (root index.ts is the package main, sim/ campaign/ validator/ levels/ generate/ modules/ metric/ stay). Pizzas: flat games/pizzas/sim/ plus versus/ (versus*.ts), school/ (tutorial), recipes/, feel/; golden bots + golden tests in games/pizzas/test/golden, JSON in test/golden/fixtures.",
+  "arena": "Not created: the game contract does not exist until F4a, so a manifest would be invented logic. Left for F6.",
+  "tests": "Tests move next to their subject (same basename), else to the package of the majority of their imports. events.test.ts and events.mirror.slow.test.ts drive the Pizzas sim, so they go to games/pizzas/sim. apps/server/test holds the websocket tests that start the whole server."
+ },
+ "deadCode": [
+  {
+   "file": "games/pizzas/sim/feel/human-bot.ts",
+   "note": "only tests, tools/feel-measure.ts and rat-bot.ts import it (no path from any app entry point)"
+  },
+  {
+   "file": "games/pizzas/sim/feel/rat-bot.ts",
+   "note": "only rat-bot.slow.test.ts and tools/rat-measure.ts"
+  },
+  {
+   "file": "games/pizzas/sim/school/school-bot.ts",
+   "note": "only school tests, apps/server/test/school.ws.test.ts and tools/school-shots.ts"
+  },
+  {
+   "file": "games/obstaculos/sim/feelkit.ts",
+   "note": "only feel.test.ts and tools/s1-feel.ts"
+  },
+  {
+   "file": "games/obstaculos/screen/audio/measure/measure.ts",
+   "note": "standalone: bundled by measure/run.mjs, nobody imports it"
+  },
+  {
+   "file": "games/obstaculos/server/crash-writer.ts",
+   "note": "spawned by expeditions.test.ts as a child process (a path, not an import)"
+  }
+ ],
+ "roots": [
+  "shared/",
+  "screen/",
+  "controller/",
+  "server/"
+ ],
+ "files": {
+  "controller/index.html": "apps/controller/index.html",
+  "controller/package.json": "DELETE",
+  "controller/portrait.css": "apps/controller/portrait.css",
+  "controller/src/howto.test.ts": "platform/controller/src/howto.test.ts",
+  "controller/src/howto.ts": "platform/controller/src/howto.ts",
+  "controller/src/main.ts": "apps/controller/src/main.ts",
+  "controller/src/school.test.ts": "games/pizzas/controller/school.test.ts",
+  "controller/src/school.ts": "games/pizzas/controller/school.ts",
+  "controller/src/zoom.test.ts": "platform/controller/src/zoom.test.ts",
+  "controller/src/zoom.ts": "platform/controller/src/zoom.ts",
+  "controller/test/capture.ts": "apps/controller/test/capture.ts",
+  "controller/test/checks.ts": "apps/controller/test/checks.ts",
+  "controller/test/harness.ts": "apps/controller/test/harness.ts",
+  "controller/test/layout.slow.test.ts": "apps/controller/test/layout.slow.test.ts",
+  "controller/test/report.ts": "apps/controller/test/report.ts",
+  "controller/test/tsconfig.json": "DELETE",
+  "controller/tsconfig.json": "DELETE",
+  "controller/vite.config.ts": "apps/controller/vite.config.ts",
+  "screen/index.html": "apps/screen/index.html",
+  "screen/package.json": "DELETE",
+  "screen/src/art/burn.ts": "games/pizzas/screen/art/burn.ts",
+  "screen/src/art/cards.ts": "games/pizzas/screen/art/cards.ts",
+  "screen/src/art/chef.ts": "platform/screen/src/art/chef.ts",
+  "screen/src/art/chefdraw.ts": "platform/screen/src/art/chefdraw.ts",
+  "screen/src/art/env.ts": "games/pizzas/screen/art/env.ts",
+  "screen/src/art/events.ts": "games/pizzas/screen/art/events.ts",
+  "screen/src/art/feel/magnetView.ts": "games/pizzas/screen/art/feel/magnet-view.ts",
+  "screen/src/art/feel/ratSignal.ts": "games/pizzas/screen/art/feel/rat-signal.ts",
+  "screen/src/art/flags.ts": "games/pizzas/screen/art/flags.ts",
+  "screen/src/art/flagView.ts": "games/pizzas/screen/art/flag-view.ts",
+  "screen/src/art/food.ts": "games/pizzas/screen/art/food.ts",
+  "screen/src/art/food/calzone.ts": "games/pizzas/screen/art/food/calzone.ts",
+  "screen/src/art/food/cardIntro.ts": "games/pizzas/screen/art/food/card-intro.ts",
+  "screen/src/art/food/recipes.ts": "games/pizzas/screen/art/food/recipes.ts",
+  "screen/src/art/food/ticket.ts": "games/pizzas/screen/art/food/ticket.ts",
+  "screen/src/art/food/toppings.ts": "games/pizzas/screen/art/food/toppings.ts",
+  "screen/src/art/fx.ts": "platform/screen/src/art/fx.ts",
+  "screen/src/art/gfx.ts": "platform/screen/src/art/gfx.ts",
+  "screen/src/art/hud.ts": "games/pizzas/screen/art/hud.ts",
+  "screen/src/art/iris.ts": "games/pizzas/screen/art/iris.ts",
+  "screen/src/art/layout.ts": "games/pizzas/screen/art/layout.ts",
+  "screen/src/art/puestos.ts": "games/pizzas/screen/art/puestos.ts",
+  "screen/src/art/sabotage.ts": "games/pizzas/screen/art/sabotage.ts",
+  "screen/src/art/stations.ts": "games/pizzas/screen/art/stations.ts",
+  "screen/src/art/tokens.ts": "platform/screen/src/art/tokens.ts",
+  "screen/src/art/ui.ts": "games/pizzas/screen/art/ui.ts",
+  "screen/src/art/versusHud.ts": "games/pizzas/screen/art/versus-hud.ts",
+  "screen/src/art/world.ts": "games/pizzas/screen/art/world.ts",
+  "screen/src/audio/director.ts": "games/pizzas/screen/audio/director.ts",
+  "screen/src/audio/index.ts": "games/pizzas/screen/audio/index.ts",
+  "screen/src/audio/mixer.test.ts": "platform/screen/src/audio/mixer.test.ts",
+  "screen/src/audio/mixer.ts": "platform/screen/src/audio/mixer.ts",
+  "screen/src/audio/music.test.ts": "platform/screen/src/audio/music.test.ts",
+  "screen/src/audio/music.ts": "platform/screen/src/audio/music.ts",
+  "screen/src/audio/recipes.test.ts": "platform/screen/src/audio/recipes.test.ts",
+  "screen/src/audio/recipes.ts": "platform/screen/src/audio/recipes.ts",
+  "screen/src/audio/synth.ts": "platform/screen/src/audio/synth.ts",
+  "screen/src/bus.ts": "platform/screen/src/bus.ts",
+  "screen/src/games/obstaculos/adapter.test.ts": "games/obstaculos/screen/adapter.test.ts",
+  "screen/src/games/obstaculos/audio/director.ts": "games/obstaculos/screen/audio/director.ts",
+  "screen/src/games/obstaculos/audio/index.ts": "games/obstaculos/screen/audio/index.ts",
+  "screen/src/games/obstaculos/audio/ks.test.ts": "games/obstaculos/screen/audio/ks.test.ts",
+  "screen/src/games/obstaculos/audio/ks.ts": "games/obstaculos/screen/audio/ks.ts",
+  "screen/src/games/obstaculos/audio/measure/measure.ts": "games/obstaculos/screen/audio/measure/measure.ts",
+  "screen/src/games/obstaculos/audio/measure/run.mjs": "games/obstaculos/screen/audio/measure/run.mjs",
+  "screen/src/games/obstaculos/audio/mixer.test.ts": "games/obstaculos/screen/audio/mixer.test.ts",
+  "screen/src/games/obstaculos/audio/mixer.ts": "games/obstaculos/screen/audio/mixer.ts",
+  "screen/src/games/obstaculos/audio/music.test.ts": "games/obstaculos/screen/audio/music.test.ts",
+  "screen/src/games/obstaculos/audio/music.ts": "games/obstaculos/screen/audio/music.ts",
+  "screen/src/games/obstaculos/audio/recipes.test.ts": "games/obstaculos/screen/audio/recipes.test.ts",
+  "screen/src/games/obstaculos/audio/recipes.ts": "games/obstaculos/screen/audio/recipes.ts",
+  "screen/src/games/obstaculos/audio/scales.test.ts": "games/obstaculos/screen/audio/scales.test.ts",
+  "screen/src/games/obstaculos/audio/scales.ts": "games/obstaculos/screen/audio/scales.ts",
+  "screen/src/games/obstaculos/audio/synth.ts": "games/obstaculos/screen/audio/synth.ts",
+  "screen/src/games/obstaculos/campaign/adapter.test.ts": "games/obstaculos/screen/campaign/adapter.test.ts",
+  "screen/src/games/obstaculos/campaign/api.ts": "games/obstaculos/screen/campaign/api.ts",
+  "screen/src/games/obstaculos/campaign/flow.test.ts": "games/obstaculos/screen/campaign/flow.test.ts",
+  "screen/src/games/obstaculos/campaign/flow.ts": "games/obstaculos/screen/campaign/flow.ts",
+  "screen/src/games/obstaculos/campaign/host.test.ts": "games/obstaculos/screen/campaign/host.test.ts",
+  "screen/src/games/obstaculos/campaign/model.test.ts": "games/obstaculos/screen/campaign/model.test.ts",
+  "screen/src/games/obstaculos/campaign/model.ts": "games/obstaculos/screen/campaign/model.ts",
+  "screen/src/games/obstaculos/campaign/screen.ts": "games/obstaculos/screen/campaign/screen.ts",
+  "screen/src/games/obstaculos/campaign/testkit.ts": "games/obstaculos/screen/campaign/testkit.ts",
+  "screen/src/games/obstaculos/campaign/view.ts": "games/obstaculos/screen/campaign/view.ts",
+  "screen/src/games/obstaculos/harness/capture.ts": "games/obstaculos/screen/harness/capture.ts",
+  "screen/src/games/obstaculos/harness/harness.ts": "games/obstaculos/screen/harness/harness.ts",
+  "screen/src/games/obstaculos/harness/index.html": "games/obstaculos/screen/harness/index.html",
+  "screen/src/games/obstaculos/host.ts": "games/obstaculos/screen/host.ts",
+  "screen/src/games/obstaculos/render/adapter.ts": "games/obstaculos/screen/render/adapter.ts",
+  "screen/src/games/obstaculos/render/biome.ts": "games/obstaculos/screen/render/biome.ts",
+  "screen/src/games/obstaculos/render/camera.test.ts": "games/obstaculos/screen/render/camera.test.ts",
+  "screen/src/games/obstaculos/render/camera.ts": "games/obstaculos/screen/render/camera.ts",
+  "screen/src/games/obstaculos/render/dark.ts": "games/obstaculos/screen/render/dark.ts",
+  "screen/src/games/obstaculos/render/entities.ts": "games/obstaculos/screen/render/entities.ts",
+  "screen/src/games/obstaculos/render/fx.ts": "games/obstaculos/screen/render/fx.ts",
+  "screen/src/games/obstaculos/render/fxtokens.ts": "games/obstaculos/screen/render/fxtokens.ts",
+  "screen/src/games/obstaculos/render/hud.ts": "games/obstaculos/screen/render/hud.ts",
+  "screen/src/games/obstaculos/render/hudlogic.ts": "games/obstaculos/screen/render/hudlogic.ts",
+  "screen/src/games/obstaculos/render/obstacles-view.ts": "games/obstaculos/screen/render/obstacles-view.ts",
+  "screen/src/games/obstaculos/render/parallax.ts": "games/obstaculos/screen/render/parallax.ts",
+  "screen/src/games/obstaculos/render/render.test.ts": "games/obstaculos/screen/render/render.test.ts",
+  "screen/src/games/obstaculos/render/rig.ts": "games/obstaculos/screen/render/rig.ts",
+  "screen/src/games/obstaculos/render/rope.ts": "games/obstaculos/screen/render/rope.ts",
+  "screen/src/games/obstaculos/render/scene.ts": "games/obstaculos/screen/render/scene.ts",
+  "screen/src/games/obstaculos/render/stub.test.ts": "games/obstaculos/screen/render/stub.test.ts",
+  "screen/src/games/obstaculos/render/stub.ts": "games/obstaculos/screen/render/stub.ts",
+  "screen/src/games/obstaculos/render/tiledraw.ts": "games/obstaculos/screen/render/tiledraw.ts",
+  "screen/src/games/obstaculos/render/tiles.ts": "games/obstaculos/screen/render/tiles.ts",
+  "screen/src/games/obstaculos/render/view.ts": "games/obstaculos/screen/render/view.ts",
+  "screen/src/howto.test.ts": "platform/screen/src/howto.test.ts",
+  "screen/src/howto.ts": "platform/screen/src/howto.ts",
+  "screen/src/main.ts": "apps/screen/src/main.ts",
+  "screen/src/menu.test.ts": "platform/screen/src/menu.test.ts",
+  "screen/src/menu.ts": "platform/screen/src/menu.ts",
+  "screen/src/remote.test.ts": "platform/screen/src/remote.test.ts",
+  "screen/src/scene.ts": "games/pizzas/screen/scene.ts",
+  "screen/src/tutorial/host.test.ts": "games/pizzas/screen/school/host.test.ts",
+  "screen/src/tutorial/host.ts": "games/pizzas/screen/school/host.ts",
+  "screen/src/tutorial/music.school.test.ts": "games/pizzas/screen/school/music.school.test.ts",
+  "screen/src/tutorial/view.ts": "games/pizzas/screen/school/view.ts",
+  "screen/test/art.test.ts": "games/pizzas/screen/art/art.test.ts",
+  "screen/tsconfig.json": "DELETE",
+  "screen/vite.config.ts": "apps/screen/vite.config.ts",
+  "server/package.json": "DELETE",
+  "server/src/expeditions.ts": "games/obstaculos/server/expeditions.ts",
+  "server/src/expeditionsApi.ts": "games/obstaculos/server/expeditions-api.ts",
+  "server/src/lan.ts": "platform/server/src/lan.ts",
+  "server/src/main.ts": "apps/server/src/main.ts",
+  "server/src/relay.ts": "platform/server/src/relay.ts",
+  "server/src/server.ts": "apps/server/src/server.ts",
+  "server/test/assist.ws.slow.test.ts": "apps/server/test/assist.ws.slow.test.ts",
+  "server/test/burn.ws.test.ts": "apps/server/test/burn.ws.test.ts",
+  "server/test/campaign.ws.test.ts": "apps/server/test/campaign.ws.test.ts",
+  "server/test/crash-writer.ts": "games/obstaculos/server/crash-writer.ts",
+  "server/test/events.ws.test.ts": "apps/server/test/events.ws.test.ts",
+  "server/test/expeditions.test.ts": "games/obstaculos/server/expeditions.test.ts",
+  "server/test/hints.ws.test.ts": "apps/server/test/hints.ws.test.ts",
+  "server/test/magnet.ws.slow.test.ts": "apps/server/test/magnet.ws.slow.test.ts",
+  "server/test/obst.campaign.ws.test.ts": "apps/server/test/obst.campaign.ws.test.ts",
+  "server/test/obst.dynamics.scenarios.ts": "games/obstaculos/test/obst.dynamics.scenarios.ts",
+  "server/test/obst.dynamics.ws.test.ts": "apps/server/test/obst.dynamics.ws.test.ts",
+  "server/test/recipes.ws.test.ts": "apps/server/test/recipes.ws.test.ts",
+  "server/test/relay.test.ts": "apps/server/test/relay.test.ts",
+  "server/test/rules-kit.ts": "apps/server/test/rules-kit.ts",
+  "server/test/sabotage.ws.slow.test.ts": "apps/server/test/sabotage.ws.slow.test.ts",
+  "server/test/school.ws.test.ts": "apps/server/test/school.ws.test.ts",
+  "server/test/versus.ws.slow.test.ts": "apps/server/test/versus.ws.slow.test.ts",
+  "server/tsconfig.json": "DELETE",
+  "shared/assist.test.ts": "games/pizzas/sim/assist.test.ts",
+  "shared/assist.ts": "games/pizzas/sim/assist.ts",
+  "shared/burn.assist.test.ts": "games/pizzas/sim/burn.assist.test.ts",
+  "shared/burn.golden.slow.test.ts": "games/pizzas/test/golden/burn.golden.slow.test.ts",
+  "shared/burn.mirror.slow.test.ts": "games/pizzas/sim/burn.mirror.slow.test.ts",
+  "shared/burn.test.ts": "games/pizzas/sim/burn.test.ts",
+  "shared/burn.ts": "games/pizzas/sim/burn.ts",
+  "shared/captain.test.ts": "platform/core/src/lobby/captain.test.ts",
+  "shared/captain.ts": "platform/core/src/lobby/captain.ts",
+  "shared/coop.golden.slow.test.ts": "games/pizzas/test/golden/coop.golden.slow.test.ts",
+  "shared/difficulty.test.ts": "platform/core/src/difficulty.test.ts",
+  "shared/difficulty.ts": "platform/core/src/difficulty.ts",
+  "shared/events.mirror.slow.test.ts": "games/pizzas/sim/events.mirror.slow.test.ts",
+  "shared/events.test.ts": "games/pizzas/sim/events.test.ts",
+  "shared/events.ts": "platform/core/src/events.ts",
+  "shared/feel.test.ts": "games/pizzas/sim/feel.test.ts",
+  "shared/feel/human-bot.test.ts": "games/pizzas/sim/feel/human-bot.test.ts",
+  "shared/feel/human-bot.ts": "games/pizzas/sim/feel/human-bot.ts",
+  "shared/feel/magnet.test.ts": "games/pizzas/sim/feel/magnet.test.ts",
+  "shared/feel/magnet.ts": "games/pizzas/sim/feel/magnet.ts",
+  "shared/feel/rat-bot.slow.test.ts": "games/pizzas/sim/feel/rat-bot.slow.test.ts",
+  "shared/feel/rat-bot.ts": "games/pizzas/sim/feel/rat-bot.ts",
+  "shared/feel/rat.test.ts": "games/pizzas/sim/feel/rat.test.ts",
+  "shared/feel/rat.ts": "games/pizzas/sim/feel/rat.ts",
+  "shared/floor.ts": "games/pizzas/sim/floor.ts",
+  "shared/games.test.ts": "platform/core/src/games.test.ts",
+  "shared/games.ts": "platform/core/src/games.ts",
+  "shared/games/obstaculos/bot.ts": "games/obstaculos/bot.ts",
+  "shared/games/obstaculos/campaign/botplay.ts": "games/obstaculos/campaign/botplay.ts",
+  "shared/games/obstaculos/campaign/campaign.test.ts": "games/obstaculos/campaign/campaign.test.ts",
+  "shared/games/obstaculos/campaign/catalog.ts": "games/obstaculos/campaign/catalog.ts",
+  "shared/games/obstaculos/campaign/index.ts": "games/obstaculos/campaign/index.ts",
+  "shared/games/obstaculos/campaign/labels.ts": "games/obstaculos/campaign/labels.ts",
+  "shared/games/obstaculos/campaign/learning.slow.test.ts": "games/obstaculos/campaign/learning.slow.test.ts",
+  "shared/games/obstaculos/campaign/learning.ts": "games/obstaculos/campaign/learning.ts",
+  "shared/games/obstaculos/campaign/parse.ts": "games/obstaculos/campaign/parse.ts",
+  "shared/games/obstaculos/campaign/practice.test.ts": "games/obstaculos/campaign/practice.test.ts",
+  "shared/games/obstaculos/campaign/practice.ts": "games/obstaculos/campaign/practice.ts",
+  "shared/games/obstaculos/campaign/progcatalog.ts": "games/obstaculos/campaign/progcatalog.ts",
+  "shared/games/obstaculos/campaign/progress.test.ts": "games/obstaculos/campaign/progress.test.ts",
+  "shared/games/obstaculos/campaign/progress.ts": "games/obstaculos/campaign/progress.ts",
+  "shared/games/obstaculos/campaign/realsim.test.ts": "games/obstaculos/campaign/realsim.test.ts",
+  "shared/games/obstaculos/campaign/sim.test.ts": "games/obstaculos/campaign/sim.test.ts",
+  "shared/games/obstaculos/campaign/stations.ts": "games/obstaculos/campaign/stations.ts",
+  "shared/games/obstaculos/campaign/testkit.ts": "games/obstaculos/campaign/testkit.ts",
+  "shared/games/obstaculos/campaign/types.ts": "games/obstaculos/campaign/types.ts",
+  "shared/games/obstaculos/campaign/world.ts": "games/obstaculos/campaign/world.ts",
+  "shared/games/obstaculos/campaign/world1.ts": "games/obstaculos/campaign/world1.ts",
+  "shared/games/obstaculos/campaign/world2.ts": "games/obstaculos/campaign/world2.ts",
+  "shared/games/obstaculos/campaign/world3.ts": "games/obstaculos/campaign/world3.ts",
+  "shared/games/obstaculos/constants.ts": "games/obstaculos/constants.ts",
+  "shared/games/obstaculos/events.ts": "games/obstaculos/events.ts",
+  "shared/games/obstaculos/generate/assemble.ts": "games/obstaculos/generate/assemble.ts",
+  "shared/games/obstaculos/generate/generate.slow.test.ts": "games/obstaculos/generate/generate.slow.test.ts",
+  "shared/games/obstaculos/generate/generate.ts": "games/obstaculos/generate/generate.ts",
+  "shared/games/obstaculos/generate/index.ts": "games/obstaculos/generate/index.ts",
+  "shared/games/obstaculos/index.ts": "games/obstaculos/index.ts",
+  "shared/games/obstaculos/legend.ts": "games/obstaculos/legend.ts",
+  "shared/games/obstaculos/levels/chain-rope.test.ts": "games/obstaculos/levels/chain-rope.test.ts",
+  "shared/games/obstaculos/levels/index.ts": "games/obstaculos/levels/index.ts",
+  "shared/games/obstaculos/levels/level01.ts": "games/obstaculos/levels/level01.ts",
+  "shared/games/obstaculos/levels/level02.ts": "games/obstaculos/levels/level02.ts",
+  "shared/games/obstaculos/levels/level03.ts": "games/obstaculos/levels/level03.ts",
+  "shared/games/obstaculos/levels/level04.ts": "games/obstaculos/levels/level04.ts",
+  "shared/games/obstaculos/levels/level05.ts": "games/obstaculos/levels/level05.ts",
+  "shared/games/obstaculos/levels/level06.ts": "games/obstaculos/levels/level06.ts",
+  "shared/games/obstaculos/levels/level07.ts": "games/obstaculos/levels/level07.ts",
+  "shared/games/obstaculos/levels/level08.ts": "games/obstaculos/levels/level08.ts",
+  "shared/games/obstaculos/levels/level09.ts": "games/obstaculos/levels/level09.ts",
+  "shared/games/obstaculos/levels/level10.ts": "games/obstaculos/levels/level10.ts",
+  "shared/games/obstaculos/levels/level11.ts": "games/obstaculos/levels/level11.ts",
+  "shared/games/obstaculos/levels/level12.ts": "games/obstaculos/levels/level12.ts",
+  "shared/games/obstaculos/levels/level13.ts": "games/obstaculos/levels/level13.ts",
+  "shared/games/obstaculos/levels/level14.ts": "games/obstaculos/levels/level14.ts",
+  "shared/games/obstaculos/levels/level15.ts": "games/obstaculos/levels/level15.ts",
+  "shared/games/obstaculos/levels/levels.slow.test.ts": "games/obstaculos/levels/levels.slow.test.ts",
+  "shared/games/obstaculos/lobby.ts": "games/obstaculos/lobby.ts",
+  "shared/games/obstaculos/mechanics.ts": "games/obstaculos/mechanics.ts",
+  "shared/games/obstaculos/metric/index.ts": "games/obstaculos/metric/index.ts",
+  "shared/games/obstaculos/metric/metric.test.ts": "games/obstaculos/metric/metric.test.ts",
+  "shared/games/obstaculos/metric/metric.ts": "games/obstaculos/metric/metric.ts",
+  "shared/games/obstaculos/modules/defs.ts": "games/obstaculos/modules/defs.ts",
+  "shared/games/obstaculos/modules/dsl.ts": "games/obstaculos/modules/dsl.ts",
+  "shared/games/obstaculos/modules/index.ts": "games/obstaculos/modules/index.ts",
+  "shared/games/obstaculos/modules/modules.test.ts": "games/obstaculos/modules/modules.test.ts",
+  "shared/games/obstaculos/modules/tramos.ts": "games/obstaculos/modules/tramos.ts",
+  "shared/games/obstaculos/modules/types.ts": "games/obstaculos/modules/types.ts",
+  "shared/games/obstaculos/parse.test.ts": "games/obstaculos/parse.test.ts",
+  "shared/games/obstaculos/parse.ts": "games/obstaculos/parse.ts",
+  "shared/games/obstaculos/registry.test.ts": "games/obstaculos/registry.test.ts",
+  "shared/games/obstaculos/session.test.ts": "games/obstaculos/session.test.ts",
+  "shared/games/obstaculos/session.ts": "games/obstaculos/session.ts",
+  "shared/games/obstaculos/sim/actions.test.ts": "games/obstaculos/sim/actions.test.ts",
+  "shared/games/obstaculos/sim/actions.ts": "games/obstaculos/sim/actions.ts",
+  "shared/games/obstaculos/sim/bungee.ts": "games/obstaculos/sim/bungee.ts",
+  "shared/games/obstaculos/sim/campaign.test.ts": "games/obstaculos/sim/campaign.test.ts",
+  "shared/games/obstaculos/sim/campaign.ts": "games/obstaculos/sim/campaign.ts",
+  "shared/games/obstaculos/sim/campaignrules.ts": "games/obstaculos/sim/campaignrules.ts",
+  "shared/games/obstaculos/sim/collide.ts": "games/obstaculos/sim/collide.ts",
+  "shared/games/obstaculos/sim/dynamics.test.ts": "games/obstaculos/sim/dynamics.test.ts",
+  "shared/games/obstaculos/sim/dynamics6.test.ts": "games/obstaculos/sim/dynamics6.test.ts",
+  "shared/games/obstaculos/sim/enemies.ts": "games/obstaculos/sim/enemies.ts",
+  "shared/games/obstaculos/sim/entities.test.ts": "games/obstaculos/sim/entities.test.ts",
+  "shared/games/obstaculos/sim/entities.ts": "games/obstaculos/sim/entities.ts",
+  "shared/games/obstaculos/sim/feel.test.ts": "games/obstaculos/sim/feel.test.ts",
+  "shared/games/obstaculos/sim/feelkit.ts": "games/obstaculos/sim/feelkit.ts",
+  "shared/games/obstaculos/sim/floaters.ts": "games/obstaculos/sim/floaters.ts",
+  "shared/games/obstaculos/sim/input.test.ts": "games/obstaculos/sim/input.test.ts",
+  "shared/games/obstaculos/sim/input.ts": "games/obstaculos/sim/input.ts",
+  "shared/games/obstaculos/sim/lantern.ts": "games/obstaculos/sim/lantern.ts",
+  "shared/games/obstaculos/sim/pickaxe.ts": "games/obstaculos/sim/pickaxe.ts",
+  "shared/games/obstaculos/sim/player.test.ts": "games/obstaculos/sim/player.test.ts",
+  "shared/games/obstaculos/sim/player.ts": "games/obstaculos/sim/player.ts",
+  "shared/games/obstaculos/sim/regression.slow.test.ts": "games/obstaculos/sim/regression.slow.test.ts",
+  "shared/games/obstaculos/sim/regression6.slow.test.ts": "games/obstaculos/sim/regression6.slow.test.ts",
+  "shared/games/obstaculos/sim/rope.test.ts": "games/obstaculos/sim/rope.test.ts",
+  "shared/games/obstaculos/sim/rope.ts": "games/obstaculos/sim/rope.ts",
+  "shared/games/obstaculos/sim/rules.test.ts": "games/obstaculos/sim/rules.test.ts",
+  "shared/games/obstaculos/sim/rules.ts": "games/obstaculos/sim/rules.ts",
+  "shared/games/obstaculos/sim/state.ts": "games/obstaculos/sim/state.ts",
+  "shared/games/obstaculos/sim/testkit.ts": "games/obstaculos/sim/testkit.ts",
+  "shared/games/obstaculos/sim/tiles.test.ts": "games/obstaculos/sim/tiles.test.ts",
+  "shared/games/obstaculos/sim/tiles.ts": "games/obstaculos/sim/tiles.ts",
+  "shared/games/obstaculos/sim/tuning.ts": "games/obstaculos/sim/tuning.ts",
+  "shared/games/obstaculos/sim/world.test.ts": "games/obstaculos/sim/world.test.ts",
+  "shared/games/obstaculos/sim/world.ts": "games/obstaculos/sim/world.ts",
+  "shared/games/obstaculos/types.ts": "games/obstaculos/types.ts",
+  "shared/games/obstaculos/validator/dynamics.test.ts": "games/obstaculos/validator/dynamics.test.ts",
+  "shared/games/obstaculos/validator/dynamics6.test.ts": "games/obstaculos/validator/dynamics6.test.ts",
+  "shared/games/obstaculos/validator/graph.ts": "games/obstaculos/validator/graph.ts",
+  "shared/games/obstaculos/validator/index.ts": "games/obstaculos/validator/index.ts",
+  "shared/games/obstaculos/validator/sim.test.ts": "games/obstaculos/validator/sim.test.ts",
+  "shared/games/obstaculos/validator/sim.ts": "games/obstaculos/validator/sim.ts",
+  "shared/games/obstaculos/validator/validate.test.ts": "games/obstaculos/validator/validate.test.ts",
+  "shared/games/obstaculos/validator/validate.ts": "games/obstaculos/validator/validate.ts",
+  "shared/generate.reject.test.ts": "games/pizzas/sim/generate.reject.test.ts",
+  "shared/generate.slow.test.ts": "games/pizzas/sim/generate.slow.test.ts",
+  "shared/generate.ts": "games/pizzas/sim/generate.ts",
+  "shared/generate.versus.reject.test.ts": "games/pizzas/sim/generate.versus.reject.test.ts",
+  "shared/generate.versus.slow.test.ts": "games/pizzas/sim/generate.versus.slow.test.ts",
+  "shared/golden/bot.ts": "games/pizzas/test/golden/bot.ts",
+  "shared/golden/coop-n2-map2-normal-magnet.json": "games/pizzas/test/golden/fixtures/coop-n2-map2-normal-magnet.json",
+  "shared/golden/coop-n2-map2-normal-rules.json": "games/pizzas/test/golden/fixtures/coop-n2-map2-normal-rules.json",
+  "shared/golden/coop-n2-map2-normal.json": "games/pizzas/test/golden/fixtures/coop-n2-map2-normal.json",
+  "shared/golden/coop-n4-map2-hard-rules.json": "games/pizzas/test/golden/fixtures/coop-n4-map2-hard-rules.json",
+  "shared/golden/coop-n4-map9-hard-magnet.json": "games/pizzas/test/golden/fixtures/coop-n4-map9-hard-magnet.json",
+  "shared/golden/coop-n4-map9-hard.json": "games/pizzas/test/golden/fixtures/coop-n4-map9-hard.json",
+  "shared/golden/coop-n6-map11-easy-magnet.json": "games/pizzas/test/golden/fixtures/coop-n6-map11-easy-magnet.json",
+  "shared/golden/coop-n6-map11-easy.json": "games/pizzas/test/golden/fixtures/coop-n6-map11-easy.json",
+  "shared/golden/coop-n6-map11-normal-rules.json": "games/pizzas/test/golden/fixtures/coop-n6-map11-normal-rules.json",
+  "shared/golden/mirror-bot.ts": "games/pizzas/test/golden/mirror-bot.ts",
+  "shared/golden/recipe-bot.ts": "games/pizzas/test/golden/recipe-bot.ts",
+  "shared/golden/recipes-n2-map2-normal.json": "games/pizzas/test/golden/fixtures/recipes-n2-map2-normal.json",
+  "shared/golden/recipes-n2-map9-normal.json": "games/pizzas/test/golden/fixtures/recipes-n2-map9-normal.json",
+  "shared/golden/recipes-n3-map12-hard.json": "games/pizzas/test/golden/fixtures/recipes-n3-map12-hard.json",
+  "shared/golden/recipes-n4-map14-normal.json": "games/pizzas/test/golden/fixtures/recipes-n4-map14-normal.json",
+  "shared/golden/sabotage-bot.ts": "games/pizzas/test/golden/sabotage-bot.ts",
+  "shared/golden/sabotage-run.ts": "games/pizzas/test/golden/sabotage-run.ts",
+  "shared/hazards.test.ts": "games/pizzas/sim/hazards.test.ts",
+  "shared/hints.test.ts": "games/pizzas/sim/hints.test.ts",
+  "shared/hints.ts": "games/pizzas/sim/hints.ts",
+  "shared/icons.ts": "platform/core/src/icons.ts",
+  "shared/kudos.test.ts": "games/pizzas/sim/kudos.test.ts",
+  "shared/kudos.ts": "games/pizzas/sim/kudos.ts",
+  "shared/magnet.golden.slow.test.ts": "games/pizzas/test/golden/magnet.golden.slow.test.ts",
+  "shared/magnet.mirror.slow.test.ts": "games/pizzas/sim/magnet.mirror.slow.test.ts",
+  "shared/maps.test.ts": "games/pizzas/sim/maps.test.ts",
+  "shared/maps.ts": "games/pizzas/sim/maps.ts",
+  "shared/midround.test.ts": "games/pizzas/sim/midround.test.ts",
+  "shared/midround.ts": "games/pizzas/sim/midround.ts",
+  "shared/overcooked.test.ts": "games/pizzas/sim/overcooked.test.ts",
+  "shared/overcooked.ts": "games/pizzas/sim/overcooked.ts",
+  "shared/package.json": "DELETE",
+  "shared/pantry.test.ts": "games/pizzas/sim/pantry.test.ts",
+  "shared/playthrough.test.ts": "games/pizzas/sim/playthrough.test.ts",
+  "shared/points.test.ts": "games/pizzas/sim/points.test.ts",
+  "shared/presses.test.ts": "platform/core/src/presses.test.ts",
+  "shared/protocol.test.ts": "platform/core/src/protocol.test.ts",
+  "shared/protocol.ts": "platform/core/src/protocol.ts",
+  "shared/puestos.test.ts": "games/pizzas/sim/puestos.test.ts",
+  "shared/puestos.ts": "games/pizzas/sim/puestos.ts",
+  "shared/recipes.cook.test.ts": "games/pizzas/sim/recipes.cook.test.ts",
+  "shared/recipes.mirror.test.ts": "games/pizzas/sim/recipes.mirror.test.ts",
+  "shared/recipes.test.ts": "games/pizzas/sim/recipes.test.ts",
+  "shared/recipes/cardCheck.ts": "games/pizzas/sim/recipes/card-check.ts",
+  "shared/recipes/cards.ts": "games/pizzas/sim/recipes/cards.ts",
+  "shared/recipes/defs.ts": "games/pizzas/sim/recipes/defs.ts",
+  "shared/recipes/sim.ts": "games/pizzas/sim/recipes/sim.ts",
+  "shared/recipes/stars.ts": "games/pizzas/sim/recipes/stars.ts",
+  "shared/render.test.ts": "platform/core/src/render.test.ts",
+  "shared/render.ts": "platform/core/src/render.ts",
+  "shared/results.ts": "games/pizzas/sim/results.ts",
+  "shared/rng.ts": "platform/core/src/rng.ts",
+  "shared/sabotage-config.test.ts": "games/pizzas/sim/sabotage-config.test.ts",
+  "shared/sabotage-config.ts": "games/pizzas/sim/sabotage-config.ts",
+  "shared/sabotage.mirror.slow.test.ts": "games/pizzas/sim/sabotage.mirror.slow.test.ts",
+  "shared/sabotage.test.ts": "games/pizzas/sim/sabotage.test.ts",
+  "shared/sabotage.ts": "games/pizzas/sim/sabotage.ts",
+  "shared/score.test.ts": "games/pizzas/sim/score.test.ts",
+  "shared/score.ts": "games/pizzas/sim/score.ts",
+  "shared/stars.ts": "games/pizzas/sim/stars.ts",
+  "shared/stats.ts": "platform/core/src/stats.ts",
+  "shared/symmetry.test.ts": "games/pizzas/sim/symmetry.test.ts",
+  "shared/symmetry.ts": "games/pizzas/sim/symmetry.ts",
+  "shared/teams.test.ts": "platform/core/src/lobby/teams.test.ts",
+  "shared/teams.ts": "platform/core/src/lobby/teams.ts",
+  "shared/tsconfig.json": "DELETE",
+  "shared/tutorial/index.ts": "games/pizzas/sim/school/index.ts",
+  "shared/tutorial/memory.test.ts": "games/pizzas/sim/school/memory.test.ts",
+  "shared/tutorial/memory.ts": "games/pizzas/sim/school/memory.ts",
+  "shared/tutorial/protocol.school.test.ts": "games/pizzas/sim/school/protocol.school.test.ts",
+  "shared/tutorial/school.test.ts": "games/pizzas/sim/school/school.test.ts",
+  "shared/tutorial/school.ts": "games/pizzas/sim/school/school.ts",
+  "shared/tutorial/schoolBot.ts": "games/pizzas/sim/school/school-bot.ts",
+  "shared/tutorial/schoolMap.ts": "games/pizzas/sim/school/school-map.ts",
+  "shared/tutorial/steps.test.ts": "games/pizzas/sim/school/steps.test.ts",
+  "shared/tutorial/steps.ts": "games/pizzas/sim/school/steps.ts",
+  "shared/validate.test.ts": "games/pizzas/sim/validate.test.ts",
+  "shared/validate.ts": "games/pizzas/sim/validate.ts",
+  "shared/versus.maps.test.ts": "games/pizzas/sim/versus/versus.maps.test.ts",
+  "shared/versus.slow.test.ts": "games/pizzas/sim/versus/versus.slow.test.ts",
+  "shared/versus.ts": "games/pizzas/sim/versus/versus.ts",
+  "shared/versusLobby.test.ts": "games/pizzas/sim/versus/lobby.test.ts",
+  "shared/versusLobby.ts": "games/pizzas/sim/versus/lobby.ts",
+  "shared/versusMaps.ts": "games/pizzas/sim/versus/maps.ts",
+  "shared/versusReport.test.ts": "games/pizzas/sim/versus/report.test.ts",
+  "shared/versusReport.ts": "games/pizzas/sim/versus/report.ts",
+  "shared/vote.test.ts": "platform/core/src/lobby/vote.test.ts",
+  "shared/vote.ts": "platform/core/src/lobby/vote.ts"
+ },
+ "dirs": [
+  {
+   "from": "shared/games/obstaculos/",
+   "to": "games/obstaculos/"
+  },
+  {
+   "from": "shared/golden/",
+   "to": "games/pizzas/test/golden/"
+  },
+  {
+   "from": "shared/tutorial/",
+   "to": "games/pizzas/sim/school/"
+  },
+  {
+   "from": "shared/recipes/",
+   "to": "games/pizzas/sim/recipes/"
+  },
+  {
+   "from": "shared/feel/",
+   "to": "games/pizzas/sim/feel/"
+  },
+  {
+   "from": "shared/",
+   "to": "games/pizzas/sim/"
+  },
+  {
+   "from": "screen/src/games/obstaculos/",
+   "to": "games/obstaculos/screen/"
+  },
+  {
+   "from": "screen/src/art/",
+   "to": "games/pizzas/screen/art/"
+  },
+  {
+   "from": "screen/src/audio/",
+   "to": "games/pizzas/screen/audio/"
+  },
+  {
+   "from": "screen/src/tutorial/",
+   "to": "games/pizzas/screen/school/"
+  },
+  {
+   "from": "screen/src/",
+   "to": "platform/screen/src/"
+  },
+  {
+   "from": "screen/",
+   "to": "apps/screen/"
+  },
+  {
+   "from": "controller/test/",
+   "to": "apps/controller/test/"
+  },
+  {
+   "from": "controller/src/",
+   "to": "platform/controller/src/"
+  },
+  {
+   "from": "controller/",
+   "to": "apps/controller/"
+  },
+  {
+   "from": "server/test/",
+   "to": "apps/server/test/"
+  },
+  {
+   "from": "server/src/",
+   "to": "platform/server/src/"
+  },
+  {
+   "from": "server/",
+   "to": "apps/server/"
+  }
+ ],
+ "barrels": {
+  "platform/core/src/protocol.ts": "platform/core/src/index.ts",
+  "games/pizzas/sim/overcooked.ts": "games/pizzas/sim/index.ts"
+ },
+ "create": {
+  "platform/core/src/index.ts": "export * from './protocol';\n",
+  "games/pizzas/sim/index.ts": "export * from './overcooked';\n"
+ },
+ "external": {
+  "phaser": "^4.2.1",
+  "nipplejs": "^1.0.4",
+  "express": "^5.2.0",
+  "ws": "^8.18.0",
+  "qrcode": "^1.5.4",
+  "qrcode-terminal": "^0.12.0"
+ },
+ "packages": {
+  "platform/core": {
+   "name": "@pichi/core",
+   "main": "src/index.ts",
+   "src": "src",
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "types": [],
+     "include": [
+      "src"
+     ]
+    }
+   ]
+  },
+  "platform/screen": {
+   "name": "@pichi/screen-kit",
+   "src": "src",
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "lib": [
+      "ES2022",
+      "DOM"
+     ],
+     "types": [],
+     "include": [
+      "src"
+     ]
+    }
+   ]
+  },
+  "platform/controller": {
+   "name": "@pichi/controller-kit",
+   "src": "src",
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "lib": [
+      "ES2022",
+      "DOM"
+     ],
+     "types": [],
+     "include": [
+      "src"
+     ]
+    }
+   ]
+  },
+  "platform/server": {
+   "name": "@pichi/server-kit",
+   "src": "src",
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "types": [
+      "node"
+     ],
+     "include": [
+      "src"
+     ]
+    }
+   ]
+  },
+  "games/pizzas": {
+   "name": "@pichi/game-pizzas",
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "lib": [
+      "ES2022",
+      "DOM"
+     ],
+     "types": [],
+     "include": [
+      "sim",
+      "screen",
+      "controller",
+      "test"
+     ]
+    }
+   ]
+  },
+  "games/obstaculos": {
+   "name": "@pichi/game-obstaculos",
+   "main": "index.ts",
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "lib": [
+      "ES2022",
+      "DOM"
+     ],
+     "types": [],
+     "include": [
+      "*.ts",
+      "sim",
+      "campaign",
+      "validator",
+      "levels",
+      "generate",
+      "modules",
+      "metric",
+      "screen",
+      "test"
+     ]
+    },
+    {
+     "dir": "server",
+     "types": [
+      "node"
+     ],
+     "include": [
+      "."
+     ]
+    }
+   ]
+  },
+  "apps/screen": {
+   "name": "@pichi/app-screen",
+   "relativeOnly": true,
+   "scripts": {
+    "build": "vite build"
+   },
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "lib": [
+      "ES2022",
+      "DOM"
+     ],
+     "types": [],
+     "include": [
+      "src",
+      "vite.config.ts"
+     ]
+    }
+   ]
+  },
+  "apps/controller": {
+   "name": "@pichi/app-controller",
+   "relativeOnly": true,
+   "scripts": {
+    "build": "vite build"
+   },
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "lib": [
+      "ES2022",
+      "DOM"
+     ],
+     "types": [],
+     "include": [
+      "src",
+      "vite.config.ts"
+     ]
+    },
+    {
+     "dir": "test",
+     "lib": [
+      "ES2022",
+      "DOM"
+     ],
+     "types": [
+      "node"
+     ],
+     "include": [
+      "."
+     ]
+    }
+   ]
+  },
+  "apps/server": {
+   "name": "@pichi/app-server",
+   "relativeOnly": true,
+   "devDeps": {
+    "@types/qrcode": "^1.5.6",
+    "@types/qrcode-terminal": "^0.12.2"
+   },
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "types": [
+      "node"
+     ],
+     "include": [
+      "src",
+      "test"
+     ]
+    }
+   ]
+  },
+  "tools/latency-report": {
+   "name": "@pichi/latency-report",
+   "tsconfigs": [
+    {
+     "dir": ".",
+     "types": [
+      "node"
+     ],
+     "include": [
+      "src"
+     ]
+    }
+   ]
+  }
+ },
+ "rootPackage": {
+  "workspaces": [
+   "platform/*",
+   "games/*",
+   "apps/*",
+   "tools/latency-report"
+  ],
+  "scripts": {
+   "dev": "tsx apps/server/src/main.ts dev",
+   "start": "tsx apps/server/src/main.ts static",
+   "build": "npm run build -w @pichi/app-screen -w @pichi/app-controller",
+   "test:fast": "vitest run --project '!slow'",
+   "deps": "depcruise --config .dependency-cruiser.cjs platform games apps tools"
+  }
+ },
+ "vitest": [
+  {
+   "name": "core",
+   "dirs": [
+    "platform/core"
+   ]
+  },
+  {
+   "name": "screen-kit",
+   "dirs": [
+    "platform/screen"
+   ]
+  },
+  {
+   "name": "controller-kit",
+   "dirs": [
+    "platform/controller"
+   ]
+  },
+  {
+   "name": "game-pizzas",
+   "dirs": [
+    "games/pizzas"
+   ]
+  },
+  {
+   "name": "game-obstaculos",
+   "dirs": [
+    "games/obstaculos"
+   ]
+  },
+  {
+   "name": "app-server",
+   "dirs": [
+    "apps/server/test"
+   ]
+  },
+  {
+   "name": "tools",
+   "dirs": [
+    "tools"
+   ]
+  }
+ ],
+ "vitestSlowOnly": [
+  "apps/controller"
+ ],
+ "overlay": {
+  ".dependency-cruiser.cjs": "scripts/move-overlay/dependency-cruiser.cjs"
+ },
+ "patches": [
+  {
+   "file": "apps/server/src/server.ts",
+   "find": "import.meta.url)), '../..')",
+   "replace": "import.meta.url)), '../../..')"
+  },
+  {
+   "file": "apps/server/src/server.ts",
+   "find": "mk('screen')",
+   "replace": "mk('apps/screen')"
+  },
+  {
+   "file": "apps/server/src/server.ts",
+   "find": "mk('controller')",
+   "replace": "mk('apps/controller')"
+  },
+  {
+   "file": "apps/server/src/server.ts",
+   "find": "path.join(root, 'screen/dist')",
+   "replace": "path.join(root, 'apps/screen/dist')"
+  },
+  {
+   "file": "apps/server/src/server.ts",
+   "find": "path.join(root, 'controller/dist')",
+   "replace": "path.join(root, 'apps/controller/dist')"
+  },
+  {
+   "file": "tools/camp-shots.ts",
+   "find": "path.resolve('screen/index.html')",
+   "replace": "path.resolve('apps/screen/index.html')"
+  },
+  {
+   "file": "tools/record-golden.ts",
+   "find": "../shared/golden/${sc.name}.json",
+   "replace": "../games/pizzas/test/golden/fixtures/${sc.name}.json"
+  },
+  {
+   "file": "tools/feel-measure.ts",
+   "find": "${root}/shared/${f}.ts",
+   "replace": "${root}/games/pizzas/sim/${f}.ts"
+  },
+  {
+   "file": "games/obstaculos/screen/harness/capture.ts",
+   "find": "['vite', 'screen', '--port'",
+   "replace": "['vite', 'games/obstaculos/screen/harness', '--port'"
+  },
+  {
+   "file": "games/obstaculos/screen/harness/capture.ts",
+   "find": "${PORT}/screen/`",
+   "replace": "${PORT}/`"
+  },
+  {
+   "file": "games/obstaculos/screen/harness/capture.ts",
+   "find": "${PORT}/screen/src/games/obstaculos/harness/index.html",
+   "replace": "${PORT}/index.html"
+  },
+  {
+   "file": "games/obstaculos/screen/harness/capture.ts",
+   "find": "npx tsx screen/src/games/obstaculos/harness/capture.ts",
+   "replace": "npx tsx games/obstaculos/screen/harness/capture.ts"
+  },
+  {
+   "file": "tools/meta/baseline.ts",
+   "find": "{ dir: 'shared/golden', ext: '' },",
+   "replace": "{ dir: 'games/pizzas/test/golden', ext: '' },"
+  },
+  {
+   "file": "tools/meta/baseline.ts",
+   "find": "const baseHashes: Record<string, string> = JSON.parse(readFileSync(join(OUT, 'captures.json'), 'utf8'));",
+   "replace": "const baseHashes = translateHashes(JSON.parse(readFileSync(join(OUT, 'captures.json'), 'utf8')));"
+  },
+  {
+   "file": "tools/meta/baseline.ts",
+   "find": "function walk(dir: string, ext: string, acc: string[] = []): string[] {",
+   "replace": "// The baseline was written before F3 moved the files: translate its paths through scripts/moves.json. Golden JSON is compared byte for byte at its new\n// path; the golden bots (.ts) had their import lines rewritten by the move, so they are checked with `git diff -M` (only import lines may differ).\nfunction translateHashes(h: Record<string, string>): Record<string, string> {\n  const file = join(ROOT, 'scripts/moves.json');\n  const moved: Record<string, string> = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')).files : {};\n  const out: Record<string, string> = {};\n  for (const [k, v] of Object.entries(h)) {\n    const nk = existsSync(join(ROOT, k)) ? k : (moved[k] ?? k);\n    if (nk !== k && k.endsWith('.ts')) continue;\n    out[nk] = v;\n  }\n  return out;\n}\n\nfunction walk(dir: string, ext: string, acc: string[] = []): string[] {"
+  },
+  {
+   "file": "tools/meta/deps-report.ts",
+   "find": "const DIRS = ['shared', 'screen/src', 'controller/src', 'server/src', 'tools'];",
+   "replace": "const DIRS = ['platform', 'games', 'apps', 'tools'];"
+  },
+  {
+   "file": "tools/meta/size-budget.ts",
+   "find": "  'screen/src/main.ts',",
+   "replace": "  'apps/screen/src/main.ts',"
+  },
+  {
+   "file": "tools/meta/size-budget.ts",
+   "find": "  'shared/overcooked.ts',",
+   "replace": "  'games/pizzas/sim/overcooked.ts',"
+  },
+  {
+   "file": "tools/meta/size-budget.ts",
+   "find": "  'screen/index.html',",
+   "replace": "  'apps/screen/index.html',"
+  },
+  {
+   "file": "tools/meta/size-budget.ts",
+   "find": "  'shared/games/obstaculos/validator/graph.ts',",
+   "replace": "  'games/obstaculos/validator/graph.ts',"
+  },
+  {
+   "file": "tools/meta/size-budget.ts",
+   "find": "  'shared/maps.ts',",
+   "replace": "  'games/pizzas/sim/maps.ts',"
+  },
+  {
+   "file": "tools/meta/size-budget.ts",
+   "find": "  'controller/src/main.ts',",
+   "replace": "  'apps/controller/src/main.ts',"
+  },
+  {
+   "file": "tools/meta/size-budget.ts",
+   "find": "  'shared/validate.ts',",
+   "replace": "  'games/pizzas/sim/validate.ts',"
+  }
+ ]
+}

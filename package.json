@@ -2,13 +2,22 @@
   "name": "party-game",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
-  "workspaces": ["shared", "server", "screen", "controller", "tools/latency-report"],
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "shared",
+    "server",
+    "screen",
+    "controller",
+    "tools/latency-report"
+  ],
   "scripts": {
     "dev": "tsx server/src/main.ts dev",
     "start": "tsx server/src/main.ts static",
     "build": "npm run build -w screen -w controller",
-    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p tools/meta",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p tools/meta && tsc -p scripts",
+    "move": "tsx scripts/move.ts",
     "test": "vitest run",
     "test:fast": "vitest run --project shared --project server --project screen --project controller --project tools",
     "test:slow": "vitest run --project slow",
@@ -27,6 +36,7 @@
     "@types/node": "^22.0.0",
     "@types/ws": "^8.18.1",
     "dependency-cruiser": "^17.4.3",
+    "ts-morph": "^28.0.0",
     "tsx": "^4.23.0",
     "typescript": "^5.9.3",
     "vite": "^8.3.0",
