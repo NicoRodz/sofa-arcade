@@ -5,6 +5,7 @@ import { MAX_SLOTS, type Game, type Station, type TeamSeat, type TeamState } fro
 import { FIXED_MAPS, parseMap, spawnPoints, type Pos, type SigmaName } from '../maps';
 import type { SabotageMode } from '../sabotage-config';
 import { newSurfaceState } from '../surfaces/config';
+import { createMutate } from '../mutate/step';
 import { applyMagnet, type MagnetLevel } from '../feel/magnet';
 import { PANTRY_MAX, VIP_EVERY_MS, kitchenRegions, stationOwner, teamStarts } from '../versus/versus';
 import { teamMultipliers } from '@pichi/core/lobby/teams';
@@ -56,6 +57,7 @@ export function createGame(
     recipes?: boolean;
     magnet?: boolean | MagnetLevel;
     surfaces?: boolean;
+    mutate?: boolean;
   } = {},
 ): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
@@ -164,6 +166,7 @@ export function createGame(
     rec: opts.recipes ? createRec(stations, opts.mapId) : null,
     assist,
     surf: opts.surfaces ? newSurfaceState() : null,
+    mut: null,
     magnet: null, // rec: before the first orders are drawn
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0
@@ -193,6 +196,7 @@ export function createGame(
   if (opts.burn) g.burn = createBurn(difficulty, !!opts.fire && fireAllowed(difficulty, g.sab?.mode), teamCount);
   if (opts.magnet) applyMagnet(g, opts.magnet === true ? 'normal' : opts.magnet); // magnetism: off unless the round's config asks
   if (opts.events) g.mid = createMid(g, opts.eventsSeed ?? seed); // `eventsSeed`: the coop lobby does not seed its orders (they are the same every round), but the event must still vary
+  if (opts.mutate) g.mut = createMutate(g, seed); // coop maps with a mutation only; its own stream, nothing shared
   return g;
 }
 

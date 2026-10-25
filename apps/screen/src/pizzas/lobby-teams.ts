@@ -1,10 +1,12 @@
 // The Pizzas lobby's team columns (versus), the sabotage pills and the events pills. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts unchanged.
 import { SABOTAGE_BLURB, SABOTAGE_OPTION, sabotageOf } from '@pichi/game-pizzas/sim/sabotage-config';
 import { eventsOf } from '@pichi/game-pizzas/sim/midround';
+import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
 import { VERSUS_RANDOM, lobbySetup, sabotageNotice, teamSizes } from '@pichi/game-pizzas/sim/versus/lobby';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { chips, chipsMovedToTeams } from '@pichi/screen-kit/lobby/chips';
+import { isVersus } from './state';
 import { $, esc, plural, setHtml } from '@pichi/screen-kit/ui/dom';
 import { assistIds, modeNow, pz } from './state';
 
@@ -91,6 +93,21 @@ export function renderEvents() {
       .map(
         (v) =>
           `<button class="pill ${v === on ? 'sel' : ''}" data-ev="${v}" title="${v ? 'Un evento por ronda, entre el 1:00 y el 2:00' : 'Sin eventos'}">${v ? 'Sí' : 'No'}</button>`,
+      )
+      .join(''),
+  );
+}
+
+// The mutating kitchen option (Sí / No): coop only (versus leaves it out for now), Sí on Normal and Difícil, No on Fácil, until the host picks.
+export function renderMutate() {
+  const on = mutateOf(app.config.modeOptions, app.config.difficulty);
+  for (const id of ['mutl', 'muts']) $(id).style.display = isVersus() ? 'none' : '';
+  setHtml(
+    'muts',
+    [true, false]
+      .map(
+        (v) =>
+          `<button class="pill ${v === on ? 'sel' : ''}" data-mut="${v}" title="${v ? 'En los mapas que lo tienen, la cocina cambia a 1:30' : 'La cocina no cambia'}">${v ? 'Sí' : 'No'}</button>`,
       )
       .join(''),
   );

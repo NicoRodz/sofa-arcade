@@ -10,6 +10,8 @@ import type { EventKind } from '@pichi/game-pizzas/sim/midround';
 
 /** Events of the surfaces: their sounds are wired by the game's own audio director, not by the shared recipe table. */
 export type SurfaceEvent = 'surface:slide' | 'surface:belt';
+/** Events of the mutating kitchen (sim/mutate): sounded by the game's own audio director too. */
+export type MutateEvent = 'mutate:warn' | 'mutate:apply';
 
 export interface GameEvents extends SabotageEvents {
   itemPicked: { player: number; item: Item; from: StationKind };
@@ -19,6 +21,8 @@ export interface GameEvents extends SabotageEvents {
   bump: { player: number; other: number }; // R5: a dash hit another chef
   'surface:slide': { player: number }; // surfaces (only a round with them): a chef stepped onto ice at speed
   'surface:belt': { player: number }; // ... onto a floor belt
+  'mutate:warn': { id: string; title: string; blurb: string; inMs: number }; // mutate flag: the alarm and the banner, the map changes in `inMs`
+  'mutate:apply': { id: string; tiles: { x: number; y: number; to: string }[]; moved: number }; // the tiles changed (grid already new); `moved` chefs/items relocated
   chopStart: { player: number; station: number }; // station = index in game.stations
   chopStop: { player: number; station: number };
   chopDone: { player: number; station: number };

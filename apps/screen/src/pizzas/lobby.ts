@@ -5,6 +5,7 @@ import { teamOf } from '@pichi/core/lobby/teams';
 import type { LobbyConfig } from '@pichi/core';
 import { defaultSabotage, isSabotageMode, SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
 import { eventsOf } from '@pichi/game-pizzas/sim/midround';
+import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
 import { fixedMap, isMapChoice, mapStatus } from '@pichi/game-pizzas/sim/maps';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import { isVersusChoice, stepChoice, teamSizes, versusAvailability, versusMapStatus } from '@pichi/game-pizzas/sim/versus/lobby';
@@ -13,8 +14,8 @@ import { app, connectedCount, setConfig } from '@pichi/screen-kit/shell/app-stat
 import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
 import type { Difficulty } from '@pichi/core/difficulty';
 import { renderMapPanel } from './lobby-maps';
-import { moveToTeam, setEvents, setMode, setSabotage, shuffleTeams, syncLobby } from './lobby-sync';
-import { renderEvents, renderSabotage, renderTeams } from './lobby-teams';
+import { moveToTeam, setEvents, setMutate, setMode, setSabotage, shuffleTeams, syncLobby } from './lobby-sync';
+import { renderEvents, renderMutate, renderSabotage, renderTeams } from './lobby-teams';
 import { connectedN, gameDef, isVersus, modeNow, pz } from './state';
 
 const MODE_PILL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
@@ -44,6 +45,7 @@ export function renderLobby() {
   if (vs) renderTeams();
   renderSabotage(vs);
   renderEvents();
+  renderMutate();
   renderMapPanel(vs, n);
 }
 
@@ -51,6 +53,10 @@ export function renderLobby() {
 export function lobbyKey(key: string, repeat: boolean): boolean {
   if ((key === 'e' || key === 'E') && !repeat) {
     setEvents(!eventsOf(app.config.modeOptions, app.config.difficulty));
+    return true;
+  }
+  if ((key === 'm' || key === 'M') && !repeat && !isVersus()) {
+    setMutate(!mutateOf(app.config.modeOptions, app.config.difficulty));
     return true;
   }
   if (isVersus() && (key === 'ArrowLeft' || key === 'ArrowRight')) {
@@ -70,6 +76,10 @@ export function initLobbyView() {
   $('evs').addEventListener('click', (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>('[data-ev]')?.dataset.ev;
     if (v === 'true' || v === 'false') setEvents(v === 'true');
+  });
+  $('muts').addEventListener('click', (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>('[data-mut]')?.dataset.mut;
+    if (!isVersus() && (v === 'true' || v === 'false')) setMutate(v === 'true');
   });
   $('sabs').addEventListener('click', (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>('[data-sab]')?.dataset.sab;

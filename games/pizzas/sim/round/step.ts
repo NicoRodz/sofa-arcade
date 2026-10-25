@@ -10,6 +10,7 @@ import { cookTick, refillPantry, returnDirtyPlates } from './stations';
 import { burnTick } from '../burn';
 import { midTick } from '../midround';
 import { surfacesTick } from '../surfaces/step';
+import { mutateTick } from '../mutate/step';
 
 function countdown(g: Game, dtMs: number) {
   const prev = Math.ceil(g.countdown / 1000);
@@ -42,6 +43,7 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   }
 
   separate(g, controls, dtMs);
+  if (g.mut) mutateTick(g);
   if (g.surf) surfacesTick(g, dtMs);
   if (g.hazards) hazardsTick(g);
   if (g.sab) sabotageTick(g);

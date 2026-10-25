@@ -8,6 +8,7 @@ import { app, connectedCount, connectedIds, renderUi, services, setConfig } from
 import { modeOf, type ModeId } from '@pichi/core/games';
 import { SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
 import { EVENTS_OPTION } from '@pichi/game-pizzas/sim/midround';
+import { MUTATE_OPTION } from '@pichi/game-pizzas/sim/mutate/plan';
 import { defaultMap, fixedMap, isMapChoice, mapStatus, replacementMap, type MapChoice } from '@pichi/game-pizzas/sim/maps';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import {
@@ -87,6 +88,12 @@ export function setEvents(on: boolean) {
   if (app.phase !== 'lobby' || app.config.game !== PIZZAS) return;
   services.ui(NAV_SFX.move);
   setConfig({ modeOptions: { ...app.config.modeOptions, [EVENTS_OPTION]: on } });
+}
+// The mutating kitchen option (coop only): Sí on Normal and Difícil, No on Fácil, until the host picks. Key M.
+export function setMutate(on: boolean) {
+  if (app.phase !== 'lobby' || app.config.game !== PIZZAS || isVersus()) return;
+  services.ui(NAV_SFX.move);
+  setConfig({ modeOptions: { ...app.config.modeOptions, [MUTATE_OPTION]: on } });
 }
 
 // Why the round cannot start yet ('' when it can). Versus also needs a legal split.
