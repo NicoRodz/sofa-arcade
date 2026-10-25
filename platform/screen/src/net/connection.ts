@@ -95,6 +95,7 @@ export function onMessage(m: ServerMsg) {
       latency.totalPkts++;
       p.pkts++;
       p.ctl = { x: m.x, y: m.y, b: (m.btn & 2) !== 0 };
+      p.ctlAt = performance.now();
       for (const g of games().list()) g.players?.input?.(p, m); // the last packet of every phone
       const delta = p.tracker.update(m.presses);
       if (delta.some((d) => d > 0)) {

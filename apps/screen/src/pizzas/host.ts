@@ -8,6 +8,7 @@ import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { openHowTo } from '@pichi/screen-kit/shell/round-flow';
 import { $ } from '@pichi/screen-kit/ui/dom';
 import { TICK_MS, resolvePause, tick, type Controls } from '@pichi/game-pizzas/sim';
+import { staleControls } from '@pichi/game-pizzas/sim/feel/stale';
 import { createHintSync } from '@pichi/game-pizzas/sim/hints';
 import { nextLead, scoreHidden } from '@pichi/game-pizzas/sim/versus/report';
 import { createSchoolHost } from '@pichi/game-pizzas/screen/school/host';
@@ -70,7 +71,8 @@ const host: Host = {
       pz.acc -= TICK_MS;
       const controls = new Map<number, Controls>();
       for (const p of app.players.values()) {
-        controls.set(p.info.id, { ...p.ctl, a: p.pendA, bTaps: p.pendB });
+        const ctl = { ...p.ctl, a: p.pendA, bTaps: p.pendB };
+        controls.set(p.info.id, p.ctlAt === undefined ? ctl : staleControls(ctl, performance.now() - p.ctlAt));
         p.pendA = 0;
         p.pendB = 0;
       }
