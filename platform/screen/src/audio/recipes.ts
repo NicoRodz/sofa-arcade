@@ -1,5 +1,5 @@
 // Pure data: what each sound is made of, and which game event triggers which sound. No Web Audio here.
-import type { GameEvents } from '@pichi/core/events';
+import type { GameEvents, SurfaceEvent } from '@pichi/core/events';
 
 export type Wave = 'sine' | 'square' | 'sawtooth' | 'triangle';
 export type BusName = 'sfx' | 'ui';
@@ -405,7 +405,7 @@ const douseKey = (p: { station: number }) => `douse:${p.station}`;
 const foldKey = (p: { station: number }) => `fold:${p.station}`;
 
 // One entry per game event; the mapped type makes a missing event a compile error.
-export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] } = {
+export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent>]: (p: GameEvents[K]) => Action[] } = {
   itemPicked: () => [play('pickup')],
   itemDropped: () => [play('drop')],
   interactInvalid: () => [play('buzz')],

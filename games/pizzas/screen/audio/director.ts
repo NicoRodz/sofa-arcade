@@ -3,6 +3,7 @@ import type { Emitter, GameEvents } from '@pichi/core/events';
 import { DUCK_GAIN, DUCK_S, BUS_GAIN, LoopTable, SfxLimiter, hintText, masterGain, rateFor } from '@pichi/screen-kit/audio/mixer';
 import { LOOKAHEAD_S, TICK_MS, advance, modeFor, newSched, type Snapshot } from '@pichi/screen-kit/audio/music';
 import { ACTIONS, type Action, type SfxId } from '@pichi/screen-kit/audio/recipes';
+import { SURFACE_ACTIONS } from './surfaces';
 import { createChain, playNote, playSfx } from '@pichi/screen-kit/audio/synth';
 
 export interface AudioController {
@@ -82,9 +83,10 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
       else loops.apply(a, now);
     }
   };
-  for (const type of Object.keys(ACTIONS) as (keyof GameEvents)[]) {
+  for (const type of Object.keys(ACTIONS) as (keyof typeof ACTIONS)[]) {
     bus.on(type, (p) => run((ACTIONS[type] as (p: unknown) => Action[])(p)));
   }
+  for (const type of Object.keys(SURFACE_ACTIONS) as (keyof typeof SURFACE_ACTIONS)[]) bus.on(type, (p) => run(SURFACE_ACTIONS[type](p)));
 
   setInterval(() => {
     if (ctx.state !== 'running') return;

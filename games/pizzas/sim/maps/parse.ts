@@ -1,5 +1,6 @@
 // Map parser and grid geometry: tile letters to typed tiles, floor regions, spawn tiles.
 import type { Grid, Pos, StationKind, Tile } from './types';
+import { surfaceTile } from '../surfaces/legend';
 
 export const MAP_W = 16;
 export const MAP_H = 9;
@@ -7,6 +8,7 @@ export const MAP_H = 9;
 // # wall, . floor, S spawn (floor), ~ water, C counter, 1/2 ingredient crates, K board (stretch/cut),
 // O oven, P tray pile, E delivery counter, X trash, 3 cheese crate (Margarita), U dirty-plate return, L sink,
 // Y catapult (VERSUS maps only, the sabotage launcher: parseMap refuses it unless the caller says the map is a versus one).
+// Surface tiles (surfaces/legend.ts, coop maps only): i ice, and the arrows of a floor belt.
 // Design legend (15-mapas.md) -> this code: T->C, M->1, R->2, Q->3, C (table)->K, H->O; the rest is the same.
 const STATIONS: Record<string, { station: StationKind; crate: number }> = {
   '1': { station: 'crate', crate: 0 },
@@ -44,7 +46,7 @@ export function parseTile(c: string, versus = false): Tile | null {
   if (c === 'S') return { kind: 'floor', spawn: true };
   if (c === '~') return { kind: 'water' };
   const s = STATIONS[c] ?? (versus ? VERSUS_ONLY[c] : undefined);
-  return s ? { kind: 'station', ...s } : null;
+  return s ? { kind: 'station', ...s } : surfaceTile(c, versus);
 }
 
 export function parseMap(rows: readonly string[], versus = false): Grid {

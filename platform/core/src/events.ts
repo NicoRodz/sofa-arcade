@@ -8,12 +8,17 @@ import type { EventKind } from '@pichi/game-pizzas/sim/midround';
 // `team` (optional, on the team-level events): the id of the team the event belongs to, for the HUD and the sounds. It is present
 // only in versus (two or more teams); a cooperative round is one team and its events carry no team, exactly as before the teams refactor.
 
+/** Events of the surfaces: their sounds are wired by the game's own audio director, not by the shared recipe table. */
+export type SurfaceEvent = 'surface:slide' | 'surface:belt';
+
 export interface GameEvents extends SabotageEvents {
   itemPicked: { player: number; item: Item; from: StationKind };
   itemDropped: { player: number; item: Item; at: StationKind };
   interactInvalid: { player: number };
   dash: { player: number; dx: number; dy: number }; // R2: unit direction
   bump: { player: number; other: number }; // R5: a dash hit another chef
+  'surface:slide': { player: number }; // surfaces (only a round with them): a chef stepped onto ice at speed
+  'surface:belt': { player: number }; // ... onto a floor belt
   chopStart: { player: number; station: number }; // station = index in game.stations
   chopStop: { player: number; station: number };
   chopDone: { player: number; station: number };

@@ -4,6 +4,7 @@ import { Emitter, type GameEvents } from '@pichi/core/events';
 import { MAX_SLOTS, type Game, type Station, type TeamSeat, type TeamState } from './state';
 import { FIXED_MAPS, parseMap, spawnPoints, type Pos, type SigmaName } from '../maps';
 import type { SabotageMode } from '../sabotage-config';
+import { newSurfaceState } from '../surfaces/config';
 import { applyMagnet, type MagnetLevel } from '../feel/magnet';
 import { PANTRY_MAX, VIP_EVERY_MS, kitchenRegions, stationOwner, teamStarts } from '../versus/versus';
 import { teamMultipliers } from '@pichi/core/lobby/teams';
@@ -54,6 +55,7 @@ export function createGame(
     eventsSeed?: number;
     recipes?: boolean;
     magnet?: boolean | MagnetLevel;
+    surfaces?: boolean;
   } = {},
 ): Game {
   const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
@@ -161,6 +163,7 @@ export function createGame(
     mid: null,
     rec: opts.recipes ? createRec(stations, opts.mapId) : null,
     assist,
+    surf: opts.surfaces ? newSurfaceState() : null,
     magnet: null, // rec: before the first orders are drawn
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0

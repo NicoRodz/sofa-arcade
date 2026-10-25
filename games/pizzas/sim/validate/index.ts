@@ -16,3 +16,4 @@ export { VERSUS_TOL, teamRange, versusLayout, type VersusLayout } from './versus
 export type { KitchenCost, VersusReport } from './kitchen-cost';
 export { CATAPULT_NEAR, sabotageProblems } from './sabotage';
 export { validateVersus } from './versus';
+export { surfaceProblems, surfaceTiles } from './surfaces';

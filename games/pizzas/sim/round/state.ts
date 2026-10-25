@@ -12,6 +12,7 @@ import type { Burn } from '../burn';
 import type { Mid } from '../midround';
 import type { Rec } from '../recipes/sim';
 import type { MagnetCfg } from '../feel/magnet';
+import type { SurfaceState } from '../surfaces/config';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -183,6 +184,7 @@ export interface Game {
   mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none
   rec: Rec | null; // the Carta del día of the round (recipes/sim.ts): null (the default) = the old recipes (Marinara, Margarita)
   assist: ReadonlySet<number>; // ids of the chefs that play on Ayudante (assist.ts); empty in a round that has none
+  surf: SurfaceState | null; // ice and belts (surfaces/): null (the default, and every golden round) = every floor tile is plain
   magnet: MagnetCfg | null; // magnetism for every chef (feel/magnet.ts): null (the default, and every golden round) = the plain targeting and feel
 }
 

@@ -5,9 +5,11 @@ import type { SIGMAS } from '../symmetry';
 export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash' | 'dirty' | 'sink' | 'catapult';
 export type Tile =
   | { kind: 'wall' }
-  | { kind: 'floor'; spawn: boolean }
+  | { kind: 'floor'; spawn: boolean; surface?: Surface }
   | { kind: 'water' }
   | { kind: 'station'; station: StationKind; crate: number };
+/** What a floor tile does to a chef standing on it (only in a round with `surfaces`): ice makes it slide, a belt carries it along (dx, dy) = unit direction. */
+export type Surface = { kind: 'ice' } | { kind: 'belt'; dx: number; dy: number };
 export type Grid = Tile[][];
 export type Pos = [number, number];
 

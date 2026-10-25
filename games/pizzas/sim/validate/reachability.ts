@@ -4,6 +4,7 @@ import { accessTiles, hasCheese, hasSink, keysOf, legsOf, stationsOf, type Stati
 import { cardFor } from '../recipes/cards';
 import { cardProblems } from '../recipes/card-check';
 import { puestoProblems } from '../puestos';
+import { surfaceProblems } from './surfaces';
 
 export interface Analysis {
   comp: number[][]; // floor component id per tile, -1 elsewhere
@@ -124,6 +125,7 @@ export function validateMap(m: MapDef): { ok: boolean; errors: string[] } {
       errors.push('explicit spawn order does not match the S tiles');
   }
   errors.push(...puestoProblems(m));
+  errors.push(...surfaceProblems(g));
   if (floorTiles(g) < FLOOR_PER_PLAYER * m.nMax)
     errors.push(`${floorTiles(g)} floor tiles for ${m.nMax} players (want ${FLOOR_PER_PLAYER} each)`);
   return { ok: !errors.length, errors };
