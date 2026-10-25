@@ -193,7 +193,7 @@ export class Chef {
     const len = Math.hypot(s.fx, s.fy) || 1;
 
     // walk cycle
-    if (moving && !skating) this.phase += dt * (HOUR / 0.3) * Math.min(1.15, Math.max(0.5, speed / 4.5));
+    if (moving && !skating) this.phase += dt * (HOUR / 0.5) * Math.min(1.15, Math.max(0.5, speed / 4.5));
     else this.phase = 0;
     if (this.wasMoving && !moving && s.action === 'none') {
       this.sx = 0.12;
@@ -208,8 +208,8 @@ export class Chef {
       this.vy = 0;
     }
     this.wasMoving = moving;
-    const bounce = moving && !skating ? Math.abs(Math.sin(this.phase)) * 6 : 0;
-    const lean = skating ? 0.14 * this.flip : moving ? Math.sin(this.phase / 2) * 6 * (HOUR / 180) : 0;
+    const bounce = moving && !skating ? Math.abs(Math.sin(this.phase)) * 4 : 0;
+    const lean = skating ? 0.14 * this.flip : moving ? Math.sin(this.phase / 2) * 4 * (HOUR / 180) : 0;
 
     // spring toward rest scale
     const k = 420,
@@ -273,7 +273,7 @@ export class Chef {
       }
     } else {
       this.hitT = 0;
-      const sw = skating ? 0.7 : moving ? Math.sin(this.phase / 2) * 0.45 : 0; // on ice both arms go out for balance
+      const sw = skating ? 0.7 : moving ? Math.sin(this.phase / 2) * 0.3 : 0; // on ice both arms go out for balance
       armA = rest[0]! + sw;
       armB = rest[1]! + (skating ? -sw : sw);
       if (carrying) {
