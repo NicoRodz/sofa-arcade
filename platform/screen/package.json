@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./art/chef": "./src/art/chef/index.ts",
+    "./art/chefdraw": "./src/art/chefdraw/index.ts",
+    "./art/fx": "./src/art/fx/index.ts",
     "./*": "./src/*.ts"
   },
   "scripts": {
