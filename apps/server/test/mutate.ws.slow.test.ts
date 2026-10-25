@@ -1,5 +1,7 @@
 // The mutating kitchen over the real relay: two bots cook on each of the three maps that mutate, the round crosses minute 1:30 (warn at 1:27, change at 1:30) and keeps delivering after it.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { MUTATIONS } from '@pichi/game-pizzas/sim/mutate/plan';
+import { surfaceTiles } from '@pichi/game-pizzas/sim/validate';
 import { startServer } from '../src/server';
 import { kit, playRound } from './rules-kit';
 
@@ -22,6 +24,8 @@ describe('a bot keeps cooking through the mutation', () => {
       expect(apply[0]!.t).toBeGreaterThanOrEqual(90_000);
       expect(apply[0]!.t).toBeLessThan(90_200);
       expect(r.game.mut?.phase).toBe('done');
+      const t = surfaceTiles(r.game.grid);
+      expect(t.ice.length + t.belts.length).toBe(MUTATIONS[map]!.tiles.length); // the map really changed
       expect(r.of('delivered').filter((d) => d.t > 90_000).length).toBeGreaterThanOrEqual(1);
       r.close();
     }, 240_000);
