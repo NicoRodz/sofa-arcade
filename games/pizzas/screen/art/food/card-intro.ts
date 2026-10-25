@@ -7,7 +7,7 @@ import { TUNING } from '@pichi/core/difficulty';
 import type { Difficulty } from '@pichi/core/difficulty';
 import { C, H, W, hexNum } from '@pichi/screen-kit/art/tokens';
 import { R } from '@pichi/screen-kit/art/gfx';
-import { foodKey, type FoodKind } from '../food';
+import { foodKey, type FoodKind } from './kinds';
 import { place } from '../stations';
 import { makeText } from '@pichi/screen-kit/art/fx';
 import { RECIPE_PIZZA } from './recipes';

@@ -5,7 +5,7 @@ import type Phaser from 'phaser';
 import { RECIPE_DEFS, type Recipe } from '../../../sim/recipes/defs';
 import { C } from '@pichi/screen-kit/art/tokens';
 import { R } from '@pichi/screen-kit/art/gfx';
-import { foodKey, type FoodKind } from '../food';
+import { foodKey, type FoodKind } from './kinds';
 import { place } from '../stations';
 import { makeText } from '@pichi/screen-kit/art/fx';
 import { RECIPE_PIZZA } from './recipes';

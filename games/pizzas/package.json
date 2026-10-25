@@ -6,6 +6,7 @@
     "./sim": "./sim/index.ts",
     "./screen/audio": "./screen/audio/index.ts",
     "./sim/school": "./sim/school/index.ts",
+    "./screen/art/food": "./screen/art/food/index.ts",
     "./*": "./*.ts"
   },
   "scripts": {
