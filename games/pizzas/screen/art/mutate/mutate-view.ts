@@ -7,7 +7,7 @@ import { C, OX, OY, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { addSurfaces } from '../surfaces/surface-view';
 
-const BANNER = { w: 900, h: 130, y: 520 } as const;
+const BANNER = { w: 900, h: 130, y: 330 } as const; // above the mid-round event banner (y 520): both can be up in the same 3 s
 const ALARM = { main: '#D9482B', dark: '#8E2A16', stripe: 0xffd23f };
 
 export class MutateView {
