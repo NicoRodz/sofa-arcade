@@ -19,6 +19,16 @@ describe('the mirror proof with magnetism', () => {
     expect(strip(r.bus, 1)).toEqual(strip(r.bus, 0));
     expect(r.g.magnet).not.toBeNull();
   });
+  it('V1 3v3 with the Carta del día (calzone folded at the oven) and every lobby rule on: still an exact tie, three seeds', () => {
+    for (const seed of [2, 7, 11]) {
+      const r = runVersus({ ...MIRRORS.v1, mapId: 'V1', difficulty: 'normal', seed, teams: [[1, 2, 3], [4, 5, 6]], flags: { recipes: true, magnet: true, burn: true, fire: true, events: true } });
+      expect(strip(r.bus, 1), `seed ${seed}`).toEqual(strip(r.bus, 0));
+      const [a, b] = r.g.teams;
+      expect(a!.delivered, `seed ${seed}`).toBeGreaterThanOrEqual(4);
+      expect([b!.score, b!.delivered, b!.reachedAt], `seed ${seed}`).toEqual([a!.score, a!.delivered, a!.reachedAt]);
+      expect(r.bus.log.some((l) => l.includes('|foldDone|')), `seed ${seed}: a calzone was folded`).toBe(true);
+    }
+  });
   it('the flag is live in the round: the same seed without it is a different round', () => {
     const on = runVersus({ ...MIRRORS.v1, difficulty: 'normal', seed: 7, teams: [[1, 2, 3], [4, 5, 6]], flags: { magnet: true } });
     const off = runVersus({ ...MIRRORS.v1, difficulty: 'normal', seed: 7, teams: [[1, 2, 3], [4, 5, 6]] });

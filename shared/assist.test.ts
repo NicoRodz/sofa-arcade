@@ -351,7 +351,7 @@ describe('the handicap k (versus): an Ayudante weighs 0.7 and its immunity costs
   it('a score is multiplied by that k (a delivery is worth 3% more for the team with the Ayudante)', () => {
     const teams = [{ id: 0, name: 'A', color: '#000000', icon: 'a', playerIds: [1, 3] }, { id: 1, name: 'B', color: '#ffffff', icon: 'b', playerIds: [2, 4] }];
     const gain = (assist: number[]) => {
-      const g = startVersusRound({ teams, choice: 'V1', difficulty: 'normal', seed: 3, modeOptions: { handicap: true, sabotage: 'off' }, slotOf: (i) => i - 1, rand: () => 0.1, assist }).game;
+      const g = startVersusRound({ teams, choice: 'V1', difficulty: 'normal', seed: 3, modeOptions: { handicap: true, sabotage: 'off', recipes: false }, slotOf: (i) => i - 1, rand: () => 0.1, assist }).game; // recipes off: the test delivers a Marinara and the queue of V1 must ask for one
       const p = g.players.get(1)!;
       const w = g.stations.find((s) => s.kind === 'window' && s.owner === 0)!;
       place(g, 1, w);

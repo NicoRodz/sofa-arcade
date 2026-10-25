@@ -306,7 +306,9 @@
   #howtofill { height: 100%; width: 0; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
   #howtohint { text-align: center; font: 800 30px var(--font); color: var(--muted); margin-top: 12px; }
   #howtohint b { color: var(--ink); }
-  #howtobtn { margin-top: 10px; height: 44px; font-size: 22px; padding: 0 18px; }
+  #howtobtn { margin-top: 4px; height: 44px; font-size: 22px; padding: 0 18px; }
+  #schoolbtn { margin-top: 4px; height: 44px; font-size: 22px; padding: 0 18px; }
+  #lobbyui:has(#pizzaops.off) #schoolbtn { display: none; } /* the school is a pizza thing */
 
   /* versus lobby: two team columns replace the chip grid (the same chip elements move into them) */
   #teams { position: absolute; left: 650px; top: 196px; width: 1190px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -447,7 +449,7 @@
       </div>
       <div id="campaign" class="panel off"></div>
       <button id="start" class="btn" disabled>¡A cocinar!</button>
-      <div id="starthint">Enter para empezar<br><button id="howtobtn" class="pill">H · Cómo se juega</button><br><small>M sonido · S sacudida de pantalla</small></div>
+      <div id="starthint">Enter para empezar<br><button id="howtobtn" class="pill">H · Cómo se juega</button> <button id="schoolbtn" class="pill" title="Práctica guiada de 4 pasos, sin tiempo ni puntos">P · Cocina escuela</button><br><small>M sonido · S sacudida de pantalla</small></div>
     </div>
   </section>
 </div>

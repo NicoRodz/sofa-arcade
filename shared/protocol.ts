@@ -19,7 +19,9 @@ export { KEYBOARD_QUIET_MS, NAV_KEYS, NAV_TO_KEY, acceptNav, captainOf, isNavKey
 // 3: the Captain ('captain' to everyone, 'nav' from the Captain's phone to the screens, stamped with 'from'). Additive: an older screen or phone ignores both.
 // 4: the versus result ('phase' results carries `result`: verdict, winner and every team's score). Additive: an older phone ignores it.
 // 5: Ayudante ('assist' from a phone, and to the screens and that phone; PublicPlayer.assist). Additive: an older screen never reads it, an older phone never sends it.
-export const PROTOCOL_VERSION = 5;
+// 6: Cocina escuela (phase 'school'; 'school' from the screen to one phone: its step and instruction; 'schoolDone' from a phone: it already did the school, or skips it; PublicPlayer.school). Additive:
+// an older phone shows its normal pad in that phase and an older screen never enters it.
+export const PROTOCOL_VERSION = 6;
 export const WS_PATH = '/ws';
 export const DEFAULT_ROOM = 'main';
 export const INPUT_HZ = 30;
@@ -48,7 +50,7 @@ export interface InputState {
 }
 
 // menu: the Pichiclub start screen, where the screen picks the game (phones wait). lobby: that game's setup.
-export const PHASES = ['menu', 'lobby', 'playing', 'results'] as const;
+export const PHASES = ['menu', 'lobby', 'school', 'playing', 'results'] as const; // school: the guided practice round (shared/tutorial), between the lobby and the first match
 export type Phase = (typeof PHASES)[number];
 export interface Score { id: number; score: number }
 // Suggested stations for the round (see puestos.ts): the screen assigns them, the phones show them. Never enforced.
@@ -92,7 +94,10 @@ export interface PublicPlayer {
   connected: boolean;
   teamId: number | null; // the relay fills it from the lobby teams; null: no teams assigned (or a spectator)
   assist?: true; // the player chose Ayudante in the lobby (assist.ts); absent otherwise
+  school?: true; // this phone already did (or skipped) the Cocina escuela: the relay keeps it with the slot, the screen does not offer the school when everybody has it
 }
+// Cocina escuela, screen -> one phone: where this chef is (step of `total`, step === total: finished), what to do (<= 8 words), and which button to light.
+export interface SchoolMsg { step: number; total: number; text: string; btn?: 'a' | 'b'; done?: true }
 
 export type ClientMsg =
   | { t: 'join'; name: string; token: string }
@@ -105,6 +110,8 @@ export type ClientMsg =
   | { t: 'buzz'; playerId: number; kind: BuzzKind } // screen only: vibrate that phone
   | ({ t: 'hint'; playerId: number } & HintLabels) // screen only: what A and B do for that chef right now (null: the game's own label), their icons and whether they are greyed; no third button
   | { t: 'assist'; on: boolean } // phone: switch Ayudante on or off for this player (lobby only; the relay keeps it with the player's slot)
+  | ({ t: 'school'; playerId: number } & SchoolMsg) // screen only: the step and instruction of that chef in the Cocina escuela
+  | { t: 'schoolDone'; skip?: true } // phone: this player already did the school (skip: just pressed "Saltar" during it); the relay keeps it with the slot
   | { t: 'nav'; key: NavKey }; // phone: a D-pad button (only the Captain's is forwarded; the relay stamps who sent it)
 
 export type ServerMsg =
@@ -125,6 +132,8 @@ export type ServerMsg =
   | { t: 'buzz'; kind: BuzzKind }
   | ({ t: 'hint' } & HintLabels) // the label, icon and greyed state of A and B right now (null: back to the game's label)
   | { t: 'assist'; playerId: number; on: boolean } // to the screens, and to that phone itself (it remembers across a reconnect): this player's Ayudante is now on / off
+  | ({ t: 'school' } & SchoolMsg) // to one phone: its step in the Cocina escuela
+  | { t: 'schoolDone'; playerId: number; skip?: true } // to the screens: this phone knows the school (skip: it pressed "Saltar" now, the chef is done)
   | { t: 'captain'; playerId: number | null } // to everyone: who holds the crown now (null: nobody is connected)
   | { t: 'nav'; from: number; key: NavKey }; // to the screens: the Captain's phone pressed this. `from` is set by the relay from the socket, never taken from the payload
 
@@ -256,6 +265,12 @@ export function parseClientMessage(raw: string): ClientMsg | null {
     }
     case 'assist':
       return typeof m.on === 'boolean' ? { t: 'assist', on: m.on } : null;
+    case 'schoolDone':
+      return { t: 'schoolDone', ...(m.skip === true ? { skip: true as const } : {}) };
+    case 'school': {
+      if (!num(m.playerId) || !intIn(m.step, 0, 8) || !intIn(m.total, 1, 8) || m.step > m.total || !text(m.text, 48) || !(m.btn === undefined || m.btn === 'a' || m.btn === 'b')) return null;
+      return { t: 'school', playerId: m.playerId, step: m.step, total: m.total, text: m.text, ...(m.btn ? { btn: m.btn } : {}), ...(m.done === true ? { done: true as const } : {}) };
+    }
     case 'nav':
       return isNavKey(m.key) ? { t: 'nav', key: m.key } : null; // anything else in the payload (a fake `from`) is dropped here
     case 'config':
@@ -278,8 +293,10 @@ export function youMsg(teams: readonly TeamInfo[] | null | undefined, playerId: 
   return t ? { t: 'you', teamId: t.id, color: t.color, icon: t.icon, ...(t.side ? { sideLabel: t.side } : {}) } : null;
 }
 
-export type PhaseEvent = 'pick' | 'back' | 'start' | 'timeout' | 'again';
+export type PhaseEvent = 'pick' | 'back' | 'start' | 'timeout' | 'again' | 'practice' | 'endPractice';
 export function nextPhase(phase: Phase, ev: PhaseEvent): Phase {
+  if (phase === 'lobby' && ev === 'practice') return 'school';
+  if (phase === 'school' && ev === 'endPractice') return 'lobby';
   if (phase === 'menu' && ev === 'pick') return 'lobby';
   if (phase === 'lobby' && ev === 'back') return 'menu';
   if (phase === 'lobby' && ev === 'start') return 'playing';

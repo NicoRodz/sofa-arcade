@@ -3,8 +3,8 @@
 import Phaser from 'phaser';
 import type { Emitter, GameEvents } from '@party/shared/events';
 import type { Game } from '@party/shared/game';
-import { C, OX, OY, TILE, hexNum } from './tokens';
-import type { Fx } from './fx';
+import { C, OX, OY, TILE, hexNum } from '../tokens';
+import type { Fx } from '../fx';
 
 export class RatSignal {
   private g: Phaser.GameObjects.Graphics;

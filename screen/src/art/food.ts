@@ -3,17 +3,18 @@ import Phaser from 'phaser';
 import type { Item } from '@party/shared/game';
 import { C } from './tokens';
 import { blob, circle, contactShadow, drawOutlined, ellipse, makeTex, mix, rng, shade, shine, star, vgrad, type Ctx } from './gfx';
+import { EXTRA_COLOR, EXTRA_ITEM_KIND, extraDraw, type RecipeFoodKind } from './food/recipes'; // the Carta del día: pepperoni, mushroom, calzone
 
 export type FoodKind =
   | 'dough_raw' | 'dough_str' | 'tomato' | 'tomato_cut' | 'cheese_raw' | 'cheese_cut' | 'pizza_raw' | 'pizza_raw_q' | 'pizza_done' | 'pizza_done_q'
-  | 'pizza_burnt' | 'tray' | 'tray_dirty' | 'dish' | 'dish_q' | 'dish_burnt' | 'box' | 'peel' | 'bag';
+  | 'pizza_burnt' | 'tray' | 'tray_dirty' | 'dish' | 'dish_q' | 'dish_burnt' | 'box' | 'peel' | 'bag' | RecipeFoodKind;
 
 export const ITEM_KIND: Record<Item, FoodKind> = {
-  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dirty: 'tray_dirty', dish: 'dish', dishQ: 'dish_q', burnt: 'dish_burnt', trash: 'peel', trashBag: 'bag',
+  raw0: 'dough_raw', cut0: 'dough_str', raw1: 'tomato', cut1: 'tomato_cut', raw2: 'cheese_raw', cut2: 'cheese_cut', plate: 'tray', dirty: 'tray_dirty', dish: 'dish', dishQ: 'dish_q', burnt: 'dish_burnt', trash: 'peel', trashBag: 'bag', ...EXTRA_ITEM_KIND,
 };
-export const RAW_KIND: readonly FoodKind[] = ['dough_raw', 'tomato', 'cheese_raw'];
-export const CUT_KIND: readonly FoodKind[] = ['dough_str', 'tomato_cut', 'cheese_cut'];
-export const ingredientColor = (type: number) => (type === 0 ? C.dough : type === 1 ? C.tomato : C.cheese);
+export const RAW_KIND: readonly FoodKind[] = ['dough_raw', 'tomato', 'cheese_raw', 'pepperoni_raw', 'mushroom_raw'];
+export const CUT_KIND: readonly FoodKind[] = ['dough_str', 'tomato_cut', 'cheese_cut', 'pepperoni_cut', 'mushroom_cut'];
+export const ingredientColor = (type: number) => (type === 0 ? C.dough : type === 1 ? C.tomato : type === 2 ? C.cheese : EXTRA_COLOR[type - 3] ?? C.cheese);
 export const foodKey = (k: FoodKind) => `it_${k}`;
 
 function radial(c: Ctx, x: number, y: number, r: number, inner: string, outer: string) {
@@ -68,7 +69,7 @@ function tomatoCut(c: Ctx) {
 }
 
 // Marinara: dough and tomato sauce. With cheese (Margarita) it also gets the cream mozzarella blobs.
-function pizzaRaw(c: Ctx, shadow = true, cheese = false) {
+export function pizzaRaw(c: Ctx, shadow = true, cheese = false) {
   doughStr(c, shadow);
   c.fillStyle = '#D7362A'; blob(c, 0, 0, 21.5, 12, 1.5, 5); c.fill();
   c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.ellipse(-7, -8, 9, 5, -0.6, 0, Math.PI * 2); c.fill();
@@ -85,7 +86,7 @@ function pizzaRaw(c: Ctx, shadow = true, cheese = false) {
 }
 
 // Marinara bakes red with basil; the Margarita adds the molten cheese layer on top.
-function pizzaDone(c: Ctx, shadow = true, cheese = false) {
+export function pizzaDone(c: Ctx, shadow = true, cheese = false) {
   drawOutlined(c, () => blob(c, 0, 0, 28, 14, 1, 3), C.crust, { lw: 2.5, shadow: shadow ? [2, 26, 26, 6] : undefined });
   c.fillStyle = mix(C.crust, '#FFFFFF', 0.25); c.beginPath(); c.ellipse(-12, -14, 10, 4, -0.7, 0, Math.PI * 2); c.fill();
   c.fillStyle = C.tomato; blob(c, 0, 0, 23, 12, 1, 8); c.fill();
@@ -127,7 +128,7 @@ function pizzaBurnt(c: Ctx, shadow = true) {
   c.fillStyle = 'rgba(255,255,255,0.12)'; c.beginPath(); c.ellipse(-6, -8, 8, 3, -0.5, 0, Math.PI * 2); c.fill();
 }
 
-function tray(c: Ctx) {
+export function tray(c: Ctx) {
   // round peel: handle first so the disc covers its root
   drawOutlined(c, () => { c.beginPath(); c.roundRect(-5, 20, 10, 22, 4); }, C.wood2, { lw: 2.5 });
   contactShadow(c, 2, 30, 30, 6);
@@ -231,14 +232,18 @@ function bag(c: Ctx) {
   c.fillStyle = '#7FBF3A'; c.beginPath(); c.ellipse(8, 6, 6, 4, 0.5, 0, Math.PI * 2); c.fill();
 }
 
-const DRAW: Record<FoodKind, (c: Ctx) => void> = {
+const DRAW: Record<Exclude<FoodKind, RecipeFoodKind>, (c: Ctx) => void> = {
   dough_raw: doughRaw, dough_str: (c) => doughStr(c), tomato, tomato_cut: tomatoCut, cheese_raw: cheeseRaw, cheese_cut: cheeseCut,
   pizza_raw: (c) => pizzaRaw(c), pizza_raw_q: (c) => pizzaRaw(c, true, true),
   pizza_done: (c) => pizzaDone(c), pizza_done_q: (c) => pizzaDone(c, true, true), pizza_burnt: (c) => pizzaBurnt(c),
   tray, tray_dirty: trayDirty, dish: (c) => dish(c), dish_q: (c) => dish(c, true), dish_burnt: dishBurnt, box, peel, bag,
 };
-export const drawFood = (c: Ctx, k: FoodKind) => DRAW[k](c);
+// the extra kinds are built on first use (they draw with the base pizza and tray of this file, which are all defined by then)
+let extra: Record<RecipeFoodKind, (c: Ctx) => void> | null = null;
+const drawerOf = (k: FoodKind): ((c: Ctx) => void) => (k in DRAW ? DRAW[k as keyof typeof DRAW] : (extra ??= extraDraw({ pizzaRaw, pizzaDone, tray }))[k as RecipeFoodKind]);
+export const drawFood = (c: Ctx, k: FoodKind) => drawerOf(k)(c);
 
 export function buildFoodTextures(scene: Phaser.Scene) {
-  for (const k of Object.keys(DRAW) as FoodKind[]) makeTex(scene, foodKey(k), { w: 84, h: 92, oy: 40 }, DRAW[k]);
+  const kinds = [...Object.keys(DRAW), ...Object.keys(extraDraw({ pizzaRaw, pizzaDone, tray }))] as FoodKind[];
+  for (const k of kinds) makeTex(scene, foodKey(k), { w: 84, h: 92, oy: 40 }, drawerOf(k));
 }

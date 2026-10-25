@@ -49,8 +49,15 @@ export const eventsOf = (modeOptions: Readonly<Record<string, boolean | number |
   return typeof v === 'boolean' ? v : defaultEvents(d);
 };
 
-/** What the lobby switches on for a round (coop and versus alike): the burning oven always (the sim leaves the fire out on Easy and under the Suave sabotage), the event by the option, the magnetism of the chefs. */
-export const roundRules = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty) => ({ burn: true, fire: true, events: eventsOf(modeOptions, d), magnet: magnetFor(modeOptions, d) }); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
+/** The lobby option: the map's Carta del día (recipes/cards.ts) on or off. Missing = on (there is no switch for it on the screen yet: a test or a later menu sets it to false). */
+export const RECIPES_OPTION = 'recipes';
+export const recipesOf = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined): boolean => {
+  const v = modeOptions?.[RECIPES_OPTION];
+  return typeof v === 'boolean' ? v : true;
+};
+
+/** What the lobby switches on for a round (coop and versus alike): the burning oven always (the sim leaves the fire out on Easy and under the Suave sabotage), the event by the option, the map's card of recipes, the magnetism of the chefs. */
+export const roundRules = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty) => ({ burn: true, fire: true, events: eventsOf(modeOptions, d), recipes: recipesOf(modeOptions), magnet: magnetFor(modeOptions, d) }); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
 
 export interface Rat {
   x: number; y: number; // tile units, centre

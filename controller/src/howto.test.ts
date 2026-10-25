@@ -30,3 +30,11 @@ describe('phone how-to card', () => {
     expect(seenAfterPhase('pizzas', 'results')).toBe('pizzas');
   });
 });
+
+describe('the Cocina escuela', () => {
+  it('is played with the pad like a round: no how-to card over it, and the phone that reconnects into it does not get one', () => {
+    expect(shouldShowHowTo(null, 'pizzas', 'school')).toBe(false);
+    expect(shouldShowHowTo('obstaculos', 'pizzas', 'school')).toBe(false);
+    expect(shouldShowHowTo(null, 'pizzas', 'lobby')).toBe(true); // and the lobby around it still shows it
+  });
+});

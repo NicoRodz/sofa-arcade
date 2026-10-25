@@ -8,7 +8,9 @@ import { kText, scoreHidden, vipView } from '@party/shared/versusReport';
 import { tipMultiplier } from '@party/shared/game';
 import { C, H, OX, OY, TILE, W, hexNum, timerColor } from './tokens';
 import { R } from './gfx';
-import { foodKey } from './food';
+import { foodKey, type FoodKind } from './food';
+import { RECIPE_PIZZA } from './food/recipes';
+import { RECIPE_DEFS } from '@party/shared/recipes/defs';
 import { Bar, place } from './stations';
 import { makeText } from './fx';
 import { VS_PLATE, vipCardAt } from './layout';
@@ -46,6 +48,7 @@ export class VersusHud {
   private cardPizza: Phaser.GameObjects.Image;
   private cardShown = false;
   private cardRecipe: Recipe | null = null;
+  private cardName!: Phaser.GameObjects.Text; // the recipe of the golden order, in words under its picture
   private announce?: Phaser.GameObjects.Text;
   private notices: Notice[] = [];
   private tabs: SabTab[] = [];
@@ -73,9 +76,10 @@ export class VersusHud {
     bg.fillStyle(0xffffff, 0.35).fillRoundedRect(-84, -50, 168, 8, 4);
     const label = makeText(scene, 0, -34, 'PEDIDO DORADO', { size: 22, color: C.ink, stroke: 0, depth: 0 });
     this.cardPizza = place(scene, foodKey('pizza_done'), -44, 4, 1.05).setScale(1.05 / R);
+    this.cardName = makeText(scene, -44, 33, '', { size: 14, color: C.ink, stroke: 0, depth: 0 });
     const mult = makeText(scene, 42, 2, '×2', { size: 54, color: C.tomato, stroke: 8, depth: 0 });
     this.cardBar = new Bar(scene, 150); this.cardBar.root.setPosition(0, 40).setVisible(true);
-    this.card = scene.add.container(cx, cy, [bg, label, this.cardPizza, mult, this.cardBar.root]).setDepth(1500).setVisible(false).setScale(0);
+    this.card = scene.add.container(cx, cy, [bg, label, this.cardPizza, this.cardName, mult, this.cardBar.root]).setDepth(1500).setVisible(false).setScale(0);
   }
 
   private buildPlate(id: number): Plate {
@@ -209,7 +213,7 @@ export class VersusHud {
       this.scene.tweens.add({ targets: this.card, scale: 0, duration: 260, ease: 'back.in', onComplete: () => { if (!this.cardShown) this.card.setVisible(false); } });
     }
     if (!v) return;
-    if (v.recipe !== this.cardRecipe) { this.cardRecipe = v.recipe; this.cardPizza.setTexture(foodKey(v.recipe === 'margarita' ? 'pizza_done_q' : 'pizza_done')); }
+    if (v.recipe !== this.cardRecipe) { this.cardRecipe = v.recipe; this.cardPizza.setTexture(foodKey(RECIPE_PIZZA[v.recipe] as FoodKind)); this.cardName.setText(RECIPE_DEFS[v.recipe].name.toUpperCase()); }
     this.cardBar.set(v.fraction, timerColor(v.fraction));
     this.card.setAngle(Math.sin(this.t / 300) * (v.fraction < 0.25 ? 3 : 1.2));
   }

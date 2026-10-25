@@ -28,5 +28,6 @@ export const acceptNav = (captainId: number | null, from: unknown): boolean => t
 export const KEYBOARD_QUIET_MS = 300;
 export const remoteBlocked = (lastKeyAt: number | null, now: number, quietMs = KEYBOARD_QUIET_MS): boolean => lastKeyAt !== null && now - lastKeyAt < quietMs;
 
-// The D-pad lives on the Captain's phone in every screen but the round itself (there the stick and the buttons own the screen).
-export const remoteVisible = (isCaptain: boolean, joined: boolean, phase: string): boolean => isCaptain && joined && phase !== 'playing';
+// The D-pad lives on the Captain's phone in every screen but the round itself and the Cocina escuela (there the stick and the buttons own the screen; the Captain's
+// "Saltar para todos" button sends the same 'ok' from the school card).
+export const remoteVisible = (isCaptain: boolean, joined: boolean, phase: string): boolean => isCaptain && joined && phase !== 'playing' && phase !== 'school';

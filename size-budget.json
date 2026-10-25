@@ -1,0 +1,41 @@
+{
+ "limits": {"code":{"soft":300,"hard":500},"test":{"soft":500,"hard":800},"markup":{"soft":150,"hard":250},"index":{"hard":40},"folder":{"soft":12,"hard":20},"shrinkSlack":25,"folderShrinkSlack":3},
+ "exemptDirs": ["data","fixtures","levels","golden"],
+ "files": {
+  "controller/index.html": { "max": 234, "until": "2027-03-31" },
+  "controller/src/main.ts": { "max": 446, "until": "2026-12-31" },
+  "controller/test/harness.ts": { "max": 344, "until": "2027-03-31" },
+  "screen/index.html": { "max": 500, "until": "2026-12-31" },
+  "screen/src/art/chef.ts": { "max": 313, "until": "2027-03-31" },
+  "screen/src/art/env.ts": { "max": 387, "until": "2027-03-31" },
+  "screen/src/art/events.ts": { "max": 308, "until": "2027-03-31" },
+  "screen/src/games/obstaculos/render/entities.ts": { "max": 393, "until": "2027-03-31" },
+  "screen/src/games/obstaculos/render/rig.ts": { "max": 309, "until": "2027-03-31" },
+  "screen/src/games/obstaculos/render/tiledraw.ts": { "max": 334, "until": "2027-03-31" },
+  "screen/src/main.ts": { "max": 1287, "until": "2026-12-31" },
+  "server/test/relay.test.ts": { "max": 662, "until": "2027-03-31" },
+  "shared/games/obstaculos/sim/dynamics.test.ts": { "max": 543, "until": "2027-03-31" },
+  "shared/games/obstaculos/sim/entities.ts": { "max": 357, "until": "2027-03-31" },
+  "shared/games/obstaculos/sim/rules.ts": { "max": 317, "until": "2027-03-31" },
+  "shared/games/obstaculos/sim/world.ts": { "max": 336, "until": "2027-03-31" },
+  "shared/games/obstaculos/validator/graph.ts": { "max": 469, "until": "2026-12-31" },
+  "shared/generate.ts": { "max": 368, "until": "2027-03-31" },
+  "shared/maps.ts": { "max": 459, "until": "2026-12-31" },
+  "shared/overcooked.test.ts": { "max": 626, "until": "2027-03-31" },
+  "shared/overcooked.ts": { "max": 946, "until": "2026-12-31" },
+  "shared/protocol.ts": { "max": 359, "until": "2027-03-31" },
+  "shared/validate.ts": { "max": 405, "until": "2026-12-31" },
+  "shared/versus.slow.test.ts": { "max": 544, "until": "2027-03-31" },
+  "shared/vote.test.ts": { "max": 609, "until": "2027-03-31" },
+  "tools/capture.ts": { "max": 924, "until": "2026-12-31" },
+  "tools/latency-report/src/index.ts": { "max": 23, "until": "2027-03-31" },
+  "tools/obst-e2e.ts": { "max": 331, "until": "2027-03-31" }
+ },
+ "folders": {
+  "screen/src/art": { "max": 21, "until": "2026-12-31" },
+  "screen/src/games/obstaculos/render": { "max": 18, "until": "2026-12-31" },
+  "shared": { "max": 32, "until": "2026-12-31" },
+  "shared/games/obstaculos/campaign": { "max": 15, "until": "2026-12-31" },
+  "shared/games/obstaculos/sim": { "max": 20, "until": "2026-12-31" }
+ }
+}

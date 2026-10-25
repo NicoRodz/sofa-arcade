@@ -6,6 +6,8 @@ import { R, texSize } from './gfx';
 import { CUT_KIND, foodKey, ITEM_KIND, type FoodKind } from './food';
 import { makeText, type Fx } from './fx';
 import { PANTRY_EVERY_MS, PANTRY_MAX } from '@party/shared/versus';
+import { canFold } from '@party/shared/recipes/sim';
+import { ovenKinds } from './food/recipes';
 
 export function place(scene: Phaser.Scene, key: string, x: number, y: number, k = 1): Phaser.GameObjects.Image {
   const t = texSize(key)!;
@@ -49,6 +51,7 @@ interface View {
   badge2?: Phaser.GameObjects.Text; // sink: clean count
   count?: number; count2?: number;
   arrow?: Phaser.GameObjects.Image;
+  foldArrow?: Phaser.GameObjects.Image; // oven: the fold arrow that invites Picar when the dough and tomato can be folded into a calzone
   wasDone: boolean;
   emberT: number; smokeT: number; flick: number;
   chopping: boolean;
@@ -102,6 +105,8 @@ export class StationViews {
       v.donePizza = place(s, foodKey('pizza_done'), cx, cy + TILE * 0.2, 0.78).setDepth(d - 2).setVisible(false);
       v.minis = [0, 1].map(() => place(s, foodKey('dough_str'), cx, cy + TILE * 0.22, 0.56).setDepth(d - 2).setVisible(false));
       v.ring = s.add.graphics().setDepth(3000);
+      v.bar = new Bar(s, 62); v.bar.root.setPosition(cx, cy - TILE * 0.4).setDepth(3000); // the fold of the calzone
+      v.foldArrow = place(s, foodKey('glyph_fold'), cx, cy - TILE * 0.3, 0.5).setDepth(3000).setVisible(false);
     }
     return v;
   }
@@ -135,7 +140,7 @@ export class StationViews {
     v.itemImg = undefined;
     if (!item) return;
     const k: FoodKind = ITEM_KIND[item];
-    const big = k === 'tray' || k === 'dish' || k === 'dish_q';
+    const big = k === 'tray' || k === 'dish' || k === 'dish_q' || k === 'dish_p' || k === 'dish_m' || k === 'dish_c';
     const img = place(this.scene, key, v.cx, v.cy - TILE * (v.st.kind === 'board' ? 0.02 : 0.04), v.st.kind === 'board' ? 1.1 : big ? 0.95 : 1.05).setDepth(100 + v.cy + 4);
     v.itemImg = img;
     const sx = img.scaleX, sy = img.scaleY;
@@ -158,7 +163,7 @@ export class StationViews {
         if (showBar) bar.set(st.progress, progressColor(st.progress));
         if (v.itemImg) v.itemImg.setAngle(act === 'chop' ? Math.sin(this.t / 40) * 4 : 0);
         v.knife!.setRotation(act === 'chop' ? -0.35 + Math.sin(this.t / 38) * 0.35 : -0.35).setY(v.cy + TILE * 0.24 + (act === 'chop' ? Math.max(0, Math.sin(this.t / 38)) * 4 : 0));
-      } else if (st.kind === 'pot') this.updateOven(v, dtMs);
+      } else if (st.kind === 'pot') this.updateOven(v, dtMs, chopping.has(v.idx));
       else if (st.kind === 'window' && v.bell) v.bell.setY(v.cy + TILE * 0.26);
       else if (st.kind === 'dirty') this.updateCount(v, st.count, 3);
       else if (st.kind === 'plates' && v.badge) this.updateCount(v, st.count, 0, true);
@@ -201,18 +206,19 @@ export class StationViews {
     v.dirtyStack!.forEach((im, i) => im.setAngle(washing ? Math.sin(this.t / 45 + i) * 3 : 0));
   }
 
-  private updateOven(v: View, dtMs: number) {
+  private updateOven(v: View, dtMs: number, folding = false) {
     const st = v.st;
     const burn = this.game.burn;
     if (st.fire !== undefined) { // on fire (burn.ts): the flames are drawn by BurnView; the oven itself shows nothing of its contents
-      for (const o of [v.rawPizza!, v.donePizza!, ...v.minis!, ...v.flames!]) o.setVisible(false);
+      for (const o of [v.rawPizza!, v.donePizza!, ...v.minis!, ...v.flames!, v.foldArrow!]) o.setVisible(false);
+      v.bar!.root.setVisible(false);
       v.glow!.setAlpha(0.1); v.ring!.clear(); v.wasDone = false;
       return;
     }
     v.flames!.forEach((f) => f.setVisible(true));
     const burnt = !!st.burnt;
     const cooking = st.inputs.includes(0) && st.inputs.includes(1) && !st.done; // dough + tomato; cheese may join until it is done
-    const q = st.inputs.includes(2); // Margarita
+    const kinds = ovenKinds(st.inputs, !!st.folded); // what is in it: Marinara, Margarita, Pepperoni, Champiñón or the folded Calzone
     const dark = !!this.game.mid?.dark; // the "Corte de luz" event: the oven is off, nothing glows and nothing crackles
     const lit = (cooking || (st.done && !burnt)) && !dark;
     v.flick -= dtMs;
@@ -230,10 +236,14 @@ export class StationViews {
       if (t === undefined) return;
       m.setTexture(foodKey(CUT_KIND[t]!)).setX(v.cx + (partial.length === 1 ? 0 : (i ? 1 : -1) * TILE * 0.17));
     });
-    const rawKey = foodKey(q ? 'pizza_raw_q' : 'pizza_raw'), doneKey = foodKey(burnt ? 'pizza_burnt' : q ? 'pizza_done_q' : 'pizza_done');
+    const rawKey = foodKey(kinds.raw as FoodKind), doneKey = foodKey((burnt ? 'pizza_burnt' : kinds.done) as FoodKind);
     if (v.rawPizza!.texture.key !== rawKey) v.rawPizza!.setTexture(rawKey);
     if (v.donePizza!.texture.key !== doneKey) v.donePizza!.setTexture(doneKey);
-    v.rawPizza!.setVisible(cooking || false);
+    v.rawPizza!.setVisible(cooking || false).setAngle(folding ? Math.sin(this.t / 45) * 7 : 0); // folding: the dough is worked, it wobbles
+    // the calzone: a bar fills while Picar folds; an arrow invites the fold on an oven that can be folded (a card with a calzone, dough and tomato baking)
+    v.bar!.root.setVisible(st.fold !== undefined && !st.folded);
+    if (st.fold !== undefined) v.bar!.set(st.fold, C.cheese);
+    v.foldArrow!.setVisible(canFold(this.game, st) && !dark && !folding).setAlpha(0.6 + Math.sin(this.t / 170) * 0.25).setY(v.cy - TILE * 0.3 + Math.sin(this.t / 170) * 3);
     v.donePizza!.setVisible(st.done || cooking);
     if (cooking) { v.rawPizza!.setAlpha(1); v.donePizza!.setAlpha(Math.max(0, (st.progress - 0.15) / 0.85)); }
     else if (st.done) v.donePizza!.setAlpha(1);

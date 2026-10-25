@@ -8,6 +8,8 @@ import { PUESTOS, type PuestoId } from '@party/shared/puestos';
 import { SABOTAGE_LABEL, sabotageOf } from '@party/shared/sabotage-config';
 import { parseObstOptions, setupLabel } from '@party/shared/obstaculos/lobby';
 import { seenAfterPhase, shouldShowHowTo } from './howto';
+import { createSchoolUi } from './school';
+import { kvOf } from '@party/shared/tutorial';
 import { createZoomGuard, isDoubleTap } from './zoom';
 import {
   BUZZ_PATTERNS, ClockSync, DEADZONE, DEFAULT_ROOM, INPUT_HZ, PING_MS, PRESS_MOD, WS_PATH, applyDeadzone, isNavKey, remoteVisible,
@@ -57,6 +59,7 @@ setInterval(zoomGuard.check, 2000);
 $('zoomfix').addEventListener('click', () => zoomGuard.manualReset());
 
 const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0, sig: { kind: 'go' as SignalKind, seq: 0 }, go: false };
+(window as unknown as { __pad: typeof state }).__pad = state; // headless drivers (tools/school-shots.ts) push the stick and the buttons through it; the game itself never reads it
 // Campaign signals: the pad of 6 buttons shows only in a campaign round (phase.match.modeOptions.campaign). While it shows, every input carries `sig` (a monotonic counter: a new seq = one
 // signal of that kind; seq 0 is the baseline the screen reads first) and `go` (true while "¡Ya!" is held: 0.4 s of it starts the 3-2-1). A quick match sends neither: the packets are the old ones.
 let signalsOn = false;
@@ -139,7 +142,7 @@ $('howtoopen').addEventListener('pointerup', () => setHowTo(true));
 let flashTimer: ReturnType<typeof setTimeout> | undefined;
 let slipTimer: ReturnType<typeof setTimeout> | undefined;
 function buzz(kind: BuzzKind) {
-  if (phase !== 'playing') return;
+  if (phase !== 'playing' && phase !== 'school') return; // the school buzzes like a round
   if (kind === 'slip') { // sabotage: the chef slipped on rubbish
     $('slip').classList.add('on');
     clearTimeout(slipTimer);
@@ -200,6 +203,7 @@ $('assist').addEventListener('pointerup', (e) => {
 });
 
 const tx = (m: ClientMsg) => { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m)); };
+const schoolUi = createSchoolUi({ kv: (() => { try { return kvOf(localStorage); } catch { return null; } })(), token, send: tx, isCaptain: () => joined && captainId !== null && captainId === myId });
 let label = '';
 const hud = (s: string) => { label = s; $('hud').textContent = s; };
 
@@ -207,6 +211,7 @@ const hud = (s: string) => { label = s; $('hud').textContent = s; };
 const isCaptain = () => joined && captainId !== null && captainId === myId;
 function renderCaptain() {
   document.body.dataset.remote = remoteVisible(isCaptain(), joined, phase) ? 'on' : 'off';
+  schoolUi.refreshCaptain();
   const crown = isCaptain() ? '👑 ' : '';
   $('who').textContent = crown + myName;
   $('who2').textContent = crown + myName;
@@ -255,14 +260,16 @@ $('pswap').addEventListener('pointerup', (e) => {
 const VERDICT_TEXT: Record<Outcome, string> = { won: '¡Ganaron!', lost: 'Perdieron', draw: '¡Empate!', none: 'Sin ganador' };
 function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg, result?: PhoneResult, campaign = false) {
   phase = p;
+  const live = p === 'playing' || p === 'school'; // the school is played with the same pad as a round
   setSignals(p === 'playing' && campaign);
-  if (p !== 'playing') setHint(NO_HINT); // the labels the round gave go with it
+  if (!live) setHint(NO_HINT); // the labels the round gave go with it
   seenGame = seenAfterPhase(seenGame, p);
   if (p === 'menu') setHowTo(false);
   else maybeShowHowTo(); // the screen just entered a game: show its summary
   applyPuestos(p === 'playing' ? puestos : undefined);
-  if (p === 'playing') setHowTo(false);
-  if (p !== 'playing') { state.x = 0; state.y = 0; state.btn = 0; state.go = false; document.querySelectorAll('.act, .sg').forEach((b) => b.classList.remove('down')); }
+  if (live) setHowTo(false);
+  schoolUi.show(p === 'school');
+  if (!live) { state.x = 0; state.y = 0; state.btn = 0; state.go = false; document.querySelectorAll('.act, .sg').forEach((b) => b.classList.remove('down')); }
   if (p === 'results' && scores) {
     const mine = scores.find((s) => s.id === myId) ?? scores[0]; // cooperative: every entry carries the team score
     $('rank').textContent = mine ? String(mine.score) : '-';
@@ -273,7 +280,7 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
     if (outcome && own) { $('rank').textContent = String(own.score); $('myscore').textContent = 'puntos de tu equipo'; $('verdict').textContent = VERDICT_TEXT[outcome]; document.body.dataset.outcome = outcome; }
     else delete document.body.dataset.outcome;
   } else delete document.body.dataset.outcome;
-  view(p);
+  view(live ? 'playing' : p);
   renderCaptain();
 }
 
@@ -290,6 +297,7 @@ function connect() {
       document.documentElement.style.setProperty('--c', m.player.color);
       myName = m.player.name;
       showAssist(false); // the relay tells a phone that comes back what it had chosen (after this message)
+      schoolUi.announce(); // a phone whose player did the Cocina escuela says so: the screen does not offer it again for them
       hud(`${m.player.name} #${m.player.slot + 1}`);
       renderCaptain();
     } else if (m.t === 'config') {
@@ -304,6 +312,8 @@ function connect() {
         : `${m.modeId === 'versus' ? 'Versus · ' : ''}${DIFFICULTY_LABEL[m.difficulty]} · ${mapName}${m.modeId === 'versus' ? ` · Sabotaje ${SABOTAGE_LABEL[sabotageOf(m.modeOptions)]}` : ''}`;
     } else if (m.t === 'assist') {
       if (m.playerId === myId) showAssist(m.on);
+    } else if (m.t === 'school') {
+      schoolUi.apply(m);
     } else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {
@@ -339,7 +349,7 @@ function connect() {
 }
 
 function sendInput() {
-  if (!joined || phase !== 'playing') return;
+  if (!joined || (phase !== 'playing' && phase !== 'school')) return;
   tx({ t: 'input', seq: state.seq++, x: state.x, y: state.y, btn: state.btn, presses: state.presses, ts: Date.now(), ...(signalsOn ? { sig: state.sig, go: state.go } : {}) });
 }
 

@@ -14,7 +14,7 @@ export interface Ctl { x: number; y: number; a: number; b: boolean }
 export interface Sim {
   createGame(o: any): any;
   addPlayer(g: any, id: number, slot: number, spawn?: number): any;
-  tick(g: any, c: Map<number, Ctl>): void | Promise<void>; // a promise when the controls travel over a real relay (server/test/magnet.ws.test.ts)
+  tick(g: any, c: Map<number, Ctl>): void | Promise<void>; // a promise when the controls travel over a real relay (server/test/magnet.ws.slow.test.ts)
   isFloor(grid: any, x: number, y: number): boolean;
   targetStation?(g: any, p: any): any; // optional: lets a record say which station the sim would have chosen when the first press landed
   maps: readonly { id: string; rows: readonly string[]; spawns?: readonly [number, number][] }[];

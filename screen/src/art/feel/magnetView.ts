@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import type { Game } from '@party/shared/game';
 import { targetStation } from '@party/shared/game';
-import { OX, OY, TILE, chefOf, hexNum } from './tokens';
+import { OX, OY, TILE, chefOf, hexNum } from '../tokens';
 
 export class MagnetView {
   private g: Phaser.GameObjects.Graphics;

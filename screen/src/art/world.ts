@@ -15,7 +15,8 @@ import { FlagView } from './flagView';
 import { SabotageView } from './sabotage';
 import { BurnView } from './burn';
 import { EventsView } from './events';
-import { MagnetView } from './magnetView';
+import { MagnetView } from './feel/magnetView';
+import { RatSignal } from './feel/ratSignal';
 import { kText } from '@party/shared/versusReport';
 
 export class World {
@@ -32,11 +33,12 @@ export class World {
   private finale: { winner: number | null; ms: number; next: number } | null = null; // versus: the end-of-round celebration
   private sabotage: SabotageView | null = null; // versus with sabotage: reticle, bags in the air, rubbish on the floor, catapult rings
   private events: EventsView | null = null; // the mid-round event: banner, pill, blackout, balloons, the rat (only when the round has one)
+  private ratSignal: RatSignal | null = null; // the gentle rat's arrow and alarm (only with the magnet and the events)
   private magnet: MagnetView | null = null; // the bracket around each chef's target station (only when the round has the magnet)
   private burn: BurnView | null = null; // the oven that burns: warning bubble, flames, extinguisher (only when the round has it)
 
   constructor(private scene: Phaser.Scene, private game: Game, private players: () => Map<number, PublicPlayer>, private puestos: () => Map<number, PuestoView>, bus: Emitter<GameEvents>, mapId: string, seed: number, private view?: RoundView) {
-    this.bg = buildBackground(scene, game.grid, mapId, seed);
+    this.bg = buildBackground(scene, game.grid, mapId, seed, game.rec?.topping);
     if (game.versus && view?.teams) this.tintKitchens(view);
     this.fx = new Fx(scene);
     this.stations = new StationViews(scene, game, this.fx);
@@ -44,7 +46,7 @@ export class World {
     if (game.sab) this.sabotage = new SabotageView(scene, game, view, this.fx, bus);
     if (game.burn) this.burn = new BurnView(scene, game, this.fx, bus);
     if (game.mid) this.events = new EventsView(scene, game, view, this.fx, bus);
-    if (game.magnet) this.magnet = new MagnetView(scene, game);
+    if (game.magnet) { this.magnet = new MagnetView(scene, game); if (game.mid) this.ratSignal = new RatSignal(scene, game, this.fx, bus); }
     this.marks = new PuestoMarks(scene, game, puestos);
     this.wire(bus);
   }
@@ -137,8 +139,8 @@ export class World {
       this.stations.ding(wi);
       if (ch) {
         this.fx.starBurst(ch.root.x, ch.root.y - TILE * 0.5, 5);
-        this.fx.float(ch.root.x, ch.root.y - TILE * 1.15, `+${e.points}`, C.cheese, 52);
-        if (e.mult > 1) this.fx.float(ch.root.x, ch.root.y - TILE * 1.55, `propina x${e.mult}`, e.mult >= 4 ? C.tomato : C.fire, 30);
+        this.fx.float(ch.root.x, ch.root.y - TILE * 1.15, this.view?.school ? '¡Bien!' : `+${e.points}`, C.cheese, this.view?.school ? 60 : 52); // the school pays no points
+        if (e.mult > 1 && !this.view?.school) this.fx.float(ch.root.x, ch.root.y - TILE * 1.55, `propina x${e.mult}`, e.mult >= 4 ? C.tomato : C.fire, 30);
       }
       this.fx.ring(w.x, w.y, 0xffc93c, 0.5, 2);
       const box = place(this.scene, foodKey('box'), w.x, w.y - TILE * 0.1, 1.0).setDepth(1300);
@@ -150,7 +152,7 @@ export class World {
       this.chefOf(e.player)?.fail();
       this.fx.shake(90, 0.003);
     });
-    on('streak', (e) => { if (!g.versus) this.hud.streak(e.n, e.mult); }); // versus: each plate reads its team's streak from the sim
+    on('streak', (e) => { if (!g.versus && !this.view?.school) this.hud.streak(e.n, e.mult); }); // versus: each plate reads its team's streak from the sim
     on('countdownTick', (e) => { if (e.kind === 'start') this.hud.countdown(e.n); else this.hud.clockPulse(); });
     on('roundEnd', (e) => {
       this.hud.timeUp();
@@ -235,7 +237,7 @@ export class World {
           const p = this.stations.pos(cur.chopAt);
           if (g.stations[cur.chopAt]?.kind === 'sink') this.fx.bubbles(p.x, p.y);
           else if (kind === 'stretch') this.fx.flourPuff(p.x, p.y);
-          else this.fx.chop(p.x, p.y, { raw0: 0, raw1: 1, raw2: 2 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2'] ?? 1);
+          else this.fx.chop(p.x, p.y, { raw0: 0, raw1: 1, raw2: 2, raw3: 1, raw4: 0 }[g.stations[cur.chopAt]?.item as 'raw0' | 'raw1' | 'raw2' | 'raw3' | 'raw4'] ?? 1);
         };
         const team = g.versus ? this.view?.teams?.[gp.team] : undefined;
         if (team) chef.setTeam(hexNum(team.color));
@@ -245,7 +247,7 @@ export class World {
       let action: 'none' | 'chop' | 'stretch' = 'none';
       if (gp.cutting && gp.chopAt >= 0 && !gp.dousing) { // (a chef putting a fire out holds the extinguisher: BurnView draws it, the knife stays put)
         const at = g.stations[gp.chopAt];
-        action = at?.kind === 'sink' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough
+        action = at?.kind === 'sink' || at?.kind === 'pot' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough, and folding the calzone kneads it
         chop.set(gp.chopAt, action);
       }
       const f = this.feet(gp);
@@ -261,6 +263,7 @@ export class World {
     this.burn?.update(dtMs);
     this.events?.update(dtMs);
     this.magnet?.update(dtMs);
+    this.ratSignal?.update(dtMs);
     this.hud.update(dtMs);
   }
 
@@ -276,6 +279,7 @@ export class World {
     this.burn?.destroy();
     this.events?.destroy();
     this.magnet?.destroy();
+    this.ratSignal?.destroy();
     for (const f of this.flags) f.destroy();
     this.flags = [];
     this.dims = [];

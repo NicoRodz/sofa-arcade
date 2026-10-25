@@ -36,7 +36,7 @@
   .overlay { position: fixed; inset: 0; display: none; flex-direction: column; gap: clamp(4px, 1.6vmin, 10px); align-items: center; justify-content: center; text-align: center; font-size: clamp(16px, 5.6vmin, 22px); padding: max(12px, var(--st)) max(16px, var(--sr)) max(12px, var(--sb)) max(16px, var(--sl)); overflow-wrap: anywhere; }
   body[data-view=lobby] #wait, body[data-view=results] #results, body[data-view=menu] #choosing { display: flex; }
   #rotate { z-index: 10; }
-  @media (orientation: portrait) { body[data-view] #rotate { display: flex; } }
+  @media (orientation: portrait) { body[data-view=playing] #rotate { display: flex; } } /* only the round needs the wide pad: portrait.css lays out the other screens upright */
   .big { font-size: clamp(36px, 14vmin, 56px); font-weight: 800; line-height: 1.1; }
 
   /* ---- stick: the whole left half is the touch zone; the dashed ring is only a hint of where the thumb goes */
@@ -126,6 +126,23 @@
   #pname { display: block; font: 800 16px/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #phint { display: block; font: 700 13px/1.15 var(--font); color: var(--muted); }
   #pswap { flex: none; min-width: 78px; min-height: 44px; font-size: 15px; padding: 6px 12px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 rgba(43,27,23,.4); }
+  /* Cocina escuela (shared/tutorial): the card sits where the station card does; the button of the step pulses */
+  #school { position: absolute; left: var(--gutter); right: calc(var(--ar) + var(--bsz) + 12px); bottom: max(8px, var(--sb)); margin-inline: auto; width: min(460px, calc(100% - var(--gutter) - var(--ar) - var(--bsz) - 12px)); display: none; flex-direction: column; gap: 4px; padding: 6px 10px 8px; border: 3px solid var(--ink); border-radius: 16px; background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 rgba(43,27,23,.35); }
+  body[data-school=on] #school { display: flex; }
+  body[data-school=on] #stickLbl { display: none; } /* the card takes the strip under the stick; the ring says what it is */
+  #school .sh { display: flex; align-items: center; gap: 8px; font: 800 13px/1 var(--font); letter-spacing: 1px; text-transform: uppercase; color: var(--tomato2); }
+  #schooldots { display: flex; gap: 4px; margin-left: auto; }
+  #schooldots i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink); background: #F6E8CB; }
+  #schooldots i.on { background: var(--basil); }
+  #schooltext { font: 800 clamp(15px, 5vmin, 20px)/1.15 var(--font); }
+  #school .sb { display: flex; gap: 8px; }
+  #school .sb button { flex: 1; min-height: 44px; font-size: 14px; padding: 4px 8px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 rgba(43,27,23,.4); background: linear-gradient(#85685A 0 50%, #6F5245 50% 100%); }
+  #school .sb button#schoolall { background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); text-shadow: none; }
+  #school .sb button:disabled { opacity: .45; }
+  #school.done { background: #D9F2DC; }
+  body[data-school=on] .act.hl { animation: schoolpulse .8s ease-in-out infinite alternate; z-index: 5; border-color: var(--cheese); } /* the ring never goes away: it only breathes */
+  body[data-school=on] .plq.hl .pl { background: var(--cheese); color: var(--ink); }
+  @keyframes schoolpulse { from { box-shadow: 0 0 0 .9vmin rgba(255,226,74,.95), 0 0 0 1.8vmin rgba(255,226,74,.35); } to { box-shadow: 0 0 0 1.5vmin rgba(255,226,74,1), 0 0 0 3.2vmin rgba(255,226,74,.45); } } /* only the ring breathes: the button keeps its size and place (the layout checks measure it) */
   /* ---- campaign signals (Obstaculos, plan §4 #1): a 3x2 pad, bottom centre, only in a campaign round (the screen says so with phase.match.modeOptions.campaign).
      Free strip of the pad: right of the stick (ring + its plate), left of A, under B and its plate. Every button is >= 44px and follows the short side like the pad. */
   :root { --sg: max(44px, 14vmin); --sgap: 6px; }
@@ -169,6 +186,7 @@
   body[data-team=on][data-view=lobby] #teamswap { display: inline-block; }
   #hud { position: absolute; top: max(6px, calc(var(--st) + 6px)); left: var(--gutter); max-width: calc(73% - var(--bsz) - var(--gutter) - 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; line-height: 1.2; color: var(--c); opacity: .9; pointer-events: none; }
 </style>
+<link rel="stylesheet" href="/portrait.css" />
 </head>
 <body>
 <form id="join" autocomplete="off">
@@ -193,6 +211,7 @@
   <div id="slip">¡Resbalaste!</div>
   <div id="teamchip"><span id="tcicon2"></span><span id="tcname2"></span><small id="tcside2"></small></div>
   <div id="puesto"><span class="pi" id="pico"></span><div class="pt"><b id="pname"></b><span id="phint"></span></div><button id="pswap" type="button">Cambiar</button></div>
+  <div id="school"><div class="sh"><span id="schoolstep"></span><span id="schooldots"></span></div><b id="schooltext"></b><div class="sb"><button id="schoolskip" type="button">Ya sé · saltar</button><button id="schoolall" type="button">Saltar a todos</button></div></div>
 </div>
 <div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div id="teamcard"><span id="tcicon"></span><span id="tcname"></span><small id="tcside"></small></div><button id="teamswap" type="button">Cambiar de equipo</button><div>Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><div id="lobbybtns"><button id="assist" type="button" aria-pressed="false"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 40V22"/><ellipse cx="14" cy="18" rx="11" ry="4.5"/><ellipse cx="34" cy="18" rx="11" ry="4.5"/><circle cx="24" cy="19" r="3.4"/></svg><span id="assistlbl">Ayudante: no</span></button><button id="howtoopen" type="button">Cómo se juega</button></div></div>
 <div id="choosing" class="overlay"><h1 class="brand">Pichiclub</h1><div class="big">Eligiendo juego…</div><div style="opacity:.8">La pantalla decide</div><div id="who2" style="opacity:.7"></div></div>

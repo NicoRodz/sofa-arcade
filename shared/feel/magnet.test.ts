@@ -1,7 +1,10 @@
 // Magnetism (feel/magnet.ts), rule by rule. Each effect is checked against the same situation with the flag off (the control), so a green cannot come from an easy setup.
 import { describe, expect, it } from 'vitest';
 import { TUNING } from '../difficulty';
-import { fixedMap } from '../maps';
+import { DIRS, fixedMap, isFloor } from '../maps';
+import { FOLD_MS } from '../recipes/defs';
+import { createSchool } from '../tutorial/school';
+import { Emitter, type GameEvents } from '../events';
 import { RADIUS, REACH, REACH_SLACK, SPEED, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player } from '../overcooked';
 import { ASSIST_REACH_MULT } from '../assist';
 import { chefHint } from '../hints';
@@ -221,6 +224,36 @@ describe('rubbish beside a counter (hazards)', () => {
     addFloorItem(g, { tx: 6, ty: 7, item: 'trash', kind: 'trash', team: 0 });
     put(g.players.get(1)!, 5.5, 7.3, 0.9, 0.44);
     expect(chefHint(g, g.players.get(1)!).a).toBe('Recoger');
+  });
+});
+
+describe('the Carta del día and the school with the magnet', () => {
+  // an oven loaded with dough and tomato, the chef beside it facing 50 degrees off the oven
+  const folding = (magnet: boolean) => {
+    const m9 = fixedMap('9')!;
+    const g = createGame({ rows: m9.rows, mapId: '9', n: 2, seed: 5, recipes: true, magnet });
+    addPlayer(g, 1, 0);
+    const oven = g.stations.find((x) => x.kind === 'pot')!;
+    oven.inputs = [0, 1];
+    const [dx, dy] = DIRS.find(([x, y]) => isFloor(g.grid, oven.tx + x, oven.ty + y))!;
+    const a = (50 * Math.PI) / 180, [fx, fy] = [-dx, -dy], c = Math.cos(a), sn = Math.sin(a);
+    Object.assign(g.players.get(1)!, { x: oven.tx + dx + 0.5 + dx * 0.4, y: oven.ty + dy + 0.5 + dy * 0.4, fx: fx * c - fy * sn, fy: fx * sn + fy * c, vx: 0, vy: 0 }); // 0.9 from the oven's edge
+    return { g, oven };
+  };
+  it('Picar at the oven folds the calzone although the chef is not looking straight at it; the old probe does not reach, and the label says Doblar', () => {
+    const on = folding(true), off = folding(false);
+    expect(targetStation(on.g, on.g.players.get(1)!)).toBe(on.oven);
+    expect(targetStation(off.g, off.g.players.get(1)!)).toBeNull();
+    expect(chefHint(on.g, on.g.players.get(1)!).b).toBe('Doblar');
+    for (const { g } of [on, off]) for (let t = 0; t < FOLD_MS + 200; t += TICK_MS) tick(g, new Map([[1, { ...idle, b: true }]]));
+    expect(on.oven.folded).toBe(true);
+    expect(off.oven.folded).toBeUndefined();
+    expect(on.g.players.get(1)!.fy ** 2 + on.g.players.get(1)!.fx ** 2).toBeGreaterThan(0.99); // faces the oven now (unit vector)
+  });
+  it('the school teaches with the magnet the lobby gives (Easy: strong)', () => {
+    const sch = createSchool({ bus: new Emitter<GameEvents>(), send: () => {} });
+    expect(sch.game.magnet).toBe(MAGNET_TUNING.strong);
+    sch.dispose();
   });
 });
 

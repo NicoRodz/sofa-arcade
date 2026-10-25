@@ -120,6 +120,9 @@ export const SFX = {
   ratScared: { bus: 'sfx', voices: [osc('sine', 3400, 0.22, 0.26, { f1: 1200, vib: { rate: 24, depth: 120 } }), noise(0.1, 0.18, { type: 'bandpass', f0: 1800, f1: 5000, q: 0.8 }, { att: 0.03 })] },
   ratTarget: { bus: 'sfx', voices: [osc('triangle', 520, 0.09, 0.2, { f1: 610 }), osc('triangle', 700, 0.11, 0.2, { at: 0.12, f1: 820 })] }, // the gentle rat has picked a counter: a question
   ratNear: { bus: 'sfx', voices: [0, 0.1, 0.2].map((at) => osc('square', 1250, 0.05, 0.16, { at, filter: { type: 'lowpass', f0: 3000 } })) }, // ...and is nearly there: three quick blips
+  // the calzone (recipes/sim.ts). Folding: soft low thumps of dough being worked, in a loop while Picar is held. Folded: a muffled whump and two rising notes.
+  knead: { bus: 'sfx', pitchVar: 0.1, voices: [osc('sine', 140, 0.09, 0.38, { f1: 70 }), noise(0.07, 0.14, { type: 'lowpass', f0: 700 }, { att: 0.01 })] },
+  folded: { bus: 'sfx', voices: [noise(0.14, 0.3, { type: 'lowpass', f0: 1200, f1: 300 }, { att: 0.02 }), osc('triangle', 392, 0.12, 0.26, { at: 0.1 }), osc('triangle', 587, 0.2, 0.26, { at: 0.18 })] },
 } as const satisfies Record<string, Sfx>;
 export type SfxId = keyof typeof SFX;
 
@@ -132,6 +135,7 @@ export const LOOPS = {
   wash: { sfx: 'splash', every: (_r: number) => 0.2, max: Infinity },
   oven: { sfx: 'crackle', every: (r: number) => 0.06 + r * 0.13, max: 3 }, // ~8 clicks/s, at most 3 pots audible
   blaze: { sfx: 'blaze', every: (r: number) => 0.1 + r * 0.12, max: 4 }, // a station on fire (burn.ts), until it is put out
+  fold: { sfx: 'knead', every: (_r: number) => 0.24, max: Infinity }, // folding a calzone at the oven: thumps while Picar is held
   douse: { sfx: 'hiss', every: (_r: number) => 0.17, max: 3 }, // the extinguisher: foam hiss while Picar is held in front of a fire
 } as const satisfies Record<string, LoopDef>;
 export type LoopId = keyof typeof LOOPS;
@@ -149,6 +153,7 @@ const washKey = (p: { station: number }) => `wash:${p.station}`;
 const ovenKey = (p: { station: number }) => `oven:${p.station}`;
 const fireKey = (p: { station: number }) => `fire:${p.station}`;
 const douseKey = (p: { station: number }) => `douse:${p.station}`;
+const foldKey = (p: { station: number }) => `fold:${p.station}`;
 
 // One entry per game event; the mapped type makes a missing event a compile error.
 export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] } = {
@@ -212,6 +217,10 @@ export const ACTIONS: { [K in keyof GameEvents]: (p: GameEvents[K]) => Action[] 
   'fire:end': () => [],
   douseStart: (p) => [{ kind: 'loopStart', key: douseKey(p), loop: 'douse' }],
   douseStop: (p) => [{ kind: 'loopStop', key: douseKey(p) }],
+  // the calzone: thumps while the dough is folded, a whump when it is
+  foldStart: (p) => [{ kind: 'loopStart', key: foldKey(p), loop: 'fold' }],
+  foldStop: (p) => [{ kind: 'loopStop', key: foldKey(p) }],
+  foldDone: (p) => [{ kind: 'loopStop', key: foldKey(p) }, play('folded')],
   // mid-round events: the siren when it is announced, a sting of its own when it starts, the power coming back, the inspector's verdict, the rat
   'event:announce': () => [play('siren')],
   'event:start': (p) => (p.kind === 'rush' ? [play('rushStart')] : p.kind === 'inspector' ? [play('inspectorStart')] : p.kind === 'blackout' ? [play('blackoutStart')] : p.kind === 'birthday' ? [play('birthday')] : []), // the rat has its own sound (rat:appear)
