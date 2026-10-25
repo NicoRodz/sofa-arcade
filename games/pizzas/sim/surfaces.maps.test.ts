@@ -54,6 +54,28 @@ describe('the surface maps', () => {
   });
 });
 
+describe('Cinta de sushi', () => {
+  it('is a closed ring: following the belts from any belt tile comes back to it', () => {
+    const g = parseMap(fixedMap('17')!.rows);
+    const { belts } = surfaceTiles(g);
+    expect(belts).toHaveLength(18);
+    for (const [x0, y0] of belts) {
+      let [x, y] = [x0, y0];
+      for (let n = 1; n <= belts.length; n++) {
+        const t = g[y]![x]!;
+        if (t.kind !== 'floor' || t.surface?.kind !== 'belt') throw new Error(`the ring breaks at (${x}, ${y})`);
+        x += t.surface.dx;
+        y += t.surface.dy;
+        if (x === x0 && y === y0) {
+          expect(n).toBe(belts.length);
+          break;
+        }
+      }
+      expect([x, y]).toEqual([x0, y0]);
+    }
+  });
+});
+
 describe('mutations the validator catches', () => {
   it('a belt that ends in a wall, a belt facing another, a missing delivery window, no spawn', () => {
     const sushi = SURFACE_MAPS[1]!; // the ring belt: (4,3) goes east
