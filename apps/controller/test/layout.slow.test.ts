@@ -2,6 +2,7 @@
 // (touch emulation) with getBoundingClientRect. Fails when a label lands on a control, text is cut or leaves the screen,
 // something is pressable below 44x44 CSS px, or a control ends up under the notch / home indicator.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { ASSIST_CARD_LINES, ASSIST_FOR, ASSIST_GIVES, assistLabel, assistToast } from '../src/assist-help';
 import { violations } from './checks';
 import { ORIENTATIONS, SCENARIOS, VIEWPORTS, insetsName, openSession, type Session } from './harness';
 
@@ -157,25 +158,66 @@ describe('phone layout', () => {
     const sentAssist = async () => (await s.eval<{ t: string; on?: boolean }[]>(`window.__sent`)).filter((m) => m.t === 'assist');
     await s.load(SCENARIOS.find((x) => x.name === 'lobby')!);
     await s.setViewport(VIEWPORTS[3]!, VIEWPORTS[3]!.insets[0]!);
-    expect(await state()).toEqual({ label: 'Ayudante: no', on: false, aria: 'false', shown: true });
+    expect(await state()).toEqual({ label: 'Modo Ayudante: no', on: false, aria: 'false', shown: true });
     await s.eval(`window.__sent = []`);
     await s.tap(...(await centre()));
     expect(await sentAssist()).toEqual([{ t: 'assist', on: true }]);
-    expect(await state()).toEqual({ label: 'Ayudante: sí', on: true, aria: 'true', shown: true });
+    expect(await state()).toEqual({ label: 'Modo Ayudante: sí', on: true, aria: 'true', shown: true });
     await s.tap(...(await centre()));
     expect(await sentAssist()).toEqual([
       { t: 'assist', on: true },
       { t: 'assist', on: false },
     ]);
-    expect((await state()).label).toBe('Ayudante: no');
+    expect((await state()).label).toBe('Modo Ayudante: no');
     await s.eval(`window.__push({ t: 'assist', playerId: 1, on: true })`); // the relay: this phone had it on (a reconnect)
-    expect(await state()).toEqual({ label: 'Ayudante: sí', on: true, aria: 'true', shown: true });
+    expect(await state()).toEqual({ label: 'Modo Ayudante: sí', on: true, aria: 'true', shown: true });
     await s.eval(`window.__push({ t: 'assist', playerId: 7, on: false })`); // somebody else's: ignored
     expect((await state()).on).toBe(true);
     await s.eval(`window.__push({ t: 'phase', phase: 'playing' })`); // in the round the overlay is gone: no switch to press
     expect((await state()).shown).toBe(false);
     await s.load(SCENARIOS.find((x) => x.name === 'lobby-other-game')!);
     expect((await state()).shown, 'another game has no Ayudante').toBe(false);
+  }, 60_000);
+
+  it('Modo Ayudante copy: the one-liner stays short, the notice names the cap, the card has three lines with the versus cost', () => {
+    expect(ASSIST_GIVES.split(/\s+/).length).toBeLessThanOrEqual(8);
+    expect(ASSIST_FOR).toContain('empieza');
+    expect(assistLabel(true)).toBe('Modo Ayudante: sí');
+    expect(assistToast(true)).toBe('Ayudante activado: llevarás un gorro con hélice');
+    expect(assistToast(false)).toBe('Ayudante desactivado');
+    expect(ASSIST_CARD_LINES).toHaveLength(3);
+    expect(ASSIST_CARD_LINES.join(' ')).toMatch(/×1,5.*inercia.*un toque.*resbalón.*catapulta.*handicap/);
+  });
+
+  it('Modo Ayudante: tapping the switch shows the notice and it fades; "¿Qué es?" opens the card, a tap closes it, nothing leaks outside the lobby', async () => {
+    const q = (js: string) => s.eval<any>(`(() => { ${js} })()`);
+    const centre = (id: string) =>
+      s.eval<[number, number]>(
+        `(() => { const r = document.getElementById('${id}').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`,
+      );
+    const vis = (id: string) =>
+      q(
+        `const e = document.getElementById('${id}'); return getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0;`,
+      );
+    await s.load(SCENARIOS.find((x) => x.name === 'captain-lobby-assist')!);
+    await s.setViewport(VIEWPORTS[3]!, VIEWPORTS[3]!.insets[0]!);
+    expect(await vis('assisttoast')).toBe(false); // the relay's echo (a reconnect) says nothing
+    expect(await vis('assisthelp')).toBe(false);
+    await s.tap(...(await centre('assist'))); // on -> off
+    expect(await q(`return document.getElementById('assisttoast').textContent`)).toBe('Ayudante desactivado');
+    await s.tap(...(await centre('assist'))); // off -> on
+    expect(await q(`return document.getElementById('assisttoast').textContent`)).toBe('Ayudante activado: llevarás un gorro con hélice');
+    expect(await vis('assisttoast')).toBe(true);
+    await s.tap(...(await centre('assisthelpopen')));
+    expect(await vis('assisthelp')).toBe(true);
+    expect(await q(`return document.querySelectorAll('#assisthelp li').length`)).toBe(3);
+    expect(await vis('remote')).toBe(true); // the Captain's D-pad is still there, above the card
+    await s.tap(...(await centre('assisthelpclose')));
+    expect(await vis('assisthelp')).toBe(false);
+    await s.eval(`document.body.dataset.assisthelp = 'open'; window.__push({ t: 'phase', phase: 'playing' })`);
+    expect(await vis('assisthelp'), 'the round hides the card').toBe(false);
+    await new Promise((r) => setTimeout(r, 3500));
+    expect(await vis('assisttoast'), 'the notice fades by itself').toBe(false);
   }, 60_000);
 
   it("versus results: the phone shows how its team ended and the score of its OWN team, framed in the team's colour; coop shows neither", async () => {

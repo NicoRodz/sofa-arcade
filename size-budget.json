@@ -3,8 +3,8 @@
  "exemptDirs": ["data","fixtures","levels","golden"],
  "files": {
   "apps/controller/index.html": { "max": 234, "until": "2027-03-31" },
-  "apps/controller/src/main.ts": { "max": 584, "until": "2026-12-31" },
-  "apps/controller/test/checks.ts": { "max": 328, "until": "2027-03-31" },
+  "apps/controller/src/main.ts": { "max": 586, "until": "2026-12-31" },
+  "apps/controller/test/checks.ts": { "max": 329, "until": "2027-03-31" },
   "apps/controller/test/harness.ts": { "max": 815, "until": "2027-03-31" },
   "apps/screen/index.html": { "max": 500, "until": "2026-12-31" },
   "apps/screen/src/main.ts": { "max": 2177, "until": "2026-12-31" },

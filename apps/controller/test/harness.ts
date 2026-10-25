@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
 import { WebSocket } from 'ws';
+import { ASSIST_PROBE, ASSIST_TOUCH, assistHelpScenarios } from './assist-scenarios';
 
 export const PORT = Number(process.env.PG_PORT ?? 3600); // 3000 / 3100 belong to the dev servers of the user; PG_PORT / PG_CDP_PORT let two worktrees run this suite at once
 const CDP_PORT = Number(process.env.PG_CDP_PORT ?? 9366);
@@ -59,7 +60,7 @@ export const TOUCH_SELECTORS = [
   '#btnB',
   '#pswap',
   '#howtoopen',
-  '#assist',
+  ...ASSIST_TOUCH,
   '#howtoclose',
   '#zoomfix',
   '#join button',
@@ -221,9 +222,7 @@ export const SELECTORS = [
   '#signals .sg',
   '#wait > *',
   '#howtoopen',
-  '#assist',
-  '#assist svg',
-  '#assistlbl',
+  ...ASSIST_PROBE,
   '#choosing > *',
   '#results > *',
   '#howto h2',
@@ -421,6 +420,7 @@ export const SCENARIOS: Scenario[] = [
     ],
     after: `${WIDE}; document.body.dataset.howto = 'closed'`,
   },
+  ...assistHelpScenarios({ player, config, vsConfig, you, captain, phase, WIDE }),
   {
     name: 'lobby-other-game',
     msgs: [player('Nico'), { ...config(), game: 'obstaculos' }, phase('lobby')],

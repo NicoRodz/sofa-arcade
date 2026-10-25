@@ -8,6 +8,7 @@ import { PUESTOS, type PuestoId } from '@pichi/game-pizzas/sim/puestos';
 import { SABOTAGE_LABEL, sabotageOf } from '@pichi/game-pizzas/sim/sabotage-config';
 import { parseObstOptions, setupLabel } from '@pichi/game-obstaculos/lobby';
 import { seenAfterPhase, shouldShowHowTo } from '@pichi/controller-kit/howto';
+import { announceAssist, assistLabel } from './assist-help';
 import { createSchoolUi } from '@pichi/game-pizzas/controller/school';
 import { kvOf } from '@pichi/game-pizzas/sim/school';
 import { createZoomGuard, isDoubleTap } from '@pichi/controller-kit/zoom';
@@ -268,13 +269,14 @@ function showAssist(on: boolean) {
   assist = on;
   $('assist').classList.toggle('on', on);
   $('assist').setAttribute('aria-pressed', String(on));
-  $('assistlbl').textContent = on ? 'Ayudante: sí' : 'Ayudante: no';
+  $('assistlbl').textContent = assistLabel(on);
 }
 $('assist').addEventListener('pointerup', (e) => {
   e.preventDefault();
   if (phase !== 'lobby') return;
   showAssist(!assist);
   tx({ t: 'assist', on: assist });
+  announceAssist(assist);
 });
 
 const tx = (m: ClientMsg) => {

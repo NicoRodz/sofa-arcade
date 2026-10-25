@@ -1,4 +1,5 @@
 // Layout rules for the phone page, checked on a Probe (see harness.ts). Each returns human-readable violations.
+import { ASSIST_SAFE } from './assist-scenarios';
 import { TOUCH_SELECTORS, type Box, type Insets, type Item, type Probe } from './harness';
 
 export const MIN_TOUCH = 44; // CSS px: Apple's HIG minimum; Android recommends 48 dp
@@ -131,7 +132,7 @@ const SAFE_BOXES = [
   '#join button',
   '#name',
   '#howtoopen',
-  '#assist',
+  ...ASSIST_SAFE,
   '#howtoclose',
   '#howto .steps li',
   '#howto .note',
