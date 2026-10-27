@@ -6,7 +6,7 @@ import { fireCue, type Cue } from '../attention';
 import './creator.css';
 import { initialFlow, reduce, type Event, type Flow, type Fx } from './flow';
 import type { DrawAvatar } from './preview';
-import { drawAvatar } from './preview-stub'; // F2 integration: import { drawAvatar } from '@pichi/core' (core/avatar/draw.ts) instead; the signature is the same
+import { drawAvatar } from '@pichi/core';
 import { duplicateOf, randomAvoiding, type RosterEntry } from './similar';
 import { LIVE_MS, createThrottle, type Clock } from './throttle';
 import { createUi, type Ui } from './ui';
