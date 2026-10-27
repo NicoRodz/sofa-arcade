@@ -468,6 +468,12 @@ export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent | MutateEve
   'fire:spread': (p) => [play('fireSpread'), { kind: 'loopStart', key: fireKey(p), loop: 'blaze' }],
   'fire:out': (p) => [{ kind: 'loopStop', key: fireKey(p) }, { kind: 'loopStop', key: douseKey(p) }, play('fireOut')],
   'fire:end': () => [],
+  // map mechanics: the flame on an oil tile, wiping it, the sprinkler, a bridge that gives way, the mate who is called
+  'mech:fire': () => [play('fireStart')],
+  'mech:wiped': () => [play('fireOut')],
+  'mech:spray': () => [play('plink')],
+  'mech:bridgeBreak': () => [play('thud')],
+  'mech:need': () => [play('ding')],
   douseStart: (p) => [{ kind: 'loopStart', key: douseKey(p), loop: 'douse' }],
   douseStop: (p) => [{ kind: 'loopStop', key: douseKey(p) }],
   // the calzone: thumps while the dough is folded, a whump when it is

@@ -21,7 +21,7 @@ export interface GameEvents extends SabotageEvents {
   bump: { player: number; other: number }; // R5: a dash hit another chef
   'surface:slide': { player: number }; // surfaces (only a round with them): a chef stepped onto ice at speed
   'surface:belt': { player: number }; // ... onto a floor belt
-  'mutate:warn': { id: string; title: string; blurb: string; inMs: number }; // mutate flag: the alarm and the banner, the map changes in `inMs`
+  'mutate:warn': { id: string; title: string; blurb: string; inMs: number; dests?: readonly (readonly [number, number])[] }; // mutate flag: the alarm and the banner, the map changes in `inMs`
   'mutate:apply': { id: string; tiles: { x: number; y: number; to: string }[]; moved: number }; // the tiles changed (grid already new); `moved` chefs/items relocated
   chopStart: { player: number; station: number }; // station = index in game.stations
   chopStop: { player: number; station: number };
@@ -57,6 +57,11 @@ export interface GameEvents extends SabotageEvents {
   'oven:warn': { station: number; msLeft: number; team?: number }; // a ready pizza is about to burn: the warning beep
   'oven:burnt': { station: number; team?: number }; // it burnt: smoke, it cannot be delivered, it goes to the bin
   'oven:rescued': { player: number; station: number; team?: number }; // a chef took the pizza out after the warning, in time
+  'mech:need': { player: number; station: number; kind: string }; // map mechanics: this chef is called (the other handle of the kneader, the bellows of the wood oven)
+  'mech:fire': { tile: number }; // oil caught fire on this tile (index y * 16 + x)
+  'mech:wiped': { tile: number }; // a chef wiped the oil or put the flame out on this tile
+  'mech:spray': { tile: number }; // the sprinkler at this tile started a burst
+  'mech:bridgeBreak': { tile: number }; // a worn bridge broke
   'fire:start': { station: number; team?: number }; // the oven caught fire
   'fire:spread': { station: number; team?: number }; // the fire jumped to this counter
   'fire:out': { player: number; station: number; team?: number }; // a chef put this station out
