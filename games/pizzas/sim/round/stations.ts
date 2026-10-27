@@ -12,6 +12,10 @@ function interact(g: Game, p: Player, s: Station) {
   if (s.fire !== undefined) return; // on fire: nothing works until it is put out
   switch (s.kind) {
     case 'crate':
+      if (s.crate === 4) {
+        if (p.item === 'dishQ' && g.rec?.recipes.includes('margfresca')) p.item = 'dishQB'; // the basil goes onto the plate, nothing is handed out
+        break;
+      }
       if (p.item) break;
       if (s.pantry) {
         // the shared pantry: a unit of the common stock, or nothing when it ran out (the other team may have emptied it)
@@ -102,7 +106,8 @@ export function act(g: Game, p: Player, s: Station) {
   const before = { held: p.item, shelf: s.item, baked: baked(s), done: s.done, delivered: team.delivered, rejected: team.rejected };
   interact(g, p, s);
   if (team.delivered !== before.delivered || team.rejected !== before.rejected) return; // 'delivered' or 'dishRejected' already emitted
-  if (!before.held && p.item) g.bus.emit('itemPicked', { player: p.id, item: p.item, from: s.kind });
+  const garnished = s.kind === 'crate' && s.crate === 4 && !!before.held && p.item !== before.held; // the basil on a plate counts as picking something up
+  if ((!before.held || garnished) && p.item) g.bus.emit('itemPicked', { player: p.id, item: p.item, from: s.kind });
   else if (before.held && !p.item) g.bus.emit('itemDropped', { player: p.id, item: before.held, at: s.kind });
   else g.bus.emit('interactInvalid', { player: p.id });
   if (s.kind === 'pot' && !before.baked && baked(s)) g.bus.emit('potStart', { station: g.stations.indexOf(s), ...tag(g, s.owner) });

@@ -14,6 +14,7 @@ const STATIONS: Record<string, { station: StationKind; crate: number }> = {
   '1': { station: 'crate', crate: 0 },
   '2': { station: 'crate', crate: 1 },
   '3': { station: 'crate', crate: 2 },
+  '5': { station: 'crate', crate: 4 }, // the basil crate: it garnishes a plate that holds a baked Margarita, it never hands out an item
   '4': { station: 'crate', crate: 3 }, // the second topping crate (a map with two toppings on its card)
   K: { station: 'board', crate: 0 },
   O: { station: 'pot', crate: 0 },
@@ -30,6 +31,7 @@ export const STATION_CHAR: Record<string, string> = {
   crate1: '2',
   crate2: '3',
   crate3: '4',
+  crate4: '5',
   board: 'K',
   pot: 'O',
   plates: 'P',

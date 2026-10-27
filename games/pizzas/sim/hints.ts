@@ -35,6 +35,8 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       const top = s.crate === 2 ? g.rec?.topping : s.crate === 3 ? g.rec?.topping2 : undefined; // the card's topping of a topping crate
       const verb = (top != null ? TOPPING_VERB[top - 2] : CRATE_VERB[s.crate]) ?? 'Tomar',
         icon = CRATE_ICON[s.crate] ?? (s.crate === 3 ? CRATE_ICON[2] : undefined) ?? 'crate';
+      if (s.crate === 4)
+        return p.item === 'dishQ' && g.rec?.recipes.includes('margfresca') ? on('Albahaca', 'crate') : off('Margarita lista', 'crate'); // basil: only onto a baked Margarita on its plate
       if (full) return off('Manos llenas', icon);
       if (s.pantry && g.pantry!.stock <= 0) return off('Despensa vacía', icon); // 14 chars
       return on(verb, icon);

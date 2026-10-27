@@ -8,7 +8,7 @@ import type { Difficulty } from '@pichi/core/difficulty';
 import { RECIPE_DEFS, isDish, type Recipe } from '../../sim/recipes/defs';
 import { RecBus, route, stationsOf, type Mem } from './bot';
 
-type At = 'crate0' | 'crate1' | 'crate2' | 'crate3' | 'board' | 'pot' | 'plates' | 'window';
+type At = 'crate0' | 'crate1' | 'crate2' | 'crate3' | 'crate4' | 'board' | 'pot' | 'plates' | 'window';
 type Take = 'a' | 'chop' | 'fold' | 'serve';
 interface Step { at: At; take: Take; done: (g: Game, p: Player, s: Station) => boolean }
 export interface RMem extends Mem { recipe: Recipe | null; force?: Recipe }
@@ -35,6 +35,7 @@ export const stepsFor = (recipe: Recipe): Step[] => {
     ...(RECIPE_DEFS[recipe].fold ? [{ at: 'pot', take: 'fold', done: (_g: Game, _p: Player, s: Station) => !!s.folded } as Step] : []),
     { at: 'plates', take: 'a', done: (_g, p) => p.item === 'plate' },
     { at: 'pot', take: 'serve', done: (_g, p) => isDish(p.item) },
+    ...(recipe === 'margfresca' ? [{ at: 'crate4', take: 'a', done: (_g: Game, p: Player) => p.item === 'dishQB' } as Step] : []), // the basil goes on the baked pizza, on its plate
     { at: 'window', take: 'a', done: (_g, p) => !p.item },
   ];
 };

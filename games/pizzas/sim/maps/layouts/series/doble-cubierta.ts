@@ -1,6 +1,6 @@
 import type { MapDef } from '../../types';
 
-// Carta larga, map 1 (design pizzas-mapas-platos-diseno.md): two topping crates ('3' and '4'), the ovens far from the crates, a ring of counters in the middle.
+// Carta larga, map 1 (design pizzas-mapas-platos-diseno.md): two topping crates ('3' and '4') and the basil crate ('5'), the ovens far from the crates, a ring of counters in the middle.
 export const MAP_20: MapDef = {
   id: '20',
   name: 'Doble cubierta',
@@ -13,7 +13,7 @@ export const MAP_20: MapDef = {
     '#C1C2CKCCKCC3C##',
     '#..............O',
     'C..............O',
-    'C...CCC..CCC...O',
+    '5...CCC..CCC...O',
     'C...C......C...C',
     'X...CCC..CCC...C',
     'P..S..S..S..S..C',

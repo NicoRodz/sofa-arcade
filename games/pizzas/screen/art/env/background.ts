@@ -38,7 +38,7 @@ export function buildBackground(
       if (t.kind !== 'station') return;
       const x0 = tx * 120,
         y0 = ty * 120;
-      if (t.station === 'crate') crate(c, x0, y0, t.crate === 2 ? topping : t.crate === 3 ? topping2 : t.crate);
+      if (t.station === 'crate') crate(c, x0, y0, t.crate === 2 ? topping : t.crate === 3 ? topping2 : t.crate === 4 ? 6 : t.crate);
       else if (t.station === 'board') board(c, x0, y0, tx, ty);
       else if (t.station === 'pot') oven(c, x0, y0);
       else if (t.station === 'plates') plates(c, x0, y0);

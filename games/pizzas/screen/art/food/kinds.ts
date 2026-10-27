@@ -41,7 +41,7 @@ export const ITEM_KIND: Record<Item, FoodKind> = {
   ...EXTRA_ITEM_KIND,
 };
 
-export const RAW_KIND: readonly FoodKind[] = ['dough_raw', 'tomato', 'cheese_raw', 'pepperoni_raw', 'mushroom_raw', 'ham_raw'];
+export const RAW_KIND: readonly FoodKind[] = ['dough_raw', 'tomato', 'cheese_raw', 'pepperoni_raw', 'mushroom_raw', 'ham_raw', 'basil_raw'];
 
 export const CUT_KIND: readonly FoodKind[] = ['dough_str', 'tomato_cut', 'cheese_cut', 'pepperoni_cut', 'mushroom_cut', 'ham_cut'];
 

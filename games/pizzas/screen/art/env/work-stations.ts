@@ -52,7 +52,7 @@ export function crate(c: Ctx, x0: number, y0: number, type: number) {
   // label
   drawOutlined(c, () => rr(c, 26, 80, 68, 24, 8), col, { lw: 2.5 });
   c.fillStyle = type === 1 || type === 3 ? C.cream : C.ink;
-  const name = ['MASA', 'TOMATE', 'QUESO', 'PEPPERONI', 'CHAMPIÑÓN', 'JAMÓN'][type]!;
+  const name = ['MASA', 'TOMATE', 'QUESO', 'PEPPERONI', 'CHAMPIÑÓN', 'JAMÓN', 'ALBAHACA'][type]!;
   c.font = `800 ${name.length > 6 ? 11 : 15}px ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif`;
   c.textAlign = 'center';
   c.textBaseline = 'middle';

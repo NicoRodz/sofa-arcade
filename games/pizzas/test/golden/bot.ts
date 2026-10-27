@@ -51,7 +51,7 @@ export class RecBus extends Emitter<GameEvents> {
 }
 
 type Take = 'a' | 'chop' | 'serve';
-interface Step { at: 'crate0' | 'crate1' | 'crate2' | 'crate3' | 'board' | 'pot' | 'plates' | 'window'; take: Take; done: (g: Game, p: Player, s: Station) => boolean }
+interface Step { at: 'crate0' | 'crate1' | 'crate2' | 'crate3' | 'crate4' | 'board' | 'pot' | 'plates' | 'window'; take: Take; done: (g: Game, p: Player, s: Station) => boolean }
 const cut = (p: Player) => !!p.item && p.item.startsWith('cut');
 // dough -> board -> cut -> oven; tomato -> board -> cut -> oven; plate -> oven when done -> window
 const RECIPE: readonly Step[] = [

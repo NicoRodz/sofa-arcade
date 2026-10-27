@@ -72,6 +72,7 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
       ['calzone', 90],
       ['pepqueso', 140], // two toppings: four ingredients and six processes
       ['jamchamp', 140],
+      ['margfresca', 130], // a Margarita and basil: one more ingredient and one more process
     ]);
     expect(RECIPE_PARTS.marinara).toEqual({ components: 2, processes: 3 });
     expect(RECIPE_PARTS.margarita).toEqual({ components: 3, processes: 4 });
@@ -86,6 +87,7 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
       'champinon',
       'pepqueso',
       'jamchamp',
+      'margfresca',
     ]);
   });
   it('items: raw<N> is cut into cut<N>; a plate says which recipe it holds', () => {

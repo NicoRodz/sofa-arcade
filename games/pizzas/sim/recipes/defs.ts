@@ -8,11 +8,20 @@
 import type { Item } from '../round/state';
 import type { Tuning } from '@pichi/core/difficulty';
 
-export type Recipe = 'marinara' | 'margarita' | 'pepperoni' | 'champinon' | 'calzone' | 'pepqueso' | 'jamchamp';
-export const RECIPES: readonly Recipe[] = ['marinara', 'margarita', 'pepperoni', 'champinon', 'calzone', 'pepqueso', 'jamchamp'];
+export type Recipe = 'marinara' | 'margarita' | 'pepperoni' | 'champinon' | 'calzone' | 'pepqueso' | 'jamchamp' | 'margfresca';
+export const RECIPES: readonly Recipe[] = [
+  'marinara',
+  'margarita',
+  'pepperoni',
+  'champinon',
+  'calzone',
+  'pepqueso',
+  'jamchamp',
+  'margfresca',
+];
 export const isRecipe = (v: unknown): v is Recipe => RECIPES.includes(v as Recipe);
 
-export type NeedKey = '1' | '2' | '3' | '4' | 'K' | 'O' | 'P' | 'E'; // the validator's station keys (validate.ts StationKey): the crates, board, oven, plates, window
+export type NeedKey = '1' | '2' | '3' | '4' | '5' | 'K' | 'O' | 'P' | 'E'; // the validator's station keys (validate.ts StationKey): the crates, board, oven, plates, window
 export interface RecipeDef {
   name: string; // Spanish, for the ticket and the lobby
   components: number; // ingredients: 20 points each
@@ -49,6 +58,7 @@ export const RECIPE_DEFS: Record<Recipe, RecipeDef> = {
     fold: false,
     needs: [...BASIC, '3', '4'],
   }, // ham 5 + mushroom 4, bakes 1.3x
+  margfresca: { name: 'Margarita fresca', components: 4, processes: 5, effort: 1.4, topping: 2, fold: false, needs: [...BASIC, '3', '5'] }, // a Margarita and, after the oven, basil on the plate (A at the basil crate with the plate in hand)
   calzone: { name: 'Calzone', components: 2, processes: 5, effort: 1.2, topping: null, fold: true, needs: BASIC }, // stretch, cut, fold, bake x2 (the long oven)
 };
 // R13: what a recipe is worth before the tip: points per ingredient plus points per process. Marinara 70, Margarita / Pepperoni / Champiñón 100, Calzone 90.
@@ -72,7 +82,7 @@ export const cutOf = (i: Item): Item | null => {
 export const cutType = (i: Item | null): number => (i ? CUT_OF.indexOf(i) : -1);
 
 // A pizza on a plate: the marinara dish, the one with a topping (cheese, pepperoni, mushroom) and the folded calzone.
-export const DISHES: readonly Item[] = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC', 'dishPQ', 'dishJM'];
+export const DISHES: readonly Item[] = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC', 'dishPQ', 'dishJM', 'dishQB'];
 export const isDish = (i: Item | null): boolean => !!i && DISHES.includes(i);
 /** The recipe a plate holds. */
 const DISH_RECIPE: Partial<Record<Item, Recipe>> = {
@@ -82,6 +92,7 @@ const DISH_RECIPE: Partial<Record<Item, Recipe>> = {
   dishC: 'calzone',
   dishPQ: 'pepqueso',
   dishJM: 'jamchamp',
+  dishQB: 'margfresca',
 };
 export const dishRecipe = (i: Item): Recipe => DISH_RECIPE[i] ?? 'marinara';
 /** The plate for a pot's contents (the burnt pizza is another item: the oven decides that first). */
