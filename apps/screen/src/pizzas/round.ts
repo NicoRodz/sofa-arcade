@@ -12,6 +12,7 @@ import { usesSurfaces } from '@pichi/game-pizzas/sim/surfaces/legend';
 import { mechFlagsOf } from '@pichi/game-pizzas/sim/mech/ids';
 import { roundRules } from '@pichi/game-pizzas/sim/midround';
 import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
+import { mechsOf, pickedMechs } from '@pichi/game-pizzas/sim/gen/lobby-opts';
 import { assignPuestos, featuresOf } from '@pichi/game-pizzas/sim/puestos';
 import { NO_LEAD } from '@pichi/game-pizzas/sim/versus/report';
 import { startVersusRound } from '@pichi/game-pizzas/sim/versus/lobby';
@@ -60,7 +61,11 @@ function startVersus(): MatchStart {
 
 function startCoop(): undefined {
   const n = connectedN();
-  const map = resolveMap(app.config.map as MapChoice, app.config.seed, app.config.difficulty, n, Math.random);
+  const map = resolveMap(app.config.map as MapChoice, app.config.seed, app.config.difficulty, n, Math.random, {
+    mechs: mechsOf(app.config.modeOptions),
+    mechanics: pickedMechs(app.config.modeOptions).length ? pickedMechs(app.config.modeOptions) : undefined,
+    mutate: mutateOf(app.config.modeOptions, app.config.difficulty),
+  });
   pz.game = createGame({
     mapId: map.id,
     difficulty: app.config.difficulty,

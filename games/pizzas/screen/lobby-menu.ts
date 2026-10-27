@@ -10,6 +10,8 @@ import { mutateOf } from '../sim/mutate/plan';
 import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_OPTION, sabotageOf } from '../sim/sabotage-config';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusAvailability, versusLobbyMaps } from '../sim/versus/lobby';
 import { versusMap } from '../sim/versus/maps';
+import { MECHS_ROW, SEED_ROW, mechIdOfRow, mechRows } from './lobby-menu-mech';
+import type { MechId } from '../sim/mech/ids';
 
 export interface PizzasLobbyState {
   config: LobbyConfig;
@@ -29,6 +31,8 @@ export const FOCUS_ROW: Readonly<Record<string, string>> = {
   events: 'evs',
   mutate: 'muts',
   map: 'maps',
+  seed: 'maps',
+  mechs: 'maps',
   teams: 'teambar',
   start: 'start',
 };
@@ -161,7 +165,7 @@ export function buildLobbyMenu(st: PizzasLobbyState): MenuBody {
       hint: yesNo(mu, 'En los mapas que lo tienen, la cocina cambia a 1:30', 'La cocina no cambia'),
     });
   }
-  rows.push(mapRow(st, vs));
+  rows.push(mapRow(st, vs), ...mechRows(c));
   if (vs && c.teams) {
     rows.push({
       id: 'teams',
@@ -204,7 +208,9 @@ export type MenuEffect =
   | { kind: 'difficulty'; value: Difficulty }
   | { kind: 'mode'; value: ModeId }
   | { kind: 'sabotage' | 'map'; value: string }
-  | { kind: 'events' | 'mutate'; value: boolean }
+  | { kind: 'events' | 'mutate' | 'mechs'; value: boolean }
+  | { kind: 'mech'; id: MechId; value: boolean }
+  | { kind: 'reseed' }
   | { kind: 'option'; id: string; value: boolean }
   | { kind: 'group'; value: 'classic' | 'series' }
   | { kind: 'shuffle' | 'lock' | 'start' }
@@ -235,12 +241,15 @@ export function decideMenuAct(st: PizzasLobbyState, act: MenuActBody, rev: numbe
     const opt = row.kind === 'buttons' ? row.options?.find((o) => o.id === act.value) : undefined;
     if (!opt) return no('Ese botón ya no existe');
     if (!opt.enabled) return no(opt.reason ?? 'No disponible ahora');
+    if (row.id === SEED_ROW) return { ok: true, effect: { kind: 'reseed' }, row: row.id };
     return { ok: true, effect: { kind: opt.id === 'shuffle' ? 'shuffle' : 'lock' }, row: row.id };
   }
   // set
   if (row.kind === 'toggle') {
     if (typeof act.value !== 'boolean') return no('Valor no válido');
-    if (row.id === 'events' || row.id === 'mutate') return { ok: true, effect: { kind: row.id, value: act.value }, row: row.id };
+    const mech = mechIdOfRow(row.id);
+    if (mech) return { ok: true, effect: { kind: 'mech', id: mech, value: act.value }, row: row.id };
+    if (row.id === 'events' || row.id === 'mutate' || row.id === MECHS_ROW) return { ok: true, effect: { kind: row.id, value: act.value }, row: row.id };
     return { ok: true, effect: { kind: 'option', id: row.id.slice(4), value: act.value }, row: row.id };
   }
   if (row.kind !== 'choice' && row.kind !== 'grid') return no('Esa fila no se elige así');

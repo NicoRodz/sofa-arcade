@@ -8,6 +8,7 @@ import { startRound } from '@pichi/screen-kit/shell/round-flow';
 import { app, connectedCount, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
 import type { MenuActResult } from '@pichi/screen-kit/shell/game';
 import type { MenuActBody, MenuBody } from '@pichi/core';
+import { MECHS_OPTION, MECH_PICK_OPTION, withMech } from '@pichi/game-pizzas/sim/gen/lobby-opts';
 import { difficultyPatch } from './lobby';
 import { setEvents, setMode, setMutate, setSabotage, shuffleTeams, startProblem } from './lobby-sync';
 import { connectedN, gameDef, pz } from './state';
@@ -36,6 +37,12 @@ function run(e: MenuEffect) {
       return setEvents(e.value);
     case 'mutate':
       return setMutate(e.value);
+    case 'mechs':
+      return setConfig({ modeOptions: { ...app.config.modeOptions, [MECHS_OPTION]: e.value } });
+    case 'mech':
+      return setConfig({ modeOptions: { ...app.config.modeOptions, [MECH_PICK_OPTION]: withMech(app.config.modeOptions, e.id, e.value) } });
+    case 'reseed':
+      return setConfig({ seed: (app.config.seed + 1) % 2 ** 32 }); // the same "Otra" as the TV's button
     case 'option':
       return setConfig({ modeOptions: { ...app.config.modeOptions, [e.id]: e.value } });
     case 'map':

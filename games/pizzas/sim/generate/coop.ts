@@ -24,6 +24,8 @@ import { teamSize, type Difficulty } from '@pichi/core/difficulty';
 import { orderSpawns, placeSpawns, zonePuestos } from './spawns';
 import { FLOOR_PER_PLAYER, floorTiles, minPlayers, spawnTiles, validateMap, zoneShareProblems } from '../validate';
 import { metric } from '../score';
+import { generateMech } from '../gen/core';
+import type { MechId } from '../mech/ids';
 
 export interface Generated {
   rows: string[];
@@ -119,6 +121,7 @@ export function resolveMap(
   diff: Difficulty,
   n: number,
   rand: Rng,
+  gen?: { mechs: boolean; mechanics?: readonly MechId[]; mutate?: boolean }, // the lobby's choices for the generated map: mechanics Sí / No and the ticked ones
 ): {
   id: string;
   name: string;
@@ -129,6 +132,18 @@ export function resolveMap(
   mutation?: MapDef['mutation'];
 } {
   if (choice === 'random') {
+    if (gen?.mechs) {
+      const g = generateMech({ seed, n, difficulty: diff, mechanics: gen.mechanics, mutate: gen.mutate });
+      return {
+        id: 'random',
+        name: `Aleatorio ${seed}`,
+        rows: g.rows,
+        spawns: g.spawns,
+        puestos: g.puestos,
+        mechanics: g.mechanics.length ? g.mechanics : undefined,
+        mutation: g.mutation,
+      };
+    }
     const g = generate(seed, diff, n);
     return { id: 'random', name: `Aleatorio ${seed}`, rows: g.rows, spawns: g.spawns, puestos: g.puestos };
   }
