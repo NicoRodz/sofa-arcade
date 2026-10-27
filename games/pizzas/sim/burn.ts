@@ -57,6 +57,8 @@ export function clearPot(s: Station) {
   delete s.burnt;
   delete s.fold;
   delete s.folded;
+  delete s.stage;
+  delete s.bellLeft;
 }
 
 function ignite(g: Game, s: Station, origin: boolean) {

@@ -1,6 +1,6 @@
 import type { MapDef } from '../../types';
 
-// Carta larga, map 7 of the design: a river splits the kitchen in two; the crossings are two pass-through counters and an ice bridge. The pot ('R') of the design is a counter until it exists.
+// Carta larga, map 7 of the design: a river splits the kitchen in two; the crossings are two pass-through counters and an ice bridge. The two pass-throughs are H hatches (counters drawn as hatches); the design's pot is not on this map yet.
 export const MAP_24: MapDef = {
   id: '24',
   name: 'El río',
@@ -14,7 +14,7 @@ export const MAP_24: MapDef = {
     'C..............C',
     'C.S..S....S..S.C',
     'C..............C',
-    '~~~C~~~ii~~~C~~~',
+    '~~~H~~~ii~~~H~~~',
     'O..............O',
     'O.S..S....S..S.O',
     'P..............O',

@@ -7,6 +7,8 @@
 import type { Game, Item, Order, Station } from '../round/state';
 import type { Rng } from '@pichi/core/rng';
 import { cardFor, type Card } from './cards';
+import { stageCookMs } from './sauce';
+export { isBaking } from './sauce';
 import {
   CALZONE_COOK_MULT,
   FOLD_MS,
@@ -121,10 +123,11 @@ export function foldStep(g: Game, playerId: number, s: Station, dtMs: number) {
 
 /** Milliseconds a full bake of this pot takes: a folded calzone bakes CALZONE_COOK_MULT times longer. */
 export const cookMsOf = (g: Game, s: Station): number =>
-  s.folded
+  stageCookMs(g, s) ??
+  (s.folded
     ? g.params.cookMs * (s.inputs.length === 4 ? STUFFED_COOK_MULT : CALZONE_COOK_MULT)
     : s.inputs.length === 4
       ? g.params.cookMs * TWO_TOPPINGS_COOK_MULT
-      : g.params.cookMs;
+      : g.params.cookMs);
 /** Milliseconds of Picar a raw item takes on the board: the pepperoni slices take SLICE_MULT times longer. */
 export const cutMsOf = (g: Game, item: Item | null): number => (item === 'raw3' ? g.params.cutMs * SLICE_MULT : g.params.cutMs);

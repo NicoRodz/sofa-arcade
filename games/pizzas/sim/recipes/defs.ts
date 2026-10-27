@@ -1,7 +1,7 @@
 // The recipes of the "Carta del día" (council #7) as plain data: what each is worth, which stations it needs, which verb it adds.
 // Pure and import-light (types only from the sim) so the sim, the validator, the stars and the art can all read it.
 //
-// Ingredient types (the index the pot's `inputs` and the items raw<N> / cut<N> use): 0 dough, 1 tomato, 2 cheese, 3 pepperoni, 4 mushroom, 5 ham.
+// Ingredient types (the index the pot's `inputs` and the items raw<N> / cut<N> use): 0 dough, 1 tomato, 2 cheese, 3 pepperoni, 4 mushroom, 5 ham, 6 sauce (it comes from the sauce pot, not from a crate: no raw6 / cut6).
 // Decision (the brief says "new ingredients in the existing crates when possible"): the cheese crate ('3' on the maps) is the TOPPING crate. In a round
 // with a card it gives the topping of the card's recipe: cheese for a Margarita, pepperoni for a Pepperoni, mushroom for a Champiñón. A card has at most
 // ONE topping recipe, so no map needs a new tile. Maps without the '3' crate get cards with no topping (Marinara and Calzone).
@@ -17,7 +17,9 @@ export type Recipe =
   | 'pepqueso'
   | 'jamchamp'
   | 'margfresca'
-  | 'calzonerel';
+  | 'calzonerel'
+  | 'nonna'
+  | 'blanca';
 export const RECIPES: readonly Recipe[] = [
   'marinara',
   'margarita',
@@ -28,10 +30,12 @@ export const RECIPES: readonly Recipe[] = [
   'jamchamp',
   'margfresca',
   'calzonerel',
+  'nonna',
+  'blanca',
 ];
 export const isRecipe = (v: unknown): v is Recipe => RECIPES.includes(v as Recipe);
 
-export type NeedKey = '1' | '2' | '3' | '4' | '5' | 'K' | 'O' | 'P' | 'E'; // the validator's station keys (validate.ts StationKey): the crates, board, oven, plates, window
+export type NeedKey = '1' | '2' | '3' | '4' | '5' | 'K' | 'O' | 'P' | 'E' | 'R'; // the validator's station keys (validate.ts StationKey): the crates, board, oven, plates, window
 export interface RecipeDef {
   name: string; // Spanish, for the ticket and the lobby
   components: number; // ingredients: 20 points each
@@ -79,6 +83,25 @@ export const RECIPE_DEFS: Record<Recipe, RecipeDef> = {
     fold: true,
     needs: [...BASIC, '3', '4'],
   }, // cheese + ham, folded 3 s, bakes 1.9x
+  nonna: {
+    name: 'Marinara de la nonna',
+    components: 4,
+    processes: 7,
+    effort: 1.8, // the design says 1.7; the extra trip to the pot keeps the stars factor of a card with it under 1.1
+    topping: null,
+    fold: false,
+    needs: [...BASIC, 'R', '5'],
+  }, // tomato -> sauce pot (stir 3 s) -> sauce + dough in the oven, basil on the plate after it
+  blanca: {
+    name: 'Pizza blanca',
+    components: 3,
+    processes: 11,
+    effort: 1.9,
+    topping: null,
+    toppings: [2, 4],
+    fold: false,
+    needs: [...BASIC, '3', '4'],
+  }, // dough bakes bare, the bell rings, cheese and mushroom go in inside the window, second bake; 1.6x in all
   calzone: { name: 'Calzone', components: 2, processes: 5, effort: 1.2, topping: null, fold: true, needs: BASIC }, // stretch, cut, fold, bake x2 (the long oven)
 };
 // R13: what a recipe is worth before the tip: points per ingredient plus points per process. Marinara 70, Margarita / Pepperoni / Champiñón 100, Calzone 90.
@@ -102,7 +125,20 @@ export const cutOf = (i: Item): Item | null => {
 export const cutType = (i: Item | null): number => (i ? CUT_OF.indexOf(i) : -1);
 
 // A pizza on a plate: the marinara dish, the one with a topping (cheese, pepperoni, mushroom) and the folded calzone.
-export const DISHES: readonly Item[] = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC', 'dishPQ', 'dishJM', 'dishQB', 'dishCR'];
+export const DISHES: readonly Item[] = [
+  'dish',
+  'dishQ',
+  'dishP',
+  'dishM',
+  'dishC',
+  'dishPQ',
+  'dishJM',
+  'dishQB',
+  'dishCR',
+  'dishN',
+  'dishNB',
+  'dishB',
+];
 export const isDish = (i: Item | null): boolean => !!i && DISHES.includes(i);
 /** The recipe a plate holds. */
 const DISH_RECIPE: Partial<Record<Item, Recipe>> = {
@@ -114,10 +150,18 @@ const DISH_RECIPE: Partial<Record<Item, Recipe>> = {
   dishJM: 'jamchamp',
   dishQB: 'margfresca',
   dishCR: 'calzonerel',
+  dishNB: 'nonna', // dishN (sauce, no basil yet) is a plain Marinara plate: it stays out of this table on purpose
+  dishB: 'blanca',
 };
 export const dishRecipe = (i: Item): Recipe => DISH_RECIPE[i] ?? 'marinara';
 /** The plate for a pot's contents (the burnt pizza is another item: the oven decides that first). */
 export const dishFor = (inputs: readonly number[], folded: boolean): Item =>
+  inputs.includes(6)
+    ? 'dishN' // the sauce of the pot (ingredient 6) instead of the tomato
+    : !folded && !inputs.includes(1) && inputs.includes(2) && inputs.includes(4)
+      ? 'dishB' // cheese and mushroom on a bare base (no tomato): the white pizza
+      : dishForTopped(inputs, folded);
+const dishForTopped = (inputs: readonly number[], folded: boolean): Item =>
   folded
     ? inputs.length >= 4
       ? 'dishCR'

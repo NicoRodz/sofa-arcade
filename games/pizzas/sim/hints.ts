@@ -10,7 +10,8 @@ import { floorItemNear } from './round/hazards';
 import type { Game, Item, Player, Station } from './round/state';
 import { isAiming, sabotageHint } from './sabotage';
 import { RAW_OF, cutType, isDish } from './recipes/defs';
-import { canFold, potCapacity } from './recipes/sim';
+import { canFold } from './recipes/sim';
+import { canLoad, canStir, hasNonna, potTypeOf } from './recipes/sauce';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
 const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón', 'Jamón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
@@ -36,7 +37,9 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       const verb = (top != null ? TOPPING_VERB[top - 2] : CRATE_VERB[s.crate]) ?? 'Tomar',
         icon = CRATE_ICON[s.crate] ?? (s.crate === 3 ? CRATE_ICON[2] : undefined) ?? 'crate';
       if (s.crate === 4)
-        return p.item === 'dishQ' && g.rec?.recipes.includes('margfresca') ? on('Albahaca', 'crate') : off('Margarita lista', 'crate'); // basil: only onto a baked Margarita on its plate
+        return (p.item === 'dishQ' && g.rec?.recipes.includes('margfresca')) || (p.item === 'dishN' && hasNonna(g))
+          ? on('Albahaca', 'crate')
+          : off('Pizza lista', 'crate'); // basil: only onto a baked Margarita or a sauce pizza on its plate
       if (full) return off('Manos llenas', icon);
       if (s.pantry && g.pantry!.stock <= 0) return off('Despensa vacía', icon); // 14 chars
       return on(verb, icon);
@@ -61,15 +64,16 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       if (!full && s.item) return on(cutType(s.item) >= 0 ? 'Tomar picado' : 'Tomar', 'chop');
       return off(full ? 'Ocupado' : 'Tabla vacía', 'chop');
     case 'pot': {
-      const t = cutType(p.item);
-      if (t >= 0)
-        return !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < potCapacity(g)
-          ? on('Al horno', 'oven')
-          : off(s.done ? 'Aún no listo' : 'Ya lleva eso', 'oven');
+      const t = potTypeOf(p.item);
+      if (t >= 0) return canLoad(g, s, t) ? on('Al horno', 'oven') : off(s.done ? 'Aún no listo' : 'Ya lleva eso', 'oven');
       if (p.item === 'plate') return s.done ? on(s.burnt ? 'Sacar quemada' : 'Sacar pizza', 'oven') : off('Aún no listo', 'oven'); // burn: a burnt pizza comes out too, to go to the bin
       if (full) return RAW.has(p.item!) ? off('Pica primero', 'oven') : off('Manos llenas', 'oven');
-      return off(s.done ? 'Falta plato' : s.inputs.length ? 'Cocinando' : 'Horno', 'oven');
+      return off(s.done ? 'Falta plato' : s.stage === 'bell' ? '¡Campanilla!' : s.inputs.length ? 'Cocinando' : 'Horno', 'oven');
     }
+    case 'saucepot':
+      if (p.item === 'cut1' && hasNonna(g)) return !s.inputs.length && !s.done ? on('Al fuego', 'oven') : off('Ocupada', 'oven');
+      if (!full && s.done) return on(s.burnt ? 'Raspar' : 'Tomar salsa', 'oven');
+      return off(full ? 'Manos llenas' : s.inputs.length ? 'Revuelve' : 'Olla', 'oven');
     case 'trash':
       if (g.sab && !full) return g.sab.teams[p.team]!.bags > 0 ? on('Tomar bolsa', 'trash') : off('Botar', 'trash');
       if (g.finitePlates && (p.item === 'plate' || p.item === 'dirty')) return off('No es basura', 'trash');
@@ -88,6 +92,7 @@ function buttonB(g: Game, p: Player, s: Station | null, front: Station | null = 
   if (s?.kind === 'board' && s.item && RAW.has(s.item)) return on(CUT_VERB[s.item]!, 'chop');
   if (s?.fire !== undefined) return on('Apagar', 'oven'); // burn: Picar puts the fire out (an Ayudante taps it once and it goes on)
   if (s?.kind === 'sink' && s.count > 0) return on('Lavar', 'wash');
+  if (s && canStir(s)) return on('Revolver', 'oven'); // the sauce pot: hold Picar to stir
   if (s && canFold(g, s)) return on('Doblar', 'oven'); // a Carta del día with a calzone: Picar at the oven with dough and tomato folds it
   if (!p.item && !front) return p.dashMs <= 0 && p.dashCd <= 0 ? on('Correr', 'move') : off('Correr', 'move');
   return off('Picar', 'chop');
