@@ -45,7 +45,12 @@ describe('mech.ovenHeat', () => {
   it('the baking speed is 400 + temp * 6 / 10 permil, never under 400', () => {
     const g = make();
     const [a] = ovens(g) as [number];
-    for (const [t, want] of [[1000, 1000], [500, 700], [0, 400], [333, 599]] as const) {
+    for (const [t, want] of [
+      [1000, 1000],
+      [500, 700],
+      [0, 400],
+      [333, 599],
+    ] as const) {
       g.mech!.heat![a] = t;
       expect(rate(g, a)).toBe(want);
     }
@@ -119,7 +124,12 @@ describe('ovenHeatValidate', () => {
     expect(ovenHeatValidate(HEAT_ROWS, 2)).toEqual([]);
     expect(ovenHeatValidate(HEAT_ROWS, 8)).toEqual([]);
     expect(ovenHeatValidate([], 2)).toEqual([]);
-    expect(ovenHeatValidate(HEAT_ROWS.map((r) => r.replaceAll('O', '.')), 2).join()).toMatch(/no oven/);
+    expect(
+      ovenHeatValidate(
+        HEAT_ROWS.map((r) => r.replaceAll('O', '.')),
+        2,
+      ).join(),
+    ).toMatch(/no oven/);
     const one = HEAT_ROWS.map((r) => r.replace('O', '.').replace('O', '.'));
     expect(ovenHeatValidate(one, 4)).toEqual([]);
     expect(ovenHeatValidate(one, 5).join()).toMatch(/second O/);

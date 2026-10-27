@@ -13,10 +13,23 @@ export const beltReverseValidate: MechValidator = (rows) => {
   if (!belts.length) return ['beltReverse: the map has no belt (→ ← ↑ ↓) to reverse'];
   const floor = new Set<number>();
   const q: [number, number][] = [];
-  rows.forEach((r, y) => [...r].forEach((c, x) => c === 'S' && (floor.add(y * 16 + x), q.push([x, y]))));
+  rows.forEach((r, y) =>
+    [...r].forEach((c, x) => {
+      if (c !== 'S') return;
+      floor.add(y * 16 + x);
+      q.push([x, y]);
+    }),
+  );
   for (let i = 0; i < q.length; i++)
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-      const nx = q[i]![0] + dx, ny = q[i]![1] + dy, c = rows[ny]?.[nx];
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const nx = q[i]![0] + dx,
+        ny = q[i]![1] + dy,
+        c = rows[ny]?.[nx];
       if (c === undefined || floor.has(ny * 16 + nx) || SOLID.has(c) || /[0-9A-Z]/.test(c)) continue;
       floor.add(ny * 16 + nx);
       q.push([nx, ny]);
@@ -24,7 +37,8 @@ export const beltReverseValidate: MechValidator = (rows) => {
   for (const b of belts) {
     if (!floor.has(b.y * 16 + b.x)) out.push(`beltReverse: belt at (${b.x}, ${b.y}) is out of reach from the spawns`);
     const [ax, ay] = AXIS[b.c]!;
-    for (const s of [1, -1]) if (rows[b.y + ay * s]?.[b.x + ax * s] === '~') out.push(`beltReverse: belt at (${b.x}, ${b.y}) points into water when it reverses`);
+    for (const s of [1, -1])
+      if (rows[b.y + ay * s]?.[b.x + ax * s] === '~') out.push(`beltReverse: belt at (${b.x}, ${b.y}) points into water when it reverses`);
   }
   return out;
 };

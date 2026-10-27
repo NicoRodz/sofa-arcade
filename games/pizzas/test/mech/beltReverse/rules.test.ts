@@ -79,9 +79,26 @@ describe('beltReverseValidate', () => {
   it('the test map is fine; no belt, a belt out of reach, a belt into water are not', () => {
     expect(beltReverseValidate(BELT_ROWS, 2)).toEqual([]);
     expect(beltReverseValidate([], 2)).toEqual([]);
-    expect(beltReverseValidate(BELT_ROWS.map((r) => r.replace(/[→←]/g, '.')), 2).join()).toMatch(/no belt/);
-    expect(beltReverseValidate(BELT_ROWS.map((r, y) => (y === 3 ? '#.→→→→→→→→→→→~#' + '.' : r)), 2).join()).toMatch(/into water/);
-    const walled = ['################', '#S##############', '#.##############', '################', '####→→→→→→→→####', ...Array<string>(4).fill('################')];
+    expect(
+      beltReverseValidate(
+        BELT_ROWS.map((r) => r.replace(/[→←]/g, '.')),
+        2,
+      ).join(),
+    ).toMatch(/no belt/);
+    expect(
+      beltReverseValidate(
+        BELT_ROWS.map((r, y) => (y === 3 ? '#.→→→→→→→→→→→~#' + '.' : r)),
+        2,
+      ).join(),
+    ).toMatch(/into water/);
+    const walled = [
+      '################',
+      '#S##############',
+      '#.##############',
+      '################',
+      '####→→→→→→→→####',
+      ...Array<string>(4).fill('################'),
+    ];
     expect(beltReverseValidate(walled, 2).join()).toMatch(/out of reach/);
   });
 });

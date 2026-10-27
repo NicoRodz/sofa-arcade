@@ -14,7 +14,7 @@ export const gateModule: MechModule = {
   validate: gateValidate,
   stamp: gateStamp,
   onLoad(g) {
-    (g.mech!.ext ??= {}).gate = scan(g);
+    g.mech!.ext = { ...g.mech!.ext, gate: scan(g) };
   },
   init(g) {
     g.mech!.gate = { open: gateMap(g).timer, phase: 0 }; // phase: timer = ticks into the cycle; plate = ticks since the door last changed

@@ -27,7 +27,7 @@ export const ovenHeatModule: MechModule = {
   stamp: ovenHeatStamp,
   init(g) {
     g.mech!.heat = {};
-    (g.mech!.ext ??= {}).heatPrev = {};
+    g.mech!.ext = { ...g.mech!.ext, heatPrev: {} };
     for (const i of ovens(g)) {
       g.mech!.heat[i] = HEAT_MAX;
       prevOf(g)[i] = { n: 0, done: false, frost: false };

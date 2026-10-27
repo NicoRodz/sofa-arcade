@@ -28,7 +28,8 @@ function flood(rows: readonly string[], from: [number, number][], through: (c: s
   }
   return seen;
 }
-const find = (rows: readonly string[], ch: string) => rows.flatMap((r, y) => [...r].flatMap((c, x) => (c === ch ? [[x, y] as [number, number]] : [])));
+const find = (rows: readonly string[], ch: string) =>
+  rows.flatMap((r, y) => [...r].flatMap((c, x) => (c === ch ? [[x, y] as [number, number]] : [])));
 
 export const gateValidate: MechValidator = (rows, n) => {
   const Z = find(rows, 'Z'),
@@ -38,13 +39,19 @@ export const gateValidate: MechValidator = (rows, n) => {
   if (Z.length && !D.length) return ['gate: a plate Z without a door D does nothing'];
   const walk = (c: string) => !SOLID.has(c) && !STATIONS.has(c) && c !== 'D'; // doors closed: a wall
   const base = flood(rows, find(rows, 'S'), walk);
-  const touches = (reach: Set<number>, ch: string) => find(rows, ch).some(([x, y]) => DIRS.some(([dx, dy]) => reach.has((y + dy) * 16 + x + dx)));
+  const touches = (reach: Set<number>, ch: string) =>
+    find(rows, ch).some(([x, y]) => DIRS.some(([dx, dy]) => reach.has((y + dy) * 16 + x + dx)));
   const hidden = flood(rows, D, (c) => walk(c) || c === 'D');
   for (const k of base) hidden.delete(k);
   for (const [x, y] of Z) if (!base.has(y * 16 + x)) out.push(`gate: plate Z at (${x}, ${y}) cannot be reached with the doors closed`);
-  if (!D.some(([x, y]) => DIRS.some(([dx, dy]) => hidden.has((y + dy) * 16 + x + dx)))) out.push('gate: the doors D lead to no protected region');
-  if (!Z.length) for (const ch of ['E', 'O', 'K', '1']) if (!touches(base, ch)) out.push(`gate: with the doors shut nobody reaches a ${ch} (timer mode must be playable closed)`);
-  if (Z.length && n < 2 && ['E', 'O', 'K', '1', 'P'].some((ch) => touches(hidden, ch) && !touches(base, ch))) out.push('gate: a lone chef cannot hold the plate and work behind the door');
-  if (Z.length && n === 2 && !Z.some(([x, y]) => DIRS.some(([dx, dy]) => 'KRM'.includes(rows[y + dy]?.[x + dx] ?? ' ')))) out.push('gate: with 2 chefs the porter has no job: put a Z beside a K, R or M');
+  if (!D.some(([x, y]) => DIRS.some(([dx, dy]) => hidden.has((y + dy) * 16 + x + dx))))
+    out.push('gate: the doors D lead to no protected region');
+  if (!Z.length)
+    for (const ch of ['E', 'O', 'K', '1'])
+      if (!touches(base, ch)) out.push(`gate: with the doors shut nobody reaches a ${ch} (timer mode must be playable closed)`);
+  if (Z.length && n < 2 && ['E', 'O', 'K', '1', 'P'].some((ch) => touches(hidden, ch) && !touches(base, ch)))
+    out.push('gate: a lone chef cannot hold the plate and work behind the door');
+  if (Z.length && n === 2 && !Z.some(([x, y]) => DIRS.some(([dx, dy]) => 'KRM'.includes(rows[y + dy]?.[x + dx] ?? ' '))))
+    out.push('gate: with 2 chefs the porter has no job: put a Z beside a K, R or M');
   return out;
 };
