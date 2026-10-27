@@ -32,13 +32,13 @@ export class MutateView {
       scene.events.off('update', tick); // goes away with the scene's children (the round's teardown removes them all)
       this.destroy();
     });
-    this.off.push(bus.on('mutate:warn', (e) => this.warn(e.title, e.blurb, e.inMs)));
+    this.off.push(bus.on('mutate:warn', (e) => this.warn(e.title, e.blurb, e.inMs, e.dests)));
     this.off.push(bus.on('mutate:apply', (e) => this.change(e.tiles)));
   }
 
-  private warn(title: string, blurb: string, inMs: number) {
+  private warn(title: string, blurb: string, inMs: number, dests?: readonly (readonly [number, number])[]) {
     this.leftMs = inMs;
-    this.tiles = this.game.mut!.mutation.tiles.map((t) => ({ x: t.x, y: t.y }));
+    this.tiles = this.game.mut ? this.game.mut.mutation.tiles.map((t) => ({ x: t.x, y: t.y })) : (dests ?? []).map(([x, y]) => ({ x, y })); // v2: the destinations the ops announce
     this.hazard.setVisible(true);
     const g = this.scene.add.graphics();
     g.fillStyle(0x2b1b17, 0.35).fillRoundedRect(-BANNER.w / 2 + 6, -BANNER.h / 2 + 10, BANNER.w, BANNER.h, 30);

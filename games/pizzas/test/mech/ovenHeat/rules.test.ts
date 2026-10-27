@@ -1,4 +1,4 @@
-// Rules of 'ovenHeat': 1000 at the start, -300 when an oven is loaded or its dish taken, +4 a tick, speed 400 + temp * 6 / 10 permil, -500 on the Ola de frío; the validator asks for two ovens from 5 chefs.
+// Rules of 'ovenHeat': 1000 at the start, -300 when an oven is loaded or its dish taken, +3 a tick, speed 400 + temp * 6 / 10 permil, -500 on the Ola de frío; the validator asks for two ovens from 5 chefs.
 import { describe, expect, it } from 'vitest';
 import { addPlayer, createGame, tick, type Controls, type Game } from '../../../sim/overcooked';
 import { mechModule } from '../../../sim/mech/registry';
@@ -26,21 +26,21 @@ describe('mech.ovenHeat', () => {
     expect(Object.values(g.mech!.heat!)).toEqual([1000, 1000, 1000]);
     expect(rate(g, a)).toBe(1000);
   });
-  it('loading an oven takes 300 and it recovers 4 a tick; taking the dish out takes 300 again', () => {
+  it('loading an oven takes 300 and it recovers 3 a tick; taking the dish out takes 300 again', () => {
     const g = make();
     const [a, b] = ovens(g) as [number, number];
     g.stations[a]!.inputs.push(0);
     run(g, 1);
-    expect(g.mech!.heat![a]).toBe(704);
+    expect(g.mech!.heat![a]).toBe(703);
     expect(g.mech!.heat![b]).toBe(1000);
     run(g, 10);
-    expect(g.mech!.heat![a]).toBe(744);
+    expect(g.mech!.heat![a]).toBe(733);
     Object.assign(g.stations[a]!, { done: true, inputs: [0, 1] });
     run(g, 1);
     const t = g.mech!.heat![a]!;
     Object.assign(g.stations[a]!, { done: false, inputs: [] }); // somebody took the dish
     run(g, 1);
-    expect(g.mech!.heat![a]).toBe(t - 300 + 4);
+    expect(g.mech!.heat![a]).toBe(t - 300 + 3);
   });
   it('the baking speed is 400 + temp * 6 / 10 permil, never under 400', () => {
     const g = make();
@@ -75,8 +75,8 @@ describe('mech.ovenHeat', () => {
     g.mech!.heat![a] = 100;
     g.stations[a]!.inputs.push(0);
     run(g, 1);
-    expect(g.mech!.heat![a]).toBe(0); // 100 - 300 + 4 clamps at 0
-    run(g, 300);
+    expect(g.mech!.heat![a]).toBe(0); // 100 - 300 + 3 clamps at 0
+    run(g, 500);
     expect(g.mech!.heat![a]).toBe(1000);
   });
   it('the Ola de frío takes 500 off every oven once, when it starts', () => {
@@ -84,9 +84,9 @@ describe('mech.ovenHeat', () => {
     const [a, b] = ovens(g) as [number, number];
     (g as { mid: unknown }).mid = { frost: true };
     mechModule('ovenHeat').tickStations(g, 16);
-    expect(g.mech!.heat).toMatchObject({ [a]: 504, [b]: 504 });
+    expect(g.mech!.heat).toMatchObject({ [a]: 503, [b]: 503 });
     mechModule('ovenHeat').tickStations(g, 16);
-    expect(g.mech!.heat![a]).toBe(508);
+    expect(g.mech!.heat![a]).toBe(506);
   });
   it('the W oven of woodOven is left alone', () => {
     const rows = HEAT_ROWS.map((r, y) => (y === 4 ? r.replace('.O.', '.W.') : r));

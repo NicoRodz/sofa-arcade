@@ -10,6 +10,7 @@ import { $ } from '@pichi/screen-kit/ui/dom';
 import { TICK_MS, resolvePause, tick, type Controls } from '@pichi/game-pizzas/sim';
 import { staleControls } from '@pichi/game-pizzas/sim/feel/stale';
 import { createHintSync } from '@pichi/game-pizzas/sim/hints';
+import { createMechPhone } from '@pichi/game-pizzas/sim/mech/phone';
 import { nextLead, scoreHidden } from '@pichi/game-pizzas/sim/versus/report';
 import { createSchoolHost } from '@pichi/game-pizzas/screen/school/host';
 import { MainScene, type Host } from '@pichi/game-pizzas/screen/scene';
@@ -41,7 +42,12 @@ export const school = createSchoolHost({
 // "Entregar", grey when nothing can be done). The label is the STATE of the sim after the last tick, recomputed every frame and sent whole when it changes (at most one
 // message per chef every HINT_MIN_MS), plus a refresh every HINT_REFRESH_MS: a late, lost or missed packet (a phone that reconnects) is replaced by the next, never an event the phone has to catch (hints.ts).
 const hints = createHintSync(sendMsg);
-const syncHints = (now = performance.now()) => hints.sync(app.phase === 'playing' && app.activeGame === PIZZAS ? pz.game : null, now);
+const mechPhone = createMechPhone();
+const syncHints = (now = performance.now()) => {
+  const live = app.phase === 'playing' && app.activeGame === PIZZAS ? pz.game : null;
+  hints.sync(live, now);
+  for (const id of mechPhone.sync(live)) sendMsg({ t: 'buzz', playerId: id, kind: 'alert' }); // a map mechanic needs this chef (the porter's plate, a door about to shut, the belt that turns, a cold oven)
+};
 
 // Versus: a team with nobody stops the clock; the host picks "Seguir sin ganador" or "Terminar" (resolvePause).
 let pauseShown = false;
@@ -117,6 +123,13 @@ export function initHost() {
   const alert = (mine: (team: number | undefined) => boolean) => pz.game.players.forEach((p) => mine(p.team) && buzz(p.id, 'alert'));
   for (const k of ['event:announce', 'mutate:warn'] as const) gameBus.on(k, () => alert(() => true));
   gameBus.on('fire:start', (e) => alert((t) => e.team === undefined || e.team === t));
+  // map mechanics: the mate who is called, and the chefs near a flame on the oil or a bridge that gave way
+  gameBus.on('mech:need', (e) => buzz(e.player, 'alert'));
+  const near = (tile: number) =>
+    pz.game.players.forEach(
+      (p) => !p.ghost && Math.hypot(p.x - ((tile % 16) + 0.5), p.y - (Math.floor(tile / 16) + 0.5)) <= 3 && buzz(p.id, 'alert'),
+    );
+  for (const k of ['mech:fire', 'mech:bridgeBreak'] as const) gameBus.on(k, (e) => near(e.tile));
   gameBus.on('sabotage:launch', (e) => alert((t) => t !== e.team));
   gameBus.on('chef:slip', (e) => buzz(e.chef, 'slip')); // sabotage: the phone of the chef that slipped vibrates and says "¡Resbalaste!"
   $('pcont').addEventListener('click', () => {

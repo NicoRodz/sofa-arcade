@@ -1,5 +1,5 @@
 // Pure data: what each sound is made of, and which game event triggers which sound. No Web Audio here.
-import type { GameEvents, MutateEvent, SurfaceEvent } from '@pichi/core/events';
+import type { GameEvents, MechEvent, MutateEvent, SurfaceEvent } from '@pichi/core/events';
 
 export type Wave = 'sine' | 'square' | 'sawtooth' | 'triangle';
 export type BusName = 'sfx' | 'ui';
@@ -405,7 +405,7 @@ const douseKey = (p: { station: number }) => `douse:${p.station}`;
 const foldKey = (p: { station: number }) => `fold:${p.station}`;
 
 // One entry per game event; the mapped type makes a missing event a compile error.
-export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent | MutateEvent>]: (p: GameEvents[K]) => Action[] } = {
+export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent | MutateEvent | MechEvent>]: (p: GameEvents[K]) => Action[] } = {
   itemPicked: () => [play('pickup')],
   itemDropped: () => [play('drop')],
   interactInvalid: () => [play('buzz')],
@@ -468,12 +468,6 @@ export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent | MutateEve
   'fire:spread': (p) => [play('fireSpread'), { kind: 'loopStart', key: fireKey(p), loop: 'blaze' }],
   'fire:out': (p) => [{ kind: 'loopStop', key: fireKey(p) }, { kind: 'loopStop', key: douseKey(p) }, play('fireOut')],
   'fire:end': () => [],
-  // map mechanics: the flame on an oil tile, wiping it, the sprinkler, a bridge that gives way, the mate who is called
-  'mech:fire': () => [play('fireStart')],
-  'mech:wiped': () => [play('fireOut')],
-  'mech:spray': () => [play('plink')],
-  'mech:bridgeBreak': () => [play('thud')],
-  'mech:need': () => [play('ding')],
   douseStart: (p) => [{ kind: 'loopStart', key: douseKey(p), loop: 'douse' }],
   douseStop: (p) => [{ kind: 'loopStop', key: douseKey(p) }],
   // the calzone: thumps while the dough is folded, a whump when it is

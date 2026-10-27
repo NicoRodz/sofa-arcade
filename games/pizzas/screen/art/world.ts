@@ -19,6 +19,8 @@ import { MagnetView } from './feel/magnet-view';
 import { RatSignal } from './feel/rat-signal';
 import { chefFlags } from './surfaces/chef-flags';
 import { kText } from '../../sim/versus/report';
+import { paintGrid } from './mech/views';
+import { tintKitchens } from './env/versus-tint';
 
 export class World {
   private bg: Phaser.GameObjects.Image;
@@ -36,6 +38,7 @@ export class World {
   private events: EventsView | null = null; // the mid-round event: banner, pill, blackout, balloons, the rat (only when the round has one)
   private ratSignal: RatSignal | null = null; // the gentle rat's arrow and alarm (only with the magnet and the events)
   private magnet: MagnetView | null = null; // the bracket around each chef's target station (only when the round has the magnet)
+  private paint: { mapId: string; seed: number }; // what rebuildKitchen needs to repaint the background
   private burn: BurnView | null = null; // the oven that burns: warning bubble, flames, extinguisher (only when the round has it)
 
   constructor(
@@ -48,8 +51,9 @@ export class World {
     seed: number,
     private view?: RoundView,
   ) {
-    this.bg = buildBackground(scene, game.grid, mapId, seed, game.rec?.topping, game.rec?.topping2 ?? undefined);
-    if (game.versus && view?.teams) this.tintKitchens(view);
+    this.paint = { mapId, seed };
+    this.bg = buildBackground(scene, paintGrid(game.grid), mapId, seed, game.rec?.topping, game.rec?.topping2 ?? undefined);
+    if (game.versus && view?.teams) this.kitchenTiles = tintKitchens(scene, game, view);
     this.fx = new Fx(scene);
     this.stations = new StationViews(scene, game, this.fx);
     this.hud = new Hud(scene, game, view);
@@ -64,61 +68,26 @@ export class World {
     this.wire(bus);
   }
 
+  /** The kitchen changed shape under the round (the v2 mutation moved stations): the baked background and every station view are made again from the grid as it is now. */
+  private rebuildKitchen() {
+    this.stations.destroy();
+    this.bg.destroy();
+    this.bg = buildBackground(
+      this.scene,
+      paintGrid(this.game.grid),
+      this.paint.mapId,
+      this.paint.seed,
+      this.game.rec?.topping,
+      this.game.rec?.topping2 ?? undefined,
+      false,
+    );
+    this.stations = new StationViews(this.scene, this.game, this.fx);
+  }
+
   private chefOf(id: number) {
     return this.chefs.get(id);
   }
 
-  // Versus: each kitchen's floor takes its team's colour, with the team's glyph big and faint in the middle (colour alone never says whose it is).
-  // The tint is a flat wash plus a stripe of the team's colour along the barrier, so even from the sofa the two halves read as two teams.
-  private tintKitchens(view: RoundView) {
-    const k = this.game.kitchens;
-    if (!k) return;
-    const g = this.scene.add.graphics().setDepth(1);
-    view.teams!.forEach((team, i) => {
-      const region = k.regions[i];
-      const tiles: [number, number][] = [];
-      g.fillStyle(hexNum(team.color), 0.24);
-      k.comp.forEach((row, y) =>
-        row.forEach((c, x) => {
-          if (c !== region) return;
-          g.fillRect(OX + x * TILE, OY + y * TILE, TILE, TILE);
-          tiles.push([x + 0.5, y + 0.5]);
-        }),
-      );
-      this.kitchenTiles[i] = tiles;
-      if (!tiles.length) return;
-      // the glyph sits on the floor tile closest to the middle of the kitchen (never over a counter island)
-      const mx = tiles.reduce((a, t) => a + t[0], 0) / tiles.length,
-        my = tiles.reduce((a, t) => a + t[1], 0) / tiles.length;
-      const [gx, gy] = tiles.reduce((a, t) => (Math.hypot(t[0] - mx, t[1] - my) < Math.hypot(a[0] - mx, a[1] - my) ? t : a));
-      makeText(this.scene, OX + gx * TILE, OY + gy * TILE, team.icon, { size: 150, color: team.color, stroke: 0, depth: 2 }).setAlpha(0.3);
-    });
-    // a stripe along every edge where a kitchen's floor meets something that is not its own floor and not a counter: the barrier
-    const edge = this.scene.add.graphics().setDepth(2);
-    view.teams!.forEach((team, i) => {
-      edge.fillStyle(hexNum(team.color), 0.9);
-      for (const [cx, cy] of this.kitchenTiles[i] ?? []) {
-        const x = Math.floor(cx),
-          y = Math.floor(cy);
-        for (const [dx, dy] of [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ] as const) {
-          const t = this.game.grid[y + dy]?.[x + dx];
-          if (t?.kind !== 'wall') continue; // only the barrier and the outer wall, not the stations
-          const px = OX + x * TILE,
-            py = OY + y * TILE,
-            w = 8;
-          if (dx === 1) edge.fillRect(px + TILE - w, py, w, TILE);
-          else if (dx === -1) edge.fillRect(px, py, w, TILE);
-          else if (dy === 1) edge.fillRect(px, py + TILE - w, TILE, w);
-          else edge.fillRect(px, py, TILE, w);
-        }
-      }
-    });
-  }
   private feet(gp: { x: number; y: number }) {
     return { x: OX + gp.x * TILE, y: OY + (gp.y + 0.3) * TILE };
   }
@@ -126,6 +95,7 @@ export class World {
   private wire(bus: Emitter<GameEvents>) {
     const on = <K extends keyof GameEvents>(k: K, fn: (p: GameEvents[K]) => void) => this.off.push(bus.on(k, fn));
     const g = this.game;
+    on('mutate:apply', (e) => e.id.startsWith('mutation2') && this.rebuildKitchen()); // stations moved: the background is baked, so it is painted again
     on('itemPicked', (e) => this.chefOf(e.player)?.bump());
     on('interactInvalid', (e) => this.chefOf(e.player)?.fail());
     on('dash', (e) => {

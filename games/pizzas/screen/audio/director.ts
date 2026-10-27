@@ -5,6 +5,7 @@ import { LOOKAHEAD_S, TICK_MS, advance, modeFor, newSched, type Snapshot } from 
 import { ACTIONS, type Action, type SfxId } from '@pichi/screen-kit/audio/recipes';
 import { SURFACE_ACTIONS } from './surfaces';
 import { MUTATE_ACTIONS } from './mutate';
+import { MECH_ACTIONS } from './mech';
 import { createChain, playNote, playSfx } from '@pichi/screen-kit/audio/synth';
 
 export interface AudioController {
@@ -90,6 +91,8 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
   for (const type of Object.keys(SURFACE_ACTIONS) as (keyof typeof SURFACE_ACTIONS)[]) bus.on(type, (p) => run(SURFACE_ACTIONS[type](p)));
   for (const type of Object.keys(MUTATE_ACTIONS) as (keyof typeof MUTATE_ACTIONS)[])
     bus.on(type, (p) => run((MUTATE_ACTIONS[type] as (p: unknown) => Action[])(p)));
+  for (const type of Object.keys(MECH_ACTIONS) as (keyof typeof MECH_ACTIONS)[])
+    bus.on(type, (p) => run((MECH_ACTIONS[type] as (p: unknown) => Action[])(p)));
 
   setInterval(() => {
     if (ctx.state !== 'running') return;

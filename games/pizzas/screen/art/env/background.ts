@@ -17,6 +17,7 @@ export function buildBackground(
   seedN: number,
   topping = 2,
   topping2 = 3,
+  surfaces = true, // false when the round already has its SurfaceView (a repaint after the kitchen changed)
 ): Phaser.GameObjects.Image {
   // topping: what the cheese crate holds this round (2 cheese, 3 pepperoni, 4 mushroom)
   const key = `bg_${scene.textures.getTextureKeys().filter((k) => k.startsWith('bg_')).length}_${Date.now() % 100000}`;
@@ -60,7 +61,7 @@ export function buildBackground(
   c.fillStyle = v;
   c.fillRect(0, 0, W, H);
   tex.refresh();
-  addSurfaces(scene, g);
+  if (surfaces) addSurfaces(scene, g);
   return scene.add
     .image(0, 0, key)
     .setOrigin(0, 0)

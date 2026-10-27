@@ -1,4 +1,4 @@
-// Thermal oven (design section 3): each O has a temp 0..1000 that drops 300 for every ingredient put in and when the dish is taken out, recovers 4 a tick, and sets the baking speed to 400 + temp * 6 / 10 permil.
+// Thermal oven (design section 3): each O has a temp 0..1000 that drops 300 for every ingredient put in and when the dish is taken out, recovers 3 a tick, and sets the baking speed to 400 + temp * 6 / 10 permil.
 // The Ola de frío event takes 500 off every oven when it starts. Integers only. Implemented by T1b.
 import type { MechModule } from '../types';
 import { noopHooks } from '../noop';
@@ -9,7 +9,7 @@ import type { Game } from '../../round/state';
 export const HEAT_MAX = 1000;
 export const HEAT_DROP = 300; // loading the oven or taking the dish out
 export const FROST_DROP = 500;
-export const HEAT_RECOVER = 4; // per tick
+export const HEAT_RECOVER = 3; // per tick: a load costs 1.7 s of waiting for the oven to be hot again (4 was gone before anybody saw the thermometer; 2 stalls the 8-chef bot)
 
 interface Prev {
   n: number; // chefs' ingredients in the pot last tick

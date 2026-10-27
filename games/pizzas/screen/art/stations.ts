@@ -404,7 +404,7 @@ export class StationViews {
       v.bar?.root.destroy();
       v.knife?.destroy();
       v.bell?.destroy();
-      v.arrow?.destroy();
+      v.arrow && (this.scene.tweens.killTweensOf(v.arrow), v.arrow.destroy()); // the window's arrow bobs forever: stop its tween with it
       v.ring?.destroy();
       v.glow?.destroy();
       v.rawPizza?.destroy();

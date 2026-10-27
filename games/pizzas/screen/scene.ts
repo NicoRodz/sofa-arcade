@@ -8,6 +8,7 @@ import { buildFoodTextures } from './art/food';
 import { Fx, buildFxTextures } from '@pichi/screen-kit/art/fx';
 import { World } from './art/world';
 import { MutateView } from './art/mutate/mutate-view';
+import { MechViews } from './art/mech/views';
 import type { RoundView } from './art/hud';
 import { buildPuestoIcons, type PuestoView } from './art/puestos';
 import { buildEventTextures } from './art/events';
@@ -55,7 +56,8 @@ export class MainScene extends Phaser.Scene {
       seed,
       view,
     );
-    if (game.mut) new MutateView(this, game, new Fx(this), gameBus); // the kitchen that mutates: banner, alarm outline, flash (self-managed, goes with the round)
+    if (game.mech) new MechViews(this, game); // the map mechanics: their own views and the arts that repaint a layer every frame
+    if (game.mut || game.mech?.ext?.mutation) new MutateView(this, game, new Fx(this), gameBus); // the kitchen that mutates: banner, alarm outline, flash (self-managed, goes with the round)
   }
   endRound() {
     this.world?.destroy();
