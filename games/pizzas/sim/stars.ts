@@ -24,13 +24,16 @@ export const E2: Record<string, Record<Difficulty, number>> = {
   '14': { easy: 290, normal: 320, hard: 290 },
   '15': { easy: 290, normal: 320, hard: 290 },
   // Carta larga (adaptive pacing, richer plates, ~200 points a pizza): normal = 0.6 x what the scripted chefs of tools/carta-larga/measure.ts make per teamFactor on 6 seeds (the
-  // classics' 3 stars sit at 50-60% of that bot); easy / hard = 0.94 x normal as in the rows above, NOT measured. Maps 26-28 stay on the default (the bot cannot play them well enough).
+  // classics' 3 stars sit at 50-60% of that bot); easy / hard = 0.94 x normal as in the rows above, NOT measured. Maps 25-28 (bot with oven claims, hatch relay, sauce pot, casa upgrades and Bandeja; 3 seeds x nMin/mid/nMax) are each difficulty's own 0.6 x median of the bot. 26 is a floor: the bot does not make the Pizza blanca.
   '20': { easy: 1070, normal: 1140, hard: 1070 },
   '21': { easy: 990, normal: 1050, hard: 990 },
   '22': { easy: 880, normal: 940, hard: 880 },
   '23': { easy: 730, normal: 780, hard: 730 },
   '24': { easy: 1020, normal: 1090, hard: 1020 },
-  '25': { easy: 650, normal: 690, hard: 650 },
+  '25': { easy: 730, normal: 1140, hard: 660 },
+  '26': { easy: 280, normal: 400, hard: 520 },
+  '27': { easy: 650, normal: 600, hard: 660 },
+  '28': { easy: 660, normal: 690, hard: 460 },
 };
 // Generated maps ("random") and anything not in the table: a middle row (2 stars, a bit of Margarita).
 export const E2_DEFAULT: Record<Difficulty, number> = { easy: 310, normal: 340, hard: 310 };
