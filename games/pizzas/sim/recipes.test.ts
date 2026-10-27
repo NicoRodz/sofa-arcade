@@ -80,7 +80,7 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
     for (const r of RECIPES)
       expect(recipeBase(r, t)).toBe(RECIPE_DEFS[r].components * t.baseComponent + RECIPE_DEFS[r].processes * t.baseProcess);
   });
-  it('only the calzones add the verb "doblar"; only the topping recipes need the cheese crate (station 3)', () => {
+  it('only the Calzone adds the verb "doblar"; only the topping recipes need the cheese crate (station 3)', () => {
     expect(RECIPES.filter((r) => RECIPE_DEFS[r].fold)).toEqual(['calzone', 'calzonerel']);
     expect(RECIPES.filter((r) => RECIPE_DEFS[r].needs.includes('3'))).toEqual([
       'margarita',
@@ -164,7 +164,7 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
     }
     expect(validateVersus(v4, { requireMirror: false }).errors.filter((e) => /card/i.test(e))).toEqual([]);
   });
-  it('the cards are varied: every recipe shows up, and a map without the cheese crate has Marinara + Calzone', () => {
+  it('the cards are varied: all five recipes show up, and a map without the cheese crate has Marinara + Calzone', () => {
     const all = new Set(Object.values(CARDS).flatMap((c) => c.recipes));
     expect([...all].sort()).toEqual([...RECIPES].sort());
     for (const id of ['1', '2', '3', '4', '5', '6', '7', '8']) expect(cardFor(id)!.recipes).toEqual(['marinara', 'calzone']);

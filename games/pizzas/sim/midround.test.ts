@@ -149,7 +149,7 @@ describe('the schedule: one event per round, between 1:00 and 2:00, announced 3 
       expect([log['event:announce']!.length, log['event:start']!.length, log['event:end']!.length], kind).toEqual([1, 1, 1]); // one event, never two at a time
     }
   });
-  it('the pool: no rat or frost in versus, no inspector on a map with no plates to wash; the rat and the inspector do exist where they can', () => {
+  it('the pool: no rat in versus, no inspector on a map with no plates to wash; the rat and the inspector do exist where they can', () => {
     const coop1 = mk({ map: '1' }).g,
       coop13 = mk({ map: '13' }).g;
     expect(eventPool(coop1)).toEqual(['rush', 'blackout', 'birthday', 'rat']);
