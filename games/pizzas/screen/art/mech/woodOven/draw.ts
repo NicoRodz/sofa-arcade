@@ -46,7 +46,7 @@ export function drawWood(gfx: Phaser.GameObjects.Graphics, g: Game, t: number) {
           .fillTriangle(fx - TILE * 0.04, y + TILE * 0.64, fx + TILE * 0.04, y + TILE * 0.64, fx, y + TILE * 0.64 - hh * 0.6);
       }
     }
-    bar(gfx, x + TILE * 0.82, y + TILE * 0.1, TILE * 0.5, fuel);
+    bar(gfx, x + TILE * 0.76, y + TILE * 0.1, TILE * 0.5, fuel);
   }
   const sq = squeeze.get(g) ?? {};
   squeeze.set(g, sq);

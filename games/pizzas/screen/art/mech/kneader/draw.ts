@@ -40,7 +40,11 @@ export function drawKneaders(gfx: Phaser.GameObjects.Graphics, g: Game, t: numbe
         .strokeEllipse(cx, cy, TILE * 0.54, TILE * 0.36);
     else if (busy) {
       const wob = Math.sin(t / 90) * TILE * 0.02 * (frac > 0 ? 1 : 0);
-      gfx.fillStyle(hexNum(C.dough), 1).fillCircle(cx, cy + wob, TILE * (0.14 + 0.1 * frac));
+      gfx
+        .fillStyle(hexNum(C.dough), 1)
+        .fillCircle(cx, cy + wob, TILE * (0.14 + 0.1 * frac))
+        .lineStyle(3, hexNum(C.crust), 1)
+        .strokeCircle(cx, cy + wob, TILE * (0.14 + 0.1 * frac));
       // the rolling pin sweeps across the ball while somebody works it
       if (frac > 0 && st.hands.some((id) => id > 0)) {
         const px = cx + Math.sin(t / 140) * TILE * 0.22;
