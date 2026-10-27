@@ -60,7 +60,8 @@ export function createView(draw: DrawAvatar, act: Actions, slotColor: () => stri
         h(
           'button',
           { class: 'cr-tab', type: 'button', role: 'tab', 'data-step': s, 'data-ov': '', 'aria-label': TAB_LABEL[s][1] },
-          TAB_LABEL[s][0],
+          h('span', { class: 'ts' }, TAB_LABEL[s][0]),
+          h('span', { class: 'tf' }, TAB_LABEL[s][1]),
         ),
         () => act.step(s),
       ),
@@ -98,7 +99,7 @@ export function createView(draw: DrawAvatar, act: Actions, slotColor: () => stri
     );
   const swatch = (label: string, field: AppearanceField, value: number, color: string) =>
     chip(label, field, value, { class: 'sw', style: `background:${color}` });
-  const px = () => (document.documentElement.clientWidth < 400 || window.innerHeight < 420 ? 44 : 56);
+  const px = () => 56; // drawn once at 56 css px; the chip scales it down on small phones
   const pic = (field: AppearanceField, g: number, size: number) => (value: number) =>
     chip(`${field} ${value + 1}`, field, value, { class: 'pic' }, copy(thumb(draw, field, value, g, size, slotColor())));
   const row = (cls: string, ...kids: Node[]) => h('div', { class: `cr-row ${cls}` }, ...kids);

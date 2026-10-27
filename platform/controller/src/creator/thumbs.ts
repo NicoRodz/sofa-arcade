@@ -25,8 +25,10 @@ export function thumb(
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   c.width = c.height = Math.round(px * dpr);
   const ctx = c.getContext('2d')!;
-  const k = focus === 'full' ? (c.width / 190) * 0.92 : c.width / 100; // the whole figure, or a 100-unit window on the head / back
-  const feetY = focus === 'full' ? c.height - 6 * dpr : focus === 'head' ? 125 * k : 95 * k;
+  // the figure spans y in [-150, 20] around the feet: the whole figure, or a window centred on the head (hats, glasses), the back (cape, wings, backpack) or the torso (clothes)
+  const [win, mid] = focus === 'head' ? [90, 86] : focus === 'back' ? [100, 50] : field === 'cl' ? [82, 52] : [135, 60];
+  const k = c.width / win;
+  const feetY = c.height / 2 + mid * k;
   ctx.setTransform(k, 0, 0, k, c.width / 2, feetY);
   draw(new Canvas2DPainter(ctx), withField(baseLook(gender), field, value), { view: focus === 'back' ? 'back' : 'front', t: 0, slotColor });
   cache.set(key, c);

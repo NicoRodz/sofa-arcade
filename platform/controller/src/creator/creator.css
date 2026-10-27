@@ -17,6 +17,10 @@ body[data-creator=open] :is(#pad, #wait, #choosing, #results, #howto, #remote, #
 #cr-random { grid-area: rand; min-height: 56px; font-size: 17px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
 #cr-tabs { grid-area: tabs; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .cr-tab { font-size: 13px; padding: 0 2px; min-width: 0; }
+#cr-tabs { container-type: inline-size; }
+.cr-tab .tf { display: none; }
+@container (min-width: 350px) { .cr-tab .tf { display: inline; } .cr-tab .ts { display: none; } } /* wide enough for "Accesorios" in every tab */
+@container (min-width: 350px) and (max-width: 430px) { .cr-tab .tf { font-size: 12px; } }
 #cr-opts { grid-area: opts; display: flex; flex-direction: column; justify-content: center; gap: 6px; min-height: 0; }
 .cr-row { display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap; }
 .cr-chip { flex: none; padding: 0; }
@@ -27,7 +31,7 @@ body[data-creator=open] :is(#pad, #wait, #choosing, #results, #howto, #remote, #
 .cr-chip.txt { min-width: 64px; padding: 0 10px; font-size: 14px; }
 .cr-chip.gen { width: var(--gen); height: var(--gen); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 14px; }
 .cr-chip canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
-.cr-chip.gen canvas { width: 62%; height: auto; aspect-ratio: 1; }
+.cr-chip.gen canvas { width: 74%; height: auto; aspect-ratio: 1; }
 #cr-bar { grid-area: bar; display: flex; gap: 6px; }
 #cr-next, #cr-done { min-height: 56px; font-size: 17px; }
 #cr-next { flex: 0 0 auto; padding: 0 12px; display: none; }
@@ -47,11 +51,11 @@ body[data-cr-edit=on] #cr-edit { display: inline-block; }
 @media (max-height: 440px) { #cr-edit { font-size: 15px; padding: 4px 12px; } }
 
 @media (orientation: portrait) {
-  #creator { --chip: 44px; --sw: 48px; --pic: 64px; --gen: min(100px, 28vw);
+  #creator { --chip: clamp(44px, calc((100vw - 52px) / 6), 56px); --sw: 48px; --pic: 64px; --gen: min(100px, 28vw);
     grid-template: "prev prev" minmax(0, 1fr) "tabs tabs" 44px "opts opts" auto "rand bar" 56px / minmax(0, 5fr) minmax(0, 7fr); padding-left: max(10px, var(--sl)); padding-right: max(10px, var(--sr)); }
-  @media (max-height: 700px) { body[data-cr-edit=on][data-view=lobby] #wait #game { display: none; } } /* short phones: the game name gives way too */
+  @media (max-height: 700px) { body[data-cr-edit=on][data-view=lobby] #wait #game { display: none; } } /* short phones: the game name gives way... */
+  @media (max-height: 899px) { body[data-cr-edit=on][data-view=lobby] #wait .brand { display: none; } } /* ...and the logo too, except on tall phones (>= 900 px, where it fits with the extra button; at 390x844 with a wide system font it does not) */
   #cr-opts { min-height: 150px; }
-  body[data-cr-edit=on][data-view=lobby] #wait .brand { display: none; } /* the extra button costs a row: the logo gives way (as it already does in the landscape versus lobby) */
   #creator[data-screen=confirm] { grid-template: "prev prev" minmax(0, 1fr) "ask ask" auto / 1fr 1fr; }
   #creator[data-screen=confirm] #cr-ask { grid-area: ask; }
 }
