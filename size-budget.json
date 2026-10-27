@@ -26,7 +26,7 @@
   "games/pizzas/screen/art/sabotage.ts": { "max": 390, "until": "2027-03-31" },
   "games/pizzas/screen/art/stations.ts": { "max": 421, "until": "2027-03-31" },
   "games/pizzas/screen/art/versus-hud.ts": { "max": 451, "until": "2027-03-31" },
-  "games/pizzas/screen/art/world.ts": { "max": 392, "until": "2027-03-31" },
+  "games/pizzas/screen/art/world.ts": { "max": 391, "until": "2027-03-31" },
   "games/pizzas/sim/assist.test.ts": { "max": 560, "until": "2027-03-31" },
   "games/pizzas/sim/feel/human-bot.ts": { "max": 435, "until": "2027-03-31" },
   "games/pizzas/sim/midround.test.ts": { "max": 508, "until": "2027-03-31" },
