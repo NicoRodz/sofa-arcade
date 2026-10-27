@@ -27,6 +27,7 @@ export function recipeParts(s: Phaser.Scene, recipe: Recipe): Phaser.GameObjects
     .setAngle(-65);
   const flames = (calzone ? [-17, -1] : [-9]).map((x) => place(s, 'flame_1', x, 41, 1).setScale((calzone ? 0.3 : 0.34) / R));
   const fold = calzone ? place(s, foodKey('glyph_fold'), 53, 73, 1).setScale(0.34 / R) : null;
-  const name = makeText(s, -27, 81, RECIPE_DEFS[recipe].name.toUpperCase(), { size: 12, color: C.cream, stroke: 4, depth: 0 });
+  const name = makeText(s, 0, 80, RECIPE_DEFS[recipe].name.toUpperCase(), { size: 12, color: C.cream, stroke: 4, depth: 0 });
+  if (name.displayWidth > 108) name.setScale((name.scaleX * 108) / name.displayWidth); // a long name ("CALZONE RELLENO") shrinks to stay inside its ticket
   return [pizza, dough, tomato, ...(topping ? [topping] : []), knife, ...flames, ...(fold ? [fold] : []), name];
 }
