@@ -3,7 +3,7 @@
 import { chefOf } from '../art/tokens';
 import { assistBadgeCanvas, chefCanvas } from '../art/chef';
 import { $ } from '../ui/dom';
-import { app } from '../shell/app-state';
+import { app, services } from '../shell/app-state';
 import { avatarCanvas, avatarKey, replay } from './chip-avatar';
 
 export interface Chip {
@@ -74,7 +74,10 @@ export function renderChips() {
       c.who = info.id;
       c.making = making;
       replay(c.el, 'pop');
-    } else if (c.making && !making) replay(c.av, 'hop'); // "Listo": a little jump
+    } else if (c.making && !making) {
+      replay(c.av, 'hop'); // "Listo": a little jump and a short tone (the screen's own audio)
+      services.ui('plink');
+    }
     c.making = making;
     const helper = !!info.assist,
       badge = c.av.querySelector('.hbadge');
