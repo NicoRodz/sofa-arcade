@@ -37,7 +37,7 @@
   "games/pizzas/sim/versus/versus.slow.test.ts": { "max": 835, "until": "2027-03-31" },
   "platform/core/src/lobby/vote.test.ts": { "max": 670, "until": "2027-03-31" },
   "platform/core/src/lobby/vote.ts": { "max": 369, "until": "2027-03-31" },
-  "platform/core/src/protocol.ts": { "max": 565, "until": "2027-03-31" },
+  "platform/core/src/protocol.ts": { "max": 516, "until": "2027-03-31" },
   "platform/screen/src/audio/recipes.ts": { "max": 497, "until": "2027-03-31" },
   "scripts/move.ts": { "max": 328, "until": "2027-03-31" },
   "tools/camp-e2e.ts": { "max": 430, "until": "2027-03-31" },

@@ -16,14 +16,26 @@ import { DEFAULT_MAP, isMapChoice, type MapChoice } from '@pichi/game-pizzas/sim
 import { isIconId, type IconId } from './icons';
 import { PUESTO_IDS, isPuestoId, type PuestoId } from '@pichi/game-pizzas/sim/puestos';
 import { MAX_TEAMS, teamOf, type TeamInfo } from './lobby/teams';
+import { MAX_PLAYERS, intIn, num, parseModeOptions, parsePhoneResult, parseTeams, text, type ModeOptions } from './lobby/parse';
+import {
+  parseMenuAct,
+  parseMenuErr,
+  parseMenuSnapshot,
+  parseCaps,
+  type MenuActBody,
+  type MenuErrBody,
+  type MenuSnapshot,
+} from './lobby/menu';
 import { isNavKey, type NavKey } from './lobby/captain';
 import { isVersusChoice, type VersusChoice } from '@pichi/game-pizzas/sim/versus/maps';
 import { SIGNAL_KINDS, type SignalKind } from '@pichi/game-obstaculos/sim/campaign';
-import type { PhoneResult, Verdict } from '@pichi/game-pizzas/sim/versus/report';
+import type { PhoneResult } from '@pichi/game-pizzas/sim/versus/report';
 
 export { ROUND_MS } from './difficulty';
 export type { SignalKind } from '@pichi/game-obstaculos/sim/campaign';
 export { MAX_TEAMS, type TeamInfo } from './lobby/teams';
+export { MAX_PLAYERS, parseModeOptions, parsePhoneResult, parseTeams, type ModeOptions } from './lobby/parse';
+export * from './lobby/menu';
 export {
   KEYBOARD_QUIET_MS,
   NAV_KEYS,
@@ -50,7 +62,6 @@ export const DEFAULT_ROOM = 'main';
 export const INPUT_HZ = 30;
 export const PING_MS = 1000;
 export const DEADZONE = 0.15;
-export const MAX_PLAYERS = 8;
 export const BUTTON_COUNT = 2; // btn bitmask: bit 0 = A, bit 1 = B
 export const SLOT_GRACE_MS = 60_000; // a dropped phone keeps its slot this long
 export const ROOM_CODE_LEN = 4;
@@ -91,7 +102,6 @@ export interface PuestoMsg {
   assign: PuestoAssign[];
 }
 // How a round starts (sent with phase 'playing'): the lobby choices frozen. modeOptions is opaque here: each game types its own.
-export type ModeOptions = Record<string, boolean | number | string>;
 export interface MatchStart {
   gameId: GameId;
   modeId: ModeId;
@@ -189,7 +199,7 @@ export interface SchoolMsg {
 }
 
 export type ClientMsg =
-  | { t: 'join'; name: string; token: string }
+  | { t: 'join'; name: string; token: string; caps?: string[] } // caps: what this phone can draw (MENU_CAP); absent on an older phone
   | ({ t: 'input' } & InputState)
   | { t: 'ping'; id: number; t0: number; rtt?: number; off?: number }
   | ({ t: 'phase' } & PhaseInfo) // screen only
@@ -201,7 +211,10 @@ export type ClientMsg =
   | { t: 'assist'; on: boolean } // phone: switch Ayudante on or off for this player (lobby only; the relay keeps it with the player's slot)
   | ({ t: 'school'; playerId: number } & SchoolMsg) // screen only: the step and instruction of that chef in the Cocina escuela
   | { t: 'schoolDone'; skip?: true } // phone: this player already did the school (skip: just pressed "Saltar" during it); the relay keeps it with the slot
-  | { t: 'nav'; key: NavKey }; // phone: a D-pad button (only the Captain's is forwarded; the relay stamps who sent it)
+  | { t: 'nav'; key: NavKey } // phone: a D-pad button (only the Captain's is forwarded; the relay stamps who sent it)
+  | ({ t: 'menu' } & MenuSnapshot) // screen only: the lobby as a form (the relay hands it to the Captain alone)
+  | ({ t: 'menuErr' } & MenuErrBody) // screen only: the last act was refused (Captain only)
+  | ({ t: 'menuAct' } & MenuActBody); // phone: the Captain's touch (only the Captain's is forwarded; the relay stamps who sent it)
 
 export type ServerMsg =
   | { t: 'joined'; player: PublicPlayer; room: string; v: number }
@@ -224,9 +237,11 @@ export type ServerMsg =
   | ({ t: 'school' } & SchoolMsg) // to one phone: its step in the Cocina escuela
   | { t: 'schoolDone'; playerId: number; skip?: true } // to the screens: this phone knows the school (skip: it pressed "Saltar" now, the chef is done)
   | { t: 'captain'; playerId: number | null } // to everyone: who holds the crown now (null: nobody is connected)
+  | ({ t: 'menu' } & MenuSnapshot) // to the Captain's phone only, when it announced MENU_CAP
+  | ({ t: 'menuErr' } & MenuErrBody) // to the Captain's phone only
+  | ({ t: 'menuAct'; from: number } & MenuActBody) // to the screens: the Captain touched the menu. `from` is stamped by the relay, like nav's
   | { t: 'nav'; from: number; key: NavKey }; // to the screens: the Captain's phone pressed this. `from` is set by the relay from the socket, never taken from the payload
 
-const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 
 const parsePuestoIds = (v: unknown, max = 4): PuestoId[] | null =>
@@ -251,86 +266,6 @@ function parsePuestoMsg(v: any): PuestoMsg | null {
   return { cheese: v.cheese, sink: v.sink, assign };
 }
 
-const HEX = /^#[0-9a-fA-F]{6}$/;
-const intIn = (v: unknown, lo: number, hi: number): v is number => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
-const text = (v: unknown, max: number): v is string => typeof v === 'string' && v.length > 0 && v.length <= max;
-
-// null = no teams. undefined = malformed (the whole message is refused).
-export function parseTeams(v: unknown): TeamInfo[] | null | undefined {
-  if (v === null || v === undefined) return null;
-  if (!Array.isArray(v) || v.length < 1 || v.length > MAX_TEAMS) return undefined;
-  const out: TeamInfo[] = [];
-  const seenIds = new Set<number>(),
-    seenPlayers = new Set<number>();
-  for (const t of v) {
-    if (
-      !t ||
-      typeof t !== 'object' ||
-      !intIn(t.id, 0, MAX_TEAMS - 1) ||
-      seenIds.has(t.id) ||
-      !text(t.name, 16) ||
-      typeof t.color !== 'string' ||
-      !HEX.test(t.color) ||
-      !text(t.icon, 4)
-    )
-      return undefined;
-    if (t.side !== undefined && !text(t.side, 16)) return undefined;
-    if (
-      !Array.isArray(t.playerIds) ||
-      t.playerIds.length > MAX_PLAYERS ||
-      !t.playerIds.every((id: unknown) => intIn(id, 0, 2 ** 31) && !seenPlayers.has(id as number) && seenPlayers.add(id as number))
-    )
-      return undefined;
-    seenIds.add(t.id);
-    out.push({
-      id: t.id,
-      name: t.name,
-      color: t.color,
-      icon: t.icon,
-      ...(t.side !== undefined ? { side: t.side } : {}),
-      playerIds: [...t.playerIds],
-    });
-  }
-  return out;
-}
-
-const VERDICTS: readonly Verdict[] = ['win', 'draw', 'nowinner', 'aborted'];
-export function parsePhoneResult(v: any): PhoneResult | null {
-  if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict) || !(v.winner === null || intIn(v.winner, 0, MAX_TEAMS - 1)))
-    return null;
-  if (
-    !Array.isArray(v.scores) ||
-    v.scores.length < 1 ||
-    v.scores.length > MAX_TEAMS ||
-    !v.scores.every((x: any) => x && intIn(x.team, 0, MAX_TEAMS - 1) && num(x.score))
-  )
-    return null;
-  if (v.verdict === 'win' ? v.winner === null : v.winner !== null) return null; // a win names its team; no other verdict does
-  return {
-    verdict: v.verdict,
-    winner: v.winner,
-    scores: v.scores.map((x: { team: number; score: number }) => ({ team: x.team, score: x.score })),
-  };
-}
-
-export function parseModeOptions(v: unknown): ModeOptions | undefined {
-  if (v === undefined || v === null) return {};
-  if (typeof v !== 'object' || Array.isArray(v)) return undefined;
-  const entries = Object.entries(v);
-  if (entries.length > 8) return undefined;
-  const out: ModeOptions = {};
-  for (const [k, x] of entries) {
-    if (
-      !text(k, 32) ||
-      k === '__proto__' ||
-      !(typeof x === 'boolean' || (typeof x === 'number' && Number.isFinite(x)) || (typeof x === 'string' && x.length <= 32))
-    )
-      return undefined;
-    out[k] = x;
-  }
-  return out;
-}
-
 export function parseClientMessage(raw: string): ClientMsg | null {
   let m: any;
   try {
@@ -342,7 +277,12 @@ export function parseClientMessage(raw: string): ClientMsg | null {
   switch (m.t) {
     case 'join':
       if (typeof m.name !== 'string' || typeof m.token !== 'string' || !m.token) return null;
-      return { t: 'join', name: m.name.trim().slice(0, 16) || 'Player', token: m.token.slice(0, 64) };
+      return {
+        t: 'join',
+        name: m.name.trim().slice(0, 16) || 'Player',
+        token: m.token.slice(0, 64),
+        ...(m.caps !== undefined ? { caps: parseCaps(m.caps) } : {}),
+      };
     case 'input': {
       if (!num(m.seq) || !num(m.x) || !num(m.y) || !num(m.btn) || !num(m.ts)) return null;
       if (!Array.isArray(m.presses) || !m.presses.every(num)) return null;
@@ -456,6 +396,18 @@ export function parseClientMessage(raw: string): ClientMsg | null {
         ...(m.btn ? { btn: m.btn } : {}),
         ...(m.done === true ? { done: true as const } : {}),
       };
+    }
+    case 'menu': {
+      const v = parseMenuSnapshot(m);
+      return v ? { t: 'menu', ...v } : null;
+    }
+    case 'menuErr': {
+      const v = parseMenuErr(m);
+      return v ? { t: 'menuErr', ...v } : null;
+    }
+    case 'menuAct': {
+      const v = parseMenuAct(m);
+      return v ? { t: 'menuAct', ...v } : null;
     }
     case 'nav':
       return isNavKey(m.key) ? { t: 'nav', key: m.key } : null; // anything else in the payload (a fake `from`) is dropped here
