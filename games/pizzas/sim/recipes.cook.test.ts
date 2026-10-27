@@ -52,6 +52,7 @@ describe('a scripted chef cooks each recipe of the card from the raw ingredients
     ['champinon', '10'],
     ['pepqueso', '20'],
     ['jamchamp', '21'],
+    ['pepqueso', '22'],
     ['margarita', '20'],
   ];
   for (const [recipe, map] of cases) {

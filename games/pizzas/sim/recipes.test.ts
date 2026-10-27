@@ -118,7 +118,7 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
     expect(cardFor('11-vs')).toBe(cardFor('11'));
     expect(cardFor('whatever')).toBeUndefined();
     expect(cardFor(undefined)).toBeUndefined();
-    expect(Object.keys(CARDS)).toHaveLength(22);
+    expect(Object.keys(CARDS)).toHaveLength(23);
   });
   it('every card has the right shape, and a card with a topping recipe sits on a map with the cheese crate', () => {
     for (const [id, card] of Object.entries(CARDS)) {
