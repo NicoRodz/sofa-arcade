@@ -67,6 +67,14 @@ export function onMessage(m: ServerMsg) {
     case 'player_removed':
       remove(m.playerId);
       break;
+    case 'appearance': {
+      const p = app.players.get(m.playerId);
+      if (p) {
+        p.info = { ...p.info, ap: m.ap, customizing: m.customizing };
+        renderUi();
+      }
+      break;
+    }
     case 'captain':
       app.captainId = m.playerId;
       renderUi();

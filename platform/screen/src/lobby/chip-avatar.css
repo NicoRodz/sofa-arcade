@@ -1,0 +1,8 @@
+/* Chip states while a phone is in the character creator (plan creador-personajes §4). */
+.chip .av.puff::after { content: ''; position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: radial-gradient(circle, #fff 0 40%, rgba(255,255,255,.0) 70%); pointer-events: none; animation: avpuff .35s ease-out; }
+@keyframes avpuff { from { transform: scale(.3); opacity: 1; } to { transform: scale(3.2); opacity: 0; } }
+.chip .av.hop { animation: avhop .5s cubic-bezier(.3,1.6,.5,1); }
+@keyframes avhop { 0% { transform: translateY(0); } 35% { transform: translateY(-16px) scaleY(1.05); } 100% { transform: none; } }
+.chip.making .sub { color: #8A5A00; font-style: italic; font-size: 15px; white-space: nowrap; }
+.chip .sub .pen { display: inline-block; margin-right: 4px; animation: avpen .5s ease-in-out infinite alternate; transform-origin: 20% 90%; }
+@keyframes avpen { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
