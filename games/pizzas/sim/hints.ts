@@ -10,7 +10,7 @@ import { floorItemNear } from './round/hazards';
 import type { Game, Item, Player, Station } from './round/state';
 import { isAiming, sabotageHint } from './sabotage';
 import { RAW_OF, cutType, isDish } from './recipes/defs';
-import { canFold } from './recipes/sim';
+import { canFold, potCapacity } from './recipes/sim';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
 const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón', 'Jamón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
@@ -63,7 +63,7 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
     case 'pot': {
       const t = cutType(p.item);
       if (t >= 0)
-        return !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < 3
+        return !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < potCapacity(g)
           ? on('Al horno', 'oven')
           : off(s.done ? 'Aún no listo' : 'Ya lleva eso', 'oven');
       if (p.item === 'plate') return s.done ? on(s.burnt ? 'Sacar quemada' : 'Sacar pizza', 'oven') : off('Aún no listo', 'oven'); // burn: a burnt pizza comes out too, to go to the bin

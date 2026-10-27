@@ -1,7 +1,7 @@
 // A at a station: what each kind does with what the chef carries (the oven included), the cooking clock, plus the plates that come back dirty and the pantry that refills.
 import { tag, type Game, type Player, type Station } from './state';
 import { PANTRY_EVERY_MS, PANTRY_MAX } from '../versus/versus';
-import { cookMsOf, crateItem } from '../recipes/sim';
+import { cookMsOf, crateItem, potCapacity } from '../recipes/sim';
 import { cutOf, cutType, dishFor, isDish } from '../recipes/defs';
 import { sabotageBinned, sabotageLoad, sabotageTakeBag } from '../sabotage';
 import { DIRTY_MS } from '@pichi/core/difficulty';
@@ -119,7 +119,7 @@ const baked = (s: Station) => s.inputs.includes(0) && s.inputs.includes(1);
 // A at an oven: a cut ingredient goes in, or a plate takes the ready pizza out.
 export function interactPot(g: Game, p: Player, s: Station) {
   const t = cutType(p.item);
-  if (t >= 0 && !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < (g.rec?.topping2 == null ? 3 : 4)) {
+  if (t >= 0 && !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < potCapacity(g)) {
     s.inputs.push(t);
     if (!baked(s)) s.progress = 0;
     p.item = null;

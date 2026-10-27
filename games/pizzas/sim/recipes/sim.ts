@@ -10,6 +10,8 @@ import { cardFor, type Card } from './cards';
 import {
   CALZONE_COOK_MULT,
   FOLD_MS,
+  STUFFED_COOK_MULT,
+  STUFFED_FOLD_MS,
   RAW_OF,
   RECIPE_DEFS,
   SLICE_MULT,
@@ -83,7 +85,7 @@ export function pickOrder(g: Game, orders: readonly Order[], item: Item): number
     return at;
   }
   const own = dishRecipe(item);
-  const topped = item !== 'dish' && item !== 'dishC';
+  const topped = item !== 'dish' && item !== 'dishC' && item !== 'dishCR';
   const fits = (o: Order) => o.recipe === own || (topped && o.recipe === 'marinara');
   let at = orders.findIndex((o) => o.vip && fits(o));
   if (at < 0) at = orders.findIndex((o) => o.birthday && fits(o));
@@ -95,18 +97,22 @@ export function pickOrder(g: Game, orders: readonly Order[], item: Item): number
 // --- the calzone: fold at the oven -------------------------------------------------------------------------------------------------------------------
 /** Can this oven be folded now: a card with a calzone, dough and tomato loaded and cooking (nothing else in it, nothing done), not on fire. */
 export const canFold = (g: Game, s: Station): boolean =>
-  !!g.rec?.recipes.includes('calzone') &&
   s.kind === 'pot' &&
   s.fire === undefined &&
   !s.done &&
   !s.folded &&
-  s.inputs.length === 2 &&
-  s.inputs.includes(0) &&
-  s.inputs.includes(1);
+  ((!!g.rec?.recipes.includes('calzone') && s.inputs.length === 2 && s.inputs.includes(0) && s.inputs.includes(1)) || isStuffed(g, s)); // a plain calzone (dough and tomato) or, on a card with it, the stuffed one (cheese and ham as well)
+
+/** Dough, tomato, cheese and ham in the oven of a card with the stuffed calzone. */
+export const isStuffed = (g: Game, s: Station): boolean =>
+  !!g.rec?.recipes.includes('calzonerel') && s.inputs.length === 4 && [0, 1, 2, 5].every((t) => s.inputs.includes(t));
+
+/** How many ingredients an oven takes: dough, tomato and a topping; four on a map with a second topping crate. */
+export const potCapacity = (g: Pick<Game, 'rec'>): number => (g.rec?.topping2 == null ? 3 : 4);
 
 /** `dtMs` more of Picar folding the pot; at FOLD_MS the calzone is folded (it keeps cooking, longer). */
 export function foldStep(g: Game, playerId: number, s: Station, dtMs: number) {
-  s.fold = (s.fold ?? 0) + dtMs / FOLD_MS;
+  s.fold = (s.fold ?? 0) + dtMs / (isStuffed(g, s) ? STUFFED_FOLD_MS : FOLD_MS);
   if (s.fold < 1) return;
   delete s.fold;
   s.folded = true;
@@ -115,6 +121,10 @@ export function foldStep(g: Game, playerId: number, s: Station, dtMs: number) {
 
 /** Milliseconds a full bake of this pot takes: a folded calzone bakes CALZONE_COOK_MULT times longer. */
 export const cookMsOf = (g: Game, s: Station): number =>
-  s.folded ? g.params.cookMs * CALZONE_COOK_MULT : s.inputs.length === 4 ? g.params.cookMs * TWO_TOPPINGS_COOK_MULT : g.params.cookMs;
+  s.folded
+    ? g.params.cookMs * (s.inputs.length === 4 ? STUFFED_COOK_MULT : CALZONE_COOK_MULT)
+    : s.inputs.length === 4
+      ? g.params.cookMs * TWO_TOPPINGS_COOK_MULT
+      : g.params.cookMs;
 /** Milliseconds of Picar a raw item takes on the board: the pepperoni slices take SLICE_MULT times longer. */
 export const cutMsOf = (g: Game, item: Item | null): number => (item === 'raw3' ? g.params.cutMs * SLICE_MULT : g.params.cutMs);

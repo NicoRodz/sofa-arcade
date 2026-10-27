@@ -18,7 +18,8 @@ const M: Recipe = 'marinara',
   Q: Recipe = 'margarita',
   PQ: Recipe = 'pepqueso',
   JM: Recipe = 'jamchamp',
-  MF: Recipe = 'margfresca';
+  MF: Recipe = 'margfresca',
+  CR: Recipe = 'calzonerel';
 export const CARDS: Readonly<Record<string, Card>> = {
   '1': { recipes: [M, C] },
   '2': { recipes: [M, C] },
@@ -39,6 +40,7 @@ export const CARDS: Readonly<Record<string, Card>> = {
   '21': { recipes: [M, H, JM], bind: [5, 4] }, // Carta larga 3: ham on crate 3, mushroom on crate 4
   '22': { recipes: [M, PQ, C], bind: [2, 3] }, // Carta larga 4
   '23': { recipes: [M, Q, H], bind: [2, 4] }, // Carta larga 2: cheese on crate 3, mushroom on crate 4
+  '24': { recipes: [M, MF, CR], bind: [2, 5] }, // Carta larga 7: cheese on crate 3, ham on crate 4, basil on 5
   V1: { recipes: [M, P, C] },
   V2: { recipes: [M, H, C] },
   V3: { recipes: [M, Q, C] },

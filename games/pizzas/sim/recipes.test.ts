@@ -73,14 +73,15 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
       ['pepqueso', 140], // two toppings: four ingredients and six processes
       ['jamchamp', 140],
       ['margfresca', 130], // a Margarita and basil: one more ingredient and one more process
+      ['calzonerel', 190],
     ]);
     expect(RECIPE_PARTS.marinara).toEqual({ components: 2, processes: 3 });
     expect(RECIPE_PARTS.margarita).toEqual({ components: 3, processes: 4 });
     for (const r of RECIPES)
       expect(recipeBase(r, t)).toBe(RECIPE_DEFS[r].components * t.baseComponent + RECIPE_DEFS[r].processes * t.baseProcess);
   });
-  it('only the Calzone adds the verb "doblar"; only the topping recipes need the cheese crate (station 3)', () => {
-    expect(RECIPES.filter((r) => RECIPE_DEFS[r].fold)).toEqual(['calzone']);
+  it('only the calzones add the verb "doblar"; only the topping recipes need the cheese crate (station 3)', () => {
+    expect(RECIPES.filter((r) => RECIPE_DEFS[r].fold)).toEqual(['calzone', 'calzonerel']);
     expect(RECIPES.filter((r) => RECIPE_DEFS[r].needs.includes('3'))).toEqual([
       'margarita',
       'pepperoni',
@@ -88,6 +89,7 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
       'pepqueso',
       'jamchamp',
       'margfresca',
+      'calzonerel',
     ]);
   });
   it('items: raw<N> is cut into cut<N>; a plate says which recipe it holds', () => {
@@ -120,7 +122,7 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
     expect(cardFor('11-vs')).toBe(cardFor('11'));
     expect(cardFor('whatever')).toBeUndefined();
     expect(cardFor(undefined)).toBeUndefined();
-    expect(Object.keys(CARDS)).toHaveLength(24);
+    expect(Object.keys(CARDS)).toHaveLength(25);
   });
   it('every card has the right shape, and a card with a topping recipe sits on a map with the cheese crate', () => {
     for (const [id, card] of Object.entries(CARDS)) {

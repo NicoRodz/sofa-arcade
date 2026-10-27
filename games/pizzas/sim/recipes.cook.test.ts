@@ -55,6 +55,7 @@ describe('a scripted chef cooks each recipe of the card from the raw ingredients
     ['pepqueso', '22'],
     ['margarita', '23'],
     ['margfresca', '20'],
+    ['calzonerel', '24'],
     ['margarita', '20'],
   ];
   for (const [recipe, map] of cases) {
@@ -69,7 +70,7 @@ describe('a scripted chef cooks each recipe of the card from the raw ingredients
       expect(r.held.has('raw2') && !tops.includes(2)).toBe(false); // no cheese in a round whose topping is another one
       if (RECIPE_DEFS[recipe].fold) expect(r.folds.length, 'the oven was folded').toBeGreaterThanOrEqual(r.delivered.length);
       else expect(r.folds).toHaveLength(0);
-      const dishes = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC', 'dishPQ', 'dishJM', 'dishQB'].filter((i) => r.held.has(i));
+      const dishes = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC', 'dishPQ', 'dishJM', 'dishQB', 'dishCR'].filter((i) => r.held.has(i));
       if (recipe === 'margfresca') expect(r.held.has('dishQB'), 'the basil went onto the plate').toBe(true);
       expect(dishes.filter((d) => d !== 'dishQB')).toEqual([
         (
@@ -81,6 +82,7 @@ describe('a scripted chef cooks each recipe of the card from the raw ingredients
             calzone: 'dishC',
             pepqueso: 'dishPQ',
             jamchamp: 'dishJM',
+            calzonerel: 'dishCR',
             margfresca: 'dishQ', // the Margarita comes out of the oven first; the basil turns it into dishQB (checked below)
           } as Record<string, string>
         )[recipe],
