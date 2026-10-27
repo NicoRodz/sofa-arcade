@@ -15,10 +15,10 @@ describe('game.mech', () => {
   it('exists only with a flag; flags.mech lists every id', () => {
     expect('mech' in createGame({})).toBe(false);
     expect('mech' in createGame({ mech: {} })).toBe(false);
-    const g = createGame({ mech: { heavyTray: true } }); // a flag whose module keeps no state of its own (T2 is still a stub)
+    const g = createGame({ mech: { heavyTray: true } }); // the tray slice is its only state
     expect(g.flags!.mech.heavyTray).toBe(true);
     expect(Object.values(g.flags!.mech).filter(Boolean)).toHaveLength(1);
-    expect(g.mech).toEqual({ hash: 0 });
+    expect(g.mech).toMatchObject({ hash: 0, tray: { carrier: null, helper: null } });
   });
   it('the hash follows what the modules report, and is refreshed every tick', () => {
     const g = createGame({ mech: { gate: true } });

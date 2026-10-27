@@ -43,6 +43,18 @@ export function mechInteract(g: Game, p: Player, c: Controls, target: Station | 
   for (const m of active(g)) used = m.onInteract(g, p, c, target, dtMs) || used;
   return used;
 }
+/** The controls a chef's step sees: every module may rewrite them in turn (heavy tray). */
+export function mechControls(g: Game, p: Player, c: Controls): Controls {
+  let out = c;
+  for (const m of active(g)) out = m.controls(g, p, out);
+  return out;
+}
+/** Do these two chefs pass through each other (the coupled pair of the heavy tray)? */
+export function mechNoCollide(g: Game, a: Player, b: Player): boolean {
+  let no = false;
+  for (const m of active(g)) no = m.noCollide(g, a, b) || no;
+  return no;
+}
 export function mechOvenRate(g: Game, s: Station): number {
   let rate = 1000;
   for (const m of active(g)) rate = Math.trunc((rate * m.ovenRate(g, s)) / 1000);

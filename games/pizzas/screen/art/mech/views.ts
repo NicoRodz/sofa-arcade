@@ -10,7 +10,7 @@ import { OvenHeatView } from './ovenHeat/draw';
 import { MECH_ART } from './registry';
 import type { Draw } from './layer';
 
-const SELF_MANAGED = new Set<MechId>(['gate', 'beltReverse', 'ovenHeat', 'heavyTray']); // views of their own (heavyTray has no art yet)
+const SELF_MANAGED = new Set<MechId>(['gate', 'beltReverse', 'ovenHeat']); // views of their own
 
 /** The grid the background paints: a raft or a bridge tile is water there (the art draws the planks and the logs over it, and a broken or departed one shows water). */
 export const paintGrid = (g: Grid): Grid =>

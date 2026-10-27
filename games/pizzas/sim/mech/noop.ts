@@ -15,4 +15,6 @@ export const noopHooks: Omit<MechModule, 'id' | 'tanda' | 'validate' | 'stamp'> 
   hashExtra: () => [],
   ovenRate: () => 1000,
   onFire: () => {},
+  controls: (_g, _p, c) => c,
+  noCollide: () => false,
 };

@@ -7,11 +7,12 @@ import { applyChop, cuttableAt, updateChop } from './chop';
 import { faceStation as magnetFace, magnetPull } from '../feel/magnet';
 import { unit, walk } from './movement';
 import { act } from './stations';
-import { mechClaimsB, mechInteract } from '../mech/loop';
+import { mechClaimsB, mechControls, mechInteract } from '../mech/loop';
 
 // One chef's tick, in this order: slipping or aiming take its control away; otherwise the target, the B edge, Picar (chop, wash, douse, fold),
 // the dash, walking and finally the A presses.
-export function stepChef(g: Game, p: Player, c: Controls, dt: number, dtMs: number) {
+export function stepChef(g: Game, p: Player, raw: Controls, dt: number, dtMs: number) {
+  const c = g.mech ? mechControls(g, p, raw) : raw; // the heavy tray: a slowed carrier, a coupled pair (mech/heavyTray)
   if (g.hazards && p.slip) {
     slipStep(g, p, c, dtMs);
     return;

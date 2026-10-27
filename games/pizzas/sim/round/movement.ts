@@ -2,7 +2,7 @@
 import { RADIUS, SPEED, TICK_MS, isSolid, type Controls, type Game, type Player } from './state';
 import { magnetHug } from '../feel/magnet';
 import { beltPush, iceTau } from '../surfaces/physics';
-import { mechCanMove, mechFriction } from '../mech/loop';
+import { mechCanMove, mechFriction, mechNoCollide } from '../mech/loop';
 
 // R1: one integrator for the chef's velocity, v += (target - v) * (1 - e^(-dt/tau)). tau = 0 is "instant" (the old feel).
 function steer(p: Player, c: Controls, g: Game, dtMs: number) {
@@ -67,6 +67,7 @@ export function separate(g: Game, controls: Map<number, Controls>, dtMs: number)
     for (let j = i + 1; j < list.length; j++) {
       const a = list[i]!,
         b = list[j]!;
+      if (g.mech && mechNoCollide(g, a, b)) continue; // the helper of the heavy tray goes through its carrier
       const key = a.id < b.id ? `${a.id}:${b.id}` : `${b.id}:${a.id}`;
       let st = g.crowd.get(key);
       const dx = a.x - b.x,

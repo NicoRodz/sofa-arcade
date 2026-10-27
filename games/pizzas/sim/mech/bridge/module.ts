@@ -1,9 +1,10 @@
 // Fragile bridge (design section 3, "Puente b"): a floor tile over water. Each time a chef steps onto it the bridge wears by 1; from 4 it shows cracks; at 6 it breaks the moment it is empty,
-// turns into water for 1200 ticks and mends itself. A broken bridge is a wall. (The heavy tray of T2 will count 3 per step: it calls `wear`.) Implemented by T1c.
+// turns into water for 1200 ticks and mends itself. A broken bridge is a wall. (The heavy tray of T2 counts 3 per step through `wear`.) Implemented by T1c.
 import type { MechModule } from '../types';
 import { noopHooks } from '../noop';
 import type { Game } from '../../round/state';
 import { emitMech } from '../kneader/call';
+import { BRIDGE_WEAR, carriesHeavy } from '../heavyTray/state';
 import { bridgeValidate } from '../../validate/mech/bridge';
 import { bridgeStamp } from '../../gen/stamps/bridge';
 
@@ -52,7 +53,7 @@ export const bridgeModule: MechModule = {
       if (p.ghost) continue;
       const idx = Math.floor(p.y) * 16 + Math.floor(p.x);
       occupied.add(idx);
-      if (bridges[idx] && e.last[p.id] !== idx) wear(g, idx);
+      if (bridges[idx] && e.last[p.id] !== idx) wear(g, idx, carriesHeavy(g, p) ? BRIDGE_WEAR : 1);
       e.last[p.id] = idx;
     }
     for (const k of Object.keys(bridges)) {

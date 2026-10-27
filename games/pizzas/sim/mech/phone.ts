@@ -4,6 +4,7 @@ import type { Game, Player } from '../round/state';
 import { gatePhone } from './gate/phone';
 import { beltPhone } from './beltReverse/phone';
 import { heatPhone } from './ovenHeat/phone';
+import { trayPhone } from './heavyTray/phone';
 
 export interface PhoneNote {
   tone: string;
@@ -13,7 +14,7 @@ export interface PhoneNote {
 }
 export function phoneNoteOf(g: Game, p: Player): PhoneNote | null {
   if (!g.mech || p.ghost) return null;
-  return gatePhone(g, p) ?? beltPhone(g, p) ?? heatPhone(g, p);
+  return gatePhone(g, p) ?? beltPhone(g, p) ?? heatPhone(g, p) ?? trayPhone(g, p);
 }
 
 /** Per chef: the key of the last note sent. `sync` returns the ids to buzz now (a new note appeared or changed). */

@@ -55,6 +55,8 @@ export interface MechModule {
   hashExtra(g: Game): readonly number[]; // integers that enter game.mech.hash
   ovenRate(g: Game, s: Station): number; // permil of the normal baking speed of this oven (1000 = as always, 0 = frozen); the chain is the product
   onFire(g: Game, s: Station, phase: FirePhase): void; // a station caught fire / the fire spread / it was put out
+  controls(g: Game, p: Player, c: Controls): Controls; // T2: the stick and buttons the chef's step really sees (chained over the modules); the heavy tray slows the carrier and merges a coupled pair
+  noCollide(g: Game, a: Player, b: Player): boolean; // T2: true = these two chefs do not push each other apart (or-ed): the helper of the heavy tray
   validate: MechValidator;
   stamp: MechStamp;
 }
