@@ -4,7 +4,7 @@ import { params } from '@pichi/core/difficulty';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
 import { generate } from '@pichi/game-pizzas/sim/generate';
-import { COOP_MAPS, fixedMap, lobbyMaps, mapFeatures, mapStatus } from '@pichi/game-pizzas/sim/maps';
+import { COOP_MAPS, SERIES_MAPS, fixedMap, lobbyMaps, mapFeatures, mapStatus } from '@pichi/game-pizzas/sim/maps';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusLobbyMaps } from '@pichi/game-pizzas/sim/versus/lobby';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import { drawMiniMap } from '@pichi/game-pizzas/screen/art/ui';
@@ -13,14 +13,17 @@ import { pz } from './state';
 
 let lastMapKey = '';
 
+const isSeries = (id: string) => SERIES_MAPS.some((m) => m.id === id);
+
 export function renderMapPanel(vs: boolean, n: number) {
+  if (isSeries(app.config.map)) pz.mapGroup = 'series'; // a series map picked (or kept from the last round) shows its own set
   const sizes = teamSizes(app.config.teams);
   const rows = vs
     ? versusLobbyMaps(sizes).map(({ map, status }) => ({
         map,
         status: status.state === 'recommended' ? { state: 'recommended' as const } : status,
       }))
-    : lobbyMaps(n, COOP_MAPS);
+    : lobbyMaps(n, COOP_MAPS).filter(({ map }) => isSeries(map.id) === (pz.mapGroup === 'series'));
   const cards = rows.map(({ map, status }) => {
     const f = mapFeatures(map.rows);
     const cls = `mc ${status.state === 'recommended' ? 'rec' : status.state === 'warn' ? 'warn' : 'blk'} ${map.id === app.config.map ? 'sel' : ''}`;
@@ -33,10 +36,13 @@ export function renderMapPanel(vs: boolean, n: number) {
           [VERSUS_AUTO, 'Aleatorio', 'de los que caben'],
           [VERSUS_RANDOM, 'Mapa generado', 'semilla nueva'],
         ]
-      : [
-          ['auto', 'Aleatorio', 'de los ideales'],
-          ['random', 'Mapa generado', 'semilla nueva'],
-        ]
+      : pz.mapGroup === 'series'
+        ? [['group', '◂ Clásicos', 'los 19 de siempre']]
+        : [
+            ['auto', 'Aleatorio', 'de los ideales'],
+            ['random', 'Mapa generado', 'semilla nueva'],
+            ['group', 'Carta larga ▸', 'platos nuevos'],
+          ]
   ).map(
     ([id, label, sub]) =>
       `<button class="mc special ${id === app.config.map ? 'sel' : ''}" data-map="${id}"><span class="t">${label}</span><span class="m">${sub}</span></button>`,

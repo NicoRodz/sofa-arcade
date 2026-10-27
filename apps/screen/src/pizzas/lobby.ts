@@ -5,7 +5,7 @@ import { teamOf } from '@pichi/core/lobby/teams';
 import type { LobbyConfig } from '@pichi/core';
 import { defaultSabotage, isSabotageMode, SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
 import { eventsOf } from '@pichi/game-pizzas/sim/midround';
-import { fixedMap, isMapChoice, mapStatus } from '@pichi/game-pizzas/sim/maps';
+import { SERIES_MAPS, fixedMap, isMapChoice, mapStatus } from '@pichi/game-pizzas/sim/maps';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import { isVersusChoice, stepChoice, teamSizes, versusAvailability, versusMapStatus } from '@pichi/game-pizzas/sim/versus/lobby';
 import { chips, showTeams } from '@pichi/screen-kit/lobby/chips';
@@ -82,6 +82,12 @@ export function initLobbyView() {
   });
   $('maps').addEventListener('click', (e) => {
     const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map;
+    if (m === 'group') {
+      pz.mapGroup = pz.mapGroup === 'series' ? 'classic' : 'series';
+      if (pz.mapGroup === 'classic' && SERIES_MAPS.some((x) => x.id === app.config.map)) setConfig({ map: 'auto' }); // the picked series map is not on this page any more
+      renderMapPanel(isVersus(), connectedN());
+      return;
+    }
     if (isVersus() ? isVersusChoice(m) : isMapChoice(m)) {
       const blocked = isVersus()
         ? (() => {

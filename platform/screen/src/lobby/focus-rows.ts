@@ -16,7 +16,7 @@ export const LOBBY_ROWS: readonly RowSpec[] = [
   { id: 'sabs', root: 'sabs', items: '[data-sab]', live: true },
   { id: 'evs', root: 'evs', items: '[data-ev]', live: true },
   { id: 'muts', root: 'muts', items: '[data-mut]', live: true },
-  { id: 'maps', root: 'maps', items: '[data-map]', live: false, cols: 7 },
+  { id: 'maps', root: 'maps', items: '[data-map]', live: false, cols: 8 },
   { id: 'obstlevels', root: 'obstlevels', items: '[data-level]', live: false, cols: 6 },
   { id: 'teambar', root: 'teambar', items: 'button', live: false },
   { id: 'howto', root: 'howtobtn', items: ':scope', live: false },
