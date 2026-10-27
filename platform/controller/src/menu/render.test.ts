@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { snapshot } from './fixture';
 import { menuHtml } from './render';
-import { ask, initialUi, onSnapshot, openMaps, refuse, setTab } from './state';
+import { ask, initialUi, onSnapshot, openMaps, refuse, setTab, showIntro, toggleFit } from './state';
 
 const ui = () => onSnapshot(initialUi(), snapshot(), 0);
 const count = (html: string, re: RegExp) => (html.match(re) ?? []).length;
@@ -74,5 +74,29 @@ describe('the confirmation (S3)', () => {
     expect(h).toContain('3 jugadores');
     expect(h).toMatch(/data-cm="back"[^>]*>Volver</);
     expect(h).not.toContain('data-cm="go"');
+  });
+});
+
+describe('tanda 2: filter, flash and the first-use card', () => {
+  it('the maps view offers "Aptos para N jugadores" and, once on, hides the locked card', () => {
+    const maps = openMaps(ui());
+    expect(menuHtml(maps, 0)).toContain('Aptos para 3 jugadores');
+    expect(menuHtml(maps, 0)).toContain('Banquete');
+    const on = menuHtml(toggleFit(maps), 0);
+    expect(on).toMatch(/data-cm="fit"[^>]*aria-pressed="true"/);
+    expect(on).not.toContain('Banquete');
+  });
+  it('a flashing row carries the class', () => {
+    const s = snapshot({ rev: 4 });
+    s.rows = s.rows.map((r) => (r.id === 'difficulty' ? { ...r, value: 'hard' } : r));
+    const html = menuHtml(onSnapshot(ui(), s, 100), 100);
+    expect(html).toMatch(/class="cm-row flash" data-kind="choice" data-row="difficulty"/);
+  });
+  it('the first-use card replaces the list and the foot, and has the "Entendido" button', () => {
+    const html = menuHtml(showIntro(ui(), true), 0);
+    expect(html).toContain('¡Eres el Capitán!');
+    expect(html).toContain('data-cm="intro"');
+    expect(html).not.toContain('cm-foot');
+    expect(html).not.toContain('data-row="difficulty"');
   });
 });

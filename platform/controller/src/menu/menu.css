@@ -54,3 +54,13 @@ body[data-menu=pad] #cmenu-back { display: block; }
   .cm-body { padding-bottom: max(12px, var(--sb)); }
   #cmenu .cm-go { min-height: 56px; font-size: 18px; }
 }
+/* a row someone else just changed (the keyboard, a second phone) flashes; the first-use card (S5) sits over the list */
+.cm-row.flash { animation: cmflash .6s ease-out; border-radius: 12px; }
+@keyframes cmflash { 0%, 60% { background: rgba(255,210,63,.45); box-shadow: 0 0 0 4px rgba(255,210,63,.45); } 100% { background: transparent; box-shadow: 0 0 0 0 transparent; } }
+.cm-introcard { display: flex; flex-direction: column; gap: 10px; max-width: 420px; width: 100%; margin: auto; font-size: 17px; }
+.cm-introcard > b { font-size: 22px; text-align: center; }
+.cm-introcard ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; }
+.cm-body[data-view=intro] { justify-content: center; }
+.cm-crown.big { align-self: center; width: 44px; height: 44px; animation: cmbeat 1s ease-in-out infinite; }
+@keyframes cmbeat { 50% { transform: scale(1.18); } }
+#cmenu .cm-fit { flex: none; align-self: flex-start; }

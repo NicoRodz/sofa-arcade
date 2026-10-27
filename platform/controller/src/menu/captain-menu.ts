@@ -4,6 +4,7 @@
 import './menu.css';
 import './menu-maps.css';
 import type { ClientMsg, ServerMsg } from '@pichi/core';
+import { fireCue, type Cue } from '../attention';
 import { menuHtml } from './render';
 import {
   actMsg,
@@ -11,6 +12,7 @@ import {
   closeMenu,
   confirmReady,
   currentTab,
+  flashLeft,
   formUp,
   goBack,
   gridRow,
@@ -23,6 +25,9 @@ import {
   refuse,
   setPad,
   setTab,
+  showIntro,
+  toggleFit,
+  touched,
   type MenuUi,
 } from './state';
 
@@ -31,10 +36,28 @@ export interface CaptainMenuEnv {
   isCaptain(): boolean;
   phase(): string;
   now?(): number;
+  cue?(c: Cue): void; // the attention cue (default: the pad's pulse, tone and vibration)
 }
+
+const INTRO_KEY = 'pichiclub.captainIntro.v1'; // once per device
+const introSeen = (): boolean => {
+  try {
+    return localStorage.getItem(INTRO_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+const markIntro = () => {
+  try {
+    localStorage.setItem(INTRO_KEY, '1');
+  } catch {
+    /* storage blocked: it shows again next time */
+  }
+};
 
 export function createCaptainMenu(env: CaptainMenuEnv) {
   const now = env.now ?? Date.now;
+  const cue = env.cue ?? fireCue;
   let ui: MenuUi = initialUi();
   let root: HTMLElement | null = null;
   let back: HTMLButtonElement | null = null;
@@ -51,6 +74,7 @@ export function createCaptainMenu(env: CaptainMenuEnv) {
   const tell = (act: Parameters<typeof actMsg>[1], row?: string, value?: string | boolean) => {
     const m = actMsg(ui, act, row, value);
     if (m) env.send({ t: 'menuAct', ...m });
+    ui = touched(ui, row, now());
   };
 
   function mount() {
@@ -88,6 +112,7 @@ export function createCaptainMenu(env: CaptainMenuEnv) {
     const waits = [
       ui.noticeUntil > t ? ui.noticeUntil - t : 0,
       ui.view === 'confirm' && !confirmReady(ui, t) ? ui.confirmAt + 500 - t : 0,
+      flashLeft(ui, t),
     ].filter((x) => x > 0);
     if (waits.length) timer = setTimeout(paint, Math.min(...waits) + 15);
   }
@@ -109,6 +134,10 @@ export function createCaptainMenu(env: CaptainMenuEnv) {
       ui = setTab(ui, val);
       const g = gridRow(ui.snap);
       if (g) tell('focus', g.id, val);
+    } else if (cm === 'fit') ui = toggleFit(ui);
+    else if (cm === 'intro') {
+      markIntro();
+      ui = showIntro(ui, false);
     } else if (cm === 'back') ui = goBack(ui);
     else if (cm === 'go') ui = enabled && !el.classList.contains('off') ? ask(ui, now()) : refuse(ui, why, now());
     else if (cm === 'yes') {
@@ -128,7 +157,11 @@ export function createCaptainMenu(env: CaptainMenuEnv) {
     onMessage(m: ServerMsg) {
       if (m.t === 'menu' && env.isCaptain()) {
         const { t: _t, ...snap } = m;
+        const before = ui;
         ui = onSnapshot(ui, snap, now());
+        if (!before.snap && !introSeen())
+          ui = showIntro(ui, true); // S5: the crown's cue is already ringing, the card says what to do
+        else if (before.snap && Object.keys(ui.flash).some((id) => !((before.flash[id] ?? 0) > now()))) cue('soft'); // someone else (the keyboard) changed a row
         paint();
       } else if (m.t === 'menuErr' && env.isCaptain()) {
         ui = onErr(ui, m, now());

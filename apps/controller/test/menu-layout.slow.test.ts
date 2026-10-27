@@ -11,9 +11,12 @@ process.env.PG_PORT = String(Number(process.env.PG_PORT ?? 3600) + 1);
 process.env.PG_CDP_PORT = String(Number(process.env.PG_CDP_PORT ?? 9366) + 1);
 const { ORIENTATIONS, insetsName, openSession } = await import('./harness');
 
+const INTRO_SEEN = `localStorage.setItem('pichiclub.captainIntro.v1', '1')`;
 let s: Session;
 beforeAll(async () => {
   s = await openSession();
+  await s.load({ name: 'prime', msgs: [] }); // the page's origin, so its storage can be set: the first-use card (S5) is already seen unless a test says otherwise
+  await s.eval(INTRO_SEEN);
 }, 60_000);
 afterAll(async () => {
   await s?.close();
@@ -71,9 +74,11 @@ const MEASURE = `(() => {
 })()`;
 
 type Measured = { bad: string[]; go: { x: number; y: number; w: number; h: number } | null };
-const STATES: { name: string; wide?: boolean; steps: string[]; over?: object }[] = [
+const STATES: { name: string; wide?: boolean; intro?: boolean; steps: string[]; over?: object }[] = [
   { name: 'list', steps: [] },
   { name: 'list-wide-font', wide: true, steps: [] },
+  { name: 'intro', steps: [], intro: true },
+  { name: 'intro-wide-font', wide: true, steps: [], intro: true },
   { name: 'maps-page-1', steps: [tapEl('[data-cm=maps]')] },
   { name: 'maps-page-2', steps: [tapEl('[data-cm=maps]'), tapEl('[data-cm=tab][data-val=series]')] },
   { name: 'maps-wide-font', wide: true, steps: [tapEl('[data-cm=maps]')] },
@@ -99,6 +104,7 @@ describe('Captain menu layout', () => {
       let probes = 0;
       for (const st of STATES) {
         const { sc } = open(st.name, '', st.over);
+        await s.eval(st.intro ? `localStorage.removeItem('pichiclub.captainIntro.v1')` : INTRO_SEEN);
         await s.load(sc);
         if (st.wide) await s.eval(WIDE);
         for (const step of st.steps) {
@@ -155,6 +161,22 @@ describe('Captain menu behaviour', () => {
     expect(j[0]).toMatchObject({ t: 'join', caps: ['menu1'] });
     expect(await s.eval<string>('document.body.dataset.menu')).toBe('on');
     expect(await s.eval<string>(`getComputedStyle(document.getElementById('remote')).display`)).toBe('none');
+  });
+
+  it('first use (S5): the card shows once per device, "Entendido" closes it for good, and a new snapshot flashes the row the keyboard changed', async () => {
+    await s.eval(`localStorage.removeItem('pichiclub.captainIntro.v1')`);
+    await s.load(open('intro', '').sc);
+    expect(await s.eval<boolean>(`!!document.querySelector('.cm-introcard')`)).toBe(true);
+    await s.eval(tapEl('[data-cm=intro]'));
+    expect(await s.eval<boolean>(`!!document.querySelector('.cm-introcard')`)).toBe(false);
+    expect(await s.eval<string>(`localStorage.getItem('pichiclub.captainIntro.v1')`)).toBe('1');
+    await s.load(open('intro2', '').sc);
+    expect(await s.eval<boolean>(`!!document.querySelector('.cm-introcard')`)).toBe(false);
+    const changed = snapshot({ rev: 4 });
+    changed.rows = changed.rows.map((r) => (r.id === 'difficulty' ? { ...r, value: 'hard' } : r));
+    await s.eval(`window.__push(${JSON.stringify({ t: 'menu', ...changed })})`);
+    expect(await s.eval<boolean>(`!!document.querySelector('.cm-row[data-row=difficulty].flash')`)).toBe(true);
+    expect(await s.eval<boolean>(`!!document.querySelector('.cm-row[data-row=events].flash')`)).toBe(false);
   });
 
   it('shows the D-pad as before when no snapshot comes (an older screen, a game without a form)', async () => {

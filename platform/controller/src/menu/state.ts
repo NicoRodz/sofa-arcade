@@ -15,8 +15,32 @@ export interface MenuUi {
   noticeUntil: number;
   confirmAt: number; // when the confirmation opened
   pad: boolean; // the Captain asked for the D-pad ("Mando"): the form steps aside
+  intro: boolean; // the first-use card (S5) is up
+  fit: boolean; // the maps view lists only the cards that fit the group ("Aptos para N")
+  flash: Record<string, number>; // row id -> until when it flashes (someone else changed it: the keyboard, a second phone)
+  touch: { row: string; at: number } | null; // the last row this phone touched: its own change is not flashed back at it
 }
-export const initialUi = (): MenuUi => ({ snap: null, view: 'main', tab: null, notice: '', noticeUntil: 0, confirmAt: 0, pad: false });
+export const FLASH_MS = 600;
+export const initialUi = (): MenuUi => ({
+  snap: null,
+  view: 'main',
+  tab: null,
+  notice: '',
+  noticeUntil: 0,
+  confirmAt: 0,
+  pad: false,
+  intro: false,
+  fit: false,
+  flash: {},
+  touch: null,
+});
+export const flashing = (ui: MenuUi, rowId: string, now: number): boolean => (ui.flash[rowId] ?? 0) > now;
+export const flashLeft = (ui: MenuUi, now: number): number => Math.max(0, ...Object.values(ui.flash).map((u) => u - now));
+export const showIntro = (ui: MenuUi, on: boolean): MenuUi => ({ ...ui, intro: on });
+export const toggleFit = (ui: MenuUi): MenuUi => ({ ...ui, fit: !ui.fit });
+export const touched = (ui: MenuUi, row: string | undefined, now: number): MenuUi => (row ? { ...ui, touch: { row, at: now } } : ui);
+/** The cards a maps page lists: all of them, or (the "Aptos para N" filter) the ones the screen says fit. */
+export const visibleItems = (ui: MenuUi, items: readonly MenuItem[]): MenuItem[] => (ui.fit ? items.filter((i) => i.enabled) : [...items]);
 
 const say = (ui: MenuUi, msg: string, now: number): MenuUi => ({ ...ui, notice: msg, noticeUntil: now + NOTICE_MS });
 export const noticeOf = (ui: MenuUi, now: number): string => (now < ui.noticeUntil ? ui.notice : '');
@@ -26,13 +50,26 @@ export const closeMenu = (ui: MenuUi): MenuUi => ({ ...initialUi(), pad: ui.pad 
 
 export function onSnapshot(ui: MenuUi, snap: MenuSnapshot, now: number): MenuUi {
   if (ui.snap && snap.rev < ui.snap.rev) return ui; // an older one that arrived late
-  let next: MenuUi = { ...ui, snap };
+  let next: MenuUi = { ...ui, snap, flash: changedRows(ui, snap, now) };
   const grid = gridRow(snap);
   if (next.view === 'maps' && !grid) next = { ...next, view: 'main' };
   if (next.tab && !grid?.groups?.some((g) => g.id === next.tab)) next = { ...next, tab: null };
   if (next.view === 'confirm' && !snap.primary.enabled)
     next = say({ ...next, view: 'main' }, snap.primary.reason ?? 'Ya no se puede empezar', now);
   return next;
+}
+
+/** Rows whose content differs from the last snapshot and that this phone did not just touch itself: they flash for FLASH_MS. */
+function changedRows(ui: MenuUi, snap: MenuSnapshot, now: number): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [id, until] of Object.entries(ui.flash)) if (until > now) out[id] = until;
+  if (!ui.snap) return out;
+  const before = new Map(ui.snap.rows.map((r) => [r.id, JSON.stringify(r)]));
+  for (const r of snap.rows) {
+    const mine = ui.touch && ui.touch.row === r.id && now - ui.touch.at < 1500;
+    if (before.has(r.id) && before.get(r.id) !== JSON.stringify(r) && !mine) out[r.id] = now + FLASH_MS;
+  }
+  return out;
 }
 
 /** The screen refused the last touch. A stale or disabled start closes the confirmation; the list is already the new snapshot. */

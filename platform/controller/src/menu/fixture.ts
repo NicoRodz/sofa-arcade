@@ -35,6 +35,7 @@ export const snapshot = (over: Partial<MenuSnapshot> = {}): MenuSnapshot => ({
       label: 'Mapa',
       kind: 'grid',
       value: '1',
+      fitFor: 3,
       options: [
         { id: 'auto', label: 'Aleatorio', enabled: true },
         { id: 'random', label: 'Mapa generado', enabled: true },
