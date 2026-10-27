@@ -10,6 +10,7 @@ import { lobbyN } from '@pichi/game-pizzas/sim/maps';
 import { tallyKitchen } from '@pichi/game-pizzas/sim/kudos';
 import { NO_LEAD, tallyDeliveries, type LeadState, type Series, type VersusReport } from '@pichi/game-pizzas/sim/versus/report';
 import type { RoundView } from '@pichi/game-pizzas/screen/art/hud';
+import type { MapGroup } from '@pichi/game-pizzas/screen/lobby-menu';
 import type { PuestoView } from '@pichi/game-pizzas/screen/art/puestos';
 
 export const PIZZAS = 'pizzas';
@@ -24,7 +25,7 @@ export const pz = {
   report: null as VersusReport | null, // versus: the verdict of the round that just ended (the results screen and the phones read it)
   lead: NO_LEAD as LeadState, // versus: who led last, for the comeback cue
   series: null as Series | null, // versus: who has won how many rounds of this group in this session
-  mapGroup: 'classic' as 'classic' | 'series', // which set of coop maps the grid shows: the 19 classics or the Carta larga series (it has its own plates)
+  mapGroup: 'classic' as MapGroup, // which set of coop maps the grid shows: the 19 classics, the Carta larga series (its own plates) or the Taller series (the new mechanics)
   mapTouched: false, // the host picked a map by hand: stop proposing defaults
   sabotageTouched: false, // the host picked a sabotage level by hand: the difficulty stops proposing one
   mapNotice: '',

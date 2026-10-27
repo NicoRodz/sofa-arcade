@@ -24,6 +24,7 @@ import { MAP_26 } from './layouts/series/pasaplatos';
 import { MAP_27 } from './layouts/series/isla-de-hornos';
 import { MAP_28 } from './layouts/series/cocina-espejo';
 import { MAP_20 } from './layouts/series/doble-cubierta';
+import { TALLER_MAPS } from './layouts/taller';
 import { MAP_16 } from './layouts/pista-de-hielo';
 import { MAP_17 } from './layouts/cinta-de-sushi';
 import { MAP_18 } from './layouts/cocina-resbaladiza';
@@ -57,13 +58,19 @@ export const FIXED_MAPS: readonly MapDef[] = [
 export const SURFACE_MAPS: readonly MapDef[] = [MAP_16, MAP_17, MAP_18, MAP_19];
 // The Carta larga series (ids 20+): two topping crates and the new recipes; coop only. The first of the campaign of the new plates.
 export const SERIES_MAPS: readonly MapDef[] = [MAP_20, MAP_21, MAP_22, MAP_23, MAP_24, MAP_25, MAP_26, MAP_27, MAP_28];
-export const COOP_MAPS: readonly MapDef[] = [...FIXED_MAPS, ...SURFACE_MAPS, ...SERIES_MAPS];
+// The Taller series (ids 29-36): curated maps of the new mechanics, to be tried by hand. Plain recipes; the lobby has its own group for them.
+export { TALLER_MAPS };
+export const COOP_MAPS: readonly MapDef[] = [...FIXED_MAPS, ...SURFACE_MAPS, ...SERIES_MAPS, ...TALLER_MAPS];
 
 // Mechanics a map brings: a cheese crate ('3') makes Margarita orders, a sink ('L') turns on plate washing.
 export const mapFeatures = (rows: readonly string[]) => ({
   cheese: rows.some((r) => r.includes('3')),
   sink: rows.some((r) => r.includes('L')),
 });
+
+/** Which page of the lobby's map grid a coop map lives on. */
+export const groupOfMap = (id: string): 'classic' | 'series' | 'taller' =>
+  SERIES_MAPS.some((m) => m.id === id) ? 'series' : TALLER_MAPS.some((m) => m.id === id) ? 'taller' : 'classic';
 
 export const MAP_IDS = COOP_MAPS.map((m) => m.id);
 export const fixedMap = (id: string): MapDef | undefined => COOP_MAPS.find((m) => m.id === id);

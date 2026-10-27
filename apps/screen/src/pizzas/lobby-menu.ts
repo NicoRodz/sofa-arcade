@@ -1,7 +1,7 @@
 // The Pizzas lobby as the Captain's touch form: feeds the pure builder in games/pizzas/screen/lobby-menu.ts with the live lobby state and carries out what a
 // touch decided with the lobby's own functions (the same ones the clicks and the keys call), so every guard they have still applies.
 // TRANSITIONAL (F4b): lives with the other lobby modules until F4c moves them into games/pizzas/screen.
-import { SERIES_MAPS } from '@pichi/game-pizzas/sim/maps';
+import { groupOfMap } from '@pichi/game-pizzas/sim/maps';
 import { FOCUS_ROW, buildLobbyMenu, decideMenuAct, type MenuEffect, type PizzasLobbyState } from '@pichi/game-pizzas/screen/lobby-menu';
 import { focusRow } from '@pichi/screen-kit/lobby/focus-nav-dom';
 import { startRound } from '@pichi/screen-kit/shell/round-flow';
@@ -52,7 +52,7 @@ function run(e: MenuEffect) {
     case 'group':
       // the TV shows the page the phone opened; a series map picked stays picked only on its own page, as with the click on the page's tab
       pz.mapGroup = e.value;
-      if (e.value === 'classic' && SERIES_MAPS.some((m) => m.id === app.config.map)) return setConfig({ map: 'auto' });
+      if (groupOfMap(app.config.map) !== e.value && groupOfMap(app.config.map) !== 'classic') return setConfig({ map: 'auto' });
       return renderUi();
     case 'shuffle':
       return shuffleTeams();

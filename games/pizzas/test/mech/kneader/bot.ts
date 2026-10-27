@@ -15,6 +15,7 @@ import {
   type Station,
 } from '../../../sim/overcooked';
 import type { MechId } from '../../../sim/mech/ids';
+import type { MapDef } from '../../../sim/maps';
 import { handlesOf } from '../../../sim/mech/kneader/state';
 import { feedOf } from '../../../sim/mech/woodOven/state';
 import { summarize } from '../../../sim/results';
@@ -251,6 +252,7 @@ export function playMech(o: {
   n: number;
   seed: number;
   difficulty?: Difficulty;
+  mutation?: MapDef['mutation']; // the v2 mutation of a map (needs `mutation` in `mech`)
 }): MechRun {
   const g = createGame({
     mapId: '1',
@@ -260,6 +262,7 @@ export function playMech(o: {
     seed: o.seed,
     countdownMs: COUNTDOWN_MS,
     mech: o.mech,
+    mutation: o.mutation,
   });
   const crew: Crew = {
     g,

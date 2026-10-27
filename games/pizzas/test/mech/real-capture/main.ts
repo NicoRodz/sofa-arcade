@@ -20,6 +20,7 @@ import { MUT, MUT_ROWS } from '../mutation/map';
 import { GATE_ROWS } from '../gate/map';
 import { KNEADER_ROWS } from '../kneader/map';
 import { WOOD_ROWS } from '../woodOven/map';
+import { TALLER_MAPS } from '../../../sim/maps';
 import { usesSurfaces } from '../../../sim/surfaces/legend';
 
 const SCEN: Record<string, { rows: readonly string[]; mech: MechId[]; mutation?: typeof MUT }> = {
@@ -31,6 +32,10 @@ const SCEN: Record<string, { rows: readonly string[]; mech: MechId[]; mutation?:
   gate: { rows: GATE_ROWS, mech: ['gate'] },
   kneader: { rows: KNEADER_ROWS, mech: ['kneader'] },
   woodOven: { rows: WOOD_ROWS, mech: ['woodOven'] },
+  // the Taller series, as the lobby plays it: ?mech=taller29 ... taller36
+  ...Object.fromEntries(
+    TALLER_MAPS.map((m) => [`taller${m.id}`, { rows: m.rows, mech: [...m.mechanics!], mutation: m.mutation as typeof MUT | undefined }]),
+  ),
 };
 const id = new URLSearchParams(location.search).get('mech')!;
 const sc = SCEN[id]!;
@@ -76,10 +81,10 @@ const acts: Record<string, () => void> = {
   },
   mid: () => advance(100),
   warn: () => {
-    while (liveOf(game)!.tick < MUT.at - MUT.warn + 25) advance(1);
+    while (liveOf(game)!.tick < (sc.mutation ?? MUT).at - (sc.mutation ?? MUT).warn + 25) advance(1);
   },
   after: () => {
-    while (liveOf(game)!.tick < MUT.at + 120) advance(1);
+    while (liveOf(game)!.tick < (sc.mutation ?? MUT).at + 120) advance(1);
   },
   still: () => advance(30),
 };

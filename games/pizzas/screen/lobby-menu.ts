@@ -5,7 +5,7 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, params, type Difficulty } from '@pichi/
 import { hasModeChoice, selectableModes, type GameDef, type ModeId } from '@pichi/core/games';
 import type { LobbyConfig, MenuActBody, MenuBody, MenuErrCode, MenuGroup, MenuItem, MenuOption, MenuRow } from '@pichi/core';
 import { eventsOf } from '../sim/midround';
-import { COOP_MAPS, SERIES_MAPS, fixedMap, lobbyMaps } from '../sim/maps';
+import { COOP_MAPS, fixedMap, groupOfMap, lobbyMaps } from '../sim/maps';
 import { mutateOf } from '../sim/mutate/plan';
 import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_OPTION, sabotageOf } from '../sim/sabotage-config';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusAvailability, versusLobbyMaps } from '../sim/versus/lobby';
@@ -37,11 +37,12 @@ export const FOCUS_ROW: Readonly<Record<string, string>> = {
   start: 'start',
 };
 const MODE_LABEL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
+/** The pages of the coop map grid: the classics, the Carta larga series (its own plates) and the Taller series (the new mechanics). */
+export type MapGroup = ReturnType<typeof groupOfMap>;
 const MODE_HINT: Partial<Record<ModeId, string>> = { coop: 'Cooperativo: todos cocinan juntos', versus: 'Versus: dos equipos compiten' };
 const OPTION_LABEL: Record<string, string> = { hiddenScore: 'Marcador oculto', handicap: 'Ventaja equipo chico' };
 const optRow = (id: string) => `opt-${id}`;
 const yesNo = (on: boolean, tipYes: string, tipNo: string): string => (on ? tipYes : tipNo);
-const isSeries = (id: string) => SERIES_MAPS.some((m) => m.id === id);
 
 const mapName = (c: LobbyConfig): string =>
   c.map === 'auto' || c.map === VERSUS_AUTO
@@ -76,12 +77,13 @@ function mapRow(st: PizzasLobbyState, vs: boolean): MenuRow {
     ];
   else {
     const rows = lobbyMaps(st.n, COOP_MAPS).map(({ map, status }) => ({
-      group: isSeries(map.id) ? 'series' : 'classic',
+      group: groupOfMap(map.id),
       ...item(map, status.state, 'reason' in status ? status.reason : undefined),
     }));
     groups = [
       { id: 'classic', label: 'Clásicos', items: rows.filter((r) => r.group === 'classic').map(({ group: _g, ...i }) => i) },
       { id: 'series', label: 'Carta larga', items: rows.filter((r) => r.group === 'series').map(({ group: _g, ...i }) => i) },
+      { id: 'taller', label: 'Taller', items: rows.filter((r) => r.group === 'taller').map(({ group: _g, ...i }) => i) },
     ];
   }
   const extras: MenuOption[] = vs
@@ -212,7 +214,7 @@ export type MenuEffect =
   | { kind: 'mech'; id: MechId; value: boolean }
   | { kind: 'reseed' }
   | { kind: 'option'; id: string; value: boolean }
-  | { kind: 'group'; value: 'classic' | 'series' }
+  | { kind: 'group'; value: MapGroup }
   | { kind: 'shuffle' | 'lock' | 'start' }
   | { kind: 'focus' };
 export type MenuDecision =
@@ -234,7 +236,7 @@ export function decideMenuAct(st: PizzasLobbyState, act: MenuActBody, rev: numbe
   if (act.act === 'focus') {
     const g = typeof act.value === 'string' && row.id === 'map' ? row.groups?.find((x) => x.id === act.value) : undefined;
     return g
-      ? { ok: true, effect: { kind: 'group', value: g.id as 'classic' | 'series' }, row: row.id }
+      ? { ok: true, effect: { kind: 'group', value: g.id as MapGroup }, row: row.id }
       : { ok: true, effect: { kind: 'focus' }, row: row.id };
   }
   if (act.act === 'press') {

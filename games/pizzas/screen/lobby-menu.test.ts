@@ -50,7 +50,7 @@ describe('buildLobbyMenu', () => {
     const blocked = items.filter((i) => !i.enabled);
     expect(blocked.length).toBeGreaterThan(0);
     for (const b of blocked) expect(b.reason, b.id).toMatch(/jugadores/);
-    expect(grid.groups!.map((g) => g.id)).toEqual(['classic', 'series']);
+    expect(grid.groups!.map((g) => g.id)).toEqual(['classic', 'series', 'taller']);
     expect(grid.groups![1]!.items.map((i) => i.id).sort()).toEqual(SERIES_MAPS.map((m) => m.id).sort());
     expect(grid.value).toBe('1');
   });

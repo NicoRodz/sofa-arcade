@@ -18,6 +18,8 @@ const shots: Record<string, string[]> = {
   gate: ['still'],
   kneader: ['still'],
   woodOven: ['still'],
+  ...Object.fromEntries(['29', '30', '31', '32', '33', '34', '36'].map((id) => [`taller${id}`, ['still']])),
+  taller35: ['still', 'warn', 'after'],
 };
 
 const server = await createServer({ root: here, server: { port: PORT, fs: { allow: [root] }, host: '127.0.0.1' }, logLevel: 'error' });
