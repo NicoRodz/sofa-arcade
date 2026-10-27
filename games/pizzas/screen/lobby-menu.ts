@@ -249,7 +249,8 @@ export function decideMenuAct(st: PizzasLobbyState, act: MenuActBody, rev: numbe
     if (typeof act.value !== 'boolean') return no('Valor no válido');
     const mech = mechIdOfRow(row.id);
     if (mech) return { ok: true, effect: { kind: 'mech', id: mech, value: act.value }, row: row.id };
-    if (row.id === 'events' || row.id === 'mutate' || row.id === MECHS_ROW) return { ok: true, effect: { kind: row.id, value: act.value }, row: row.id };
+    if (row.id === 'events' || row.id === 'mutate' || row.id === MECHS_ROW)
+      return { ok: true, effect: { kind: row.id, value: act.value }, row: row.id };
     return { ok: true, effect: { kind: 'option', id: row.id.slice(4), value: act.value }, row: row.id };
   }
   if (row.kind !== 'choice' && row.kind !== 'grid') return no('Esa fila no se elige así');

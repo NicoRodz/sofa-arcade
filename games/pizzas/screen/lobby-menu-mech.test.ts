@@ -29,7 +29,10 @@ describe('mechanics rows of the generated map', () => {
   it('the seed is visible and "Otra" is a press that reseeds', () => {
     const row = buildLobbyMenu(st()).rows.find((r) => r.id === 'seed')!;
     expect(row.label).toBe('Semilla 77');
-    expect(decideMenuAct(st(), act({ act: 'press', row: 'seed', value: 'again' }), 1)).toMatchObject({ ok: true, effect: { kind: 'reseed' } });
+    expect(decideMenuAct(st(), act({ act: 'press', row: 'seed', value: 'again' }), 1)).toMatchObject({
+      ok: true,
+      effect: { kind: 'reseed' },
+    });
   });
   it('mechanics default to Sí; No hides the ticks and says so', () => {
     expect(buildLobbyMenu(st()).rows.find((r) => r.id === 'mechs')!.value).toBe(true);
@@ -38,7 +41,10 @@ describe('mechanics rows of the generated map', () => {
     expect(buildLobbyMenu(off).rows.find((r) => r.id === 'mechs')).toMatchObject({ value: false, hint: 'Mapa clásico, sin mecánicas' });
   });
   it('touches become effects; the ticks live in one bitmask', () => {
-    expect(decideMenuAct(st(), act({ act: 'set', row: 'mechs', value: false }), 1)).toMatchObject({ ok: true, effect: { kind: 'mechs', value: false } });
+    expect(decideMenuAct(st(), act({ act: 'set', row: 'mechs', value: false }), 1)).toMatchObject({
+      ok: true,
+      effect: { kind: 'mechs', value: false },
+    });
     expect(decideMenuAct(st(), act({ act: 'set', row: 'gm-oil', value: true }), 1)).toMatchObject({
       ok: true,
       effect: { kind: 'mech', id: 'oil', value: true },
