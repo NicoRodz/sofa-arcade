@@ -11,13 +11,14 @@ import { seenAfterPhase, shouldShowHowTo } from '@pichi/controller-kit/howto';
 import { announceAssist, assistLabel } from './assist-help';
 import { createSchoolUi } from '@pichi/game-pizzas/controller/school';
 import { kvOf } from '@pichi/game-pizzas/sim/school';
-import { createZoomGuard, isDoubleTap } from '@pichi/controller-kit/zoom';
+import '@pichi/controller-kit/touch-guard'; // side effects only: the touch and zoom hardening of the page
 import {
   BUZZ_PATTERNS,
   ClockSync,
   DEADZONE,
   DEFAULT_ROOM,
   INPUT_HZ,
+  MENU_CAP,
   PING_MS,
   PRESS_MOD,
   WS_PATH,
@@ -35,6 +36,7 @@ import {
 } from '@pichi/core';
 import type { IconId } from '@pichi/core/icons';
 import { attend } from '@pichi/controller-kit/attention';
+import { createCaptainMenu } from '@pichi/controller-kit/menu/captain-menu';
 import { bindRemote } from '@pichi/controller-kit/remote';
 import { outcomeFor, type Outcome, type PhoneResult } from '@pichi/game-pizzas/sim/versus/report';
 
@@ -55,56 +57,6 @@ const store = {
     }
   },
 };
-
-// Touch hardening: no zoom (pinch, double-tap), scroll, selection or context menu. iOS Safari ignores user-scalable=no,
-// so the gesture events are cancelled too, and zoom.ts watches visualViewport in case it zooms anyway.
-const stop = (e: Event) => e.preventDefault();
-document.addEventListener('touchmove', stop, { passive: false });
-document.addEventListener(
-  'touchstart',
-  (e) => {
-    if (e.touches.length > 1) e.preventDefault();
-  },
-  { passive: false },
-); // second finger = pinch
-for (const g of ['gesturestart', 'gesturechange', 'gestureend', 'contextmenu', 'dblclick', 'selectstart']) {
-  document.addEventListener(g, (e) => {
-    if (!(e.target as HTMLElement | null)?.closest?.('input')) e.preventDefault();
-  });
-}
-let lastEnd = 0;
-document.addEventListener(
-  'touchend',
-  (e) => {
-    const now = Date.now();
-    if (isDoubleTap(lastEnd, now)) e.preventDefault();
-    lastEnd = now;
-  },
-  { passive: false },
-);
-
-function resetZoom() {
-  window.scrollTo(0, 0);
-  const meta = document.querySelector<HTMLMetaElement>('meta[name=viewport]');
-  if (!meta) return;
-  const original = meta.content;
-  meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'; // a changed value makes iOS re-evaluate the scale
-  setTimeout(() => {
-    meta.content = original;
-  }, 120);
-}
-const zoomGuard = createZoomGuard({
-  viewport: window.visualViewport,
-  reset: resetZoom,
-  onZoomed: (z) => document.body.classList.toggle('zoomed', z),
-  later: (fn, ms) => {
-    setTimeout(fn, ms);
-  },
-});
-window.visualViewport?.addEventListener('resize', zoomGuard.check);
-window.visualViewport?.addEventListener('scroll', zoomGuard.check);
-setInterval(zoomGuard.check, 2000);
-$('zoomfix').addEventListener('click', () => zoomGuard.manualReset());
 
 const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0, sig: { kind: 'go' as SignalKind, seq: 0 }, go: false };
 (window as unknown as { __pad: typeof state }).__pad = state; // headless drivers (tools/school-shots.ts) push the stick and the buttons through it; the game itself never reads it
@@ -304,9 +256,11 @@ const hud = (s: string) => {
 
 // The Captain's remote: shown on every screen but the round, and only while the socket is joined (a button that cannot send would lie).
 const isCaptain = () => joined && captainId !== null && captainId === myId;
+const captainMenu = createCaptainMenu({ send: tx, isCaptain, phase: () => phase }); // the lobby as a touch form; the D-pad below is its fallback
 function renderCaptain() {
   document.body.dataset.remote = remoteVisible(isCaptain(), joined, phase) ? 'on' : 'off';
   schoolUi.refreshCaptain();
+  captainMenu.refresh();
   const crown = isCaptain() ? '👑 ' : '';
   $('who').textContent = crown + myName;
   $('who2').textContent = crown + myName;
@@ -391,11 +345,12 @@ function connect() {
   const sock = (ws = new WebSocket(`ws://${location.host}${WS_PATH}?room=${encodeURIComponent(room)}`));
   sock.onopen = () => {
     lastPong = Date.now();
-    tx({ t: 'join', name, token });
+    tx({ t: 'join', name, token, caps: [MENU_CAP] });
   };
   sock.onmessage = (ev) => {
     const m = JSON.parse(ev.data) as ServerMsg;
     attend(m, myId);
+    captainMenu.onMessage(m);
     if (m.t === 'joined') {
       joined = true;
       myId = m.player.id;

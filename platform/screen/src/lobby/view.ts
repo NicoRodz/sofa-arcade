@@ -7,8 +7,10 @@ import { $, setHtml } from '../ui/dom';
 import { app, pickedGame, setConfig } from '../shell/app-state';
 import { renderChips, showTeams } from './chips';
 import { paintFocus } from './focus-nav-dom';
+import { scheduleMenu } from './menu-bridge';
 
 export function paintUi() {
+  scheduleMenu(); // whatever changed, the Captain's form follows (a snapshot only goes out when its content did)
   const inMenu = app.phase === 'menu';
   const lobby = app.phase === 'lobby';
   const hub = inMenu || lobby; // both share the logo, the QR + room code and the connected players

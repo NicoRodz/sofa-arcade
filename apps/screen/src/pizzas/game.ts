@@ -13,6 +13,7 @@ import { pizzasDebug } from './debug';
 import { initHost, school, scene } from './host';
 import { difficultyPatch, initLobbyView, lobbyKey, renderLobby } from './lobby';
 import { moveToTeam } from './lobby-sync';
+import { pizzasMenu, pizzasMenuAct } from './lobby-menu';
 import { startMatch } from './round';
 import { renderResults } from './results';
 import { initVersusResults, rematch } from './results-versus';
@@ -39,6 +40,8 @@ export const pizzasScreen: ScreenGame = {
     key: lobbyKey,
     difficulty: difficultyPatch,
     beforeStart: () => school.offer(),
+    menu: pizzasMenu,
+    menuAct: pizzasMenuAct,
   },
   startMatch,
   enterSchool: () => school.begin(),

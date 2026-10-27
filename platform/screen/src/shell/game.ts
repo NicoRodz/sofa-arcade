@@ -15,7 +15,7 @@ import type { Difficulty } from '@pichi/core/difficulty';
 import { createRegistry, type Registry } from '@pichi/core/registry';
 import type { GameManifest } from '@pichi/core/contract';
 import { GAME_IDS, type GameId } from '@pichi/core/games';
-import type { LobbyConfig, MatchStart, PhaseInfo, Phase, ServerMsg } from '@pichi/core';
+import type { LobbyConfig, MatchStart, MenuActBody, MenuBody, PhaseInfo, Phase, ServerMsg } from '@pichi/core';
 import type { PlayerRec } from './player';
 
 export interface SceneSpec {
@@ -24,6 +24,9 @@ export interface SceneSpec {
   initial?: true; // the scene Phaser boots with: the shell wakes it, never starts it
   leave?(): void; // the shell is switching to another game's scene (the level ends)
 }
+
+/** What the game answers to one touch of the Captain's menu: done, or refused (`stale`: the lobby changed under the phone; `disabled`: not allowed now) with a line for the phone. */
+export type MenuActResult = { ok: true } | { ok: false; code: 'stale' | 'disabled'; msg: string };
 
 export interface LobbyHooks {
   /** Config patch when this game is picked in the menu: a game must not inherit the teams or options of the one before (the relay would refuse the config). */
@@ -39,6 +42,10 @@ export interface LobbyHooks {
   back?(): boolean;
   /** "A cocinar" was pressed: true when the game takes over (the school). */
   beforeStart?(): boolean;
+  /** The lobby as a touch form for the Captain's phone (null: none right now, the phone keeps its D-pad). The shell sends it whenever it changes. */
+  menu?(): MenuBody | null;
+  /** One touch of the Captain's phone (the shell already checked who sent it and that the lobby is open); `rev` is the snapshot's current revision. */
+  menuAct?(act: MenuActBody, rev: number): MenuActResult;
 }
 
 export interface ResultsHooks {

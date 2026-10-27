@@ -4,6 +4,7 @@ import { PING_MS, PressTracker, WS_PATH, acceptNav, navToKey, remoteBlocked, typ
 import { app, renderUi, services, sync } from '../shell/app-state';
 import { games } from '../shell/game';
 import { onKey } from '../vote/dpad-vote';
+import { onMenuAct, scheduleMenu } from '../lobby/menu-bridge';
 import { latency, queueLag, record } from './latency';
 import { sendMsg, setSocket, socket } from './socket';
 
@@ -69,6 +70,10 @@ export function onMessage(m: ServerMsg) {
     case 'captain':
       app.captainId = m.playerId;
       renderUi();
+      scheduleMenu(true); // a new Captain (or one that came back) gets the form even if nothing in it changed
+      break;
+    case 'menuAct':
+      onMenuAct(m); // the Captain's touch: absolute values, judged by the game against its own state
       break;
     case 'nav': {
       // the Captain's D-pad: the same handler as the keyboard, fed with the key that intent stands for

@@ -1,0 +1,56 @@
+/* The Captain's touch menu: header, notice, scrolling list, fixed foot. Portrait: foot under the list. Landscape: list on the left (~62%), the current map and
+   ¡A cocinar! in the column where the D-pad used to be. Sits under the how-to card (z 5) and over the waiting overlays; hides the D-pad while it is up. */
+#cmenu { position: fixed; inset: 0; z-index: 4; display: none; background: var(--cocoa); color: var(--cream); font: 800 16px var(--font);
+  grid-template: "head" auto "note" auto "body" minmax(0, 1fr) "foot" auto / minmax(0, 1fr);
+  padding: max(0px, var(--st)) var(--sr) 0 var(--sl); }
+body[data-menu=on] #cmenu { display: grid; }
+body[data-menu=on] #remote { display: none; }
+#cmenu, #cmenu * { touch-action: manipulation; box-sizing: border-box; }
+#cmenu button { min-height: 44px; padding: 6px 14px; font: 800 16px/1.1 var(--font); border-radius: 14px; border: 3px solid var(--ink); color: var(--cream);
+  background: linear-gradient(#85685A 0 50%, #6F5245 50% 100%); box-shadow: 0 3px 0 rgba(43,27,23,.4); }
+#cmenu button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(43,27,23,.4); }
+.cm-head { grid-area: head; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 12px; }
+.cm-crown { flex: none; width: 28px; height: 28px; }
+.cm-title { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
+.cm-title b { font-size: 16px; }
+.cm-title span { font-size: 12px; font-weight: 700; opacity: .8; overflow-wrap: anywhere; }
+#cmenu .cm-sm { flex: none; min-width: 44px; padding: 4px 10px; font-size: 15px; }
+#cmenu .cm-sm[data-cm=help] { background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); font-size: 20px; }
+.cm-notice { grid-area: note; display: none; margin: 0 12px 4px; padding: 6px 12px; border-radius: 12px; border: 3px solid var(--ink); background: var(--cheese); color: var(--ink); font-size: 14px; line-height: 1.2; }
+.cm-notice.on { display: block; animation: cmpop .35s ease-out; }
+@keyframes cmpop { from { transform: scale(.94); opacity: .3; } to { transform: scale(1); opacity: 1; } }
+.cm-body { grid-area: body; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 4px 12px 16px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.cm-row { display: flex; flex-direction: column; gap: 6px; }
+.cm-lab { font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,244,224,.65); }
+.cm-seg, .cm-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+#cmenu .cm-opt { flex: 1 1 64px; min-width: 64px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; overflow-wrap: anywhere; }
+#cmenu .cm-opt.sel, #cmenu .cm-card.sel { background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); }
+#cmenu .off { opacity: .55; }
+.cm-lock { flex: none; width: 14px; height: 14px; }
+.cm-hint, .cm-why { font-size: 13px; font-weight: 700; line-height: 1.2; color: rgba(255,244,224,.75); overflow-wrap: anywhere; }
+.cm-why { color: #FFB4A8; }
+.cm-pick, .cm-cur { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 17px; }
+.cm-pick span, .cm-cur span { font-size: 14px; opacity: .8; }
+.cm-st { color: var(--cheese); letter-spacing: 1px; }
+#cmenu .cm-more { flex: none; align-self: flex-start; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+.cm-foot { grid-area: foot; display: flex; flex-direction: column; gap: 6px; padding: 8px 12px max(8px, var(--sb)); background: rgba(0,0,0,.18); }
+.cm-cur { display: none; }
+#cmenu .cm-go { min-height: 56px; width: 100%; font-size: 20px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+#cmenu .cm-go.off { background: linear-gradient(#6B6661 0 50%, #54504C 50% 100%); color: #E9E1D5; }
+#cmenu .cm-go.alt { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+.cm-foot .cm-why { text-align: center; }
+.cm-ask { font-size: clamp(20px, 6vmin, 26px); text-align: center; }
+#cmenu .cm-yes { min-height: 64px; width: 100%; font-size: 22px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+#cmenu .cm-yes:disabled { opacity: .45; }
+.cm-sum { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; text-align: center; font-size: 16px; }
+#cmenu-back { display: none; position: fixed; z-index: 7; left: max(10px, calc(var(--sl) + 10px)); top: max(10px, calc(var(--st) + 10px)); min-height: 44px; min-width: 64px; padding: 6px 14px; font: 800 16px var(--font); color: var(--cream); border-radius: 14px; border: 3px solid var(--ink); background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+body[data-menu=pad] #cmenu-back { display: block; }
+/* landscape: a short, wide screen. The list keeps ~62%; the foot becomes a column with the map and the start button. */
+@media (orientation: landscape) and (max-height: 520px) {
+  #cmenu { grid-template: "head side" auto "note side" auto "body side" minmax(0, 1fr) / minmax(0, 62%) minmax(0, 38%); }
+  .cm-foot { grid-area: side; justify-content: flex-end; padding: 8px max(12px, var(--sr)) max(8px, var(--sb)) 12px; background: transparent; }
+  .cm-cur { display: flex; flex: 1; align-content: flex-end; }
+  .cm-body[data-view=main] .cm-row[data-kind=grid] { display: none; }
+  .cm-body { padding-bottom: max(12px, var(--sb)); }
+  #cmenu .cm-go { min-height: 56px; font-size: 18px; }
+}

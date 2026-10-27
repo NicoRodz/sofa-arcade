@@ -6,6 +6,7 @@ import {
   captainOf,
   hintExtras,
   PROTOCOL_VERSION,
+  MENU_CAP,
   configMsg,
   DEFAULT_ROOM,
   MAX_PLAYERS,
@@ -18,6 +19,7 @@ import {
   type PublicPlayer,
   type ServerMsg,
 } from '@pichi/core';
+import { actFits, createRateLimiter, menuFits } from './menu-guard';
 
 interface Player {
   id: number;
@@ -26,6 +28,7 @@ interface Player {
   slot: number;
   ws: WebSocket | null;
   assist?: true; // Ayudante, chosen from the phone in the lobby; it stays with the slot (a reconnect with the token keeps it)
+  caps?: string[]; // what this phone announced when it joined (MENU_CAP: it draws the Captain's touch menu)
   school?: true; // this phone did (or skipped) the Cocina escuela; it stays with the slot like assist
   expiry?: ReturnType<typeof setTimeout>;
 }
@@ -36,6 +39,7 @@ interface Room {
   phase: PhaseInfo;
   config: LobbyConfig;
   captain: number | null; // who holds the crown (see captainOf); only the relay knows who is connected, so it elects and tells everyone
+  menu: string | null; // the last `menu` snapshot of the screen as sent on the wire: a Captain that arrives (or changes) gets it at once
 }
 
 const send = (ws: WebSocket, m: ServerMsg) => {
@@ -61,7 +65,15 @@ export function attachRelay(server: Server) {
     if (!r)
       rooms.set(
         code,
-        (r = { players: new Map(), screens: new Set(), nextId: 1, phase: { phase: 'menu' }, config: DEFAULT_CONFIG, captain: null }),
+        (r = {
+          players: new Map(),
+          screens: new Set(),
+          nextId: 1,
+          phase: { phase: 'menu' },
+          config: DEFAULT_CONFIG,
+          captain: null,
+          menu: null,
+        }),
       );
     return r;
   };
@@ -82,7 +94,16 @@ export function attachRelay(server: Server) {
       const m: ServerMsg = { t: 'captain', playerId: next };
       toScreens(r, m);
       toPlayers(r, m);
-    } else if (to) send(to, { t: 'captain', playerId: next });
+      sendMenu(r);
+    } else if (to) {
+      send(to, { t: 'captain', playerId: next });
+      sendMenu(r);
+    }
+  };
+  // The menu goes to the Captain alone, and only when that phone can draw it (an older phone keeps its D-pad).
+  const sendMenu = (r: Room, raw: string | null = r.menu) => {
+    const c = r.captain === null ? undefined : r.players.get(r.captain);
+    if (raw && c?.ws && c.caps?.includes(MENU_CAP) && c.ws.readyState === WebSocket.OPEN) c.ws.send(raw);
   };
 
   const sendYou = (r: Room, p: Player) => {
@@ -96,6 +117,7 @@ export function attachRelay(server: Server) {
     const r = room(url.searchParams.get('room') || DEFAULT_ROOM);
     const isScreen = url.searchParams.get('role') === 'screen';
     let me: Player | null = null;
+    const actAllowed = createRateLimiter(); // menuAct per second of this connection
 
     if (isScreen) {
       r.screens.add(ws);
@@ -104,7 +126,8 @@ export function attachRelay(server: Server) {
     }
 
     ws.on('message', (data) => {
-      const m = parseClientMessage(data.toString());
+      const raw = data.toString();
+      const m = parseClientMessage(raw);
       if (!m) return;
       if (m.t === 'ping') {
         send(ws, { t: 'pong', id: m.id, t0: m.t0, ts: Date.now() });
@@ -116,6 +139,7 @@ export function attachRelay(server: Server) {
       if (m.t === 'phase') {
         if (!isScreen) return;
         r.phase = { phase: m.phase, scores: m.scores, puestos: m.puestos, match: m.match, result: m.result };
+        if (m.phase !== 'lobby') r.menu = null; // the form belongs to the lobby
         toPlayers(r, { t: 'phase', ...r.phase });
         return;
       }
@@ -141,6 +165,15 @@ export function attachRelay(server: Server) {
             ...(m.btn ? { btn: m.btn } : {}),
             ...(m.done ? { done: true as const } : {}),
           });
+        return;
+      }
+      if (m.t === 'menu' || m.t === 'menuErr') {
+        // screen -> Captain only: re-parsed by the protocol, so what is forwarded is exactly what was validated
+        if (!isScreen || !menuFits(raw)) return;
+        const { t: _t, ...body } = m;
+        const out = JSON.stringify({ t: m.t, ...body });
+        if (m.t === 'menu') r.menu = out;
+        sendMenu(r, out);
         return;
       }
       if (m.t === 'config') {
@@ -169,6 +202,7 @@ export function attachRelay(server: Server) {
           p.name = m.name;
           if (p.ws && p.ws !== ws) p.ws.close();
         }
+        p.caps = m.caps ?? [];
         clearTimeout(p.expiry);
         p.ws = ws;
         me = p;
@@ -184,6 +218,11 @@ export function attachRelay(server: Server) {
       if (m.t === 'nav' && me) {
         // The Captain's D-pad only; `from` comes from the socket (set at join), so nothing in the payload can pose as someone else.
         if (r.captain === me.id) toScreens(r, { t: 'nav', from: me.id, key: m.key });
+        return;
+      }
+      if (m.t === 'menuAct' && me) {
+        // The Captain's touch, stamped like nav: `from` is the socket's player. Shape was parsed; here its size and pace, and who sent it.
+        if (r.captain === me.id && actFits(raw) && actAllowed()) toScreens(r, { ...m, from: me.id });
         return;
       }
       if (m.t === 'schoolDone' && me) {

@@ -33,6 +33,11 @@ export const domEnv: FocusEnv = {
 let focus: FocusState = INITIAL_FOCUS;
 export const resetFocus = () => (focus = INITIAL_FOCUS);
 export const currentFocus = () => focus;
+/** The Captain touched a row on the phone: the ring goes to that row (a row that is not on the page leaves it where it was). */
+export function focusRow(id: string, env: FocusEnv = domEnv) {
+  if (LOBBY_ROWS.some((r) => r.id === id)) focus = { ...focus, row: id };
+  paintFocus(env);
+}
 
 function readRows(env: FocusEnv): { rows: FocusRow[]; els: Map<string, FocusEl[]> } {
   const els = new Map<string, FocusEl[]>();
