@@ -86,3 +86,15 @@ describe('join caps', () => {
     expect(parseClientMessage(JSON.stringify({ t: 'join', name: 'N', token: 't', caps: [MENU_CAP] }))).toMatchObject({ caps: [MENU_CAP] });
   });
 });
+
+describe('fitFor (the "Aptos para N" filter)', () => {
+  it('travels on a grid row when it is a plausible group size, and is dropped or refused otherwise', () => {
+    const s = snap();
+    s.rows[2]!.fitFor = 4;
+    expect(parseMenuSnapshot(s)!.rows[2]!.fitFor).toBe(4);
+    s.rows[2]!.fitFor = 0;
+    expect(parseMenuSnapshot(s)).toBeNull();
+    delete s.rows[2]!.fitFor;
+    expect(parseMenuSnapshot(s)!.rows[2]).not.toHaveProperty('fitFor');
+  });
+});

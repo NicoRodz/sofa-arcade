@@ -96,6 +96,7 @@ function mapRow(st: PizzasLobbyState, vs: boolean): MenuRow {
     value: st.config.map,
     options: extras,
     groups,
+    fitFor: Math.min(99, Math.max(1, vs ? teamSizes(st.config.teams).reduce((a, b) => a + b, 0) || st.connected : st.n)),
     ...(st.mapNotice ? { hint: st.mapNotice.slice(0, 120) } : {}),
   };
 }
