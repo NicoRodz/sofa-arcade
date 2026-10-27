@@ -333,7 +333,7 @@ export class World {
         this.chefs.set(gp.id, chef);
       }
       chef.setName(info.name);
-      chef.setLook(info.ap, 'pizzas'); // the player's Appearance (an old phone sent none: the slot's own chef)
+      chef.setLook(info.ap, 'pizzas');
       let action: 'none' | 'chop' | 'stretch' = 'none';
       if (gp.cutting && gp.chopAt >= 0 && !gp.dousing) {
         // (a chef putting a fire out holds the extinguisher: BurnView draws it, the knife stays put)
