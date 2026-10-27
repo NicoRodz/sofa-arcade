@@ -5,7 +5,7 @@ import type { Recipe } from '../../sim/recipes/defs';
 import type { TeamInfo } from '@pichi/core/lobby/teams';
 import { C, H, W, hexNum, timerColor } from '@pichi/screen-kit/art/tokens';
 import { R } from '@pichi/screen-kit/art/gfx';
-import { Bar, place } from './stations';
+import { Bar } from './stations';
 import { recipeParts } from './food/ticket';
 import { birthdayParts, trayParts, type Tray } from './food/ticket-tray';
 import { MARGIN_MS } from '../../sim/recipes/bandeja';
