@@ -23,8 +23,7 @@ export const raftValidate: MechValidator = (rows) => {
     while (wet(at(rows, x + dx * (b + 1), y + dy * (b + 1)))) b++;
     if (!land(at(rows, x - dx * (a + 1), y - dy * (a + 1))) || !land(at(rows, x + dx * (b + 1), y + dy * (b + 1))))
       out.push(`raft: the lane of = at (${x}, ${y}) does not reach land at both ends`);
-    for (let i = -a; i <= b; i++)
-      if (i && at(rows, x + dx * i, y + dy * i) === '=') out.push(`raft: two = share the lane at (${x}, ${y})`);
+    for (let i = -a; i <= b; i++) if (i && at(rows, x + dx * i, y + dy * i) === '=') out.push(`raft: two = share the lane at (${x}, ${y})`);
   }
   return [...out, ...playableWithout(rows, '=', 'raft')];
 };

@@ -37,7 +37,9 @@ export const bridgeModule: MechModule = {
   },
   init(g) {
     const b: Record<number, { uses: number; brokenUntil: number }> = {};
-    g.grid.forEach((row, y) => row.forEach((t, x) => t.kind === 'floor' && t.mech === 'b' && (b[y * 16 + x] = { uses: 0, brokenUntil: 0 })));
+    g.grid.forEach((row, y) =>
+      row.forEach((t, x) => t.kind === 'floor' && t.mech === 'b' && (b[y * 16 + x] = { uses: 0, brokenUntil: 0 })),
+    );
     g.mech!.bridge = b;
   },
   canEnter: (g, tx, ty) => !isBroken(g, tx, ty),

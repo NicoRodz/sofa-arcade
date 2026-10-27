@@ -57,7 +57,10 @@ describe('mech.bridge', () => {
   it('is deterministic: two runs of the same walk give the same fingerprint', () => {
     const hash = () => {
       const g = make(2);
-      const go = new Map<number, Controls>([[1, { x: 1, y: 0, a: 0, b: false }], [2, { x: -1, y: 0, a: 0, b: false }]]);
+      const go = new Map<number, Controls>([
+        [1, { x: 1, y: 0, a: 0, b: false }],
+        [2, { x: -1, y: 0, a: 0, b: false }],
+      ]);
       put(g, 1, 5, 2);
       put(g, 2, 9, 3);
       run(g, 400, go);

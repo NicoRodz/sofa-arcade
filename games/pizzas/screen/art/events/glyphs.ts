@@ -10,6 +10,7 @@ export const EVENT_COLOR: Record<EventKind, { main: string; dark: string }> = {
   birthday: { main: '#E95FA5', dark: '#A83572' },
   rat: { main: '#8A6B4C', dark: '#563F2A' },
   frost: { main: '#4FB6E0', dark: '#1F6E99' },
+  spill: { main: '#E0A21B', dark: '#8F5E0A' },
 };
 
 // --- Textures -----------------------------------------------------------------------------------------------------------------------------------------
@@ -228,5 +229,14 @@ export const GLYPH: Record<EventKind, (c: Ctx) => void> = {
         c.restore();
       }
     }
+  },
+  spill: (c) => {
+    // an oil bottle tipped over and the puddle under it
+    drawOutlined(c, () => c.ellipse(0, 20, 30, 10, 0, 0, Math.PI * 2), '#E0A21B', { lw: 3 });
+    c.save();
+    c.rotate(-0.9);
+    drawOutlined(c, () => rr(c, -12, -28, 24, 40, 8), '#F5D26B', { lw: 3 });
+    drawOutlined(c, () => rr(c, -5, -38, 10, 14, 3), '#B8C4CC', { lw: 2.4 });
+    c.restore();
   },
 };

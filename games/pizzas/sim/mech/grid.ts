@@ -12,7 +12,11 @@ export const find = (rows: readonly string[], ch: string): [number, number][] =>
 export const at = (rows: readonly string[], x: number, y: number) => rows[y]?.[x];
 
 /** Tiles reachable from `from`: a step into a tile of letter `c` going (dx, dy) is allowed when `can` says so. Stations and walls are never walked. */
-export function reach(rows: readonly string[], from: readonly [number, number][], can: (c: string, dx: number, dy: number) => boolean): Set<number> {
+export function reach(
+  rows: readonly string[],
+  from: readonly [number, number][],
+  can: (c: string, dx: number, dy: number) => boolean,
+): Set<number> {
   const seen = new Set<number>(from.map(([x, y]) => y * 16 + x));
   const q = [...from];
   for (let i = 0; i < q.length; i++) {
@@ -49,5 +53,7 @@ export function playableWithout(rows: readonly string[], gone: string, label: st
     const missing = cutOff(dry, region); // a team is one kitchen: ONE region has to hold every station (items do not cross the water)
     if (!best || missing.length < best.length) best = missing;
   }
-  return (best ?? []).map((ch) => `${label}: without it no region of the kitchen reaches the ${ch} (it must be a shortcut, not the only way)`);
+  return (best ?? []).map(
+    (ch) => `${label}: without it no region of the kitchen reaches the ${ch} (it must be a shortcut, not the only way)`,
+  );
 }

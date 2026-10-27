@@ -8,6 +8,7 @@
 //   blackout   Corte de luz       every oven is off for 10 s (it does not cook, and the grace time of a ready pizza does not run)
 //   birthday   Pedido de cumpleaños  a pizza order worth 150 flat in every queue
 //   frost      Ola de frío        every floor tile is ice for FROST_MS (the playtest of 25-oct: a patch of ice did nothing; a frozen kitchen is a different game for a while). Cooperative only
+//   spill      Derrame            six patches of oil on the floor (mech/oil, only in a round with the oil mechanic)
 //   rat        Rata               a rat steals the item of a counter; a dash scares it (and the item goes back). Cooperative only
 // Versus: the same event, at the same instant, to both teams (one global state). The rat is never in the pool there (it would double the sabotage).
 import { DIRS, isFloor } from './maps';
@@ -17,9 +18,10 @@ import { magnetFor } from './feel/magnet';
 import { newSurfaceState } from './surfaces/config';
 import { gentleRatStep, ratPrize } from './feel/rat';
 import type { Game, Item, Station } from './round/state';
+import { spill } from './mech/oil/spill';
 
-export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost';
-export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost'];
+export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
+export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];
 export const EVENTS_SEED_TAG = 0xe7e47e55;
 export const EVENT_FROM_MS = 60_000; // the event starts between these two instants of the match
 export const EVENT_TO_MS = 120_000;
@@ -31,6 +33,7 @@ export const ACTIVE_MS: Record<EventKind, number> = {
   birthday: 3000,
   rat: 25_000,
   frost: 30_000,
+  spill: 3000,
 }; // how long it counts as "on" (the rat leaves earlier when it is gone)
 export const RUSH_ORDERS = 3;
 export const EVENT_MAX_QUEUE = 6; // a rush never grows a queue past what the order strip can show
@@ -49,6 +52,7 @@ export const EVENT_INFO: Record<EventKind, { title: string; blurb: string }> = {
   birthday: { title: '¡CUMPLEAÑOS!', blurb: 'Pedido triple: 150 puntos' },
   rat: { title: '¡UNA RATA!', blurb: 'Espántala con el dash' },
   frost: { title: '¡OLA DE FRÍO!', blurb: 'Todo el piso es hielo 30 s' },
+  spill: { title: '¡DERRAME!', blurb: 'Manchas de aceite por la cocina' },
 };
 
 /** The lobby option: events on or off. Missing = the difficulty's default (Sí in Normal and Difícil, No in Fácil). */
@@ -118,7 +122,7 @@ export interface MidFx {
 const tag = (g: Game, team: number): { team?: number } => (g.versus ? { team } : {});
 
 /** The kinds this round can have: no rat in versus, no inspector without plates to wash, no rat without counters. */
-export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations' | 'frostEvent'>): EventKind[] =>
+export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations' | 'frostEvent' | 'flags'>): EventKind[] =>
   EVENT_KINDS.filter((k) =>
     k === 'rat'
       ? !g.versus && g.stations.some((s) => s.kind === 'counter')
@@ -126,7 +130,9 @@ export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations' |
         ? g.finitePlates
         : k === 'frost'
           ? g.frostEvent && !g.versus
-          : true,
+          : k === 'spill'
+            ? !!g.flags?.mech.oil && !g.versus
+            : true,
   );
 
 /** The event of the round: kind and instant from the seed. */
@@ -307,7 +313,8 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
     else if (m.kind === 'frost') {
       m.frost = true;
       g.surf ??= newSurfaceState(); // the ice rules only run in a round that has `surf`
-    } else if (m.kind === 'rat') spawnRat(g, m);
+    } else if (m.kind === 'spill') spill(g, m.rng);
+    else if (m.kind === 'rat') spawnRat(g, m);
     return;
   }
   if (m.phase !== 'active') return;

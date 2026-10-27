@@ -31,6 +31,7 @@ export const oneWayValidate: MechValidator = (rows) => {
       }
     }
   }
-  for (const i of forward) if (!home.has(i)) out.push(`oneWay: trap at (${i % 16}, ${Math.floor(i / 16)}): a chef who gets there cannot come back`);
+  for (const i of forward)
+    if (!home.has(i)) out.push(`oneWay: trap at (${i % 16}, ${Math.floor(i / 16)}): a chef who gets there cannot come back`);
   return out.slice(0, 6);
 };

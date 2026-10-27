@@ -56,7 +56,9 @@ export const raftModule: MechModule = {
   },
   init(g) {
     const start = g.mech!.ext!.raftStart as number[];
-    g.mech!.raft = Object.fromEntries(lanes(g).map((l, i) => [i, { pos: start[i]!, dir: start[i] === l.tiles.length - 1 ? -1 : 1, wait: RAFT_STEP_TICKS }]));
+    g.mech!.raft = Object.fromEntries(
+      lanes(g).map((l, i) => [i, { pos: start[i]!, dir: start[i] === l.tiles.length - 1 ? -1 : 1, wait: RAFT_STEP_TICKS }]),
+    );
   },
   beforeMove(g) {
     lanes(g).forEach((lane, i) => {
