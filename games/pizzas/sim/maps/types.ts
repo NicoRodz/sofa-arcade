@@ -1,6 +1,7 @@
 // Map types: tiles and grids, a map definition, and what a versus map adds.
 import type { PuestoId } from '../puestos';
 import type { SIGMAS } from '../symmetry';
+import type { MechId } from '../mech/ids';
 
 export type StationKind =
   | 'crate'
@@ -13,12 +14,14 @@ export type StationKind =
   | 'dirty'
   | 'sink'
   | 'catapult'
-  | 'saucepot';
+  | 'saucepot'
+  | 'kneader' // M, behind flags.mech.kneader (mech/letters.ts)
+  | 'bellows'; // Q, behind flags.mech.woodOven
 export type Tile =
   | { kind: 'wall' }
-  | { kind: 'floor'; spawn: boolean; surface?: Surface }
+  | { kind: 'floor'; spawn: boolean; surface?: Surface; mech?: string } // mech: the letter of a mechanic tile (Z D a g * b > < ^ v =), walkable; the module decides
   | { kind: 'water' }
-  | { kind: 'station'; station: StationKind; crate: number };
+  | { kind: 'station'; station: StationKind; crate: number; wood?: true }; // wood: the W oven (a 'pot' that the woodOven module speeds up or freezes)
 /** What a floor tile does to a chef standing on it (only in a round with `surfaces`): ice makes it slide, a belt carries it along (dx, dy) = unit direction. */
 export type Surface = { kind: 'ice' } | { kind: 'belt'; dx: number; dy: number };
 export type Grid = Tile[][];
@@ -35,6 +38,7 @@ export interface MapDef {
   spawns?: readonly Pos[]; // explicit spawn order when reading order is not the order the author wants
   puestos?: readonly (readonly PuestoId[])[]; // replaces the default puesto table (zone maps), indexed by spawn
   versusFit?: VersusFit; // coop maps only: what the versus work (F3) found out about this map
+  mechanics?: readonly MechId[]; // the map mechanics it uses: the lobby turns those flags on (mechFlagsOf), the parser reads their letters
 }
 
 // --- Versus ---------------------------------------------------------------------------------------------------------

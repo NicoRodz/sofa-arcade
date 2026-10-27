@@ -9,6 +9,7 @@ import { sabotageBinned, sabotageLoad, sabotageTakeBag } from '../sabotage';
 import { DIRTY_MS } from '@pichi/core/difficulty';
 import { deliver } from './orders';
 import { clearPot, isDark } from '../burn';
+import { mechOvenRate } from '../mech/loop';
 
 function interact(g: Game, p: Player, s: Station) {
   if (s.fire !== undefined) return; // on fire: nothing works until it is put out
@@ -147,7 +148,8 @@ export function cookTick(g: Game, dtMs: number) {
     if (s.kind === 'saucepot') stickTick(g, s);
     if (s.kind === 'pot' && s.stage === 'bell') bellTick(g, s, dtMs, dark);
     else if (s.kind === 'pot' && !s.done && baked(s) && !dark) {
-      s.progress += dtMs / cookMsOf(g, s);
+      const rate = g.mech ? mechOvenRate(g, s) : 1000; // permil: W and the thermal oven (mech/); 1000 = as always
+      s.progress += (rate === 1000 ? dtMs : (dtMs * rate) / 1000) / cookMsOf(g, s);
       if (s.progress >= 1 && s.stage === 'base') ringBell(g, s);
       else if (s.progress >= 1) {
         s.progress = 1;

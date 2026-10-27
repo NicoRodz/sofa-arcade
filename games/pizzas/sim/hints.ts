@@ -79,6 +79,10 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       if (g.sab && !full) return g.sab.teams[p.team]!.bags > 0 ? on('Tomar bolsa', 'trash') : off('Botar', 'trash');
       if (g.finitePlates && (p.item === 'plate' || p.item === 'dirty')) return off('No es basura', 'trash');
       return full ? on('Botar', 'trash') : off('Botar', 'trash');
+    case 'kneader': // mech/: the phone hint of M and Q is written by the tanda that implements them (T1e)
+      return off('Amasadora', 'chop');
+    case 'bellows':
+      return off('Fuelle', 'chop');
     case 'catapult':
       return off('Catapulta', 'grab'); // the sabotage hint names it when there is something to load
     case 'window':

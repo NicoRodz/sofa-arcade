@@ -13,6 +13,7 @@
 import type { Difficulty } from '@pichi/core/difficulty';
 import type { Game, Station } from './round/state';
 import type { SabotageMode } from './sabotage-config';
+import { mechOnFire, mechOvenRate } from './mech/loop';
 
 export const GRACE_MS: Record<Difficulty, number> = { easy: 15_000, normal: 8_000, hard: 8_000 }; // from "ready" to "burnt"
 export const WARN_BEFORE_MS = 3000; // the warning beep comes this long before the pizza burns
@@ -66,6 +67,7 @@ function ignite(g: Game, s: Station, origin: boolean) {
   if (s.kind === 'pot') clearPot(s);
   else s.item = null;
   g.bus.emit(origin ? 'fire:start' : 'fire:spread', { station: g.stations.indexOf(s), ...tag(g, s.owner) });
+  if (g.mech) mechOnFire(g, s, origin ? 'start' : 'spread'); // mech/: a burning oven lights the oil next to it
 }
 
 /** A chef holds Picar in front of a station on fire: `dtMs` more of putting it out. When it is done the station is usable again. */
@@ -75,6 +77,7 @@ export function douse(g: Game, playerId: number, s: Station, dtMs: number) {
   delete s.fire;
   const k = kitchenOf(s);
   g.bus.emit('fire:out', { player: playerId, station: g.stations.indexOf(s), ...tag(g, s.owner) });
+  if (g.mech) mechOnFire(g, s, 'out'); // mech/: the extinguisher also cleans the oil in front
   if (!g.stations.some((o) => o.fire !== undefined && kitchenOf(o) === k)) {
     // the last flame of the kitchen: it may catch fire again
     g.burn!.fires[k] = null;
@@ -92,10 +95,10 @@ export function burnTick(g: Game, dtMs: number) {
   const dark = isDark(g);
   for (const s of g.stations) {
     if (s.kind !== 'pot' || s.fire !== undefined || !s.done || s.readyAt === undefined) continue;
-    if (dark) {
+    if (dark || (g.mech && mechOvenRate(g, s) === 0)) {
       s.readyAt += dtMs;
       continue;
-    } // lights out: the grace time does not run
+    } // lights out (or a frozen W oven, mech/): the grace time does not run
     const age = g.time - s.readyAt;
     const at = g.stations.indexOf(s);
     if (!s.burnt) {

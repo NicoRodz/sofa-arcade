@@ -15,6 +15,8 @@ import { spawnOrder } from './orders';
 import { createSabotage } from '../sabotage';
 import { createBurn, fireAllowed } from '../burn';
 import { createMid } from '../midround';
+import { anyMech, MECH_IDS, type MechFlags, type MechOpts } from '../mech/ids';
+import { mechStart } from '../mech/loop';
 
 const LEGACY = [
   'score',
@@ -58,6 +60,7 @@ export function createGame(
     magnet?: boolean | MagnetLevel;
     surfaces?: boolean;
     mutate?: boolean;
+    mech?: MechOpts; // flags.mech.<id>: the map mechanics that are on (off by default; the lobby turns on the ones the map declares). Absent or all false = the round of before
     frost?: boolean; // the Ola de frio event may be drawn (coop only)
     upgradeOrders?: boolean; // the Pizza de la casa takes upgrades (recipes/casa.ts)
     sliceAfterBake?: boolean; // ... and can be cut into portions on a board
@@ -66,7 +69,8 @@ export function createGame(
     pace?: number; // order-flow speed-up (1 = the table as it is): orders arrive 1/pace as far apart and the queue holds one more from 1.3 up
   } = {},
 ): Game {
-  const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1); // the catapult letter belongs to versus maps
+  const mechOn = anyMech(opts.mech);
+  const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1, opts.mech); // the catapult letter belongs to versus maps; a mechanic's letter needs its flag
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
   if (seats && !seats.length) throw new RangeError('a round needs at least one team');
@@ -100,6 +104,7 @@ export function createGame(
         clean: 0,
         owner: pantry ? null : kitchens ? stationOwner(grid, kitchens, tx, ty) : 0,
         ...(pantry ? { pantry: true as const } : {}),
+        ...(t.wood ? { wood: true as const } : {}),
       });
     }),
   );
@@ -185,6 +190,9 @@ export function createGame(
     surf: opts.surfaces ? newSurfaceState() : null,
     mut: null,
     magnet: null, // rec: before the first orders are drawn
+    ...(mechOn
+      ? { flags: { mech: Object.fromEntries(MECH_IDS.map((id) => [id, !!opts.mech![id]])) as MechFlags }, mech: { hash: 0 } }
+      : {}),
   } as unknown as Game;
   // the legacy single-team fields are live views of team 0
   for (const key of LEGACY)
@@ -214,6 +222,7 @@ export function createGame(
   if (opts.magnet) applyMagnet(g, opts.magnet === true ? 'normal' : opts.magnet); // magnetism: off unless the round's config asks
   if (opts.events) g.mid = createMid(g, opts.eventsSeed ?? seed); // `eventsSeed`: the coop lobby does not seed its orders (they are the same every round), but the event must still vary
   if (opts.mutate) g.mut = createMutate(g, seed); // coop maps with a mutation only; its own stream, nothing shared
+  if (g.mech) mechStart(g); // onLoad, then init, of every module whose flag is on
   return g;
 }
 

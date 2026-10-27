@@ -14,6 +14,8 @@ import type { Rec } from '../recipes/sim';
 import type { MagnetCfg } from '../feel/magnet';
 import type { SurfaceState } from '../surfaces/config';
 import type { Mutate } from '../mutate/step';
+import type { MechFlags } from '../mech/ids';
+import type { MechState } from '../mech/types';
 
 export const TICK_HZ = 60;
 export const TICK_MS = 1000 / TICK_HZ;
@@ -75,6 +77,7 @@ export interface Station {
   readyAt?: number; // pot: match time the pizza got ready (it burns `burn.graceMs` later); shifted while the lights are out
   warned?: true; // pot: the warning beep sounded
   burnt?: true; // pot: the ready pizza burnt (smoke): it only serves for the bin
+  wood?: true; // the W oven: a pot whose speed the woodOven module sets (mech/); absent on every other station
   fire?: number; // on fire: the ms of Picar already spent putting it out (present = burning, the station is out of use)
   fold?: number;
   stage?: 'base' | 'bell' | 'top'; // pot, a card with the Pizza blanca only: first bake of the bare dough, the bell (the toppings must go in now), the second bake
@@ -209,6 +212,9 @@ export interface Game {
   surf: SurfaceState | null; // ice and belts (surfaces/): null (the default, and every golden round) = every floor tile is plain
   mut: Mutate | null; // the kitchen that mutates at 1:30 (mutate/): null (the default, and every golden round) = the map never changes
   magnet: MagnetCfg | null; // magnetism for every chef (feel/magnet.ts): null (the default, and every golden round) = the plain targeting and feel
+  // map mechanics (mech/): BOTH keys are absent unless some flag is on, so a round without them is the round of before, key for key
+  flags?: { mech: MechFlags }; // flags.mech.<id>, off by default; the lobby turns on the ones a map declares
+  mech?: MechState; // the state of the active mechanics (their slices, and the hash of them)
 }
 
 /** One team's side of the round. */

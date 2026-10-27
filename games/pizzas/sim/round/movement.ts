@@ -2,13 +2,15 @@
 import { RADIUS, SPEED, TICK_MS, isSolid, type Controls, type Game, type Player } from './state';
 import { magnetHug } from '../feel/magnet';
 import { beltPush, iceTau } from '../surfaces/physics';
+import { mechCanMove, mechFriction } from '../mech/loop';
 
 // R1: one integrator for the chef's velocity, v += (target - v) * (1 - e^(-dt/tau)). tau = 0 is "instant" (the old feel).
 function steer(p: Player, c: Controls, g: Game, dtMs: number) {
   const { tauMs, tauStopMs } = g.params.tune;
   const moving = c.x !== 0 || c.y !== 0;
   const base = p.assist ? 0 : moving ? tauMs : tauStopMs; // Ayudante: no inertia
-  const tau = g.surf ? iceTau(g, p, base) : base; // ice: a long tau both ways (the stick only steers the slide)
+  let tau = g.surf ? iceTau(g, p, base) : base; // ice: a long tau both ways (the stick only steers the slide)
+  if (g.mech) tau = mechFriction(g, p.x, p.y, tau); // oil: the same on a patch
   const k = tau > 0 ? 1 - Math.exp(-dtMs / tau) : 1;
   p.vx += (c.x * SPEED - p.vx) * k;
   p.vy += (c.y * SPEED - p.vy) * k;
@@ -142,13 +144,13 @@ export function walk(g: Game, p: Player, c: Controls, dt: number, dtMs: number) 
   const slow = p.crossing ? g.params.tune.yieldSpeed : 1;
   const bp = g.surf ? beltPush(g, p) : null; // a belt carries the chef at its own speed, on top of what the chef does
   const nx = p.x + (p.vx + p.kx) * dt * slow + (bp ? bp[0] * dt : 0);
-  if (!blocked(g, nx, p.y)) p.x = nx;
+  if (!blocked(g, nx, p.y) && (!g.mech || mechCanMove(g, p, p.x, p.y, nx, p.y))) p.x = nx;
   else {
     p.vx = 0;
     p.kx = 0;
   }
   const ny = p.y + (p.vy + p.ky) * dt * slow + (bp ? bp[1] * dt : 0);
-  if (!blocked(g, p.x, ny)) p.y = ny;
+  if (!blocked(g, p.x, ny) && (!g.mech || mechCanMove(g, p, p.x, p.y, p.x, ny))) p.y = ny;
   else {
     p.vy = 0;
     p.ky = 0;

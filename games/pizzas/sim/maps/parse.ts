@@ -1,6 +1,8 @@
 // Map parser and grid geometry: tile letters to typed tiles, floor regions, spawn tiles.
 import type { Grid, Pos, StationKind, Tile } from './types';
 import { surfaceTile } from '../surfaces/legend';
+import { mechLetterId, mechTile } from '../mech/letters';
+import type { MechOpts } from '../mech/ids';
 
 export const MAP_W = 16;
 export const MAP_H = 9;
@@ -49,22 +51,28 @@ export const STATION_CHAR: Record<string, string> = {
 };
 
 /** `versus`: the tile letters that only exist in versus maps (Y, the catapult) are accepted. A coop map refuses them. */
-export function parseTile(c: string, versus = false): Tile | null {
+export function parseTile(c: string, versus = false, mech?: MechOpts): Tile | null {
   if (c === '#') return { kind: 'wall' };
   if (c === '.') return { kind: 'floor', spawn: false };
   if (c === 'S') return { kind: 'floor', spawn: true };
   if (c === '~') return { kind: 'water' };
   const s = STATIONS[c] ?? (versus ? VERSUS_ONLY[c] : undefined);
-  return s ? { kind: 'station', ...s } : surfaceTile(c, versus);
+  return s ? { kind: 'station', ...s } : (surfaceTile(c, versus) ?? mechTile(c, versus, mech));
 }
 
-export function parseMap(rows: readonly string[], versus = false): Grid {
+/** `mech`: the mechanics that are on; the letter of one that is off is a load error (never a floor tile). */
+export function parseMap(rows: readonly string[], versus = false, mech?: MechOpts): Grid {
   if (rows.length !== MAP_H) throw new Error(`map needs ${MAP_H} rows, got ${rows.length}`);
   return rows.map((row, y) => {
     if (row.length !== MAP_W) throw new Error(`row ${y} needs ${MAP_W} columns, got ${row.length}`);
     return [...row].map((c, x) => {
-      const t = parseTile(c, versus);
-      if (!t) throw new Error(`unknown tile '${c}' at (${x}, ${y})${c in VERSUS_ONLY ? ': only a versus map has it' : ''}`);
+      const t = parseTile(c, versus, mech);
+      if (!t) {
+        const need = mechLetterId(c);
+        throw new Error(
+          `unknown tile '${c}' at (${x}, ${y})${c in VERSUS_ONLY ? ': only a versus map has it' : need ? `: it needs the flag mech.${need} (coop maps only)` : ''}`,
+        );
+      }
       return t;
     });
   });

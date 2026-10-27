@@ -11,6 +11,7 @@ import { burnTick } from '../burn';
 import { midTick } from '../midround';
 import { surfacesTick } from '../surfaces/step';
 import { mutateTick } from '../mutate/step';
+import { mechAfterChefs, mechBeforeMove, mechHashTick } from '../mech/loop';
 
 function countdown(g: Game, dtMs: number) {
   const prev = Math.ceil(g.countdown / 1000);
@@ -37,12 +38,14 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
   const dt = dtMs / 1000;
   g.time += dtMs;
 
+  if (g.mech) mechBeforeMove(g, controls, dtMs); // raft, belt
   for (const p of g.players.values()) {
     if (p.ghost) continue;
     stepChef(g, p, controls.get(p.id) ?? idleControls, dt, dtMs);
   }
 
   separate(g, controls, dtMs);
+  if (g.mech) mechAfterChefs(g, dtMs); // tickStations, tickTiles, mutation (mech/loop.ts)
   if (g.mut) mutateTick(g);
   if (g.surf) surfacesTick(g, dtMs);
   if (g.hazards) hazardsTick(g);
@@ -65,4 +68,5 @@ export function tick(g: Game, controls: Map<number, Controls>, dtMs = TICK_MS) {
     g.bus.emit('countdownTick', { n: left, kind: 'end' });
   }
   if (g.time >= g.params.roundMs) finish(g, false);
+  if (g.mech) mechHashTick(g); // last hook of the tick: hashExtra
 }

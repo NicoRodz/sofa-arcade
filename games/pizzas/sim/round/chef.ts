@@ -7,6 +7,7 @@ import { applyChop, cuttableAt, updateChop } from './chop';
 import { faceStation as magnetFace, magnetPull } from '../feel/magnet';
 import { unit, walk } from './movement';
 import { act } from './stations';
+import { mechClaimsB, mechInteract } from '../mech/loop';
 
 // One chef's tick, in this order: slipping or aiming take its control away; otherwise the target, the B edge, Picar (chop, wash, douse, fold),
 // the dash, walking and finally the A presses.
@@ -31,7 +32,12 @@ export function stepChef(g: Game, p: Player, c: Controls, dt: number, dtMs: numb
   if (g.magnet && target && !p.assist) magnetPull(g, p, target, cuttable && (c.b || (c.bTaps ?? 0) > 0), !c.x && !c.y, dtMs); // magnetism: Picar turns the chef to its board (or the oven it folds at); a slow chef beside a station drifts to face it
   const at = updateChop(g, p, c, target, bEdge, cuttable, burning, wasCutting, wasDousing);
   dashPress(g, p, c, target, bEdge, cuttable, dtMs);
-  if (!applyChop(g, p, target, at, dtMs)) walk(g, p, c, dt, dtMs);
+  const stays = !!g.mech && !p.cutting && c.b && mechClaimsB(g, p, target); // a mechanic's B (handle, bellows, extinguisher on a tile): the chef stands still
+  if (stays) {
+    p.vx = 0;
+    p.vy = 0;
+  } else if (!applyChop(g, p, target, at, dtMs)) walk(g, p, c, dt, dtMs);
+  if (g.mech && mechInteract(g, p, c, target, dtMs)) return; // onInteract: the module used this chef's A presses
   pressA(g, p, c, dtMs);
 }
 
@@ -52,7 +58,11 @@ function startDash(g: Game, p: Player, c: Controls) {
 // R2 + R6: a B press with free hands and nothing in front is a dash; if the cooldown ends within bufferMs it still goes
 function dashPress(g: Game, p: Player, c: Controls, target: Station | null, bEdge: boolean, cuttable: boolean, dtMs: number) {
   const tune = g.params.tune;
-  const free = !p.item && !(g.magnet && !p.assist ? cuttable || targetStation(g, p, true) : target) && !p.cutting; // magnetism: only what the old probe finds (or a chop) stops a dash
+  const free =
+    !p.item &&
+    !(g.magnet && !p.assist ? cuttable || targetStation(g, p, true) : target) &&
+    !p.cutting &&
+    !(g.mech && mechClaimsB(g, p, target)); // magnetism: only what the old probe finds (or a chop) stops a dash; a mechanic's B (mech/) stops it too
   const ready = p.dashMs <= 0 && p.dashCd <= 0;
   if (!free) p.buffB = 0;
   else if (bEdge && ready) startDash(g, p, c);

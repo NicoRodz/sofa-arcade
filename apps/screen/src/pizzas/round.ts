@@ -9,6 +9,7 @@ import { COUNTDOWN_MS, addPlayer, createGame } from '@pichi/game-pizzas/sim';
 import { resolveMap } from '@pichi/game-pizzas/sim/generate';
 import { SERIES_MAPS, type MapChoice } from '@pichi/game-pizzas/sim/maps';
 import { usesSurfaces } from '@pichi/game-pizzas/sim/surfaces/legend';
+import { mechFlagsOf } from '@pichi/game-pizzas/sim/mech/ids';
 import { roundRules } from '@pichi/game-pizzas/sim/midround';
 import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
 import { assignPuestos, featuresOf } from '@pichi/game-pizzas/sim/puestos';
@@ -74,6 +75,7 @@ function startCoop(): undefined {
     upgradeOrders: SERIES_MAPS.some((m) => m.id === map.id), // ... and brings the Pizza de la casa with its upgrades, the portions and the Bandeja familiar
     sliceAfterBake: SERIES_MAPS.some((m) => m.id === map.id),
     compoundOrders: SERIES_MAPS.some((m) => m.id === map.id),
+    mech: mechFlagsOf(map.mechanics), // the map declares its mechanics, the lobby turns their flags on (off by default; a map without any plays as before)
     surfaces: usesSurfaces(map.rows), // a map with ice or belts turns the surfaces on by itself; versus never draws those maps
     mutate: mutateOf(app.config.modeOptions, app.config.difficulty), // only maps with a mutation: coop; versus never gets it
     assist: assistIds(),
