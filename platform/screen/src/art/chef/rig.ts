@@ -7,6 +7,8 @@ import { PROP_Y, hatTop } from '../chefdraw';
 import { ANCHORS, CHOP_MS, HEAD_Y, MOUTH_DY, STRETCH_MS, armPose, eyeLook, facing, gait, itemAnchor } from '@pichi/core/avatar/rig-math';
 import { foodKey, ITEM_KIND } from '@pichi/game-pizzas/screen/art/food';
 import { CHEF_SCALE, ITEM_SCALE, plateKey } from './textures';
+import type { Appearance } from '@pichi/core/avatar/appearance';
+import { lookTextures, type LookKeys } from './look';
 
 export interface ChefState {
   x: number;
@@ -71,6 +73,9 @@ export class Chef {
   private prop: Phaser.GameObjects.Image; // Ayudante: the stalk on the hat
   private blades: Phaser.GameObjects.Image; // ... and the blades that spin
   private clock = 0;
+  private hat: Phaser.GameObjects.Image;
+  private look: LookKeys | null = null; // set once the player's Appearance is known: the baked parts replace the slot's own
+  private lookId = '';
 
   constructor(
     private scene: Phaser.Scene,
@@ -104,7 +109,7 @@ export class Chef {
     this.mouth = at('chef_mouth_smile', 0, ANCHORS.mouthY);
     this.fb = at(`chef_fb_${slot % 8}`);
     this.drop = at('chef_drop', ANCHORS.dropX, ANCHORS.dropY).setVisible(false);
-    const hat = at(`chef_hat_${slot % 8}`);
+    const hat = (this.hat = at(`chef_hat_${slot % 8}`));
     this.prop = at(`chef_prop_${slot % 8}`).setVisible(false);
     this.blades = at('chef_blades', 0, hatTop(slot) - PROP_Y).setVisible(false);
     this.head = scene.add.container(0, 0, [
@@ -130,6 +135,23 @@ export class Chef {
     );
     this.root = scene.add.container(0, 0, [this.shadow, this.ring, this.rig, ...this.spinStars, this.tag]);
     this.root.setScale(U * CHEF_SCALE);
+  }
+
+  /** Dress the rig with the player's Appearance for this game's role ('pizzas' | 'obstaculos' | 'arena'). Rebuilds only when the look changes. */
+  setLook(ap: Appearance | undefined, role: string) {
+    if (!ap) return;
+    const id = `${JSON.stringify(ap)}|${role}`;
+    if (id === this.lookId) return;
+    this.lookId = id;
+    const k = (this.look = lookTextures(this.scene, ap, role));
+    this.torso.setTexture(k.torsoF);
+    this.torsoB.setTexture(k.torsoB);
+    this.headF.setTexture(k.headF);
+    this.headB.setTexture(k.headB);
+    this.fa.setVisible(false);
+    this.fb.setTexture(k.over);
+    this.hat.setTexture(k.hat);
+    this.arms.forEach((a) => a.setTexture(k.arm));
   }
 
   // Versus: a second, wider ring in the team's colour under the chef's own (the chef keeps its colour; the team is the ring).
@@ -292,7 +314,8 @@ export class Chef {
     this.torsoB.setVisible(up);
     this.headF.setVisible(!up);
     this.headB.setVisible(up);
-    for (const o of [this.fa, this.fb, this.mouth, ...this.eyes]) o.setVisible(!up);
+    for (const o of [this.fa, this.fb, this.mouth, ...this.eyes]) o.setVisible(!up && !(this.look && o === this.fa));
+    this.hat.setVisible(!(up && this.look)); // from behind the baked head already carries the hat
     // carried item
     if (s.item) {
       this.itemImg.setVisible(true).setTexture(foodKey(ITEM_KIND[s.item]));
