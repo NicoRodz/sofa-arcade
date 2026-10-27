@@ -31,7 +31,6 @@ import { MIRRORS } from '../test/golden/mirror-bot';
 import { GAMES, modeOf } from '@pichi/core/games';
 import { mulberry32 } from '@pichi/core/rng';
 import { startVersusRound, syncTeams } from './versus/lobby';
-
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 type Log = { [K in keyof GameEvents]?: { t: number; p: GameEvents[K] }[] };
 const KINDS = [
