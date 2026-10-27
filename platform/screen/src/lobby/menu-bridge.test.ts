@@ -141,3 +141,14 @@ describe('judging a touch', () => {
     expect(sent.filter((m) => m.t === 'menuErr')).toHaveLength(2);
   });
 });
+
+describe('captain banner', () => {
+  it('pure state: shown with a form, hidden when the Captain acts and re-armed when the form goes (no document in node: it must not throw)', async () => {
+    const b = await import('./captain-banner');
+    expect(() => {
+      b.bannerForm(true);
+      b.bannerActed();
+      b.bannerForm(false);
+    }).not.toThrow();
+  });
+});
