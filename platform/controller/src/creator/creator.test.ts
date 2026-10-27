@@ -29,7 +29,12 @@ function rig(saved?: Appearance) {
     cue: (x) => cues.push(x),
     ui: (a) => {
       act = a;
-      return { render: (f, dup) => shown.push({ f, dup, ...last }), show: (open, preview, edit) => void (last = { open, preview, edit }) };
+      return {
+        render: (f, dup) => shown.push({ f, dup, ...last }),
+        show: (open, preview, edit) => {
+          last = { open, preview, edit };
+        },
+      };
     },
   });
   const rx = (m: object) => c.onMessage(m as ServerMsg);
@@ -81,9 +86,11 @@ describe('creator shell', () => {
     r.c.begin();
     r.joined(1);
     const mine = r.c.flow.ap;
+    const before = r.cues.filter((c) => c === 'soft').length;
     r.rx({ t: 'state', players: [{ id: 2, name: 'Ana', color: '#fff', slot: 1, connected: true, teamId: null, ap: mine }] });
     expect(r.shown.at(-1)!.dup).toBe('Ana');
     const soft = r.cues.filter((c) => c === 'soft').length;
+    expect(soft).toBe(before + 1); // the notice appearing on the phone is looked at
     r.rx({ t: 'appearance', playerId: 2, ap: mine, customizing: false });
     expect(r.cues.filter((c) => c === 'soft').length).toBe(soft); // same notice: no second cue
     r.act().pick('bk', (mine.bk + 1) % 6);

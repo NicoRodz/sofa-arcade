@@ -1,6 +1,6 @@
 import { CLOTHES_BY_GENDER, FIELDS, FIELD_SIZE, defaultAppearance, sanitizeAppearance, type Appearance } from '@pichi/core';
 import { describe, expect, it } from 'vitest';
-import { STEPS, initialFlow, reduce, withField, type Event, type Flow } from './flow';
+import { STEPS, initialFlow, reduce, withField, type Event } from './flow';
 
 const A = (o: Partial<Appearance> = {}): Appearance => ({ ...defaultAppearance(1), g: 1, s: 0, cl: 0, ...o });
 const open = (saved: Appearance | null = null) => reduce(initialFlow(A()), { t: 'begin', saved, random: A({ hc: 4 }) }).flow;
