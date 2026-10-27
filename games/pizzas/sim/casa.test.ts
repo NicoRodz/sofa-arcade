@@ -100,6 +100,7 @@ describe('the upgrades after the oven', () => {
     expect(p.item).toBe('dishH3');
     act(g, p, s);
     expect(p.item, 'the basil only once').toBe('dishH3');
+    expect(chefHint(g, p).a, 'nothing left to add').toBe('Pizza lista');
     p.item = 'dish';
     act(g, p, s);
     expect(p.item).toBe('dish');
