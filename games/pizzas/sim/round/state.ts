@@ -186,6 +186,7 @@ export interface Game {
   mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none
   rec: Rec | null; // the Carta del día of the round (recipes/sim.ts): null (the default) = the old recipes (Marinara, Margarita)
   assist: ReadonlySet<number>; // ids of the chefs that play on Ayudante (assist.ts); empty in a round that has none
+  adaptive: boolean; // adaptive pacing (recipes/pacing.ts): orders come by the load of the queue, not by the clock; false (the default) = the old schedule
   surf: SurfaceState | null; // ice and belts (surfaces/): null (the default, and every golden round) = every floor tile is plain
   mut: Mutate | null; // the kitchen that mutates at 1:30 (mutate/): null (the default, and every golden round) = the map never changes
   magnet: MagnetCfg | null; // magnetism for every chef (feel/magnet.ts): null (the default, and every golden round) = the plain targeting and feel

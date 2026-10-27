@@ -7,7 +7,7 @@ import { app } from '@pichi/screen-kit/shell/app-state';
 import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { COUNTDOWN_MS, addPlayer, createGame } from '@pichi/game-pizzas/sim';
 import { resolveMap } from '@pichi/game-pizzas/sim/generate';
-import type { MapChoice } from '@pichi/game-pizzas/sim/maps';
+import { SERIES_MAPS, type MapChoice } from '@pichi/game-pizzas/sim/maps';
 import { usesSurfaces } from '@pichi/game-pizzas/sim/surfaces/legend';
 import { roundRules } from '@pichi/game-pizzas/sim/midround';
 import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
@@ -70,6 +70,7 @@ function startCoop(): undefined {
     bus: gameBus,
     eventsSeed: nextEventsSeed(),
     ...roundRules(app.config.modeOptions, app.config.difficulty),
+    adaptive: SERIES_MAPS.some((m) => m.id === map.id), // the Carta larga series paces its orders by the load of the queue
     surfaces: usesSurfaces(map.rows), // a map with ice or belts turns the surfaces on by itself; versus never draws those maps
     mutate: mutateOf(app.config.modeOptions, app.config.difficulty), // only maps with a mutation: coop; versus never gets it
     assist: assistIds(),

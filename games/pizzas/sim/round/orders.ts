@@ -5,6 +5,7 @@ import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, type MidFx } from '../mi
 import { pickOrder, pickRecipe } from '../recipes/sim';
 import { VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS } from '../versus/versus';
 import { isDish, recipeBase } from '../recipes/defs';
+import { adaptiveDue, patienceMs } from '../recipes/pacing';
 
 // R15: the tip multiplier for a delivery made after `streak` correct ones in a row.
 export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax, 1 + Math.max(0, streak));
@@ -16,7 +17,7 @@ export const spawnOrder = (g: Game, team: TeamState = g.teams[0]!, force = false
   if (!room && !g.versus && !force) return;
   const recipe = pickRecipe(g, team.rng);
   if (!room) return;
-  const o: Order = { id: team.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe };
+  const o: Order = { id: team.orderSeq++, expiresAt: g.time + patienceMs(g, recipe), warned: false, recipe };
   team.orders.push(o);
   g.bus.emit('orderNew', { order: o.id, recipe, ...tag(g, team.id) });
 };
@@ -124,7 +125,13 @@ export const MID_FX: MidFx = {
 // End of the tick for every queue: new orders on schedule, expired ones leave (and cost points and the streak), and orders about to expire warn.
 export function ordersTick(g: Game) {
   for (const team of g.teams) {
-    if (g.time >= team.nextOrderAt) {
+    if (g.adaptive) {
+      const gap = adaptiveDue(g, team);
+      if (gap !== null) {
+        spawnOrder(g, team);
+        team.nextOrderAt = g.time + gap;
+      }
+    } else if (g.time >= team.nextOrderAt) {
       spawnOrder(g, team);
       team.nextOrderAt += g.params.orderEveryMs;
     }

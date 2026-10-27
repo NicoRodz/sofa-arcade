@@ -58,6 +58,7 @@ export function createGame(
     magnet?: boolean | MagnetLevel;
     surfaces?: boolean;
     mutate?: boolean;
+    adaptive?: boolean; // the order flow follows the load of the queue (recipes/pacing.ts)
     pace?: number; // order-flow speed-up (1 = the table as it is): orders arrive 1/pace as far apart and the queue holds one more from 1.3 up
   } = {},
 ): Game {
@@ -170,6 +171,7 @@ export function createGame(
     mid: null,
     rec: opts.recipes ? createRec(stations, opts.mapId) : null,
     assist,
+    adaptive: !!opts.adaptive && !versus, // coop only
     surf: opts.surfaces ? newSurfaceState() : null,
     mut: null,
     magnet: null, // rec: before the first orders are drawn
