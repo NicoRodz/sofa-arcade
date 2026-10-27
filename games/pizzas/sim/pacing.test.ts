@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from './overcooked';
 import { fixedMap } from './maps';
-import { MIN_GAP_MS, loadOf, patienceMs, targetLoad } from './recipes/pacing';
+import { MIN_GAP_MS, adaptiveDue, loadOf, patienceMs, targetLoad } from './recipes/pacing';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const play = (adaptive: boolean, seconds: number, n = 2) => {
@@ -39,5 +39,19 @@ describe('adaptive pacing', () => {
     expect(patienceMs(on, 'marinara')).toBe(on.params.orderTtlMs);
     expect(patienceMs(on, 'pepqueso')).toBeCloseTo(on.params.orderTtlMs * 1.9);
     expect(patienceMs(off, 'pepqueso')).toBe(off.params.orderTtlMs);
+  });
+  it('due only when the gap has passed AND the load is under the target: a heavy queue gets nothing, an empty one gets an order', () => {
+    const { g } = play(true, 1);
+    const team = g.teams[0]!;
+    g.time = 100_000;
+    team.nextOrderAt = 0;
+    team.orders = [];
+    expect(adaptiveDue(g, team)).toBe(MIN_GAP_MS.normal);
+    team.orders = Array.from({ length: 4 }, (_, i) => ({ id: i, expiresAt: 1e9, warned: false, recipe: 'pepqueso' as const }));
+    expect(loadOf(team)).toBeGreaterThan(targetLoad('normal', 2));
+    expect(adaptiveDue(g, team)).toBeNull();
+    team.orders = [];
+    team.nextOrderAt = g.time + 1;
+    expect(adaptiveDue(g, team)).toBeNull(); // the gap has not passed
   });
 });
