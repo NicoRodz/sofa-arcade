@@ -55,7 +55,8 @@ export type Item =
   | 'sauce'
   | 'dishN'
   | 'dishNB'
-  | 'dishB';
+  | 'dishB'
+  | `dishH${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7}`; // the Pizza de la casa with the upgrades of its mask (recipes/casa.ts)
 
 export interface Station {
   kind: StationKind;
@@ -123,6 +124,9 @@ export interface Order {
   recipe: Recipe;
   vip?: boolean;
   birthday?: boolean;
+  parts?: Recipe[]; // a Bandeja familiar (recipes/bandeja.ts): its three plates...
+  served?: boolean[]; // ...which of them are already on the window
+  firstAt?: number; // match time the first one went in
 } // birthday: the mid-round event's order, worth BIRTHDAY_POINTS flat
 // a = new A presses since last tick; bTaps = new B presses since last tick (a quick tap can start and end between two ticks)
 export interface Controls {
@@ -198,6 +202,9 @@ export interface Game {
   rec: Rec | null; // the Carta del día of the round (recipes/sim.ts): null (the default) = the old recipes (Marinara, Margarita)
   assist: ReadonlySet<number>; // ids of the chefs that play on Ayudante (assist.ts); empty in a round that has none
   frostEvent: boolean; // the Ola de frio event is in the pool of this round's events (the lobby turns it on; the golden rounds never see it)
+  upgrades: boolean; // `upgradeOrders`: the Pizza de la casa with upgrades (recipes/casa.ts); false (the default) = the card drops it
+  slices: boolean; // `sliceAfterBake`: a casa plate can be cut into portions on a board
+  compound: boolean; // `compoundOrders`: the Bandeja familiar (recipes/bandeja.ts), coop only
   adaptive: boolean; // adaptive pacing (recipes/pacing.ts): orders come by the load of the queue, not by the clock; false (the default) = the old schedule
   surf: SurfaceState | null; // ice and belts (surfaces/): null (the default, and every golden round) = every floor tile is plain
   mut: Mutate | null; // the kitchen that mutates at 1:30 (mutate/): null (the default, and every golden round) = the map never changes

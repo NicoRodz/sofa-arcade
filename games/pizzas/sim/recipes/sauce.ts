@@ -7,6 +7,7 @@ import type { Difficulty } from '@pichi/core/difficulty';
 import type { Game, Item, Station } from '../round/state';
 import { cutType } from './defs';
 import { potCapacity } from './sim';
+import { hasCasa } from './casa';
 
 export const STIR_MS = 3000; // of Picar to turn a pot of chopped tomato into sauce
 export const STICK_MS: Record<Difficulty, number> = { easy: Infinity, normal: 20_000, hard: 12_000 }; // sauce left in the pot this long sticks
@@ -15,6 +16,8 @@ export const BASE_COOK_MULT = 0.6; // the first bake of the Pizza blanca (the se
 export const BELL_MS: Record<Difficulty, number> = { easy: 10_000, normal: 6000, hard: 4000 }; // the window the toppings must go in after the bell
 
 export const hasNonna = (g: Pick<Game, 'rec'>) => !!g.rec?.recipes.includes('nonna');
+/** The sauce pot is in use: the Marinara de la nonna or the Pizza de la casa is on the card. */
+export const hasSauce = (g: Pick<Game, 'rec'>) => hasNonna(g) || hasCasa(g);
 export const hasBlanca = (g: Pick<Game, 'rec'>) => !!g.rec?.recipes.includes('blanca');
 
 /** The ingredient type an item is when it goes into an oven: a chopped ingredient, or the sauce (-1: not an ingredient). */
@@ -83,7 +86,7 @@ export function bellTick(g: Game, s: Station, dtMs: number, dark: boolean) {
 // --- the sauce pot ---------------------------------------------------------------------------------------------------------------------------------
 /** A at the pot: a chopped tomato in (when the card has the Marinara de la nonna), the sauce out, or the stuck sauce scraped off. */
 export function interactSaucepot(g: Game, p: { item: Item | null }, s: Station) {
-  if (p.item === 'cut1' && hasNonna(g) && !s.inputs.length && !s.done) {
+  if (p.item === 'cut1' && hasSauce(g) && !s.inputs.length && !s.done) {
     s.inputs = [1];
     s.progress = 0;
     p.item = null;

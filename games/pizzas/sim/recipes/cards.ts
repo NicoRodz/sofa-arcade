@@ -1,6 +1,6 @@
 // The Carta del día: each map brings 2 or 3 recipes instead of all of them (council #7). It is metadata of the map, here by map id; the validator
 // (cardCheck.ts) proves every station a recipe needs is on the map and reachable (in versus: in EACH kitchen). A versus round plays one card for both teams.
-// Rules of a card: 2 or 3 different recipes, always including the Marinara (the staple: the birthday event orders it and every kitchen can make it), and at
+// Rules of a card: 2 to 4 different recipes, always including the Marinara (the staple: the birthday event orders it and every kitchen can make it), and at
 // most one recipe with a topping (the cheese crate gives one topping per round, see defs.ts). Maps 1 to 8 have no cheese crate: their card is Marinara + Calzone.
 import { isRecipe, RECIPE_DEFS, type Recipe } from './defs';
 
@@ -9,7 +9,7 @@ export interface Card {
   bind?: readonly [number, number]; // a map with two topping crates ('3' and '4'): the topping each one gives (2 cheese, 3 pepperoni, 4 mushroom)
 }
 export const CARD_MIN = 2;
-export const CARD_MAX = 3;
+export const CARD_MAX = 4; // the Carta larga 9 holds four (the Bandeja draws its plates from the others)
 
 const M: Recipe = 'marinara',
   C: Recipe = 'calzone',
@@ -21,7 +21,9 @@ const M: Recipe = 'marinara',
   MF: Recipe = 'margfresca',
   CR: Recipe = 'calzonerel',
   NO: Recipe = 'nonna',
-  BL: Recipe = 'blanca';
+  BL: Recipe = 'blanca',
+  CA: Recipe = 'casa',
+  BA: Recipe = 'bandeja';
 export const CARDS: Readonly<Record<string, Card>> = {
   '1': { recipes: [M, C] },
   '2': { recipes: [M, C] },
@@ -45,6 +47,8 @@ export const CARDS: Readonly<Record<string, Card>> = {
   '24': { recipes: [M, MF, CR], bind: [2, 5] }, // Carta larga 7: cheese on crate 3, ham on crate 4, basil on 5
   '25': { recipes: [M, NO, H], bind: [2, 4] }, // Carta larga 5 La nonna: mushroom on crate 4, basil on 5, the sauce pot (the design's Margarita fresca does not fit: a card holds three recipes)
   '26': { recipes: [M, BL, NO], bind: [2, 4] }, // Carta larga 6 Pasaplatos: the white pizza takes both crates
+  '27': { recipes: [M, CA, CR], bind: [2, 5] }, // Carta larga 8 Isla de hornos: cheese on crate 3, ham on crate 4 (the upgrade of the casa and the stuffing of the calzone)
+  '28': { recipes: [M, CA, BA, CR], bind: [2, 5] }, // Carta larga 9 Cocina espejo: the Bandeja takes its three plates from the other three
   V1: { recipes: [M, P, C] },
   V2: { recipes: [M, H, C] },
   V3: { recipes: [M, Q, C] },
@@ -80,6 +84,9 @@ export function cardShapeProblems(card: Card): string[] {
     const one = isRecipe(r) ? RECIPE_DEFS[r].topping : null;
     if (bind && one !== null && !bind.includes(one)) errors.push(`recipe ${r} needs topping ${one}, which no crate of the card gives`);
   }
+  if (card.recipes.includes('casa') && !bind?.includes(2)) errors.push('the Pizza de la casa needs the cheese bound to a crate');
+  if (card.recipes.includes('bandeja') && card.recipes.length < 3)
+    errors.push('the Bandeja needs two other recipes on the card to draw its plates from');
   if (card.recipes.filter((r) => isRecipe(r) && RECIPE_DEFS[r].topping !== null).length > (bind ? 2 : 1))
     errors.push('a card has at most one recipe with a topping (the cheese crate gives one topping)');
   return errors;

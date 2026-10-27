@@ -4,10 +4,12 @@
 //   - the cheese crate gives the topping of the card's recipe (cheese, pepperoni or mushroom);
 //   - slicing pepperoni takes longer; a pot with dough and tomato can be FOLDED (hold Picar at the oven) into a calzone, which bakes longer;
 //   - the window matches a plate to an order by recipe.
-import type { Game, Item, Order, Station } from '../round/state';
+import type { Game, Item, Order, Station, TeamState } from '../round/state';
 import type { Rng } from '@pichi/core/rng';
 import { cardFor, type Card } from './cards';
 import { stageCookMs } from './sauce';
+import { SLICE_MS, casaAccepts, casaCookMult, casaMask } from './casa';
+import { bandejaAllowed, partSlot } from './bandeja';
 export { isBaking } from './sauce';
 import {
   CALZONE_COOK_MULT,
@@ -20,6 +22,7 @@ import {
   TOPPING_RECIPE,
   TWO_TOPPINGS_COOK_MULT,
   dishRecipe,
+  isToppedPlate,
   type Recipe,
 } from './defs';
 
@@ -34,12 +37,22 @@ export interface Rec {
 }
 
 /** The card of the round, or null when the map has none (a generated map): the round then plays the old recipes. `stations`: the sim's, to drop what the grid cannot make. */
-export function createRec(stations: readonly Station[], mapId: string | undefined): Rec | null {
+export function createRec(
+  stations: readonly Station[],
+  mapId: string | undefined,
+  flags: { upgrades?: boolean; compound?: boolean } = {},
+): Rec | null {
   const card = cardFor(mapId);
   if (!card) return null;
   const hasTopping = stations.some((s) => s.kind === 'crate' && s.crate === 2);
   const hasTopping2 = hasTopping && stations.some((s) => s.kind === 'crate' && s.crate === 3);
-  const recipes = card.recipes.filter((r) => (hasTopping || RECIPE_DEFS[r].topping === null) && (hasTopping2 || !RECIPE_DEFS[r].toppings)); // a recipe with a topping needs the crate that gives it
+  const recipes = card.recipes.filter(
+    (r) =>
+      (hasTopping || RECIPE_DEFS[r].topping === null) &&
+      (hasTopping2 || !RECIPE_DEFS[r].toppings) && // a recipe with a topping needs the crate that gives it
+      (r !== 'casa' || !!flags.upgrades) && // the Pizza de la casa and the Bandeja are behind their flags (casa.ts, bandeja.ts)
+      (r !== 'bandeja' || !!flags.compound),
+  );
   if (!recipes.includes('marinara')) return null;
   const others = recipes.length - 1;
   const weights = recipes.map((r) => (others === 0 ? 100 : r === 'marinara' ? MARINARA_PCT : (100 - MARINARA_PCT) / others));
@@ -49,17 +62,20 @@ export function createRec(stations: readonly Station[], mapId: string | undefine
 }
 
 /** The recipe of a new order. Old rounds: Margarita on a cheese map with probability cheesePct (a draw only when the map has cheese). Card rounds: one draw by the card's weights. */
-export function pickRecipe(g: Game, rng: Rng): Recipe {
+export function pickRecipe(g: Game, rng: Rng, team?: Pick<TeamState, 'orders'>): Recipe {
   const rec = g.rec;
   if (!rec) return g.hasCheese && rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
   const u = rng() * 100;
   let acc = 0;
   for (let i = 0; i < rec.recipes.length; i++) {
     acc += rec.weights[i]!;
-    if (u < acc) return rec.recipes[i]!;
+    if (u < acc) return open(g, rec.recipes[i]!, team);
   }
-  return rec.recipes[rec.recipes.length - 1]!;
+  return open(g, rec.recipes[rec.recipes.length - 1]!, team);
 }
+/** A Bandeja that may not be opened now (none allowed: under 4 chefs, one open already) comes out as a Marinara: the draw was made, nothing more is drawn. */
+const open = (g: Game, r: Recipe, team?: Pick<TeamState, 'orders'>): Recipe =>
+  r === 'bandeja' && !(team && bandejaAllowed(g, team)) ? 'marinara' : r;
 
 /** What a crate gives. Crate type 2 (the cheese crate) gives the card's topping. */
 export const crateItem = (g: Game, crate: number): Item =>
@@ -87,11 +103,13 @@ export function pickOrder(g: Game, orders: readonly Order[], item: Item): number
     return at;
   }
   const own = dishRecipe(item);
-  const topped = item !== 'dish' && item !== 'dishC' && item !== 'dishCR';
-  const fits = (o: Order) => o.recipe === own || (topped && o.recipe === 'marinara');
+  const topped = isToppedPlate(item);
+  const fits = (o: Order) =>
+    (o.recipe === own && (own !== 'casa' || casaAccepts(g.difficulty, item))) || (topped && o.recipe === 'marinara');
   let at = orders.findIndex((o) => o.vip && fits(o));
   if (at < 0) at = orders.findIndex((o) => o.birthday && fits(o));
-  if (at < 0) at = orders.findIndex((o) => o.recipe === own);
+  if (at < 0) at = orders.findIndex((o) => partSlot(o, item) >= 0); // a Bandeja takes the plate into one of its slots before a loose order does
+  if (at < 0) at = orders.findIndex((o) => o.recipe === own && fits(o));
   if (at < 0) at = orders.findIndex(fits);
   return at;
 }
@@ -124,10 +142,13 @@ export function foldStep(g: Game, playerId: number, s: Station, dtMs: number) {
 /** Milliseconds a full bake of this pot takes: a folded calzone bakes CALZONE_COOK_MULT times longer. */
 export const cookMsOf = (g: Game, s: Station): number =>
   stageCookMs(g, s) ??
-  (s.folded
-    ? g.params.cookMs * (s.inputs.length === 4 ? STUFFED_COOK_MULT : CALZONE_COOK_MULT)
-    : s.inputs.length === 4
-      ? g.params.cookMs * TWO_TOPPINGS_COOK_MULT
-      : g.params.cookMs);
+  (casaCookMult(g, s) !== null
+    ? g.params.cookMs * casaCookMult(g, s)!
+    : s.folded
+      ? g.params.cookMs * (s.inputs.length === 4 ? STUFFED_COOK_MULT : CALZONE_COOK_MULT)
+      : s.inputs.length === 4
+        ? g.params.cookMs * TWO_TOPPINGS_COOK_MULT
+        : g.params.cookMs);
 /** Milliseconds of Picar a raw item takes on the board: the pepperoni slices take SLICE_MULT times longer. */
-export const cutMsOf = (g: Game, item: Item | null): number => (item === 'raw3' ? g.params.cutMs * SLICE_MULT : g.params.cutMs);
+export const cutMsOf = (g: Game, item: Item | null): number =>
+  casaMask(item) >= 0 ? SLICE_MS : item === 'raw3' ? g.params.cutMs * SLICE_MULT : g.params.cutMs; // a casa plate on a board is being cut into portions

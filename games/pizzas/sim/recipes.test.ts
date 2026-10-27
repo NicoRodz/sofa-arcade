@@ -76,6 +76,8 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
       ['calzonerel', 190],
       ['nonna', 150], // tomato, dough, sauce, basil; seven processes
       ['blanca', 170], // dough, cheese, mushroom; eleven processes (two bakes)
+      ['casa', 120], // the base of the Pizza de la casa; its upgrades are paid on top (casa.ts)
+      ['bandeja', 0], // the Bandeja pays by its parts (bandeja.ts)
     ]);
     expect(RECIPE_PARTS.marinara).toEqual({ components: 2, processes: 3 });
     expect(RECIPE_PARTS.margarita).toEqual({ components: 3, processes: 4 });
@@ -93,6 +95,7 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
       'margfresca',
       'calzonerel',
       'blanca',
+      'casa',
     ]);
   });
   it('items: raw<N> is cut into cut<N>; a plate says which recipe it holds', () => {
@@ -125,7 +128,7 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
     expect(cardFor('11-vs')).toBe(cardFor('11'));
     expect(cardFor('whatever')).toBeUndefined();
     expect(cardFor(undefined)).toBeUndefined();
-    expect(Object.keys(CARDS)).toHaveLength(27);
+    expect(Object.keys(CARDS)).toHaveLength(29);
   });
   it('every card has the right shape, and a card with a topping recipe sits on a map with the cheese crate', () => {
     for (const [id, card] of Object.entries(CARDS)) {
