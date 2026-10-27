@@ -80,7 +80,7 @@ describe('ovens and fire', () => {
   const potGame = (rate?: number) => {
     const rows = withLetter('W');
     const g = createGame({ mech: { woodOven: true }, rows, burn: true, fire: true, difficulty: 'normal' });
-    if (rate !== undefined) vi.spyOn(mechModule('woodOven'), 'ovenRate').mockReturnValue(rate);
+    vi.spyOn(mechModule('woodOven'), 'ovenRate').mockReturnValue(rate ?? 1000); // the real W is frozen without fuel (T1e): these tests pin the sim's hook, so the rate is set here
     const s = g.stations.find((x) => x.wood)!;
     s.inputs = [0, 1];
     return { g, s };
