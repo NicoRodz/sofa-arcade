@@ -30,9 +30,6 @@ describe("clothes vs slot colours", () => {
     expect(deltaE("#112233", "#112233")).toBe(0);
     expect(deltaE("#000000", "#ffffff")).toBeCloseTo(100, 0);
   });
-  // KNOWN: the hawaiian shirt (cl 2) is 17.8 from Turquesa. Fixing it is a catalog change (platform/core/src/avatar/parts/data.ts, F2's area):
-  // when it is fixed this test goes red on purpose, and the entry below must be deleted.
-  const KNOWN = ["cl 2 top #4FB3BF vs Turquesa #1FB5A8: 17.8"];
   it("every top and bottom is at least 20 from every slot colour (only the KNOWN exception)", () => {
     const bad: string[] = [];
     CLOTHES.forEach((c, id) => {
@@ -48,6 +45,6 @@ describe("clothes vs slot colours", () => {
             );
         }
     });
-    expect(bad).toEqual(KNOWN);
+    expect(bad).toEqual([]);
   });
 });

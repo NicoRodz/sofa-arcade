@@ -11,7 +11,7 @@ export interface ClothesSpec {
 export const CLOTHES: readonly ClothesSpec[] = [
   { top: '#F4F4F0', bottom: '#4C6A92', sleeves: 'short', legs: 'long', deco: 'none', accent: '#F4F4F0' },
   { top: '#7C8A55', bottom: '#2F3B55', sleeves: 'long', legs: 'long', deco: 'hoodie', accent: '#EFE6D2' },
-  { top: '#4FB3BF', bottom: '#EFE6D2', sleeves: 'short', legs: 'short', deco: 'flowers', accent: '#F4F4F0' },
+  { top: '#6BB7CF', bottom: '#EFE6D2', sleeves: 'short', legs: 'short', deco: 'flowers', accent: '#F4F4F0' },
   { top: '#D2A84A', bottom: '#4C6A92', sleeves: 'short', legs: 'long', deco: 'overall', accent: '#4C6A92' },
   { top: '#9E3B32', bottom: '#5B4636', sleeves: 'long', legs: 'long', deco: 'plaid', accent: '#2A211C' },
   { top: '#2F3B55', bottom: '#2F3B55', sleeves: 'short', legs: 'short', deco: 'surf', accent: '#D2603A' },
