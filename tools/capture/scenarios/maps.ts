@@ -14,6 +14,7 @@ export async function runNewmaps({ cdp, bots, timers, open, join, click, snap, w
     await join(room, n, fixedMap(id)!.rows);
     await sleep(800);
     await cdp.shot(`lobby-n${n}`);
+    if (Number(id) >= 20) await click('[data-map="group"]'); // the Carta larga series is a page of its own in the lobby
     await click(`[data-map="${id}"]`);
     await click('[data-diff="easy"]');
     await sleep(300);
