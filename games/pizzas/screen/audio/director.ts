@@ -1,7 +1,17 @@
 // Glue: subscribes to the game bus, owns the AudioContext, unlocks it on a user gesture, runs the scheduler.
 import type { Emitter, GameEvents } from '@pichi/core/events';
 import { DUCK_GAIN, DUCK_S, BUS_GAIN, LoopTable, SfxLimiter, hintText, masterGain, rateFor } from '@pichi/screen-kit/audio/mixer';
-import { LOOKAHEAD_S, TICK_MS, advance, modeFor, newSched, type Snapshot } from '@pichi/screen-kit/audio/music';
+import {
+  LOOKAHEAD_S,
+  TICK_MS,
+  advance,
+  modeFor,
+  newSched,
+  pickTheme,
+  themeFor,
+  type Mode,
+  type Snapshot,
+} from '@pichi/screen-kit/audio/music';
 import { ACTIONS, type Action, type SfxId } from '@pichi/screen-kit/audio/recipes';
 import { SURFACE_ACTIONS } from './surfaces';
 import { MUTATE_ACTIONS } from './mutate';
@@ -16,7 +26,8 @@ export interface AudioController {
 const NOOP: AudioController = { playerJoined() {}, toggleMute() {}, ui() {} };
 const MUTE_KEY = 'pg.muted';
 
-export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): AudioController {
+// `rand` picks the match theme; it is deliberately not the simulation's RNG.
+export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot, rand: () => number = Math.random): AudioController {
   const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Ctor) return NOOP;
   const ctx = new Ctor();
@@ -24,6 +35,8 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
   const limiter = new SfxLimiter();
   const loops = new LoopTable();
   let sched = newSched(0);
+  let theme = pickTheme(null, rand);
+  let prevMode: Mode = 'silent';
   let muted = false;
   try {
     muted = localStorage.getItem(MUTE_KEY) === '1';
@@ -98,9 +111,11 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot): A
     if (ctx.state !== 'running') return;
     const now = ctx.currentTime;
     const mode = modeFor(snapshot());
+    theme = themeFor(theme, prevMode, mode, rand);
+    prevMode = mode;
     if (mode !== 'game' && mode !== 'rush') loops.clear();
     const look = document.hidden ? 1.5 : LOOKAHEAD_S; // hidden tabs throttle timers to ~1 s
-    const r = advance(sched, now, look, mode);
+    const r = advance(sched, now, look, mode, theme);
     sched = r.state;
     for (const n of r.notes) playNote(ctx, chain, n);
     for (const h of loops.due(now, look, Math.random)) playSfx(ctx, chain, h.sfx, h.at, rateFor(h.sfx, Math.random()));

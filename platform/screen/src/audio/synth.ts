@@ -2,6 +2,7 @@
 import { BUS_GAIN, COMPRESSOR, MASTER_GAIN, softClip } from './mixer';
 import type { Note, Scheduled } from './music';
 import { SFX, type SfxId, type Voice } from './recipes';
+import { playHybrid } from './synth-perc';
 
 export interface Chain {
   master: GainNode;
@@ -107,7 +108,9 @@ export function playSfx(ctx: BaseAudioContext, chain: Chain, id: SfxId, t: numbe
 }
 
 // Music voices. `n.len` is in eighths; `eighth` is the current eighth duration in seconds.
-export function playNote(ctx: BaseAudioContext, chain: Chain, { at, eighth, note: n }: Scheduled) {
+export function playNote(ctx: BaseAudioContext, chain: Chain, sched: Scheduled) {
+  if (playHybrid(ctx, chain, sched)) return;
+  const { at, eighth, note: n } = sched;
   const dur = Math.max(0.03, n.len * eighth);
   const out = chain.music;
   const peak = n.gain;
