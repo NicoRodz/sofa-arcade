@@ -33,4 +33,19 @@ describe('cueFor', () => {
     expect(cueFor({ t: 'buzz', playerId: 1, kind: 'alert' } as never, 1, mem())).toBe('alert');
     expect(cueFor({ t: 'buzz', playerId: 1, kind: 'pick' } as never, 1, mem())).toBeNull();
   });
+  it("the Captain's form: a crown cue already covers its first snapshot; one in a new lobby rings once; later snapshots and other phones stay quiet", () => {
+    const menu = { t: 'menu' } as never;
+    const m = mem();
+    expect(cueFor(captain(1), 1, m)).toBe('turn');
+    expect(cueFor(menu, 1, m)).toBeNull(); // the turn cue said it
+    expect(cueFor(phase('lobby'), 1, m)).toBeNull();
+    expect(cueFor(menu, 1, m)).toBe('soft'); // a lobby entered while already Captain
+    expect(cueFor(menu, 1, m)).toBeNull(); // the lobby changing under the form
+    const other = mem();
+    cueFor(captain(2), 1, other);
+    expect(cueFor(menu, 1, other)).toBeNull();
+  });
+  it('a refused touch rings the alert so the notice is read', () => {
+    expect(cueFor({ t: 'menuErr', rev: 1, code: 'stale', msg: 'x' } as never, 1, mem())).toBe('alert');
+  });
 });

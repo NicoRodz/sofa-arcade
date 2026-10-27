@@ -1,0 +1,13 @@
+/* The map picker (S2) and the confirmation card (S3) of the Captain's menu. Cards are at least 64px tall; the grid takes as many columns as fit (two on the
+   narrowest phones, up to four on a wide one). */
+.cm-body[data-view=maps] { gap: 10px; }
+.cm-maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 132px), 1fr)); gap: 8px; }
+#cmenu .cm-card { min-height: 64px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding: 6px 10px; text-align: left; }
+#cmenu .cm-card b { display: flex; align-items: center; gap: 5px; font-size: 15px; line-height: 1.1; overflow-wrap: anywhere; }
+#cmenu .cm-card span { font-size: 13px; font-weight: 700; opacity: .85; }
+#cmenu .cm-card em { font-style: normal; font-size: 12px; font-weight: 700; line-height: 1.15; color: #FFB4A8; overflow-wrap: anywhere; }
+#cmenu .cm-card.sel em { color: var(--tomato2); }
+#cmenu .cm-card.sel .cm-st { color: var(--tomato2); }
+.cm-extras { margin-top: 2px; }
+.cm-tabs { flex-wrap: nowrap; }
+.cm-body[data-view=confirm] { justify-content: center; align-items: stretch; gap: 14px; }

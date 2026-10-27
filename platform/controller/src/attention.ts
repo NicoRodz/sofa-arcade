@@ -7,6 +7,7 @@ export type Cue = 'turn' | 'go' | 'done' | 'soft' | 'alert';
 export interface CueMemory {
   phase: string | null;
   captain: number | null;
+  menu?: boolean; // the Captain already knows its form is up (the crown cue, or the first snapshot of this lobby, said so)
 }
 
 // Pure: which cue (if any) a message from the relay deserves. `mem` is updated as a side effect.
@@ -15,15 +16,23 @@ export function cueFor(m: ServerMsg, me: number | null, mem: CueMemory): Cue | n
     const was = mem.phase;
     mem.phase = m.phase;
     if (was === m.phase) return null;
+    mem.menu = false; // a new lobby (or the end of a round): the form shows up again and deserves a look
     if (m.phase === 'playing' || m.phase === 'school') return was === 'playing' || was === 'school' ? null : 'go';
     return m.phase === 'results' ? 'done' : null;
   }
   if (m.t === 'captain') {
     const was = mem.captain;
     mem.captain = m.playerId;
+    mem.menu = m.playerId === me && was !== me; // the crown cue already says "look at your phone": the form that follows needs no second one
     return m.playerId === me && was !== me ? 'turn' : null; // the menus are yours now
   }
   if (m.t === 'buzz') return m.kind === 'alert' ? 'alert' : null; // something is coming in the kitchen: look at the screen
+  if (m.t === 'menu') {
+    if (mem.menu) return null; // later snapshots are the lobby changing under the form: the flash of the changed row is the cue, not a tone
+    mem.menu = true;
+    return me !== null && mem.captain === me ? 'soft' : null; // the form appeared (a lobby entered while already Captain): the screen is waiting for a choice
+  }
+  if (m.t === 'menuErr') return 'alert'; // the screen refused the touch: look at the notice
   if (m.t === 'assist') return m.playerId === me && m.on ? 'soft' : null;
   return null;
 }
