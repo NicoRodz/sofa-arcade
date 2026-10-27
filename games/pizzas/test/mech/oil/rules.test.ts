@@ -4,6 +4,7 @@ import { addPlayer, createGame, tick, type Controls, type Game } from '../../../
 import type { MechOpts } from '../../../sim/mech/ids';
 import { mechOnFire } from '../../../sim/mech/loop';
 import { DRIP_EVERY, FIRE, FIRE_TICKS, OIL, OIL_TICKS, SAUCE_WAIT, WATER, WIPE_OIL, at, setTile } from '../../../sim/mech/oil/state';
+import { freeFloor } from '../../../sim/mech/oil/state';
 import { SPILL_PATCHES, spill } from '../../../sim/mech/oil/spill';
 import { eventPool } from '../../../sim/midround';
 import { mulberry32 } from '@pichi/core/rng';
@@ -142,6 +143,18 @@ describe('mech.oil fire', () => {
       return g.mech!.hash;
     };
     expect(h()).toBe(h());
+  });
+});
+
+describe('where oil may appear', () => {
+  it('only on plain floor: not on a drip g, a sprinkler *, a station, and not under a chef', () => {
+    const g = make();
+    expect(freeFloor(g, idx(4, 3))).toBe(false); // g
+    expect(freeFloor(g, idx(3, 5))).toBe(false); // *
+    expect(freeFloor(g, idx(10, 4))).toBe(false); // an oven
+    expect(freeFloor(g, idx(6, 6))).toBe(true);
+    put(g, 6, 6);
+    expect(freeFloor(g, idx(6, 6))).toBe(false);
   });
 });
 
