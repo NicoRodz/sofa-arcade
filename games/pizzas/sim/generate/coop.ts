@@ -126,11 +126,12 @@ export function resolveMap(
   spawns?: readonly Pos[];
   puestos?: MapDef['puestos'];
   mechanics?: MapDef['mechanics'];
+  mutation?: MapDef['mutation'];
 } {
   if (choice === 'random') {
     const g = generate(seed, diff, n);
     return { id: 'random', name: `Aleatorio ${seed}`, rows: g.rows, spawns: g.spawns, puestos: g.puestos };
   }
   const m = pickFixedMap(choice, diff, rand, n);
-  return { id: m.id, name: m.name, rows: m.rows, spawns: m.spawns, puestos: m.puestos, mechanics: m.mechanics };
+  return { id: m.id, name: m.name, rows: m.rows, spawns: m.spawns, puestos: m.puestos, mechanics: m.mechanics, mutation: m.mutation };
 }

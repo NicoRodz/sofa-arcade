@@ -17,6 +17,8 @@ import { createBurn, fireAllowed } from '../burn';
 import { createMid } from '../midround';
 import { anyMech, MECH_IDS, type MechFlags, type MechOpts } from '../mech/ids';
 import { mechStart } from '../mech/loop';
+import { armMutation } from '../mech/mutation/module';
+import { invertOps, type MutationV2 } from '../mech/mutation/ops';
 
 const LEGACY = [
   'score',
@@ -60,6 +62,7 @@ export function createGame(
     magnet?: boolean | MagnetLevel;
     surfaces?: boolean;
     mutate?: boolean;
+    mutation?: MutationV2; // the map's v2 mutation (mech/mutation/ops.ts); it runs only with flags.mech.mutation
     mech?: MechOpts; // flags.mech.<id>: the map mechanics that are on (off by default; the lobby turns on the ones the map declares). Absent or all false = the round of before
     frost?: boolean; // the Ola de frio event may be drawn (coop only)
     upgradeOrders?: boolean; // the Pizza de la casa takes upgrades (recipes/casa.ts)
@@ -222,6 +225,8 @@ export function createGame(
   if (opts.magnet) applyMagnet(g, opts.magnet === true ? 'normal' : opts.magnet); // magnetism: off unless the round's config asks
   if (opts.events) g.mid = createMid(g, opts.eventsSeed ?? seed); // `eventsSeed`: the coop lobby does not seed its orders (they are the same every round), but the event must still vary
   if (opts.mutate) g.mut = createMutate(g, seed); // coop maps with a mutation only; its own stream, nothing shared
+  if (g.mech && opts.mutation && g.flags!.mech.mutation)
+    armMutation(g, opts.mutation, invertOps(opts.rows ?? FIXED_MAPS[0]!.rows, opts.mutation.ops), opts.rows ?? FIXED_MAPS[0]!.rows); // the v2 mutation's data, before the modules start
   if (g.mech) mechStart(g); // onLoad, then init, of every module whose flag is on
   return g;
 }

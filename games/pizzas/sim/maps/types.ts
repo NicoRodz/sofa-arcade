@@ -2,6 +2,7 @@
 import type { PuestoId } from '../puestos';
 import type { SIGMAS } from '../symmetry';
 import type { MechId } from '../mech/ids';
+import type { MutationV2 } from '../mech/mutation/ops';
 
 export type StationKind =
   | 'crate'
@@ -38,6 +39,7 @@ export interface MapDef {
   spawns?: readonly Pos[]; // explicit spawn order when reading order is not the order the author wants
   puestos?: readonly (readonly PuestoId[])[]; // replaces the default puesto table (zone maps), indexed by spawn
   versusFit?: VersusFit; // coop maps only: what the versus work (F3) found out about this map
+  mutation?: MutationV2; // the v2 mutation (stations that move, mech/mutation/ops.ts): the map needs `mutation` in its mechanics for the round to run it
   mechanics?: readonly MechId[]; // the map mechanics it uses: the lobby turns those flags on (mechFlagsOf), the parser reads their letters
 }
 

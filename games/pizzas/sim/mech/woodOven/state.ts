@@ -34,3 +34,14 @@ export const blowers = (g: Game) => ext(g).blowing;
 export const dryFlag = (g: Game) => ext(g).dry;
 /** Is the W oven holding something that needs heat (dough or pizza inside, ready or not)? */
 export const loaded = (s: Station) => s.inputs.length > 0 || s.done;
+
+/** After a station moved (the v2 mutation): each bellows feeds the nearest W again. The fuel stays where it is. */
+export function refeed(g: Game) {
+  const w = ovens(g);
+  for (const q of bellows(g)) {
+    const s = g.stations[q]!;
+    const d = (i: number) => Math.abs(g.stations[i]!.tx - s.tx) + Math.abs(g.stations[i]!.ty - s.ty);
+    const near = [...w].sort((a, b) => d(a) - d(b) || a - b)[0];
+    if (near !== undefined) ext(g).feeds[q] = near;
+  }
+}

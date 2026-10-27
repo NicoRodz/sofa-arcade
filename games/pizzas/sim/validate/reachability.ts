@@ -1,4 +1,5 @@
 // Map solvability: floor regions, the zone graph over passing counters, recipe legs, spawns per zone, and a fixed map against its own metadata.
+import { mechFlagsOf } from '../mech/ids';
 import { MAP_H, MAP_W, floorComponents, parseMap, posKey, type Grid, type MapDef, type Pos } from '../maps';
 import { accessTiles, hasCheese, hasSink, keysOf, legsOf, stationsOf, type StationKey } from './stations';
 import { cardFor } from '../recipes/cards';
@@ -109,7 +110,7 @@ export const FLOOR_PER_PLAYER = 7; // design: at least 7 floor tiles per player 
 // A fixed map against its own metadata: solvable, one spawn per player of its maximum, range and minDuro consistent.
 export function validateMap(m: MapDef): { ok: boolean; errors: string[] } {
   if (m.rows.length !== MAP_H || m.rows.some((r) => r.length !== MAP_W)) return { ok: false, errors: ['bad size'] };
-  const g = parseMap(m.rows);
+  const g = parseMap(m.rows, false, mechFlagsOf(m.mechanics));
   const errors = [...validate(g).errors];
   const card = cardFor(m.id);
   if (card) errors.push(...cardProblems(card, g)); // the recipes of the map's card: every station they need, reachable

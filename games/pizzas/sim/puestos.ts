@@ -1,5 +1,6 @@
 // Suggested stations ("puestos"): who starts where. Nothing here is enforced: any chef can use any station.
 // Spawn i gets puesto i (design 15-mapas §1.2): the map author orders the S tiles so spawn i sits next to the stations of puesto i.
+import { mechFlagsOf } from './mech/ids';
 import type { IconId } from '@pichi/core/icons';
 import type { PuestoMsg } from '@pichi/core';
 import { teamSize } from '@pichi/core/difficulty';
@@ -139,11 +140,11 @@ export function puestoStations(
 }
 
 // Spawn order a map really uses: explicit, or what spawnPoints gives.
-export const mapSpawns = (m: MapDef, g: Grid = parseMap(m.rows)): Pos[] => spawnPoints(g, 8, m.spawns);
+export const mapSpawns = (m: MapDef, g: Grid = parseMap(m.rows, false, mechFlagsOf(m.mechanics))): Pos[] => spawnPoints(g, 8, m.spawns);
 
 // Every chef must be able to reach the stations of their puesto, for every team size the map recommends.
 export function puestoProblems(m: MapDef, versus = false): string[] {
-  const g = parseMap(m.rows, versus);
+  const g = parseMap(m.rows, versus, versus ? undefined : mechFlagsOf(m.mechanics));
   const f = { cheese: m.rows.some((r) => r.includes('3')), sink: m.rows.some((r) => r.includes('L')) };
   const { comp } = floorComponents(g);
   const spawns = mapSpawns(m, g);
