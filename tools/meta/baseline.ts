@@ -34,7 +34,7 @@ const sh = (cmd: string, args: string[]) => spawnSync(cmd, args, { cwd: ROOT, en
 function runSuite(only: string[] = []): Report {
   const t0 = Date.now();
   rmSync(TMP, { force: true });
-  const r = spawnSync('npx', ['vitest', 'run', '--reporter=json', `--outputFile=${TMP}`, '--silent', ...only], {
+  const r = spawnSync('npx', ['vitest', 'run', '--reporter=json', `--outputFile=${TMP}`, '--silent=true', ...only], {
     cwd: ROOT,
     stdio: ['ignore', 'ignore', 'inherit'],
   });
