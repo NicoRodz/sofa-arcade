@@ -7,7 +7,17 @@
 import type { Game, Item, Order, Station } from '../round/state';
 import type { Rng } from '@pichi/core/rng';
 import { cardFor, type Card } from './cards';
-import { CALZONE_COOK_MULT, FOLD_MS, RAW_OF, RECIPE_DEFS, SLICE_MULT, TOPPING_RECIPE, dishRecipe, type Recipe } from './defs';
+import {
+  CALZONE_COOK_MULT,
+  FOLD_MS,
+  RAW_OF,
+  RECIPE_DEFS,
+  SLICE_MULT,
+  TOPPING_RECIPE,
+  TWO_TOPPINGS_COOK_MULT,
+  dishRecipe,
+  type Recipe,
+} from './defs';
 
 export const MARINARA_PCT = 40; // share of the Marinara in the orders; the other recipes of the card split the rest equally
 
@@ -16,6 +26,7 @@ export interface Rec {
   recipes: readonly Recipe[]; // card.recipes in order, Marinara first
   weights: readonly number[]; // % of the orders of each, same order (they add up to 100)
   topping: number; // ingredient type the cheese crate gives: 2 cheese, 3 pepperoni, 4 mushroom
+  topping2: number | null; // the second topping crate ('4'), on a map that has one
 }
 
 /** The card of the round, or null when the map has none (a generated map): the round then plays the old recipes. `stations`: the sim's, to drop what the grid cannot make. */
@@ -23,12 +34,14 @@ export function createRec(stations: readonly Station[], mapId: string | undefine
   const card = cardFor(mapId);
   if (!card) return null;
   const hasTopping = stations.some((s) => s.kind === 'crate' && s.crate === 2);
-  const recipes = card.recipes.filter((r) => hasTopping || RECIPE_DEFS[r].topping === null); // a recipe with a topping needs the crate that gives it
+  const hasTopping2 = hasTopping && stations.some((s) => s.kind === 'crate' && s.crate === 3);
+  const recipes = card.recipes.filter((r) => (hasTopping || RECIPE_DEFS[r].topping === null) && (hasTopping2 || !RECIPE_DEFS[r].toppings)); // a recipe with a topping needs the crate that gives it
   if (!recipes.includes('marinara')) return null;
   const others = recipes.length - 1;
   const weights = recipes.map((r) => (others === 0 ? 100 : r === 'marinara' ? MARINARA_PCT : (100 - MARINARA_PCT) / others));
   const top = recipes.map((r) => RECIPE_DEFS[r].topping).find((t) => t !== null);
-  return { card: { recipes }, recipes, weights, topping: top ?? 2 };
+  const bind = hasTopping2 ? card.bind : undefined; // the card says which crate gives which topping
+  return { card: { recipes, ...(bind ? { bind } : {}) }, recipes, weights, topping: bind?.[0] ?? top ?? 2, topping2: bind?.[1] ?? null };
 }
 
 /** The recipe of a new order. Old rounds: Margarita on a cheese map with probability cheesePct (a draw only when the map has cheese). Card rounds: one draw by the card's weights. */
@@ -45,7 +58,12 @@ export function pickRecipe(g: Game, rng: Rng): Recipe {
 }
 
 /** What a crate gives. Crate type 2 (the cheese crate) gives the card's topping. */
-export const crateItem = (g: Game, crate: number): Item => (crate === 2 && g.rec ? RAW_OF[g.rec.topping]! : (RAW_OF[crate] ?? 'raw1'));
+export const crateItem = (g: Game, crate: number): Item =>
+  crate === 2 && g.rec
+    ? RAW_OF[g.rec.topping]!
+    : crate === 3 && g.rec?.topping2 != null
+      ? RAW_OF[g.rec.topping2]!
+      : (RAW_OF[crate] ?? 'raw1');
 
 /** Ingredient type a topping recipe is (2, 3, 4) -> its recipe. Exposed for the art and the tests. */
 export const recipeOfTopping = (t: number): Recipe | undefined => TOPPING_RECIPE[t];
@@ -96,6 +114,7 @@ export function foldStep(g: Game, playerId: number, s: Station, dtMs: number) {
 }
 
 /** Milliseconds a full bake of this pot takes: a folded calzone bakes CALZONE_COOK_MULT times longer. */
-export const cookMsOf = (g: Game, s: Station): number => (s.folded ? g.params.cookMs * CALZONE_COOK_MULT : g.params.cookMs);
+export const cookMsOf = (g: Game, s: Station): number =>
+  s.folded ? g.params.cookMs * CALZONE_COOK_MULT : s.inputs.length === 4 ? g.params.cookMs * TWO_TOPPINGS_COOK_MULT : g.params.cookMs;
 /** Milliseconds of Picar a raw item takes on the board: the pepperoni slices take SLICE_MULT times longer. */
 export const cutMsOf = (g: Game, item: Item | null): number => (item === 'raw3' ? g.params.cutMs * SLICE_MULT : g.params.cutMs);

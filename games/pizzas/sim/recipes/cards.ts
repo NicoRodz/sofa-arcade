@@ -6,6 +6,7 @@ import { isRecipe, RECIPE_DEFS, type Recipe } from './defs';
 
 export interface Card {
   recipes: readonly Recipe[];
+  bind?: readonly [number, number]; // a map with two topping crates ('3' and '4'): the topping each one gives (2 cheese, 3 pepperoni, 4 mushroom)
 }
 export const CARD_MIN = 2;
 export const CARD_MAX = 3;
@@ -14,7 +15,8 @@ const M: Recipe = 'marinara',
   C: Recipe = 'calzone',
   P: Recipe = 'pepperoni',
   H: Recipe = 'champinon',
-  Q: Recipe = 'margarita';
+  Q: Recipe = 'margarita',
+  PQ: Recipe = 'pepqueso';
 export const CARDS: Readonly<Record<string, Card>> = {
   '1': { recipes: [M, C] },
   '2': { recipes: [M, C] },
@@ -31,6 +33,7 @@ export const CARDS: Readonly<Record<string, Card>> = {
   '13': { recipes: [M, Q, C] },
   '14': { recipes: [M, P] },
   '15': { recipes: [M, H, C] },
+  '20': { recipes: [M, Q, PQ], bind: [2, 3] }, // Carta larga 1: cheese on crate 3, pepperoni on crate 4
   V1: { recipes: [M, P, C] },
   V2: { recipes: [M, H, C] },
   V3: { recipes: [M, Q, C] },
@@ -58,7 +61,15 @@ export function cardShapeProblems(card: Card): string[] {
   if (new Set(card.recipes).size !== n) errors.push('a recipe is twice on the card');
   for (const r of card.recipes) if (!isRecipe(r)) errors.push(`unknown recipe '${String(r)}'`);
   if (!card.recipes.includes('marinara')) errors.push('the card has no Marinara');
-  if (card.recipes.filter((r) => isRecipe(r) && RECIPE_DEFS[r].topping !== null).length > 1)
+  const bind = card.bind;
+  for (const r of card.recipes) {
+    const two = isRecipe(r) ? RECIPE_DEFS[r].toppings : undefined;
+    if (two && !(bind && two.every((t) => bind.includes(t))))
+      errors.push(`recipe ${r} needs both toppings ${two.join(' and ')} bound to the two crates`);
+    const one = isRecipe(r) ? RECIPE_DEFS[r].topping : null;
+    if (bind && one !== null && !bind.includes(one)) errors.push(`recipe ${r} needs topping ${one}, which no crate of the card gives`);
+  }
+  if (card.recipes.filter((r) => isRecipe(r) && RECIPE_DEFS[r].topping !== null).length > (bind ? 2 : 1))
     errors.push('a card has at most one recipe with a topping (the cheese crate gives one topping)');
   return errors;
 }

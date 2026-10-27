@@ -63,7 +63,11 @@ describe('a scripted chef cooks each recipe of the card from the raw ingredients
       if (RECIPE_DEFS[recipe].fold) expect(r.folds.length, 'the oven was folded').toBeGreaterThanOrEqual(r.delivered.length);
       else expect(r.folds).toHaveLength(0);
       const dishes = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC'].filter((i) => r.held.has(i));
-      expect(dishes).toEqual([{ marinara: 'dish', margarita: 'dishQ', pepperoni: 'dishP', champinon: 'dishM', calzone: 'dishC' }[recipe]]); // the plate that came out of the oven
+      expect(dishes).toEqual([
+        ({ marinara: 'dish', margarita: 'dishQ', pepperoni: 'dishP', champinon: 'dishM', calzone: 'dishC' } as Record<string, string>)[
+          recipe
+        ],
+      ]); // the plate that came out of the oven
     });
   }
   it('the calzone takes longer than a marinara from the first ingredient in the oven to the plate out (the long oven)', () => {

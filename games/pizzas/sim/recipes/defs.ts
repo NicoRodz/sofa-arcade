@@ -8,17 +8,18 @@
 import type { Item } from '../round/state';
 import type { Tuning } from '@pichi/core/difficulty';
 
-export type Recipe = 'marinara' | 'margarita' | 'pepperoni' | 'champinon' | 'calzone';
-export const RECIPES: readonly Recipe[] = ['marinara', 'margarita', 'pepperoni', 'champinon', 'calzone'];
+export type Recipe = 'marinara' | 'margarita' | 'pepperoni' | 'champinon' | 'calzone' | 'pepqueso';
+export const RECIPES: readonly Recipe[] = ['marinara', 'margarita', 'pepperoni', 'champinon', 'calzone', 'pepqueso'];
 export const isRecipe = (v: unknown): v is Recipe => RECIPES.includes(v as Recipe);
 
-export type NeedKey = '1' | '2' | '3' | 'K' | 'O' | 'P' | 'E'; // the validator's station keys (validate.ts StationKey): the crates, board, oven, plates, window
+export type NeedKey = '1' | '2' | '3' | '4' | 'K' | 'O' | 'P' | 'E'; // the validator's station keys (validate.ts StationKey): the crates, board, oven, plates, window
 export interface RecipeDef {
   name: string; // Spanish, for the ticket and the lobby
   components: number; // ingredients: 20 points each
   processes: number; // processes: 10 points each (stretch / cut / grate / slice each ingredient, fold, bake; a long bake counts double)
   effort: number; // how much longer than a Marinara it takes a chef to make one (an estimate: the stars use it, see stars.ts; to calibrate with playtests)
   topping: number | null; // ingredient type of the topping the recipe needs on top of dough and tomato (null: none)
+  toppings?: readonly [number, number]; // a recipe with TWO toppings (both crates of the card): topping stays null, so the one-topping rules of a card do not count it
   fold: boolean; // adds the verb "doblar": hold Picar at the oven with dough and tomato loaded, then it bakes longer
   needs: readonly NeedKey[]; // stations the recipe cannot be made without
 }
@@ -28,6 +29,16 @@ export const RECIPE_DEFS: Record<Recipe, RecipeDef> = {
   margarita: { name: 'Margarita', components: 3, processes: 4, effort: 1.15, topping: 2, fold: false, needs: [...BASIC, '3'] },
   pepperoni: { name: 'Pepperoni', components: 3, processes: 4, effort: 1.3, topping: 3, fold: false, needs: [...BASIC, '3'] }, // the slices take 1.5x the board time
   champinon: { name: 'Champiñón', components: 3, processes: 4, effort: 1.15, topping: 4, fold: false, needs: [...BASIC, '3'] },
+  pepqueso: {
+    name: 'Pepperoni y queso',
+    components: 4,
+    processes: 6,
+    effort: 1.9,
+    topping: null,
+    toppings: [2, 3],
+    fold: false,
+    needs: [...BASIC, '3', '4'],
+  }, // bakes 1.3x
   calzone: { name: 'Calzone', components: 2, processes: 5, effort: 1.2, topping: null, fold: true, needs: BASIC }, // stretch, cut, fold, bake x2 (the long oven)
 };
 // R13: what a recipe is worth before the tip: points per ingredient plus points per process. Marinara 70, Margarita / Pepperoni / Champiñón 100, Calzone 90.
@@ -51,15 +62,36 @@ export const cutOf = (i: Item): Item | null => {
 export const cutType = (i: Item | null): number => (i ? CUT_OF.indexOf(i) : -1);
 
 // A pizza on a plate: the marinara dish, the one with a topping (cheese, pepperoni, mushroom) and the folded calzone.
-export const DISHES: readonly Item[] = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC'];
+export const DISHES: readonly Item[] = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC', 'dishPQ'];
 export const isDish = (i: Item | null): boolean => !!i && DISHES.includes(i);
 /** The recipe a plate holds. */
 export const dishRecipe = (i: Item): Recipe =>
-  i === 'dishQ' ? 'margarita' : i === 'dishP' ? 'pepperoni' : i === 'dishM' ? 'champinon' : i === 'dishC' ? 'calzone' : 'marinara';
+  i === 'dishPQ'
+    ? 'pepqueso'
+    : i === 'dishQ'
+      ? 'margarita'
+      : i === 'dishP'
+        ? 'pepperoni'
+        : i === 'dishM'
+          ? 'champinon'
+          : i === 'dishC'
+            ? 'calzone'
+            : 'marinara';
 /** The plate for a pot's contents (the burnt pizza is another item: the oven decides that first). */
 export const dishFor = (inputs: readonly number[], folded: boolean): Item =>
-  folded ? 'dishC' : inputs.includes(3) ? 'dishP' : inputs.includes(4) ? 'dishM' : inputs.includes(2) ? 'dishQ' : 'dish';
+  folded
+    ? 'dishC'
+    : inputs.includes(2) && inputs.includes(3)
+      ? 'dishPQ'
+      : inputs.includes(3)
+        ? 'dishP'
+        : inputs.includes(4)
+          ? 'dishM'
+          : inputs.includes(2)
+            ? 'dishQ'
+            : 'dish';
 
 export const FOLD_MS = 2000; // of Picar at the oven to fold the calzone
 export const CALZONE_COOK_MULT = 1.6; // a folded calzone bakes this much longer
+export const TWO_TOPPINGS_COOK_MULT = 1.3; // a pizza with both toppings bakes this much longer
 export const SLICE_MULT = 1.5; // slicing the pepperoni takes this much longer than cutting a tomato

@@ -48,7 +48,7 @@ export class World {
     seed: number,
     private view?: RoundView,
   ) {
-    this.bg = buildBackground(scene, game.grid, mapId, seed, game.rec?.topping);
+    this.bg = buildBackground(scene, game.grid, mapId, seed, game.rec?.topping, game.rec?.topping2 ?? undefined);
     if (game.versus && view?.teams) this.tintKitchens(view);
     this.fx = new Fx(scene);
     this.stations = new StationViews(scene, game, this.fx);

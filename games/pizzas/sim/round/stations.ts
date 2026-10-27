@@ -114,7 +114,7 @@ const baked = (s: Station) => s.inputs.includes(0) && s.inputs.includes(1);
 // A at an oven: a cut ingredient goes in, or a plate takes the ready pizza out.
 export function interactPot(g: Game, p: Player, s: Station) {
   const t = cutType(p.item);
-  if (t >= 0 && !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < 3) {
+  if (t >= 0 && !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < (g.rec?.topping2 == null ? 3 : 4)) {
     s.inputs.push(t);
     if (!baked(s)) s.progress = 0;
     p.item = null;

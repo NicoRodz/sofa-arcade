@@ -70,6 +70,7 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
       ['pepperoni', 100],
       ['champinon', 100],
       ['calzone', 90],
+      ['pepqueso', 140], // two toppings: four ingredients and six processes
     ]);
     expect(RECIPE_PARTS.marinara).toEqual({ components: 2, processes: 3 });
     expect(RECIPE_PARTS.margarita).toEqual({ components: 3, processes: 4 });
@@ -78,7 +79,7 @@ describe('what each recipe is worth: 20 per ingredient, 10 per process', () => {
   });
   it('only the Calzone adds the verb "doblar"; only the topping recipes need the cheese crate (station 3)', () => {
     expect(RECIPES.filter((r) => RECIPE_DEFS[r].fold)).toEqual(['calzone']);
-    expect(RECIPES.filter((r) => RECIPE_DEFS[r].needs.includes('3'))).toEqual(['margarita', 'pepperoni', 'champinon']);
+    expect(RECIPES.filter((r) => RECIPE_DEFS[r].needs.includes('3'))).toEqual(['margarita', 'pepperoni', 'champinon', 'pepqueso']);
   });
   it('items: raw<N> is cut into cut<N>; a plate says which recipe it holds', () => {
     expect(['raw0', 'raw1', 'raw2', 'raw3', 'raw4'].map((i) => cutOf(i as Item))).toEqual(['cut0', 'cut1', 'cut2', 'cut3', 'cut4']);
@@ -110,7 +111,7 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
     expect(cardFor('11-vs')).toBe(cardFor('11'));
     expect(cardFor('whatever')).toBeUndefined();
     expect(cardFor(undefined)).toBeUndefined();
-    expect(Object.keys(CARDS)).toHaveLength(20);
+    expect(Object.keys(CARDS)).toHaveLength(21);
   });
   it('every card has the right shape, and a card with a topping recipe sits on a map with the cheese crate', () => {
     for (const [id, card] of Object.entries(CARDS)) {
@@ -152,7 +153,7 @@ describe('the cards: 2 or 3 recipes per map, validated', () => {
     }
     expect(validateVersus(v4, { requireMirror: false }).errors.filter((e) => /card/i.test(e))).toEqual([]);
   });
-  it('the cards are varied: all five recipes show up, and a map without the cheese crate has Marinara + Calzone', () => {
+  it('the cards are varied: every recipe shows up, and a map without the cheese crate has Marinara + Calzone', () => {
     const all = new Set(Object.values(CARDS).flatMap((c) => c.recipes));
     expect([...all].sort()).toEqual([...RECIPES].sort());
     for (const id of ['1', '2', '3', '4', '5', '6', '7', '8']) expect(cardFor(id)!.recipes).toEqual(['marinara', 'calzone']);

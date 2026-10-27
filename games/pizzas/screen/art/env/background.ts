@@ -9,7 +9,14 @@ import { trashCan, catapult, dirtyReturn, sinkStation, windowStation } from './s
 
 const BG_R = 1.5;
 
-export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, seedN: number, topping = 2): Phaser.GameObjects.Image {
+export function buildBackground(
+  scene: Phaser.Scene,
+  g: Grid,
+  mapId: string,
+  seedN: number,
+  topping = 2,
+  topping2 = 3,
+): Phaser.GameObjects.Image {
   // topping: what the cheese crate holds this round (2 cheese, 3 pepperoni, 4 mushroom)
   const key = `bg_${scene.textures.getTextureKeys().filter((k) => k.startsWith('bg_')).length}_${Date.now() % 100000}`;
   for (const k of scene.textures.getTextureKeys()) if (k.startsWith('bg_')) scene.textures.remove(k);
@@ -31,7 +38,7 @@ export function buildBackground(scene: Phaser.Scene, g: Grid, mapId: string, see
       if (t.kind !== 'station') return;
       const x0 = tx * 120,
         y0 = ty * 120;
-      if (t.station === 'crate') crate(c, x0, y0, t.crate === 2 ? topping : t.crate);
+      if (t.station === 'crate') crate(c, x0, y0, t.crate === 2 ? topping : t.crate === 3 ? topping2 : t.crate);
       else if (t.station === 'board') board(c, x0, y0, tx, ty);
       else if (t.station === 'pot') oven(c, x0, y0);
       else if (t.station === 'plates') plates(c, x0, y0);
