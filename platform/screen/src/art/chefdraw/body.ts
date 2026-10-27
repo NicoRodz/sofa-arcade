@@ -35,10 +35,22 @@ export function drawShoe(c: Painter) {
   c.fill();
 }
 
-export function drawArm(c: Painter, skin: string) {
+/** `sleeve`: the player's clothes baked into the arm (creator §3, Pizzas rig): the shirt colour and how far it reaches. Absent = the chef's white coat. */
+export interface Sleeve {
+  color: string;
+  kind: 'short' | 'long' | 'none';
+}
+export function drawArm(c: Painter, skin: string, sleeve?: Sleeve) {
   // anchor = shoulder; arm hangs down
-  drawOutlined(c, () => rr(c, -5, 8, 10, 18, 5), skinGrad2(c, skin), { lw: 2.5 });
-  drawOutlined(c, () => rr(c, -6.5, -4, 13, 17, 6), vgrad(c, -4, 13, SHIRT_A, SHIRT_B), { lw: 2.5 });
+  const kind = sleeve?.kind ?? 'short';
+  drawOutlined(c, () => rr(c, -5, kind === 'none' ? -2 : 8, 10, kind === 'none' ? 28 : 18, 5), skinGrad2(c, skin), { lw: 2.5 });
+  if (kind !== 'none')
+    drawOutlined(
+      c,
+      () => rr(c, -6.5, -4, 13, kind === 'long' ? 28 : 17, 6),
+      vgrad(c, -4, kind === 'long' ? 24 : 13, sleeve ? shade(sleeve.color, 0.12) : SHIRT_A, sleeve ? shade(sleeve.color, -0.1) : SHIRT_B),
+      { lw: 2.5 },
+    );
   drawOutlined(c, circle(c, 0, 27, 5.6), skin, { lw: 2.5 });
   c.fillStyle = 'rgba(255,255,255,0.35)';
   c.beginPath();

@@ -6,6 +6,7 @@ import type { Appearance } from '@pichi/core/avatar/appearance';
 import { Canvas2DPainter } from '@pichi/core/avatar/canvas2d-painter';
 import { encodeAppearance } from '@pichi/core/avatar/codec';
 import { SKIN_TONES } from '@pichi/core/avatar/catalog';
+import { clothesSpec } from '@pichi/core/avatar/parts/data';
 import { avatarParts } from '@pichi/core/avatar/draw';
 import { makeCtx } from '@pichi/core/avatar/parts/ctx';
 import { drawArm } from '../chefdraw';
@@ -52,7 +53,10 @@ export function lookTextures(scene: Phaser.Scene, ap: Appearance, role: string):
   const id = `${encodeAppearance(ap)}_${role}`;
   const key = (s: string) => `look_${id}_${s}`;
   for (const s of Object.keys(SLOTS) as (keyof typeof SLOTS)[]) makeTex(scene, key(s), BOX, bake(ap, role, s));
-  const arm = `look_arm_${ap.sk}`;
-  makeTex(scene, arm, { w: 24, h: 48, ox: 12, oy: 9 }, (c) => drawArm(new Canvas2DPainter(c), SKIN_TONES[ap.sk] ?? SKIN_TONES[1]!));
+  const cl = clothesSpec(ap.cl),
+    arm = `look_arm_${ap.sk}_${ap.cl}`;
+  makeTex(scene, arm, { w: 24, h: 48, ox: 12, oy: 9 }, (c) =>
+    drawArm(new Canvas2DPainter(c), SKIN_TONES[ap.sk] ?? SKIN_TONES[1]!, { color: cl.top, kind: cl.sleeves }),
+  );
   return { torsoF: key('torsoF'), torsoB: key('torsoB'), headF: key('headF'), headB: key('headB'), over: key('over'), hat: key('hat'), arm };
 }
