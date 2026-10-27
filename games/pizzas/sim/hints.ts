@@ -13,6 +13,8 @@ import { RAW_OF, cutType, isDish } from './recipes/defs';
 import { canFold } from './recipes/sim';
 import { canLoad, canStir, hasNonna, hasSauce, potTypeOf } from './recipes/sauce';
 import { basilOn, canSlice } from './recipes/casa';
+import { kneaderA, kneaderB } from './mech/kneader/hint';
+import { bellowsA, bellowsB } from './mech/woodOven/hint';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
 const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón', 'Jamón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
@@ -61,6 +63,7 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       if (!full && s.item) return on('Tomar', 'grab');
       return off(full ? 'Ocupado' : 'Vacío', 'grab');
     case 'board':
+      if (g.flags?.mech.kneader && p.item === 'raw0') return off('Amasa primero', 'chop'); // mech/kneader: the raw ball goes through M before it reaches a board
       if (full && !s.item) return RAW.has(p.item!) || canSlice(g, p.item) ? on('Poner en tabla', 'chop') : off('No se pica', 'chop');
       if (!full && s.item) return on(cutType(s.item) >= 0 ? 'Tomar picado' : 'Tomar', 'chop');
       return off(full ? 'Ocupado' : 'Tabla vacía', 'chop');
@@ -79,10 +82,10 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       if (g.sab && !full) return g.sab.teams[p.team]!.bags > 0 ? on('Tomar bolsa', 'trash') : off('Botar', 'trash');
       if (g.finitePlates && (p.item === 'plate' || p.item === 'dirty')) return off('No es basura', 'trash');
       return full ? on('Botar', 'trash') : off('Botar', 'trash');
-    case 'kneader': // mech/: the phone hint of M and Q is written by the tanda that implements them (T1e)
-      return off('Amasadora', 'chop');
+    case 'kneader': // mech/: M and Q (T1e); the labels live in mech/kneader/hint.ts and mech/woodOven/hint.ts
+      return kneaderA(g, p, s);
     case 'bellows':
-      return off('Fuelle', 'chop');
+      return bellowsA();
     case 'catapult':
       return off('Catapulta', 'grab'); // the sabotage hint names it when there is something to load
     case 'window':
@@ -94,6 +97,8 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
 /** What B does: hold on a board with a raw ingredient or at a sink with dirty plates; a tap with free hands and nothing in front is the dash. */
 function buttonB(g: Game, p: Player, s: Station | null, front: Station | null = s): Btn {
   // front: what stops a dash (the old probe when the magnet is on)
+  if (s?.kind === 'kneader') return kneaderB(g, p, s); // mech/: hold B on a handle of M
+  if (s?.kind === 'bellows') return bellowsB(g, s); // mech/: hold B on the bellows
   if (s?.kind === 'board' && s.item && RAW.has(s.item)) return on(CUT_VERB[s.item]!, 'chop');
   if (s?.kind === 'board' && canSlice(g, s.item)) return on('Porciones', 'chop'); // a casa plate on the board: hold Picar to cut it
   if (s?.fire !== undefined) return on('Apagar', 'oven'); // burn: Picar puts the fire out (an Ayudante taps it once and it goes on)
