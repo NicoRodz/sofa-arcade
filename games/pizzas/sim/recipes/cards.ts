@@ -19,7 +19,9 @@ const M: Recipe = 'marinara',
   PQ: Recipe = 'pepqueso',
   JM: Recipe = 'jamchamp',
   MF: Recipe = 'margfresca',
-  CR: Recipe = 'calzonerel';
+  CR: Recipe = 'calzonerel',
+  NO: Recipe = 'nonna',
+  BL: Recipe = 'blanca';
 export const CARDS: Readonly<Record<string, Card>> = {
   '1': { recipes: [M, C] },
   '2': { recipes: [M, C] },
@@ -41,6 +43,8 @@ export const CARDS: Readonly<Record<string, Card>> = {
   '22': { recipes: [M, PQ, C], bind: [2, 3] }, // Carta larga 4
   '23': { recipes: [M, Q, H], bind: [2, 4] }, // Carta larga 2: cheese on crate 3, mushroom on crate 4
   '24': { recipes: [M, MF, CR], bind: [2, 5] }, // Carta larga 7: cheese on crate 3, ham on crate 4, basil on 5
+  '25': { recipes: [M, NO, H], bind: [2, 4] }, // Carta larga 5 La nonna: mushroom on crate 4, basil on 5, the sauce pot (the design's Margarita fresca does not fit: a card holds three recipes)
+  '26': { recipes: [M, BL, NO], bind: [2, 4] }, // Carta larga 6 Pasaplatos: the white pizza takes both crates
   V1: { recipes: [M, P, C] },
   V2: { recipes: [M, H, C] },
   V3: { recipes: [M, Q, C] },

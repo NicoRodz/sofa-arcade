@@ -1,7 +1,7 @@
 // Recipe stations on a grid: the keys, the legs of the recipe between them, where each station is and which floor tiles touch it.
 import { DIRS, isFloor, type Grid, type Pos } from '../maps';
 
-export type StationKey = '1' | '2' | '3' | '4' | '5' | 'K' | 'O' | 'P' | 'E' | 'U' | 'L';
+export type StationKey = '1' | '2' | '3' | '4' | '5' | 'K' | 'O' | 'P' | 'E' | 'U' | 'L' | 'R';
 // 1 -> K, 2 -> K, K -> O (once per ingredient), P -> O, O -> E
 export const RECIPE_LEGS: readonly (readonly [StationKey, StationKey])[] = [
   ['1', 'K'],
@@ -17,6 +17,7 @@ export const STATION_KEYS: readonly StationKey[] = ['1', '2', 'K', 'O', 'P', 'E'
 export const hasCheese = (g: Grid) => stationsOf(g, '3').length > 0;
 export const hasTopping2 = (g: Grid) => stationsOf(g, '4').length > 0;
 export const hasBasil = (g: Grid) => stationsOf(g, '5').length > 0;
+export const hasPot = (g: Grid) => stationsOf(g, 'R').length > 0; // the sauce pot
 export const hasSink = (g: Grid) => stationsOf(g, 'U').length > 0 || stationsOf(g, 'L').length > 0;
 export const keysOf = (g: Grid): StationKey[] => [
   ...STATION_KEYS,
@@ -24,11 +25,18 @@ export const keysOf = (g: Grid): StationKey[] => [
   ...(hasTopping2(g) ? (['4'] as const) : []),
   ...(hasBasil(g) ? (['5'] as const) : []),
   ...(hasSink(g) ? (['U', 'L'] as const) : []),
+  ...(hasPot(g) ? (['R'] as const) : []),
 ];
 export const legsOf = (g: Grid): (readonly [StationKey, StationKey])[] => [
   ...RECIPE_LEGS,
   ...(hasCheese(g) ? ([['3', 'K']] as const) : []),
   ...(hasTopping2(g) ? ([['4', 'K']] as const) : []),
+  ...(hasPot(g)
+    ? ([
+        ['K', 'R'],
+        ['R', 'O'],
+      ] as const)
+    : []),
   ...(hasSink(g)
     ? ([
         ['U', 'L'],
@@ -53,17 +61,19 @@ export function stationsOf(g: Grid, key: StationKey): Pos[] {
                 ? t.station === 'crate' && t.crate === 3
                 : key === '5'
                   ? t.station === 'crate' && t.crate === 4
-                  : key === 'U'
-                    ? t.station === 'dirty'
-                    : key === 'L'
-                      ? t.station === 'sink'
-                      : key === 'K'
-                        ? t.station === 'board'
-                        : key === 'O'
-                          ? t.station === 'pot'
-                          : key === 'P'
-                            ? t.station === 'plates'
-                            : t.station === 'window';
+                  : key === 'R'
+                    ? t.station === 'saucepot'
+                    : key === 'U'
+                      ? t.station === 'dirty'
+                      : key === 'L'
+                        ? t.station === 'sink'
+                        : key === 'K'
+                          ? t.station === 'board'
+                          : key === 'O'
+                            ? t.station === 'pot'
+                            : key === 'P'
+                              ? t.station === 'plates'
+                              : t.station === 'window';
       if (hit) out.push([x, y]);
     }),
   );

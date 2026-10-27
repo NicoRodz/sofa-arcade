@@ -5,6 +5,7 @@ import { cardFor } from '../recipes/cards';
 import { cardProblems } from '../recipes/card-check';
 import { puestoProblems } from '../puestos';
 import { surfaceProblems } from './surfaces';
+import { spawnZoneProblems } from './spawn-zones';
 
 export interface Analysis {
   comp: number[][]; // floor component id per tile, -1 elsewhere
@@ -126,6 +127,7 @@ export function validateMap(m: MapDef): { ok: boolean; errors: string[] } {
   }
   errors.push(...puestoProblems(m));
   errors.push(...surfaceProblems(g));
+  errors.push(...spawnZoneProblems(m)); // every N of the range: the chefs that start cover every station
   if (floorTiles(g) < FLOOR_PER_PLAYER * m.nMax)
     errors.push(`${floorTiles(g)} floor tiles for ${m.nMax} players (want ${FLOOR_PER_PLAYER} each)`);
   return { ok: !errors.length, errors };

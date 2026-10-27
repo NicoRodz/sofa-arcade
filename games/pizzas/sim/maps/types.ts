@@ -2,7 +2,18 @@
 import type { PuestoId } from '../puestos';
 import type { SIGMAS } from '../symmetry';
 
-export type StationKind = 'crate' | 'board' | 'pot' | 'plates' | 'window' | 'counter' | 'trash' | 'dirty' | 'sink' | 'catapult';
+export type StationKind =
+  | 'crate'
+  | 'board'
+  | 'pot'
+  | 'plates'
+  | 'window'
+  | 'counter'
+  | 'trash'
+  | 'dirty'
+  | 'sink'
+  | 'catapult'
+  | 'saucepot';
 export type Tile =
   | { kind: 'wall' }
   | { kind: 'floor'; spawn: boolean; surface?: Surface }

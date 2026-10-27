@@ -51,7 +51,11 @@ export type Item =
   | 'dirty'
   | 'trash'
   | 'trashBag'
-  | 'burnt';
+  | 'burnt'
+  | 'sauce'
+  | 'dishN'
+  | 'dishNB'
+  | 'dishB';
 
 export interface Station {
   kind: StationKind;
@@ -72,6 +76,8 @@ export interface Station {
   burnt?: true; // pot: the ready pizza burnt (smoke): it only serves for the bin
   fire?: number; // on fire: the ms of Picar already spent putting it out (present = burning, the station is out of use)
   fold?: number;
+  stage?: 'base' | 'bell' | 'top'; // pot, a card with the Pizza blanca only: first bake of the bare dough, the bell (the toppings must go in now), the second bake
+  bellLeft?: number; // ms of the bell's window left
   folded?: true; // a round with a Carta del día, pot only: 0..1 of Picar folding the dough and tomato; folded = a calzone (it bakes longer)
 }
 export interface Player {

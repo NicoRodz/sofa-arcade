@@ -1,8 +1,9 @@
 // A at a station: what each kind does with what the chef carries (the oven included), the cooking clock, plus the plates that come back dirty and the pantry that refills.
 import { tag, type Game, type Player, type Station } from './state';
 import { PANTRY_EVERY_MS, PANTRY_MAX } from '../versus/versus';
-import { cookMsOf, crateItem, potCapacity } from '../recipes/sim';
-import { cutOf, cutType, dishFor, isDish } from '../recipes/defs';
+import { cookMsOf, crateItem } from '../recipes/sim';
+import { bellTick, canLoad, hasNonna, interactSaucepot, isBaking, potTypeOf, ringBell, stageAfterLoad, stickTick } from '../recipes/sauce';
+import { cutOf, dishFor, isDish } from '../recipes/defs';
 import { sabotageBinned, sabotageLoad, sabotageTakeBag } from '../sabotage';
 import { DIRTY_MS } from '@pichi/core/difficulty';
 import { deliver } from './orders';
@@ -13,7 +14,9 @@ function interact(g: Game, p: Player, s: Station) {
   switch (s.kind) {
     case 'crate':
       if (s.crate === 4) {
-        if (p.item === 'dishQ' && g.rec?.recipes.includes('margfresca')) p.item = 'dishQB'; // the basil goes onto the plate, nothing is handed out
+        if (p.item === 'dishQ' && g.rec?.recipes.includes('margfresca'))
+          p.item = 'dishQB'; // the basil goes onto the plate, nothing is handed out
+        else if (p.item === 'dishN' && hasNonna(g)) p.item = 'dishNB'; // ... and on the sauce pizza: the Marinara de la nonna
         break;
       }
       if (p.item) break;
@@ -81,6 +84,9 @@ function interact(g: Game, p: Player, s: Station) {
     case 'pot':
       interactPot(g, p, s);
       break;
+    case 'saucepot':
+      interactSaucepot(g, p, s);
+      break;
     case 'trash':
       if (g.sab && !p.item) {
         sabotageTakeBag(g, p);
@@ -114,13 +120,14 @@ export function act(g: Game, p: Player, s: Station) {
 }
 
 // A pizza cooks once it has dough and tomato; cheese can still go on until it is done (then it is a Margarita).
-const baked = (s: Station) => s.inputs.includes(0) && s.inputs.includes(1);
+const baked = isBaking; // dough and tomato (or the sauce); the stages of the Pizza blanca count too
 
 // A at an oven: a cut ingredient goes in, or a plate takes the ready pizza out.
 export function interactPot(g: Game, p: Player, s: Station) {
-  const t = cutType(p.item);
-  if (t >= 0 && !s.done && !s.folded && !s.inputs.includes(t) && s.inputs.length < potCapacity(g)) {
+  const t = potTypeOf(p.item);
+  if (canLoad(g, s, t)) {
     s.inputs.push(t);
+    stageAfterLoad(g, s, t);
     if (!baked(s)) s.progress = 0;
     p.item = null;
   } else if (p.item === 'plate' && s.done) {
@@ -134,9 +141,12 @@ export function interactPot(g: Game, p: Player, s: Station) {
 export function cookTick(g: Game, dtMs: number) {
   const dark = isDark(g); // the "Corte de luz" event: the ovens do not cook
   for (const s of g.stations) {
-    if (s.kind === 'pot' && !s.done && baked(s) && !dark) {
+    if (s.kind === 'saucepot') stickTick(g, s);
+    if (s.kind === 'pot' && s.stage === 'bell') bellTick(g, s, dtMs, dark);
+    else if (s.kind === 'pot' && !s.done && baked(s) && !dark) {
       s.progress += dtMs / cookMsOf(g, s);
-      if (s.progress >= 1) {
+      if (s.progress >= 1 && s.stage === 'base') ringBell(g, s);
+      else if (s.progress >= 1) {
         s.progress = 1;
         s.done = true;
         if (g.burn) s.readyAt = g.time;

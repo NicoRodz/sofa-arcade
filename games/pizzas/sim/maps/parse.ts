@@ -7,6 +7,7 @@ export const MAP_H = 9;
 
 // # wall, . floor, S spawn (floor), ~ water, C counter, 1/2 ingredient crates, K board (stretch/cut),
 // O oven, P tray pile, E delivery counter, X trash, 3 cheese crate (Margarita), U dirty-plate return, L sink,
+// R sauce pot, H pass-through hatch (a counter drawn as a hatch),
 // Y catapult (VERSUS maps only, the sabotage launcher: parseMap refuses it unless the caller says the map is a versus one).
 // Surface tiles (surfaces/legend.ts, coop maps only): i ice, and the arrows of a floor belt.
 // Design legend (15-mapas.md) -> this code: T->C, M->1, R->2, Q->3, C (table)->K, H->O; the rest is the same.
@@ -24,6 +25,8 @@ const STATIONS: Record<string, { station: StationKind; crate: number }> = {
   X: { station: 'trash', crate: 0 },
   U: { station: 'dirty', crate: 0 },
   L: { station: 'sink', crate: 0 },
+  R: { station: 'saucepot', crate: 0 }, // the sauce pot of the Marinara de la nonna: chopped tomato in, hold Picar to stir, sauce out
+  H: { station: 'counter', crate: 1 }, // the pass-through hatch: a counter for the sim (crate 1 only tells the art to draw the hatch)
 };
 const VERSUS_ONLY: Record<string, { station: StationKind; crate: number }> = { Y: { station: 'catapult', crate: 0 } };
 export const STATION_CHAR: Record<string, string> = {
@@ -40,6 +43,8 @@ export const STATION_CHAR: Record<string, string> = {
   trash: 'X',
   dirty: 'U',
   sink: 'L',
+  saucepot: 'R',
+  counter1: 'H',
   catapult: 'Y',
 };
 

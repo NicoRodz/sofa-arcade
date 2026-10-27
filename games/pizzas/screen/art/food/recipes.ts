@@ -7,6 +7,7 @@ import type { Ctx } from '@pichi/screen-kit/art/gfx';
 import { calzoneDone, calzoneRaw, foldGlyph } from './calzone';
 import { BASIL, basilOverlay, basilRaw } from './basil';
 import { HAM, hamCut, hamOverlay, hamRaw, hamSquare } from './ham';
+import { SAUCE_ITEM_KIND, sauceDraw, type SauceFoodKind } from './sauce-art';
 import { MUSHROOM, PEPPERONI, mushroomCut, mushroomRaw, pepperoniCut, pepperoniRaw, toppingOverlay } from './toppings';
 
 export type RecipeFoodKind =
@@ -37,13 +38,31 @@ export type RecipeFoodKind =
   | 'calzone_raw'
   | 'calzone_done'
   | 'dish_c'
-  | 'glyph_fold';
+  | 'glyph_fold'
+  | SauceFoodKind;
 
 /** Which kind each new item draws as (the old items keep theirs in food.ts). */
 export const EXTRA_ITEM_KIND: Record<
-  'raw3' | 'raw4' | 'raw5' | 'cut3' | 'cut4' | 'cut5' | 'dishP' | 'dishM' | 'dishC' | 'dishPQ' | 'dishJM' | 'dishQB' | 'dishCR',
+  | 'raw3'
+  | 'raw4'
+  | 'raw5'
+  | 'cut3'
+  | 'cut4'
+  | 'cut5'
+  | 'dishP'
+  | 'dishM'
+  | 'dishC'
+  | 'dishPQ'
+  | 'dishJM'
+  | 'dishQB'
+  | 'dishCR'
+  | 'sauce'
+  | 'dishN'
+  | 'dishNB'
+  | 'dishB',
   RecipeFoodKind
 > = {
+  ...SAUCE_ITEM_KIND,
   raw3: 'pepperoni_raw',
   cut3: 'pepperoni_cut',
   raw4: 'mushroom_raw',
@@ -134,6 +153,7 @@ export function extraDraw(base: BaseArt): Record<RecipeFoodKind, (c: Ctx) => voi
     },
   };
   return {
+    ...sauceDraw(base),
     pepperoni_raw: pepperoniRaw,
     pepperoni_cut: pepperoniCut,
     mushroom_raw: mushroomRaw,
@@ -221,10 +241,14 @@ export const RECIPE_PIZZA: Record<Recipe, string> = {
   jamchamp: 'pizza_done_jm',
   margfresca: 'pizza_done_qb',
   calzonerel: 'calzone_done_r',
+  nonna: 'pizza_done_nb',
+  blanca: 'pizza_done_w',
 };
 /** The raw and the finished picture of what is in an oven: dough + tomato + the topping, and the calzone once it is folded. */
 export function ovenKinds(inputs: readonly number[], folded: boolean): { raw: string; done: string } {
   if (folded) return inputs.length >= 4 ? { raw: 'calzone_raw_r', done: 'calzone_done_r' } : { raw: 'calzone_raw', done: 'calzone_done' };
+  if (inputs.includes(6)) return { raw: 'pizza_raw', done: 'pizza_done' }; // the sauce of the pot: the red pizza
+  if (!inputs.includes(1) && inputs.includes(2) && inputs.includes(4)) return { raw: 'pizza_raw_w', done: 'pizza_done_w' }; // the white pizza
   if (inputs.includes(4) && inputs.includes(5)) return { raw: 'pizza_raw_jm', done: 'pizza_done_jm' };
   if (inputs.includes(2) && inputs.includes(3)) return { raw: 'pizza_raw_pq', done: 'pizza_done_pq' };
   if (inputs.includes(3)) return { raw: 'pizza_raw_p', done: 'pizza_done_p' };

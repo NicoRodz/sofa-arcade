@@ -8,7 +8,7 @@ import type { Difficulty } from '@pichi/core/difficulty';
 import { RECIPE_DEFS, isDish, type Recipe } from '../../sim/recipes/defs';
 import { RecBus, route, stationsOf, type Mem } from './bot';
 
-type At = 'crate0' | 'crate1' | 'crate2' | 'crate3' | 'crate4' | 'board' | 'pot' | 'plates' | 'window';
+type At = 'crate0' | 'crate1' | 'crate2' | 'crate3' | 'crate4' | 'board' | 'pot' | 'saucepot' | 'plates' | 'window';
 type Take = 'a' | 'chop' | 'fold' | 'serve';
 interface Step { at: At; take: Take; done: (g: Game, p: Player, s: Station) => boolean }
 export interface RMem extends Mem { recipe: Recipe | null; force?: Recipe }
@@ -16,15 +16,28 @@ export const newMem = (force?: Recipe): RMem => ({ step: 0, since: 0, lastPress:
 
 const cut = (p: Player) => !!p.item && p.item.startsWith('cut');
 // crate -> board (put it down, hold Picar until it is cut, take it) -> oven
-const prepare = (crate: At, raw: Item): Step[] => [
+const prepare = (crate: At, raw: Item, to: At = 'pot'): Step[] => [
   { at: crate, take: 'a', done: (_g, p) => p.item === raw },
   { at: 'board', take: 'a', done: (_g, p) => !p.item },
   { at: 'board', take: 'chop', done: (_g, _p, s) => !!s.item && s.item.startsWith('cut') },
   { at: 'board', take: 'a', done: (_g, p) => cut(p) },
-  { at: 'pot', take: 'a', done: (_g, p) => !p.item },
+  { at: to, take: 'a', done: (_g, p) => !p.item },
 ];
 // dough first, then the topping (the oven does not start until dough AND tomato are in), then the tomato (it starts the baking), then fold (calzone only)
+// the Marinara de la nonna: dough to the oven, the tomato chopped into the sauce pot, stirred (Picar), the sauce to the oven, then the basil on the plate
+const nonnaSteps = (): Step[] => [
+  ...prepare('crate0', 'raw0'),
+  ...prepare('crate1', 'raw1', 'saucepot'),
+  { at: 'saucepot', take: 'chop', done: (_g, _p, s) => s.done },
+  { at: 'saucepot', take: 'a', done: (_g, p) => p.item === 'sauce' },
+  { at: 'pot', take: 'a', done: (_g, p) => !p.item },
+  { at: 'plates', take: 'a', done: (_g, p) => p.item === 'plate' },
+  { at: 'pot', take: 'serve', done: (_g, p) => isDish(p.item) },
+  { at: 'crate4', take: 'a', done: (_g, p) => p.item === 'dishNB' },
+  { at: 'window', take: 'a', done: (_g, p) => !p.item },
+];
 export const stepsFor = (recipe: Recipe): Step[] => {
+  if (recipe === 'nonna') return nonnaSteps();
   const top = RECIPE_DEFS[recipe].topping;
   const two = RECIPE_DEFS[recipe].toppings;
   return [
@@ -39,6 +52,7 @@ export const stepsFor = (recipe: Recipe): Step[] => {
     { at: 'window', take: 'a', done: (_g, p) => !p.item },
   ];
 };
+const stationsAt = (g: Game, at: At) => (at === 'saucepot' ? g.stations.filter((s) => s.kind === 'saucepot') : stationsOf(g, at));
 const STUCK_MS = 25_000;
 const PRESS_EVERY = 12;
 
@@ -51,7 +65,7 @@ export function decideR(g: Game, p: Player, rank: number, m: RMem, tickNo: numbe
   const steps = stepsFor(m.recipe ?? 'marinara');
   const step = steps[m.step]!;
   const bins = g.stations.filter((x) => x.kind === 'trash' || x.kind === 'counter');
-  const list = m.bin ? bins : stationsOf(g, step.at);
+  const list = m.bin ? bins : stationsAt(g, step.at);
   const s: Station | undefined = list[rank % Math.max(1, list.length)];
   if (!s) return idle;
   if (m.bin ? !p.item : step.done(g, p, s)) {

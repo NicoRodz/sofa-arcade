@@ -2,6 +2,7 @@
 import type { Controls, Game, Player, Station } from './state';
 import { cutOf } from '../recipes/defs';
 import { canFold, cutMsOf, foldStep } from '../recipes/sim';
+import { canStir, stirStep } from '../recipes/sauce';
 import { ASSIST_STICK_CANCEL } from '../assist';
 import { pushesInto } from './targeting';
 import { WASH_MS } from '@pichi/core/difficulty';
@@ -11,7 +12,7 @@ import { douse } from '../burn';
 export const stopKind = (g: Game, p: Player) =>
   p.dousing
     ? 'douseStop'
-    : g.stations[p.chopAt]?.kind === 'sink'
+    : g.stations[p.chopAt]?.kind === 'sink' || g.stations[p.chopAt]?.kind === 'saucepot'
       ? 'washStop'
       : g.stations[p.chopAt]?.kind === 'pot'
         ? 'foldStop'
@@ -24,6 +25,7 @@ export function cuttableAt(g: Game, target: Station | null) {
     target &&
     ((target.kind === 'board' && target.item && cutOf(target.item)) ||
       (target.kind === 'sink' && target.count > 0) ||
+      canStir(target) ||
       burning ||
       canFold(g, target))
   );
@@ -55,7 +57,7 @@ export function updateChop(
     g.bus.emit(
       wasDousing
         ? 'douseStop'
-        : g.stations[wasAt]?.kind === 'sink'
+        : g.stations[wasAt]?.kind === 'sink' || g.stations[wasAt]?.kind === 'saucepot'
           ? 'washStop'
           : g.stations[wasAt]?.kind === 'pot'
             ? 'foldStop'
@@ -63,10 +65,19 @@ export function updateChop(
       { player: p.id, station: wasAt },
     );
   if (p.cutting && (!wasCutting || at !== wasAt))
-    g.bus.emit(p.dousing ? 'douseStart' : target!.kind === 'sink' ? 'washStart' : target!.kind === 'pot' ? 'foldStart' : 'chopStart', {
-      player: p.id,
-      station: at,
-    });
+    g.bus.emit(
+      p.dousing
+        ? 'douseStart'
+        : target!.kind === 'sink' || target!.kind === 'saucepot'
+          ? 'washStart'
+          : target!.kind === 'pot'
+            ? 'foldStart'
+            : 'chopStart',
+      {
+        player: p.id,
+        station: at,
+      },
+    );
   p.chopAt = p.cutting ? at : -1;
   if (p.cutting) {
     p.vx = 0;
@@ -90,6 +101,8 @@ export function applyChop(g: Game, p: Player, target: Station | null, at: number
     }
   } else if (p.cutting && target && p.dousing) {
     douse(g, p.id, target, dtMs); // the fire is out when the Picar of the chefs in front of it adds up to DOUSE_MS
+  } else if (p.cutting && target?.kind === 'saucepot') {
+    if (stirStep(g, target, dtMs)) g.bus.emit('washDone', { player: p.id, station: at }); // recipes/sauce.ts: the sauce is ready
   } else if (p.cutting && target?.kind === 'pot') {
     foldStep(g, p.id, target, dtMs); // recipes/sim.ts: Picar at an oven with dough and tomato folds the calzone
   } else if (p.cutting && target) {
