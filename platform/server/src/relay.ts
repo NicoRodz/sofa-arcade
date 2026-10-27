@@ -12,13 +12,18 @@ import {
   MAX_PLAYERS,
   SLOT_GRACE_MS,
   WS_PATH,
+  APPEARANCE_PHASES,
+  defaultAppearance,
+  sanitizeAppearance,
   parseClientMessage,
   youMsg,
+  type Appearance,
   type LobbyConfig,
   type PhaseInfo,
   type PublicPlayer,
   type ServerMsg,
 } from '@pichi/core';
+import { createLastWins } from './appearance-guard';
 import { actFits, createRateLimiter, menuFits } from './menu-guard';
 
 interface Player {
@@ -29,6 +34,8 @@ interface Player {
   ws: WebSocket | null;
   assist?: true; // Ayudante, chosen from the phone in the lobby; it stays with the slot (a reconnect with the token keeps it)
   caps?: string[]; // what this phone announced when it joined (MENU_CAP: it draws the Captain's touch menu)
+  ap: Appearance; // the sanitized look; it stays with the slot (a reconnect with the token keeps it)
+  customizing?: true; // in the character creator now (only a phone that sent `ap` ever is)
   school?: true; // this phone did (or skipped) the Cocina escuela; it stays with the slot like assist
   expiry?: ReturnType<typeof setTimeout>;
 }
@@ -54,6 +61,8 @@ const pub = (p: Player, r: Room): PublicPlayer => ({
   slot: p.slot,
   connected: p.ws !== null,
   teamId: teamIdOf(r, p.id),
+  ap: p.ap,
+  ...(p.customizing ? { customizing: true } : {}),
   ...(p.assist ? { assist: true as const } : {}),
   ...(p.school ? { school: true as const } : {}),
 });
@@ -106,6 +115,8 @@ export function attachRelay(server: Server) {
     if (raw && c?.ws && c.caps?.includes(MENU_CAP) && c.ws.readyState === WebSocket.OPEN) c.ws.send(raw);
   };
 
+  const appearanceMsg = (p: Player): ServerMsg => ({ t: 'appearance', playerId: p.id, ap: p.ap, customizing: !!p.customizing });
+
   const sendYou = (r: Room, p: Player) => {
     const you = youMsg(r.config.teams, p.id);
     if (you && p.ws) send(p.ws, you);
@@ -118,6 +129,16 @@ export function attachRelay(server: Server) {
     const isScreen = url.searchParams.get('role') === 'screen';
     let me: Player | null = null;
     const actAllowed = createRateLimiter(); // menuAct per second of this connection
+    const appearanceGate = createLastWins<{ ap: Record<string, unknown>; done: boolean }>((a) => {
+      // lobby / home / results only; `playerId` is the socket's player, never the payload's
+      if (!me || !APPEARANCE_PHASES.includes(r.phase.phase)) return;
+      me.ap = sanitizeAppearance(a.ap, me.slot);
+      if (a.done) delete me.customizing;
+      else me.customizing = true;
+      const am = appearanceMsg(me);
+      toScreens(r, am);
+      toPlayers(r, am);
+    });
 
     if (isScreen) {
       r.screens.add(ws);
@@ -141,6 +162,14 @@ export function attachRelay(server: Server) {
         r.phase = { phase: m.phase, scores: m.scores, puestos: m.puestos, match: m.match, result: m.result };
         if (m.phase !== 'lobby') r.menu = null; // the form belongs to the lobby
         toPlayers(r, { t: 'phase', ...r.phase });
+        if (!APPEARANCE_PHASES.includes(m.phase))
+          for (const p of r.players.values())
+            if (p.customizing) {
+              delete p.customizing; // the match starts: the look is forced as it stands
+              const am = appearanceMsg(p);
+              toScreens(r, am);
+              toPlayers(r, am);
+            }
         return;
       }
       if (m.t === 'buzz') {
@@ -196,7 +225,15 @@ export function attachRelay(server: Server) {
             ws.close();
             return;
           }
-          p = { id: r.nextId++, token: m.token, name: m.name, slot, ws: null };
+          p = {
+            id: r.nextId++,
+            token: m.token,
+            name: m.name,
+            slot,
+            ws: null,
+            ap: m.ap ? sanitizeAppearance(m.ap, slot) : defaultAppearance(slot), // an old phone sends none: seeded by its slot
+            ...(m.ap ? { customizing: true as const } : {}),
+          };
           r.players.set(p.id, p);
         } else {
           p.name = m.name;
@@ -212,6 +249,7 @@ export function attachRelay(server: Server) {
         if (p.assist) send(ws, { t: 'assist', playerId: p.id, on: true }); // a phone that comes back remembers its choice
         send(ws, { t: 'phase', ...r.phase });
         toScreens(r, { t: 'player_joined', player: pub(p, r) });
+        if (m.ap) for (const o of r.players.values()) if (o !== p) send(ws, appearanceMsg(o)); // the creator's "same as Ana" hint needs the others
         syncCaptain(r, ws);
         return;
       }
@@ -229,6 +267,10 @@ export function attachRelay(server: Server) {
         // it stays with the slot; the screen hears it every time (a "Saltar" during the school needs the nudge even when it was known)
         me.school = true;
         toScreens(r, { t: 'schoolDone', playerId: me.id, ...(m.skip ? { skip: true as const } : {}) });
+        return;
+      }
+      if (m.t === 'appearance' && me) {
+        appearanceGate.push(m);
         return;
       }
       if (m.t === 'assist' && me) {
@@ -255,6 +297,7 @@ export function attachRelay(server: Server) {
     });
 
     ws.on('close', () => {
+      appearanceGate.dispose();
       r.screens.delete(ws);
       if (me && me.ws === ws) {
         me.ws = null;
