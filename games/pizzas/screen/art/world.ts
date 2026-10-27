@@ -337,7 +337,7 @@ export class World {
       if (gp.cutting && gp.chopAt >= 0 && !gp.dousing) {
         // (a chef putting a fire out holds the extinguisher: BurnView draws it, the knife stays put)
         const at = g.stations[gp.chopAt];
-        action = at?.kind === 'sink' || at?.kind === 'pot' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough, and folding the calzone kneads it
+        action = at?.kind === 'sink' || at?.kind === 'pot' || at?.kind === 'saucepot' || at?.item === 'raw0' ? 'stretch' : 'chop'; // washing scrubs like stretching dough, and folding the calzone kneads it
         chop.set(gp.chopAt, action);
       }
       chef.update(dtMs, {

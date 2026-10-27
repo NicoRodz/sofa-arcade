@@ -4,6 +4,7 @@ import type { Grid } from '../../../sim/maps';
 import { H, OX, OY, TILE, U, W, floorPair } from '@pichi/screen-kit/art/tokens';
 import { outerWall, floorPass, waterPass, masses } from './floor';
 import { crate, board, oven, plates } from './work-stations';
+import { passHatch, saucePot } from './pot-stations';
 import { addSurfaces } from '../surfaces/surface-view';
 import { trashCan, catapult, dirtyReturn, sinkStation, windowStation } from './service-stations';
 
@@ -47,6 +48,8 @@ export function buildBackground(
       else if (t.station === 'catapult') catapult(c, x0, y0);
       else if (t.station === 'dirty') dirtyReturn(c, x0, y0);
       else if (t.station === 'sink') sinkStation(c, x0, y0);
+      else if (t.station === 'saucepot') saucePot(c, x0, y0);
+      else if (t.station === 'counter' && t.crate === 1) passHatch(c, x0, y0);
     }),
   );
   c.restore();

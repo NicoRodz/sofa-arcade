@@ -6,7 +6,8 @@ import { R, texSize } from '@pichi/screen-kit/art/gfx';
 import { CUT_KIND, foodKey, ITEM_KIND, type FoodKind } from './food';
 import { makeText, type Fx } from '@pichi/screen-kit/art/fx';
 import { PANTRY_EVERY_MS, PANTRY_MAX } from '../../sim/versus/versus';
-import { canFold } from '../../sim/recipes/sim';
+import { canFold, isBaking } from '../../sim/recipes/sim';
+import { attachSaucepot, updateSaucepot } from './env/sauce-view';
 import { ovenKinds } from './food/recipes';
 
 export function place(scene: Phaser.Scene, key: string, x: number, y: number, k = 1): Phaser.GameObjects.Image {
@@ -96,9 +97,8 @@ export class StationViews {
       v.badge = makeText(s, cx, cy - TILE * 0.34, '', { size: 34, color: C.cream, depth: 3000 });
       v.bar = new Bar(s, 62);
       v.bar.root.setPosition(cx, cy + TILE * 0.38).setDepth(3000);
-    } else if (st.kind === 'counter') {
-      /* items only */
-    } else if (st.kind === 'window') {
+    } else if (st.kind === 'saucepot') attachSaucepot(s, v, Bar, place);
+    else if (st.kind === 'window') {
       v.bell = place(s, 'bell', cx, cy + TILE * 0.26, 0.9).setDepth(d - 2);
       const dir = this.openSide(st);
       v.arrow = place(s, 'arrow', cx + dir[0] * TILE, cy + dir[1] * TILE, 0.8)
@@ -159,7 +159,6 @@ export class StationViews {
     return v;
   }
 
-  // up to `max` plate images piled up, bottom first
   private stack(key: string, x: number, y: number, depth: number, max = 5): Phaser.GameObjects.Image[] {
     return Array.from({ length: max }, (_v, i) =>
       place(this.scene, key, x, y - i * 6, 0.6)
@@ -249,6 +248,7 @@ export class StationViews {
       else if (st.kind === 'dirty') this.updateCount(v, st.count, 3);
       else if (st.kind === 'plates' && v.badge) this.updateCount(v, st.count, 0, true);
       else if (st.kind === 'sink') this.updateSink(v, chopping.has(v.idx));
+      else if (st.kind === 'saucepot') updateSaucepot(v, chopping.has(v.idx), this.t);
     }
   }
 
@@ -303,7 +303,7 @@ export class StationViews {
     }
     v.flames!.forEach((f) => f.setVisible(true));
     const burnt = !!st.burnt;
-    const cooking = st.inputs.includes(0) && st.inputs.includes(1) && !st.done; // dough + tomato; cheese may join until it is done
+    const cooking = isBaking(st) && !st.done; // dough + tomato or sauce (or a stage of the white pizza); cheese may join until it is done
     const kinds = ovenKinds(st.inputs, !!st.folded); // what is in it: Marinara, Margarita, Pepperoni, Champiñón or the folded Calzone
     const dark = !!this.game.mid?.dark; // the "Corte de luz" event: the oven is off, nothing glows and nothing crackles
     const lit = (cooking || (st.done && !burnt)) && !dark;

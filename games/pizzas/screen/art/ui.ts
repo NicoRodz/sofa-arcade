@@ -48,6 +48,8 @@ const TILE_COLOR: Record<string, string> = {
   [STATION_CHAR.trash!]: C.steel2,
   [STATION_CHAR.dirty!]: '#667782',
   [STATION_CHAR.sink!]: '#4FA8E0',
+  [STATION_CHAR.saucepot!]: '#8C919B',
+  [STATION_CHAR.counter1!]: '#E6B980',
 };
 export function drawMiniMap(cv: HTMLCanvasElement, rows: readonly string[]) {
   const c = cv.getContext('2d')!;
