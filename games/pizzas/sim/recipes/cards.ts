@@ -37,6 +37,7 @@ export const CARDS: Readonly<Record<string, Card>> = {
   '20': { recipes: [M, Q, PQ], bind: [2, 3] }, // Carta larga 1: cheese on crate 3, pepperoni on crate 4
   '21': { recipes: [M, H, JM], bind: [5, 4] }, // Carta larga 3: ham on crate 3, mushroom on crate 4
   '22': { recipes: [M, PQ, C], bind: [2, 3] }, // Carta larga 4
+  '23': { recipes: [M, Q, H], bind: [2, 4] }, // Carta larga 2: cheese on crate 3, mushroom on crate 4
   V1: { recipes: [M, P, C] },
   V2: { recipes: [M, H, C] },
   V3: { recipes: [M, Q, C] },
