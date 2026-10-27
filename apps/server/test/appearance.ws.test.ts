@@ -66,7 +66,7 @@ describe('appearance over the relay', () => {
     const b = await phone('b', { ap });
     const id = a.of('joined')[0]!.player.id;
     screen.msgs.length = 0;
-    a.send({ t: 'appearance', playerId: 77, from: 77, ap: { ...ap, gl: -4, hat: 2 }, done: false });
+    a.send({ t: 'appearance', playerId: 77, from: 77, ap: { ...ap, gl: -4, hat: 2 }, done: false } as never); // forged fields on purpose
     await tick();
     expect(screen.of('appearance')).toEqual([{ t: 'appearance', playerId: id, ap: { ...ap, gl: 0, hat: 2 }, customizing: true }]);
     expect(b.of('appearance').pop()).toMatchObject({ playerId: id, customizing: true }); // other phones hear it too
