@@ -1,8 +1,11 @@
 // Modo Ayudante, explained: what the layout harness measures for it (selectors) and the states it is measured in (notice, "¿Qué es?" card).
+import { CREATOR_PROBE, CR_STACK, CREATOR_TOUCH, creatorScenarios } from './creator-scenarios';
 import type { Scenario } from './harness';
 
-export const ASSIST_TOUCH = ['#assist', '#assisthelpopen', '#assisthelpclose'];
-export const ASSIST_SAFE = [...ASSIST_TOUCH, '#assisthelp li', '#assisttoast'];
+export { CR_STACK };
+
+export const ASSIST_TOUCH = ['#assist', '#assisthelpopen', '#assisthelpclose', ...CREATOR_TOUCH];
+export const ASSIST_SAFE = [...ASSIST_TOUCH, '#assisthelp li', '#assisttoast', ...CR_STACK];
 export const ASSIST_PROBE = [
   '#assist',
   '#assist svg',
@@ -15,6 +18,7 @@ export const ASSIST_PROBE = [
   '#assisthelp li',
   '#assisthelpclose',
   '#assisttoast',
+  ...CREATOR_PROBE,
 ];
 
 type Msg = unknown;
@@ -45,5 +49,6 @@ export function assistHelpScenarios(b: Builders): Scenario[] {
     { name: 'assist-help', msgs: [b.player('Nico'), b.config(), b.phase('lobby')], after: `${CLOSED}; ${CARD}` },
     { name: 'captain-assist-help', msgs: cap, after: `${CLOSED}; ${CARD}` },
     { name: 'assist-help-wide-font', msgs: [b.player(W), ...cap.slice(1)], after: `${b.WIDE}; ${CLOSED}; ${CARD}` },
+    ...creatorScenarios(b),
   ] as Scenario[];
 }

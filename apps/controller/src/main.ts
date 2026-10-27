@@ -38,6 +38,7 @@ import type { IconId } from '@pichi/core/icons';
 import { attend } from '@pichi/controller-kit/attention';
 import { createCaptainMenu } from '@pichi/controller-kit/menu/captain-menu';
 import { bindRemote } from '@pichi/controller-kit/remote';
+import { createCreator } from '@pichi/controller-kit/creator/creator';
 import { outcomeFor, type Outcome, type PhoneResult } from '@pichi/game-pizzas/sim/versus/report';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -236,6 +237,7 @@ $('assist').addEventListener('pointerup', (e) => {
 const tx = (m: ClientMsg) => {
   if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
 };
+const creator = createCreator({ send: tx }); // character creator: begin() on the name form, joinExtra() in the join, onMessage() for the relay
 const schoolUi = createSchoolUi({
   kv: (() => {
     try {
@@ -262,8 +264,7 @@ function renderCaptain() {
   schoolUi.refreshCaptain();
   captainMenu.refresh();
   const crown = isCaptain() ? '👑 ' : '';
-  $('who').textContent = crown + myName;
-  $('who2').textContent = crown + myName;
+  for (const id of ['who', 'who2']) $(id).textContent = crown + myName;
   $('waitmsg').textContent = !joined ? 'Esperando que inicie la partida' : isCaptain() ? 'Eres el Capitán' : 'Elige el Capitán';
 }
 bindRemote(Array.from(document.querySelectorAll<HTMLElement>('#remote [data-nav]')), {
@@ -315,10 +316,7 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
   if (live) setHowTo(false);
   schoolUi.show(p === 'school');
   if (!live) {
-    state.x = 0;
-    state.y = 0;
-    state.btn = 0;
-    state.go = false;
+    Object.assign(state, { x: 0, y: 0, btn: 0, go: false });
     document.querySelectorAll('.act, .sg').forEach((b) => b.classList.remove('down'));
   }
   if (p === 'results' && scores) {
@@ -345,12 +343,13 @@ function connect() {
   const sock = (ws = new WebSocket(`ws://${location.host}${WS_PATH}?room=${encodeURIComponent(room)}`));
   sock.onopen = () => {
     lastPong = Date.now();
-    tx({ t: 'join', name, token, caps: [MENU_CAP] });
+    tx({ t: 'join', name, token, caps: [MENU_CAP], ...creator.joinExtra() });
   };
   sock.onmessage = (ev) => {
     const m = JSON.parse(ev.data) as ServerMsg;
     attend(m, myId);
     captainMenu.onMessage(m);
+    creator.onMessage(m);
     if (m.t === 'joined') {
       joined = true;
       myId = m.player.id;
@@ -526,6 +525,7 @@ $('name').setAttribute('value', name);
   e.preventDefault();
   name = ($('name') as HTMLInputElement).value.trim() || 'Player';
   store.set('pg.name', name);
+  creator.begin();
   startPad();
 });
 if (name && store.get('pg.room') === room) startPad(); // reopened page: rejoin with the stored token

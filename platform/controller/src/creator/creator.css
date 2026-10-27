@@ -1,0 +1,57 @@
+/* Character creator (plan §4). Landscape: preview 40% | steps 60%. Portrait: preview on top, steps below, Aleatorio + Listo in one bottom row.
+   Built by view.ts; covers the whole page while body[data-creator=open]. Everything pressable is >= 44 px; touch-action: manipulation, no long-press, safe-area padding. */
+#creator { display: none; position: fixed; inset: 0; z-index: 40; background: var(--cocoa); color: var(--cream); font: 800 14px var(--font); touch-action: manipulation; gap: 8px;
+  padding: max(8px, var(--st)) max(10px, var(--sr)) max(8px, var(--sb)) max(10px, var(--sl));
+  --chip: clamp(44px, 12vmin, 56px); --sw: clamp(44px, 15vmin, 64px); --pic: clamp(44px, 18vmin, 72px); --gen: min(100px, 26vmin, 28vw);
+  grid-template: "prev tabs" 44px "prev opts" minmax(0, 1fr) "rand bar" 56px / minmax(0, 2fr) minmax(0, 3fr); }
+body[data-creator=open] #creator { display: grid; }
+body[data-creator=open] :is(#pad, #wait, #choosing, #results, #howto, #remote, #join, #cmenu, #teamchip, #assisttoast) { display: none !important; }
+#creator button { font: inherit; min-height: 44px; padding: 0 8px; border-radius: 14px; border: 3px solid var(--ink); background: #54463E; color: var(--cream); box-shadow: 0 3px 0 rgba(43, 27, 23, .5); -webkit-touch-callout: none; }
+#creator button:active { transform: translateY(3px); box-shadow: none; }
+#creator button[aria-pressed=true], #creator .cr-tab[aria-selected=true] { background: var(--cheese); color: var(--ink); border-color: var(--ink); }
+
+#cr-prev { grid-area: prev; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+#cr-canvas { flex: 1 1 0; min-height: 0; width: 100%; border-radius: 16px; background: rgba(255, 244, 224, .08); touch-action: none; }
+#cr-dup { font-size: 13px; line-height: 1.2; text-align: center; color: var(--cheese); flex: none; }
+#cr-dup[hidden] { display: none; }
+#cr-random { grid-area: rand; min-height: 56px; font-size: 17px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+#cr-tabs { grid-area: tabs; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.cr-tab { font-size: 13px; padding: 0 2px; min-width: 0; }
+#cr-opts { grid-area: opts; display: flex; flex-direction: column; justify-content: center; gap: 6px; min-height: 0; }
+.cr-row { display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap; }
+.cr-chip { flex: none; padding: 0; }
+.cr-chip.sw { width: var(--sw); height: var(--sw); min-height: 44px; border-radius: 50%; }
+.cr-chip.pic { width: var(--chip); height: var(--chip); }
+.cr-chip.pic.big { width: var(--pic); height: var(--pic); }
+.cr-row.cl { flex-wrap: wrap; max-width: calc(4 * var(--pic) + 12px); margin: 0 auto; }
+.cr-chip.txt { min-width: 64px; padding: 0 10px; font-size: 14px; }
+.cr-chip.gen { width: var(--gen); height: var(--gen); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 14px; }
+.cr-chip canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
+.cr-chip.gen canvas { width: 62%; height: auto; aspect-ratio: 1; }
+#cr-bar { grid-area: bar; display: flex; gap: 6px; }
+#cr-next, #cr-done { min-height: 56px; font-size: 17px; }
+#cr-next { flex: 0 0 auto; padding: 0 12px; display: none; }
+#creator[data-step=acc] #cr-next { display: block; }
+#cr-done { flex: 1 1 0; min-width: 0; background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+#cr-ask { display: none; flex-direction: column; align-items: stretch; justify-content: center; gap: 10px; text-align: center; }
+#cr-asktxt { font-size: 20px; }
+#cr-play { min-height: 56px; font-size: 18px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+
+/* "¿Juegas con este?": only the preview and two buttons */
+#creator[data-screen=confirm] :is(#cr-tabs, #cr-opts, #cr-bar, #cr-random) { display: none; }
+#creator[data-screen=confirm] #cr-ask { display: flex; grid-area: 1 / 2 / -1 / 3; }
+
+/* the lobby button that reopens the creator (phases that accept a look) */
+#cr-edit { display: none; font-size: 16px; padding: 6px 18px; min-height: 44px; background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); text-shadow: none; }
+body[data-cr-edit=on] #cr-edit { display: inline-block; }
+@media (max-height: 440px) { #cr-edit { font-size: 15px; padding: 4px 12px; } }
+
+@media (orientation: portrait) {
+  #creator { --chip: 44px; --sw: 48px; --pic: 64px; --gen: min(100px, 28vw);
+    grid-template: "prev prev" minmax(0, 1fr) "tabs tabs" 44px "opts opts" auto "rand bar" 56px / minmax(0, 5fr) minmax(0, 7fr); padding-left: max(10px, var(--sl)); padding-right: max(10px, var(--sr)); }
+  @media (max-height: 700px) { body[data-cr-edit=on][data-view=lobby] #wait #game { display: none; } } /* short phones: the game name gives way too */
+  #cr-opts { min-height: 150px; }
+  body[data-cr-edit=on][data-view=lobby] #wait .brand { display: none; } /* the extra button costs a row: the logo gives way (as it already does in the landscape versus lobby) */
+  #creator[data-screen=confirm] { grid-template: "prev prev" minmax(0, 1fr) "ask ask" auto / 1fr 1fr; }
+  #creator[data-screen=confirm] #cr-ask { grid-area: ask; }
+}

@@ -1,5 +1,5 @@
 // Layout rules for the phone page, checked on a Probe (see harness.ts). Each returns human-readable violations.
-import { ASSIST_SAFE } from './assist-scenarios';
+import { ASSIST_SAFE, CR_STACK } from './assist-scenarios';
 import { TOUCH_SELECTORS, type Box, type Insets, type Item, type Probe } from './harness';
 
 export const MIN_TOUCH = 44; // CSS px: Apple's HIG minimum; Android recommends 48 dp
@@ -193,7 +193,7 @@ export function padOverlaps(p: Probe): string[] {
 // 6. Overlay screens: their text blocks must not collide, and the whole content must fit the screen.
 export function stacked(p: Probe): string[] {
   const out: string[] = [];
-  for (const root of ['#wait > *', '#choosing > *', '#results > *', '#rotate > *', '#join .brand', '#name', '#join button']) {
+  for (const root of ['#wait > *', '#choosing > *', '#results > *', '#rotate > *', '#join .brand', '#name', '#join button', ...CR_STACK]) {
     const xs = all(p, root).filter((i) => i.text ?? i.box);
     for (let a = 0; a < xs.length; a++)
       for (let b = a + 1; b < xs.length; b++) {
