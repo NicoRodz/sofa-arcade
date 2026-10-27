@@ -3,7 +3,8 @@ import type Phaser from 'phaser';
 import type { Item } from '@pichi/game-pizzas/sim';
 import { TILE, U, chefOf, hexNum } from '../tokens';
 import { R, texSize } from '../gfx';
-import { HEAD_Y, MOUTH_DY, PROP_Y, hatTop } from '../chefdraw';
+import { PROP_Y, hatTop } from '../chefdraw';
+import { ANCHORS, CHOP_MS, HEAD_Y, MOUTH_DY, STRETCH_MS, armPose, eyeLook, facing, gait, itemAnchor } from '@pichi/core/avatar/rig-math';
 import { foodKey, ITEM_KIND } from '@pichi/game-pizzas/screen/art/food';
 import { CHEF_SCALE, ITEM_SCALE, plateKey } from './textures';
 
@@ -86,20 +87,23 @@ export class Chef {
     };
     this.shadow = at('chef_shadow');
     this.ring = at('chef_ring').setTint(hexNum(chefOf(slot).color));
-    this.feet = [at('chef_shoe', -10, -3), at('chef_shoe', 10, -3)];
-    this.arms = [at(`chef_arm_${skin}`, -25, -41), at(`chef_arm_${skin}`, 25, -41)];
+    this.feet = [at('chef_shoe', ANCHORS.foot[0], ANCHORS.footY), at('chef_shoe', ANCHORS.foot[1], ANCHORS.footY)];
+    this.arms = [
+      at(`chef_arm_${skin}`, ANCHORS.shoulder[0], ANCHORS.shoulderY),
+      at(`chef_arm_${skin}`, ANCHORS.shoulder[1], ANCHORS.shoulderY),
+    ];
     this.torso = at(`chef_body_${slot % 8}`);
     this.torsoB = at(`chef_bodyb_${slot % 8}`).setVisible(false);
-    this.itemImg = at(foodKey('dough_raw'), 20, -44)
+    this.itemImg = at(foodKey('dough_raw'), ANCHORS.item.x, ANCHORS.item.y)
       .setVisible(false)
       .setScale(ITEM_SCALE / R);
     this.headF = at(`chef_head_${slot % 8}`);
     this.headB = at(`chef_headb_${slot % 8}`).setVisible(false);
     this.fa = at(`chef_fa_${slot % 8}`);
-    this.eyes = [at('chef_eye_open', -7, HEAD_Y - 2), at('chef_eye_open', 7, HEAD_Y - 2)];
-    this.mouth = at('chef_mouth_smile', 0, HEAD_Y + MOUTH_DY);
+    this.eyes = [at('chef_eye_open', -ANCHORS.eyeX, ANCHORS.eyeY), at('chef_eye_open', ANCHORS.eyeX, ANCHORS.eyeY)];
+    this.mouth = at('chef_mouth_smile', 0, ANCHORS.mouthY);
     this.fb = at(`chef_fb_${slot % 8}`);
-    this.drop = at('chef_drop', 17, HEAD_Y - 6).setVisible(false);
+    this.drop = at('chef_drop', ANCHORS.dropX, ANCHORS.dropY).setVisible(false);
     const hat = at(`chef_hat_${slot % 8}`);
     this.prop = at(`chef_prop_${slot % 8}`).setVisible(false);
     this.blades = at('chef_blades', 0, hatTop(slot) - PROP_Y).setVisible(false);
@@ -117,7 +121,7 @@ export class Chef {
     ]);
     this.rig = scene.add.container(0, 0, [...this.feet, this.torsoB, this.torso, ...this.arms, this.itemImg, this.head]);
     this.tagKey = plateKey(scene, slot, name);
-    this.tag = at(this.tagKey, 0, 20);
+    this.tag = at(this.tagKey, 0, ANCHORS.tagY);
     this.spinStars = [0, 1, 2].map(() =>
       scene.add
         .image(0, 0, 'fx_star')
@@ -183,14 +187,9 @@ export class Chef {
     const skating = moving && !!s.skate; // the feet do not walk on ice: they glide
 
     // facing
-    const ax = Math.abs(s.fx),
-      ay = Math.abs(s.fy);
-    if (ay > ax * 1.3) this.face = s.fy < 0 ? 'up' : 'down';
-    else {
-      this.face = 'side';
-      if (Math.abs(s.fx) > 0.05) this.flip = s.fx < 0 ? -1 : 1;
-    }
-    const len = Math.hypot(s.fx, s.fy) || 1;
+    const fc = facing(s.fx, s.fy, this.flip);
+    this.face = fc.face;
+    this.flip = fc.flip;
 
     // walk cycle
     if (moving && !skating) this.phase += dt * (HOUR / 0.5) * Math.min(1.15, Math.max(0.5, speed / 4.5));
@@ -208,8 +207,7 @@ export class Chef {
       this.vy = 0;
     }
     this.wasMoving = moving;
-    const bounce = moving && !skating ? Math.abs(Math.sin(this.phase)) * 4 : 0;
-    const lean = skating ? 0.14 * this.flip : moving ? Math.sin(this.phase / 2) * 4 * (HOUR / 180) : 0;
+    const { bounce, lean, footL, footR } = gait(this.phase, moving, skating, this.flip);
 
     // spring toward rest scale
     const k = 420,
@@ -232,69 +230,32 @@ export class Chef {
     this.happyT = Math.max(0, this.happyT - dtMs);
     this.failT = Math.max(0, this.failT - dtMs);
 
-    // action loops
-    let armA = 0,
-      armB = 0,
-      armsLen = [1, 1];
+    // action loops (angles and lengths: rig-math; the hit beats and squashes stay here)
     const carrying = !!s.item;
-    const rest = [0.14, -0.14];
-    if (s.action === 'chop') {
+    if (s.action === 'chop' || s.action === 'stretch') {
       this.hitT += dtMs;
-      const cyc = (this.hitT % 240) / 240;
-      const down = cyc < 0.5 ? cyc * 2 : 1 - (cyc - 0.5) * 2; // 0 raised .. 1 down
-      armB = -2.3 + 1.9 * down;
-      armA = rest[0]!;
-      const prev = ((this.hitT - dtMs) % 240) / 240;
+      const period = s.action === 'chop' ? CHOP_MS : STRETCH_MS;
+      const cyc = (this.hitT % period) / period;
+      const prev = ((this.hitT - dtMs) % period) / period;
       if (prev < 0.5 && cyc >= 0.5) {
-        this.onHit?.('chop');
-        this.sx = 0.05;
+        this.onHit?.(s.action);
+        this.sx = s.action === 'chop' ? 0.05 : 0.04;
         this.sy = -0.05;
         this.vx = 0;
         this.vy = 0;
       }
-      if (carrying) {
-        armA = -1.1;
-        armsLen = [0.7, 1];
-      }
-    } else if (s.action === 'stretch') {
-      this.hitT += dtMs;
-      const cyc = (this.hitT % 360) / 360;
-      const push = 0.5 - 0.5 * Math.cos(cyc * HOUR * 2);
-      armA = -(0.45 + 0.75 * push);
-      armB = 0.45 + 0.75 * push;
-      armsLen = [0.85 - 0.15 * push, 0.85 - 0.15 * push];
-      const prev = ((this.hitT - dtMs) % 360) / 360;
-      if (prev < 0.5 && cyc >= 0.5) {
-        this.onHit?.('stretch');
-        this.sx = 0.04;
-        this.sy = -0.05;
-        this.vx = 0;
-        this.vy = 0;
-      }
-    } else {
-      this.hitT = 0;
-      const sw = skating ? 0.7 : moving ? Math.sin(this.phase / 2) * 0.3 : 0; // on ice both arms go out for balance
-      armA = rest[0]! + sw;
-      armB = rest[1]! + (skating ? -sw : sw);
-      if (carrying) {
-        if (this.face === 'side') {
-          armA = -1.05;
-          armB = -1.3;
-          armsLen = [0.7, 0.55];
-        } else {
-          armA = -1.2;
-          armB = 1.2;
-          armsLen = [0.62, 0.62];
-        }
-      }
-    }
+    } else this.hitT = 0;
+    const arm = armPose({ action: s.action, hitT: this.hitT, carrying, face: this.face, moving, skating, phase: this.phase });
+    const armA = arm.a,
+      armB = arm.b,
+      armsLen = [arm.lenA, arm.lenB];
     const [aL, aR] = this.arms as [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
     aL.setRotation(armA).setScale(1 / R, (armsLen[0] ?? 1) / R);
     aR.setRotation(armB).setScale(1 / R, (armsLen[1] ?? 1) / R);
 
     // feet
-    this.feet[0]!.y = -3 + (moving ? Math.sin(this.phase / 2) * 3 : 0);
-    this.feet[1]!.y = -3 - (moving ? Math.sin(this.phase / 2) * 3 : 0);
+    this.feet[0]!.y = footL;
+    this.feet[1]!.y = footR;
 
     // sabotage: a slip is two spins and flailing arms (the slide is the spin), then the chef gets up with a squash; the stars circle the head
     this.clock += dtMs;
@@ -335,8 +296,8 @@ export class Chef {
     // carried item
     if (s.item) {
       this.itemImg.setVisible(true).setTexture(foodKey(ITEM_KIND[s.item]));
-      const side = this.face === 'side';
-      this.itemImg.setPosition(side ? 21 : up ? 20 : 0, up ? -46 : -43);
+      const at = itemAnchor(this.face);
+      this.itemImg.setPosition(at.x, at.y);
     } else this.itemImg.setVisible(false);
 
     // Ayudante: the propeller spins (the blades squash in x, as a disc seen from the front)
@@ -350,8 +311,7 @@ export class Chef {
     this.head.setPosition(headDx, moving ? -Math.abs(Math.sin(this.phase + 0.6)) * 1.2 : -br * 46);
 
     // face
-    const look = this.face === 'side' ? 4 : this.face === 'down' ? Math.max(-4, Math.min(4, (s.fx / len) * 4)) * this.flip : 0;
-    const lookY = this.face === 'down' ? 1.5 : 0;
+    const { look, lookY } = eyeLook(this.face, s.fx, s.fy, this.flip);
     this.blinkT -= dt;
     if (this.blinkT <= 0) {
       this.blinkOn = 0.12;

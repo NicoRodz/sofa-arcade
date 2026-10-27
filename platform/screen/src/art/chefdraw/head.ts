@@ -1,9 +1,10 @@
 // Chef parts drawn on a canvas. Origin is the chef's feet; the head centre is (0, -68). Used for textures and DOM portraits.
 import { C, chefOf, hairOf, skinOf } from '../tokens';
-import { circle, drawOutlined, rr, shade, vgrad, type Ctx } from '../gfx';
+import { circle, drawOutlined, rr, shade, vgrad } from '../gfx';
+import type { Painter } from '@pichi/core/avatar/painter';
 import { HEAD_Y, skinGrad } from './body';
 
-function backHair(c: Ctx, slot: number) {
+function backHair(c: Painter, slot: number) {
   const ch = chefOf(slot),
     hair = hairOf(slot);
   if (ch.accessory === 'pigtails') {
@@ -13,11 +14,11 @@ function backHair(c: Ctx, slot: number) {
   }
 }
 
-function ears(c: Ctx, skin: string) {
+function ears(c: Painter, skin: string) {
   for (const sx of [-1, 1]) drawOutlined(c, circle(c, sx * 21.5, HEAD_Y + 2, 5.2), shade(skin, -0.04), { lw: 2.5 });
 }
 
-export function drawHead(c: Ctx, slot: number) {
+export function drawHead(c: Painter, slot: number) {
   const skin = skinOf(slot),
     ch = chefOf(slot),
     hair = hairOf(slot);
@@ -46,7 +47,7 @@ export function drawHead(c: Ctx, slot: number) {
   }
 }
 
-export function drawHeadBack(c: Ctx, slot: number) {
+export function drawHeadBack(c: Painter, slot: number) {
   const skin = skinOf(slot),
     hair = hairOf(slot);
   backHair(c, slot);
@@ -61,7 +62,7 @@ export function drawHeadBack(c: Ctx, slot: number) {
 }
 
 // Layer under the mouth: the beard.
-export function drawFaceA(c: Ctx, slot: number) {
+export function drawFaceA(c: Painter, slot: number) {
   if (chefOf(slot).accessory !== 'beard') return;
   const skin = skinOf(slot);
   c.beginPath();
@@ -82,7 +83,7 @@ export function drawFaceA(c: Ctx, slot: number) {
 }
 
 // Layer over the mouth: glasses, moustache.
-export function drawFaceB(c: Ctx, slot: number) {
+export function drawFaceB(c: Painter, slot: number) {
   const a = chefOf(slot).accessory;
   if (a === 'glasses') {
     for (const sx of [-1, 1]) {
