@@ -30,7 +30,7 @@ export interface MenuOption {
 }
 export interface MenuItem extends MenuOption {
   players?: string; // "2-4"
-  stars?: number; // 0..3
+  stars?: number; // 0..5
 }
 export interface MenuGroup {
   id: string;
@@ -45,6 +45,7 @@ export interface MenuRow {
   hint?: string; // one line under the row
   options?: MenuOption[]; // choice / toggle labels are drawn by the phone; buttons / grid extras
   groups?: MenuGroup[]; // grid only: tabs of cards
+  fitFor?: number; // grid only: the group size the cards' `enabled` was judged for (the phone's "Aptos para N" filter)
 }
 export interface MenuPrimary {
   id: 'start';
@@ -103,7 +104,7 @@ function parseOption(o: any): MenuOption | null {
 }
 function parseItem(o: any): MenuItem | null {
   const base = parseOption(o);
-  if (!base || !optStr(o.players, 12) || !(o.stars === undefined || (Number.isInteger(o.stars) && o.stars >= 0 && o.stars <= 3)))
+  if (!base || !optStr(o.players, 12) || !(o.stars === undefined || (Number.isInteger(o.stars) && o.stars >= 0 && o.stars <= 5)))
     return null;
   return { ...base, ...(o.players !== undefined ? { players: o.players } : {}), ...(o.stars !== undefined ? { stars: o.stars } : {}) };
 }
@@ -129,6 +130,7 @@ function parseRow(r: any): MenuRow | null {
   const options = r.options === undefined ? undefined : list(r.options, MAX_OPTIONS, parseOption);
   const groups = r.groups === undefined ? undefined : list(r.groups, MAX_GROUPS, parseGroup);
   if (options === null || groups === null) return null;
+  if (r.fitFor !== undefined && !(Number.isInteger(r.fitFor) && r.fitFor >= 1 && r.fitFor <= 99)) return null;
   return {
     id: r.id,
     label: r.label,
@@ -137,6 +139,7 @@ function parseRow(r: any): MenuRow | null {
     ...(r.hint !== undefined ? { hint: r.hint } : {}),
     ...(options ? { options } : {}),
     ...(groups ? { groups } : {}),
+    ...(r.fitFor !== undefined ? { fitFor: r.fitFor } : {}),
   };
 }
 

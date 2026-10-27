@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { snapshot } from './fixture';
 import {
   CONFIRM_DELAY_MS,
+  FLASH_MS,
+  flashing,
+  showIntro,
+  toggleFit,
+  touched,
+  visibleItems,
   NOTICE_MS,
   actMsg,
   ask,
@@ -118,5 +124,36 @@ describe('what the form says to the screen', () => {
     expect(formUp(setPad(up(), true), true, 'lobby')).toBe(false);
     expect(padUp(setPad(up(), true), true, 'lobby')).toBe(true);
     expect(padUp(up(), true, 'lobby')).toBe(false);
+  });
+});
+
+describe('rows changed by someone else (keyboard flash)', () => {
+  const changed = (rev: number) => {
+    const s = snapshot({ rev });
+    s.rows = s.rows.map((r) => (r.id === 'difficulty' ? { ...r, value: 'hard' } : r));
+    return s;
+  };
+  it('a row whose content changed flashes for FLASH_MS; the first snapshot and unchanged rows do not', () => {
+    expect(Object.keys(up().flash)).toEqual([]);
+    const ui = onSnapshot(up(), changed(4), 1000);
+    expect(flashing(ui, 'difficulty', 1000 + FLASH_MS - 1)).toBe(true);
+    expect(flashing(ui, 'difficulty', 1000 + FLASH_MS)).toBe(false);
+    expect(flashing(ui, 'events', 1000)).toBe(false);
+  });
+  it('the row this phone just touched is not flashed back at it, but one touched long ago is', () => {
+    expect(flashing(onSnapshot(touched(up(), 'difficulty', 900), changed(4), 1000), 'difficulty', 1000)).toBe(false);
+    expect(flashing(onSnapshot(touched(up(), 'difficulty', 0), changed(4), 5000), 'difficulty', 5000)).toBe(true);
+  });
+});
+
+describe('"Aptos para N" and the first-use card', () => {
+  it('the filter keeps only the cards the screen says fit; off lists them all', () => {
+    const items = snapshot().rows.find((r) => r.kind === 'grid')!.groups![0]!.items;
+    expect(visibleItems(up(), items)).toHaveLength(4);
+    expect(visibleItems(toggleFit(up()), items).map((i) => i.id)).toEqual(['1', '2', '3']);
+  });
+  it('the card is a flag the phone raises and lowers', () => {
+    expect(showIntro(up(), true).intro).toBe(true);
+    expect(showIntro(showIntro(up(), true), false).intro).toBe(false);
   });
 });

@@ -8,6 +8,7 @@ import { obstaculosManifest } from '../manifest';
 import { initObstAudio, type MusicState } from './audio';
 import { camp } from './campaign-link';
 import { obstDebug } from './debug';
+import { obstMenu, obstMenuAct } from './lobby-menu-hooks';
 import { initLobbyView, renderLobby } from './lobby-view';
 import { endObst, obstScene, startObst } from './match';
 import { renderResults } from './results-panel';
@@ -51,6 +52,8 @@ export const obstaculosScreen: ScreenGame = (() => {
       pickReset: () => ({ modeId: 'coop', teams: null, teamsLocked: false, modeOptions: toModeOptions(DEFAULT_OBST_OPTIONS) }),
       afterPick: () => void camp.enter(),
       render: renderLobby,
+      menu: obstMenu,
+      menuAct: obstMenuAct,
       back: () => {
         if (camp.on) return false;
         void camp.enter(); // Esc in the quick-game setup goes back to the campaign's hub

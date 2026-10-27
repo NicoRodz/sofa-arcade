@@ -4,6 +4,7 @@
 import { acceptNav, type ServerMsg } from '@pichi/core';
 import { app, pickedGame } from '../shell/app-state';
 import { sendMsg } from '../net/socket';
+import { bannerActed, bannerForm } from './captain-banner';
 
 export const MENU_DEBOUNCE_MS = 50;
 let rev = 0; // bumps with every change of content; `start` must carry the current one
@@ -18,8 +19,10 @@ function publish(force = false): number {
   const b = body();
   if (!b) {
     last = '';
+    bannerForm(false);
     return rev;
   }
+  bannerForm(true);
   const json = JSON.stringify(b);
   if (json === last && !force) return rev;
   if (json !== last) rev++;
@@ -51,7 +54,10 @@ export function onMenuAct(m: Extract<ServerMsg, { t: 'menuAct' }>) {
   if (app.phase !== 'lobby' || app.starting || app.howTo) return refuse('disabled', 'Ahora no se puede');
   const r = hooks.menuAct(m, cur);
   if (!r.ok) refuse(r.code, r.msg);
-  else scheduleMenu();
+  else {
+    bannerActed();
+    scheduleMenu();
+  }
 }
 
 /** Tests: forget everything. */
@@ -61,4 +67,5 @@ export function resetMenuBridge() {
   again = false;
   rev = 0;
   last = '';
+  bannerForm(false);
 }
