@@ -1,15 +1,15 @@
 // Chef parts drawn on a canvas. Origin is the chef's feet; the head centre is (0, -68). Used for textures and DOM portraits.
+import { HEAD_Y, MOUTH_DY } from '@pichi/core/avatar/rig-math';
 import { C, chefOf } from '../tokens';
-import { circle, drawOutlined, ellipse, mix, rr, shade, vgrad, type Ctx } from '../gfx';
+import { circle, drawOutlined, ellipse, mix, rr, shade, vgrad } from '../gfx';
+import type { Painter } from '@pichi/core/avatar/painter';
 
-export const HEAD_Y = -68;
-
-export const MOUTH_DY = 15;
+export { HEAD_Y, MOUTH_DY };
 
 const SHIRT_A = '#FFFFFF',
   SHIRT_B = '#E7DFD1';
 
-export function skinGrad(c: Ctx, skin: string) {
+export function skinGrad(c: Painter, skin: string) {
   const g = c.createRadialGradient(-8, HEAD_Y - 9, 3, 0, HEAD_Y, 26);
   g.addColorStop(0, shade(skin, 0.28));
   g.addColorStop(0.55, skin);
@@ -17,7 +17,7 @@ export function skinGrad(c: Ctx, skin: string) {
   return g;
 }
 
-export function drawShadow(c: Ctx) {
+export function drawShadow(c: Painter) {
   const g = c.createRadialGradient(0, 0, 2, 0, 0, 30);
   g.addColorStop(0, 'rgba(0,0,0,0.30)');
   g.addColorStop(1, 'rgba(0,0,0,0.06)');
@@ -27,7 +27,7 @@ export function drawShadow(c: Ctx) {
   c.fill();
 }
 
-export function drawShoe(c: Ctx) {
+export function drawShoe(c: Painter) {
   drawOutlined(c, ellipse(c, 0, 0, 8, 5), '#3B2A22', { lw: 2.5 });
   c.fillStyle = 'rgba(255,255,255,0.3)';
   c.beginPath();
@@ -35,7 +35,7 @@ export function drawShoe(c: Ctx) {
   c.fill();
 }
 
-export function drawArm(c: Ctx, skin: string) {
+export function drawArm(c: Painter, skin: string) {
   // anchor = shoulder; arm hangs down
   drawOutlined(c, () => rr(c, -5, 8, 10, 18, 5), skinGrad2(c, skin), { lw: 2.5 });
   drawOutlined(c, () => rr(c, -6.5, -4, 13, 17, 6), vgrad(c, -4, 13, SHIRT_A, SHIRT_B), { lw: 2.5 });
@@ -46,14 +46,14 @@ export function drawArm(c: Ctx, skin: string) {
   c.fill();
 }
 
-function skinGrad2(c: Ctx, skin: string) {
+function skinGrad2(c: Painter, skin: string) {
   const g = c.createLinearGradient(-5, 0, 5, 0);
   g.addColorStop(0, shade(skin, 0.15));
   g.addColorStop(1, shade(skin, -0.1));
   return g;
 }
 
-export function drawBody(c: Ctx, slot: number) {
+export function drawBody(c: Painter, slot: number) {
   const ch = chefOf(slot);
   drawOutlined(c, () => rr(c, -24, -49, 48, 46, 18), vgrad(c, -49, -3, SHIRT_A, SHIRT_B), { lw: 3 });
   // coat buttons peek out on both sides of the apron
@@ -108,7 +108,7 @@ export function drawBody(c: Ctx, slot: number) {
   }
 }
 
-export function drawBodyBack(c: Ctx, slot: number) {
+export function drawBodyBack(c: Painter, slot: number) {
   const ch = chefOf(slot);
   drawOutlined(c, () => rr(c, -24, -49, 48, 46, 18), vgrad(c, -49, -3, SHIRT_A, SHIRT_B), { lw: 3 });
   c.strokeStyle = C.ink;

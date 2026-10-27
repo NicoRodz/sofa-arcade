@@ -1,9 +1,12 @@
 // Canvas 2D drawing helpers. Textures are drawn once into canvas textures (Graphics.generateTexture goes
 // through the same canvas path but ignores gradients), then used as plain images.
 import type Phaser from 'phaser';
+import type { PaintGradient, PaintStyle, Painter } from '@pichi/core/avatar/painter';
 import { C, U } from './tokens';
 
 export type Ctx = CanvasRenderingContext2D;
+/** A raw 2D context or an avatar Painter: the shared helpers below work on both (a Ctx has the same methods at runtime). */
+export type Pen = Ctx | Painter;
 export const R = 2; // supersampling: textures are drawn at R px per design unit
 export const ART = U / R; // display scale of a texture drawn in design units
 
@@ -56,7 +59,7 @@ export function domCanvas(w: number, h: number, ox: number, oy: number, draw: (c
   return cv;
 }
 
-export function rr(c: Ctx, x: number, y: number, w: number, h: number, r: number) {
+export function rr(c: Pen, x: number, y: number, w: number, h: number, r: number) {
   const k = Math.min(r, w / 2, h / 2);
   c.beginPath();
   c.moveTo(x + k, y);
@@ -82,14 +85,16 @@ export function mix(a: string, b: string, t: number): string {
   const ch = (s: number) => clamp(((x >> s) & 255) * (1 - t) + ((y >> s) & 255) * t);
   return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
 }
-export function vgrad(c: Ctx, y0: number, y1: number, top: string, bottom: string): CanvasGradient {
+export function vgrad(c: Ctx, y0: number, y1: number, top: string, bottom: string): CanvasGradient;
+export function vgrad(c: Painter, y0: number, y1: number, top: string, bottom: string): PaintGradient;
+export function vgrad(c: Pen, y0: number, y1: number, top: string, bottom: string): PaintGradient {
   const g = c.createLinearGradient(0, y0, 0, y1);
   g.addColorStop(0, top);
   g.addColorStop(1, bottom);
   return g;
 }
 
-export function contactShadow(c: Ctx, x: number, y: number, rx: number, ry: number, a = 0.18) {
+export function contactShadow(c: Pen, x: number, y: number, rx: number, ry: number, a = 0.18) {
   c.save();
   c.fillStyle = `rgba(0,0,0,${a})`;
   c.beginPath();
@@ -99,7 +104,7 @@ export function contactShadow(c: Ctx, x: number, y: number, rx: number, ry: numb
 }
 
 // One white arc, top-left: the single highlight of every object.
-export function shine(c: Ctx, cx: number, cy: number, r: number, a = 0.35, lw = 3) {
+export function shine(c: Pen, cx: number, cy: number, r: number, a = 0.35, lw = 3) {
   c.save();
   c.strokeStyle = `rgba(255,255,255,${a})`;
   c.lineWidth = lw;
@@ -116,7 +121,7 @@ export interface OutlineOpts {
   shadow?: [number, number, number, number?];
 }
 // Fill (flat colour or gradient) + ink outline of the current path builder, optionally with a contact shadow.
-export function drawOutlined(c: Ctx, build: () => void, fill: string | CanvasGradient, o: OutlineOpts = {}) {
+export function drawOutlined(c: Pen, build: () => void, fill: PaintStyle, o: OutlineOpts = {}) {
   if (o.shadow) {
     const [x, y, rx, ry] = o.shadow;
     contactShadow(c, x, y, rx, ry ?? rx * 0.3);
@@ -128,17 +133,17 @@ export function drawOutlined(c: Ctx, build: () => void, fill: string | CanvasGra
   c.strokeStyle = o.stroke ?? C.ink;
   c.stroke();
 }
-export const circle = (c: Ctx, x: number, y: number, r: number) => () => {
+export const circle = (c: Pen, x: number, y: number, r: number) => () => {
   c.beginPath();
   c.arc(x, y, r, 0, Math.PI * 2);
 };
 export const ellipse =
-  (c: Ctx, x: number, y: number, rx: number, ry: number, rot = 0) =>
+  (c: Pen, x: number, y: number, rx: number, ry: number, rot = 0) =>
   () => {
     c.beginPath();
     c.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
   };
-export const rect = (c: Ctx, x: number, y: number, w: number, h: number, r: number) => () => rr(c, x, y, w, h, r);
+export const rect = (c: Pen, x: number, y: number, w: number, h: number, r: number) => () => rr(c, x, y, w, h, r);
 
 // Seeded noise for hand-made looking shapes.
 export function rng(seed: number) {

@@ -1,9 +1,10 @@
 // Chef parts drawn on a canvas. Origin is the chef's feet; the head centre is (0, -68). Used for textures and DOM portraits.
 import { C, chefOf } from '../tokens';
-import { circle, drawOutlined, ellipse, mix, rr, shine, vgrad, type Ctx } from '../gfx';
+import { circle, drawOutlined, ellipse, mix, rr, shine, vgrad } from '../gfx';
+import type { Painter } from '@pichi/core/avatar/painter';
 import { HEAD_Y } from './body';
 
-function cloud(c: Ctx, circles: [number, number, number][], body?: [number, number, number, number]) {
+function cloud(c: Painter, circles: [number, number, number][], body?: [number, number, number, number]) {
   const all = () => {
     c.beginPath();
     for (const [x, y, r] of circles) {
@@ -39,7 +40,7 @@ function cloud(c: Ctx, circles: [number, number, number][], body?: [number, numb
   c.restore();
 }
 
-export function drawHat(c: Ctx, slot: number) {
+export function drawHat(c: Painter, slot: number) {
   const ch = chefOf(slot);
   if (ch.accessory === 'cap') {
     // backwards cap: dome, adjuster strap on the forehead, visor sticking out behind
@@ -141,7 +142,7 @@ export const hatTop = (slot: number) => {
 
 export const PROP_Y = 38; // the hub sits this far above the hat
 
-export function drawPropStem(c: Ctx, slot: number) {
+export function drawPropStem(c: Painter, slot: number) {
   const y = hatTop(slot);
   drawOutlined(c, () => rr(c, -3, y - PROP_Y + 4, 6, PROP_Y - 14, 2.5), '#F1E9D8', { lw: 3 }); // stalk
   drawOutlined(
@@ -164,7 +165,7 @@ export function drawPropStem(c: Ctx, slot: number) {
   drawOutlined(c, circle(c, 0, y - PROP_Y, 6.5), '#E2338C', { lw: 3 });
 }
 
-export function drawPropBlades(c: Ctx) {
+export function drawPropBlades(c: Painter) {
   drawOutlined(c, ellipse(c, -19, 0, 19, 7.5), '#35D0FF', { lw: 3.5 });
   drawOutlined(c, ellipse(c, 19, 0, 19, 7.5), '#FFE14A', { lw: 3.5 });
   c.fillStyle = 'rgba(255,255,255,0.55)';
