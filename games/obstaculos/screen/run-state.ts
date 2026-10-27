@@ -22,4 +22,5 @@ export const biomeColor: Record<Biome, string> = {
   volcano: '#FF5A1F',
 };
 export const obstOpts = (): ObstOptions => parseObstOptions(app.config.modeOptions);
+export const slotLook = (slot: number) => [...app.players.values()].find((p) => p.info.slot === slot)?.info.ap;
 export const slotName = (slot: number) => [...app.players.values()].find((p) => p.info.slot === slot)?.info.name ?? `J${slot + 1}`;

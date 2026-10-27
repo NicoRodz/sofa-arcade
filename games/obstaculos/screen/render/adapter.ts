@@ -19,17 +19,7 @@ import type { GameMode, ParsedLevel, TileGrid } from '../../index';
 import { entitiesFromLevel } from './stub';
 import type { EntityView, HandAction, HazardView, HudView, PlayerView, RopeView, WorldView } from './view';
 
-const HINT: Record<BPreview['action'], HandAction> = {
-  anchor: 'anchor',
-  lift: 'lift',
-  grab: 'grab',
-  plant: 'plant',
-  unplant: 'release',
-  release: 'release',
-  throw: 'throw',
-  pass: 'grab',
-  none: 'none',
-};
+const HINT: Record<BPreview['action'], HandAction> = { anchor: 'anchor', lift: 'lift', grab: 'grab', plant: 'plant', unplant: 'release', release: 'release', throw: 'throw', pass: 'grab', none: 'none' };
 
 export class SimWorldView implements WorldView {
   readonly level: ParsedLevel;
@@ -56,6 +46,7 @@ export class SimWorldView implements WorldView {
     private session: ObstSession,
     readonly world: World = session.world,
     private names: (slot: number) => string = (s) => `J${s + 1}`,
+    private looks: (slot: number) => PlayerView['ap'] = () => undefined,
   ) {
     this.level = world.level;
     this.grid = world.grid;
@@ -123,6 +114,7 @@ export class SimWorldView implements WorldView {
         id: p.slot,
         slot: p.slot,
         name: this.names(p.slot),
+        ap: this.looks(p.slot),
         connected: p.connected,
         x: b.x,
         y: b.y,

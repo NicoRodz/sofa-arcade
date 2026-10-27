@@ -18,11 +18,13 @@ import { SimWorldView } from './render/adapter';
 import type { ObstaclesView } from './render/obstacles-view';
 import type { WorldView } from './render/view';
 import type { LevelEnd } from './campaign/flow';
+import type { Appearance } from '@pichi/core/avatar/appearance';
 
 type ObstBus = Pick<Emitter<ObstEvents>, 'emit'>;
 
 export interface RunHooks {
   names: (slot: number) => string;
+  looks?: (slot: number) => Appearance | undefined; // the player's Appearance (the rig dresses with it)
   bus: ObstBus;
   onOver: () => void; // the final banner has been shown long enough: the screen goes to the results
   onLevelEnd?: (e: LevelEnd) => void; // the campaign saves here, the moment a level is cleared or its hearts run out (not when the banners are over)
@@ -40,7 +42,7 @@ export class ObstRun {
   constructor(opts: SessionOpts, hooks: RunHooks) {
     this.hooks = hooks;
     this.session = new ObstSession(opts);
-    this.view = new SimWorldView(this.session, this.session.world, hooks.names);
+    this.view = new SimWorldView(this.session, this.session.world, hooks.names, hooks.looks);
     this.field = levelProgressField(this.session.world.level);
     this.startDist = this.distAtSpawn();
   }
@@ -72,7 +74,7 @@ export class ObstRun {
     this.publish(ev);
     if (was === 'playing' && this.session.status === 'between') this.hooks.onLevelEnd?.(this.levelEnd());
     if (this.session.world !== this.view.world) {
-      this.view = new SimWorldView(this.session, this.session.world, this.hooks.names);
+      this.view = new SimWorldView(this.session, this.session.world, this.hooks.names, this.hooks.looks);
       this.field = levelProgressField(this.session.world.level);
       this.startDist = this.distAtSpawn();
     }

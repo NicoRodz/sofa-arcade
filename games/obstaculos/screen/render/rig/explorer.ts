@@ -1,6 +1,8 @@
 // The Explorer rig: a chef-based puppet animated from a PlayerView every frame.
 import { RIG_SCALE } from './textures';
 import type Phaser from 'phaser';
+import type { Appearance } from '@pichi/core/avatar/appearance';
+import { lookTextures } from '@pichi/screen-kit/art/chef';
 import { HEAD_Y, MOUTH_DY } from '@pichi/screen-kit/art/chefdraw';
 import { R, texSize } from '@pichi/screen-kit/art/gfx';
 import type { HandAction, PlayerView } from '../view';
@@ -55,12 +57,15 @@ export class Explorer {
   private wasGrounded = true;
   private t = 0;
   private lastIcon: HandAction = 'none';
+  private lookId = '';
+  private scene: Phaser.Scene;
 
   constructor(
     scene: Phaser.Scene,
     layer: Phaser.GameObjects.Layer,
     readonly slot: number,
   ) {
+    this.scene = scene;
     const i = slot % 8,
       skin = slot % 4;
     const at = (key: string, x = 0, y = 0) => {
@@ -100,6 +105,19 @@ export class Explorer {
     layer.add(this.root);
   }
 
+  /** Dresses the rig with the player's Appearance in the 'obstaculos' role (helmet + harness, back item at 0.6); no `ap` keeps the slot's own explorer. */
+  setLook(ap: Appearance | undefined) {
+    const id = ap ? JSON.stringify(ap) : '';
+    if (!ap || id === this.lookId) return;
+    this.lookId = id;
+    const k = lookTextures(this.scene, ap, 'obstaculos');
+    this.torso.setTexture(k.torsoF);
+    this.headF.setTexture(k.headF);
+    this.fa.setVisible(false);
+    this.fb.setTexture(k.over);
+    this.helmet.setTexture(k.hat);
+    this.arms.forEach((a) => a.setTexture(k.arm));
+  }
   celebrate() {
     this.happyT = 1.2;
   }
@@ -123,6 +141,7 @@ export class Explorer {
   }
 
   update(p: PlayerView, f: RigFrame) {
+    this.setLook(p.ap);
     const dt = Math.min(f.dt, 0.05);
     this.t += dt;
     const speed = Math.abs(p.vx);

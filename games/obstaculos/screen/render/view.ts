@@ -27,6 +27,7 @@
 // Units: pixels of the simulation (TILE = 48), y grows downward. Nothing here imports Phaser: it can be used from Node tests and from the sim adapter.
 import type { GameMode, ParsedLevel, SignalKind, TileGrid } from '../../index';
 import type { Difficulty } from '@pichi/core/difficulty';
+import type { Appearance } from '@pichi/core/avatar/appearance';
 
 export type HandAction = 'none' | 'anchor' | 'lift' | 'grab' | 'plant' | 'throw' | 'release'; // what B would do now (icon above the head); the campaign's 'pass' (pickaxe) reuses 'grab'
 
@@ -34,6 +35,7 @@ export interface PlayerView {
   id: number;
   slot: number; // 0-7: colour, accessory, number tag
   name: string;
+  ap?: Appearance; // the player's look (creator): the rig dresses with it; absent = the slot's own explorer
   connected: boolean;
   x: number;
   y: number; // hitbox top-left after the latest step

@@ -9,7 +9,7 @@ import { resolveLevel, GAME_ID } from '../index';
 import { ObstaclesScene } from './render/scene';
 import { ObstRun } from './host';
 import { camp } from './campaign-link';
-import { obstOpts, perf, run, slotName } from './run-state';
+import { obstOpts, perf, run, slotLook, slotName } from './run-state';
 
 let scene: ObstaclesScene | undefined;
 export function obstScene(): ObstaclesScene {
@@ -61,6 +61,7 @@ export function startObst(): MatchStart | undefined {
     },
     {
       names: slotName,
+      looks: slotLook,
       bus: gameBus,
       onOver: () => {
         run.summary = run.obst?.session.summary() ?? null;
