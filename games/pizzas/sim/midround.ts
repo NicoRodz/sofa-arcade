@@ -77,6 +77,7 @@ export const roundRules = (modeOptions: Readonly<Record<string, boolean | number
   recipes: recipesOf(modeOptions),
   magnet: magnetFor(modeOptions, d),
   pace: PACE[d],
+  frost: true,
 }); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
 
 export interface Rat {
@@ -117,14 +118,14 @@ export interface MidFx {
 const tag = (g: Game, team: number): { team?: number } => (g.versus ? { team } : {});
 
 /** The kinds this round can have: no rat in versus, no inspector without plates to wash, no rat without counters. */
-export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations'>): EventKind[] =>
+export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations' | 'frostEvent'>): EventKind[] =>
   EVENT_KINDS.filter((k) =>
     k === 'rat'
       ? !g.versus && g.stations.some((s) => s.kind === 'counter')
       : k === 'inspector'
         ? g.finitePlates
         : k === 'frost'
-          ? !g.versus
+          ? g.frostEvent && !g.versus
           : true,
   );
 

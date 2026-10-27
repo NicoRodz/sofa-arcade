@@ -117,7 +117,7 @@ describe('the schedule: one event per round, between 1:00 and 2:00, announced 3 
     };
     expect(at(7)).toBe(at(7));
     const all = Array.from({ length: 120 }, (_v, i) => mk({ seed: i + 1 }).g.mid!);
-    expect(new Set(all.map((m) => m.kind)).size).toBe(5); // map 1 has no plates to wash: no inspector (the other five appear)
+    expect(new Set(all.map((m) => m.kind)).size).toBe(4); // map 1 has no plates to wash: no inspector (the other four appear)
     expect(new Set(all.map((m) => m.startAt)).size).toBeGreaterThan(60);
     for (const m of all) {
       expect(m.startAt).toBeGreaterThanOrEqual(EVENT_FROM_MS);
@@ -153,8 +153,8 @@ describe('the schedule: one event per round, between 1:00 and 2:00, announced 3 
   it('the pool: no rat or frost in versus, no inspector on a map with no plates to wash; the rat and the inspector do exist where they can', () => {
     const coop1 = mk({ map: '1' }).g,
       coop13 = mk({ map: '13' }).g;
-    expect(eventPool(coop1)).toEqual(['rush', 'blackout', 'birthday', 'rat', 'frost']);
-    expect(eventPool(coop13)).toEqual(['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost']);
+    expect(eventPool(coop1)).toEqual(['rush', 'blackout', 'birthday', 'rat']);
+    expect(eventPool(coop13)).toEqual(['rush', 'inspector', 'blackout', 'birthday', 'rat']);
     const vs = createGame({ rows: MIRRORS.v1.rows, teams: [{ playerIds: [1, 2] }, { playerIds: [3, 4] }], events: true });
     expect(eventPool(vs)).toEqual(['rush', 'blackout', 'birthday']);
     for (let seed = 1; seed <= 150; seed++)
@@ -477,8 +477,24 @@ describe('the lobby option', () => {
     expect(eventsOf({ [EVENTS_OPTION]: 'nonsense' }, 'hard')).toBe(true); // anything that is not a boolean is "no choice made"
   });
   it('roundRules: the burning oven always, the event by the option', () => {
-    expect(roundRules({}, 'normal')).toEqual({ burn: true, fire: true, events: true, recipes: true, magnet: 'normal', pace: 1.6 });
-    expect(roundRules({}, 'easy')).toEqual({ burn: true, fire: true, events: false, recipes: true, magnet: 'strong', pace: 1.2 }); // Easy: a stronger magnet
+    expect(roundRules({}, 'normal')).toEqual({
+      burn: true,
+      fire: true,
+      events: true,
+      recipes: true,
+      magnet: 'normal',
+      pace: 1.6,
+      frost: true,
+    });
+    expect(roundRules({}, 'easy')).toEqual({
+      burn: true,
+      fire: true,
+      events: false,
+      recipes: true,
+      magnet: 'strong',
+      pace: 1.2,
+      frost: true,
+    }); // Easy: a stronger magnet
     expect(roundRules({}, 'hard').magnet).toBe('normal');
     expect(roundRules({ magnet: false }, 'normal').magnet).toBe(false);
     expect(roundRules({ events: false }, 'hard').events).toBe(false);
