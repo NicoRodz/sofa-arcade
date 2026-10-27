@@ -14,9 +14,11 @@ import {
 } from './games';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from '@pichi/game-pizzas/sim/maps';
 import { isIconId, type IconId } from './icons';
-import { PUESTO_IDS, isPuestoId, type PuestoId } from '@pichi/game-pizzas/sim/puestos';
+import type { PuestoId } from '@pichi/game-pizzas/sim/puestos';
 import { MAX_TEAMS, teamOf, type TeamInfo } from './lobby/teams';
-import { MAX_PLAYERS, intIn, num, parseModeOptions, parsePhoneResult, parseTeams, text, type ModeOptions } from './lobby/parse';
+import { parsePuestoIds, parsePuestoMsg } from './lobby/parse-puestos';
+import { parseAppearanceMsg, parseRawAppearance, type Appearance, type RawAppearance } from './avatar';
+import { intIn, num, parseModeOptions, parsePhoneResult, parseTeams, text, type ModeOptions } from './lobby/parse';
 import {
   parseMenuAct,
   parseMenuErr,
@@ -187,6 +189,8 @@ export interface PublicPlayer {
   connected: boolean;
   teamId: number | null; // the relay fills it from the lobby teams; null: no teams assigned (or a spectator)
   assist?: true; // the player chose Ayudante in the lobby (assist.ts); absent otherwise
+  ap?: Appearance; // the sanitized look (avatar/); always set by the relay; absent from an older relay
+  customizing?: boolean; // the phone is in the character creator now (absent: no)
   school?: true; // this phone already did (or skipped) the Cocina escuela: the relay keeps it with the slot, the screen does not offer the school when everybody has it
 }
 // Cocina escuela, screen -> one phone: where this chef is (step of `total`, step === total: finished), what to do (<= 8 words), and which button to light.
@@ -199,7 +203,7 @@ export interface SchoolMsg {
 }
 
 export type ClientMsg =
-  | { t: 'join'; name: string; token: string; caps?: string[] } // caps: what this phone can draw (MENU_CAP); absent on an older phone
+  | { t: 'join'; name: string; token: string; caps?: string[]; ap?: RawAppearance } // ap: the look, raw (the relay sanitizes it); caps: what this phone can draw (MENU_CAP); absent on an older phone
   | ({ t: 'input' } & InputState)
   | { t: 'ping'; id: number; t0: number; rtt?: number; off?: number }
   | ({ t: 'phase' } & PhaseInfo) // screen only
@@ -208,6 +212,7 @@ export type ClientMsg =
   | { t: 'setTeam'; teamId: number } // phone: "Cambiar de equipo" (the screen decides: it is the host and owns the lobby)
   | { t: 'buzz'; playerId: number; kind: BuzzKind } // screen only: vibrate that phone
   | ({ t: 'hint'; playerId: number } & HintLabels) // screen only: what A and B do for that chef right now (null: the game's own label), their icons and whether they are greyed; no third button
+  | { t: 'appearance'; ap: RawAppearance; done: boolean } // phone: the look in the creator (done: it pressed "Listo"); lobby, menu and results only, 5/s
   | { t: 'assist'; on: boolean } // phone: switch Ayudante on or off for this player (lobby only; the relay keeps it with the player's slot)
   | ({ t: 'school'; playerId: number } & SchoolMsg) // screen only: the step and instruction of that chef in the Cocina escuela
   | { t: 'schoolDone'; skip?: true } // phone: this player already did the school (skip: just pressed "Saltar" during it); the relay keeps it with the slot
@@ -233,6 +238,7 @@ export type ServerMsg =
   | { t: 'you'; teamId: number; color: string; icon: string; sideLabel?: string } // to one phone: its team (when it has one)
   | { t: 'buzz'; kind: BuzzKind }
   | ({ t: 'hint' } & HintLabels) // the label, icon and greyed state of A and B right now (null: back to the game's label)
+  | { t: 'appearance'; playerId: number; ap: Appearance; customizing: boolean } // to everyone: this player's sanitized look changed (the relay stamps playerId)
   | { t: 'assist'; playerId: number; on: boolean } // to the screens, and to that phone itself (it remembers across a reconnect): this player's Ayudante is now on / off
   | ({ t: 'school' } & SchoolMsg) // to one phone: its step in the Cocina escuela
   | { t: 'schoolDone'; playerId: number; skip?: true } // to the screens: this phone knows the school (skip: it pressed "Saltar" now, the chef is done)
@@ -243,28 +249,6 @@ export type ServerMsg =
   | { t: 'nav'; from: number; key: NavKey }; // to the screens: the Captain's phone pressed this. `from` is set by the relay from the socket, never taken from the payload
 
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
-
-const parsePuestoIds = (v: unknown, max = 4): PuestoId[] | null =>
-  Array.isArray(v) && v.length <= max && v.every(isPuestoId) ? [...v] : null;
-function parsePuestoMsg(v: any): PuestoMsg | null {
-  if (
-    !v ||
-    typeof v !== 'object' ||
-    typeof v.cheese !== 'boolean' ||
-    typeof v.sink !== 'boolean' ||
-    !Array.isArray(v.assign) ||
-    v.assign.length > MAX_PLAYERS
-  )
-    return null;
-  const assign: PuestoAssign[] = [];
-  for (const a of v.assign) {
-    const puestos = parsePuestoIds(a?.puestos),
-      pool = parsePuestoIds(a?.pool, PUESTO_IDS.length);
-    if (!a || !num(a.id) || !puestos || !pool) return null;
-    assign.push({ id: a.id, puestos, pool });
-  }
-  return { cheese: v.cheese, sink: v.sink, assign };
-}
 
 export function parseClientMessage(raw: string): ClientMsg | null {
   let m: any;
@@ -282,6 +266,7 @@ export function parseClientMessage(raw: string): ClientMsg | null {
         name: m.name.trim().slice(0, 16) || 'Player',
         token: m.token.slice(0, 64),
         ...(m.caps !== undefined ? { caps: parseCaps(m.caps) } : {}),
+        ...(parseRawAppearance(m.ap) ? { ap: parseRawAppearance(m.ap) } : {}),
       };
     case 'input': {
       if (!num(m.seq) || !num(m.x) || !num(m.y) || !num(m.btn) || !num(m.ts)) return null;
@@ -372,6 +357,10 @@ export function parseClientMessage(raw: string): ClientMsg | null {
           ...(m.bOff === true ? { bOff: true } : {}),
         }),
       };
+    }
+    case 'appearance': {
+      const v = parseAppearanceMsg(m);
+      return v ? { t: 'appearance', ...v } : null;
     }
     case 'assist':
       return typeof m.on === 'boolean' ? { t: 'assist', on: m.on } : null;
