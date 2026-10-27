@@ -5,8 +5,9 @@ import { fixedMap, isFloor, DIRS } from '../../sim/maps';
 import { Emitter, type GameEvents } from '@pichi/core/events';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player, type Station } from '../../sim/overcooked';
 import type { Difficulty } from '@pichi/core/difficulty';
+import type { MechId } from '../../sim/mech/ids';
 
-export interface RuleFlags { burn?: boolean; fire?: boolean; events?: boolean; magnet?: boolean | 'strong' } // the new rules of the sim, all off by default: the three original goldens never set them
+export interface RuleFlags { mech?: Partial<Record<MechId, boolean>>; burn?: boolean; fire?: boolean; events?: boolean; magnet?: boolean | 'strong' } // the new rules of the sim, all off by default: the three original goldens never set them
 export interface Scenario { name: string; mapId: string; difficulty: Difficulty; n: number; seed: number; teams?: readonly { playerIds: readonly number[] }[]; assist?: readonly number[]; flags?: RuleFlags } // teams: declared roster (a single team must play exactly like none)
 export const SCENARIOS: readonly Scenario[] = [
   { name: 'coop-n2-map2-normal', mapId: '2', difficulty: 'normal', n: 2, seed: 11 },
