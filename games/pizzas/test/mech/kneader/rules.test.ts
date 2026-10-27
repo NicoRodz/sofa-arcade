@@ -72,9 +72,9 @@ describe('kneader: progress', () => {
   it('B held on a handle pins the chef (no walking, no dash)', () => {
     const g = ball();
     const p = g.players.get(1)!;
-    const x = p.x;
+    const { x, y } = p;
     run(g, 30, new Map([[1, press(true, 0, 0, -1)]]));
-    expect(p.x).toBe(x);
+    expect([p.x, p.y]).toEqual([x, y]);
     expect(p.dashMs).toBe(0);
   });
 });
