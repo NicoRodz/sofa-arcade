@@ -46,7 +46,7 @@ describe('mechanics registry', () => {
       for (const h of HOOKS) expect(typeof m[h], `${m.id}.${h}`).toBe('function');
       expect(m.tanda).toBe(MECH_TANDA[m.id]);
       expect(m.validate([], 2)).toEqual([]);
-      expect(m.stamp.template).toEqual([]);
+      expect(Array.isArray(m.stamp.template)).toBe(true); // a stub's is empty, a tanda's holds its sub-grid
       expect(mechModule(m.id)).toBe(m);
     }
   });
