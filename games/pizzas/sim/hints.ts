@@ -11,7 +11,8 @@ import type { Game, Item, Player, Station } from './round/state';
 import { isAiming, sabotageHint } from './sabotage';
 import { RAW_OF, cutType, isDish } from './recipes/defs';
 import { canFold } from './recipes/sim';
-import { canLoad, canStir, hasNonna, potTypeOf } from './recipes/sauce';
+import { canLoad, canStir, hasNonna, hasSauce, potTypeOf } from './recipes/sauce';
+import { basilOn, canSlice } from './recipes/casa';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
 const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón', 'Jamón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
@@ -37,7 +38,7 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       const verb = (top != null ? TOPPING_VERB[top - 2] : CRATE_VERB[s.crate]) ?? 'Tomar',
         icon = CRATE_ICON[s.crate] ?? (s.crate === 3 ? CRATE_ICON[2] : undefined) ?? 'crate';
       if (s.crate === 4)
-        return (p.item === 'dishQ' && g.rec?.recipes.includes('margfresca')) || (p.item === 'dishN' && hasNonna(g))
+        return (p.item === 'dishQ' && g.rec?.recipes.includes('margfresca')) || (p.item === 'dishN' && hasNonna(g)) || basilOn(g, p.item)
           ? on('Albahaca', 'crate')
           : off('Pizza lista', 'crate'); // basil: only onto a baked Margarita or a sauce pizza on its plate
       if (full) return off('Manos llenas', icon);
@@ -60,7 +61,7 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       if (!full && s.item) return on('Tomar', 'grab');
       return off(full ? 'Ocupado' : 'Vacío', 'grab');
     case 'board':
-      if (full && !s.item) return RAW.has(p.item!) ? on('Poner en tabla', 'chop') : off('No se pica', 'chop');
+      if (full && !s.item) return RAW.has(p.item!) || canSlice(g, p.item) ? on('Poner en tabla', 'chop') : off('No se pica', 'chop');
       if (!full && s.item) return on(cutType(s.item) >= 0 ? 'Tomar picado' : 'Tomar', 'chop');
       return off(full ? 'Ocupado' : 'Tabla vacía', 'chop');
     case 'pot': {
@@ -71,7 +72,7 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
       return off(s.done ? 'Falta plato' : s.stage === 'bell' ? '¡Campanilla!' : s.inputs.length ? 'Cocinando' : 'Horno', 'oven');
     }
     case 'saucepot':
-      if (p.item === 'cut1' && hasNonna(g)) return !s.inputs.length && !s.done ? on('Al fuego', 'oven') : off('Ocupada', 'oven');
+      if (p.item === 'cut1' && hasSauce(g)) return !s.inputs.length && !s.done ? on('Al fuego', 'oven') : off('Ocupada', 'oven');
       if (!full && s.done) return on(s.burnt ? 'Raspar' : 'Tomar salsa', 'oven');
       return off(full ? 'Manos llenas' : s.inputs.length ? 'Revuelve' : 'Olla', 'oven');
     case 'trash':
@@ -90,6 +91,7 @@ function buttonA(g: Game, p: Player, s: Station | null, nearFloor: boolean): Btn
 function buttonB(g: Game, p: Player, s: Station | null, front: Station | null = s): Btn {
   // front: what stops a dash (the old probe when the magnet is on)
   if (s?.kind === 'board' && s.item && RAW.has(s.item)) return on(CUT_VERB[s.item]!, 'chop');
+  if (s?.kind === 'board' && canSlice(g, s.item)) return on('Porciones', 'chop'); // a casa plate on the board: hold Picar to cut it
   if (s?.fire !== undefined) return on('Apagar', 'oven'); // burn: Picar puts the fire out (an Ayudante taps it once and it goes on)
   if (s?.kind === 'sink' && s.count > 0) return on('Lavar', 'wash');
   if (s && canStir(s)) return on('Revolver', 'oven'); // the sauce pot: hold Picar to stir

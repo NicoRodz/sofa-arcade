@@ -4,6 +4,7 @@ import { PANTRY_EVERY_MS, PANTRY_MAX } from '../versus/versus';
 import { cookMsOf, crateItem } from '../recipes/sim';
 import { bellTick, canLoad, hasNonna, interactSaucepot, isBaking, potTypeOf, ringBell, stageAfterLoad, stickTick } from '../recipes/sauce';
 import { cutOf, dishFor, isDish } from '../recipes/defs';
+import { basilOn, canSlice, hasCasa } from '../recipes/casa';
 import { sabotageBinned, sabotageLoad, sabotageTakeBag } from '../sabotage';
 import { DIRTY_MS } from '@pichi/core/difficulty';
 import { deliver } from './orders';
@@ -16,7 +17,9 @@ function interact(g: Game, p: Player, s: Station) {
       if (s.crate === 4) {
         if (p.item === 'dishQ' && g.rec?.recipes.includes('margfresca'))
           p.item = 'dishQB'; // the basil goes onto the plate, nothing is handed out
-        else if (p.item === 'dishN' && hasNonna(g)) p.item = 'dishNB'; // ... and on the sauce pizza: the Marinara de la nonna
+        else if (p.item === 'dishN' && hasNonna(g))
+          p.item = 'dishNB'; // ... and on the sauce pizza: the Marinara de la nonna
+        else if (basilOn(g, p.item)) p.item = basilOn(g, p.item); // ... and on a Pizza de la casa: an upgrade
         break;
       }
       if (p.item) break;
@@ -71,7 +74,7 @@ function interact(g: Game, p: Player, s: Station) {
       }
       break;
     case 'board':
-      if (p.item && !s.item && cutOf(p.item)) {
+      if (p.item && !s.item && (cutOf(p.item) || canSlice(g, p.item))) {
         s.item = p.item;
         s.progress = 0;
         p.item = null;
@@ -132,7 +135,7 @@ export function interactPot(g: Game, p: Player, s: Station) {
     p.item = null;
   } else if (p.item === 'plate' && s.done) {
     if (g.burn && s.warned && !s.burnt) g.bus.emit('oven:rescued', { player: p.id, station: g.stations.indexOf(s), ...tag(g, s.owner) }); // out of the oven after the warning, before it burnt
-    p.item = s.burnt ? 'burnt' : dishFor(s.inputs, !!s.folded);
+    p.item = s.burnt ? 'burnt' : dishFor(s.inputs, !!s.folded, hasCasa(g));
     clearPot(s);
   }
 }

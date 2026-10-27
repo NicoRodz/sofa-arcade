@@ -7,6 +7,7 @@
 // ONE topping recipe, so no map needs a new tile. Maps without the '3' crate get cards with no topping (Marinara and Calzone).
 import type { Item } from '../round/state';
 import type { Tuning } from '@pichi/core/difficulty';
+import { CASA_HAM, casaDish, casaMask } from './casa';
 
 export type Recipe =
   | 'marinara'
@@ -19,7 +20,9 @@ export type Recipe =
   | 'margfresca'
   | 'calzonerel'
   | 'nonna'
-  | 'blanca';
+  | 'blanca'
+  | 'casa'
+  | 'bandeja';
 export const RECIPES: readonly Recipe[] = [
   'marinara',
   'margarita',
@@ -32,6 +35,8 @@ export const RECIPES: readonly Recipe[] = [
   'calzonerel',
   'nonna',
   'blanca',
+  'casa',
+  'bandeja',
 ];
 export const isRecipe = (v: unknown): v is Recipe => RECIPES.includes(v as Recipe);
 
@@ -102,6 +107,16 @@ export const RECIPE_DEFS: Record<Recipe, RecipeDef> = {
     fold: false,
     needs: [...BASIC, '3', '4'],
   }, // dough bakes bare, the bell rings, cheese and mushroom go in inside the window, second bake; 1.6x in all
+  casa: {
+    name: 'Pizza de la casa',
+    components: 3,
+    processes: 6,
+    effort: 2,
+    topping: null,
+    fold: false,
+    needs: [...BASIC, 'R', '3'],
+  }, // dough + sauce + cheese (120); upgrades (ham before the oven, basil and slices after it) are paid on top, see casa.ts
+  bandeja: { name: 'Bandeja familiar', components: 0, processes: 0, effort: 3, topping: null, fold: false, needs: BASIC }, // three plates of the card in one ticket; it pays by its parts (bandeja.ts), 'effort' is the load it counts for
   calzone: { name: 'Calzone', components: 2, processes: 5, effort: 1.2, topping: null, fold: true, needs: BASIC }, // stretch, cut, fold, bake x2 (the long oven)
 };
 // R13: what a recipe is worth before the tip: points per ingredient plus points per process. Marinara 70, Margarita / Pepperoni / Champiñón 100, Calzone 90.
@@ -138,6 +153,14 @@ export const DISHES: readonly Item[] = [
   'dishN',
   'dishNB',
   'dishB',
+  'dishH0',
+  'dishH1',
+  'dishH2',
+  'dishH3',
+  'dishH4',
+  'dishH5',
+  'dishH6',
+  'dishH7',
 ];
 export const isDish = (i: Item | null): boolean => !!i && DISHES.includes(i);
 /** The recipe a plate holds. */
@@ -152,15 +175,22 @@ const DISH_RECIPE: Partial<Record<Item, Recipe>> = {
   dishCR: 'calzonerel',
   dishNB: 'nonna', // dishN (sauce, no basil yet) is a plain Marinara plate: it stays out of this table on purpose
   dishB: 'blanca',
+  ...Object.fromEntries(DISHES.filter((d) => d.startsWith('dishH')).map((d) => [d, 'casa'])), // the Pizza de la casa, whatever it carries (casa.ts)
 };
 export const dishRecipe = (i: Item): Recipe => DISH_RECIPE[i] ?? 'marinara';
+/** A plate with a topping (not the plain Marinara, a calzone or a casa): it also serves a Marinara order. */
+export const isToppedPlate = (i: Item): boolean => i !== 'dish' && i !== 'dishC' && i !== 'dishCR' && casaMask(i) < 0;
+/** Does this plate serve a recipe: its own, or (a topped plate) a Marinara. */
+export const servesRecipe = (i: Item, r: Recipe): boolean => dishRecipe(i) === r || (isToppedPlate(i) && r === 'marinara');
 /** The plate for a pot's contents (the burnt pizza is another item: the oven decides that first). */
-export const dishFor = (inputs: readonly number[], folded: boolean): Item =>
-  inputs.includes(6)
-    ? 'dishN' // the sauce of the pot (ingredient 6) instead of the tomato
-    : !folded && !inputs.includes(1) && inputs.includes(2) && inputs.includes(4)
-      ? 'dishB' // cheese and mushroom on a bare base (no tomato): the white pizza
-      : dishForTopped(inputs, folded);
+export const dishFor = (inputs: readonly number[], folded: boolean, casa = false): Item =>
+  casa && inputs.includes(6) && inputs.includes(2)
+    ? casaDish(inputs.includes(5) ? CASA_HAM : 0) // sauce and cheese on the dough (and the ham before the oven): the Pizza de la casa
+    : inputs.includes(6)
+      ? 'dishN' // the sauce of the pot (ingredient 6) instead of the tomato
+      : !folded && !inputs.includes(1) && inputs.includes(2) && inputs.includes(4)
+        ? 'dishB' // cheese and mushroom on a bare base (no tomato): the white pizza
+        : dishForTopped(inputs, folded);
 const dishForTopped = (inputs: readonly number[], folded: boolean): Item =>
   folded
     ? inputs.length >= 4

@@ -1,6 +1,7 @@
 // Picar (the B button held): whether a station can be worked on, the start / stop events, and the progress of a chop, a wash, a fold or a fire being put out.
 import type { Controls, Game, Player, Station } from './state';
 import { cutOf } from '../recipes/defs';
+import { canSlice, slicedOf } from '../recipes/casa';
 import { canFold, cutMsOf, foldStep } from '../recipes/sim';
 import { canStir, stirStep } from '../recipes/sauce';
 import { ASSIST_STICK_CANCEL } from '../assist';
@@ -23,7 +24,7 @@ export function cuttableAt(g: Game, target: Station | null) {
   const burning = !!(g.burn && target && target.fire !== undefined);
   const cuttable = !!(
     target &&
-    ((target.kind === 'board' && target.item && cutOf(target.item)) ||
+    ((target.kind === 'board' && target.item && (cutOf(target.item) || canSlice(g, target.item))) ||
       (target.kind === 'sink' && target.count > 0) ||
       canStir(target) ||
       burning ||
@@ -108,7 +109,7 @@ export function applyChop(g: Game, p: Player, target: Station | null, at: number
   } else if (p.cutting && target) {
     target.progress += dtMs / cutMsOf(g, target.item);
     if (target.progress >= 1) {
-      target.item = cutOf(target.item!);
+      target.item = canSlice(g, target.item) ? slicedOf(target.item!) : cutOf(target.item!);
       target.progress = 0;
       g.bus.emit('chopDone', { player: p.id, station: at });
     }

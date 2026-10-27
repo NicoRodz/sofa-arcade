@@ -6,6 +6,8 @@ import { pickOrder, pickRecipe } from '../recipes/sim';
 import { VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS } from '../versus/versus';
 import { isDish, recipeBase } from '../recipes/defs';
 import { adaptiveDue, patienceMs } from '../recipes/pacing';
+import { bandejaBase, bandejaPatienceMs, pickParts, takePart } from '../recipes/bandeja';
+import { casaExtras } from '../recipes/casa';
 
 // R15: the tip multiplier for a delivery made after `streak` correct ones in a row.
 export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax, 1 + Math.max(0, streak));
@@ -15,9 +17,16 @@ export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax
 export const spawnOrder = (g: Game, team: TeamState = g.teams[0]!, force = false) => {
   const room = team.orders.length < (force ? EVENT_MAX_QUEUE : g.params.maxOrders); // force: the rush event, which may fill the strip beyond the usual queue
   if (!room && !g.versus && !force) return;
-  const recipe = pickRecipe(g, team.rng);
+  const recipe = pickRecipe(g, team.rng, team);
   if (!room) return;
-  const o: Order = { id: team.orderSeq++, expiresAt: g.time + patienceMs(g, recipe), warned: false, recipe };
+  const parts = recipe === 'bandeja' ? pickParts(g, team.rng) : undefined; // the three plates of a Bandeja: drawn only when one comes up
+  const o: Order = {
+    id: team.orderSeq++,
+    expiresAt: g.time + (parts ? bandejaPatienceMs(g, parts) : patienceMs(g, recipe)),
+    warned: false,
+    recipe,
+    ...(parts ? { parts } : {}),
+  };
   team.orders.push(o);
   g.bus.emit('orderNew', { order: o.id, recipe, ...tag(g, team.id) });
 };
@@ -70,15 +79,18 @@ export function deliver(g: Game, p: Player) {
       g.bus.emit('dishRejected', { player: p.id, ...tag(g, team.id) });
       return;
     }
+    const item = p.item!;
+    if (team.orders[at]!.recipe === 'bandeja' && !takePart(g, team, team.orders[at]!, p)) return; // a plate of the Bandeja: into its slot, the tray pays with the third (recipes/bandeja.ts)
     const o = team.orders.splice(at, 1)[0]!;
     const { tune, orderTtlMs } = g.params;
     const birthday = !!o.birthday; // the event's order: BIRTHDAY_POINTS flat, no tip (the streak still counts)
-    const base = birthday ? BIRTHDAY_POINTS : recipeBase(o.recipe, tune); // R13
+    const extra = o.recipe === 'casa' ? casaExtras(g.difficulty, item) : { points: 0, tip: 1, bonus: 1 }; // the upgrades of a Pizza de la casa (casa.ts); nothing for any other order
+    const base = birthday ? BIRTHDAY_POINTS : o.recipe === 'bandeja' ? bandejaBase(g, o, tune) : recipeBase(o.recipe, tune) + extra.points; // R13
     const left = Math.min(1, Math.max(0, o.expiresAt - g.time) / orderTtlMs);
     const mult = birthday ? 1 : tipMultiplier(team.streak, tune); // R15: the streak multiplies only the tip
-    const tip = birthday ? 0 : Math.round(base * tune.tipPct * left) * mult; // R14: up to +50% of the base, by the patience left
+    const tip = birthday ? 0 : Math.round(base * tune.tipPct * left * extra.tip) * mult; // R14: up to +50% of the base, by the patience left
     const vip = !!o.vip; // won the golden order: x2. Another team delivering it in this same tick wins it too (settleVip runs at the end of the tick)
-    const raw = (base + tip) * (vip ? VIP_MULT : 1);
+    const raw = (base + tip) * (vip ? VIP_MULT : 1) * extra.bonus;
     const gain = Math.round(raw * team.k); // the handicap k of this instant
     team.score += gain;
     team.gross += raw;

@@ -36,8 +36,21 @@ const nonnaSteps = (): Step[] => [
   { at: 'crate4', take: 'a', done: (_g, p) => p.item === 'dishNB' },
   { at: 'window', take: 'a', done: (_g, p) => !p.item },
 ];
+// the Pizza de la casa: dough, cheese and the sauce (tomato -> pot -> stir -> sauce) into the oven; the plain base, no upgrades
+const casaSteps = (): Step[] => [
+  ...prepare('crate0', 'raw0'),
+  ...prepare('crate2', 'raw2'),
+  ...prepare('crate1', 'raw1', 'saucepot'),
+  { at: 'saucepot', take: 'chop', done: (_g, _p, s) => s.done },
+  { at: 'saucepot', take: 'a', done: (_g, p) => p.item === 'sauce' },
+  { at: 'pot', take: 'a', done: (_g, p) => !p.item },
+  { at: 'plates', take: 'a', done: (_g, p) => p.item === 'plate' },
+  { at: 'pot', take: 'serve', done: (_g, p) => isDish(p.item) },
+  { at: 'window', take: 'a', done: (_g, p) => !p.item },
+];
 export const stepsFor = (recipe: Recipe): Step[] => {
   if (recipe === 'nonna') return nonnaSteps();
+  if (recipe === 'casa') return casaSteps();
   const top = RECIPE_DEFS[recipe].topping;
   const two = RECIPE_DEFS[recipe].toppings;
   return [
@@ -60,7 +73,9 @@ export function decideR(g: Game, p: Player, rank: number, m: RMem, tickNo: numbe
   const idle: Controls = { x: 0, y: 0, a: 0, b: false };
   if (!m.recipe && !m.bin) {
     const q = g.teams[p.team]?.orders ?? [];
-    m.recipe = m.force ?? q[rank % Math.max(1, q.length)]?.recipe ?? 'marinara';
+    const ord = q[rank % Math.max(1, q.length)];
+    // a Bandeja: the chef makes the first plate of it that is not on the window yet
+    m.recipe = m.force ?? (ord?.recipe === 'bandeja' ? (ord.parts?.find((_r, i) => !ord.served?.[i]) ?? 'marinara') : ord?.recipe) ?? 'marinara';
   }
   const steps = stepsFor(m.recipe ?? 'marinara');
   const step = steps[m.step]!;
@@ -94,11 +109,11 @@ export function decideR(g: Game, p: Player, rank: number, m: RMem, tickNo: numbe
 
 export interface CookRun { g: Game; bus: RecBus; ticks: number }
 /** One coop round with the recipes on: `n` scripted chefs on a map (default 9, which has crates 1 2 3 and ovens), `force` makes them all cook that recipe. `before(g, tick)` runs ahead of each tick. */
-export function cookRound(o: { mapId?: string; difficulty?: Difficulty; n?: number; seed?: number; force?: Recipe; seconds?: number; recipes?: boolean; before?: (g: Game, t: number) => void }): CookRun {
+export function cookRound(o: { mapId?: string; difficulty?: Difficulty; n?: number; seed?: number; force?: Recipe; seconds?: number; recipes?: boolean; flags?: { upgradeOrders?: boolean; compoundOrders?: boolean; sliceAfterBake?: boolean; adaptive?: boolean }; before?: (g: Game, t: number) => void }): CookRun {
   const map = fixedMap(o.mapId ?? '9')!;
   const bus = new RecBus();
   const n = o.n ?? 2;
-  const g = createGame({ mapId: map.id, difficulty: o.difficulty ?? 'normal', n, rows: map.rows, spawns: map.spawns, seed: o.seed ?? 5, countdownMs: COUNTDOWN_MS, bus, recipes: o.recipes ?? true });
+  const g = createGame({ mapId: map.id, difficulty: o.difficulty ?? 'normal', n, rows: map.rows, spawns: map.spawns, seed: o.seed ?? 5, countdownMs: COUNTDOWN_MS, bus, recipes: o.recipes ?? true, ...o.flags });
   if (o.seconds) g.params.roundMs = o.seconds * 1000;
   const ids = Array.from({ length: n }, (_v, i) => i + 1);
   ids.forEach((id, rank) => addPlayer(g, id, rank, rank));

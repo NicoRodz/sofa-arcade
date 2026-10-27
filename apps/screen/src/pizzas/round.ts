@@ -71,6 +71,9 @@ function startCoop(): undefined {
     eventsSeed: nextEventsSeed(),
     ...roundRules(app.config.modeOptions, app.config.difficulty),
     adaptive: SERIES_MAPS.some((m) => m.id === map.id), // the Carta larga series paces its orders by the load of the queue
+    upgradeOrders: SERIES_MAPS.some((m) => m.id === map.id), // ... and brings the Pizza de la casa with its upgrades, the portions and the Bandeja familiar
+    sliceAfterBake: SERIES_MAPS.some((m) => m.id === map.id),
+    compoundOrders: SERIES_MAPS.some((m) => m.id === map.id),
     surfaces: usesSurfaces(map.rows), // a map with ice or belts turns the surfaces on by itself; versus never draws those maps
     mutate: mutateOf(app.config.modeOptions, app.config.difficulty), // only maps with a mutation: coop; versus never gets it
     assist: assistIds(),
