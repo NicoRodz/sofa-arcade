@@ -147,7 +147,7 @@ export class Hud {
       .setScale(1 / R);
     const bar = new Bar(s, 100);
     bar.root.setPosition(0, 17);
-    const num = makeText(s, -48, 74, `#${id + 1}`, { size: 14, color: C.muted, stroke: 0, depth: 0 });
+    const num = makeText(s, -50, 38, `#${id + 1}`, { size: 11, color: C.muted, stroke: 0, depth: 0 });
     bar.root.setVisible(true);
     const frame = s.add.graphics().setVisible(vip);
     frame.lineStyle(7, hexNum(C.cheese2), 1).strokeRoundedRect(-62, 3, 124, 96, 10);

@@ -10,23 +10,68 @@ import { place } from '../stations';
 import { makeText } from '@pichi/screen-kit/art/fx';
 import { RECIPE_PIZZA } from './recipes';
 
-const TOPPING_KIND: Partial<Record<Recipe, FoodKind>> = { margarita: 'cheese_cut', pepperoni: 'pepperoni_cut', champinon: 'mushroom_cut' };
+// The ingredients each recipe uses, in the form they go in (so the ticket does not show a tomato on a white pizza): one column of three or fewer, a 2x2 grid for four.
+const D: FoodKind = 'dough_str';
+const T: FoodKind = 'tomato_cut';
+const Q: FoodKind = 'cheese_cut';
+const P: FoodKind = 'pepperoni_cut';
+const M: FoodKind = 'mushroom_cut';
+const H: FoodKind = 'ham_cut';
+const S: FoodKind = 'sauce_blob';
+const B: FoodKind = 'basil_raw';
+const INGREDIENTS: Record<Recipe, readonly FoodKind[]> = {
+  marinara: [D, T],
+  margarita: [D, T, Q],
+  pepperoni: [D, T, P],
+  champinon: [D, T, M],
+  calzone: [D, T],
+  pepqueso: [D, T, P, Q],
+  jamchamp: [D, T, H, M],
+  margfresca: [D, T, Q, B],
+  calzonerel: [D, T, Q, H],
+  nonna: [D, T, S, B],
+  blanca: [D, Q, M],
+  casa: [D, S, Q],
+  bandeja: [],
+};
+const SPOTS: Record<number, readonly (readonly [number, number, number])[]> = {
+  2: [
+    [28, 44, 0.5],
+    [28, 68, 0.5],
+  ],
+  3: [
+    [28, 35, 0.38],
+    [28, 52, 0.38],
+    [28, 69, 0.38],
+  ],
+  4: [
+    [14, 40, 0.38],
+    [42, 40, 0.38],
+    [14, 62, 0.38],
+    [42, 62, 0.38],
+  ],
+};
 
 export function recipeParts(s: Phaser.Scene, recipe: Recipe): Phaser.GameObjects.GameObject[] {
-  const top = TOPPING_KIND[recipe]; // a topping recipe: three ingredient icons instead of two
-  const calzone = recipe === 'calzone';
+  const calzone = recipe === 'calzone' || recipe === 'calzonerel';
   const pizza = place(s, foodKey(RECIPE_PIZZA[recipe] as FoodKind), -27, 57, 1).setScale(0.86 / R);
-  const dough = place(s, foodKey('dough_str'), 28, top ? (recipe === 'margarita' ? 37 : 35) : 46, 1).setScale((top ? 0.4 : 0.5) / R);
-  const tomato = place(s, foodKey('tomato_cut'), 28, top ? (recipe === 'margarita' ? 56 : 52) : 72, 1).setScale((top ? 0.4 : 0.52) / R);
-  const topping = top
-    ? place(s, foodKey(top), 28, recipe === 'margarita' ? 75 : 69, 1).setScale((recipe === 'margarita' ? 0.4 : 0.44) / R)
-    : null;
+  const kinds = INGREDIENTS[recipe];
+  const icons = kinds.map((k, i) => {
+    const [x, y, sc] = SPOTS[kinds.length]![i]!;
+    return place(s, foodKey(k), x, y, 1).setScale(sc / R);
+  });
   // R23: process glyphs, so the ticket reads "cut these, bake them": a knife by the ingredients and a flame on the pizza (the calzone: fold it, and two flames, a long oven)
   const knife = place(s, 'knife', 54, 56, 1)
     .setScale(0.3 / R)
     .setAngle(-65);
   const flames = (calzone ? [-17, -1] : [-9]).map((x) => place(s, 'flame_1', x, 41, 1).setScale((calzone ? 0.3 : 0.34) / R));
   const fold = calzone ? place(s, foodKey('glyph_fold'), 53, 73, 1).setScale(0.34 / R) : null;
-  const name = makeText(s, -27, 81, RECIPE_DEFS[recipe].name.toUpperCase(), { size: 12, color: C.cream, stroke: 4, depth: 0 });
-  return [pizza, dough, tomato, ...(topping ? [topping] : []), knife, ...flames, ...(fold ? [fold] : []), name];
+  const name = makeText(s, 0, 85, RECIPE_DEFS[recipe].name.toUpperCase(), {
+    size: 12,
+    color: C.cream,
+    stroke: 4,
+    depth: 0,
+  });
+  if (name.displayWidth > 108) name.setScale((name.scaleX * 108) / name.displayWidth); // a long name ("CALZONE RELLENO") shrinks to stay inside its ticket
+  return [pizza, ...icons, knife, ...flames, ...(fold ? [fold] : []), name];
 }

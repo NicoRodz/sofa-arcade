@@ -37,7 +37,7 @@ export function renderMapPanel(vs: boolean, n: number) {
           [VERSUS_RANDOM, 'Mapa generado', 'semilla nueva'],
         ]
       : pz.mapGroup === 'series'
-        ? [['group', '◂ Clásicos', 'los 19 de siempre']]
+        ? [['group', '◂ Clásicos', 'los 19 de antes']]
         : [
             ['auto', 'Aleatorio', 'de los ideales'],
             ['random', 'Mapa generado', 'semilla nueva'],
