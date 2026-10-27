@@ -59,16 +59,13 @@ describe('mech.mutation v2', () => {
     expect(board).toMatchObject({ tx: 3, ty: 1, item: 'raw1' });
     expect(g.stations.find((s) => s.kind === 'crate' && s.crate === 1)).toMatchObject({ tx: 8, ty: 1 });
   });
-  it('a chef on the destination goes to the nearest free floor tile; one using the station is cut off', () => {
+  it('a chef on the destination goes to the nearest free floor tile', () => {
     const g = make();
     put(g, 1, 12, 4);
-    put(g, 2, 2, 5);
-    g.players.get(2)!.cutting = true;
     run(g, 302);
     const p = g.players.get(1)!;
     expect(g.grid[Math.floor(p.y)]![Math.floor(p.x)]!.kind).toBe('floor');
     expect(Math.abs(Math.floor(p.x) - 12) + Math.abs(Math.floor(p.y) - 4)).toBe(1);
-    expect(g.players.get(2)!.cutting).toBe(false);
   });
   it('revertAt puts every station back (same tick rules)', () => {
     const g = make();

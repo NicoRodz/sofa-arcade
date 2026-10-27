@@ -1,6 +1,6 @@
 // The v2 mutation (design section 5): stations that move. The map carries DATA (`MapDef.mutation`: at, warn, revertAt, ops); the generator rolls it, the sim only applies it, so it never touches the RNG.
-// The change is atomic in the tick `at` (ops in list order). A station travels with its whole state (the same index: items, baking, fire, kneading progress). A chef using it is cut off (the progress stays
-// in the station); a chef or a loose item on a tile that stops being floor goes to the nearest free floor tile (breadth first, ties N-E-S-O; chefs by id, then items by id). Implemented by T1a.
+// The change is atomic in the tick `at` (ops in list order). A station travels with its whole state (the same index: items, baking, fire, kneading progress). A chef using it simply finds nothing in front next tick (the progress stays
+// in the station, and the chop is recomputed every tick); a chef or a loose item on a tile that stops being floor goes to the nearest free floor tile (breadth first, ties N-E-S-O; chefs by id, then items by id). Implemented by T1a.
 import type { MechModule } from '../types';
 import { noopHooks } from '../noop';
 import { mutationValidate } from '../../validate/mech/mutation';
@@ -127,10 +127,6 @@ function run(g: Game, live: Live, ops: readonly Op[], id: string) {
   const before = live.rows;
   for (const op of ops) applyOp(g, op);
   live.rows = applyRows(before, ops);
-  for (const p of g.players.values()) {
-    p.cutting = false;
-    p.dousing = false;
-  } // the interaction is cut: the progress stays in the station
   const moved = relocate(g);
   rescan(g);
   const tiles = live.rows.flatMap((r, y) => [...r].flatMap((c, x) => (c !== before[y]![x] ? [{ x, y, to: c }] : [])));

@@ -22,7 +22,7 @@ describe('mutation ops on rows', () => {
         ['move', [2, 4], [5, 5]],
       ],
     ] as const) {
-      const rows = [...MUT_ROWS];
+      const rows = MUT_ROWS.map((r, y) => (y === 5 ? `${r.slice(0, 5)}→${r.slice(6)}` : r)); // an arrow under the tile op: the inverse must write it back
       const after = applyRows(rows, ops as never);
       expect(applyRows(after, invertOps(rows, ops as never))).toEqual(rows);
     }
