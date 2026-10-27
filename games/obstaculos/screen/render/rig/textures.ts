@@ -2,6 +2,7 @@
 import type Phaser from 'phaser';
 import { C, CHEFS, SKINS, chefOf } from '@pichi/screen-kit/art/tokens';
 import { HEAD_Y, drawBody, drawBodyBack } from '@pichi/screen-kit/art/chefdraw';
+import { Canvas2DPainter } from '@pichi/core/avatar/canvas2d-painter';
 import { buildChefTextures } from '@pichi/screen-kit/art/chef';
 import { makeTex, type Ctx } from '@pichi/screen-kit/art/gfx';
 import { circle, drawOutlined, mix, rr, shade, vgrad } from '@pichi/screen-kit/art/gfx';
@@ -255,11 +256,11 @@ export function buildRigTextures(scene: Phaser.Scene) {
   buildChefTextures(scene); // shoes, arms, eyes, mouths, heads, plates (the pizza rig parts)
   for (let i = 0; i < CHEFS.length; i++) {
     makeTex(scene, `ex_body_${i}`, BOX, (c) => {
-      drawBody(c, i);
+      drawBody(new Canvas2DPainter(c), i);
       harness(c);
     });
     makeTex(scene, `ex_bodyb_${i}`, BOX, (c) => {
-      drawBodyBack(c, i);
+      drawBodyBack(new Canvas2DPainter(c), i);
       harnessBack(c);
     });
     makeTex(scene, `ex_helmet_${i}`, BOX, (c) => drawHelmet(c, i));
