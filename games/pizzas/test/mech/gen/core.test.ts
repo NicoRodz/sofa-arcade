@@ -81,7 +81,7 @@ describe('generateMech', () => {
   });
   it('when no seed validates it falls back to the plain classic map with no mechanics', () => {
     const spy = vi.spyOn(mechModule('sprinkler'), 'validate').mockReturnValue(['always wrong']);
-    const r = generateMech({ seed: 3, n: 4, difficulty: 'normal', mechanics: ['sprinkler'] });
+    const r = generateMech({ seed: 3, n: 4, difficulty: 'normal', mechanics: ['sprinkler'], mutate: false });
     spy.mockRestore();
     expect(r).toMatchObject({ fallback: true, mechanics: [], attempts: MAX_SEEDS });
     expect(r.rows.join('')).not.toMatch(/[*]/);

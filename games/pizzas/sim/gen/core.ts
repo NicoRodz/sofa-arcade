@@ -22,6 +22,7 @@ export interface MechGenOpts {
   seed: number;
   n: number;
   difficulty: Difficulty;
+  mutate?: boolean; // false: no v2 mutation (the menu's switch); missing = by difficulty (Fácil with no request has none)
   mechanics?: readonly MechId[]; // the ones the player ticked; none = the generator chooses `HOW_MANY[difficulty]` of GEN_MECHS
 }
 export interface MechGenerated {
@@ -54,7 +55,7 @@ export function generateMech(o: MechGenOpts): MechGenerated {
     const cells: Cells = base.rows.map((r) => [...r]);
     if (!mechs.every((m) => DECORATORS[m]!(cells, rng))) continue;
     const rows = cells.map((r) => r.join(''));
-    const mutation = o.difficulty === 'easy' && !o.mechanics ? undefined : rollMutation(rows, rng, o.difficulty);
+    const mutation = (o.mutate ?? !(o.difficulty === 'easy' && !o.mechanics)) ? rollMutation(rows, rng, o.difficulty) : undefined;
     const mechanics: MechId[] = mutation ? [...mechs, 'mutation'] : mechs;
     const grid = parseMap(rows, false, mechFlagsOf(mechanics));
     if (floorTiles(grid) < FLOOR_PER_PLAYER * base.nMax) continue;
