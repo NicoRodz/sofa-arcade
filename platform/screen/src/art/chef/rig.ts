@@ -168,6 +168,10 @@ export class Chef {
       .setTint(color);
     this.root.addAt(this.teamRing, 1);
   }
+  setPlayer(name: string, ap: Appearance | undefined, role: string) {
+    this.setName(name);
+    this.setLook(ap, role);
+  }
   setName(name: string) {
     const k = plateKey(this.scene, this.slot, name);
     if (k !== this.tagKey) {
