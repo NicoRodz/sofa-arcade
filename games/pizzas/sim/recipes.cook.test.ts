@@ -50,6 +50,8 @@ describe('a scripted chef cooks each recipe of the card from the raw ingredients
     ['calzone', '2'],
     ['pepperoni', '14'],
     ['champinon', '10'],
+    ['pepqueso', '20'],
+    ['margarita', '20'],
   ];
   for (const [recipe, map] of cases) {
     it(`${recipe} on map ${map}: delivered, paid ${recipeBase(recipe, TUNING.normal)} base, nothing refused`, () => {
@@ -57,16 +59,20 @@ describe('a scripted chef cooks each recipe of the card from the raw ingredients
       expect(r.delivered.length, 'something was delivered').toBeGreaterThanOrEqual(1);
       expect(r.rejected).toHaveLength(0);
       for (const e of r.delivered) expect(e.base).toBe(recipeBase(recipe, TUNING.normal));
-      const top = RECIPE_DEFS[recipe].topping;
-      if (top !== null) expect(r.held.has(`raw${top}`), `the chef took raw${top} from the cheese crate`).toBe(true);
-      expect(r.held.has('raw2') && top !== 2).toBe(false); // no cheese in a round whose topping is another one
+      const def = RECIPE_DEFS[recipe];
+      const tops: readonly number[] = def.toppings ?? (def.topping !== null ? [def.topping] : []);
+      for (const t of tops) expect(r.held.has(`raw${t}`), `the chef took raw${t} from a topping crate`).toBe(true);
+      expect(r.held.has('raw2') && !tops.includes(2)).toBe(false); // no cheese in a round whose topping is another one
       if (RECIPE_DEFS[recipe].fold) expect(r.folds.length, 'the oven was folded').toBeGreaterThanOrEqual(r.delivered.length);
       else expect(r.folds).toHaveLength(0);
-      const dishes = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC'].filter((i) => r.held.has(i));
+      const dishes = ['dish', 'dishQ', 'dishP', 'dishM', 'dishC', 'dishPQ'].filter((i) => r.held.has(i));
       expect(dishes).toEqual([
-        ({ marinara: 'dish', margarita: 'dishQ', pepperoni: 'dishP', champinon: 'dishM', calzone: 'dishC' } as Record<string, string>)[
-          recipe
-        ],
+        (
+          { marinara: 'dish', margarita: 'dishQ', pepperoni: 'dishP', champinon: 'dishM', calzone: 'dishC', pepqueso: 'dishPQ' } as Record<
+            string,
+            string
+          >
+        )[recipe],
       ]); // the plate that came out of the oven
     });
   }

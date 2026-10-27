@@ -8,7 +8,7 @@ import type { Difficulty } from '@pichi/core/difficulty';
 import { RECIPE_DEFS, isDish, type Recipe } from '../../sim/recipes/defs';
 import { RecBus, route, stationsOf, type Mem } from './bot';
 
-type At = 'crate0' | 'crate1' | 'crate2' | 'board' | 'pot' | 'plates' | 'window';
+type At = 'crate0' | 'crate1' | 'crate2' | 'crate3' | 'board' | 'pot' | 'plates' | 'window';
 type Take = 'a' | 'chop' | 'fold' | 'serve';
 interface Step { at: At; take: Take; done: (g: Game, p: Player, s: Station) => boolean }
 export interface RMem extends Mem { recipe: Recipe | null; force?: Recipe }
@@ -26,9 +26,11 @@ const prepare = (crate: At, raw: Item): Step[] => [
 // dough first, then the topping (the oven does not start until dough AND tomato are in), then the tomato (it starts the baking), then fold (calzone only)
 export const stepsFor = (recipe: Recipe): Step[] => {
   const top = RECIPE_DEFS[recipe].topping;
+  const two = RECIPE_DEFS[recipe].toppings;
   return [
     ...prepare('crate0', 'raw0'),
     ...(top !== null ? prepare('crate2', `raw${top}` as Item) : []),
+    ...(two ? [...prepare('crate2', `raw${two[0]}` as Item), ...prepare('crate3', `raw${two[1]}` as Item)] : []), // a two-topping pizza: the card's cheese from crate 2, its pepperoni from crate 3
     ...prepare('crate1', 'raw1'),
     ...(RECIPE_DEFS[recipe].fold ? [{ at: 'pot', take: 'fold', done: (_g: Game, _p: Player, s: Station) => !!s.folded } as Step] : []),
     { at: 'plates', take: 'a', done: (_g, p) => p.item === 'plate' },
