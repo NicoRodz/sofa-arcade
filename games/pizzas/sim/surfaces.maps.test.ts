@@ -15,7 +15,7 @@ describe('the surface maps', () => {
   it('are four, appended after the fifteen original ones, with ids 16..19', () => {
     expect(SURFACE_MAPS.map((m) => m.id)).toEqual(['16', '17', '18', '19']);
     expect(FIXED_MAPS).toHaveLength(15);
-    expect(COOP_MAPS).toHaveLength(20);
+    expect(COOP_MAPS).toHaveLength(21);
     for (const m of SURFACE_MAPS) expect(fixedMap(m.id)).toBe(m);
   });
   for (const m of SURFACE_MAPS)

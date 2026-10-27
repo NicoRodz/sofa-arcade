@@ -13,7 +13,7 @@ import { RAW_OF, cutType, isDish } from './recipes/defs';
 import { canFold } from './recipes/sim';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
-const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
+const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón', 'Jamón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
 const CRATE_ICON: readonly IconId[] = ['dough', 'crate', 'cheese'];
 const CUT_VERB: Record<string, string> = { raw0: 'Estirar', raw1: 'Picar', raw2: 'Rallar', raw3: 'Rebanar', raw4: 'Picar' }; // what B does to each raw ingredient (stretch the dough, cut the tomato, grate the cheese, slice the pepperoni, cut the mushroom)
 const RAW = new Set<Item>(RAW_OF);

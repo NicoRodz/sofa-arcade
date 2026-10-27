@@ -15,7 +15,8 @@ import { MAP_12 } from './layouts/linea-de-montaje';
 import { MAP_13 } from './layouts/tres-cuartos';
 import { MAP_14 } from './layouts/dos-brigadas';
 import { MAP_15 } from './layouts/el-sotano';
-import { MAP_20 } from './layouts/doble-cubierta';
+import { MAP_21 } from './layouts/series/cinta-de-hornos';
+import { MAP_20 } from './layouts/series/doble-cubierta';
 import { MAP_16 } from './layouts/pista-de-hielo';
 import { MAP_17 } from './layouts/cinta-de-sushi';
 import { MAP_18 } from './layouts/cocina-resbaladiza';
@@ -48,7 +49,7 @@ export const FIXED_MAPS: readonly MapDef[] = [
 // (COOP_MAPS) and turns `surfaces` on for these (usesSurfaces); a versus round never draws from this list.
 export const SURFACE_MAPS: readonly MapDef[] = [MAP_16, MAP_17, MAP_18, MAP_19];
 // The Carta larga series (ids 20+): two topping crates and the new recipes; coop only. The first of the campaign of the new plates.
-export const SERIES_MAPS: readonly MapDef[] = [MAP_20];
+export const SERIES_MAPS: readonly MapDef[] = [MAP_20, MAP_21];
 export const COOP_MAPS: readonly MapDef[] = [...FIXED_MAPS, ...SURFACE_MAPS, ...SERIES_MAPS];
 
 // Mechanics a map brings: a cheese crate ('3') makes Margarita orders, a sink ('L') turns on plate washing.

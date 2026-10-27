@@ -5,6 +5,7 @@ import type { Recipe } from '../../../sim/recipes/defs';
 import { C } from '@pichi/screen-kit/art/tokens';
 import type { Ctx } from '@pichi/screen-kit/art/gfx';
 import { calzoneDone, calzoneRaw, foldGlyph } from './calzone';
+import { HAM, hamCut, hamOverlay, hamRaw } from './ham';
 import { MUSHROOM, PEPPERONI, mushroomCut, mushroomRaw, pepperoniCut, pepperoniRaw, toppingOverlay } from './toppings';
 
 export type RecipeFoodKind =
@@ -21,13 +22,21 @@ export type RecipeFoodKind =
   | 'pizza_raw_pq'
   | 'pizza_done_pq'
   | 'dish_pq'
+  | 'ham_raw'
+  | 'ham_cut'
+  | 'pizza_raw_jm'
+  | 'pizza_done_jm'
+  | 'dish_jm'
   | 'calzone_raw'
   | 'calzone_done'
   | 'dish_c'
   | 'glyph_fold';
 
 /** Which kind each new item draws as (the old items keep theirs in food.ts). */
-export const EXTRA_ITEM_KIND: Record<'raw3' | 'raw4' | 'cut3' | 'cut4' | 'dishP' | 'dishM' | 'dishC' | 'dishPQ', RecipeFoodKind> = {
+export const EXTRA_ITEM_KIND: Record<
+  'raw3' | 'raw4' | 'raw5' | 'cut3' | 'cut4' | 'cut5' | 'dishP' | 'dishM' | 'dishC' | 'dishPQ' | 'dishJM',
+  RecipeFoodKind
+> = {
   raw3: 'pepperoni_raw',
   cut3: 'pepperoni_cut',
   raw4: 'mushroom_raw',
@@ -36,11 +45,14 @@ export const EXTRA_ITEM_KIND: Record<'raw3' | 'raw4' | 'cut3' | 'cut4' | 'dishP'
   dishM: 'dish_m',
   dishC: 'dish_c',
   dishPQ: 'dish_pq',
+  dishJM: 'dish_jm',
+  raw5: 'ham_raw',
+  cut5: 'ham_cut',
 };
 export const isRecipeItem = (i: Item): boolean => i in EXTRA_ITEM_KIND;
 
 /** The ingredient colours by type (crate label, chop particles): 3 pepperoni, 4 mushroom. */
-export const EXTRA_COLOR: readonly string[] = [PEPPERONI, MUSHROOM];
+export const EXTRA_COLOR: readonly string[] = [PEPPERONI, MUSHROOM, HAM];
 
 export interface BaseArt {
   pizzaRaw(c: Ctx, shadow?: boolean, cheese?: boolean): void;
@@ -111,6 +123,27 @@ export function extraDraw(base: BaseArt): Record<RecipeFoodKind, (c: Ctx) => voi
     pizza_raw_pq: pq.raw,
     pizza_done_pq: pq.done,
     dish_pq: pq.dish,
+    ham_raw: hamRaw,
+    ham_cut: hamCut,
+    pizza_raw_jm: (c) => {
+      base.pizzaRaw(c, true, true);
+      toppingOverlay(c, 4, 0.95);
+      hamOverlay(c, 0.95);
+    },
+    pizza_done_jm: (c) => {
+      base.pizzaDone(c, true, true);
+      toppingOverlay(c, 4);
+      hamOverlay(c);
+    },
+    dish_jm: (c) => {
+      base.tray(c);
+      c.save();
+      c.scale(0.82, 0.82);
+      base.pizzaDone(c, false, true);
+      toppingOverlay(c, 4);
+      hamOverlay(c);
+      c.restore();
+    },
     calzone_raw: (c) => calzoneRaw(c),
     calzone_done: (c) => calzoneDone(c),
     dish_c: (c) => {
@@ -132,10 +165,12 @@ export const RECIPE_PIZZA: Record<Recipe, string> = {
   champinon: 'pizza_done_m',
   calzone: 'calzone_done',
   pepqueso: 'pizza_done_pq',
+  jamchamp: 'pizza_done_jm',
 };
 /** The raw and the finished picture of what is in an oven: dough + tomato + the topping, and the calzone once it is folded. */
 export function ovenKinds(inputs: readonly number[], folded: boolean): { raw: string; done: string } {
   if (folded) return { raw: 'calzone_raw', done: 'calzone_done' };
+  if (inputs.includes(4) && inputs.includes(5)) return { raw: 'pizza_raw_jm', done: 'pizza_done_jm' };
   if (inputs.includes(2) && inputs.includes(3)) return { raw: 'pizza_raw_pq', done: 'pizza_done_pq' };
   if (inputs.includes(3)) return { raw: 'pizza_raw_p', done: 'pizza_done_p' };
   if (inputs.includes(4)) return { raw: 'pizza_raw_m', done: 'pizza_done_m' };

@@ -22,7 +22,7 @@ export const RADIUS = 0.35;
 export const REACH = 0.8; // probe distance from the player centre along the facing direction
 export const REACH_SLACK = 0.3; // max gap between probe and a station tile
 
-// raw2/cut2 = cheese (Margarita), raw3/cut3 = pepperoni, raw4/cut4 = mushroom (a round with a Carta del día: the cheese crate gives the card's topping). dishQ / dishP / dishM = a pizza that baked with cheese / pepperoni / mushroom, dishC = a folded calzone, dishPQ = pepperoni and cheese together (two topping crates).
+// raw2/cut2 = cheese (Margarita), raw3/cut3 = pepperoni, raw4/cut4 = mushroom (a round with a Carta del día: the cheese crate gives the card's topping). dishQ / dishP / dishM = a pizza that baked with cheese / pepperoni / mushroom, dishC = a folded calzone, dishPQ = pepperoni and cheese together (two topping crates), dishJM = ham and mushroom; raw5/cut5 = ham.
 // trash / trashBag exist only in a round with hazards on (sabotage): rubbish picked off the floor, and the bag a team throws.
 // burnt: a pizza that burnt in the oven (a round with `burn` on), taken on a plate: it cannot be delivered, it goes to the bin.
 export type Item =
@@ -31,17 +31,20 @@ export type Item =
   | 'raw2'
   | 'raw3'
   | 'raw4'
+  | 'raw5'
   | 'cut0'
   | 'cut1'
   | 'cut2'
   | 'cut3'
   | 'cut4'
+  | 'cut5'
   | 'plate'
   | 'dish'
   | 'dishQ'
   | 'dishP'
   | 'dishM'
   | 'dishPQ'
+  | 'dishJM'
   | 'dishC'
   | 'dirty'
   | 'trash'

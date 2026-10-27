@@ -1,4 +1,4 @@
-import type { MapDef } from '../types';
+import type { MapDef } from '../../types';
 
 // Carta larga, map 1 (design pizzas-mapas-platos-diseno.md): two topping crates ('3' and '4'), the ovens far from the crates, a ring of counters in the middle.
 export const MAP_20: MapDef = {
