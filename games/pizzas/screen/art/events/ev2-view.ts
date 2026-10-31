@@ -43,7 +43,9 @@ export class Ev2View {
     this.gfx = scene.add.graphics().setDepth(1905);
     this.pill = makeText(scene, W / 2, 178, '', { size: 30, color: C.cheese, stroke: 7, depth: 2300 }).setVisible(false);
     const on = <K extends keyof GameEvents>(k: K, fn: (p: GameEvents[K]) => void) => this.off.push(bus.on(k, fn));
-    on('event:end', (e) => e.kind === 'blackout' && (this.flash = 900));
+    on('event:end', (e) => {
+      if (e.kind === 'blackout') this.flash = 900;
+    });
     on('ev2:cake', (e) => {
       if (e.step === 'expired') this.deflate = 1400;
       if (e.step === 'candle')

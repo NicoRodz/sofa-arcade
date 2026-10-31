@@ -11,11 +11,11 @@ import { FrostView } from './frost-view';
 import { Ev2View } from './ev2-view';
 import { C, H, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../env/grid';
-import { foodKey, ITEM_KIND } from '../food';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';
 import { EVENT_COLOR } from './glyphs';
-import { ratLift } from '../feel/rat-dodge';
+import { RatView } from './rat-view';
+import { InspectorView } from './inspector-view';
 
 // --- The view -------------------------------------------------------------------------------------------------------------------------------------------
 interface Pill {
@@ -44,15 +44,8 @@ export class EventsView {
   private bolts: Phaser.GameObjects.Image[] = [];
   private edges: Phaser.GameObjects.Graphics;
   private edgeT = 0;
-  private rat: {
-    img: Phaser.GameObjects.Image;
-    item: Phaser.GameObjects.Image | null;
-    itemKey: string;
-    lastX: number;
-    face: 1 | -1;
-    bob: number;
-  } | null = null;
-  private stamps: Phaser.GameObjects.Text[] = [];
+  private rat: RatView;
+  private inspector: InspectorView;
 
   constructor(
     private scene: Phaser.Scene,
@@ -68,70 +61,13 @@ export class EventsView {
       .setVisible(false);
     this.edges = scene.add.graphics().setDepth(1860).setVisible(false);
     this.frost = new FrostView(scene);
+    this.rat = new RatView(scene, game, fx, bus);
+    this.inspector = new InspectorView(scene, game, fx, bus);
     this.ev2 = game.ev2 ? new Ev2View(scene, game, fx, bus) : null; // EVENTS_V2: the dark with cones, the board, the cake, the closing card
     const on = <K extends keyof GameEvents>(k: K, fn: (p: GameEvents[K]) => void) => this.off.push(bus.on(k, fn));
-    const winTile = (team?: number) => {
-      const s = game.stations.find((x) => x.kind === 'window' && (team === undefined || x.owner === team));
-      return s ? { x: OX + (s.tx + 0.5) * TILE, y: OY + (s.ty + 0.5) * TILE } : { x: W / 2, y: H / 2 };
-    };
-    const tilePx = (tx: number, ty: number) => ({ x: OX + (tx + 0.5) * TILE, y: OY + (ty + 0.5) * TILE });
     on('event:announce', (e) => this.showBanner(e.kind));
     on('event:start', (e) => this.start(e.kind));
     on('event:end', (e) => this.end(e.kind));
-    on('event:inspector', (e) => {
-      const p = winTile(e.team);
-      const label = makeText(this.scene, p.x, p.y + TILE * 1.5, e.passed ? '¡APROBADO!' : '¡RECHAZADO!', {
-        size: 46,
-        color: e.passed ? C.basil : C.danger,
-        stroke: 8,
-        depth: 2450,
-      })
-        .setAngle(-8)
-        .setScale(2.2)
-        .setAlpha(0);
-      this.stamps.push(label);
-      this.scene.tweens.add({ targets: label, scale: 1, alpha: 1, duration: 200, ease: 'back.out' });
-      this.scene.tweens.add({
-        targets: label,
-        alpha: 0,
-        y: label.y - 40,
-        delay: 1500,
-        duration: 500,
-        onComplete: () => {
-          label.destroy();
-          this.stamps = this.stamps.filter((x) => x !== label);
-        },
-      });
-      if (e.passed) {
-        this.fx.float(p.x, p.y + TILE * 0.6, `+${e.points}`, C.cheese, 52);
-        this.fx.confettiBurst(p.x, p.y);
-        this.fx.starBurst(p.x, p.y - TILE * 0.3, 6);
-      } else {
-        this.fx.float(p.x, p.y + TILE * 0.6, 'Platos sucios', '#FF8D8D', 34);
-        this.fx.shake(120, 0.004);
-      }
-    });
-    on('rat:appear', (e) => {
-      const p = tilePx(e.at[0], e.at[1]);
-      this.fx.ring(p.x, p.y, 0xffffff, 0.3, 1.4);
-      this.fx.dustPoof(p.x, p.y);
-      this.fx.float(p.x, p.y - TILE * 0.9, '¡Una rata!', '#E8DCC8', 38);
-    });
-    on('rat:steal', (e) => {
-      const s = game.stations[e.station];
-      if (!s) return;
-      const p = tilePx(s.tx, s.ty);
-      this.fx.ring(p.x, p.y, 0xd7263d, 0.3, 1.5);
-      this.fx.float(p.x, p.y - TILE * 0.7, '¡Se lo llevó!', C.danger, 38);
-    });
-    on('rat:scared', (e) => {
-      const r = game.mid?.rat;
-      if (!r) return;
-      const p = { x: OX + r.x * TILE, y: OY + r.y * TILE };
-      this.fx.starBurst(p.x, p.y - TILE * 0.3, 7);
-      this.fx.ring(p.x, p.y, 0xffe45c, 0.4, 1.8);
-      this.fx.float(p.x, p.y - TILE * 0.9, e.returned ? '¡Fuera! Se salvó' : '¡Fuera!', C.cheese, 40);
-    });
   }
 
   // --- banner ---
@@ -317,40 +253,7 @@ export class EventsView {
       e.lineStyle(26, hexNum(C.danger), 0.5 * k * (0.6 + 0.4 * pulse)).strokeRect(13, 117, W - 26, H - 130);
       e.setVisible(true);
     } else this.edges.setVisible(false);
-    this.updateRat(dtMs);
-  }
-
-  private updateRat(dtMs: number) {
-    const r = this.game.mid?.rat;
-    if (!r) {
-      if (this.rat) {
-        this.rat.img.destroy();
-        this.rat.item?.destroy();
-        this.rat = null;
-      }
-      return;
-    }
-    const x = OX + r.x * TILE,
-      y = OY + r.y * TILE + TILE * 0.34;
-    if (!this.rat)
-      this.rat = { img: place(this.scene, 'rat', x, y, 0.92).setDepth(100 + y), item: null, itemKey: '', lastX: x, face: 1, bob: 0 };
-    const v = this.rat;
-    if (Math.abs(x - v.lastX) > 0.1) v.face = x > v.lastX ? 1 : -1;
-    v.lastX = x;
-    v.bob += dtMs * (r.scared ? 0.05 : 0.026);
-    v.img
-      .setPosition(x, y - Math.abs(Math.sin(v.bob)) * 5 - ratLift(this.game))
-      .setFlipX(v.face < 0)
-      .setDepth(100 + y)
-      .setAngle(Math.sin(v.bob) * 3 + (r.scared ? 8 * v.face : 0));
-    const key = r.item ? foodKey(ITEM_KIND[r.item]) : '';
-    if (key !== v.itemKey) {
-      v.item?.destroy();
-      v.item = null;
-      v.itemKey = key;
-      if (r.item) v.item = place(this.scene, key, x, y - TILE * 0.5, 0.62).setDepth(100 + y + 2);
-    }
-    v.item?.setPosition(x + v.face * TILE * 0.22, y - TILE * 0.38 - Math.abs(Math.sin(v.bob)) * 5).setDepth(100 + y + 2);
+    this.rat.update(dtMs);
   }
 
   destroy() {
@@ -363,13 +266,10 @@ export class EventsView {
     this.ev2?.destroy();
     this.edges.destroy();
     for (const b of this.bolts) b.destroy();
-    this.rat?.img.destroy();
-    this.rat?.item?.destroy();
-    for (const s of this.stamps) s.destroy();
+    this.rat.destroy();
+    this.inspector.destroy();
     this.banner = null;
     this.pill = null;
     this.bolts = [];
-    this.rat = null;
-    this.stamps = [];
   }
 }

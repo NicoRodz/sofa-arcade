@@ -94,7 +94,7 @@ function startCoop(): undefined {
     bus: pizzasBus,
     eventsSeed: nextEventsSeed(),
     ...roundRules(app.config.modeOptions, app.config.difficulty),
-    eventsV2: eventsV2Of(app.config.modeOptions) || new URLSearchParams(location.search).has('ev2'), // EVENTS_V2: the lobby option `eventsV2` (off by default) or `?ev2` in the URL (captures, playtests)
+    eventsV2: eventsV2Of(app.config.modeOptions), // EVENTS_V2: on in every coop lobby round with events (the sim ignores it otherwise); the option `eventsV2: false` turns it off
     menuV2: true, // 2-4 plates by difficulty with a bag (recipes/menu.ts) and the crate a third plate needs (maps/menu-patches.ts)
     adaptive: SERIES_MAPS.some((m) => m.id === map.id), // the Carta larga series paces its orders by the load of the queue
     upgradeOrders: SERIES_MAPS.some((m) => m.id === map.id), // ... and brings the Pizza de la casa with its upgrades, the portions and the Bandeja familiar

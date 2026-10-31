@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Emitter, type GameEvents } from '../round/events';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '../overcooked';
 import type { EventKind } from '../midround';
-import { BOARD_RADIUS, HOLD_MS, pickSpot } from './state';
+import { BOARD_RADIUS, HOLD_MS, eventsV2Of, pickSpot } from './state';
 import { cakeRecipe } from './events';
 import { chefHint } from '../hints';
 import { ev2Bot } from './bot';
@@ -53,6 +53,12 @@ describe('eventsV2: the flag', () => {
     expect(room({ v2: false }).g.ev2).toBeUndefined();
     expect(createGame({ eventsV2: true }).ev2).toBeUndefined(); // no events, no presence
     expect(room().g.ev2).toBeDefined();
+  });
+  it('the lobby reads it as on unless the option says false (the juntada plays the events with presence)', () => {
+    expect(eventsV2Of(undefined)).toBe(true);
+    expect(eventsV2Of({})).toBe(true);
+    expect(eventsV2Of({ events: true })).toBe(true);
+    expect(eventsV2Of({ eventsV2: false })).toBe(false);
   });
   it('a round with the flag off plays tick for tick like a round that never heard of it', () => {
     const snap = (v2: boolean | null) => {
