@@ -83,7 +83,7 @@ function mapRow(st: PizzasLobbyState, vs: boolean): MenuRow {
     ];
   else {
     // The same rule as the TV: a recommended map is listed once (under "Recomendados"), and the maps that cannot be picked for N fold into one last tab,
-    // "Otros mapas (N)". Opening that tab is the unfolding; the picked map is wherever it lives, so it never hides.
+    // "Otros (N)". Opening that tab is the unfolding; the picked map is wherever it lives, so it never hides.
     const rec = recommendedForN(st.n, st.config.difficulty, { played: st.played ?? new Set(), last: st.autoLast });
     const toItem = ({ map, status }: LobbyRow): MenuItem => item(map, status.state, 'reason' in status ? status.reason : undefined);
     const page = (g: MapGroup) => coopLobbyView(st.n, g, rec, st.config.map, true); // unfolded: `shown` lists all of the page, `folded` its blocked ones
@@ -92,12 +92,12 @@ function mapRow(st: PizzasLobbyState, vs: boolean): MenuRow {
     const open = (r: LobbyRow) => r.status.state !== 'blocked' && !topIds.has(r.map.id);
     const others = pages.flatMap((v) => v.folded.filter((r) => !topIds.has(r.map.id))).map(toItem);
     groups = [
-      ...(pages[0]!.top.length ? [{ id: 'rec', label: `Recomendados para ${st.n}`, items: pages[0]!.top.map(toItem) }] : []),
+      ...(pages[0]!.top.length ? [{ id: 'rec', label: `Para ${st.n}`, items: pages[0]!.top.map(toItem) }] : []),
       { id: 'classic', label: 'Clásicos', items: pages[0]!.shown.filter(open).map(toItem) },
       { id: 'series', label: 'Carta larga', items: pages[1]!.shown.filter(open).map(toItem) },
       { id: 'taller', label: 'Taller', items: pages[2]!.shown.filter(open).map(toItem) },
-      { id: 'plain', label: 'Sin dinámica', items: pages[3]!.shown.filter(open).map(toItem) },
-      ...(others.length ? [{ id: OTHERS_GROUP, label: `Otros mapas (${others.length})`, items: others }] : []),
+      { id: 'plain', label: 'Simples', items: pages[3]!.shown.filter(open).map(toItem) },
+      ...(others.length ? [{ id: OTHERS_GROUP, label: `Otros (${others.length})`, items: others }] : []),
     ];
   }
   const extras: MenuOption[] = vs

@@ -46,9 +46,14 @@ function mapsHtml(ui: MenuUi): string {
       ? `<div class="cm-tabs" role="tablist">${groups.map((g) => `<button type="button" role="tab" class="cm-opt${g.id === tab ? ' sel' : ''}" data-cm="tab" data-val="${esc(g.id)}" aria-selected="${g.id === tab}">${esc(g.label)}</button>`).join('')}</div>`
       : '';
   const items = visibleItems(ui, groups.find((g) => g.id === tab)?.items ?? []);
-  const fit = row.fitFor
-    ? `<button type="button" class="cm-opt cm-fit${ui.fit ? ' sel' : ''}" data-cm="fit" aria-pressed="${ui.fit}">${ui.fit ? '✓ ' : ''}Aptos para ${row.fitFor} ${row.fitFor === 1 ? 'jugador' : 'jugadores'}</button>`
-    : '';
+  const inGroup = groups.find((g) => g.id === tab)?.items ?? [];
+  const nobody = inGroup.length > 0 && !inGroup.some((i) => i.enabled); // a page of only locked cards (the folded "Otros"): the "Aptos" filter would empty it
+  const players = row.fitFor ? `${row.fitFor} ${row.fitFor === 1 ? 'jugador' : 'jugadores'}` : '';
+  const fit = !row.fitFor
+    ? ''
+    : nobody
+      ? `<div class="cm-fitnote">No sirven para ${players} · toca uno para ver por qué</div>`
+      : `<button type="button" class="cm-opt cm-fit${ui.fit ? ' sel' : ''}" data-cm="fit" aria-pressed="${ui.fit}">${ui.fit ? '✓ ' : ''}Aptos para ${players}</button>`;
   const cards = items
     .map((i) => {
       const sel = i.id === row.value;

@@ -76,11 +76,11 @@ describe('buildLobbyMenu', () => {
     const grid = rowOf(st, 'map')!;
     const rec = grid.groups!.find((g) => g.id === 'rec')!;
     const plain = grid.groups!.find((g) => g.id === 'plain')!;
-    expect(rec.label).toBe('Recomendados para 4');
+    expect(rec.label).toBe('Para 4');
     expect(rec.items.map((i) => i.id)).toEqual(recommendedForN(4, st.config.difficulty, { played: new Set() }).map((m) => m.id));
     expect(rec.items.length).toBe(3);
     for (const i of rec.items) expect(autoMaps(4, st.config.difficulty).map((m) => m.id)).toContain(i.id);
-    expect(plain.label).toBe('Sin dinámica');
+    expect(plain.label).toBe('Simples');
     const others = grid.groups!.find((g) => g.id === 'others')!;
     expect(
       [...plain.items, ...others.items]
@@ -114,7 +114,7 @@ describe('buildLobbyMenu', () => {
     it('"Otros mapas (N)" counts the folded maps; with every map choosable there is no such tab', () => {
       const { g } = ids(coop({ n: 2, connected: 2 }));
       const o = g.find((x) => x.id === 'others')!;
-      expect(o.label).toBe(`Otros mapas (${o.items.length})`);
+      expect(o.label).toBe(`Otros (${o.items.length})`);
       expect(o.items.length).toBeGreaterThan(0);
       for (const i of o.items) expect(i.enabled, i.id).toBe(false);
     });
