@@ -2,9 +2,10 @@ import nipplejs from 'nipplejs';
 import { DIFFICULTY_LABEL } from '@pichi/core/difficulty';
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { VERSUS_AUTO, VERSUS_RANDOM, versusMap } from '@pichi/game-pizzas/sim/versus/maps';
-import { gameName, type GameControls, type HowTo } from '@pichi/core/games';
+import { CATALOG } from '@pichi/catalog';
+import type { GameControls, HowTo } from '@pichi/core/contract';
 import { esc, howToHtml, iconSvg } from '@pichi/core/render';
-import { PUESTOS, type PuestoId } from '@pichi/game-pizzas/sim/puestos';
+import { PUESTOS, type PuestoId, type PuestoMsgPz } from '@pichi/game-pizzas/sim/puestos';
 import { SABOTAGE_LABEL, sabotageOf } from '@pichi/game-pizzas/sim/sabotage-config';
 import { parseObstOptions, setupLabel } from '@pichi/game-obstaculos/lobby';
 import { seenAfterPhase, shouldShowHowTo } from '@pichi/controller-kit/howto';
@@ -29,9 +30,7 @@ import {
   type ClientMsg,
   type HintLabels,
   type Phase,
-  type PuestoMsg,
   type ServerMsg,
-  type SignalKind,
   type TeamInfo,
 } from '@pichi/core';
 import type { IconId } from '@pichi/core/icons';
@@ -59,7 +58,7 @@ const store = {
   },
 };
 
-const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0, sig: { kind: 'go' as SignalKind, seq: 0 }, go: false };
+const state = { x: 0, y: 0, btn: 0, presses: [0, 0], seq: 0, sig: { kind: 'go' as string, seq: 0 }, go: false };
 (window as unknown as { __pad: typeof state }).__pad = state; // headless drivers (tools/school-shots.ts) push the stick and the buttons through it; the game itself never reads it
 // Campaign signals: the pad of 6 buttons shows only in a campaign round (phase.match.modeOptions.campaign). While it shows, every input carries `sig` (a monotonic counter: a new seq = one
 // signal of that kind; seq 0 is the baseline the screen reads first) and `go` (true while "¡Ya!" is held: 0.4 s of it starts the 3-2-1). A quick match sends neither: the packets are the old ones.
@@ -285,7 +284,7 @@ function showPuesto(ids: PuestoId[] | null) {
   $('pname').textContent = ids.map((i) => PUESTOS[i].name).join(' + ');
   $('phint').textContent = ids.map((i) => PUESTOS[i].hint(feats)).join(' · ');
 }
-function applyPuestos(pm: PuestoMsg | undefined) {
+function applyPuestos(pm: PuestoMsgPz | undefined) {
   const mine = pm?.assign.find((a) => a.id === myId);
   if (!pm || !mine) {
     showPuesto(null);
@@ -304,7 +303,7 @@ $('pswap').addEventListener('pointerup', (e) => {
 });
 
 const VERDICT_TEXT: Record<Outcome, string> = { won: '¡Ganaron!', lost: 'Perdieron', draw: '¡Empate!', none: 'Sin ganador' };
-function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsg, result?: PhoneResult, campaign = false) {
+function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsgPz, result?: PhoneResult, campaign = false) {
   phase = p;
   const live = p === 'playing' || p === 'school'; // the school is played with the same pad as a round
   setSignals(p === 'playing' && campaign);
@@ -361,9 +360,9 @@ function connect() {
       renderCaptain();
     } else if (m.t === 'config') {
       document.body.dataset.game = m.game; // CSS: the Ayudante switch is a pizzas thing
-      $('game').textContent = gameName(m.game);
+      $('game').textContent = CATALOG.name(m.game);
       applyControls(m.controls);
-      renderHowTo(m.game, gameName(m.game), m.howTo);
+      renderHowTo(m.game, CATALOG.name(m.game), m.howTo);
       applyTeams(m.teams, m.teamsLocked);
       const mapName =
         m.map === 'auto' || m.map === VERSUS_AUTO
@@ -380,7 +379,13 @@ function connect() {
     else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {
-      showPhase(m.phase, m.scores, m.puestos, m.result, m.match?.modeOptions.campaign === true);
+      showPhase(
+        m.phase,
+        m.scores,
+        m.puestos as PuestoMsgPz | undefined,
+        m.result as PhoneResult | undefined,
+        m.match?.modeOptions.campaign === true,
+      );
     } else if (m.t === 'captain') {
       captainId = m.playerId;
       renderCaptain();
@@ -469,7 +474,7 @@ function startPad() {
   bindButton($('btnB'), 1);
   for (const el of Array.from(document.querySelectorAll<HTMLElement>('#signals [data-sig]'))) {
     // the campaign's signal pad: a press = one signal; "¡Ya!" also holds `go`
-    const kind = el.dataset.sig as SignalKind;
+    const kind = el.dataset.sig as string;
     let activePointer: number | null = null;
     const release = (e: PointerEvent) => {
       if (e.pointerId !== activePointer) return;

@@ -3,9 +3,10 @@
 // it says through the whole wire: B reaches the sim as a press counter (one tap = one press), and the flag lives in the sim only for the chef that chose it.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { DEFAULT_CONFIG, PressTracker, type ClientMsg, type LobbyConfig, type ServerMsg } from '@pichi/core';
+import { PressTracker, type ClientMsg, type LobbyConfig, type ServerMsg } from '@pichi/core';
+import { DEFAULT_CONFIG } from '@pichi/catalog';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '@pichi/game-pizzas/sim';
-import { GAMES, modeOf } from '@pichi/core/games';
+import { GAMES, modeOf } from '@pichi/catalog';
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { lobbySetup, startVersusRound, syncTeams } from '@pichi/game-pizzas/sim/versus/lobby';
 import { decide, type Mem } from '@pichi/game-pizzas/test/golden/bot';

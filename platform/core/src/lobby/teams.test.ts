@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GAMES, modeOf, type ModeSpec } from '../games';
+import { GAMES } from '@pichi/catalog';
+import { modeOf, type ModeSpec } from '@pichi/core/contract';
 import {
   GHOST_MS,
   balanceTeams,

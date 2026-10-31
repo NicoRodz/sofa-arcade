@@ -6,6 +6,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@pichi/catalog": "*",
     "@pichi/core": "*",
     "@pichi/game-obstaculos": "*",
     "@pichi/game-pizzas": "*",

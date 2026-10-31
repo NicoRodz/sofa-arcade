@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseClientMessage } from '../protocol';
+import { parseClientMessage } from '@pichi/catalog';
 import { MENU_CAP, parseCaps, parseMenuAct, parseMenuSnapshot, type MenuSnapshot } from './menu';
 
 const snap = (): MenuSnapshot => ({

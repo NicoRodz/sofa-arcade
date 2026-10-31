@@ -8,7 +8,7 @@ import { addFloorItem, pilesIn } from './floor';
 import { RULES, SLIP, AIM_MAX_MS, LAND_AFTER_MS, RETICLE_STEP_MS, DESECHOS_DRIP_MS, type SabotageMode } from './sabotage-config';
 import { adjustLanding, catapultState, kitchenTiles, landingTiles, reticleAt, sabotageHint, sweepOrder } from './sabotage';
 import { floorItemNear, targetStation } from './overcooked';
-import { LABEL_MAX } from '@pichi/core/games';
+import { LABEL_MAX } from '@pichi/core/contract';
 import { versusMap } from './versus/maps';
 import type { Difficulty } from '@pichi/core/difficulty';
 

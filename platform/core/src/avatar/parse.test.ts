@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseClientMessage } from '../protocol';
+import { parseClientMessage } from '@pichi/catalog';
 import { APPEARANCE_MAX_KEYS, parseAppearanceMsg, parseRawAppearance } from './parse';
 
 const ap = { v: 1, g: 0, s: 1, hc: 2, sk: 1, hat: 0, gl: 0, bk: 0, cl: 8 };

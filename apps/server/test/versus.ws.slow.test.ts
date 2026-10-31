@@ -3,8 +3,9 @@
 // screen -> tick, so joining, `you`, setTeam, config/phase with the match, inputs and the results all cross the wire.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { DEFAULT_CONFIG, PressTracker, type ClientMsg, type LobbyConfig, type ServerMsg } from '@pichi/core';
-import { GAMES, modeOf } from '@pichi/core/games';
+import { PressTracker, type ClientMsg, type LobbyConfig } from '@pichi/core';
+import { DEFAULT_CONFIG, type ServerMsg } from '@pichi/catalog';
+import { GAMES, modeOf } from '@pichi/catalog';
 import { COUNTDOWN_MS, TICK_MS, tick, type Controls, type Game, type Player, type Station } from '@pichi/game-pizzas/sim';
 import { summarizeTeam } from '@pichi/game-pizzas/sim/results';
 import { movePlayer, teamOf, type TeamInfo } from '@pichi/core/lobby/teams';

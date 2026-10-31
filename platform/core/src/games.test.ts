@@ -1,25 +1,21 @@
 import { describe, expect, it } from 'vitest';
+import { COMING_SOON, GAMES, GAME_IDS, gameInfo, isGameId } from '@pichi/catalog';
 import {
-  COMING_SOON,
-  GAMES,
-  GAME_IDS,
   HOWTO_MAX_STEPS,
   HOWTO_MIN_STEPS,
   LABEL_MAX,
   defaultModeOf,
-  gameInfo,
   gameProblems,
   hasModeChoice,
-  isGameId,
   modeOf,
   playersLabel,
   resolveModes,
   selectableModes,
   type GameDef,
   type ModeSpec,
-} from './games';
+} from '@pichi/core/contract';
 import { ICON_IDS, isIconId } from './icons';
-import { configMsg, DEFAULT_CONFIG } from './protocol';
+import { configMsg, DEFAULT_CONFIG } from '@pichi/catalog';
 
 const pizzas = GAMES[0] as GameDef;
 const clone = (): GameDef => structuredClone(pizzas) as GameDef;

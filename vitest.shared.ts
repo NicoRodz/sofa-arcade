@@ -1,8 +1,8 @@
 import { defineProject, mergeConfig } from 'vitest/config';
 import type { ViteUserConfig } from 'vitest/config';
 
-// Shared test config: every project merges it. The 30 s global timeout lives here only.
-export const sharedConfig: ViteUserConfig = { test: { testTimeout: 30000 } };
+// Shared test config: every project merges it. The 30 s global timeout and the catalog binding of vitest.setup.ts live here only.
+export const sharedConfig: ViteUserConfig = { test: { testTimeout: 30000, setupFiles: ['./vitest.setup.ts'] } };
 
 export const SLOW = '*.slow.test.ts';
 

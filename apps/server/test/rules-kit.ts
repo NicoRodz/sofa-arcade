@@ -1,7 +1,8 @@
 // Test support for the bots-over-the-relay tests of the burning oven and the mid-round events: phones on websockets, a Node "screen" that hosts the coop sim (one tick per
 // frame, the inputs coming through the relay), and scripted chefs. Nothing in the game imports this. `kit.srv` is set by each test file in beforeAll.
 import { WebSocket } from 'ws';
-import { DEFAULT_CONFIG, PressTracker, type ClientMsg, type ServerMsg } from '@pichi/core';
+import { PressTracker, type ClientMsg, type ServerMsg } from '@pichi/core';
+import { DEFAULT_CONFIG } from '@pichi/catalog';
 import {
   COUNTDOWN_MS,
   TICK_MS,

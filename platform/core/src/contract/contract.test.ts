@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { obstaculosManifest } from '@pichi/game-obstaculos/manifest';
 import { pizzasManifest } from '@pichi/game-pizzas/manifest';
-import { COMING_SOON, GAMES, GAME_IDS, gameProblems } from '../games';
+import { COMING_SOON, GAMES, GAME_IDS } from '@pichi/catalog';
+import { gameProblems } from '@pichi/core/contract';
 import { createRegistry } from '../registry';
 import type { GameManifest } from './game';
 

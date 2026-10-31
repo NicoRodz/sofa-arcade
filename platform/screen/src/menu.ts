@@ -1,7 +1,8 @@
 // Pichiclub start menu: which cards the registry produces, which of them can be picked with the players connected right now,
 // and what a key or a click does. Free of the DOM so it can be tested.
-import { COMING_SOON, GAMES, playersLabel, type GameDef, type SoonDef } from '@pichi/core/games';
+import { playersLabel, type ComingSoon, type GameDef } from '@pichi/core/contract';
 import type { SfxId } from './audio/recipes';
+import { catalog } from './shell/catalog';
 
 export const GRID_COLS = 3;
 
@@ -28,7 +29,11 @@ export function availability(
 }
 
 // Registry games first (in registry order), then the announced ones that are not in the registry yet.
-export function menuCards(connected: number, games: readonly GameDef[] = GAMES, soon: readonly SoonDef[] = COMING_SOON): MenuCard[] {
+export function menuCards(
+  connected: number,
+  games: readonly GameDef[] = catalog().games,
+  soon: readonly ComingSoon[] = catalog().comingSoon,
+): MenuCard[] {
   const live: MenuCard[] = games.map((g) => ({
     id: g.id,
     name: g.name,

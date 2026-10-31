@@ -9,6 +9,7 @@ const packages: Record<string, string[]> = {
   'game-pizzas': ['games/pizzas'],
   'game-obstaculos': ['games/obstaculos'],
   'app-server': ['apps/server/test'],
+  catalog: ['apps/catalog/test'],
   tools: ['tools'],
 };
 // Directories with slow tests only (a fast project of theirs would run 0 tests).

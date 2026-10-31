@@ -41,7 +41,7 @@ import { starThresholds } from './stars';
 import { summarize } from './results';
 import { mulberry32 } from '@pichi/core/rng';
 import { chefHint } from './hints';
-import { LABEL_MAX } from '@pichi/core/games';
+import { LABEL_MAX } from '@pichi/core/contract';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const mk = (map = '9', o: { recipes?: boolean; seed?: number; n?: number; bus?: Emitter<GameEvents> } = {}) => {

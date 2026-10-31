@@ -1,7 +1,8 @@
 // The Pizzas lobby form: what each state of the lobby shows, and how a touch is judged against it.
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, type LobbyConfig, type MenuActBody } from '@pichi/core';
-import { GAMES } from '@pichi/core/games';
+import type { LobbyConfig, MenuActBody } from '@pichi/core';
+import { DEFAULT_CONFIG } from '@pichi/catalog';
+import { GAMES } from '@pichi/catalog';
 import { SERIES_MAPS } from '../sim/maps';
 import { FOCUS_ROW, buildLobbyMenu, decideMenuAct, type PizzasLobbyState } from './lobby-menu';
 

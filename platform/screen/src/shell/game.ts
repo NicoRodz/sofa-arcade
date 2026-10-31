@@ -14,7 +14,7 @@ import type Phaser from 'phaser';
 import type { Difficulty } from '@pichi/core/difficulty';
 import { createRegistry, type Registry } from '@pichi/core/registry';
 import type { GameManifest } from '@pichi/core/contract';
-import { GAME_IDS, type GameId } from '@pichi/core/games';
+import { catalog } from './catalog';
 import type { LobbyConfig, MatchStart, MenuActBody, MenuBody, PhaseInfo, Phase, ServerMsg } from '@pichi/core';
 import type { PlayerRec } from './player';
 
@@ -30,7 +30,7 @@ export type MenuActResult = { ok: true } | { ok: false; code: 'stale' | 'disable
 
 export interface LobbyHooks {
   /** Config patch when this game is picked in the menu: a game must not inherit the teams or options of the one before (the relay would refuse the config). */
-  pickReset(prev: GameId): Partial<LobbyConfig>;
+  pickReset(prev: string): Partial<LobbyConfig>;
   afterPick?(): void;
   /** The game's half of the lobby (everything below the difficulty pills); it also hides what belongs to the other games. */
   render(): void;
@@ -90,11 +90,12 @@ export interface ScreenGame {
 }
 
 let registry: Registry<ScreenGame> = createRegistry<ScreenGame>([]);
-/** The games this screen runs. Refuses to start when a published manifest (core GAMES) has no ScreenGame or a ScreenGame has no manifest there. */
+/** The games this screen runs. Refuses to start when a published manifest (the catalog) has no ScreenGame or a ScreenGame has no manifest there. */
 export const registerGames = (games: readonly ScreenGame[]) => {
+  const GAME_IDS = catalog().ids;
   const reg = createRegistry(games);
   const missing = GAME_IDS.filter((id) => !reg.get(id));
-  const unknown = reg.ids().filter((id) => !(GAME_IDS as readonly string[]).includes(id));
+  const unknown = reg.ids().filter((id) => !GAME_IDS.includes(id));
   if (missing.length || unknown.length)
     throw new Error(`screen games do not match the manifests: missing ${missing.join(',') || '-'}, unknown ${unknown.join(',') || '-'}`);
   registry = reg;

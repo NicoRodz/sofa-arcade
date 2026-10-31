@@ -2,12 +2,11 @@ import type { Server } from 'node:http';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   COLORS,
-  DEFAULT_CONFIG,
   captainOf,
   hintExtras,
   PROTOCOL_VERSION,
   MENU_CAP,
-  configMsg,
+  configMsgOf,
   DEFAULT_ROOM,
   MAX_PLAYERS,
   SLOT_GRACE_MS,
@@ -15,14 +14,15 @@ import {
   APPEARANCE_PHASES,
   defaultAppearance,
   sanitizeAppearance,
-  parseClientMessage,
   youMsg,
   type Appearance,
+  type ClientMsg,
   type LobbyConfig,
   type PhaseInfo,
   type PublicPlayer,
   type ServerMsg,
 } from '@pichi/core';
+import type { GameCatalog } from '@pichi/core/contract';
 import { createLastWins } from './appearance-guard';
 import { actFits, createRateLimiter, menuFits } from './menu-guard';
 
@@ -67,7 +67,15 @@ const pub = (p: Player, r: Room): PublicPlayer => ({
   ...(p.school ? { school: true as const } : {}),
 });
 
-export function attachRelay(server: Server) {
+/** What the composition root hands the relay: the games it knows (config validation lives in `parse`), how to read a client frame and the lobby a room starts with. */
+export interface RelayDeps {
+  catalog: GameCatalog;
+  parse(raw: string): ClientMsg | null;
+  defaultConfig: LobbyConfig;
+}
+
+export function attachRelay(server: Server, { catalog, parse, defaultConfig }: RelayDeps) {
+  const configFor = (cfg: LobbyConfig) => configMsgOf(cfg, catalog.info(cfg.game, cfg.modeId));
   const rooms = new Map<string, Room>();
   const room = (code: string) => {
     let r = rooms.get(code);
@@ -79,7 +87,7 @@ export function attachRelay(server: Server) {
           screens: new Set(),
           nextId: 1,
           phase: { phase: 'menu' },
-          config: DEFAULT_CONFIG,
+          config: defaultConfig,
           captain: null,
           menu: null,
         }),
@@ -148,7 +156,7 @@ export function attachRelay(server: Server) {
 
     ws.on('message', (data) => {
       const raw = data.toString();
-      const m = parseClientMessage(raw);
+      const m = parse(raw);
       if (!m) return;
       if (m.t === 'ping') {
         send(ws, { t: 'pong', id: m.id, t0: m.t0, ts: Date.now() });
@@ -208,8 +216,8 @@ export function attachRelay(server: Server) {
       if (m.t === 'config') {
         if (!isScreen) return;
         const { t: _t, ...cfg } = m;
-        r.config = { ...DEFAULT_CONFIG, ...cfg }; // the parser already filled the team fields; the spread only satisfies the type
-        toPlayers(r, configMsg(r.config));
+        r.config = { ...defaultConfig, ...cfg }; // the parser already filled the team fields; the spread only satisfies the type
+        toPlayers(r, configFor(r.config));
         for (const p of r.players.values()) sendYou(r, p);
         return;
       }
@@ -244,7 +252,7 @@ export function attachRelay(server: Server) {
         p.ws = ws;
         me = p;
         send(ws, { t: 'joined', player: pub(p, r), room: url.searchParams.get('room') || DEFAULT_ROOM, v: PROTOCOL_VERSION });
-        send(ws, configMsg(r.config));
+        send(ws, configFor(r.config));
         sendYou(r, p);
         if (p.assist) send(ws, { t: 'assist', playerId: p.id, on: true }); // a phone that comes back remembers its choice
         send(ws, { t: 'phase', ...r.phase });

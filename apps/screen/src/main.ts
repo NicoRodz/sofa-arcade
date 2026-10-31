@@ -1,4 +1,5 @@
 // Pichiclub's screen: the composition root. The shell (platform/screen) owns the flow; each game plugs in through its ScreenGame (games.ts).
+import './catalog';
 import { drawCardArt } from '@pichi/game-pizzas/screen/art/cards';
 import { iris } from '@pichi/game-pizzas/screen/art/iris';
 import { drawLogo, starCanvas } from '@pichi/game-pizzas/screen/art/ui';

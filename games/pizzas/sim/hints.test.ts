@@ -1,7 +1,7 @@
 // Contextual buttons: the label of A and B must be TRUE. Every (station state x carried item) is built, the chef presses the button, and
 // "greyed" has to mean exactly "the press changed nothing". Anything else would teach the player the wrong thing.
 import { describe, expect, it } from 'vitest';
-import { LABEL_MAX } from '@pichi/core/games';
+import { LABEL_MAX } from '@pichi/core/contract';
 import { isIconId } from '@pichi/core/icons';
 import { createHintSync, chefHint, HINT_MIN_MS, HINT_REFRESH_MS } from './hints';
 import { DIRS, fixedMap, isFloor } from './maps';

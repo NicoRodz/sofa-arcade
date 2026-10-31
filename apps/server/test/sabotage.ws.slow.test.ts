@@ -6,8 +6,9 @@
 import { appendFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { DEFAULT_CONFIG, PressTracker, type ClientMsg, type LobbyConfig, type ServerMsg } from '@pichi/core';
-import { GAMES, modeOf } from '@pichi/core/games';
+import { PressTracker, type ClientMsg, type LobbyConfig, type ServerMsg } from '@pichi/core';
+import { DEFAULT_CONFIG } from '@pichi/catalog';
+import { GAMES, modeOf } from '@pichi/catalog';
 import { COUNTDOWN_MS, TICK_MS, tick, type Controls, type Game } from '@pichi/game-pizzas/sim';
 import { syncTeams, startVersusRound } from '@pichi/game-pizzas/sim/versus/lobby';
 import { Emitter, type GameEvents } from '@pichi/core/events';

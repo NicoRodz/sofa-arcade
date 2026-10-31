@@ -9,9 +9,5 @@
   },
   "scripts": {
     "typecheck": "tsc -p ."
-  },
-  "dependencies": {
-    "@pichi/game-obstaculos": "*",
-    "@pichi/game-pizzas": "*"
   }
 }

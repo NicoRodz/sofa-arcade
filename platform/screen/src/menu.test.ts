@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { COMING_SOON, GAMES, type GameDef } from '@pichi/core/games';
+import { COMING_SOON, GAMES } from '@pichi/catalog';
+import type { GameDef } from '@pichi/core/contract';
 import { SFX } from './audio/recipes';
 import {
   GRID_COLS,

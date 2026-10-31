@@ -1,20 +1,14 @@
-// Game registry: the lobby lists these and the choice travels to the phones as an id.
-// Each game also declares its controls (what the stick and the two buttons are called) and its quick "how to play" steps:
-// the relay sends both to the phones with the lobby config, so a new game needs no change in the controller.
-// F4a: the types live in ./contract (the game contract, EXPERIMENTAL) and each game's entry in games/<id>/manifest.ts; this file keeps the
-// list (GAMES), what is derived from it and the authoring checks, and re-exports every name it used to declare.
-import { isIconId } from './icons';
-import { pizzasManifest, VERSUS_STYLES } from '@pichi/game-pizzas/manifest';
-import { obstaculosManifest } from '@pichi/game-obstaculos/manifest';
-import { COOP_STYLE, COOP_TEAMS, DEFAULT_MODE, MODE_IDS, isModeId } from './contract/options';
-import type { ChoiceSpec, ModeId, ModeSpec } from './contract/options';
-import type { ControlLabel, GameControls, GameInfo, HowTo, HowToStep } from './contract/controls';
-import type { GameManifest } from './contract/game';
-import type { OptionSpec as VoteOptionSpec } from './lobby/vote';
-
-export { COOP_STYLE, COOP_TEAMS, DEFAULT_MODE, MODE_IDS, VERSUS_STYLES, isModeId };
-export type { ChoiceSpec, ModeId, ModeSpec, ControlLabel, GameControls, GameInfo, HowTo, HowToStep };
-export type { ChoiceValue, OptionSpec, TeamSpec, TeamStyle } from './contract/options';
+// The catalog of published games: the lobby lists them and the choice travels to the phones as an id. The platform never lists games itself: the composition
+// root (apps/catalog) builds a GameCatalog from the manifests it composes and hands it to the relay, the screen and the controller.
+// Each game also declares its controls (what the stick and the two buttons are called) and its quick "how to play" steps: the relay sends both to the
+// phones with the lobby config, so a new game needs no change in the controller. This file holds what is derived from a list of manifests and the
+// authoring checks; it used to be core/games.ts, which also held the list (GAMES).
+import { isIconId } from '../icons';
+import type { OptionSpec as VoteOptionSpec } from '../lobby/vote';
+import type { ControlLabel, GameInfo } from './controls';
+import type { GameManifest } from './game';
+import { COOP_TEAMS, isModeId } from './options';
+import type { ChoiceSpec, ModeId, ModeSpec } from './options';
 
 export const PLATFORM = 'Pichiclub';
 
@@ -29,26 +23,8 @@ export const choiceVoteSpec = (c: ChoiceSpec, votable = true): VoteOptionSpec =>
 });
 export type GameDef = GameManifest; // the registry entry is the contract's manifest
 
-export const GAMES = [pizzasManifest, obstaculosManifest] as const satisfies readonly GameDef[];
-
-// Announced games: the menu shows them as a "Próximamente" card (not selectable). Not in GAMES, so config and phones never see them.
-// Once a game with the same id is published in GAMES, its announcement stops showing by itself.
-export interface SoonDef {
-  id: string;
-  name: string;
-  blurb: string;
-}
-export const COMING_SOON: readonly SoonDef[] = [
-  { id: 'arena', name: 'Arena de empujones', blurb: 'Empuja a tus rivales fuera de la plataforma.' },
-];
-
-export type GameId = (typeof GAMES)[number]['id'];
-export const GAME_IDS: readonly GameId[] = GAMES.map((g) => g.id);
-export const DEFAULT_GAME: GameId = GAMES[0].id;
-export const isGameId = (v: unknown): v is GameId => GAME_IDS.includes(v as GameId);
 export const playersLabel = (g: Pick<GameDef, 'minPlayers' | 'maxPlayers'>): string =>
   g.minPlayers === g.maxPlayers ? `${g.minPlayers} jugadores` : `${g.minPlayers} a ${g.maxPlayers} jugadores`;
-export const gameName = (id: GameId): string => GAMES.find((g) => g.id === id)?.name ?? id;
 // The modes a game plays. A game that declares none gets the single mode its own fields describe: cooperative, one team.
 export const resolveModes = (g: GameDef): readonly ModeSpec[] =>
   g.modes?.length ? g.modes : [{ id: 'coop', label: 'Cooperativo', players: [g.minPlayers, g.maxPlayers], teams: COOP_TEAMS }];
@@ -62,7 +38,7 @@ export const selectableModes = (g: GameDef): ModeSpec[] => resolveModes(g).filte
 export const hasModeChoice = (g: GameDef): boolean => selectableModes(g).length > 1; // the lobby shows the selector only then
 
 // What the phones get: the game's labels, with the mode's overrides on top.
-export const gameInfo = (id: string, games: readonly GameDef[] = GAMES, modeId?: string): GameInfo => {
+export const gameInfo = (id: string, games: readonly GameDef[], modeId?: string): GameInfo => {
   const g: GameDef = games.find((x) => x.id === id) ?? games[0]!;
   const m = g.modes?.find((x) => x.id === modeId);
   return { controls: m?.controls ? { ...g.controls, ...m.controls } : g.controls, howTo: m?.howTo ?? g.howTo };
@@ -139,4 +115,51 @@ function modeProblems(g: GameDef): string[] {
     }
   }
   return out;
+}
+
+// Announced games: the menu shows them as a "Próximamente" card (not selectable). Not in the games list, so config and phones never see them.
+// Once a game with the same id is published, its announcement stops showing by itself.
+export interface ComingSoon {
+  id: string;
+  name: string;
+  blurb: string;
+}
+
+export interface GameCatalog {
+  readonly games: readonly GameManifest[];
+  readonly ids: readonly string[];
+  readonly defaultGame: string;
+  readonly comingSoon: readonly ComingSoon[];
+  isGameId(v: unknown): v is string;
+  name(id: string): string;
+  modes(id: string): readonly ModeSpec[];
+  modeOf(id: string, mode?: string): ModeSpec | undefined;
+  info(id: string, mode?: string): GameInfo;
+  problems(): readonly string[];
+}
+
+export function createCatalog(games: readonly GameManifest[], soon: readonly ComingSoon[] = []): GameCatalog {
+  const ids = games.map((g) => g.id);
+  if (!games.length) throw new Error('a catalog needs at least one game');
+  const dup = ids.find((id, i) => ids.indexOf(id) !== i);
+  if (dup !== undefined) throw new Error(`duplicated game id: ${dup}`);
+  const find = (id: string) => games.find((g) => g.id === id);
+  return {
+    games,
+    ids,
+    defaultGame: games[0]!.id,
+    comingSoon: soon,
+    isGameId: (v): v is string => ids.includes(v as string),
+    name: (id) => find(id)?.name ?? id,
+    modes: (id) => {
+      const g = find(id);
+      return g ? resolveModes(g) : [];
+    },
+    modeOf: (id, mode) => {
+      const g = find(id);
+      return g ? modeOf(g, mode) : undefined;
+    },
+    info: (id, mode) => gameInfo(id, games, mode),
+    problems: () => games.flatMap((g) => gameProblems(g).map((p) => `${g.id}: ${p}`)),
+  };
 }

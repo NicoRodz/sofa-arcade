@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { controlHtml, esc, howToHtml, iconSvg } from './render';
-import { GAMES } from './games';
+import { GAMES } from '@pichi/catalog';
 
 describe('render', () => {
   it('escapes text', () => {

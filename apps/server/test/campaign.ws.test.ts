@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import type { ServerMsg } from '@pichi/core';
+import type { ServerMsg } from '@pichi/catalog';
 import { ObstBot, snapshot } from '@pichi/game-obstaculos';
 import { CAMPAIGN_CATALOG, continueLevel, continueLabel, parseExpedition } from '@pichi/game-obstaculos/campaign';
 import { ObstRun } from '@pichi/game-obstaculos/screen/host';

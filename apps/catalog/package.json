@@ -1,0 +1,16 @@
+{
+  "name": "@pichi/catalog",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pichi/core": "*",
+    "@pichi/game-obstaculos": "*",
+    "@pichi/game-pizzas": "*"
+  }
+}

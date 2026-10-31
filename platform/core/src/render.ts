@@ -1,6 +1,6 @@
 // HTML for control labels and the "how to play" steps. Both the phones and the big screen use it and style the classes.
 import { ICONS, type IconId } from './icons';
-import type { ControlLabel, HowTo } from './games';
+import type { ControlLabel, HowTo } from './contract/controls';
 
 export const esc = (t: string) => t.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 

@@ -6,7 +6,7 @@ import { DIRS, fixedMap, isFloor } from './maps';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
 import { DOUSE_MS, FIRE_DELAY_MS, GRACE_MS } from './burn';
 import { chefHint } from './hints';
-import { LABEL_MAX, GAMES, modeOf } from '@pichi/core/games';
+import { LABEL_MAX, GAMES, modeOf } from '@pichi/catalog';
 import { mulberry32 } from '@pichi/core/rng';
 import { startVersusRound, syncTeams } from './versus/lobby';
 

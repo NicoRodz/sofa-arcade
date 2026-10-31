@@ -3,7 +3,8 @@
 // first presses THROUGH the wire, an Ayudante beside plain chefs must keep working with it, and a round of the lobby's own rules (magnet from roundRules) must be playable.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
-import { DEFAULT_CONFIG, PressTracker, type ServerMsg } from '@pichi/core';
+import { PressTracker, type ServerMsg } from '@pichi/core';
+import { DEFAULT_CONFIG } from '@pichi/catalog';
 import { addPlayer, createGame, tick, type Controls } from '@pichi/game-pizzas/sim';
 import { FIXED_MAPS, isFloor } from '@pichi/game-pizzas/sim/maps';
 import { roundRules } from '@pichi/game-pizzas/sim/midround';

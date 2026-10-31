@@ -21,7 +21,7 @@ import {
   type Station,
 } from './overcooked';
 import { chefHint } from './hints';
-import { GAMES, modeOf } from '@pichi/core/games';
+import { GAMES, modeOf } from '@pichi/catalog';
 import { handicapK, matchStatus, teamMultipliers, validateTeamSetup } from '@pichi/core/lobby/teams';
 import { createVersusGame, lobbySetup, startVersusRound } from './versus/lobby';
 import { versusMap } from './versus/maps';

@@ -1,20 +1,10 @@
 // The one state machine of the screen: menu -> lobby -> (school) -> playing -> results, the state every screen reads, and what the shell
 // needs from the page (the iris, the UI sounds, the repaint) injected at boot so it never imports a game. EXPERIMENTAL (F4b).
 // Moved out of apps/screen/src/main.ts: the module-level `let`s became fields of `app`; no logic changed.
-import {
-  ClockSync,
-  DEFAULT_CONFIG,
-  canStart,
-  newRoomCode,
-  nextPhase,
-  type LobbyConfig,
-  type MatchStart,
-  type Phase,
-  type PhaseEvent,
-} from '@pichi/core';
-import type { GameId } from '@pichi/core/games';
+import { ClockSync, canStart, newRoomCode, nextPhase, type LobbyConfig, type MatchStart, type Phase, type PhaseEvent } from '@pichi/core';
 import type { SfxId } from '../audio/recipes';
 import { menuCards } from '../menu';
+import { defaultConfig } from './catalog';
 import { sendMsg } from '../net/socket';
 import type { HowToState } from '../howto';
 import { clearResultsTimers } from '../results/timers';
@@ -64,8 +54,8 @@ export const app = {
   captainId: null as number | null, // the phone that holds the crown (the relay elects it): the only one whose D-pad moves the menus
   lastKeyAt: null as number | null, // when the Mac keyboard last pressed something: it keeps the last word over the D-pad
   phase: 'menu' as Phase, // Pichiclub start: the screen picks the game, then that game's lobby
-  config: { ...DEFAULT_CONFIG, seed: (Math.random() * 2 ** 32) >>> 0 } as LobbyConfig,
-  activeGame: DEFAULT_CONFIG.game as GameId, // the game of the round that is running (or just ran): config.game can change in the lobby meanwhile
+  config: { ...defaultConfig(), seed: (Math.random() * 2 ** 32) >>> 0 } as LobbyConfig,
+  activeGame: defaultConfig().game, // the game of the round that is running (or just ran): config.game can change in the lobby meanwhile
   starting: false, // the iris is moving
   gateUntil: 0, // the logic waits for the iris to open
   howTo: null as HowToState | null,

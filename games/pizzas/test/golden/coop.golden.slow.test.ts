@@ -3,7 +3,7 @@
 // Re-record only on purpose: `npx tsx tools/record-golden.ts`.
 import { describe, expect, it } from 'vitest';
 import { SCENARIOS, runGolden, type GoldenRun } from './bot';
-import { GAMES, modeOf } from '@pichi/core/games';
+import { GAMES, modeOf } from '@pichi/catalog';
 import { makeTeams } from '@pichi/core/lobby/teams';
 import n2 from './fixtures/coop-n2-map2-normal.json';
 import n4 from './fixtures/coop-n4-map9-hard.json';

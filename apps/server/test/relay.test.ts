@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { WebSocket } from 'ws';
 import { PROTOCOL_VERSION, SLOT_GRACE_MS, type ClientMsg, type ServerMsg } from '@pichi/core';
-import { GAMES } from '@pichi/core/games';
+import { GAMES } from '@pichi/catalog';
 import { startServer } from '../src/server';
 
 let srv: Awaited<ReturnType<typeof startServer>>;

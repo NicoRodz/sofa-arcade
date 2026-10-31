@@ -1,7 +1,7 @@
 // Starting a round: iris closes, the "how to play" card shows for ~10 s (Enter skips), iris again, then the countdown.
 // Also leaving the lobby. Moved out of apps/screen/src/main.ts (F4b) unchanged; the only game-specific steps are the games' own hooks.
 import { howToHtml } from '@pichi/core/render';
-import { GAMES, gameInfo } from '@pichi/core/games';
+import { catalog } from './catalog';
 import { $ } from '../ui/dom';
 import { NAV_SFX } from '../menu';
 import { isExpired, progress, secondsLeft, type HowToState } from '../howto';
@@ -35,10 +35,10 @@ export function beginRound() {
 }
 
 export function openHowTo(mode: HowToState['mode']) {
-  const g = GAMES.find((x) => x.id === app.config.game) ?? GAMES[0];
+  const g = catalog().games.find((x) => x.id === app.config.game) ?? catalog().games[0]!;
   app.howTo = { mode, startedAt: performance.now() };
   $('howtogame').textContent = g.name;
-  $('howtobody').innerHTML = howToHtml(gameInfo(g.id, GAMES, app.config.modeId).howTo);
+  $('howtobody').innerHTML = howToHtml(catalog().info(g.id, app.config.modeId).howTo);
   $('howtobar').style.visibility = mode === 'start' ? 'visible' : 'hidden';
   $('howto').classList.remove('off');
   tickHowTo();

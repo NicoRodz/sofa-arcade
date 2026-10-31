@@ -1,6 +1,6 @@
 // Pure team rules shared by the lobby, the relay and the sim (design pizzas-modalidades-coop-versus §1 and §4). No clock, no I/O.
 // Cooperative is the same mechanism with one team, so everything here works for 1..MAX_TEAMS teams.
-import { COOP_STYLE, type ModeSpec, type TeamSpec, type TeamStyle } from '../games';
+import { COOP_STYLE, type ModeSpec, type TeamSpec, type TeamStyle } from '../contract/options';
 import { mulberry32, type Rng } from '../rng';
 import { ASSIST_IMMUNITY_K, effectiveChefs } from '@pichi/game-pizzas/sim/assist';
 

@@ -2,7 +2,7 @@
 // picked, how the connected players are split into teams, which versus maps fit the teams, and how the lobby turns into a round.
 // No DOM, no clock, no I/O: the host (the screen) owns the state, this only computes the next one.
 import type { Difficulty } from '@pichi/core/difficulty';
-import type { ChoiceSpec, ModeSpec } from '@pichi/core/games';
+import type { ChoiceSpec, ModeSpec } from '@pichi/core/contract';
 import { generateVersus } from '../generate';
 import { parseMap, type Pos, type SigmaName } from '../maps';
 import { addPlayer, createGame } from '../round/create';

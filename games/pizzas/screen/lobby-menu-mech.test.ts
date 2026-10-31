@@ -1,7 +1,8 @@
 // The Captain's rows for the generated map's mechanics: when they exist, what they say and how a touch on them is judged.
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, parseMenuSnapshot, type LobbyConfig, type MenuActBody } from '@pichi/core';
-import { GAMES } from '@pichi/core/games';
+import { parseMenuSnapshot, type LobbyConfig, type MenuActBody } from '@pichi/core';
+import { DEFAULT_CONFIG } from '@pichi/catalog';
+import { GAMES } from '@pichi/catalog';
 import { GEN_MECHS } from '../sim/gen/place';
 import { MECHS_OPTION, MECH_PICK_OPTION, mechsOf, pickedMechs, withMech } from '../sim/gen/lobby-opts';
 import { resolveMap } from '../sim/generate';

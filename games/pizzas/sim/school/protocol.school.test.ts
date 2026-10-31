@@ -1,6 +1,7 @@
 // The wire side of the Cocina escuela: the school phase, the per-phone step message, the "I already know it" message, and the Captain's remote.
 import { describe, expect, it } from 'vitest';
-import { PHASES, PROTOCOL_VERSION, nextPhase, parseClientMessage, remoteVisible } from '@pichi/core';
+import { PHASES, PROTOCOL_VERSION, nextPhase, remoteVisible } from '@pichi/core';
+import { parseClientMessage } from '@pichi/catalog';
 
 const parse = (m: object) => parseClientMessage(JSON.stringify(m));
 const good = { t: 'school', playerId: 3, step: 1, total: 4, text: 'Toma tomate y pícalo en la tabla', btn: 'b' };

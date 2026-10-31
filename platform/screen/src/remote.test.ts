@@ -2,7 +2,8 @@
 // whatever a key does in each state (menu, lobby, how-to card, results), the matching button does, and nothing else.
 import { describe, expect, it } from 'vitest';
 import { NAV_KEYS, navToKey, type NavKey } from '@pichi/core';
-import { GAMES, type GameDef } from '@pichi/core/games';
+import { GAMES } from '@pichi/catalog';
+import type { GameDef } from '@pichi/core/contract';
 import { HOWTO_MS, howToOnKey, isExpired, type HowToState } from './howto';
 import { lobbyEscGoesBack, menuCards, menuOnKey } from './menu';
 

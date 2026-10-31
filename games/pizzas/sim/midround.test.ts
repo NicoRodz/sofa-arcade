@@ -28,7 +28,7 @@ import { GRACE_MS } from './burn';
 import { recipeBase } from './overcooked';
 import { params } from '@pichi/core/difficulty';
 import { MIRRORS } from '../test/golden/mirror-bot';
-import { GAMES, modeOf } from '@pichi/core/games';
+import { GAMES, modeOf } from '@pichi/catalog';
 import { mulberry32 } from '@pichi/core/rng';
 import { startVersusRound, syncTeams } from './versus/lobby';
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };

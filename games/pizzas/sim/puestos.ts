@@ -3,12 +3,15 @@
 import { mechFlagsOf } from './mech/ids';
 import type { IconId } from '@pichi/core/icons';
 import type { PuestoMsg } from '@pichi/core';
+import type { Slots } from '@pichi/core/contract';
 import { teamSize } from '@pichi/core/difficulty';
 import { DIRS, floorComponents, isFloor, parseMap, spawnPoints, type Grid, type MapDef, type Pos } from './maps';
 
 const accessTiles = (g: Grid, x: number, y: number): Pos[] =>
   DIRS.map(([dx, dy]): Pos => [x + dx, y + dy]).filter(([ax, ay]) => isFloor(g, ax, ay));
 
+/** The stations message with Pizzas' own puesto ids (the wire types them as opaque strings). */
+export type PuestoMsgPz = PuestoMsg<Slots & { puesto: PuestoId }>;
 export const PUESTO_IDS = ['masa', 'corte', 'queso', 'horno', 'reparto', 'lavado', 'apoyo', 'prep', 'platos', 'entrega'] as const;
 export type PuestoId = (typeof PUESTO_IDS)[number];
 export const isPuestoId = (v: unknown): v is PuestoId => PUESTO_IDS.includes(v as PuestoId);
@@ -107,7 +110,7 @@ export const featuresOf = (stations: readonly { kind: string; crate: number }[])
 });
 
 // Round assignment: chef i (in spawn order) gets puesto i. `pool` is what "Cambiar" cycles through.
-export function assignPuestos(ids: readonly number[], f: Features, override?: readonly (readonly PuestoId[])[]): PuestoMsg {
+export function assignPuestos(ids: readonly number[], f: Features, override?: readonly (readonly PuestoId[])[]): PuestoMsgPz {
   const table = puestosFor(ids.length, f, override);
   const pool = [...new Set(puestosFor(8, f, override).flat())];
   return { cheese: f.cheese, sink: f.sink, assign: ids.map((id, i) => ({ id, puestos: table[i] ?? ['apoyo'], pool })) };

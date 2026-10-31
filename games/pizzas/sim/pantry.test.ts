@@ -7,7 +7,7 @@ import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '
 import { PANTRY_EVERY_MS, PANTRY_MAX } from './versus/versus';
 import { startVersusRound } from './versus/lobby';
 import { versusMap } from './versus/maps';
-import { VERSUS_STYLES } from '@pichi/core/games';
+import { VERSUS_STYLES } from '@pichi/game-pizzas/manifest';
 import { mulberry32 } from '@pichi/core/rng';
 
 const V2 = versusMap('V2')!;

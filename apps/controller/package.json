@@ -7,6 +7,7 @@
     "typecheck": "tsc -p . && tsc -p test"
   },
   "dependencies": {
+    "@pichi/catalog": "*",
     "@pichi/controller-kit": "*",
     "@pichi/core": "*",
     "@pichi/game-obstaculos": "*",

@@ -3,6 +3,7 @@
 import { gameBus } from '@pichi/screen-kit/bus';
 import { app, renderUi } from '@pichi/screen-kit/shell/app-state';
 import type { ScreenGame } from '@pichi/screen-kit/shell/game';
+import type { Packet } from '../sim/input';
 import { DEFAULT_OBST_OPTIONS, GAME_ID, toModeOptions } from '../index';
 import { obstaculosManifest } from '../manifest';
 import { initObstAudio, type MusicState } from './audio';
@@ -79,7 +80,7 @@ export const obstaculosScreen: ScreenGame = (() => {
       removed: (p) => run.obst?.setConnected(p.info.slot, false),
       input: (p, m) => {
         if (app.activeGame === GAME_ID && app.phase === 'playing')
-          run.obst?.receive(p.info.slot, { x: m.x, y: m.y, presses: m.presses, signal: m.sig, goHeld: m.go });
+          run.obst?.receive(p.info.slot, { x: m.x, y: m.y, presses: m.presses, signal: m.sig as Packet['signal'], goHeld: m.go });
       },
     },
     key: (key, repeat) => camp.shows(app.phase) && !app.starting && !app.howTo && camp.key(key, repeat),

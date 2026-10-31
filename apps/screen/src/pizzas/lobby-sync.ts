@@ -5,7 +5,7 @@ import { movePlayer, reshuffleTeams } from '@pichi/core/lobby/teams';
 import { NAV_SFX } from '@pichi/screen-kit/menu';
 import { sendMsg } from '@pichi/screen-kit/net/socket';
 import { app, connectedCount, connectedIds, renderUi, services, setConfig } from '@pichi/screen-kit/shell/app-state';
-import { modeOf, type ModeId } from '@pichi/core/games';
+import { modeOf, type ModeId } from '@pichi/core/contract';
 import { SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
 import { EVENTS_OPTION } from '@pichi/game-pizzas/sim/midround';
 import { MUTATE_OPTION } from '@pichi/game-pizzas/sim/mutate/plan';

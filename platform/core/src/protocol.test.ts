@@ -2,18 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
   BUZZ_PATTERNS,
   ClockSync,
-  DEFAULT_CONFIG,
   PROTOCOL_VERSION,
   applyDeadzone,
   canStart,
-  configMsg,
   newRoomCode,
   nextPhase,
-  parseClientMessage,
   parseTeams,
   youMsg,
 } from './protocol';
-import { GAMES } from './games';
+import { DEFAULT_CONFIG, GAMES, configMsg, parseClientMessage } from '@pichi/catalog';
 import { assignPuestos } from '@pichi/game-pizzas/sim/puestos';
 
 describe('protocol', () => {

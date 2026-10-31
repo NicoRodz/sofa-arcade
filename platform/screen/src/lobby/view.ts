@@ -1,7 +1,8 @@
 // The part of the screen the menu and every lobby share: the logo, the QR + room code, the connected players and the difficulty pills.
 // The rest of a lobby is the game's (ScreenGame.lobby.render). Moved out of apps/screen/src/main.ts (F4b).
 import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core/difficulty';
-import { PLATFORM, gameName } from '@pichi/core/games';
+import { PLATFORM } from '@pichi/core/contract';
+import { catalog } from '../shell/catalog';
 import { renderMenu } from '../menu/view';
 import { $, setHtml } from '../ui/dom';
 import { app, pickedGame, setConfig } from '../shell/app-state';
@@ -21,7 +22,7 @@ export function paintUi() {
   $('results').classList.toggle('off', app.phase !== 'results');
   $('debug').classList.toggle('off', !app.debugOverride);
   if (!hub) return;
-  $('title').textContent = inMenu ? PLATFORM : gameName(app.config.game);
+  $('title').textContent = inMenu ? PLATFORM : catalog().name(app.config.game);
   $('platform').textContent = inMenu ? 'Elige un juego' : PLATFORM;
   renderChips();
   if (inMenu) {
