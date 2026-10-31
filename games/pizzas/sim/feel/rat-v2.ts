@@ -28,6 +28,11 @@ const RAT_V1: RatParams = {
   dodgeMs: 0,
   pantMs: 0,
   pantSpeed: 1,
+  evadeTiles: 0,
+  evadeLen: 0,
+  evadeMs: 0,
+  evadeCdMs: 0,
+  evadePantMs: 0,
 };
 
 const free = (g: Game, floor: (g: Game, x: number, y: number) => boolean, x: number, y: number) => floor(g, Math.floor(x), Math.floor(y));
@@ -79,6 +84,7 @@ export function dodgeStep(g: Game, r: Rat, dtMs: number, floor: (g: Game, x: num
     r.dodgeTo = best;
     r.dodgeMs = rp.dodgeMs;
     r.dodgeCd = rp.dodgeCdMs;
+    r.evadeMs = 0; // a burst in progress gives way to the jump
     g.bus.emit('rat:dodge', { player: p.id });
   }
   if ((r.dodgeMs ?? 0) <= 0) return false;

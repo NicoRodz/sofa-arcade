@@ -11,6 +11,7 @@
 import type { Game, Player } from '../round/state';
 import type { Mid, Rat } from '../midround';
 import { dodgeStep, ratGait, ratParams } from './rat-v2';
+import { evadeStep } from './rat-evade';
 
 export const RAT_GENTLE = {
   speed: 1.68, // tiles/s: 70% of the old RAT_SPEED (2.4)
@@ -115,6 +116,7 @@ export function gentleRatStep(g: Game, m: Mid, dtMs: number, kit: RatKit): boole
       return false;
     }
   }
+  if (evadeStep(g, r, dtMs, kit.floor)) return true; // HAZARD_V2: it bolts from a chef closing in (a short burst, then it pants: the window)
   if (r.state === 'seek') {
     let best = -1,
       bestD = Infinity;

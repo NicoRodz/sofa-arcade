@@ -50,11 +50,11 @@ describe('fire: big (needs two chefs at once) and small (cap of two)', () => {
     expect(oven.fire).toBe(0);
     expect(g.burn!.fires[0]!.rings).toBe(0);
   });
-  it('with two chefs it is out in about 4 s (8 chef-seconds); with three, not faster than 2.7 s, and four add no more than three', () => {
+  it('with two chefs it is out in about 2.5 s (5 chef-seconds); with three, not faster than 1.7 s, and four add no more than three', () => {
     for (const [n, lo, hi] of [
-      [2, 3.9, 4.2],
-      [3, 2.6, 2.9],
-      [4, 2.6, 2.9],
+      [2, 2.4, 2.7],
+      [3, 1.6, 1.8],
+      [4, 1.6, 1.8],
     ] as const) {
       const { g, oven } = fireGame(bigSeed(true));
       const t = holdFor(g, oven, n, 10_000) / 1000;
@@ -151,7 +151,7 @@ describe('rat: dodge of a dash, then it pants', () => {
     Object.assign(p, { x: x - 1.5 + 0.5, y: y + 0.5, vx: 0, vy: 0, dashMs: 180, dashDx: 1, dashDy: 0, fx: 1, fy: 0 });
     return { g, rat, p };
   }
-  it('a dash aimed at it with the dodge ready is dodged: the rat jumps 1.2 tiles aside, is not scared, then pants at half speed', () => {
+  it('a dash aimed at it with the dodge ready is dodged: the rat jumps 1.2 tiles aside, is not scared, then pants', () => {
     const { g, rat } = setup(0);
     const seen: string[] = [];
     g.bus.on('rat:dodge', () => seen.push('dodge'));
@@ -164,6 +164,7 @@ describe('rat: dodge of a dash, then it pants', () => {
   });
   it('with the dodge on cooldown the same dash scares it; and a dash inside the panting window catches it', () => {
     const a = setup(5000);
+    a.rat.evadeCd = 5000; // the burst would take it out of the dash's reach: this test is about the dodge
     let scared = false;
     a.g.bus.on('rat:scared', () => (scared = true));
     for (let i = 0; i < 20; i++) tick(a.g, new Map());
@@ -177,7 +178,7 @@ describe('rat: dodge of a dash, then it pants', () => {
     for (let i = 0; i < 10; i++) tick(b.g, new Map());
     expect(caught).toBe(true);
   });
-  it('while it pants it walks at half its speed (the distance in the same ticks)', () => {
+  it('while it pants it stands still (the walking rat covers the distance in the same ticks)', () => {
     const run = (pantMs: number) => {
       const { g, rat, p } = setup(5000);
       Object.assign(p, { dashMs: 0, x: 1.5, y: 1.5 }); // the chef is out of the way and not dashing
@@ -189,8 +190,7 @@ describe('rat: dodge of a dash, then it pants', () => {
     const walk = run(0),
       pant = run(5000);
     expect(walk).toBeGreaterThan(0.2);
-    expect(pant / walk).toBeGreaterThan(0.4);
-    expect(pant / walk).toBeLessThan(0.6);
+    expect(pant).toBeLessThan(1e-9);
   });
 });
 

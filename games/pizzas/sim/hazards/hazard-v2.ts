@@ -39,7 +39,12 @@ export interface RatParams {
   dodgeTiles: number;
   dodgeMs: number;
   pantMs: number;
-  pantSpeed: number; // fraction of the speed while panting
+  pantSpeed: number; // fraction of the speed while panting (0: it stands still)
+  evadeTiles: number; // a chef closing in within this many tiles makes it bolt (feel/rat-evade.ts)
+  evadeLen: number; // tiles covered by one burst
+  evadeMs: number; // duration of a burst
+  evadeCdMs: number; // from the start of a burst to the next one
+  evadePantMs: number; // it pants this long after a burst
 }
 export interface IceParams {
   tauAccelMs: number;
@@ -67,6 +72,7 @@ const rat = (
   dash: number,
   after: number,
   cd: number,
+  ev: readonly [tiles: number, len: number, ms: number, cd: number, pant: number],
 ): RatParams => ({
   walk,
   alert,
@@ -84,8 +90,13 @@ const rat = (
   dodgeConeDeg: 60,
   dodgeTiles: 1.2,
   dodgeMs: 200,
-  pantMs: 600,
-  pantSpeed: 0.5,
+  pantMs: ev[4],
+  pantSpeed: 0,
+  evadeTiles: ev[0],
+  evadeLen: ev[1],
+  evadeMs: ev[2],
+  evadeCdMs: ev[3],
+  evadePantMs: ev[4],
 });
 const fire = (
   graceMs: number,
@@ -116,13 +127,13 @@ const ev = (w: readonly (readonly [number, number])[], blackoutMs: number): Even
 export const HAZARD_V2: Record<Difficulty, HazardParams> = {
   easy: {
     fire: fire(15_000, 5000, 3000, 2, 3000, 0, 0, 3000), // Easy has no fire (burn.fireAllowed): the row only keeps the old numbers
-    rat: rat(1.9, 2.8, 450, 600, 0.5, 2.0, 1.1, 1.3, 5000),
+    rat: rat(1.9, 2.8, 450, 600, 0.5, 2.0, 1.1, 1.3, 5000, [1.4, 2.0, 340, 2600, 800]),
     ice: { tauAccelMs: 900, tauStopMs: 1000 },
     events: ev([[0.333, 0.667]], 10_000), // switched on by hand in Easy: one event, as before
   },
   normal: {
-    fire: fire(8000, 5000, 2500, 3, 4000, 300, 8000, 2000),
-    rat: rat(2.2, 3.4, 540, 400, 0.45, 4.4, 0.9, 1.1, 3000),
+    fire: fire(8000, 5000, 2500, 3, 4000, 300, 5000, 2000),
+    rat: rat(2.2, 3.4, 540, 400, 0.6, 2.5, 0.9, 1.1, 3000, [1.8, 4.9, 250, 850, 600]),
     ice: { tauAccelMs: 1100, tauStopMs: 1300 },
     events: ev(
       [
@@ -134,7 +145,7 @@ export const HAZARD_V2: Record<Difficulty, HazardParams> = {
   },
   hard: {
     fire: fire(6000, 3000, 2000, 4, 5000, 500, 10_000, 1500),
-    rat: rat(2.6, 3.8, 540, 300, 0.45, 4.45, 0.8, 1.0, 2000),
+    rat: rat(2.6, 3.8, 540, 300, 0.45, 3.0, 0.8, 1.0, 2000, [2.2, 6.0, 240, 840, 600]),
     ice: { tauAccelMs: 1300, tauStopMs: 1600 },
     events: ev(
       [

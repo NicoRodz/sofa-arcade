@@ -35,9 +35,13 @@ export function chefControls(g: Game, p: Player, rank: number, m: Mem, t: number
   const { arrived, next } = route(g, p, fight);
   if (!arrived) {
     if (!next) return { x: 0, y: 0, a: 0, b: false };
-    const dx = next[0] + 0.5 - p.x, dy = next[1] + 0.5 - p.y, l = Math.hypot(dx, dy) || 1;
+    const dx = next[0] + 0.5 - p.x,
+      dy = next[1] + 0.5 - p.y,
+      l = Math.hypot(dx, dy) || 1;
     return { x: dx / l, y: dy / l, a: 0, b: false };
   }
-  const fx = fight.tx + 0.5 - p.x, fy = fight.ty + 0.5 - p.y, l = Math.hypot(fx, fy) || 1;
+  const fx = fight.tx + 0.5 - p.x,
+    fy = fight.ty + 0.5 - p.y,
+    l = Math.hypot(fx, fy) || 1;
   return { x: fx / l, y: fy / l, a: 0, b: targetStation(g, p) === fight };
 }

@@ -52,7 +52,7 @@ export const EVENT_INFO: Record<EventKind, { title: string; blurb: string }> = {
   inspector: { title: '¡INSPECTOR!', blurb: 'Sin platos sucios al terminar: +100' },
   blackout: { title: '¡CORTE DE LUZ!', blurb: 'Hornos apagados 10 s' },
   birthday: { title: '¡CUMPLEAÑOS!', blurb: 'Pedido triple: 150 puntos' },
-  rat: { title: '¡UNA RATA!', blurb: 'Espántala con el dash' },
+  rat: { title: '¡UNA RATA!', blurb: 'Huye si te acercas: atrápala cuando jadee o arrinconada' },
   frost: { title: '¡OLA DE FRÍO!', blurb: 'Todo el piso es hielo 30 s' },
   spill: { title: '¡DERRAME!', blurb: 'Manchas de aceite por la cocina' },
 };
@@ -109,6 +109,10 @@ export interface Rat {
   dodgeTo?: [number, number];
   pantMs?: number;
   dashers?: number[];
+  evadeMs?: number; // feel/rat-evade.ts: a burst away from a chef in progress, its unit direction and cooldown
+  evadeDx?: number;
+  evadeDy?: number;
+  evadeCd?: number;
 }
 export interface Mid {
   kind: EventKind;
