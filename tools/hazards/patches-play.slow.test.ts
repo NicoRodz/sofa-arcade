@@ -32,7 +32,14 @@ describe('HAZARD_V3 patched maps are playable', () => {
           difficulty: 'hard',
           n: m.nMin + 1,
           seed,
-          extra: { ...roundRules(undefined, 'hard'), menuV2: true, rows: pm.rows, mech: mechFlagsOf(pm.mechanics), surfaces: usesSurfaces(pm.rows), hazardsV3: true },
+          extra: {
+            ...roundRules(undefined, 'hard'),
+            menuV2: true,
+            rows: pm.rows,
+            mech: mechFlagsOf(pm.mechanics),
+            surfaces: usesSurfaces(pm.rows),
+            hazardsV3: true,
+          },
           before: (gg) => {
             t++;
             if (t % 90 !== 0 || !gg.mech?.tile) return;
