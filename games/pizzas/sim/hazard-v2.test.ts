@@ -177,6 +177,21 @@ describe('rat: dodge of a dash, then it pants', () => {
     for (let i = 0; i < 10; i++) tick(b.g, new Map());
     expect(caught).toBe(true);
   });
+  it('while it pants it walks at half its speed (the distance in the same ticks)', () => {
+    const run = (pantMs: number) => {
+      const { g, rat, p } = setup(5000);
+      Object.assign(p, { dashMs: 0, x: 1.5, y: 1.5 }); // the chef is out of the way and not dashing
+      Object.assign(rat, { pantMs, state: 'flee', born: g.time - 60_000, hole: [Math.floor(rat.x) - 3, Math.floor(rat.y)] }); // it walks towards a hole three tiles away
+      const [x0, y0] = [rat.x, rat.y];
+      for (let i = 0; i < 12; i++) tick(g, new Map());
+      return Math.hypot(rat.x - x0, rat.y - y0);
+    };
+    const walk = run(0),
+      pant = run(5000);
+    expect(walk).toBeGreaterThan(0.2);
+    expect(pant / walk).toBeGreaterThan(0.4);
+    expect(pant / walk).toBeLessThan(0.6);
+  });
 });
 
 describe('ice: separate taus; the calendar', () => {
@@ -209,7 +224,7 @@ describe('ice: separate taus; the calendar', () => {
     expect(v1 / 4.5).toBeLessThan(0.7); // ~63% after one tau (the old fixed 750 ms would give 77%)
     const start = p.vx;
     mv(0, 1300);
-    expect(p.vx / start).toBeGreaterThan(0.3); // one stopping tau leaves ~37% (the old 750 ms: 18% after the same time)
+    expect(p.vx / start).toBeGreaterThan(0.34); // one stopping tau (1300) leaves ~37%; the accelerating tau (1100) would leave 31%; the old 750 ms 18%
   });
   it('the calendar: Normal 2 events, Hard 3, no kind twice, the gap between events, in windows of the round', () => {
     const pool = ['rush', 'blackout', 'birthday', 'rat', 'frost'] as const;
