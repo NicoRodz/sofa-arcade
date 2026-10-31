@@ -379,13 +379,8 @@ function connect() {
     else if (m.t === 'you') {
       showTeam(m);
     } else if (m.t === 'phase') {
-      showPhase(
-        m.phase,
-        m.scores,
-        m.puestos as PuestoMsgPz | undefined,
-        m.result as PhoneResult | undefined,
-        m.match?.modeOptions.campaign === true,
-      );
+      const puestos = m.puestos as PuestoMsgPz | undefined; // the wire's slots are opaque: this screen knows Pizzas' stations
+      showPhase(m.phase, m.scores, puestos, m.result as PhoneResult | undefined, m.match?.modeOptions.campaign === true);
     } else if (m.t === 'captain') {
       captainId = m.playerId;
       renderCaptain();
