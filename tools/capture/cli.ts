@@ -7,6 +7,7 @@ import { runEventsVs, runVersus, runVsDrop, runVsHud, runVsLobby, runVsPantry, r
 import { runAssist, runBurn, runSabotage } from './scenarios/coop-a';
 import { runEvents, runMagnet } from './scenarios/coop-b';
 import { runFrost } from './scenarios/frost';
+import { runHzFire, runHzIce, runHzRat } from './scenarios/hazards';
 import { runMutate } from './scenarios/mutate';
 import { runHowto, runHowtoTimeout, runMenu } from './scenarios/screens';
 import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './scenarios/maps';
@@ -32,6 +33,9 @@ const MODES: Record<string, Scenario[]> = {
   magnet: [runMagnet],
   mutate: [runMutate],
   frost: [runFrost],
+  'hz-fire': [runHzFire],
+  'hz-rat': [runHzRat],
+  'hz-ice': [runHzIce],
   howto: [runHowto],
   'howto-timeout': [runHowtoTimeout],
   menu: [runMenu],

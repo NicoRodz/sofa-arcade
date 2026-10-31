@@ -14,7 +14,7 @@ import {
 } from '@pichi/screen-kit/audio/music';
 import type { Action, SfxId } from '@pichi/screen-kit/audio/recipes';
 import { ACTIONS } from './actions';
-import { SURFACE_ACTIONS } from './surfaces';
+import { PANT_AT_MS, SURFACE_ACTIONS } from './surfaces';
 import { MUTATE_ACTIONS } from './mutate';
 import { MECH_ACTIONS } from './mech';
 import { createChain, playNote, playSfx } from '@pichi/screen-kit/audio/synth';
@@ -107,6 +107,10 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot, ra
     bus.on(type, (p) => run((MUTATE_ACTIONS[type] as (p: unknown) => Action[])(p)));
   for (const type of Object.keys(MECH_ACTIONS) as (keyof typeof MECH_ACTIONS)[])
     bus.on(type, (p) => run((MECH_ACTIONS[type] as (p: unknown) => Action[])(p)));
+
+  bus.on('rat:dodge', () => {
+    for (const ms of PANT_AT_MS) setTimeout(() => run([{ kind: 'play', id: 'hiss', semis: -3 }]), ms);
+  });
 
   setInterval(() => {
     if (ctx.state !== 'running') return;

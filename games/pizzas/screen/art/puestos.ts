@@ -127,7 +127,7 @@ export class PuestoMarks {
       m.t += dtMs;
       const bigK = Math.max(0, Math.min(1, (BIG_MS - m.t) / 600)); // 1 while big, fades into the small icon
       m.big.setAlpha(bigK);
-      m.small.setAlpha(1 - bigK);
+      m.small.setAlpha(Math.max(0, 1 - 2 * bigK)); // the head icons appear only once the pill is half gone, never drawn over its text
       m.root.setPosition(chef.root.x, chef.root.y - TILE * 1.6 - (byX.indexOf(id) % 2) * 62);
       if (bigK > 0) {
         const pulse = 0.55 + 0.45 * Math.sin(this.clock / 170);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LOOPS, SFX, sfxDuration, type Action } from '@pichi/screen-kit/audio/recipes';
 import { ACTIONS } from './actions';
+import { PANT_AT_MS } from './surfaces';
 
 const ids = (a: Action[]) => a.map((x) => (x.kind === 'play' ? x.id : x.kind));
 
@@ -165,6 +166,9 @@ describe('burn sounds', () => {
       { kind: 'play', id: 'fireStart' },
       { kind: 'loopStart', key: 'fire:5', loop: 'blaze' },
     ]);
+    const big = ACTIONS['fire:start']({ station: 5, big: true }); // a big fire: deeper and layered, still the same crackle loop
+    expect(ids(big)).toEqual(['fireStart', 'fireStart', 'burnt', 'loopStart']);
+    expect(big.filter((x) => x.kind === 'play' && (x.semis ?? 0) <= -5)).toHaveLength(3);
     expect(ACTIONS['fire:spread']({ station: 6 })).toEqual([
       { kind: 'play', id: 'fireSpread' },
       { kind: 'loopStart', key: 'fire:6', loop: 'blaze' },
@@ -227,6 +231,11 @@ describe('mid-round event sounds', () => {
     const squeak = SFX.ratScared.voices.find((v) => v.src === 'sine')!;
     expect(squeak.f1!).toBeLessThan(squeak.f0! / 2);
     expect(sfxDuration('ratSteal')).toBeLessThan(0.2);
+  });
+  it('the dodge of the rat is a whoosh and a squeak, followed by three breaths inside the 0.6 s window', () => {
+    expect(ids(ACTIONS['rat:dodge']({ player: 1 }))).toEqual(['whoosh', 'ratScared']);
+    expect(PANT_AT_MS).toHaveLength(3);
+    expect(Math.max(...PANT_AT_MS)).toBeLessThanOrEqual(650);
   });
   it('the blackout is a power-down: a sawtooth that falls, and a thud after it', () => {
     const down = SFX.blackoutStart.voices[0]!;
