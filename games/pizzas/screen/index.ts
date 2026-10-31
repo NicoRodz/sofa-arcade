@@ -1,0 +1,1 @@
+export { pizzasScreen } from './game';

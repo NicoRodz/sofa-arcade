@@ -1,14 +1,14 @@
-// The Pizzas lobby's team columns (versus), the sabotage pills and the events pills. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts unchanged.
-import { SABOTAGE_BLURB, SABOTAGE_OPTION, sabotageOf } from '@pichi/game-pizzas/sim/sabotage-config';
-import { eventsOf } from '@pichi/game-pizzas/sim/midround';
-import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
-import { VERSUS_RANDOM, lobbySetup, sabotageNotice, teamSizes } from '@pichi/game-pizzas/sim/versus/lobby';
-import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
+// The Pizzas lobby's team columns (versus), the sabotage pills and the events pills.
+import { SABOTAGE_BLURB, SABOTAGE_OPTION, sabotageOf } from '../../sim/sabotage-config';
+import { eventsOf } from '../../sim/midround';
+import { mutateOf } from '../../sim/mutate/plan';
+import { VERSUS_RANDOM, lobbySetup, sabotageNotice, teamSizes } from '../../sim/versus/lobby';
+import { versusMap } from '../../sim/versus/maps';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { chips, chipsMovedToTeams } from '@pichi/screen-kit/lobby/chips';
-import { isVersus } from './state';
+import { isVersus } from '../state';
 import { $, esc, plural, setHtml } from '@pichi/screen-kit/ui/dom';
-import { assistIds, modeNow, pz } from './state';
+import { assistIds, modeNow, pz } from '../state';
 
 export const OPTION_PILL: Record<string, string> = { hiddenScore: 'Marcador oculto', handicap: 'Ventaja equipo chico' }; // the registry labels are sentences; the pills need short ones
 

@@ -55,7 +55,6 @@ export const app = {
   lastKeyAt: null as number | null, // when the Mac keyboard last pressed something: it keeps the last word over the D-pad
   phase: 'menu' as Phase, // Pichiclub start: the screen picks the game, then that game's lobby
   config: { ...defaultConfig(), seed: (Math.random() * 2 ** 32) >>> 0 } as LobbyConfig,
-  activeGame: defaultConfig().game, // the game of the round that is running (or just ran): config.game can change in the lobby meanwhile
   starting: false, // the iris is moving
   gateUntil: 0, // the logic waits for the iris to open
   howTo: null as HowToState | null,
@@ -63,7 +62,8 @@ export const app = {
   debugOverride: false,
 };
 
-export const activeGame = () => games().require(app.activeGame);
+/** The game on screen: the one in config.game (the lobby can only change it between rounds, so it is also the game of the round that runs or just ran). */
+export const activeGame = () => games().require(app.config.game);
 export const pickedGame = () => games().require(app.config.game);
 export const connectedCount = () => [...app.players.values()].filter((p) => p.info.connected).length;
 export const connectedIds = () =>
@@ -93,7 +93,6 @@ export function setPhase(next: Phase) {
   app.phase = next;
   let match: MatchStart | undefined;
   if (next === 'playing') {
-    app.activeGame = app.config.game;
     match = pickedGame().startMatch();
   } else if (next === 'results') {
     clearResultsTimers();

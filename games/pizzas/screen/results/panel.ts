@@ -1,13 +1,12 @@
-// Pizzas' results: the round summary (stars, score, stats, podium, kudos) or, in versus, the verdict (results-versus.ts).
-// TRANSITIONAL (F4b): the pizza branch of renderResults in apps/screen/src/main.ts, moved unchanged.
+// Pizzas' results: the round summary (stars, score, stats, podium, kudos) or, in versus, the verdict (versus-view.ts).
 import { chefCanvas } from '@pichi/screen-kit/art/chef';
 import { laterInResults } from '@pichi/screen-kit/results/timers';
 import { app, services } from '@pichi/screen-kit/shell/app-state';
 import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
-import { kudosLines } from '@pichi/game-pizzas/sim/kudos';
-import { summarize } from '@pichi/game-pizzas/sim/results';
-import { cancelFlagLoop, renderVersusResults } from './results-versus';
-import { kitchen, pz, stats } from './state';
+import { kudosLines } from '../../sim/kudos';
+import { summarize } from '../../sim/results';
+import { cancelFlagLoop, renderVersusResults } from './versus-view';
+import { kitchen, pz, stats } from '../state';
 
 function renderKudos() {
   // the extra lines of the results: empty (and hidden) when the round had no burn rules or nobody did any of it

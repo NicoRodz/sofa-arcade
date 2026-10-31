@@ -4,13 +4,13 @@
 // highlighted when the screen appears: Enter on the results is still Revancha, and on the pause it is Seguir sin ganador.
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { $ } from '@pichi/screen-kit/ui/dom';
-import { VERSUS_NAV, versusNavStep, type VersusNavCtx as Ctx } from '@pichi/game-pizzas/screen/versus-nav';
-import { PIZZAS, pz } from './state';
+import { VERSUS_NAV, versusNavStep, type VersusNavCtx as Ctx } from '../versus-nav';
+import { PIZZAS, pz } from '../state';
 let sel = 0;
 
 /** Which of the two screens is up (null: neither, or not the Pizzas versus). */
 export function versusCtx(): Ctx | null {
-  if (app.activeGame !== PIZZAS || !pz.game.versus) return null;
+  if (app.config.game !== PIZZAS || !pz.game.versus) return null; // every game's key hook runs: only the picked one may answer
   if (app.phase === 'playing' && pz.game.paused) return 'pause';
   return app.phase === 'results' && !app.starting ? 'results' : null;
 }

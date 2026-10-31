@@ -17,14 +17,14 @@ export function obstScene(): ObstaclesScene {
   const s: ObstaclesScene = new ObstaclesScene(
     {
       step(delta) {
-        if (app.phase !== 'playing' || app.activeGame !== GAME_ID || !run.obst || performance.now() < app.gateUntil) return;
+        if (app.phase !== 'playing' || app.config.game !== GAME_ID || !run.obst || performance.now() < app.gateUntil) return;
         const t0 = performance.now();
         run.obst.step(delta);
         perf.stepMs.push(performance.now() - t0);
         if (perf.stepMs.length > 600) perf.stepMs.shift();
       },
       world: () =>
-        run.obst && app.activeGame === GAME_ID && (app.phase === 'playing' || app.phase === 'results') ? run.obst.world() : null,
+        run.obst && app.config.game === GAME_ID && (app.phase === 'playing' || app.phase === 'results') ? run.obst.world() : null,
       afterRender: (v) => run.obst?.afterRender(v),
     },
     obstBus,
@@ -33,7 +33,7 @@ export function obstScene(): ObstaclesScene {
   s.update = (t: number, d: number) => {
     const a = performance.now();
     base(t, d);
-    if (app.phase === 'playing' && app.activeGame === GAME_ID) {
+    if (app.phase === 'playing' && app.config.game === GAME_ID) {
       perf.frameMs.push(performance.now() - a);
       if (perf.frameMs.length > 600) perf.frameMs.shift();
     }
@@ -85,9 +85,7 @@ export function startObst(): MatchStart | undefined {
 }
 
 export function endObst() {
+  const ran = !!run.obst; // an Obstaculos round was on (config.game may be anything again by the time the screen goes back to the menu)
   run.obst = null;
-  if (app.activeGame === GAME_ID) {
-    showScene(catalog().defaultGame);
-    app.activeGame = catalog().defaultGame;
-  }
+  if (ran) showScene(catalog().defaultGame);
 }

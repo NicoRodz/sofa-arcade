@@ -1,24 +1,23 @@
-// Pizzas on the screen as a ScreenGame, assembled from the transitional modules in this folder. F4c replaces it with the game's own
-// games/pizzas/screen (index, coop-view, versus-view, results-panel) and deletes the ramas that still read `pz` from the shell.
-import type { PuestoId } from '@pichi/game-pizzas/sim/puestos';
+// Pizzas on the screen as a ScreenGame (index.ts re-exports it), assembled from this folder: match/ (the round and its tick loop), lobby/, results/, debug.
+import type { PuestoId } from '../sim/puestos';
 import { teamOf } from '@pichi/core/lobby/teams';
-import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
+import { pizzasBus } from './bus';
 import { app, bindServices, dispatch, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
 import type { ScreenGame } from '@pichi/screen-kit/shell/game';
-import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '@pichi/game-pizzas/sim';
-import { pizzasManifest } from '@pichi/game-pizzas/manifest';
-import { drawLogo } from '@pichi/game-pizzas/screen/art/ui';
-import { initAudio } from '@pichi/game-pizzas/screen/audio';
-import { phoneResult } from '@pichi/game-pizzas/sim/versus/report';
+import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '../sim';
+import { pizzasManifest } from '../manifest';
+import { drawLogo } from './art/ui';
+import { initAudio } from './audio';
+import { phoneResult } from '../sim/versus/report';
 import { pizzasDebug } from './debug';
-import { initHost, school, scene } from './host';
-import { versusKey } from './key-nav';
-import { difficultyPatch, initLobbyView, lobbyKey, renderLobby } from './lobby';
-import { moveToTeam } from './lobby-sync';
-import { pizzasMenu, pizzasMenuAct } from './lobby-menu';
-import { startMatch } from './round';
-import { renderResults } from './results';
-import { initVersusResults, rematch } from './results-versus';
+import { frame, initHost, school, scene } from './match/loop';
+import { versusKey } from './match/key-nav';
+import { difficultyPatch, initLobbyView, lobbyKey, renderLobby } from './lobby/lobby';
+import { moveToTeam } from './lobby/sync';
+import { pizzasMenu, pizzasMenuAct } from './lobby/menu';
+import { startMatch } from './match/round';
+import { renderResults } from './results/panel';
+import { initVersusResults, rematch } from './results/versus-view';
 import { PIZZAS, puestoOf, pz } from './state';
 
 /** The lobby mark of Pizzas: the finished pizza, as it was the platform's logo before Sofa Arcade. */
@@ -35,8 +34,8 @@ export const pizzasScreen: ScreenGame = {
   init() {
     const audio = initAudio(pizzasBus, () => ({
       phase: app.phase,
-      started: pz.game.started && app.activeGame === PIZZAS,
-      timeLeftMs: app.phase === 'playing' && pz.game.started && app.activeGame === PIZZAS ? pz.game.params.roundMs - pz.game.time : null,
+      started: pz.game.started && app.config.game === PIZZAS,
+      timeLeftMs: app.phase === 'playing' && pz.game.started && app.config.game === PIZZAS ? pz.game.params.roundMs - pz.game.time : null,
     }));
     bindServices({ ui: (id) => audio.ui(id), playerJoined: () => audio.playerJoined() }); // the UI sounds of the whole shell are the pizza audio's for now
     initHost();
@@ -44,6 +43,10 @@ export const pizzasScreen: ScreenGame = {
     initVersusResults();
   },
   scenes: () => [{ key: 'main', scene: scene(), initial: true }],
+  frame,
+  activate: () => {
+    pz.acc = 0; // the time of a stretch in which Pizzas did not run is not owed to its tick loop
+  },
   lobby: {
     // a game that has no versus must not inherit the teams or the options of the one before (the relay would refuse the whole config)
     pickReset: (prev) => (prev !== PIZZAS ? { modeOptions: {} } : {}),
