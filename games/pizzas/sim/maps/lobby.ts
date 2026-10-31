@@ -35,6 +35,12 @@ export function defaultMap(n: number, played: ReadonlySet<string>, maps: readonl
   const rec = recommendedMaps(n, maps);
   return rec.find((m) => !played.has(m.id)) ?? rec[0] ?? lobbyMaps(n, maps).find((x) => x.status.state === 'warn')?.map ?? maps[0]!;
 }
+// menuV2: what the coop lobby opens on. The six plain maps are folded into "Sin dinámica", so a default among them would open the lobby on that page and hide "Recomendados para N":
+// the default is the first recommended map not yet played that is off the plain list (plain ones only when nothing else fits N).
+export function defaultCoopMap(n: number, played: ReadonlySet<string>): MapDef {
+  const dyn = FIXED_MAPS.filter((m) => !OUT_OF_DRAW.includes(m.id));
+  return recommendedMaps(n, dyn).length ? defaultMap(n, played, dyn) : defaultMap(n, played);
+}
 // The selected map got blocked (someone joined or left): the recommended map with the closest complexity, then closest range.
 export function replacementMap(current: MapDef, n: number, maps: readonly MapDef[] = FIXED_MAPS): MapDef {
   const rec = recommendedMaps(n, maps);

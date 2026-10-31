@@ -8,10 +8,13 @@ import {
   MAP_DYNAMICS,
   OUT_OF_DRAW,
   autoMaps,
+  defaultCoopMap,
   familyOfMap,
+  FIXED_MAPS,
   fixedMap,
   lobbyGroupOfMap,
   mapLevel,
+  mapStatus,
   pickAutoMap,
   recommendedForN,
   type MapFamily,
@@ -123,5 +126,23 @@ describe('the lobby lists', () => {
         const last = familyOfMap(rec[0]!.id);
         if (rec.length > 1) expect(familyOfMap(recommendedForN(n, d, { played: new Set(), last })[0]!.id)).not.toBe(last);
       }
+  });
+});
+
+describe('the coop lobby default (defaultCoopMap)', () => {
+  it('is never a plain map when another recommended one fits N, so the lobby opens on the home page with "Recomendados para N"', () => {
+    for (let n = 2; n <= 8; n++) {
+      const d = defaultCoopMap(n, new Set());
+      const others = FIXED_MAPS.some((m) => !OUT_OF_DRAW.includes(m.id) && mapStatus(m, n).state === 'recommended');
+      if (others) {
+        expect(OUT_OF_DRAW.includes(d.id), `N${n} ${d.id}`).toBe(false);
+        expect(mapStatus(d, n).state).toBe('recommended');
+      }
+    }
+    expect(defaultCoopMap(4, new Set()).id).not.toBe('2'); // what defaultMap gives for 4 chefs
+  });
+  it('walks the unplayed ones and wraps when all were played', () => {
+    const first = defaultCoopMap(4, new Set());
+    expect(defaultCoopMap(4, new Set([first.id])).id).not.toBe(first.id);
   });
 });
