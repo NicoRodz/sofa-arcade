@@ -14,6 +14,7 @@ import { foodKey, ITEM_KIND } from '../food';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';
 import { EVENT_COLOR } from './glyphs';
+import { ratLift } from '../feel/rat-dodge';
 
 // --- The view -------------------------------------------------------------------------------------------------------------------------------------------
 interface Pill {
@@ -330,7 +331,7 @@ export class EventsView {
     v.lastX = x;
     v.bob += dtMs * (r.scared ? 0.05 : 0.026);
     v.img
-      .setPosition(x, y - Math.abs(Math.sin(v.bob)) * 5)
+      .setPosition(x, y - Math.abs(Math.sin(v.bob)) * 5 - ratLift(this.game))
       .setFlipX(v.face < 0)
       .setDepth(100 + y)
       .setAngle(Math.sin(v.bob) * 3 + (r.scared ? 8 * v.face : 0));

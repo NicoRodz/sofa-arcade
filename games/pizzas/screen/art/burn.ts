@@ -5,11 +5,13 @@ import Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../sim/round/events';
 import type { Game } from '../../sim/overcooked';
 import { DOUSE_MS } from '../../sim/burn';
+import { fireNeedMs } from '../../sim/hazards/fire-v2';
 import { C, TILE, U, hexNum } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from './env/grid';
 import { R } from '@pichi/screen-kit/art/gfx';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { Bar, place } from './stations';
+import { BIG_K, BigFireMark } from './feel/fire-big';
 
 const tilePx = (tx: number, ty: number) => ({ x: OX + (tx + 0.5) * TILE, y: OY + (ty + 0.5) * TILE });
 // A label over a station goes above it, or below it when the station is on the top wall (the strip of the HUD is right above): `dy` is the distance in tiles.
@@ -22,6 +24,7 @@ interface FireView {
   glow: Phaser.GameObjects.Image;
   bar: Bar;
   hint: Phaser.GameObjects.Text;
+  mark: BigFireMark | null; // the big fire's panel (feel/fire-big.ts), made when the kitchen's fire turns out to be big
   flick: number;
   ember: number;
   born: number;
@@ -41,6 +44,7 @@ export class BurnView {
   private exts = new Map<number, ExtView>();
   private off: (() => void)[] = [];
   private t = 0;
+  private bestChefs = 0; // the most chefs holding Picar in front of any one station (the big fire's panel shows it)
   private hintSeen = false; // the "hold Picar" hint explains itself until somebody has put a fire out (or tried) once in the round
 
   constructor(
@@ -73,10 +77,10 @@ export class BurnView {
     });
     on('fire:start', (e) => {
       const p = at(e.station);
-      this.fx.shake(220, 0.006);
-      this.fx.ring(p.x, p.y, 0xff8a1f, 0.5, 3);
-      this.fx.ring(p.x, p.y, 0xffc93c, 0.3, 2);
-      this.fx.float(p.x, labelY(p, 0.9), '¡FUEGO!', C.fire, 56);
+      this.fx.shake(e.big ? 420 : 220, e.big ? 0.011 : 0.006);
+      this.fx.ring(p.x, p.y, 0xff8a1f, 0.5, e.big ? 4.4 : 3);
+      this.fx.ring(p.x, p.y, 0xffc93c, 0.3, e.big ? 3 : 2);
+      this.fx.float(p.x, labelY(p, e.big ? 1.5 : 0.9), e.big ? '¡FUEGO GRANDE!' : '¡FUEGO!', C.fire, e.big ? 72 : 56);
       for (let i = 0; i < 6; i++) this.fx.ember(p.x + (Math.random() - 0.5) * TILE * 0.6, p.y);
     });
     on('fire:spread', (e) => {
@@ -118,36 +122,54 @@ export class BurnView {
     bar.root.setPosition(p.x, p.y - TILE * 0.62).setDepth(3000);
     if (p.y < OY + TILE * 1.2) bar.root.setPosition(p.x, p.y + TILE * 0.6);
     const hint = makeText(this.scene, p.x, labelY(p, 0.95), 'Mantén PICAR', { size: 26, color: C.cream, stroke: 5, depth: 3001 });
-    return { flames, glow, bar, hint, flick: 0, ember: 0, born: this.t };
+    return { flames, glow, bar, hint, mark: null, flick: 0, ember: 0, born: this.t };
   }
 
-  private updateFire(idx: number, v: FireView, dtMs: number, dousing: boolean, hinted: boolean) {
+  private updateFire(idx: number, v: FireView, dtMs: number, chefs: number, hinted: boolean) {
     const s = this.game.stations[idx]!;
     const p = tilePx(s.tx, s.ty);
+    const b = this.game.burn!;
+    const k = s.owner ?? 0;
+    const big = !!b.fires[k]?.big; // v2: the kitchen's fire needs two chefs at once (flames 1.5x, panel over the station)
+    const sz = big ? BIG_K : 1;
     v.flick -= dtMs;
     if (v.flick <= 0) {
       v.flick = 70;
       const grow = Math.min(1, (this.t - v.born) / 350); // the fire climbs in
       v.flames.forEach((f, i) => {
-        const k = ((1.55 + (i === 2 ? 0.5 : 0)) * U) / R;
-        f.setScale(k * (0.9 + Math.random() * 0.25) * (0.5 + 0.5 * grow), k * (0.95 + Math.random() * 0.4) * (0.4 + 0.6 * grow))
+        const kk = ((1.55 + (i === 2 ? 0.5 : 0)) * U * sz) / R;
+        f.setPosition(p.x + (i - 2) * TILE * 0.17 * sz, p.y + TILE * (0.3 - (i % 2) * 0.06))
+          .setScale(kk * (0.9 + Math.random() * 0.25) * (0.5 + 0.5 * grow), kk * (0.95 + Math.random() * 0.4) * (0.4 + 0.6 * grow))
           .setAlpha(0.92 + Math.random() * 0.08)
           .setAngle((Math.random() - 0.5) * 8);
       });
     }
-    v.glow.setAlpha(0.42 + Math.sin(this.t / 70) * 0.1).setPosition(p.x, p.y + TILE * 0.1);
+    v.glow
+      .setScale(((U * 2.3 * sz) / R) * 2)
+      .setAlpha(0.42 + Math.sin(this.t / 70) * 0.1)
+      .setPosition(p.x, p.y + TILE * 0.1);
     v.ember -= dtMs;
     if (v.ember <= 0) {
-      v.ember = 110;
-      this.fx.ember(p.x + (Math.random() - 0.5) * TILE * 0.5, p.y);
+      v.ember = big ? 60 : 110;
+      this.fx.ember(p.x + (Math.random() - 0.5) * TILE * 0.5 * sz, p.y);
       if (Math.random() < 0.35) this.fx.sootPuff(p.x + (Math.random() - 0.5) * TILE * 0.4, p.y - TILE * 0.2);
     }
-    const frac = Math.min(1, (s.fire ?? 0) / DOUSE_MS);
-    v.bar.root.setVisible(frac > 0.001);
-    if (frac > 0.001) v.bar.set(frac, '#7FD0F2');
+    const frac = Math.min(1, (s.fire ?? 0) / (b.v2 ? fireNeedMs(b, k) : DOUSE_MS));
+    if (big && hinted && !v.mark) {
+      // ONE panel for the whole fire (the station that caught it first); on the top wall there is no room above, so it goes under the counter
+      const top = p.y < OY + TILE * 1.2;
+      v.mark = new BigFireMark(this.scene, p.x, top ? p.y + TILE * 2.3 : Math.max(p.y - TILE * 1.75, OY + TILE * 0.9), top ? 80 : -80);
+    }
+    if (v.mark) {
+      const mine = this.game.stations.filter((o) => o.fire !== undefined && (o.owner ?? 0) === k);
+      const best = Math.max(0, ...mine.map((o) => (o.fire ?? 0) / fireNeedMs(b, k)));
+      v.mark.update(dtMs, this.bestChefs, Math.min(1, best));
+    }
+    v.bar.root.setVisible(!big && frac > 0.001);
+    if (!big && frac > 0.001) v.bar.set(frac, '#7FD0F2');
     // the hint: until somebody has held Picar in front of a fire; afterwards it stays quiet
     v.hint
-      .setVisible(hinted && !this.hintSeen && !dousing && frac < 0.01 && this.t - v.born > 400)
+      .setVisible(hinted && !this.hintSeen && !chefs && frac < 0.01 && this.t - v.born > 400 && !big)
       .setAlpha(0.75 + Math.sin(this.t / 140) * 0.25);
   }
 
@@ -158,6 +180,7 @@ export class BurnView {
     const dousers = new Map<number, number>(); // station index -> how many chefs
     for (const q of g.players.values()) if (q.dousing && q.chopAt >= 0) dousers.set(q.chopAt, (dousers.get(q.chopAt) ?? 0) + 1);
     if (dousers.size) this.hintSeen = true;
+    this.bestChefs = Math.max(0, ...dousers.values());
     // fires
     g.stations.forEach((s, i) => {
       const burning = s.fire !== undefined;
@@ -168,11 +191,12 @@ export class BurnView {
         v.glow.destroy();
         v.bar.root.destroy();
         v.hint.destroy();
+        v.mark?.destroy();
         this.fires.delete(i);
       }
     });
     const first = Math.min(...this.fires.keys()); // one hint for the whole fire (the first station that caught it), not one per burning counter
-    for (const [i, v] of this.fires) this.updateFire(i, v, dtMs, dousers.has(i), i === first);
+    for (const [i, v] of this.fires) this.updateFire(i, v, dtMs, dousers.get(i) ?? 0, i === first);
     // the "take it out now" bubble over an oven whose pizza is about to burn
     const warnNow = new Set<number>();
     g.stations.forEach((s, i) => {
@@ -249,6 +273,7 @@ export class BurnView {
       v.glow.destroy();
       v.bar.root.destroy();
       v.hint.destroy();
+      v.mark?.destroy();
     }
     for (const w of this.warns.values()) {
       w.g.destroy();
