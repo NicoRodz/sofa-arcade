@@ -7,6 +7,7 @@ import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
 import type { TeamInfo } from '@pichi/core/lobby/teams';
 import { ANNOUNCE_MS, EVENT_INFO, dirtyPlates, type EventKind } from '../../../sim/midround';
+import { cakeLine } from '../../../sim/ev2/state';
 import { FrostView } from './frost-view';
 import { Ev2View } from './ev2-view';
 import { C, H, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
@@ -83,7 +84,13 @@ export class EventsView {
     g.fillStyle(0xffffff, 0.22).fillRoundedRect(-BANNER.w / 2 + 24, -BANNER.h / 2 + 16, BANNER.w - 48, 10, 5);
     const icon = place(this.scene, `ev_${kind}`, -BANNER.w / 2 + 96, 0, 1.55);
     const title = makeText(this.scene, 40, -34, info.title, { size: 66, color: C.cream, stroke: 9, depth: 0 });
-    const blurb = makeText(this.scene, 40, 22, kind === 'rat' && this.game.magnet ? 'Esquiva el dash: atrápala cuando jadee' : info.blurb, {
+    const blurbTxt =
+      kind === 'rat' && this.game.magnet
+        ? 'Esquiva el dash: atrápala cuando jadee'
+        : kind === 'birthday' && this.game.ev2
+          ? `${cakeLine(this.game.difficulty)} puntos, con vela`
+          : info.blurb;
+    const blurb = makeText(this.scene, 40, 22, blurbTxt, {
       size: 32,
       color: '#FFF1D6',
       stroke: 5,
@@ -153,14 +160,15 @@ export class EventsView {
   private balloons() {
     const colors = [0xe63b2e, 0x2f7de1, 0x3fa34d, 0xffc21a, 0x8e5cd9, 0xff7a1a, 0xff5fa2, 0x1fb5a8];
     for (let i = 0; i < 16; i++) {
-      const x = OX + 60 + Math.random() * (16 * TILE - 120);
-      const b = place(this.scene, 'balloon', x, H + 80, 1.6 + Math.random() * 0.5)
+      // EVENTS_V2 has its own party (ev2-view.ts): the burst only rises along the two side walls, never over a chef or a station
+      const x = this.ev2 ? (i % 2 ? 24 : W - 24) + (Math.random() - 0.5) * 30 : OX + 60 + Math.random() * (16 * TILE - 120);
+      const b = place(this.scene, 'balloon', x, H + 80, this.ev2 ? 0.8 + Math.random() * 0.3 : 1.6 + Math.random() * 0.5)
         .setTint(colors[i % colors.length]!)
         .setDepth(2400);
       this.scene.tweens.add({
         targets: b,
         y: -140,
-        x: x + (Math.random() - 0.5) * 160,
+        x: x + (this.ev2 ? 0 : (Math.random() - 0.5) * 160),
         duration: 2600 + Math.random() * 1400,
         delay: Math.random() * 500,
         ease: 'sine.out',
@@ -216,7 +224,7 @@ export class EventsView {
       else if (p.kind === 'frost') p.text.setText(`¡OLA DE FRÍO! Todo resbala ${Math.ceil(left / 1000)} s`);
       else if (p.kind === 'blackout') p.text.setText(`¡CORTE DE LUZ! ${Math.ceil(left / 1000)} s`);
       else if (p.kind === 'rush') p.text.setText('¡HORA PUNTA! +3 pedidos');
-      else if (p.kind === 'birthday') p.text.setText('¡CUMPLEAÑOS! Pedido de 150');
+      else if (p.kind === 'birthday') p.text.setText(g.ev2 ? `¡CUMPLEAÑOS! ${cakeLine(g.difficulty)}` : '¡CUMPLEAÑOS! Pedido de 150');
       p.text.setX(30);
     }
     this.frost.update(dtMs, m.frost);

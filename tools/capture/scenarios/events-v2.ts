@@ -67,6 +67,10 @@ async function round(ctx: Ctx, kind: Kind) {
   await sleep(600);
   await cdp.shot(`${n}-3-during`);
   await ph.shot(`${n}-phone-1-note`);
+  if (kind === 'birthday') {
+    await sleep(4500); // the balloon burst has risen and gone; only the party at the top edge stays
+    await cdp.shot(`${n}-3b-after-burst`);
+  }
   const ev2 = await kit('ev2()');
   console.log(kind, 'ev2', JSON.stringify(ev2), 'mid', JSON.stringify(((await snap()) as any).mid));
   // the phone's chef goes to the thing the event adds, then the note has faded and the labelled button shows

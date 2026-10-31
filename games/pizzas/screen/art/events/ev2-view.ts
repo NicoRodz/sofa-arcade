@@ -152,8 +152,10 @@ export class Ev2View {
       const cx = x / 2,
         cy = (y - TOP) / 2,
         rr = rad / 2;
-      const gr = ctx.createRadialGradient(cx, cy, rr * 0.25, cx, cy, rr);
+      const gr = ctx.createRadialGradient(cx, cy, rr * 0.2, cx, cy, rr);
       gr.addColorStop(0, `rgba(0,0,0,${k})`);
+      gr.addColorStop(0.3, `rgba(0,0,0,${k * 0.5})`); // a quick falloff: the cone is a cone, the floor between chefs stays dark
+      gr.addColorStop(0.65, `rgba(0,0,0,${k * 0.14})`);
       gr.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = gr;
       ctx.fillRect(cx - rr, cy - rr, rr * 2, rr * 2);

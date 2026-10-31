@@ -17,6 +17,8 @@ export const RED_PRIZE = 20; // per red ticket served on time
 export const PERFECT_PRIZE = 100; // all of them
 export const CAKE_TTL_MS: Record<Difficulty, number> = { easy: 75_000, normal: 75_000, hard: 60_000 };
 export const CAKE_PRIZE: Record<Difficulty, number> = { easy: 250, normal: 250, hard: 350 };
+/** What the banner and the pill promise for the cake: the same number the delivery pays (CAKE_PRIZE), never the 150 of the plain birthday order. */
+export const cakeLine = (d: Difficulty) => `Torta de ${CAKE_PRIZE[d]}`;
 export const SPILL_PRIZE = 60; // every patch wiped before it dries
 export const CAKE_PENALTY: Record<Difficulty, number> = { easy: -50, normal: -50, hard: -100 };
 

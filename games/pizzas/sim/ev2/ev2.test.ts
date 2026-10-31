@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Emitter, type GameEvents } from '../round/events';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '../overcooked';
 import type { EventKind } from '../midround';
-import { BOARD_RADIUS, HOLD_MS, eventsV2Of, pickSpot } from './state';
+import { BOARD_RADIUS, HOLD_MS, cakeLine, eventsV2Of, pickSpot } from './state';
 import { cakeRecipe } from './events';
 import { chefHint } from '../hints';
 import { ev2Bot } from './bot';
@@ -222,6 +222,8 @@ describe('eventsV2: cumpleaños', () => {
     tick(g, new Map([[1, { ...idle, a: 1 }]]));
     expect(closes.at(-1)).toMatchObject({ kind: 'birthday', points: 250, ok: true, by: 1 });
     expect(g.teams[0]!.score).toBe(before + 250);
+    expect(cakeLine('normal')).toContain(String(closes.at(-1)!.points)); // the banner promises what the card pays
+    expect(cakeLine('hard')).toBe('Torta de 350');
   });
   it('an expired cake costs 50 and a balloon', () => {
     const { g, closes } = room();
