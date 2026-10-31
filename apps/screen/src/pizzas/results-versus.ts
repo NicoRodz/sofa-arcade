@@ -6,8 +6,8 @@ import { laterInResults } from '@pichi/screen-kit/results/timers';
 import { app, dispatch, services } from '@pichi/screen-kit/shell/app-state';
 import { $, esc } from '@pichi/screen-kit/ui/dom';
 import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from '@pichi/game-pizzas/screen/art/flags';
-import { DECIDED_TEXT, recordRound, seriesLine, versusReport } from '@pichi/game-pizzas/sim/versus/report';
-import { drawNote } from '@pichi/game-pizzas/sim/versus/notes';
+import { recordRound, seriesLine, versusReport } from '@pichi/game-pizzas/sim/versus/report';
+import { resultNote } from '@pichi/game-pizzas/sim/versus/notes';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import type { LobbyConfig } from '@pichi/core';
 import { startProblem, shuffleTeams } from './lobby-sync';
@@ -44,16 +44,7 @@ export function renderVersusResults() {
         : rep.verdict === 'aborted'
           ? 'Partida terminada'
           : 'Partida sin ganador';
-  const noteText =
-    rep.verdict === 'win'
-      ? rep.decidedBy === 'score'
-        ? `Ganaron por <b>${rep.margin}</b> ${rep.margin === 1 ? 'punto' : 'puntos'}`
-        : DECIDED_TEXT[rep.decidedBy ?? 'score']
-      : rep.verdict === 'draw'
-        ? drawNote(rep.teams.map((t) => t.delivered))
-        : rep.verdict === 'aborted'
-          ? 'El anfitrión terminó la partida'
-          : 'El anfitrión siguió sin ganador';
+  const noteText = resultNote(rep);
   const row = (cls: string, label: string, v: number | string) => `<div class="vr ${cls}"><span>${label}</span><b>${v}</b></div>`;
   const slotOf = (id: number) => app.players.get(id)?.info.slot ?? 0;
   $('vsres').innerHTML = rep.teams
