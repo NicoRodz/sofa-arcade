@@ -1,10 +1,14 @@
-# Pichiclub
+# Sofa Arcade
+
+> Antes se llamaba Pichiclub: por eso los paquetes internos siguen como `@pichi/*` (por ahora no cambian).
 
 Party game local para jugar en el sofá: la **pantalla grande** (un Mac o una TV con navegador) corre el juego y los **celulares** son los controles. Nadie instala nada: el celular abre una URL (o escanea un QR) y listo. De 2 a 8 jugadores.
 
 ![Lobby de Pizzas: QR, jugadores y opciones](docs/screens/lobby.png)
 
 ## Capturas
+
+Aviso: las capturas aún muestran la marca anterior (Pichiclub) hasta el rediseño de la pantalla de inicio.
 
 | Pizzas: entrega en el mostrador | Obstáculos: cruzando la playa |
 |---|---|
