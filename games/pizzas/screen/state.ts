@@ -3,16 +3,16 @@
 // into games/pizzas/screen (coop-view, versus-view, results-panel) and turns this into the game's own state.
 import { modeOf, type GameDef } from '@pichi/core/contract';
 import { catalog } from '@pichi/screen-kit/shell/catalog';
-import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
+import { pizzasBus } from './bus';
 import { app, connectedCount } from '@pichi/screen-kit/shell/app-state';
-import type { PuestoMsgPz } from '@pichi/game-pizzas/sim/puestos';
-import { createGame } from '@pichi/game-pizzas/sim';
-import { lobbyN } from '@pichi/game-pizzas/sim/maps';
-import { tallyKitchen } from '@pichi/game-pizzas/sim/kudos';
-import { NO_LEAD, tallyDeliveries, type LeadState, type Series, type VersusReport } from '@pichi/game-pizzas/sim/versus/report';
-import type { RoundView } from '@pichi/game-pizzas/screen/art/hud';
-import type { MapGroup } from '@pichi/game-pizzas/screen/lobby-menu';
-import type { PuestoView } from '@pichi/game-pizzas/screen/art/puestos';
+import type { PuestoMsgPz } from '../sim/puestos';
+import { createGame } from '../sim';
+import { lobbyN } from '../sim/maps';
+import { tallyKitchen } from '../sim/kudos';
+import { NO_LEAD, tallyDeliveries, type LeadState, type Series, type VersusReport } from '../sim/versus/report';
+import type { RoundView } from './art/hud';
+import type { MapGroup } from './lobby-menu';
+import type { PuestoView } from './art/puestos';
 
 export const PIZZAS = 'pizzas';
 export const pz = {

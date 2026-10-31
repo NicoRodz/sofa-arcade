@@ -1,24 +1,24 @@
 // Starting a Pizzas round: the coop round (map, orders, puestos) and the versus one (frozen teams and map, a puesto deal inside each kitchen).
 // TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts (setPhase's pizza branches and startVersus).
 import type { MatchStart } from '@pichi/core';
-import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
+import { pizzasBus } from '../bus';
 import { sendMsg } from '@pichi/screen-kit/net/socket';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { showScene } from '@pichi/screen-kit/shell/game-host';
-import { COUNTDOWN_MS, addPlayer, createGame } from '@pichi/game-pizzas/sim';
-import { resolveMap } from '@pichi/game-pizzas/sim/generate';
-import { SERIES_MAPS, type MapChoice } from '@pichi/game-pizzas/sim/maps';
-import { usesSurfaces } from '@pichi/game-pizzas/sim/surfaces/legend';
-import { mechFlagsOf } from '@pichi/game-pizzas/sim/mech/ids';
-import { roundRules } from '@pichi/game-pizzas/sim/midround';
-import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
-import { mechsOf, pickedMechs } from '@pichi/game-pizzas/sim/gen/lobby-opts';
-import { assignPuestos, featuresOf } from '@pichi/game-pizzas/sim/puestos';
-import { dealVersusPuestos } from '@pichi/game-pizzas/sim/versus/deal';
-import { NO_LEAD } from '@pichi/game-pizzas/sim/versus/report';
-import { startVersusRound } from '@pichi/game-pizzas/sim/versus/lobby';
-import { scene } from './host';
-import { PIZZAS, assistIds, connectedN, kitchen, nextEventsSeed, puestoOf, pz, tally } from './state';
+import { COUNTDOWN_MS, addPlayer, createGame } from '../../sim';
+import { resolveMap } from '../../sim/generate';
+import { SERIES_MAPS, type MapChoice } from '../../sim/maps';
+import { usesSurfaces } from '../../sim/surfaces/legend';
+import { mechFlagsOf } from '../../sim/mech/ids';
+import { roundRules } from '../../sim/midround';
+import { mutateOf } from '../../sim/mutate/plan';
+import { mechsOf, pickedMechs } from '../../sim/gen/lobby-opts';
+import { assignPuestos, featuresOf } from '../../sim/puestos';
+import { dealVersusPuestos } from '../../sim/versus/deal';
+import { NO_LEAD } from '../../sim/versus/report';
+import { startVersusRound } from '../../sim/versus/lobby';
+import { scene } from './loop';
+import { PIZZAS, assistIds, connectedN, kitchen, nextEventsSeed, puestoOf, pz, tally } from '../state';
 
 // Versus: the lobby's frozen teams and map become the round (createVersusGame), with the puestos dealt inside each kitchen.
 function startVersus(): MatchStart {

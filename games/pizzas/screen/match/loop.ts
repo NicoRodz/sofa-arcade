@@ -1,21 +1,21 @@
 // The Pizzas round while it runs: the scene's host (the tick loop), the pause bar, the contextual button labels, the buzz on the phones and the
 // Cocina escuela glue. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts; F4c turns it into games/pizzas/screen/coop-view.
 import type { BuzzKind } from '@pichi/core';
-import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
+import { pizzasBus } from '../bus';
 import { sendMsg } from '@pichi/screen-kit/net/socket';
 import { app, dispatch, services, transition } from '@pichi/screen-kit/shell/app-state';
 import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { openHowTo } from '@pichi/screen-kit/shell/round-flow';
 import { $ } from '@pichi/screen-kit/ui/dom';
-import { TICK_MS, resolvePause, tick, type Controls } from '@pichi/game-pizzas/sim';
-import { staleControls } from '@pichi/game-pizzas/sim/feel/stale';
-import { createHintSync } from '@pichi/game-pizzas/sim/hints';
-import { createMechPhone } from '@pichi/game-pizzas/sim/mech/phone';
-import { nextLead, scoreHidden } from '@pichi/game-pizzas/sim/versus/report';
-import { createSchoolHost } from '@pichi/game-pizzas/screen/school/host';
-import { MainScene, type Host } from '@pichi/game-pizzas/screen/scene';
+import { TICK_MS, resolvePause, tick, type Controls } from '../../sim';
+import { staleControls } from '../../sim/feel/stale';
+import { createHintSync } from '../../sim/hints';
+import { createMechPhone } from '../../sim/mech/phone';
+import { nextLead, scoreHidden } from '../../sim/versus/report';
+import { createSchoolHost } from '../school/host';
+import { MainScene, type Host } from '../scene';
 import { resetFocus } from './key-nav';
-import { PIZZAS, isVersus, pz, puestoOf } from './state';
+import { PIZZAS, isVersus, pz, puestoOf } from '../state';
 
 export const school = createSchoolHost({
   players: app.players,

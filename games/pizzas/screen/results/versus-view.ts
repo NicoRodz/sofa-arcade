@@ -5,14 +5,14 @@ import { chefCanvas } from '@pichi/screen-kit/art/chef';
 import { laterInResults } from '@pichi/screen-kit/results/timers';
 import { app, dispatch, services } from '@pichi/screen-kit/shell/app-state';
 import { $, esc } from '@pichi/screen-kit/ui/dom';
-import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from '@pichi/game-pizzas/screen/art/flags';
-import { recordRound, seriesLine, versusReport } from '@pichi/game-pizzas/sim/versus/report';
-import { resultNote } from '@pichi/game-pizzas/sim/versus/notes';
-import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
+import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from '../art/flags';
+import { recordRound, seriesLine, versusReport } from '../../sim/versus/report';
+import { resultNote } from '../../sim/versus/notes';
+import { versusMap } from '../../sim/versus/maps';
 import type { LobbyConfig } from '@pichi/core';
-import { startProblem, shuffleTeams } from './lobby-sync';
-import { resetFocus } from './key-nav';
-import { isVersus, pz, stats } from './state';
+import { startProblem, shuffleTeams } from '../lobby/sync';
+import { resetFocus } from '../match/key-nav';
+import { isVersus, pz, stats } from '../state';
 
 const lightOf = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);

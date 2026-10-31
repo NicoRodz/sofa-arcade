@@ -1,24 +1,24 @@
 // Pizzas on the screen as a ScreenGame, assembled from the transitional modules in this folder. F4c replaces it with the game's own
 // games/pizzas/screen (index, coop-view, versus-view, results-panel) and deletes the ramas that still read `pz` from the shell.
-import type { PuestoId } from '@pichi/game-pizzas/sim/puestos';
+import type { PuestoId } from '../sim/puestos';
 import { teamOf } from '@pichi/core/lobby/teams';
-import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
+import { pizzasBus } from './bus';
 import { app, bindServices, dispatch, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
 import type { ScreenGame } from '@pichi/screen-kit/shell/game';
-import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '@pichi/game-pizzas/sim';
-import { pizzasManifest } from '@pichi/game-pizzas/manifest';
-import { drawLogo } from '@pichi/game-pizzas/screen/art/ui';
-import { initAudio } from '@pichi/game-pizzas/screen/audio';
-import { phoneResult } from '@pichi/game-pizzas/sim/versus/report';
+import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '../sim';
+import { pizzasManifest } from '../manifest';
+import { drawLogo } from './art/ui';
+import { initAudio } from './audio';
+import { phoneResult } from '../sim/versus/report';
 import { pizzasDebug } from './debug';
-import { initHost, school, scene } from './host';
-import { versusKey } from './key-nav';
-import { difficultyPatch, initLobbyView, lobbyKey, renderLobby } from './lobby';
-import { moveToTeam } from './lobby-sync';
-import { pizzasMenu, pizzasMenuAct } from './lobby-menu';
-import { startMatch } from './round';
-import { renderResults } from './results';
-import { initVersusResults, rematch } from './results-versus';
+import { initHost, school, scene } from './match/loop';
+import { versusKey } from './match/key-nav';
+import { difficultyPatch, initLobbyView, lobbyKey, renderLobby } from './lobby/lobby';
+import { moveToTeam } from './lobby/sync';
+import { pizzasMenu, pizzasMenuAct } from './lobby/menu';
+import { startMatch } from './match/round';
+import { renderResults } from './results/panel';
+import { initVersusResults, rematch } from './results/versus-view';
 import { PIZZAS, puestoOf, pz } from './state';
 
 /** The lobby mark of Pizzas: the finished pizza, as it was the platform's logo before Sofa Arcade. */

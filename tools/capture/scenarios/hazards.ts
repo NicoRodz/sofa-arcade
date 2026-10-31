@@ -1,11 +1,12 @@
 import { fireIsBig } from '@pichi/game-pizzas/sim/hazards/hazard-v2';
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
+import path from 'node:path';
 import { sleep } from '../config';
 import type { Ctx } from '../session';
 
 // Hazards tanda 1, the feedback of each hazard (needs DEV=1: the page's game state is reached through vite's module graph, `pz.game`, with no hook of its own).
 // hz-fire: a big fire with no chef, one chef (it only contains) and two (the bar moves); hz-rat: the dodge and the panting; hz-ice: a chef sliding on the frost.
-const PZ = `(await import('/screen/src/pizzas/state.ts')).pz`;
+const PZ = `(await import('/@fs${path.resolve(import.meta.dirname, '../../..')}/games/pizzas/screen/state.ts')).pz`;
 
 async function start({ cdp, bots, open, join, click, waitFor }: Ctx, room: string, events: boolean, chefs = 2) {
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);

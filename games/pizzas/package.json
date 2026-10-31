@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./sim": "./sim/index.ts",
+    "./screen": "./screen/index.ts",
     "./screen/audio": "./screen/audio/index.ts",
     "./sim/school": "./sim/school/index.ts",
     "./sim/maps": "./sim/maps/index.ts",

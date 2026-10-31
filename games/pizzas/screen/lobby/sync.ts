@@ -6,11 +6,11 @@ import { NAV_SFX } from '@pichi/screen-kit/menu';
 import { sendMsg } from '@pichi/screen-kit/net/socket';
 import { app, connectedCount, connectedIds, renderUi, services, setConfig } from '@pichi/screen-kit/shell/app-state';
 import { modeOf, type ModeId } from '@pichi/core/contract';
-import { SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
-import { EVENTS_OPTION } from '@pichi/game-pizzas/sim/midround';
-import { MUTATE_OPTION } from '@pichi/game-pizzas/sim/mutate/plan';
-import { defaultMap, fixedMap, isMapChoice, mapStatus, replacementMap, type MapChoice } from '@pichi/game-pizzas/sim/maps';
-import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
+import { SABOTAGE_OPTION } from '../../sim/sabotage-config';
+import { EVENTS_OPTION } from '../../sim/midround';
+import { MUTATE_OPTION } from '../../sim/mutate/plan';
+import { defaultMap, fixedMap, isMapChoice, mapStatus, replacementMap, type MapChoice } from '../../sim/maps';
+import { versusMap } from '../../sim/versus/maps';
 import {
   VERSUS_AUTO,
   VERSUS_RANDOM,
@@ -23,9 +23,9 @@ import {
   versusAvailability,
   versusLobbyMaps,
   versusMapStatus,
-} from '@pichi/game-pizzas/sim/versus/lobby';
-import { versusStartProblem } from '@pichi/game-pizzas/sim/versus/start-fit';
-import { PIZZAS, assistIds, connectedN, gameDef, isVersus, modeNow, pz } from './state';
+} from '../../sim/versus/lobby';
+import { versusStartProblem } from '../../sim/versus/start-fit';
+import { PIZZAS, assistIds, connectedN, gameDef, isVersus, modeNow, pz } from '../state';
 
 export function setMode(id: ModeId) {
   if (app.phase !== 'lobby' || id === app.config.modeId) return;
