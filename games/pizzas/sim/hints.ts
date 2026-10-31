@@ -140,7 +140,7 @@ type HintMsg = Extract<ClientMsg, { t: 'hint' }>;
  * from the last ones sent (not faster than HINT_MIN_MS) or when HINT_REFRESH_MS went by; `sync(null, now)` (no round running) hands every labelled
  * phone back to the game's own labels. A label is never an event: the phone keeps the last whole state it got.
  */
-export function createHintSync(send: (m: HintMsg) => void) {
+export function createHintSync(send: (m: HintMsg) => void, minMs = HINT_MIN_MS) {
   const sent = new Map<number, { key: string; at: number }>();
   return {
     sync(g: Game | null, now: number) {
@@ -154,7 +154,7 @@ export function createHintSync(send: (m: HintMsg) => void) {
         const h = chefHint(g, p),
           key = JSON.stringify(h),
           last = sent.get(p.id);
-        if (last && !(key !== last.key && now - last.at >= HINT_MIN_MS) && now - last.at < HINT_REFRESH_MS) continue;
+        if (last && !(key !== last.key && now - last.at >= minMs) && now - last.at < HINT_REFRESH_MS) continue;
         sent.set(p.id, { key, at: now });
         send({ t: 'hint', playerId: p.id, ...h });
       }
