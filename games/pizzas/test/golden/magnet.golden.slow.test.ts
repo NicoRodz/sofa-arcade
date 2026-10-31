@@ -15,12 +15,13 @@ describe('coop golden rounds with the magnetism on', () => {
     expect([...SCENARIOS, ...RULES_SCENARIOS].every((s) => !s.flags?.magnet)).toBe(true);
     expect(MAGNET_SCENARIOS.map((s) => s.flags!.magnet)).toEqual([true, true, 'strong']); // both levels
   });
-  it('the first fixture is a round with the gentle rat: it announces its counter, is scared off and the team is paid', () => {
+  it('the first fixture is a round with the HAZARD_V2 rat that flees contact: it announces its counter, the bots do not catch it, it steals once and leaves with the item', () => {
     const types = a.events.map((e) => e.split('|')[1]);
     expect(types).toContain('rat:appear');
     expect(types).toContain('rat:target');
-    expect(types.filter((t) => t === 'rat:scared')).toHaveLength(1);
-    expect(a.events.find((e) => e.includes('|rat:scared|'))).toContain('"bonus":50');
+    expect(types.filter((t) => t === 'rat:scared')).toHaveLength(0);
+    expect(types.filter((t) => t === 'rat:steal')).toHaveLength(1);
+    expect(a.events.find((e) => e.includes('|rat:gone|'))).toContain('"stolen":true');
   });
   for (const sc of MAGNET_SCENARIOS) {
     it(`${sc.name}: the whole event sequence matches the fixture, and it is not the round without the flag`, () => {

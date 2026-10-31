@@ -74,7 +74,7 @@ function setup(chefs: number, deadEnd = false) {
   Object.assign(g.mid!, { kind: 'rat', phase: 'active', endAt: Infinity, startAt: 0, announceAt: 0, rat });
   return { g, rat, x: x + 0.5, y: y + 0.5 };
 }
-const put = (g: Game, id: number, x: number, y: number, item: Game['players'] extends Map<number, infer P> ? P['item'] : never = null) =>
+const put = (g: Game, id: number, x: number, y: number, item: NonNullable<ReturnType<Game['players']['get']>>['item'] = null) =>
   Object.assign(g.players.get(id)!, { x, y, vx: 0, vy: 0, item });
 const run = (g: Game, ticks: number, ctl: Map<number, Controls>, until?: () => boolean) => {
   for (let i = 0; i < ticks && !(until && until()); i++) tick(g, ctl);
