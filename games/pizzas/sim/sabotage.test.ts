@@ -446,8 +446,7 @@ describe('limits: cooldown, per minute, piles', () => {
   it('maximum piles on the rival floor (Suave 3, Caos 4), counting bags in the air: the catapult goes red and keeps the bag', () => {
     const { g, log } = mk({ mode: 'soft' });
     const tiles = landingTiles(g, 1);
-    addFloorItem(g, { tx: tiles[0]![0], ty: tiles[0]![1], item: 'trash', kind: 'trash', team: 1 });
-    addFloorItem(g, { tx: tiles[3]![0], ty: tiles[3]![1], item: 'trash', kind: 'trash', team: 1 });
+    for (const i of [0, 3]) addFloorItem(g, { tx: tiles[i]![0], ty: tiles[i]![1], item: 'trash', kind: 'trash', team: 1 });
     expect(catapultState(g, 0)).toBe('ready');
     addFloorItem(g, { tx: tiles[5]![0], ty: tiles[5]![1], item: 'trash', kind: 'trash', team: 1 });
     expect(catapultState(g, 0)).toBe('piles');
@@ -459,8 +458,7 @@ describe('limits: cooldown, per minute, piles', () => {
     expect(log['sabotage:blocked']!.map((e) => e.p.why)).toEqual(['piles']);
     // a bag in the air counts as a pile too
     const { g: h } = mk({ mode: 'soft' });
-    addFloorItem(h, { tx: tiles[0]![0], ty: tiles[0]![1], item: 'trash', kind: 'trash', team: 1 });
-    addFloorItem(h, { tx: tiles[3]![0], ty: tiles[3]![1], item: 'trash', kind: 'trash', team: 1 });
+    for (const i of [0, 3]) addFloorItem(h, { tx: tiles[i]![0], ty: tiles[i]![1], item: 'trash', kind: 'trash', team: 1 });
     load(h, 1);
     pressB(h, 1);
     expect(flights(h, 0)).toHaveLength(1);
