@@ -202,9 +202,19 @@ function showTeam(you: { teamId: number; color: string; icon: string; sideLabel?
     $(`tcside${k}`).textContent = you.sideLabel ? `· cocina ${you.sideLabel}` : '';
   }
 }
+// Versus round in progress and this phone is on no team (it joined after the start: the screen has no chef for it): it is not a pad, it
+// says when it plays. The next round (rematch or lobby) deals it into a team and `you` takes this away.
+let versusRound = false;
+const watching = () => phase === 'playing' && versusRound && myTeam === null;
+function refreshWatch() {
+  if (phase !== 'playing') return;
+  view(watching() ? 'lobby' : 'playing');
+  renderCaptain();
+}
 function applyTeams(t: TeamInfo[] | null, locked: boolean) {
   teams = t && t.length > 1 ? t : null;
   teamsLocked = locked;
+  if (teams && myId && !teams.some((t) => t.playerIds.includes(myId))) showTeam(null); // a team picked before the relay forgot this phone is not its team now
   if (!teams) showTeam(null);
   ($('teamswap') as HTMLButtonElement).disabled = locked;
   $('teamswap').textContent = locked ? 'Equipos bloqueados' : 'Cambiar de equipo';
@@ -264,7 +274,13 @@ function renderCaptain() {
   captainMenu.refresh();
   const crown = isCaptain() ? '👑 ' : '';
   for (const id of ['who', 'who2']) $(id).textContent = crown + myName;
-  $('waitmsg').textContent = !joined ? 'Esperando que inicie la partida' : isCaptain() ? 'Eres el Capitán' : 'Elige el Capitán';
+  $('waitmsg').textContent = !joined
+    ? 'Esperando que inicie la partida'
+    : watching()
+      ? 'Entras en la próxima ronda'
+      : isCaptain()
+        ? 'Eres el Capitán'
+        : 'Elige el Capitán';
 }
 bindRemote(Array.from(document.querySelectorAll<HTMLElement>('#remote [data-nav]')), {
   isCaptain,
@@ -332,7 +348,7 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
       document.body.dataset.outcome = outcome;
     } else delete document.body.dataset.outcome;
   } else delete document.body.dataset.outcome;
-  view(live ? 'playing' : p);
+  view(live && !watching() ? 'playing' : live ? 'lobby' : p);
   renderCaptain();
 }
 
@@ -378,7 +394,9 @@ function connect() {
     else if (m.t === 'school') schoolUi.apply(m);
     else if (m.t === 'you') {
       showTeam(m);
+      refreshWatch();
     } else if (m.t === 'phase') {
+      versusRound = m.match?.modeId === 'versus';
       const puestos = m.puestos as PuestoMsgPz | undefined; // the wire's slots are opaque: this screen knows Pizzas' stations
       showPhase(m.phase, m.scores, puestos, m.result as PhoneResult | undefined, m.match?.modeOptions.campaign === true);
     } else if (m.t === 'captain') {
