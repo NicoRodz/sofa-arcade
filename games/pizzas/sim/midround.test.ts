@@ -1,7 +1,7 @@
 // The event in the middle of the round (midround.ts) on the real maps: pure logic. One event per round between 1:00 and 2:00, announced 3 s before, the same for both
 // teams of a versus round; rush, inspector, blackout, birthday and (coop only) the rat.
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from './round/events';
 import { DIRS, fixedMap, isFloor } from './maps';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
 import {

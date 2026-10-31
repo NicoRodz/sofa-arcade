@@ -3,7 +3,8 @@
 import type Phaser from 'phaser';
 import type { MechArt } from '../../../../sim/mech/types';
 import { FIRE, OIL, WATER } from '../../../../sim/mech/oil/state';
-import { OX, OY, TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
 
 const COL = {

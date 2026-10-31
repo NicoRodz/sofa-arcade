@@ -10,7 +10,7 @@ import { wear } from '../../../sim/mech/bridge/module';
 import { heads } from '../../../sim/mech/sprinkler/module';
 import { liveOf } from '../../../sim/mech/mutation/module';
 import { MainScene, type Host } from '../../../screen/scene';
-import { gameBus } from '@pichi/screen-kit/bus';
+import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
 import { decide, type Mem } from '../../golden/bot';
 import { OIL_ROWS } from '../oil/map';
 import { BRIDGE_ROWS } from '../bridge/map';
@@ -110,7 +110,7 @@ new Phaser.Game({
           mutation: sc.mutation,
           surfaces: usesSurfaces(sc.rows),
           events: false,
-          bus: gameBus, // the scene listens on it: the mutation's repaint and banner come from its events
+          bus: pizzasBus, // the scene listens on it: the mutation's repaint and banner come from its events
         });
         for (let i = 1; i <= N; i++) {
           addPlayer(game, i, i - 1, i - 1);

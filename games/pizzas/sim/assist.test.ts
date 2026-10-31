@@ -22,7 +22,8 @@ import {
 } from './overcooked';
 import { chefHint } from './hints';
 import { GAMES, modeOf } from '@pichi/catalog';
-import { handicapK, matchStatus, teamMultipliers, validateTeamSetup } from '@pichi/core/lobby/teams';
+import { handicapK } from '@pichi/core/lobby/teams';
+import { matchStatus, teamMultipliers, validateTeamSetup } from './assist';
 import { createVersusGame, lobbySetup, startVersusRound } from './versus/lobby';
 import { versusMap } from './versus/maps';
 import n4 from '../test/golden/fixtures/coop-n4-map9-hard.json';

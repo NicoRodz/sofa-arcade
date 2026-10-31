@@ -13,8 +13,6 @@
   },
   "dependencies": {
     "@pichi/core": "*",
-    "@pichi/game-obstaculos": "*",
-    "@pichi/game-pizzas": "*",
     "phaser": "^4.2.1"
   }
 }

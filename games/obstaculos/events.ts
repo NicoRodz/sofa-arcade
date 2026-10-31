@@ -1,5 +1,5 @@
 // Events of the game ("obst.*"). The world returns them on every step and the scene publishes them on the session bus
-// (platform/screen/src/bus.ts types it as Emitter<GameEvents & ObstEvents>); sound and juice subscribe there. Plan §14.
+// (games/obstaculos/screen/bus.ts types it as Bus<AllObstEvents>); sound and juice subscribe there. Plan §14.
 import type { SignalKind } from './sim/campaign';
 import type { WindPhase } from './sim/state';
 export type DeathCause = 'spikes' | 'liquid' | 'crush' | 'fall' | 'hazard';

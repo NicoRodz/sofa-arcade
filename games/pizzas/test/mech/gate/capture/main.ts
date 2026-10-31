@@ -12,7 +12,8 @@ import { gateAssist, newGateBot } from '../../../../../../tools/carta-larga/mech
 import { GATE_ROWS } from '../map';
 import { BELT_ROWS } from '../../beltReverse/map';
 import { HEAT_ROWS } from '../../ovenHeat/map';
-import { OX, OY, TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '@pichi/game-pizzas/screen/art/env/grid';
 
 const id = new URLSearchParams(location.search).get('mech') as 'gate' | 'beltReverse' | 'ovenHeat';
 const ROWS = { gate: GATE_ROWS, beltReverse: BELT_ROWS, ovenHeat: HEAT_ROWS }[id];

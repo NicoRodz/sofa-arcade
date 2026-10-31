@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from './round/events';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, recipeBase, tick, type Controls, type Game, type Station } from './overcooked';
 import { DIRS, isFloor } from './maps';
 import { params } from '@pichi/core/difficulty';

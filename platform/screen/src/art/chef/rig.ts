@@ -1,21 +1,25 @@
 // The eight pizzaiolos: part textures plus a procedural rig (squash & stretch, walk bounce, chop, carry, expressions).
 import type Phaser from 'phaser';
-import type { Item } from '@pichi/game-pizzas/sim';
 import { TILE, U, chefOf, hexNum } from '../tokens';
 import { R, texSize } from '../gfx';
 import { PROP_Y, hatTop } from '../chefdraw';
 import { ANCHORS, CHOP_MS, HEAD_Y, MOUTH_DY, STRETCH_MS, armPose, eyeLook, facing, gait, itemAnchor } from '@pichi/core/avatar/rig-math';
-import { foodKey, ITEM_KIND } from '@pichi/game-pizzas/screen/art/food';
 import { CHEF_SCALE, ITEM_SCALE, plateKey } from './textures';
 import type { Appearance } from '@pichi/core/avatar/appearance';
 import { lookTextures, type LookKeys } from './look';
+
+/** What a chef carries is the game's business: `idle` is the texture the carried-item image is created with, `keyOf` the texture of an item. */
+export interface HeldSkin {
+  idle: string;
+  keyOf(item: string): string;
+}
 
 export interface ChefState {
   x: number;
   y: number; // feet, logical px
   fx: number;
   fy: number;
-  item: Item | null;
+  item: string | null;
   action: 'none' | 'chop' | 'stretch';
   connected: boolean;
   ghost?: boolean; // R4: crossing through another chef
@@ -46,7 +50,7 @@ export class Chef {
   private drop: Phaser.GameObjects.Image;
   private feet: Phaser.GameObjects.Image[];
   private arms: Phaser.GameObjects.Image[];
-  private itemImg: Phaser.GameObjects.Image;
+  private itemImg?: Phaser.GameObjects.Image; // only a chef built with a `held` skin carries anything
   private tag: Phaser.GameObjects.Image;
   private shadow: Phaser.GameObjects.Image;
   private ring: Phaser.GameObjects.Image;
@@ -81,6 +85,7 @@ export class Chef {
     private scene: Phaser.Scene,
     readonly slot: number,
     name: string,
+    private held?: HeldSkin,
   ) {
     const skin = ((slot % 4) + 4) % 4;
     const at = (key: string, x = 0, y = 0) => {
@@ -99,9 +104,10 @@ export class Chef {
     ];
     this.torso = at(`chef_body_${slot % 8}`);
     this.torsoB = at(`chef_bodyb_${slot % 8}`).setVisible(false);
-    this.itemImg = at(foodKey('dough_raw'), ANCHORS.item.x, ANCHORS.item.y)
-      .setVisible(false)
-      .setScale(ITEM_SCALE / R);
+    if (held)
+      this.itemImg = at(held.idle, ANCHORS.item.x, ANCHORS.item.y)
+        .setVisible(false)
+        .setScale(ITEM_SCALE / R);
     this.headF = at(`chef_head_${slot % 8}`);
     this.headB = at(`chef_headb_${slot % 8}`).setVisible(false);
     this.fa = at(`chef_fa_${slot % 8}`);
@@ -124,7 +130,14 @@ export class Chef {
       this.prop,
       this.blades,
     ]);
-    this.rig = scene.add.container(0, 0, [...this.feet, this.torsoB, this.torso, ...this.arms, this.itemImg, this.head]);
+    this.rig = scene.add.container(0, 0, [
+      ...this.feet,
+      this.torsoB,
+      this.torso,
+      ...this.arms,
+      ...(this.itemImg ? [this.itemImg] : []),
+      this.head,
+    ]);
     this.tagKey = plateKey(scene, slot, name);
     this.tag = at(this.tagKey, 0, ANCHORS.tagY);
     this.spinStars = [0, 1, 2].map(() =>
@@ -321,11 +334,11 @@ export class Chef {
     for (const o of [this.fa, this.fb, this.mouth, ...this.eyes]) o.setVisible(!up && !(this.look && o === this.fa));
     this.hat.setVisible(!(up && this.look)); // from behind the baked head already carries the hat
     // carried item
-    if (s.item) {
-      this.itemImg.setVisible(true).setTexture(foodKey(ITEM_KIND[s.item]));
+    if (this.itemImg && this.held && s.item) {
+      this.itemImg.setVisible(true).setTexture(this.held.keyOf(s.item));
       const at = itemAnchor(this.face);
       this.itemImg.setPosition(at.x, at.y);
-    } else this.itemImg.setVisible(false);
+    } else this.itemImg?.setVisible(false);
 
     // Ayudante: the propeller spins (the blades squash in x, as a disc seen from the front)
     this.prop.setVisible(!!s.assist);

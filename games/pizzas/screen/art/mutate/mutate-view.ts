@@ -1,9 +1,10 @@
 // The kitchen that mutates, drawn (sim/mutate is the rules): 3 s before, an alarm banner with a countdown and a pulsing hazard outline over the tiles about to change;
 // at the change a white flash over those tiles, a shake, and the new tiles (ice and belts come from the existing SurfaceView). Only exists when `game.mut` does.
 import type Phaser from 'phaser';
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
-import { C, OX, OY, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../env/grid';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { addSurfaces } from '../surfaces/surface-view';
 

@@ -1,7 +1,7 @@
 // Ayudante (assist.ts, hints.ts) together with the burning oven, the fire and the events: the one-tap chop becomes a one-tap extinguisher (the same latch), the contextual buttons
 // know the fire, and the lobby options of both sides live in the same round. Rule: an Ayudante puts a fire out with ONE tap of B that goes on while it stays in front of it.
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from './round/events';
 import { DIRS, fixedMap, isFloor } from './maps';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
 import { DOUSE_MS, FIRE_DELAY_MS, GRACE_MS } from './burn';

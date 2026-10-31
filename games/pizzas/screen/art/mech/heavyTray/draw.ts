@@ -4,7 +4,8 @@ import type Phaser from 'phaser';
 import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
 import { carriesTray } from '../../../../sim/mech/heavyTray/state';
-import { C, OX, OY, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../../env/grid';
 
 const layers = new WeakMap<Phaser.Scene, Phaser.GameObjects.Graphics>();
 function layer(scene: Phaser.Scene): Phaser.GameObjects.Graphics {

@@ -2,7 +2,7 @@
 // shown. Each chef has its own progress (steps.ts) and moves on when the sim says it did the thing. Pure: the browser screen and the Node tests drive it the same way
 // (`step` with the roster and a function that hands over each chef's controls), and it only talks through `send` (the hints of the contextual buttons and the
 // school messages to the phones).
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from '../round/events';
 import { chefHint, createHintSync } from '../hints';
 import { TICK_MS, type Controls, type Game } from '../round/state';
 import { addPlayer, createGame, removePlayer } from '../round/create';

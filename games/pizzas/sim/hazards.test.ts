@@ -2,7 +2,7 @@
 // rules yet (those are sabotage.test.ts): rubbish is put on the floor by hand with addFloorItem.
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTIES, type Difficulty } from '@pichi/core/difficulty';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from './round/events';
 import { addFloorItem } from './floor';
 import { fixedMap } from './maps';
 import { SPEED, TICK_MS, addPlayer, createGame, dropPlayer, tick, type Controls, type Game, type Item } from './overcooked';

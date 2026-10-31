@@ -2,7 +2,7 @@
 // round is reproducible from (map, difficulty, n, seed) alone. F2 (teams in the sim) must reproduce these runs exactly.
 // Test support only: nothing in the game imports this.
 import { fixedMap, isFloor, DIRS } from '../../sim/maps';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { GameEvents, Emitter } from '../../sim/round/events';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player, type Station } from '../../sim/overcooked';
 import type { Difficulty } from '@pichi/core/difficulty';
 import type { MechId } from '../../sim/mech/ids';

@@ -1,6 +1,4 @@
 // Design tokens: palette, type, layout and the eight chef specs. Pure data, no Phaser.
-import { COLS, ROWS } from '@pichi/game-pizzas/sim';
-
 export const C = {
   ink: '#2B1B17',
   cream: '#FFF4E0',
@@ -44,10 +42,26 @@ export const FONT = 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", syst
 export const W = 1920;
 export const H = 1080;
 export const HUD_H = 104;
-export const TILE = Math.floor((H - HUD_H) / ROWS);
-export const OX = Math.floor((W - TILE * COLS) / 2);
-export const OY = HUD_H + Math.floor((H - HUD_H - TILE * ROWS) / 2);
-export const U = TILE / 120; // design units (tile = 120) to logical px
+export interface GridTokens {
+  TILE: number;
+  OX: number;
+  OY: number;
+  U: number;
+}
+/** The playfield of a game that draws a `cols` x `rows` tile grid under the HUD strip: tile size, origin and design-unit scale. */
+export function gridTokens(cols: number, rows: number): GridTokens {
+  const TILE = Math.floor((H - HUD_H) / rows);
+  return {
+    TILE,
+    OX: Math.floor((W - TILE * cols) / 2),
+    OY: HUD_H + Math.floor((H - HUD_H - TILE * rows) / 2),
+    U: TILE / 120, // design units (tile = 120) to logical px
+  };
+}
+// The canvas is 16:9, so its design tile is the one of a 16x9 grid (108 px); the chef rig and the art scale by it whichever game draws.
+const CANVAS = gridTokens(16, 9);
+export const TILE = CANVAS.TILE;
+export const U = CANVAS.U; // design units (tile = 120) to logical px
 
 export interface ChefSpec {
   name: string;

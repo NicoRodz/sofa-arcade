@@ -3,7 +3,8 @@
 import type Phaser from 'phaser';
 import type { Game } from '../../../sim/overcooked';
 import { targetStation } from '../../../sim/overcooked';
-import { OX, OY, TILE, chefOf, hexNum } from '@pichi/screen-kit/art/tokens';
+import { TILE, chefOf, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../env/grid';
 
 export class MagnetView {
   private g: Phaser.GameObjects.Graphics;

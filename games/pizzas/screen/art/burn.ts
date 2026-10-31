@@ -2,10 +2,11 @@
 // the red extinguisher in the hands of a chef that is putting it out with a stream of foam, and the reactions to the burn events (smoke, flames, steam).
 // Everything is drawn by code. Reads `game.stations` (fire / warned / burnt) and `game.players` (dousing); only exists when `game.burn` does.
 import Phaser from 'phaser';
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from '../../sim/round/events';
 import type { Game } from '../../sim/overcooked';
 import { DOUSE_MS } from '../../sim/burn';
-import { C, OX, OY, TILE, U, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, U, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from './env/grid';
 import { R } from '@pichi/screen-kit/art/gfx';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { Bar, place } from './stations';

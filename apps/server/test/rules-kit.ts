@@ -14,7 +14,7 @@ import {
   type Player,
   type Station,
 } from '@pichi/game-pizzas/sim';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '@pichi/game-pizzas/sim/round/events';
 import { DIRS, fixedMap, isFloor } from '@pichi/game-pizzas/sim/maps';
 import { decide, type Mem } from '@pichi/game-pizzas/test/golden/bot';
 import type { startServer } from '../src/server';

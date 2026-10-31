@@ -1,7 +1,7 @@
 // F5: the shared pantry of V2 (design pizzas-modalidades-coop-versus §2): the two cheese crates on the barrier draw from ONE stock of 4,
 // and one unit comes back every 6 s while it is below 4. Coop and the other versus maps are untouched.
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from './round/events';
 import { fixedMap } from './maps';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from './overcooked';
 import { PANTRY_EVERY_MS, PANTRY_MAX } from './versus/versus';

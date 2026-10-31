@@ -1,7 +1,7 @@
 // The Carta del día (recipes/*): pure logic on the real maps. What each recipe is worth, the cards and their validator, the orders a round draws, the crate that gives the
 // topping, the plate that serves each order, the calzone's fold at the oven, and the star table that follows. Chefs are put next to the stations by hand.
 import { describe, expect, it } from 'vitest';
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from './round/events';
 import { DIRS, FIXED_MAPS, fixedMap, isFloor, parseMap } from './maps';
 import {
   TICK_MS,

@@ -1,7 +1,7 @@
 // The oven that burns, the fire and the extinguishing (burn.ts) on the real maps: pure logic, chefs are put next to the stations by hand and the ticks are run directly.
 // Map 1 has its two ovens at (11, 0) and (13, 0) with counters at (10, 0), (12, 0) and (14, 0): the fire has neighbours to jump to.
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from './round/events';
 import { fixedMap, DIRS, isFloor } from './maps';
 import { TICK_MS, addPlayer, createGame, dropPlayer, tick, type Controls, type Game, type Station } from './overcooked';
 import { DOUSE_MS, FIRE_DELAY_MS, FIRE_RINGS, FIRE_SPREAD_MS, GRACE_MS, WARN_BEFORE_MS, createBurn, fireAllowed, ovenStage } from './burn';

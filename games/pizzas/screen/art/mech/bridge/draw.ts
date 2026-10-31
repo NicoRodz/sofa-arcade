@@ -2,7 +2,8 @@
 // The background paints a bridge tile as water (world.ts), so what is drawn here is the whole bridge.
 import type { MechArt } from '../../../../sim/mech/types';
 import { BRIDGE_BREAKS, BRIDGE_CRACKS, BRIDGE_MEND_TICKS, isBroken } from '../../../../sim/mech/bridge/module';
-import { OX, OY, TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
 
 const COL = { plank: 0xc98a4b, plank2: 0x9c6232, rope: 0xe8c9a0, crack: 0x2b1b17, warn: 0xffb020 };

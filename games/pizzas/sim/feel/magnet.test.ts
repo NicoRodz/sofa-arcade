@@ -4,7 +4,7 @@ import { TUNING } from '@pichi/core/difficulty';
 import { DIRS, fixedMap, isFloor } from '../maps';
 import { FOLD_MS } from '../recipes/defs';
 import { createSchool } from '../school/school';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '../round/events';
 import {
   RADIUS,
   REACH,

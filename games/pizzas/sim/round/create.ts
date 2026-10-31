@@ -1,6 +1,6 @@
 // A round and its chefs: createGame builds the Game (map, stations, teams, queues, the optional rule sets), addPlayer / removePlayer seat the chefs.
 import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficulty } from '@pichi/core/difficulty';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from './events';
 import { MAX_SLOTS, type Game, type Station, type TeamSeat, type TeamState } from './state';
 import { FIXED_MAPS, parseMap, spawnPoints, type Pos, type SigmaName } from '../maps';
 import type { SabotageMode } from '../sabotage-config';
@@ -8,7 +8,7 @@ import { newSurfaceState } from '../surfaces/config';
 import { createMutate } from '../mutate/step';
 import { applyMagnet, type MagnetLevel } from '../feel/magnet';
 import { PANTRY_MAX, VIP_EVERY_MS, kitchenRegions, stationOwner, teamStarts } from '../versus/versus';
-import { teamMultipliers } from '@pichi/core/lobby/teams';
+import { teamMultipliers } from '../assist';
 import { mulberry32 } from '@pichi/core/rng';
 import { createRec } from '../recipes/sim';
 import { spawnOrder } from './orders';

@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import { PressTracker, type ClientMsg, type PublicPlayer, type ServerMsg } from '@pichi/core';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '@pichi/game-pizzas/sim/round/events';
 import { TICK_MS, type Controls } from '@pichi/game-pizzas/sim';
 import { SCHOOL_TOTAL, createSchool, type School, type SchoolMember } from '@pichi/game-pizzas/sim/school';
 import { botControls, type BotMem } from '@pichi/game-pizzas/sim/school/school-bot';

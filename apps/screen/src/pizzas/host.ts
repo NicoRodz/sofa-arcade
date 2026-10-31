@@ -1,7 +1,7 @@
 // The Pizzas round while it runs: the scene's host (the tick loop), the pause bar, the contextual button labels, the buzz on the phones and the
 // Cocina escuela glue. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts; F4c turns it into games/pizzas/screen/coop-view.
 import type { BuzzKind } from '@pichi/core';
-import { gameBus } from '@pichi/screen-kit/bus';
+import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
 import { sendMsg } from '@pichi/screen-kit/net/socket';
 import { app, dispatch, services, transition } from '@pichi/screen-kit/shell/app-state';
 import { showScene } from '@pichi/screen-kit/shell/game-host';
@@ -20,7 +20,7 @@ export const school = createSchoolHost({
   players: app.players,
   room: app.room,
   send: sendMsg,
-  bus: gameBus,
+  bus: pizzasBus,
   scene: () => scene(),
   sfx: (id) => services.ui(id),
   phase: () => app.phase,
@@ -91,7 +91,7 @@ const host: Host = {
           scoreHidden(pz.roundView.hiddenScore, pz.game.countdown <= 0, pz.game.params.roundMs - pz.game.time),
         );
         pz.lead = r.state;
-        if (r.cue && pz.lead.leader !== null) gameBus.emit('comeback', { team: pz.lead.leader });
+        if (r.cue && pz.lead.leader !== null) pizzasBus.emit('comeback', { team: pz.lead.leader });
       }
       if (pz.game.over) {
         pz.overAt ??= performance.now();
@@ -113,25 +113,25 @@ export const scene = (): MainScene => (main ??= new MainScene(host));
 export function initHost() {
   // R7: a short vibration on the phone of the chef the event belongs to (the phone falls back to a colour flash)
   const buzz = (player: number, kind: BuzzKind) => sendMsg({ t: 'buzz', playerId: player, kind });
-  gameBus.on('itemPicked', (e) => buzz(e.player, 'pick'));
-  for (const k of ['chopDone', 'foldDone'] as const) gameBus.on(k, (e) => buzz(e.player, 'chop')); // folding the calzone buzzes like a finished chop
-  gameBus.on('washDone', (e) => buzz(e.player, 'chop'));
-  gameBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
-  gameBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
-  gameBus.on('dash', (e) => buzz(e.player, 'dash'));
+  pizzasBus.on('itemPicked', (e) => buzz(e.player, 'pick'));
+  for (const k of ['chopDone', 'foldDone'] as const) pizzasBus.on(k, (e) => buzz(e.player, 'chop')); // folding the calzone buzzes like a finished chop
+  pizzasBus.on('washDone', (e) => buzz(e.player, 'chop'));
+  pizzasBus.on('interactInvalid', (e) => buzz(e.player, 'bad'));
+  pizzasBus.on('dishRejected', (e) => buzz(e.player, 'bad'));
+  pizzasBus.on('dash', (e) => buzz(e.player, 'dash'));
   // the phones that must look up: the whole kitchen for an event, a mutation or a fire; the defending team when rubbish is on its way
   const alert = (mine: (team: number | undefined) => boolean) => pz.game.players.forEach((p) => mine(p.team) && buzz(p.id, 'alert'));
-  for (const k of ['event:announce', 'mutate:warn'] as const) gameBus.on(k, () => alert(() => true));
-  gameBus.on('fire:start', (e) => alert((t) => e.team === undefined || e.team === t));
+  for (const k of ['event:announce', 'mutate:warn'] as const) pizzasBus.on(k, () => alert(() => true));
+  pizzasBus.on('fire:start', (e) => alert((t) => e.team === undefined || e.team === t));
   // map mechanics: the mate who is called, and the chefs near a flame on the oil or a bridge that gave way
-  gameBus.on('mech:need', (e) => buzz(e.player, 'alert'));
+  pizzasBus.on('mech:need', (e) => buzz(e.player, 'alert'));
   const near = (tile: number) =>
     pz.game.players.forEach(
       (p) => !p.ghost && Math.hypot(p.x - ((tile % 16) + 0.5), p.y - (Math.floor(tile / 16) + 0.5)) <= 3 && buzz(p.id, 'alert'),
     );
-  for (const k of ['mech:fire', 'mech:bridgeBreak'] as const) gameBus.on(k, (e) => near(e.tile));
-  gameBus.on('sabotage:launch', (e) => alert((t) => t !== e.team));
-  gameBus.on('chef:slip', (e) => buzz(e.chef, 'slip')); // sabotage: the phone of the chef that slipped vibrates and says "¡Resbalaste!"
+  for (const k of ['mech:fire', 'mech:bridgeBreak'] as const) pizzasBus.on(k, (e) => near(e.tile));
+  pizzasBus.on('sabotage:launch', (e) => alert((t) => t !== e.team));
+  pizzasBus.on('chef:slip', (e) => buzz(e.chef, 'slip')); // sabotage: the phone of the chef that slipped vibrates and says "¡Resbalaste!"
   $('pcont').addEventListener('click', () => {
     if (pz.game.paused) resolvePause(pz.game, 'continue');
   });

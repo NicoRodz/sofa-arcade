@@ -2,7 +2,7 @@
 import type Phaser from 'phaser';
 import { TILE } from '../../../index';
 import type { AllObstEvents } from '../../../index';
-import type { Emitter } from '@pichi/core/events';
+import type { Emitter } from '@pichi/core/emitter';
 import { C, H, W } from '@pichi/screen-kit/art/tokens';
 import { PALETTES } from '../biome';
 import { Background } from '../parallax';

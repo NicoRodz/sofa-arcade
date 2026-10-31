@@ -1,5 +1,5 @@
 // Glue: subscribes to the game bus, owns the AudioContext, unlocks it on a user gesture, runs the scheduler.
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from '../../sim/round/events';
 import { DUCK_GAIN, DUCK_S, BUS_GAIN, LoopTable, SfxLimiter, hintText, masterGain, rateFor } from '@pichi/screen-kit/audio/mixer';
 import {
   LOOKAHEAD_S,
@@ -12,7 +12,8 @@ import {
   type Mode,
   type Snapshot,
 } from '@pichi/screen-kit/audio/music';
-import { ACTIONS, type Action, type SfxId } from '@pichi/screen-kit/audio/recipes';
+import type { Action, SfxId } from '@pichi/screen-kit/audio/recipes';
+import { ACTIONS } from './actions';
 import { SURFACE_ACTIONS } from './surfaces';
 import { MUTATE_ACTIONS } from './mutate';
 import { MECH_ACTIONS } from './mech';

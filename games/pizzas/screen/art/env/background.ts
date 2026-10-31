@@ -1,7 +1,8 @@
 // Kitchen environment: floor, walls, benches and the static body of every station, baked into ONE canvas texture.
 import type Phaser from 'phaser';
 import type { Grid } from '../../../sim/maps';
-import { H, OX, OY, TILE, U, W, floorPair } from '@pichi/screen-kit/art/tokens';
+import { H, TILE, U, W, floorPair } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from './grid';
 import { outerWall, floorPass, waterPass, masses } from './floor';
 import { crate, board, oven, plates } from './work-stations';
 import { passHatch, saucePot } from './pot-stations';

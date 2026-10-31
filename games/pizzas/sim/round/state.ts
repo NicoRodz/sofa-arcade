@@ -4,7 +4,7 @@ import { MAP_H, MAP_W, isFloor, type Grid, type StationKind } from '../maps';
 import type { RosterEntry, TeamId, TeamResult } from '@pichi/core/lobby/teams';
 import type { FloorItem, Sabotage, Slip } from '../sabotage-config';
 import type { Recipe } from '../recipes/defs';
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from './events';
 import type { Difficulty, Params } from '@pichi/core/difficulty';
 import type { Rng } from '@pichi/core/rng';
 import type { Kitchens } from '../versus/versus';

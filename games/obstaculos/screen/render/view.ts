@@ -4,7 +4,7 @@
 // The simulation (F2a's world) is not imported by the renderer: an adapter maps it onto this interface once per render frame.
 //
 //   host loop (ObstaclesScene.update does this when you give it an ObstHost):
-//     1. world.step(dtMs)          fixed 60 Hz inside; publish every obst.* event of the step on the bus (gameBus) as it happens
+//     1. world.step(dtMs)          fixed 60 Hz inside; publish every obst.* event of the step on the bus (obstBus) as it happens
 //     2. view.alpha = acc / STEP_MS   fraction of a step the render frame is past the last one (players are drawn interpolated)
 //     3. ObstaclesView.update(dtMs)   draws; sets view.bubbleDue and view.hitstopMs
 //     4. afterRender: world.requestBubble(ids of view.bubbleDue) ; skip step 1 while view.hitstopMs > 0 (50 ms after a death)

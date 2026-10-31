@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ACTIONS, LOOPS, SFX, sfxDuration, type Action } from './recipes';
+import { LOOPS, SFX, sfxDuration, type Action } from '@pichi/screen-kit/audio/recipes';
+import { ACTIONS } from './actions';
 
 const ids = (a: Action[]) => a.map((x) => (x.kind === 'play' ? x.id : x.kind));
 

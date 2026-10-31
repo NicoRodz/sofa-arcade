@@ -18,7 +18,7 @@ import {
   type TileGrid,
 } from '../../../index';
 import type { Difficulty } from '@pichi/core/difficulty';
-import type { Emitter } from '@pichi/core/events';
+import type { Emitter } from '@pichi/core/emitter';
 import type { EntityView, HandAction, HazardView, HudView, PlayerView, RopeView } from '../view';
 
 export interface Slot {

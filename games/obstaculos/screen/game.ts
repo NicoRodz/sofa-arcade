@@ -1,6 +1,6 @@
 // Obstaculos on the screen, through the shell's contract (ScreenGame, EXPERIMENTAL): everything apps/screen/src/main.ts used to do for this game
 // behind `config.game === OBST_ID` / `activeGame === 'obstaculos'` is a hook here, so the shell names no game (F4b).
-import { gameBus } from '@pichi/screen-kit/bus';
+import { obstBus } from './bus';
 import { app, renderUi } from '@pichi/screen-kit/shell/app-state';
 import type { ScreenGame } from '@pichi/screen-kit/shell/game';
 import type { Packet } from '../sim/input';
@@ -33,7 +33,7 @@ export const obstaculosScreen: ScreenGame = (() => {
     manifest: obstaculosManifest,
     init() {
       audio = initObstAudio(
-        gameBus,
+        obstBus,
         () => run.obst?.biome ?? 'beach',
         () => (run.obst && app.phase === 'playing' ? run.obst.musicState() : IDLE_MUSIC),
       );

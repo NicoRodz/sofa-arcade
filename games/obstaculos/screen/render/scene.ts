@@ -2,7 +2,7 @@
 // The host (F3) supplies the world: step(dtMs) advances the simulation and sets world.alpha; world() returns the WorldView or null.
 import Phaser from 'phaser';
 import type { ObstEvents } from '../../index';
-import type { Emitter } from '@pichi/core/events';
+import type { Emitter } from '@pichi/core/emitter';
 import { C } from '@pichi/screen-kit/art/tokens';
 import { ObstaclesView, buildObstacleTextures } from './obstacles-view';
 import type { WorldView } from './view';

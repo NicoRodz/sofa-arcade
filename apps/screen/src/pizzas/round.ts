@@ -1,7 +1,7 @@
 // Starting a Pizzas round: the coop round (map, orders, puestos) and the versus one (frozen teams and map, a puesto deal inside each kitchen).
 // TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts (setPhase's pizza branches and startVersus).
 import type { MatchStart } from '@pichi/core';
-import { gameBus } from '@pichi/screen-kit/bus';
+import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
 import { sendMsg } from '@pichi/screen-kit/net/socket';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { showScene } from '@pichi/screen-kit/shell/game-host';
@@ -31,7 +31,7 @@ function startVersus(): MatchStart {
     modeOptions: app.config.modeOptions,
     slotOf,
     rand: Math.random,
-    bus: gameBus,
+    bus: pizzasBus,
     countdownMs: COUNTDOWN_MS,
     assist: assistIds(),
   });
@@ -73,7 +73,7 @@ function startCoop(): undefined {
     rows: map.rows,
     spawns: map.spawns,
     countdownMs: COUNTDOWN_MS,
-    bus: gameBus,
+    bus: pizzasBus,
     eventsSeed: nextEventsSeed(),
     ...roundRules(app.config.modeOptions, app.config.difficulty),
     adaptive: SERIES_MAPS.some((m) => m.id === map.id), // the Carta larga series paces its orders by the load of the queue

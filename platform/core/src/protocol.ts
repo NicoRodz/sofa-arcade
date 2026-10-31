@@ -10,7 +10,7 @@ export * from './wire/lobby-flow';
 export { createClientParser } from './wire/parse-client';
 export { ROUND_MS } from './difficulty';
 export { MAX_TEAMS, type TeamInfo } from './lobby/teams';
-export { MAX_PLAYERS, parseModeOptions, parsePhoneResult, parseTeams, type ModeOptions } from './lobby/parse';
+export { MAX_PLAYERS, intIn, num, parseModeOptions, parseTeams, type ModeOptions } from './lobby/parse';
 export * from './lobby/menu';
 export {
   KEYBOARD_QUIET_MS,

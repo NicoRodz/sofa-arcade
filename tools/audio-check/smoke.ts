@@ -1,5 +1,5 @@
 // Runs in headless Chrome with a real AudioContext: gesture unlock, hint, mute key and bus -> sound wiring.
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '@pichi/game-pizzas/sim/round/events';
 import { initAudio } from '@pichi/game-pizzas/screen/audio';
 
 const w = window as unknown as Record<string, unknown>;

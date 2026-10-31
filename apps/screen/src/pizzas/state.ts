@@ -3,7 +3,7 @@
 // into games/pizzas/screen (coop-view, versus-view, results-panel) and turns this into the game's own state.
 import { modeOf, type GameDef } from '@pichi/core/contract';
 import { catalog } from '@pichi/screen-kit/shell/catalog';
-import { gameBus } from '@pichi/screen-kit/bus';
+import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
 import { app, connectedCount } from '@pichi/screen-kit/shell/app-state';
 import type { PuestoMsgPz } from '@pichi/game-pizzas/sim/puestos';
 import { createGame } from '@pichi/game-pizzas/sim';
@@ -46,6 +46,6 @@ export const isVersus = () => app.config.modeId === 'versus';
 export const assistIds = () => [...app.players.values()].filter((p) => p.info.assist).map((p) => p.info.id);
 
 // round stats for the results screen: deliveries per chef (the podium, and the MVP of each team)
-export const tally = tallyDeliveries(gameBus);
+export const tally = tallyDeliveries(pizzasBus);
 export const stats = { delivered: tally.counts };
-export const kitchen = tallyKitchen(gameBus); // pizzas rescued from the oven and fires put out, for the results
+export const kitchen = tallyKitchen(pizzasBus); // pizzas rescued from the oven and fires put out, for the results

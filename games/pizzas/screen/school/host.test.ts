@@ -1,6 +1,6 @@
 // The Cocina escuela on the screen: when it is offered, how the keys work, what the room remembers and what follows it. The DOM overlay and the scene are fakes; the session is the real one.
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '../../sim/round/events';
 import { nextPhase, type ClientMsg, type Phase, type PhaseEvent, type PublicPlayer } from '@pichi/core';
 import { SCHOOL_MAP_ID, SCHOOL_TOTAL, roomKey } from '../../sim/school/index';
 import { ALL_DONE_HOLD_MS, createSchoolHost, type SchoolCtx, type SchoolPlayer } from './host';

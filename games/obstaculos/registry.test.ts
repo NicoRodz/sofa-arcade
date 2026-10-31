@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { Emitter } from '@pichi/core/emitter';
 import { COMING_SOON, GAMES, GAME_IDS, gameInfo, gameName, gameProblems, isGameId } from '@pichi/catalog';
 import { isIconId } from '@pichi/core/icons';
 import { DEFAULT_CONFIG, configMsg, parseClientMessage } from '@pichi/catalog';
@@ -7,6 +7,7 @@ import { GAME_ID } from './constants';
 import { DIFFICULTY_LABEL } from '@pichi/core/difficulty';
 import { parseObstOptions, setupLabel, toModeOptions } from './lobby';
 import type { ObstEvents } from './events';
+type GameEvents = { roundEnd: { score: number; delivered: number } }; // the one event of another game this test shares the bus with (games do not import each other)
 
 const entry = GAMES.find((g) => g.id === GAME_ID)!;
 

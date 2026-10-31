@@ -1,5 +1,5 @@
-// One bus for the whole session: every round's game emits here, so the sound layer subscribes once.
-import { Emitter, type GameEvents } from '@pichi/core/events';
-import type { AllObstEvents } from '@pichi/game-obstaculos';
+// A typed event bus for a game's screen layer: the sim emits, the sound and art layers subscribe. Each game owns one instance (its own event map).
+import { Emitter } from '@pichi/core/emitter';
 
-export const gameBus = new Emitter<GameEvents & AllObstEvents>();
+export type Bus<E extends object> = Emitter<E>;
+export const createBus = <E extends object>(): Bus<E> => new Emitter<E>();

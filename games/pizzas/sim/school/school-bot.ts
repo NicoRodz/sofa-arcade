@@ -1,7 +1,7 @@
 // Test support (nothing in the game imports this): a scripted chef that does the four steps of the school through the real controls, and a loop that runs a session with
 // any number of them. The browser screen and the ws tests use the same createSchool; this is only the hands.
 import { DIRS, isFloor } from '../maps';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '../round/events';
 import { TICK_MS, type Controls, type Game, type Player, type Station } from '../round/state';
 import { targetStation } from '../round/targeting';
 import type { ClientMsg } from '@pichi/core';

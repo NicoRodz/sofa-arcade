@@ -12,7 +12,7 @@ import {
   type Packet,
   type SessionOpts,
 } from '../index';
-import type { Emitter } from '@pichi/core/events';
+import type { Emitter } from '@pichi/core/emitter';
 import type { MusicState } from './audio';
 import { SimWorldView } from './render/adapter';
 import type { ObstaclesView } from './render/obstacles-view';

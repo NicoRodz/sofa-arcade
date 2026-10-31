@@ -1,7 +1,7 @@
 // Visual harness for the renderer: a Phaser game with FakeWorld (real F1 physics, bots or keyboard). Served by vite from screen/.
 // usage: window.obst.start({ level: 1, n: 8, mode: 'chain', bots: true }) ; ff(seconds) fast-forwards ; see tools/obst-capture.ts
 import Phaser from 'phaser';
-import { Emitter } from '@pichi/core/events';
+import { Emitter } from '@pichi/core/emitter';
 import type { Biome, GameMode, ObstEvents } from '../../index';
 import type { Difficulty } from '@pichi/core/difficulty';
 import { LEVELS } from '../../levels';

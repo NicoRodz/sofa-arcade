@@ -4,7 +4,8 @@ import type Phaser from 'phaser';
 import { ICONS, type IconId } from '@pichi/core/icons';
 import { PUESTOS, puestoStations, type PuestoId } from '../../sim/puestos';
 import type { Game } from '../../sim/overcooked';
-import { C, OX, OY, TILE, chefOf, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, chefOf, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from './env/grid';
 import { makeText } from '@pichi/screen-kit/art/fx';
 import type { Chef } from '@pichi/screen-kit/art/chef';
 

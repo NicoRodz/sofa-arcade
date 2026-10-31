@@ -3,7 +3,8 @@
 // Returns the floor tiles of each kitchen (tile centres): the finale picks its confetti from them.
 import type Phaser from 'phaser';
 import type { Game } from '../../../sim/overcooked';
-import { OX, OY, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from './grid';
 import { makeText } from '@pichi/screen-kit/art/fx';
 import type { RoundView } from '../hud';
 

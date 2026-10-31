@@ -3,6 +3,7 @@ import type { GameProtocol, Slots } from '@pichi/core/contract';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './sim/maps';
 import { PUESTO_IDS, isPuestoId, type PuestoId } from './sim/puestos';
 import { isVersusChoice, type VersusChoice } from './sim/versus/maps';
+import { parsePhoneResult } from './sim/versus/phone-result';
 import type { PhoneResult } from './sim/versus/report';
 
 export interface PzSlots extends Slots {
@@ -17,4 +18,5 @@ export const pizzasProtocol: GameProtocol = {
   isMap: (v) => isMapChoice(v) || isVersusChoice(v), // versus lobbies hold a versus map choice (V1.., vs-auto, vs-random)
   isPuesto: isPuestoId,
   puestoCount: PUESTO_IDS.length,
+  parseResult: parsePhoneResult,
 };

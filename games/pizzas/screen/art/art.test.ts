@@ -6,8 +6,6 @@ import {
   FLOORS,
   H,
   HUD_H,
-  OX,
-  OY,
   SKINS,
   TILE,
   W,
@@ -19,6 +17,7 @@ import {
   timerColor,
   C,
 } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from './env/grid';
 import {
   MAX_TICKETS,
   TICKET_SHAKE_AT,

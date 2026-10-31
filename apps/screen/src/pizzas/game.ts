@@ -2,7 +2,7 @@
 // games/pizzas/screen (index, coop-view, versus-view, results-panel) and deletes the ramas that still read `pz` from the shell.
 import type { PuestoId } from '@pichi/game-pizzas/sim/puestos';
 import { teamOf } from '@pichi/core/lobby/teams';
-import { gameBus } from '@pichi/screen-kit/bus';
+import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
 import { app, bindServices, dispatch, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
 import type { ScreenGame } from '@pichi/screen-kit/shell/game';
 import { addPlayer, dropPlayer, rejoinPlayer, removePlayer } from '@pichi/game-pizzas/sim';
@@ -22,7 +22,7 @@ import { PIZZAS, puestoOf, pz } from './state';
 export const pizzasScreen: ScreenGame = {
   manifest: pizzasManifest,
   init() {
-    const audio = initAudio(gameBus, () => ({
+    const audio = initAudio(pizzasBus, () => ({
       phase: app.phase,
       started: pz.game.started && app.activeGame === PIZZAS,
       timeLeftMs: app.phase === 'playing' && pz.game.started && app.activeGame === PIZZAS ? pz.game.params.roundMs - pz.game.time : null,

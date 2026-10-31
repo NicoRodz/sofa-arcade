@@ -1,7 +1,7 @@
 // The Cocina escuela on the big screen: the glue between the pure session (shared/tutorial) and the page. It owns the session, the TV overlay, the keys of the school and the
 // memory of the room; main.ts only forwards a few hooks (offer, begin, step, key, skip) and hands over what the school needs to talk to the rest of the screen.
 import type { ClientMsg, Phase, PhaseEvent, PublicPlayer } from '@pichi/core';
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from '../../sim/round/events';
 import type { Controls, Game } from '../../sim/overcooked';
 import {
   SCHOOL_MAP_ID,

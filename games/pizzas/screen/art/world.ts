@@ -1,15 +1,16 @@
 // One round on screen: background, station views, chefs, HUD and the reactions to game events.
 import type Phaser from 'phaser';
-import type { Emitter, GameEvents } from '@pichi/core/events';
-import type { Game } from '../../sim/overcooked';
+import type { GameEvents, Emitter } from '../../sim/round/events';
+import type { Game, Item } from '../../sim/overcooked';
 import type { PublicPlayer } from '@pichi/core';
-import { C, OX, OY, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from './env/grid';
 import { buildBackground } from './env';
-import { Chef } from '@pichi/screen-kit/art/chef';
+import { Chef, type HeldSkin } from '@pichi/screen-kit/art/chef';
 import { Fx } from '@pichi/screen-kit/art/fx';
 import { Hud, ticketKey, type RoundView } from './hud';
 import { StationViews, place } from './stations';
-import { foodKey } from './food';
+import { foodKey, ITEM_KIND } from './food';
 import { PuestoMarks, type PuestoView } from './puestos';
 import { FlagView } from './flag-view';
 import { SabotageView } from './sabotage';
@@ -21,6 +22,9 @@ import { chefFlags } from './surfaces/chef-flags';
 import { kText } from '../../sim/versus/report';
 import { paintGrid } from './mech/views';
 import { tintKitchens } from './env/versus-tint';
+
+// What a chef carries is food: the rig only knows a texture per item.
+const HELD: HeldSkin = { idle: foodKey('dough_raw'), keyOf: (item) => foodKey(ITEM_KIND[item as Item]) };
 
 export class World {
   private bg: Phaser.GameObjects.Image;
@@ -283,7 +287,7 @@ export class World {
       if (!info) continue;
       let chef = this.chefs.get(gp.id);
       if (!chef) {
-        chef = new Chef(this.scene, gp.slot, info.name);
+        chef = new Chef(this.scene, gp.slot, info.name, HELD);
         chef.onHit = (kind) => {
           const cur = this.game.players.get(gp.id);
           if (!cur || cur.chopAt < 0) return;

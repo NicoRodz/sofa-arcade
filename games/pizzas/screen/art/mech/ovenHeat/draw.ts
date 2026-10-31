@@ -4,7 +4,8 @@ import type Phaser from 'phaser';
 import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
 import { HEAT_MAX } from '../../../../sim/mech/ovenHeat/module';
-import { OX, OY, TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../../env/grid';
 
 const DEPTH = 2.4; // above the oven drawn in the background, under the items and the chefs
 const lerp = (a: number, b: number, k: number) => Math.round(a + (b - a) * k);

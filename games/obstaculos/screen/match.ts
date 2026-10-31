@@ -2,7 +2,7 @@
 // packet. Moved out of apps/screen/src/main.ts (F4b): startObst / endObst, the scene's host and the perf counters.
 import type { MatchStart } from '@pichi/core';
 import { catalog } from '@pichi/screen-kit/shell/catalog';
-import { gameBus } from '@pichi/screen-kit/bus';
+import { obstBus } from './bus';
 import { app, dispatch } from '@pichi/screen-kit/shell/app-state';
 import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { resolveLevel, GAME_ID } from '../index';
@@ -27,7 +27,7 @@ export function obstScene(): ObstaclesScene {
         run.obst && app.activeGame === GAME_ID && (app.phase === 'playing' || app.phase === 'results') ? run.obst.world() : null,
       afterRender: (v) => run.obst?.afterRender(v),
     },
-    gameBus,
+    obstBus,
   );
   const base = s.update.bind(s);
   s.update = (t: number, d: number) => {
@@ -62,7 +62,7 @@ export function startObst(): MatchStart | undefined {
     {
       names: slotName,
       looks: slotLook,
-      bus: gameBus,
+      bus: obstBus,
       onOver: () => {
         run.summary = run.obst?.session.summary() ?? null;
         if (cr) void camp.over().then(() => dispatch('timeout'));

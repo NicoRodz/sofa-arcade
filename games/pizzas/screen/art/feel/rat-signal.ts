@@ -1,9 +1,10 @@
 // The gentle rat announces itself (feel/rat.ts): a bouncing arrow over the rat, a dashed line to the counter it goes for (an arrow and a pulsing ring over that counter), an alarm
 // flash when it is about to arrive, and the prize when it is scared off. Exists only in a round with the magnet and the events on.
 import type Phaser from 'phaser';
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
-import { C, OX, OY, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../env/grid';
 import type { Fx } from '@pichi/screen-kit/art/fx';
 
 export class RatSignal {

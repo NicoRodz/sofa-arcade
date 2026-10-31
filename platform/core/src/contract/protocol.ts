@@ -13,6 +13,8 @@ export interface GameProtocol {
   readonly signalKinds?: readonly string[];
   /** How many puesto ids the game has: the most a phone's "Cambiar" pool may hold. Absent: none. */
   readonly puestoCount?: number;
+  /** Validates the `result` slot of a phase message (the verdict a phone shows). Returns the clean value, or null when malformed. Absent: the game sends none. */
+  parseResult?(v: unknown): unknown;
 }
 export interface ProtocolExt {
   isMap(v: string): boolean; // union of the games = what the single parser accepted before
@@ -20,6 +22,7 @@ export interface ProtocolExt {
   isSignalKind(v: string): boolean;
   defaultMap(game: string): string | undefined;
   readonly puestoCount: number; // the biggest of the games
+  parseResult(v: unknown): unknown; // the first game that accepts the value; null when none does
 }
 
 export function composeProtocol(games: readonly GameProtocol[]): ProtocolExt {
@@ -35,6 +38,13 @@ export function composeProtocol(games: readonly GameProtocol[]): ProtocolExt {
     isSignalKind: (v) => list.some((g) => g.signalKinds?.includes(v) === true),
     defaultMap: (game) => list.find((g) => g.game === game)?.defaultMap,
     puestoCount: Math.max(0, ...list.map((g) => g.puestoCount ?? 0)),
+    parseResult: (v) => {
+      for (const g of list) {
+        const r = g.parseResult?.(v) ?? null;
+        if (r !== null) return r;
+      }
+      return null;
+    },
   };
 }
 

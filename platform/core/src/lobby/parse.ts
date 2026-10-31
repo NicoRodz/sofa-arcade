@@ -1,6 +1,5 @@
-// Wire-format parsers shared by the lobby messages: the validated pieces (teams, a versus result, mode options) and the tiny guards they and
+// Wire-format parsers shared by the lobby messages: the validated pieces (teams, mode options) and the tiny guards they and
 // the protocol parser use. Moved out of protocol.ts unchanged (which re-exports them) to leave that file room.
-import type { PhoneResult, Verdict } from '@pichi/game-pizzas/sim/versus/report';
 import { MAX_TEAMS, type TeamInfo } from './teams';
 
 export const MAX_PLAYERS = 8;
@@ -48,25 +47,6 @@ export function parseTeams(v: unknown): TeamInfo[] | null | undefined {
     });
   }
   return out;
-}
-
-const VERDICTS: readonly Verdict[] = ['win', 'draw', 'nowinner', 'aborted'];
-export function parsePhoneResult(v: any): PhoneResult | null {
-  if (!v || typeof v !== 'object' || !VERDICTS.includes(v.verdict) || !(v.winner === null || intIn(v.winner, 0, MAX_TEAMS - 1)))
-    return null;
-  if (
-    !Array.isArray(v.scores) ||
-    v.scores.length < 1 ||
-    v.scores.length > MAX_TEAMS ||
-    !v.scores.every((x: any) => x && intIn(x.team, 0, MAX_TEAMS - 1) && num(x.score))
-  )
-    return null;
-  if (v.verdict === 'win' ? v.winner === null : v.winner !== null) return null; // a win names its team; no other verdict does
-  return {
-    verdict: v.verdict,
-    winner: v.winner,
-    scores: v.scores.map((x: { team: number; score: number }) => ({ team: x.team, score: x.score })),
-  };
 }
 
 export function parseModeOptions(v: unknown): ModeOptions | undefined {

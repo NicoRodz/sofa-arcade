@@ -3,7 +3,7 @@
 // from the design, translated to the real legend in golden/mirror-bot.ts.
 import { describe, expect, it } from 'vitest';
 import { GHOST_MS, handicapK } from '@pichi/core/lobby/teams';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '../round/events';
 import { DIRS, fixedMap, isFloor } from '../maps';
 import {
   TICK_MS,

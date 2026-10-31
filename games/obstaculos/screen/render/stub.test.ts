@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PLAYER_H, ROPE_LEN, TILE, type ObstEvents } from '../../index';
-import { Emitter } from '@pichi/core/events';
+import { Emitter } from '@pichi/core/emitter';
 import { LEVEL_01, LEVEL_04, LEVEL_08 } from '../../levels';
 import { FakeWorld, botController, cordadas, entitiesFromLevel } from './stub';
 import { checkWorldView, type WorldView } from './view';

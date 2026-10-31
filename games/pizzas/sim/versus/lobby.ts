@@ -7,7 +7,7 @@ import { generateVersus } from '../generate';
 import { parseMap, type Pos, type SigmaName } from '../maps';
 import { addPlayer, createGame } from '../round/create';
 import type { Game } from '../round/state';
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from '../round/events';
 import type { Rng } from '@pichi/core/rng';
 import type { MatchStart } from '@pichi/core';
 import {
@@ -16,10 +16,10 @@ import {
   leaveTeams,
   makeTeams,
   modeAvailability,
-  validateTeamSetup,
   type TeamInfo,
   type TeamSetup,
 } from '@pichi/core/lobby/teams';
+import { validateTeamSetup } from '../assist';
 import { kitchenRegions } from './versus';
 import { roundRules } from '../midround';
 import { CATAPULT_CHAR, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '../sabotage-config';

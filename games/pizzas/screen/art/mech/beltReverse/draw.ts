@@ -5,7 +5,8 @@ import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
 import { BELT_SPEED } from '../../../../sim/surfaces/config';
 import { BELT_WARN } from '../../../../sim/mech/beltReverse/module';
-import { OX, OY, TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../../env/grid';
 
 const C = { base: 0x3a3f47, rail: 0xf2b632, chevron: 0xffd966, dark: 0x262a30, warn: 0xb18cff };
 const DEPTH = 1.6; // over SurfaceView (1.5): it covers the lane it drew with the old direction

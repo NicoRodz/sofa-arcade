@@ -4,7 +4,8 @@ import type Phaser from 'phaser';
 import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
 import { CAP, bellows, blowers, feedOf, fuelOf, ovens } from '../../../../sim/mech/woodOven/state';
-import { C, OX, OY, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../../env/grid';
 
 const layers = new WeakMap<Phaser.Scene, Phaser.GameObjects.Graphics>();
 const squeeze = new WeakMap<Game, Record<number, number>>(); // 0..1 per bellows: eases towards 1 while a chef blows

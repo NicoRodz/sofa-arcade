@@ -2,7 +2,8 @@
 // chevrons; this is still). Drawn once per frame from the grid, a few rectangles.
 import type { MechArt } from '../../../../sim/mech/types';
 import { SENSE } from '../../../../sim/mech/oneWay/module';
-import { OX, OY, TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
 
 const COL = { pad: 0x5b7a99, padHi: 0x7f9fbf, arrow: 0xffffff, wall: 0x2b3a4a };

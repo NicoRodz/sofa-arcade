@@ -1,9 +1,9 @@
 // Typed events emitted by the pure game logic. The sound layer (and anything else) subscribes to these;
 // the logic knows nothing about who listens.
-import type { Item, Recipe, StationKind } from '@pichi/game-pizzas/sim';
-import type { TeamResult } from './lobby/teams';
-import type { SabotageEvents } from '@pichi/game-pizzas/sim/sabotage-config';
-import type { EventKind } from '@pichi/game-pizzas/sim/midround';
+import type { TeamResult } from '@pichi/core/lobby/teams';
+import type { Item, Recipe, StationKind } from '../index';
+import type { SabotageEvents } from '../sabotage-config';
+import type { EventKind } from '../midround';
 
 // `team` (optional, on the team-level events): the id of the team the event belongs to, for the HUD and the sounds. It is present
 // only in versus (two or more teams); a cooperative round is one team and its events carry no team, exactly as before the teams refactor.
@@ -86,16 +86,4 @@ export interface GameEvents extends SabotageEvents {
   'rat:near': { station: number }; // ...and is about to get there
   'rat:gone': { stolen: boolean }; // it left (stolen: with an item)
 }
-
-export class Emitter<M extends object> {
-  private handlers: { [K in keyof M]?: Set<(p: M[K]) => void> } = {};
-  on<K extends keyof M>(type: K, fn: (p: M[K]) => void): () => void {
-    (this.handlers[type] ??= new Set()).add(fn);
-    return () => {
-      this.handlers[type]?.delete(fn);
-    };
-  }
-  emit<K extends keyof M>(type: K, payload: M[K]) {
-    for (const fn of [...(this.handlers[type] ?? [])]) fn(payload);
-  }
-}
+export { Emitter } from '@pichi/core/emitter'; // a Pizzas bus is an Emitter<GameEvents>: one import serves both

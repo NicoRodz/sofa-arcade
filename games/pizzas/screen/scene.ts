@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Game } from '../sim/overcooked';
 import type { PublicPlayer } from '@pichi/core';
-import { gameBus } from '@pichi/screen-kit/bus';
+import { pizzasBus } from './bus';
 import { C } from '@pichi/screen-kit/art/tokens';
 import { buildChefTextures } from '@pichi/screen-kit/art/chef';
 import { buildFoodTextures } from './art/food';
@@ -51,13 +51,13 @@ export class MainScene extends Phaser.Scene {
       game,
       () => this.host.players(),
       () => this.host.puestos(),
-      gameBus,
+      pizzasBus,
       mapId,
       seed,
       view,
     );
     if (game.mech) new MechViews(this, game); // the map mechanics: their own views and the arts that repaint a layer every frame
-    if (game.mut || game.mech?.ext?.mutation) new MutateView(this, game, new Fx(this), gameBus); // the kitchen that mutates: banner, alarm outline, flash (self-managed, goes with the round)
+    if (game.mut || game.mech?.ext?.mutation) new MutateView(this, game, new Fx(this), pizzasBus); // the kitchen that mutates: banner, alarm outline, flash (self-managed, goes with the round)
   }
   endRound() {
     this.world?.destroy();

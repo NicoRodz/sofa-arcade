@@ -2,7 +2,6 @@
 // Cooperative is the same mechanism with one team, so everything here works for 1..MAX_TEAMS teams.
 import { COOP_STYLE, type ModeSpec, type TeamSpec, type TeamStyle } from '../contract/options';
 import { mulberry32, type Rng } from '../rng';
-import { ASSIST_IMMUNITY_K, effectiveChefs } from '@pichi/game-pizzas/sim/assist';
 
 // What the repo says about the design's open questions (resolved in F0):
 //  1-2. Maps are 16x9 strings (maps.ts, 15 FIXED_MAPS). Legend: # wall . floor S spawn ~ water C counter 1/2/3 dough/tomato/cheese crate
@@ -95,19 +94,26 @@ export function handicapK(nOwn: number, nRival: number, maxRatio = HANDICAP_MAX_
   return Math.max(1, round2(Math.sqrt(nRival / nOwn)));
 }
 
+/** A game's own correction of the handicap: the chefs of each team that count (`effective`) and what its k gives up (`discount`), same order as the counts. */
+export interface TeamBias {
+  effective: readonly number[];
+  discount: readonly number[];
+}
+/** Works out a game's TeamBias from the flagged players (the roster's `assist` marks) per team. Undefined: nobody is flagged, no correction. */
+export type BiasOf = (flagged: readonly number[], counts: readonly number[]) => TeamBias | undefined;
+
 /**
  * k per team, in the order of `counts`: every team is measured against the biggest one. Null when any team is refused (see handicapK).
- * `assists` (Ayudante chefs per team, same order; absent = none): each one weighs ASSIST_WEIGHT of a chef, and its team gives up ASSIST_IMMUNITY_K of k per
- * Ayudante for the immunity to sabotage. The legal split is still judged on the real counts. With no Ayudantes every number is what it always was.
+ * `bias` (a game's correction, absent = none): the teams are measured by their `effective` chefs and each gives up its `discount` of k. The legal split is
+ * still judged on the real counts. With no bias every number is what it always was.
  */
-export function teamMultipliers(counts: readonly number[], maxRatio = HANDICAP_MAX_RATIO, assists?: readonly number[]): number[] | null {
+export function teamMultipliers(counts: readonly number[], maxRatio = HANDICAP_MAX_RATIO, bias?: TeamBias): number[] | null {
   const top = Math.max(...counts);
   const ks = counts.map((c) => handicapK(c, top, maxRatio));
   if (!ks.every((k): k is number => k !== null)) return null;
-  if (!assists?.some((a) => a > 0)) return ks as number[];
-  const eff = counts.map((c, i) => effectiveChefs(c, assists[i] ?? 0));
-  const best = Math.max(...eff);
-  return eff.map((e, i) => Math.max(1, round2(round2(Math.sqrt(best / e)) - ASSIST_IMMUNITY_K * (assists[i] ?? 0))));
+  if (!bias) return ks as number[];
+  const best = Math.max(...bias.effective);
+  return bias.effective.map((e, i) => Math.max(1, round2(round2(Math.sqrt(best / e)) - (bias.discount[i] ?? 0))));
 }
 
 // --- Lobby checks ------------------------------------------------------------------------------------------------
@@ -133,7 +139,8 @@ export interface TeamSetup {
 export function validateTeamSetup(
   mode: Pick<ModeSpec, 'players' | 'teams'>,
   teams: readonly (readonly number[])[],
-  assist?: ReadonlySet<number>,
+  flagged?: ReadonlySet<number>,
+  biasOf?: BiasOf,
 ): TeamSetup {
   const problems: string[] = [];
   const spec = mode.teams;
@@ -155,7 +162,16 @@ export function validateTeamSetup(
   if (!avail.ok) problems.push(avail.reason);
   const ks =
     !problems.length && spec?.handicap === 'score-k'
-      ? teamMultipliers(counts, spec.maxRatio, assist ? teams.map((t) => t.filter((id) => assist.has(id)).length) : undefined)
+      ? teamMultipliers(
+          counts,
+          spec.maxRatio,
+          flagged && biasOf
+            ? biasOf(
+                teams.map((t) => t.filter((id) => flagged.has(id)).length),
+                counts,
+              )
+            : undefined,
+        )
       : null;
   return { ok: problems.length === 0, problems, k: ks ?? counts.map(() => 1) };
 }
@@ -264,12 +280,13 @@ export function matchStatus(
   now: number,
   handicap: TeamSpec['handicap'],
   graceMs = GHOST_MS,
+  biasOf?: BiasOf,
 ): MatchStatus {
   const counts = teamIds.map((t) => roster.filter((e) => e.teamId === t && holdsPlace(e, now, graceMs)).length);
   const emptyTeams = teamIds.filter((_t, i) => counts[i] === 0);
   const paused = emptyTeams.length > 0;
-  const assists = teamIds.map((t) => roster.filter((e) => e.teamId === t && e.assist && holdsPlace(e, now, graceMs)).length);
-  const k = !paused && handicap === 'score-k' ? teamMultipliers(counts, Infinity, assists)! : counts.map(() => 1);
+  const flagged = teamIds.map((t) => roster.filter((e) => e.teamId === t && e.assist && holdsPlace(e, now, graceMs)).length);
+  const k = !paused && handicap === 'score-k' ? teamMultipliers(counts, Infinity, biasOf?.(flagged, counts))! : counts.map(() => 1);
   return { counts, k, emptyTeams, paused };
 }
 

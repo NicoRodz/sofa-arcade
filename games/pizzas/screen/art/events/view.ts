@@ -3,12 +3,13 @@
 // the blackout (the kitchen goes dark, a crossed-out bolt over every oven), the birthday (balloons and confetti; the order's ticket is in hud.ts) and the rat (a little
 // grey rat that runs across the floor, grabs an item and is scared off by a dash). Everything is drawn by code. Only exists when `game.mid` does.
 import type Phaser from 'phaser';
-import type { Emitter, GameEvents } from '@pichi/core/events';
+import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
 import type { TeamInfo } from '@pichi/core/lobby/teams';
 import { ANNOUNCE_MS, EVENT_INFO, dirtyPlates, type EventKind } from '../../../sim/midround';
 import { FrostView } from './frost-view';
-import { C, H, OX, OY, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, H, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
+import { OX, OY } from '../env/grid';
 import { foodKey, ITEM_KIND } from '../food';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';

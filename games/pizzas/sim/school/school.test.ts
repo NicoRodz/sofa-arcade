@@ -1,6 +1,6 @@
 // The Cocina escuela session on the REAL sim: scripted chefs (schoolBot.ts) cook through the four steps with the same controls a phone sends.
 import { describe, expect, it } from 'vitest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '../round/events';
 import { TICK_MS, type Controls } from '../overcooked';
 import type { ClientMsg } from '@pichi/core';
 import { OVEN_SHOW_MS, REGRANT_MS, UNWANTED_MS, createSchool, type SchoolMember } from './school';

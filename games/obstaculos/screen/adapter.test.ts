@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DT, LEVELS, ObstBot, ObstSession, TILE, snapshot, type LevelDef, type ObstEvent } from '../index';
-import { Emitter } from '@pichi/core/events';
+import { Emitter } from '@pichi/core/emitter';
 import type { ObstEvents } from '../index';
 import { SimWorldView } from './render/adapter';
 import { checkWorldView } from './render/view';

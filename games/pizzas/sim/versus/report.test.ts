@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { COLORS } from '@pichi/core';
 import { VERSUS_STYLES } from '@pichi/game-pizzas/manifest';
-import { Emitter, type GameEvents } from '@pichi/core/events';
+import { type GameEvents, Emitter } from '../round/events';
 import { TICK_MS, addPlayer, createGame, resolvePause, tick, type Game, type TeamState } from '../overcooked';
 import { summarizeTeam } from '../results';
 import { starThresholds } from '../stars';

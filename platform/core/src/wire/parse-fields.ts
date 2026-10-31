@@ -8,7 +8,7 @@ import { isDifficulty } from '../difficulty';
 import { LABEL_MAX } from '../contract/catalog';
 import { isIconId, type IconId } from '../icons';
 import { parseCaps } from '../lobby/menu';
-import { intIn, num, parseModeOptions, parsePhoneResult, parseTeams, MAX_PLAYERS, text } from '../lobby/parse';
+import { intIn, num, parseModeOptions, parseTeams, MAX_PLAYERS, text } from '../lobby/parse';
 import { BUTTON_COUNT, PHASES, PRESS_MOD, isSeed } from './constants';
 import type { ClientMsg } from './client-msg';
 import type { PuestoAssign, PuestoMsg, Score } from './phase';
@@ -107,7 +107,7 @@ export function parsePhase(m: Msg, ext: ProtocolExt, catalog: GameCatalog): Of<'
     out.scores = m.scores.map((x: Score) => ({ id: x.id, score: x.score }));
   }
   if (m.result !== undefined) {
-    const r = parsePhoneResult(m.result);
+    const r = ext.parseResult(m.result);
     if (!r) return null;
     out.result = r;
   }
