@@ -42,6 +42,9 @@ export class Cdp {
     if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? 'eval failed');
     return r.result.value as T;
   }
+  close() {
+    this.ws.close();
+  }
   async shot(name: string, clip?: { x: number; y: number; width: number; height: number; scale?: number }) {
     const r = await this.send('Page.captureScreenshot', { format: 'png', ...(clip ? { clip: { scale: 1, ...clip } } : {}) });
     const file = path.join(outDir, `${name}.png`);

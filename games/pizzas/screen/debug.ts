@@ -3,6 +3,7 @@
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { phaserGame } from '@pichi/screen-kit/shell/game-host';
 import { dropPlayer } from '../sim';
+import { ev2CakeServed, ev2RedServed } from '../sim/ev2/events';
 import { addFloorItem } from '../sim/floor';
 import { sabotageAimPress, sabotageLoad } from '../sim/sabotage';
 import { school } from './match/loop';
@@ -124,6 +125,18 @@ export const pizzasDebug = () => ({
         rat: null,
       });
       return true;
+    },
+    // capture tool (events V2): the state of the events with presence, and the real closes without playing the round (a spill wiped, the lights restored, the reds served, the cake served)
+    ev2: () => JSON.parse(JSON.stringify(pz.game.ev2 ?? null)),
+    ev2Win: (kind: string) => {
+      const g = pz.game,
+        e = g.ev2!;
+      if (kind === 'spill') for (const i of e.spill?.tiles ?? []) g.mech!.tile![i] = 0;
+      else if (kind === 'blackout' && g.mid) {
+        e.restoredAt = g.time;
+        g.mid.endAt = g.time;
+      } else if (kind === 'rush') for (let i = e.rush?.total ?? 0; i > 0; i--) ev2RedServed(g);
+      else if (kind === 'birthday') ev2CakeServed(g, [...g.players.values()][0]!, 250);
     },
     setItem: (i: number, item: string | null) => {
       pz.game.stations[i]!.item = item as never;
