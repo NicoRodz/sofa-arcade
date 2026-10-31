@@ -6,7 +6,7 @@ import { hasModeChoice, selectableModes, type GameDef, type ModeId } from '@pich
 import type { LobbyConfig, MenuActBody, MenuBody, MenuErrCode, MenuGroup, MenuItem, MenuOption, MenuRow } from '@pichi/core';
 import { eventsHint } from '../sim/ev2/lines';
 import { eventsOf } from '../sim/midround';
-import { COOP_MAPS, fixedMap, lobbyGroupOfMap, lobbyMaps, recommendedForN, type MapFamily } from '../sim/maps';
+import { coopLobbyView, fixedMap, lobbyGroupOfMap, recommendedForN, type LobbyRow, type MapFamily } from '../sim/maps';
 import { mutateOf } from '../sim/mutate/plan';
 import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_OPTION, sabotageOf } from '../sim/sabotage-config';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusAvailability, versusLobbyMaps } from '../sim/versus/lobby';
@@ -44,6 +44,8 @@ const MODE_LABEL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versu
 export type MapGroup = ReturnType<typeof lobbyGroupOfMap>;
 const MODE_HINT: Partial<Record<ModeId, string>> = { coop: 'Cooperativo: todos cocinan juntos', versus: 'Versus: dos equipos compiten' };
 const OPTION_LABEL: Record<string, string> = { hiddenScore: 'Marcador oculto', handicap: 'Ventaja equipo chico' };
+/** The phone's last map tab: the maps that cannot be picked for this group size, folded away until that tab is opened. */
+export const OTHERS_GROUP = 'others';
 const optRow = (id: string) => `opt-${id}`;
 const yesNo = (on: boolean, tipYes: string, tipNo: string): string => (on ? tipYes : tipNo);
 
@@ -79,20 +81,22 @@ function mapRow(st: PizzasLobbyState, vs: boolean): MenuRow {
       },
     ];
   else {
-    const rows = lobbyMaps(st.n, COOP_MAPS).map(({ map, status }) => ({
-      group: lobbyGroupOfMap(map.id),
-      ...item(map, status.state, 'reason' in status ? status.reason : undefined),
-    }));
-    const of = (g: MapGroup) => rows.filter((r) => r.group === g).map(({ group: _g, ...i }) => i);
-    const rec = recommendedForN(st.n, st.config.difficulty, { played: st.played ?? new Set(), last: st.autoLast }).flatMap((m) =>
-      of(lobbyGroupOfMap(m.id)).filter((i) => i.id === m.id),
-    );
+    // The same rule as the TV: a recommended map is listed once (under "Recomendados"), and the maps that cannot be picked for N fold into one last tab,
+    // "Otros mapas (N)". Opening that tab is the unfolding; the picked map is wherever it lives, so it never hides.
+    const rec = recommendedForN(st.n, st.config.difficulty, { played: st.played ?? new Set(), last: st.autoLast });
+    const toItem = ({ map, status }: LobbyRow): MenuItem => item(map, status.state, 'reason' in status ? status.reason : undefined);
+    const page = (g: MapGroup) => coopLobbyView(st.n, g, rec, st.config.map, true); // unfolded: `shown` lists all of the page, `folded` its blocked ones
+    const pages = (['classic', 'series', 'taller', 'plain'] as const).map((g) => page(g));
+    const topIds = new Set(pages[0]!.top.map((r) => r.map.id)); // a recommended map of any page lists once, under its label
+    const open = (r: LobbyRow) => r.status.state !== 'blocked' && !topIds.has(r.map.id);
+    const others = pages.flatMap((v) => v.folded.filter((r) => !topIds.has(r.map.id))).map(toItem);
     groups = [
-      ...(rec.length ? [{ id: 'rec', label: `Recomendados para ${st.n}`, items: rec }] : []),
-      { id: 'classic', label: 'Clásicos', items: of('classic') },
-      { id: 'series', label: 'Carta larga', items: of('series') },
-      { id: 'taller', label: 'Taller', items: of('taller') },
-      { id: 'plain', label: 'Sin dinámica', items: of('plain') },
+      ...(pages[0]!.top.length ? [{ id: 'rec', label: `Recomendados para ${st.n}`, items: pages[0]!.top.map(toItem) }] : []),
+      { id: 'classic', label: 'Clásicos', items: pages[0]!.shown.filter(open).map(toItem) },
+      { id: 'series', label: 'Carta larga', items: pages[1]!.shown.filter(open).map(toItem) },
+      { id: 'taller', label: 'Taller', items: pages[2]!.shown.filter(open).map(toItem) },
+      { id: 'plain', label: 'Sin dinámica', items: pages[3]!.shown.filter(open).map(toItem) },
+      ...(others.length ? [{ id: OTHERS_GROUP, label: `Otros mapas (${others.length})`, items: others }] : []),
     ];
   }
   const extras: MenuOption[] = vs
@@ -224,6 +228,7 @@ export type MenuEffect =
   | { kind: 'reseed' }
   | { kind: 'option'; id: string; value: boolean }
   | { kind: 'group'; value: MapGroup }
+  | { kind: 'others' } // the phone opened "Otros mapas (N)": the TV unfolds its own
   | { kind: 'shuffle' | 'lock' | 'start' }
   | { kind: 'focus' };
 export type MenuDecision =
@@ -244,6 +249,7 @@ export function decideMenuAct(st: PizzasLobbyState, act: MenuActBody, rev: numbe
   if (!row) return no('Esa opción ya no existe');
   if (act.act === 'focus') {
     const g = typeof act.value === 'string' && row.id === 'map' ? row.groups?.find((x) => x.id === act.value) : undefined;
+    if (g?.id === OTHERS_GROUP) return { ok: true, effect: { kind: 'others' }, row: row.id };
     return g
       ? { ok: true, effect: { kind: 'group', value: (g.id === 'rec' ? 'classic' : g.id) as MapGroup }, row: row.id }
       : { ok: true, effect: { kind: 'focus' }, row: row.id };
