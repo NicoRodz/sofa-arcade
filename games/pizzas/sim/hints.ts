@@ -131,7 +131,7 @@ export function chefHint(g: Game, p: Player): HintLabels {
 }
 
 // --- Sending: the state of every tick, whole --------------------------------------------------------------------------------------------------------
-export const HINT_MIN_MS = 50; // a chef's labels change at most this often on the wire (walking along a counter flaps them every step)
+export const HINT_MIN_MS = 200; // a chef's labels change at most this often on the wire: 5 per second (walking along a counter flaps them every step)
 export const HINT_REFRESH_MS = 1000; // ...and are sent again after this long even when nothing changed: a phone that reconnected, or missed one, is right again within a second
 type HintMsg = Extract<ClientMsg, { t: 'hint' }>;
 

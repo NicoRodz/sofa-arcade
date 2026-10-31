@@ -369,6 +369,24 @@ describe('sending: the state of every tick, whole, with lag in mind', () => {
     expect(out).toHaveLength(3);
     expect(out[2]).toEqual(out[1]);
   });
+  it('a chef whose labels flap on every frame gets at most 5 hints per second and ends on the right state', () => {
+    const { g, out, hs } = rig();
+    const crate = g.stations.find((s) => s.kind === 'crate' && s.crate === 0)!;
+    const counter = g.stations.find((s) => s.kind === 'counter')!;
+    const times: number[] = [];
+    for (let t = 0, i = 0; t <= 5000; t += 16, i++) {
+      face(g, i % 2 ? crate : counter); // a different label on every frame
+      const n = out.length;
+      hs.sync(g, t);
+      if (out.length > n) times.push(t);
+    }
+    expect(times.length).toBeGreaterThan(15); // it does send (a green that sent nothing proves nothing)
+    for (const t0 of times) expect(times.filter((t) => t >= t0 && t < t0 + 1000).length).toBeLessThanOrEqual(5);
+    for (let k = 1; k < times.length; k++) expect(times[k]! - times[k - 1]!).toBeGreaterThanOrEqual(HINT_MIN_MS);
+    face(g, crate);
+    hs.sync(g, 5000 + HINT_MIN_MS + 20); // the flapping stops: the next sync after the gap carries the last state
+    expect(out.at(-1)).toMatchObject({ a: 'Tomar masa' });
+  });
   it('a phone that only sees the LAST message of a burst still ends up right (the messages are states, not events)', () => {
     const { g, out, hs } = rig();
     const crate = g.stations.find((s) => s.kind === 'crate' && s.crate === 1)!;
@@ -376,11 +394,11 @@ describe('sending: the state of every tick, whole, with lag in mind', () => {
     let now = 0;
     for (let i = 0; i < 12; i++) {
       face(g, i % 2 ? crate : counter);
-      now += 60;
+      now += HINT_MIN_MS + 10; // one step past the cap (it was 60 ms against a 50 ms cap)
       hs.sync(g, now);
     }
     face(g, crate);
-    now += 60;
+    now += HINT_MIN_MS + 10;
     hs.sync(g, now);
     const last = out[out.length - 1]!;
     expect([last.a, last.aIcon, !!last.aOff]).toEqual(['Tomar tomate', 'crate', false]);
