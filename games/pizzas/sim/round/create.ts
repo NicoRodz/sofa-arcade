@@ -16,7 +16,7 @@ import { createSabotage } from '../sabotage';
 import { createBurn, fireAllowed } from '../burn';
 import { createMid } from '../midround';
 import { HAZARD_V3 } from '../hazards/hazard-v3';
-import { newLedger } from '../score-ledger';
+import { newLedger } from '../hazards/score-ledger';
 import { anyMech, MECH_IDS, type MechFlags, type MechOpts } from '../mech/ids';
 import { mechStart } from '../mech/loop';
 import { armMutation } from '../mech/mutation/module';
@@ -43,7 +43,7 @@ export function createGame(
     assist?: readonly number[];
     burn?: boolean;
     hazardsV3?: boolean; // HAZARD_V3 (hazards/hazard-v3.ts): the harder numbers and the expired-order penalties; off unless the lobby asks (the rounds without it are bit for bit as before)
-    ledger?: boolean; // keep the score book by source (score-ledger.ts) without hazardsV3 (measurement)
+    ledger?: boolean; // keep the score book by source (hazards/score-ledger.ts) without hazardsV3 (measurement)
     hazardsV2?: boolean; // HAZARD_V2 under the flags burn / magnet / events / surf (hazard-v2.ts): on unless false (false = the first numbers, for the tests that pin them and for before/after runs)
     fire?: boolean;
     events?: boolean;

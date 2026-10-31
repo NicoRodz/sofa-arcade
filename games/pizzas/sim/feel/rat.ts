@@ -12,7 +12,7 @@ import type { Game, Player } from '../round/state';
 import type { Mid, Rat } from '../midround';
 import { dodgeStep, ratGait, ratParams } from './rat-v2';
 import { evadeStep } from './rat-evade';
-import { book } from '../score-ledger';
+import { book } from '../hazards/score-ledger';
 import { ratPull } from './rat-loot';
 
 export const RAT_GENTLE = {

@@ -7,7 +7,7 @@ import { HAZARD_V3, LEGACY, hz3Params } from './hazards/hazard-v3';
 import { escapeLoot, stealOnEscape } from './feel/rat-loot';
 import { mechFlagsOf } from './mech/ids';
 import { roundRules } from './midround';
-import { book, byFamily } from './score-ledger';
+import { book, byFamily } from './hazards/score-ledger';
 import { SCHOOL_STEPS_V3, SCHOOL_ROWS_V3, SCHOOL_TOTAL_V3, completesV3 } from './school/steps-v3';
 import { cardLines, markSeen, DYNAMICS } from './hazards/dynamics-card';
 import { validateMap } from './validate';

@@ -4,7 +4,7 @@ import type { Game, Item } from '../round/state';
 import type { Mid, Rat } from '../midround';
 import { hz3Params } from '../hazards/hazard-v3';
 import { isDish } from '../recipes/defs';
-import { book } from '../score-ledger';
+import { book } from '../hazards/score-ledger';
 
 /** Bonus (in tiles of distance) a ready dish gets in the rat's choice of counter: it goes for the pizza first. */
 export const DISH_PULL = 2;

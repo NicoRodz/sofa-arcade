@@ -9,7 +9,7 @@ import { isDish, recipeBase } from '../recipes/defs';
 import { adaptiveDue, patienceMs } from '../recipes/pacing';
 import { bandejaBase, bandejaPatienceMs, pickParts, takePart } from '../recipes/bandeja';
 import { casaExtras } from '../recipes/casa';
-import { book } from '../score-ledger';
+import { book } from '../hazards/score-ledger';
 
 // R15: the tip multiplier for a delivery made after `streak` correct ones in a row.
 export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax, 1 + Math.max(0, streak));

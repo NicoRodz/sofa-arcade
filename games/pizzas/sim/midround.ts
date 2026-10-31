@@ -21,7 +21,7 @@ import { ratPull, stealOnEscape } from './feel/rat-loot';
 import type { Game, Item, Station } from './round/state';
 import { spill } from './mech/oil/spill';
 import { hazardParams } from './hazards/hazard-v2';
-import { book } from './score-ledger';
+import { book } from './hazards/score-ledger';
 import { planEvents, type Planned } from './hazards/events-v2';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
