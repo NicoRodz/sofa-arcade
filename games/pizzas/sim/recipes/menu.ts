@@ -19,11 +19,24 @@ export function subSeed(seed: number, tag: string): number {
   return (h ^ (h >>> 15)) >>> 0;
 }
 
-/** The plates of a round: by effort ascending (stable, the card's own order breaks ties), Marinara first, cut to the difficulty. */
+/** The "signature" plate of a card: the one its special station exists for (Bandeja, then the sauce pot's Nonna, then the Casa, then the Blanca), if the card has one. */
+const SIGNATURE_ORDER: readonly Recipe[] = ['bandeja', 'nonna', 'casa', 'blanca'];
+export const signatureOf = (card: readonly Recipe[]): Recipe | undefined => SIGNATURE_ORDER.find((r) => card.includes(r));
+
+/**
+ * The plates of a round: by effort ascending (stable, the card's own order breaks ties), Marinara first, cut to the difficulty. The cut never drops the
+ * signature plate of the card (it would leave its station idle): it takes the place of the costliest of the rest, and the order stays by effort. The Bandeja
+ * needs two other plates beside it, so a cut of two (Fácil) cannot hold it and takes the cheapest plates as before.
+ */
 export function menuRecipes(card: readonly Recipe[], d: Difficulty): Recipe[] {
   const rest = card.filter((r) => r !== 'marinara').sort((x, y) => RECIPE_DEFS[x].effort - RECIPE_DEFS[y].effort);
   const all: Recipe[] = card.includes('marinara') ? ['marinara', ...rest] : rest;
-  return all.slice(0, Math.min(MENU_SIZE[d], all.length));
+  const size = Math.min(MENU_SIZE[d], all.length);
+  const cut = all.slice(0, size);
+  const sig = signatureOf(card);
+  if (sig === undefined || cut.includes(sig) || (sig === 'bandeja' && size < 3)) return cut;
+  cut[size - 1] = sig; // the last slot is the costliest kept plate
+  return all.filter((r) => cut.includes(r));
 }
 
 export interface Menu {

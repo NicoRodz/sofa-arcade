@@ -62,6 +62,15 @@ describe('the cut of the card by difficulty', () => {
     expect(c(['marinara', 'casa', 'bandeja', 'calzonerel'], 'hard')).toEqual(['marinara', 'casa', 'calzonerel', 'bandeja']);
     expect(c(['marinara', 'casa', 'bandeja', 'calzonerel'], 'easy')).toEqual(['marinara', 'casa']);
   });
+  it("map 28: the cut keeps the card's signature plate (the Bandeja) and the Marinara, and drops the rest", () => {
+    const card = cardForV2('28')!.recipes;
+    expect(card).toContain('bandeja');
+    expect(menuRecipes(card, 'normal')).toEqual(['marinara', 'casa', 'bandeja']);
+    expect(menuRecipes(card, 'hard')).toEqual(['marinara', 'casa', 'calzonerel', 'bandeja']);
+    expect(menuRecipes(card, 'easy')).toEqual(['marinara', 'casa']); // the Bandeja needs two other plates beside it
+    for (const d of ['normal', 'hard'] as const) expect(menuRecipes(card, d)).toContain('bandeja');
+    expect(menuRecipes(['marinara', 'nonna', 'champinon', 'calzonerel'], 'normal')).toContain('nonna');
+  });
   it('maps 1-8: Fácil Marinara + Calzone (as before), Normal and Difícil add a third plate; Taller 29-36 get a card of 3', () => {
     for (const id of ['1', '2', '3', '4', '5', '6', '7', '8']) {
       expect(menuRecipes(cardForV2(id)!.recipes, 'easy'), id).toEqual(['marinara', 'calzone']);
