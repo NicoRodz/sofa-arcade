@@ -91,7 +91,7 @@ export function transition(swap: () => void) {
 // is dropped, or a second OK would also skip the card the first one opened.
 const DOUBLE_TAP_MS = 1500;
 let held: string | undefined;
-let lastCaptain: { key: string; at: number } | undefined;
+let lastCaptain: { key: string; at: number; began: boolean } | undefined;
 let sink: ((key: string) => void) | undefined;
 export const bindCaptainKeySink = (fn: (key: string) => void) => {
   sink = fn;
@@ -100,11 +100,13 @@ export const bindCaptainKeySink = (fn: (key: string) => void) => {
 export function routeCaptainKey(key: string, apply: (key: string) => void) {
   const now = performance.now();
   if (app.starting) {
-    if (!(lastCaptain && lastCaptain.key === key && now - lastCaptain.at < DOUBLE_TAP_MS)) held = key;
+    // only a repeat of the key that itself began this iris is a double tap; any other key (two "down" in a row) is legitimate
+    if (!(lastCaptain?.began && lastCaptain.key === key && now - lastCaptain.at < DOUBLE_TAP_MS)) held = key;
     return;
   }
-  lastCaptain = { key, at: now };
+  lastCaptain = { key, at: now, began: false };
   apply(key);
+  if (lastCaptain) lastCaptain.began = app.starting; // did this key start the iris?
 }
 /** The iris is free again: run what the Captain pressed meanwhile. */
 export function endIris() {
@@ -112,8 +114,9 @@ export function endIris() {
   const key = held;
   held = undefined;
   if (key === undefined) return;
-  lastCaptain = { key, at: performance.now() };
+  lastCaptain = { key, at: performance.now(), began: false };
   sink?.(key);
+  if (lastCaptain) lastCaptain.began = app.starting;
 }
 /** Tests: forget the held key. */
 export function resetCaptainKeys() {

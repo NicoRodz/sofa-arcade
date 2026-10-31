@@ -2,89 +2,19 @@
 // The captain bot walks start -> lobby -> how-to card -> round -> results -> back; the other phone is ignored; a fake `from`, a
 // message injected straight into the screen and a keyboard press racing a D-pad press are all refused.
 // usage: npx tsx tools/menu-remote-e2e.ts   (needs `npm run build`; uses :3900 and CDP :9390)
-import { spawn, execSync, type ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
 import { startServer } from '../apps/server/src/server';
 import type { ClientMsg, ServerMsg } from '@pichi/core';
+import { Cdp, irisFree, killTree, sleep } from './menu-remote/wait';
 
 const PORT = Number(process.env.E2E_PORT ?? 3900),
   CDP = Number(process.env.E2E_CDP ?? 9390);
 const CHROME = process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const ROOM = 'e2e';
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function descendants(pid: number): number[] {
-  const rows = execSync('ps -A -o pid=,ppid=')
-    .toString()
-    .trim()
-    .split('\n')
-    .map((l) => l.trim().split(/\s+/).map(Number));
-  const out: number[] = [];
-  const walk = (p: number) => {
-    for (const [c, pp] of rows)
-      if (pp === p && c !== undefined) {
-        out.push(c);
-        walk(c);
-      }
-  };
-  walk(pid);
-  return out;
-}
-async function killTree(proc: ChildProcess) {
-  if (!proc.pid) return;
-  const pids = [proc.pid, ...descendants(proc.pid)];
-  for (const p of pids) {
-    try {
-      process.kill(p, 'SIGTERM');
-    } catch {
-      /* gone */
-    }
-  }
-  await sleep(600);
-  for (const p of pids) {
-    try {
-      process.kill(p, 0);
-      process.kill(p, 'SIGKILL');
-    } catch {
-      /* gone */
-    }
-  }
-}
-
-class Cdp {
-  private id = 0;
-  private pending = new Map<number, (v: any) => void>();
-  readonly errors: string[] = [];
-  constructor(private ws: WebSocket) {
-    ws.on('message', (d) => {
-      const m = JSON.parse(d.toString());
-      if (m.id && this.pending.has(m.id)) {
-        this.pending.get(m.id)!(m);
-        this.pending.delete(m.id);
-      } else if (m.method === 'Runtime.exceptionThrown')
-        this.errors.push(String(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text).slice(0, 300));
-    });
-  }
-  send(method: string, params: object = {}): Promise<any> {
-    const id = ++this.id;
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, (m) => (m.error ? reject(new Error(m.error.message)) : resolve(m.result)));
-      this.ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-  async eval<T = unknown>(expr: string): Promise<T> {
-    const r = await this.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
-    if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? 'eval failed');
-    return r.result.value as T;
-  }
-  async key(key: string, code: string, vk: number) {
-    await this.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: vk });
-    await this.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: vk });
-  }
-}
 
 class Phone {
   ws: WebSocket;
@@ -162,16 +92,8 @@ async function main() {
     await cdp.send('Runtime.enable');
     await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${ROOM}` });
     const pg = <T>(expr: string) => cdp.eval<T>(`window.__pg.${expr}`);
-    // by state, not by sleeping: the iris (#iris is display:block while it moves, 1 s) swallows every key
-    const irisFree = async () => {
-      for (let i = 0; i < 80; i++) {
-        if (await cdp.eval<boolean>(`getComputedStyle(document.getElementById('iris')).display === 'none'`)) return;
-        await sleep(50);
-      }
-      throw new Error('the iris never freed');
-    };
     const tap = async (p: Phone, key: string) => {
-      await irisFree();
+      await irisFree(cdp);
       p.nav(key);
     };
     const phase = () => pg<string>('snapshot().phase');
@@ -254,7 +176,7 @@ async function main() {
 
     // 5. back and OK without waiting for the iris: the OK lands while the iris moves, is held and runs when it is free
     //    (menu -> lobby -> menu -> lobby); before the queue that OK was swallowed and the screen stayed at the menu
-    await irisFree();
+    await irisFree(cdp);
     cap.nav('back');
     await sleep(150);
     check(
@@ -265,7 +187,7 @@ async function main() {
     for (let i = 0; i < 60 && (await phase()) !== 'menu'; i++) await sleep(100);
     check((await phase()) === 'menu', 'captain Atrás in the lobby goes back to the menu');
     for (let i = 0; i < 60 && (await phase()) !== 'lobby'; i++) await sleep(100);
-    await irisFree();
+    await irisFree(cdp);
     check((await phase()) === 'lobby', 'the captain OK pressed during the iris is held and picks the game: back in the lobby');
     // the keyboard keeps the last word. H on the Mac opens the card (no iris involved, so nothing else can mask the rule);
     // a captain OK right behind it would close it: it is dropped inside the quiet window, and works after it

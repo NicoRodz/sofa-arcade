@@ -53,11 +53,22 @@ describe('Captain keys during the iris', () => {
   });
 
   it('drops a double tap: a repeat of the key that began the iris would also skip what it opened', () => {
-    st.routeCaptainKey('Enter', apply);
-    st.transition(() => {});
+    const opens = (k: string) => {
+      apply(k);
+      st.transition(() => {}); // this OK opens a card through the iris
+    };
+    st.routeCaptainKey('Enter', opens);
     st.routeCaptainKey('Enter', apply);
     irisDone?.();
     expect(applied).toEqual(['Enter']);
+  });
+
+  it('two equal keys in a row are kept when the first did not begin the iris (down, down)', () => {
+    st.routeCaptainKey('ArrowDown', apply);
+    st.transition(() => {}); // the iris starts from elsewhere
+    st.routeCaptainKey('ArrowDown', apply);
+    irisDone?.();
+    expect(applied).toEqual(['ArrowDown', 'ArrowDown']);
   });
 
   it('a back followed by OK within the iris is not lost', () => {
