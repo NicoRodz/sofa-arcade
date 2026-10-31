@@ -118,7 +118,8 @@ describe('the lobby lists', () => {
         for (const m of rec) expect(ids).toContain(m.id);
         expect(recommendedForN(n, d, { played: new Set() }).map((m) => m.id)).toEqual(rec.map((m) => m.id));
         const played = new Set(rec.map((m) => m.id));
-        for (const m of recommendedForN(n, d, { played })) if (ids.length > played.size) expect(played.has(m.id), `${d} N${n} ${m.id}`).toBe(false);
+        for (const m of recommendedForN(n, d, { played }))
+          if (ids.length > played.size) expect(played.has(m.id), `${d} N${n} ${m.id}`).toBe(false);
         const last = familyOfMap(rec[0]!.id);
         if (rec.length > 1) expect(familyOfMap(recommendedForN(n, d, { played: new Set(), last })[0]!.id)).not.toBe(last);
       }

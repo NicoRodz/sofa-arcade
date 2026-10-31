@@ -163,7 +163,8 @@ export function pickAutoMap(n: number | undefined, d: Difficulty, rand: () => nu
 
 // --- menuV2: the lobby lists (design pizzas-tanda2 §1.3, UI) ------------------------------------------------------------------------------------------------
 /** The page of the lobby's map grid a coop map lives on: the three sets of `groupOfMap`, and "plain" for the six maps out of the draw (the folded "Sin dinámica" group). */
-export const lobbyGroupOfMap = (id: string): ReturnType<typeof groupOfMap> | 'plain' => (OUT_OF_DRAW.includes(id) ? 'plain' : groupOfMap(id));
+export const lobbyGroupOfMap = (id: string): ReturnType<typeof groupOfMap> | 'plain' =>
+  OUT_OF_DRAW.includes(id) ? 'plain' : groupOfMap(id);
 /** How many maps "Recomendados para N" lists. */
 export const RECOMMENDED_COUNT = 3;
 /**
@@ -176,7 +177,8 @@ export function recommendedForN(n: number | undefined, d: Difficulty, session: P
   const bag = all.filter((m) => !session.played.has(m.id));
   const pool = bag.length ? bag : all;
   const k = Math.max(2, n ?? 4);
-  const best = (a: MapDef, b: MapDef) => mapLevel(a) - mapLevel(b) || Math.abs(centre(a) - k) - Math.abs(centre(b) - k) || Number(a.id) - Number(b.id);
+  const best = (a: MapDef, b: MapDef) =>
+    mapLevel(a) - mapLevel(b) || Math.abs(centre(a) - k) - Math.abs(centre(b) - k) || Number(a.id) - Number(b.id);
   const families = (['classic', 'surface', 'series', 'taller'] as const).filter((f) => pool.some((m) => familyOfMap(m.id) === f));
   families.sort((a, b) => Number(a === session.last) - Number(b === session.last) || FAMILY_PCT[d][b] - FAMILY_PCT[d][a]);
   const out: MapDef[] = [];

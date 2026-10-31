@@ -150,7 +150,9 @@ describe('rows changed by someone else (keyboard flash)', () => {
 
 describe('"Aptos para N" and the first-use card', () => {
   it('the filter keeps only the cards the screen says fit; off lists them all', () => {
-    const items = snapshot().rows.find((r) => r.kind === 'grid')!.groups!.find((g) => g.id === 'classic')!.items;
+    const items = snapshot()
+      .rows.find((r) => r.kind === 'grid')!
+      .groups!.find((g) => g.id === 'classic')!.items;
     expect(visibleItems(up(), items)).toHaveLength(4);
     expect(visibleItems(toggleFit(up()), items).map((i) => i.id)).toEqual(['1', '2', '3']);
   });

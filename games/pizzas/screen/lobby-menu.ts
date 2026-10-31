@@ -83,7 +83,9 @@ function mapRow(st: PizzasLobbyState, vs: boolean): MenuRow {
       ...item(map, status.state, 'reason' in status ? status.reason : undefined),
     }));
     const of = (g: MapGroup) => rows.filter((r) => r.group === g).map(({ group: _g, ...i }) => i);
-    const rec = recommendedForN(st.n, st.config.difficulty, { played: st.played ?? new Set(), last: st.autoLast }).flatMap((m) => of(lobbyGroupOfMap(m.id)).filter((i) => i.id === m.id));
+    const rec = recommendedForN(st.n, st.config.difficulty, { played: st.played ?? new Set(), last: st.autoLast }).flatMap((m) =>
+      of(lobbyGroupOfMap(m.id)).filter((i) => i.id === m.id),
+    );
     groups = [
       ...(rec.length ? [{ id: 'rec', label: `Recomendados para ${st.n}`, items: rec }] : []),
       { id: 'classic', label: 'Clásicos', items: of('classic') },

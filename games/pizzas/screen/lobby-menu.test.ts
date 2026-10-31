@@ -72,7 +72,10 @@ describe('buildLobbyMenu', () => {
     const next = rowOf(coop({ n: 4, connected: 4, played }), 'map')!.groups!.find((g) => g.id === 'rec')!;
     for (const i of next.items) expect(played.has(i.id), i.id).toBe(false);
     // a plain map is selectable by touch
-    expect(decideMenuAct(coop({ n: 4, connected: 4 }), act({ act: 'set', row: 'map', value: '1' }), 1)).toMatchObject({ ok: true, effect: { kind: 'map', value: '1' } });
+    expect(decideMenuAct(coop({ n: 4, connected: 4 }), act({ act: 'set', row: 'map', value: '1' }), 1)).toMatchObject({
+      ok: true,
+      effect: { kind: 'map', value: '1' },
+    });
   });
   it('the versus grid has one group and the generated / random picks as extras', () => {
     const grid = rowOf(versus(), 'map')!;
@@ -184,7 +187,11 @@ describe('decideMenuAct', () => {
       row: 'map',
     });
     expect(decideMenuAct(coop(), act({ act: 'focus', row: 'map', value: 'zzz' }), 1)).toMatchObject({ effect: { kind: 'focus' } });
-    expect(decideMenuAct(coop(), act({ act: 'focus', row: 'map', value: 'plain' }), 1)).toMatchObject({ effect: { kind: 'group', value: 'plain' } });
-    expect(decideMenuAct(coop(), act({ act: 'focus', row: 'map', value: 'rec' }), 1)).toMatchObject({ effect: { kind: 'group', value: 'classic' } }); // the TV lists them on its home page
+    expect(decideMenuAct(coop(), act({ act: 'focus', row: 'map', value: 'plain' }), 1)).toMatchObject({
+      effect: { kind: 'group', value: 'plain' },
+    });
+    expect(decideMenuAct(coop(), act({ act: 'focus', row: 'map', value: 'rec' }), 1)).toMatchObject({
+      effect: { kind: 'group', value: 'classic' },
+    }); // the TV lists them on its home page
   });
 });
