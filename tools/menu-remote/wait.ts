@@ -1,6 +1,6 @@
 // Helpers of tools/menu-remote-e2e.ts: process-tree kill, the CDP client and the iris wait.
 import { execSync, type ChildProcess } from 'node:child_process';
-import { WebSocket } from 'ws';
+import type { WebSocket } from 'ws';
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
