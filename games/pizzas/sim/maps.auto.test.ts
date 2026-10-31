@@ -168,7 +168,12 @@ describe('the TV lobby grid (coopLobbyView)', () => {
     expect(folded.shown.every((r) => r.status.state !== 'blocked')).toBe(true);
     const open = view({ showOthers: true });
     expect(open.unfolded).toBe(true);
-    expect(open.shown.filter((r) => r.status.state === 'blocked').map((r) => r.map.id).sort()).toEqual(open.folded.map((r) => r.map.id).sort());
+    expect(
+      open.shown
+        .filter((r) => r.status.state === 'blocked')
+        .map((r) => r.map.id)
+        .sort(),
+    ).toEqual(open.folded.map((r) => r.map.id).sort());
   });
   it('the selected map never hides: a blocked selection unfolds the group by itself', () => {
     const blocked = view().folded[0]!.map.id;

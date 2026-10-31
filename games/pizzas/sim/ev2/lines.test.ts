@@ -18,7 +18,8 @@ describe('eventBlurb', () => {
     expect(eventBlurb('birthday', 'normal', false)).toContain('150');
   });
   it('the four events with presence have their own line under eventsV2', () => {
-    for (const k of ['rush', 'birthday', 'blackout', 'spill'] as const) expect(eventBlurb(k, 'normal', true), k).not.toBe(eventBlurb(k, 'normal', false));
+    for (const k of ['rush', 'birthday', 'blackout', 'spill'] as const)
+      expect(eventBlurb(k, 'normal', true), k).not.toBe(eventBlurb(k, 'normal', false));
   });
 });
 

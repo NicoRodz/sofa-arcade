@@ -13,7 +13,8 @@ const V2_BLURB: Partial<Record<EventKind, (d: Difficulty) => string>> = {
 };
 
 /** The one-line blurb of an event: the eventsV2 line when the round has the events with presence, else EVENT_INFO's. */
-export const eventBlurb = (kind: EventKind, d: Difficulty, ev2: boolean): string => (ev2 ? V2_BLURB[kind]?.(d) : undefined) ?? EVENT_INFO[kind].blurb;
+export const eventBlurb = (kind: EventKind, d: Difficulty, ev2: boolean): string =>
+  (ev2 ? V2_BLURB[kind]?.(d) : undefined) ?? EVENT_INFO[kind].blurb;
 
 /** The tooltip of the lobby's "Eventos" switch: how many events a round has on this difficulty and which ones. */
 export function eventsHint(on: boolean, d: Difficulty, vs: boolean): string {

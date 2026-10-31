@@ -32,7 +32,9 @@ export function renderMapPanel(vs: boolean, n: number) {
   const { top, shown: listed, folded, unfolded } = view ?? { top: [], shown: rows, folded: [], unfolded: false };
   // "Recomendados para N" is one band of up to three cards under its label; the rest of the page flows next to it
   const cards = [
-    ...(top.length ? [`<div class="band"><div class="grp">Recomendados para ${n}</div>${top.map((r) => card(r, true)).join('')}</div>`] : []),
+    ...(top.length
+      ? [`<div class="band"><div class="grp">Recomendados para ${n}</div>${top.map((r) => card(r, true)).join('')}</div>`]
+      : []),
     ...listed.map((r) => card(r)),
   ];
   const others = folded.length

@@ -39,7 +39,8 @@ const act = (a: Partial<MenuActBody> & Pick<MenuActBody, 'act'>): MenuActBody =>
 
 describe('buildLobbyMenu', () => {
   it('the Eventos hint states the events per round of the difficulty, not the old single event between 1:00 and 2:00', () => {
-    const hint = (d: 'easy' | 'normal' | 'hard') => rowOf(coop({ config: { ...DEFAULT_CONFIG, map: '1', difficulty: d, modeOptions: { events: true } } as LobbyConfig }), 'events')?.hint;
+    const hint = (d: 'easy' | 'normal' | 'hard') =>
+      rowOf(coop({ config: { ...DEFAULT_CONFIG, map: '1', difficulty: d, modeOptions: { events: true } } as LobbyConfig }), 'events')?.hint;
     expect(hint('easy')).toMatch(/^1 evento por ronda/);
     expect(hint('hard')).toMatch(/^3 eventos por ronda/);
     expect(hint('normal')).not.toContain('1:00');
