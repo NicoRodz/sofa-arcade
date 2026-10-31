@@ -14,8 +14,8 @@ import type { Difficulty } from '@pichi/core/difficulty';
 import type { Game, Station } from './round/state';
 import type { SabotageMode } from './sabotage-config';
 import { mechOnFire, mechOvenRate } from './mech/loop';
-import { hazardParams, fireIsBig, type FireParams } from './hazard-v2';
-import { fireDouseTick, newFireV2, registerDouse, type FireV2 } from './fire-v2';
+import { hazardParams, fireIsBig, type FireParams } from './hazards/hazard-v2';
+import { fireDouseTick, newFireV2, registerDouse, type FireV2 } from './hazards/fire-v2';
 
 export const GRACE_MS: Record<Difficulty, number> = { easy: 15_000, normal: 8_000, hard: 8_000 }; // from "ready" to "burnt"
 export const WARN_BEFORE_MS = 3000; // the warning beep comes this long before the pizza burns

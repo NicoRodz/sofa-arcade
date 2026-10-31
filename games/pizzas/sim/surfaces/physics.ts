@@ -2,7 +2,7 @@
 import type { Surface } from '../maps/types';
 import type { Game, Player } from '../round/state';
 import { BELT_SPEED, ICE_TAU_MS } from './config';
-import { hazardParams } from '../hazard-v2';
+import { hazardParams } from '../hazards/hazard-v2';
 
 const ICE: Surface = { kind: 'ice' };
 export function surfaceAt(g: Game, x: number, y: number): Surface | null {

@@ -1,8 +1,8 @@
 // The fire of HAZARD_V2 (only in a round whose Burn carries `v2`): small fires need a few chef-seconds with a cap on how many chefs add up; a BIG fire (a pure function of the
 // kitchen's local fire index, see hazard-v2.ts) only progresses while two chefs hold Picar at once. One chef alone only CONTAINS it: the spread timer waits, the fire stays.
 // Picar no longer progresses inside the chef's own step: the chefs in front of a flame register (`registerDouse`) and `fireDouseTick` settles the tick once all of them did.
-import type { Game, Station } from './round/state';
-import type { Burn } from './burn';
+import type { Game, Station } from '../round/state';
+import type { Burn } from '../burn';
 
 export interface FireV2 {
   seed: number; // the round seed the fire sizes hash from

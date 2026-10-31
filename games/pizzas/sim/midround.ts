@@ -19,8 +19,8 @@ import { newSurfaceState } from './surfaces/config';
 import { gentleRatStep, ratPrize } from './feel/rat';
 import type { Game, Item, Station } from './round/state';
 import { spill } from './mech/oil/spill';
-import { hazardParams } from './hazard-v2';
-import { planEvents, type Planned } from './events-v2';
+import { hazardParams } from './hazards/hazard-v2';
+import { planEvents, type Planned } from './hazards/events-v2';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
 export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];

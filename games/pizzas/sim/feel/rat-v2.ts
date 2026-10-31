@@ -4,7 +4,7 @@
 // the one with more free floor beyond the landing point, the left of the chef's heading on a tie.
 import type { Game } from '../round/state';
 import type { Rat } from '../midround';
-import { hazardParams, type RatParams } from '../hazard-v2';
+import { hazardParams, type RatParams } from '../hazards/hazard-v2';
 
 export const ratParams = (g: Game): RatParams => (g.hz ? hazardParams(g.difficulty, g.players.size).rat : RAT_V1);
 

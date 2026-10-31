@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { MIRRORS, isoOf, runVersus } from '../test/golden/mirror-bot';
 import type { Game, Station } from './overcooked';
-import { HAZARD_V2 } from './hazard-v2';
+import { HAZARD_V2 } from './hazards/hazard-v2';
 
 const bake = (g: Game, s: Station) => {
   s.inputs = [0, 1];

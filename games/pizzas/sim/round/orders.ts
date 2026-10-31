@@ -2,7 +2,7 @@
 import { DIRTY_MS, type Tuning } from '@pichi/core/difficulty';
 import { WARNING_MS, tag, type Game, type Order, type Player, type TeamState } from './state';
 import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, type MidFx } from '../midround';
-import { rushOrdersV2 } from '../events-v2';
+import { rushOrdersV2 } from '../hazards/events-v2';
 import { pickOrder, pickRecipe } from '../recipes/sim';
 import { VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS } from '../versus/versus';
 import { isDish, recipeBase } from '../recipes/defs';

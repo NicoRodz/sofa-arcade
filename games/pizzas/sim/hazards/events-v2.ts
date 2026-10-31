@@ -2,7 +2,7 @@
 // no kind repeats, and at least `gapMs` pass between the end of one and the announce of the next. The kinds and instants come from a stream of their own (seed ^ EVENT_SCHEDULE_TAG):
 // versus has ONE global Mid, so both kitchens get the same event on the same tick. The sim keeps the rest of the list in `Mid.queue` and loads the next one when an event ends.
 import { mulberry32 } from '@pichi/core/rng';
-import { ANNOUNCE_MS, type EventKind } from './midround';
+import { ANNOUNCE_MS, type EventKind } from '../midround';
 import { EVENT_SCHEDULE_TAG, hazardParams } from './hazard-v2';
 import type { Difficulty } from '@pichi/core/difficulty';
 

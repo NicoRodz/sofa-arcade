@@ -1,12 +1,12 @@
 // HAZARD_V2 (tanda 1): the big fire needs two chefs at once, the rat dodges a dash it saw coming, the ice brakes slower than it accelerates, the calendar has several events.
 import { describe, expect, it } from 'vitest';
-import { TICK_MS, addPlayer, createGame, tick, type Game, type Station } from './overcooked';
-import { fixedMap, isFloor } from './maps';
-import { versusMap } from './versus/maps';
-import { douse } from './burn';
+import { TICK_MS, addPlayer, createGame, tick, type Game, type Station } from '../overcooked';
+import { fixedMap, isFloor } from '../maps';
+import { versusMap } from '../versus/maps';
+import { douse } from '../burn';
 import { fireIsBig, hash32 } from './hazard-v2';
 import { planEvents } from './events-v2';
-import type { Rat } from './midround';
+import type { Rat } from '../midround';
 
 const bigSeed = (want: boolean, chefs = 2) => {
   for (let s = 1; s < 500; s++) if (fireIsBig(s, 0, 'normal', chefs, true) === want) return s;
