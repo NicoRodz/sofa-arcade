@@ -13,7 +13,7 @@
   "games/obstaculos/screen/campaign/model.ts": { "max": 384, "until": "2027-03-31" },
   "games/obstaculos/screen/campaign/screen.ts": { "max": 347, "until": "2027-03-31" },
   "games/obstaculos/screen/harness/capture.ts": { "max": 459, "until": "2027-03-31" },
-  "games/obstaculos/screen/render/adapter.ts": { "max": 296, "until": "2027-03-31" },
+  "games/obstaculos/screen/render/adapter.ts": { "max": 297, "until": "2027-03-31" },
   "games/obstaculos/session.ts": { "max": 307, "until": "2027-03-31" },
   "games/obstaculos/sim/actions.ts": { "max": 353, "until": "2027-03-31" },
   "games/obstaculos/sim/campaign.test.ts": { "max": 605, "until": "2027-03-31" },

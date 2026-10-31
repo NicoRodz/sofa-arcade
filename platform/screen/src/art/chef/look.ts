@@ -58,5 +58,13 @@ export function lookTextures(scene: Phaser.Scene, ap: Appearance, role: string):
   makeTex(scene, arm, { w: 24, h: 48, ox: 12, oy: 9 }, (c) =>
     drawArm(new Canvas2DPainter(c), SKIN_TONES[ap.sk] ?? SKIN_TONES[1]!, { color: cl.top, kind: cl.sleeves }),
   );
-  return { torsoF: key('torsoF'), torsoB: key('torsoB'), headF: key('headF'), headB: key('headB'), over: key('over'), hat: key('hat'), arm };
+  return {
+    torsoF: key('torsoF'),
+    torsoB: key('torsoB'),
+    headF: key('headF'),
+    headB: key('headB'),
+    over: key('over'),
+    hat: key('hat'),
+    arm,
+  };
 }

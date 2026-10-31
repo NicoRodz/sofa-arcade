@@ -16,7 +16,8 @@ function keepPair(g: Game) {
   if (t.carrier === null || t.helper === null) return;
   const c = g.players.get(t.carrier),
     h = g.players.get(t.helper);
-  if (!c || !h || !carriesTray(g, c) || h.ghost || h.item || h.team !== c.team || Math.hypot(c.x - h.x, c.y - h.y) > RELEASE_DIST) t.helper = null;
+  if (!c || !h || !carriesTray(g, c) || h.ghost || h.item || h.team !== c.team || Math.hypot(c.x - h.x, c.y - h.y) > RELEASE_DIST)
+    t.helper = null;
 }
 
 /** The first chef (by id) in front of `p` within reach that carries the tray, or null. */

@@ -2,7 +2,6 @@
 // `game.mech.tile` (1 oil, 2 fire, 3 water), so whatever the sim says is what is drawn: a tile the sim cleaned is clean here one frame later.
 import type Phaser from 'phaser';
 import type { MechArt } from '../../../../sim/mech/types';
-import type { Game } from '../../../../sim/overcooked';
 import { FIRE, OIL, WATER } from '../../../../sim/mech/oil/state';
 import { OX, OY, TILE } from '@pichi/screen-kit/art/tokens';
 import { layer, type Draw } from '../layer';

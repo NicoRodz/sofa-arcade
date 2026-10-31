@@ -64,12 +64,13 @@ function stationsFor(c: Crew, p: Player, j: Job, at: At, rank: number): Station[
   if (at === 'pot') return reaches(c, p, j.pot) ? [j.pot] : [];
   if (at === 'saucepot') {
     if (j.sp) return reaches(c, p, j.sp) ? [j.sp] : [];
-    return near(p, c.g.stations.filter((s) => s.kind === 'saucepot' && free(s) && !claimed(c, s) && reaches(c, p, s)));
+    return near(
+      p,
+      c.g.stations.filter((s) => s.kind === 'saucepot' && free(s) && !claimed(c, s) && reaches(c, p, s)),
+    );
   }
   const kind = at === 'window' ? 'window' : at;
-  const all = c.g.stations.filter((s) =>
-    at.startsWith('crate') ? s.kind === 'crate' && s.crate === Number(at[5]) : s.kind === kind,
-  );
+  const all = c.g.stations.filter((s) => (at.startsWith('crate') ? s.kind === 'crate' && s.crate === Number(at[5]) : s.kind === kind));
   const ok = all.filter((s) => reaches(c, p, s));
   return ok.length ? [ok[rank % ok.length]!] : [];
 }
@@ -90,7 +91,10 @@ function demand(c: Crew): Recipe[] {
 }
 
 function startJob(c: Crew, p: Player, rank: number): Job | null {
-  const pot = near(p, c.g.stations.filter((s) => s.kind === 'pot' && free(s) && !claimed(c, s)))[0];
+  const pot = near(
+    p,
+    c.g.stations.filter((s) => s.kind === 'pot' && free(s) && !claimed(c, s)),
+  )[0];
   if (!pot) return null;
   for (const recipe of demand(c)) {
     const steps = stepsFor(recipe, c.bind, c.g.rec?.recipes.includes('blanca'));
@@ -145,7 +149,9 @@ function decide(c: Crew, p: Player, rank: number, m: CMem, tickNo: number): Cont
   let take: Step['take'] = 'a';
   let done = false;
   if (m.bin) {
-    const bins = g.stations.filter((s) => reaches(c, p, s) && (s.kind === 'trash' || (s.kind === 'counter' && !s.item && !c.hatches.includes(s))));
+    const bins = g.stations.filter(
+      (s) => reaches(c, p, s) && (s.kind === 'trash' || (s.kind === 'counter' && !s.item && !c.hatches.includes(s))),
+    );
     target = near(p, bins)[0];
     done = !p.item;
     if (done) m.bin = false;
@@ -166,7 +172,10 @@ function decide(c: Crew, p: Player, rank: number, m: CMem, tickNo: number): Cont
           leave(m);
           return idle;
         }
-        const h = near(p, c.hatches.filter((s) => reaches(c, p, s) && !s.item && !c.jobs.some((o) => o.hatch === s)))[0];
+        const h = near(
+          p,
+          c.hatches.filter((s) => reaches(c, p, s) && !s.item && !c.jobs.some((o) => o.hatch === s)),
+        )[0];
         if (!h) return idle;
         target = h;
         take = 'a';

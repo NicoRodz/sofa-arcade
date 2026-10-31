@@ -6,7 +6,7 @@ import type { PublicPlayer } from '@pichi/core';
 import { C, OX, OY, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
 import { buildBackground } from './env';
 import { Chef } from '@pichi/screen-kit/art/chef';
-import { Fx, makeText } from '@pichi/screen-kit/art/fx';
+import { Fx } from '@pichi/screen-kit/art/fx';
 import { Hud, ticketKey, type RoundView } from './hud';
 import { StationViews, place } from './stations';
 import { foodKey } from './food';

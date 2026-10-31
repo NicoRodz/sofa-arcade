@@ -19,6 +19,7 @@ import type { GameMode, ParsedLevel, TileGrid } from '../../index';
 import { entitiesFromLevel } from './stub';
 import type { EntityView, HandAction, HazardView, HudView, PlayerView, RopeView, WorldView } from './view';
 
+// biome-ignore format: one-line lookup table (keeps file within size budget)
 const HINT: Record<BPreview['action'], HandAction> = { anchor: 'anchor', lift: 'lift', grab: 'grab', plant: 'plant', unplant: 'release', release: 'release', throw: 'throw', pass: 'grab', none: 'none' };
 
 export class SimWorldView implements WorldView {

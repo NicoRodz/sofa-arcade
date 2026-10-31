@@ -14,7 +14,8 @@ const make = (n = 2, mech: Record<string, boolean> = { heavyTray: true, bridge: 
   g.players.get(1)!.item = 'dish'; // a plate of the open Bandeja: player 1 carries the tray
   return g;
 };
-const put = (g: Game, id: number, x: number, y: number, fx = 1) => Object.assign(g.players.get(id)!, { x: x + 0.5, y: y + 0.5, vx: 0, vy: 0, fx, fy: 0 });
+const put = (g: Game, id: number, x: number, y: number, fx = 1) =>
+  Object.assign(g.players.get(id)!, { x: x + 0.5, y: y + 0.5, vx: 0, vy: 0, fx, fy: 0 });
 const run = (g: Game, k: number, c: Map<number, Controls> = idle) => {
   for (let i = 0; i < k; i++) tick(g, c);
 };
@@ -92,7 +93,14 @@ describe('mech.heavyTray', () => {
     put(g, 1, 4, 3);
     put(g, 2, 3, 3, -1); // facing away
     put(g, 3, 6, 3, -1); // too far
-    run(g, 1, new Map([[2, stick(0, 0, 1)], [3, stick(0, 0, 1)]]));
+    run(
+      g,
+      1,
+      new Map([
+        [2, stick(0, 0, 1)],
+        [3, stick(0, 0, 1)],
+      ]),
+    );
     expect(g.mech!.tray!.helper).toBeNull();
     const h = make();
     put(h, 1, 4, 3);
@@ -115,7 +123,9 @@ describe('mech.heavyTray', () => {
     put(free, 1, 4, 3);
     put(free, 2, 4.2, 3);
     run(free, 5);
-    expect(Math.hypot(free.players.get(1)!.x - free.players.get(2)!.x, free.players.get(1)!.y - free.players.get(2)!.y)).toBeGreaterThan(0.6);
+    expect(Math.hypot(free.players.get(1)!.x - free.players.get(2)!.x, free.players.get(1)!.y - free.players.get(2)!.y)).toBeGreaterThan(
+      0.6,
+    );
   });
   it('the pair breaks when the carrier loses the plate or the helper falls too far behind', () => {
     const g = make();
@@ -167,7 +177,14 @@ describe('mech.heavyTray', () => {
       put(g, 1, 4, 3);
       put(g, 2, 3, 3);
       run(g, 1, new Map([[2, stick(0, 0, 1)]]));
-      run(g, 300, new Map([[1, stick(1, 0.3)], [2, stick(0.5, -1)]]));
+      run(
+        g,
+        300,
+        new Map([
+          [1, stick(1, 0.3)],
+          [2, stick(0.5, -1)],
+        ]),
+      );
       return [g.mech!.hash, g.mech!.tray];
     };
     expect(hash()).toEqual(hash());

@@ -10,7 +10,9 @@ describe('heavyTrayValidate', () => {
     expect(heavyTrayValidate([], 2)).toEqual([]);
   });
   it('a route that only the bridge crosses is refused (the dry ways closed)', () => {
-    const rows = BRIDGE_ROWS.map((r, y) => (y === 1 || y === 7 ? r.slice(0, 7) + '~' + r.slice(8) : y === 4 ? r.replace('O....#', '.....#') : r)); // the only oven is on the left bank
+    const rows = BRIDGE_ROWS.map((r, y) =>
+      y === 1 || y === 7 ? r.slice(0, 7) + '~' + r.slice(8) : y === 4 ? r.replace('O....#', '.....#') : r,
+    ); // the only oven is on the left bank
     expect(heavyTrayValidate(rows, 2).join()).toMatch(/without a bridge/);
   });
   it('a map that declares heavyTray needs the Bandeja on its card; the others are not checked', () => {

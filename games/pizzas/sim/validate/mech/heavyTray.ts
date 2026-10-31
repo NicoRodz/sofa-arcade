@@ -9,10 +9,13 @@ export const heavyTrayValidate: MechValidator = (rows) => {
   const ovens = find(rows, 'O'),
     windows = find(rows, 'E');
   if (!ovens.length || !windows.length) return [];
-  const free = (x: number, y: number) => at(rows, x, y) !== undefined && !'#~b=O'.includes(at(rows, x, y)!) && !/[A-Z0-9*]/.test(at(rows, x, y)!);
+  const free = (x: number, y: number) =>
+    at(rows, x, y) !== undefined && !'#~b=O'.includes(at(rows, x, y)!) && !/[A-Z0-9*]/.test(at(rows, x, y)!);
   const starts = ovens.flatMap(([x, y]) => DIRS.map(([dx, dy]) => [x + dx, y + dy] as [number, number])).filter(([x, y]) => free(x, y));
   const seen = reach(rows, starts, (c) => c !== 'b' && c !== '=');
-  return touches(rows, seen, 'E') ? [] : ['heavyTray: no route from an oven O to the window E without a bridge b or a raft (the tray would wear the bridge out)'];
+  return touches(rows, seen, 'E')
+    ? []
+    : ['heavyTray: no route from an oven O to the window E without a bridge b or a raft (the tray would wear the bridge out)'];
 };
 
 /** A map that declares `heavyTray` needs the Bandeja on its card (it is the tray that is heavy). */
