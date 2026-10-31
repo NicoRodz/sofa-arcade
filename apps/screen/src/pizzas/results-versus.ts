@@ -7,6 +7,7 @@ import { app, dispatch, services } from '@pichi/screen-kit/shell/app-state';
 import { $, esc } from '@pichi/screen-kit/ui/dom';
 import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from '@pichi/game-pizzas/screen/art/flags';
 import { DECIDED_TEXT, recordRound, seriesLine, versusReport } from '@pichi/game-pizzas/sim/versus/report';
+import { drawNote } from '@pichi/game-pizzas/sim/versus/notes';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import type { LobbyConfig } from '@pichi/core';
 import { startProblem, shuffleTeams } from './lobby-sync';
@@ -49,7 +50,7 @@ export function renderVersusResults() {
         ? `Ganaron por <b>${rep.margin}</b> ${rep.margin === 1 ? 'punto' : 'puntos'}`
         : DECIDED_TEXT[rep.decidedBy ?? 'score']
       : rep.verdict === 'draw'
-        ? 'Empate perfecto: puntaje, entregas, pedidos dorados y hasta el momento en que lo lograron'
+        ? drawNote(rep.teams.map((t) => t.delivered))
         : rep.verdict === 'aborted'
           ? 'El anfitrión terminó la partida'
           : 'El anfitrión siguió sin ganador';
