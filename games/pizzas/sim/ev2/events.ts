@@ -29,7 +29,16 @@ export function ev2End(g: Game, m: Mid) {
   if (m.kind === 'blackout') {
     const t = e.restoredAt === null ? null : e.restoredAt - m.startAt;
     if (t === null) announce(g, 'blackout', 0, 'La luz volvió sola', 'Sin premio', false);
-    else award(g, 'blackout', 'event:blackout', t < FAST_MS ? BLACKOUT_PRIZE.fast : BLACKOUT_PRIZE.slow, `Luz en ${(t / 1000).toFixed(1)} s`, 'Cocina iluminada', true);
+    else
+      award(
+        g,
+        'blackout',
+        'event:blackout',
+        t < FAST_MS ? BLACKOUT_PRIZE.fast : BLACKOUT_PRIZE.slow,
+        `Luz en ${(t / 1000).toFixed(1)} s`,
+        'Cocina iluminada',
+        true,
+      );
     e.board = null;
     mood(g, 'blackout', false);
   } else if (m.kind === 'spill') mood(g, 'spill', false);
@@ -83,7 +92,15 @@ function rushClose(g: Game) {
   const perfect = r.late === 0;
   const pts = r.ok * RED_PRIZE + (perfect ? PERFECT_PRIZE : 0);
   const bad = r.ok * 2 < r.total;
-  award(g, 'rush', 'event:rush', pts, perfect ? '¡Servicio perfecto!' : bad ? 'Clientes molestos' : 'Servicio cumplido', `${r.ok}/${r.total} a tiempo`, !bad);
+  award(
+    g,
+    'rush',
+    'event:rush',
+    pts,
+    perfect ? '¡Servicio perfecto!' : bad ? 'Clientes molestos' : 'Servicio cumplido',
+    `${r.ok}/${r.total} a tiempo`,
+    !bad,
+  );
   mood(g, 'rush', false);
 }
 

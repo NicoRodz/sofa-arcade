@@ -18,7 +18,13 @@ export function ev2Hint(g: Game, p: Player): Ev2Hint | null {
   if (!k || k.closed || k.candled) return null;
   if (near(p, k.drawer)) return { a: { label: 'Vela', icon: 'star' } };
   const win = g.stations.find((s) => s.kind === 'window');
-  if (win && isDish(p.item) && Math.hypot(p.x - (win.tx + 0.5), p.y - (win.ty + 0.5)) < 2.2 && p.item && g.teams[p.team]!.orders.some((o) => o.cake))
+  if (
+    win &&
+    isDish(p.item) &&
+    Math.hypot(p.x - (win.tx + 0.5), p.y - (win.ty + 0.5)) < 2.2 &&
+    p.item &&
+    g.teams[p.team]!.orders.some((o) => o.cake)
+  )
     return { a: { label: 'Falta la vela', icon: 'bell', off: true } };
   return null;
 }

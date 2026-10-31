@@ -39,14 +39,24 @@ export function trayParts(s: Phaser.Scene, parts: readonly Recipe[]): Tray {
 }
 
 /** The balloon and the flat prize of the birthday ticket ("Pedido de cumpleaños", midround.ts) and its pink frame. */
-export function birthdayParts(s: Phaser.Scene, frame: Phaser.GameObjects.Graphics): Phaser.GameObjects.GameObject[] {
+export function birthdayParts(
+  s: Phaser.Scene,
+  frame: Phaser.GameObjects.Graphics,
+  kind: true | 'red' | 'cake' = true,
+): Phaser.GameObjects.GameObject[] {
   frame.clear().setVisible(true);
+  if (kind === 'red') {
+    // EVENTS_V2: a ticket of the Hora punta, red frame and "¡YA!"
+    frame.lineStyle(8, 0x8f1020, 1).strokeRoundedRect(-62, 3, 124, 96, 10);
+    frame.lineStyle(4, 0xff3b4e, 1).strokeRoundedRect(-62, 3, 124, 96, 10);
+    return [makeText(s, 30, 20, '¡YA!', { size: 26, color: C.danger, stroke: 6, depth: 0 })];
+  }
   frame.lineStyle(7, 0xa83572, 1).strokeRoundedRect(-62, 3, 124, 96, 10);
   frame.lineStyle(3, 0xff8cc4, 1).strokeRoundedRect(-62, 3, 124, 96, 10);
   return [
     place(s, 'balloon', -45, 36, 0.3)
       .setScale(0.3 / R)
       .setTint(0xe95fa5),
-    makeText(s, 30, 20, '150', { size: 30, color: C.tomato, stroke: 6, depth: 0 }),
+    makeText(s, 30, 20, kind === 'cake' ? 'TORTA' : '150', { size: kind === 'cake' ? 22 : 30, color: C.tomato, stroke: 6, depth: 0 }),
   ];
 }

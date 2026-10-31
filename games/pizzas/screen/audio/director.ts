@@ -17,6 +17,8 @@ import { ACTIONS } from './actions';
 import { PANT_AT_MS, SURFACE_ACTIONS } from './surfaces';
 import { MUTATE_ACTIONS } from './mutate';
 import { MECH_ACTIONS } from './mech';
+import { GLIDE_S, moodOf, moodStack } from './mood';
+import type { EventKind } from '../../sim/midround';
 import { createChain, playNote, playSfx } from '@pichi/screen-kit/audio/synth';
 
 export interface AudioController {
@@ -84,6 +86,25 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot, ra
     if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) toggleMute();
   });
 
+  // EVENTS_V2: the mood of the music (tempo, low-pass, level) of the latest event with presence; the filter sits between the music bus and the master only once a mood asks
+  let moods: EventKind[] = [];
+  let lp: BiquadFilterNode | undefined;
+  let moodGain: GainNode | undefined;
+  bus.on('ev2:mood', (e) => {
+    moods = moodStack(moods, e.kind, e.on);
+    if (!lp) {
+      lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 20_000;
+      moodGain = ctx.createGain();
+      chain.music.disconnect();
+      chain.music.connect(lp).connect(moodGain).connect(chain.master);
+    }
+    const m = moodOf(moods);
+    lp.frequency.setTargetAtTime(m.lowpassHz, ctx.currentTime, GLIDE_S / 3);
+    moodGain!.gain.setTargetAtTime(10 ** (m.gainDb / 20), ctx.currentTime, GLIDE_S / 3);
+  });
+
   const duck = (t: number) => {
     const g = chain.music.gain;
     g.setTargetAtTime(BUS_GAIN.music * DUCK_GAIN, t, 0.03);
@@ -120,7 +141,16 @@ export function initAudio(bus: Emitter<GameEvents>, snapshot: () => Snapshot, ra
     prevMode = mode;
     if (mode !== 'game' && mode !== 'rush') loops.clear();
     const look = document.hidden ? 1.5 : LOOKAHEAD_S; // hidden tabs throttle timers to ~1 s
-    const r = advance(sched, now, look, mode, theme);
+    const mm = moodOf(moods);
+    const r = advance(
+      sched,
+      now,
+      look,
+      mode,
+      mm.bpmMul === 1
+        ? theme
+        : { ...theme, bpm: { lobby: theme.bpm.lobby, game: theme.bpm.game * mm.bpmMul, rush: theme.bpm.rush * mm.bpmMul } },
+    );
     sched = r.state;
     for (const n of r.notes) playNote(ctx, chain, n);
     for (const h of loops.due(now, look, Math.random)) playSfx(ctx, chain, h.sfx, h.at, rateFor(h.sfx, Math.random()));

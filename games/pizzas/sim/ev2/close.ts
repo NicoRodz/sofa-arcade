@@ -9,7 +9,16 @@ export function announce(g: Game, kind: EventKind, points: number, title: string
 }
 
 /** Add (or subtract, never below 0) `points` to the team's score with `source` in the book, and announce the card. */
-export function award(g: Game, kind: EventKind, source: string, points: number, title: string, detail: string, ok = points > 0, by?: number) {
+export function award(
+  g: Game,
+  kind: EventKind,
+  source: string,
+  points: number,
+  title: string,
+  detail: string,
+  ok = points > 0,
+  by?: number,
+) {
   const t = g.teams[0]!;
   const before = t.score;
   t.score = Math.max(0, t.score + points);

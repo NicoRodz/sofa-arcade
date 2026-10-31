@@ -8,6 +8,7 @@ import type { Game } from '../../../sim/overcooked';
 import type { TeamInfo } from '@pichi/core/lobby/teams';
 import { ANNOUNCE_MS, EVENT_INFO, dirtyPlates, type EventKind } from '../../../sim/midround';
 import { FrostView } from './frost-view';
+import { Ev2View } from './ev2-view';
 import { C, H, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../env/grid';
 import { foodKey, ITEM_KIND } from '../food';
@@ -39,6 +40,7 @@ export class EventsView {
   private dark: Phaser.GameObjects.Rectangle;
   private darkNow = 0; // eased 0..1
   private frost: FrostView;
+  private ev2: Ev2View | null;
   private bolts: Phaser.GameObjects.Image[] = [];
   private edges: Phaser.GameObjects.Graphics;
   private edgeT = 0;
@@ -66,6 +68,7 @@ export class EventsView {
       .setVisible(false);
     this.edges = scene.add.graphics().setDepth(1860).setVisible(false);
     this.frost = new FrostView(scene);
+    this.ev2 = game.ev2 ? new Ev2View(scene, game, fx, bus) : null; // EVENTS_V2: the dark with cones, the board, the cake, the closing card
     const on = <K extends keyof GameEvents>(k: K, fn: (p: GameEvents[K]) => void) => this.off.push(bus.on(k, fn));
     const winTile = (team?: number) => {
       const s = game.stations.find((x) => x.kind === 'window' && (team === undefined || x.owner === team));
@@ -286,7 +289,8 @@ export class EventsView {
     this.darkNow += (target - this.darkNow) * Math.min(1, dtMs / 160);
     const flick = m.dark && g.time - m.startAt < 700 ? (Math.floor(this.t / 70) % 2 ? 0.55 : 1) : 1;
     const a = this.darkNow * flick;
-    this.dark.setVisible(a > 0.01).setAlpha(0.66 * a);
+    this.dark.setVisible(a > 0.01 && !this.ev2).setAlpha(0.66 * a);
+    this.ev2?.update(dtMs);
     const ovens = g.stations.filter((s) => s.kind === 'pot');
     if (m.dark && !this.bolts.length)
       for (const s of ovens)
@@ -356,6 +360,7 @@ export class EventsView {
     this.pill?.root.destroy();
     this.dark.destroy();
     this.frost.destroy();
+    this.ev2?.destroy();
     this.edges.destroy();
     for (const b of this.bolts) b.destroy();
     this.rat?.img.destroy();

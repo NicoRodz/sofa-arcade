@@ -5,6 +5,9 @@ import { isFloor } from '../maps';
 import type { Game, Station } from '../round/state';
 
 export const EVENTS_V2_OPTION = 'eventsV2';
+/** The lobby option (default off): the events with presence. */
+export const eventsV2Of = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined): boolean =>
+  modeOptions?.[EVENTS_V2_OPTION] === true;
 export const BOARD_RADIUS = 1.5; // tiles: a chef this close to the board (or the candle drawer) is "at" it
 export const HOLD_MS: Record<Difficulty, number> = { easy: 2000, normal: 2000, hard: 1500 }; // B held at the board
 export const HOLD_CHEFS: Record<Difficulty, number> = { easy: 1, normal: 1, hard: 2 }; // chefs it takes (capped by the chefs in the kitchen)

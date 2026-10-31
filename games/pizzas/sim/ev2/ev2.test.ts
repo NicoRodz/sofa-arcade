@@ -17,7 +17,14 @@ function room(o: { v2?: boolean | null; difficulty?: 'normal' | 'hard'; chefs?: 
   const log: string[] = [];
   bus.on('ev2:close', (c) => closes.push(c));
   for (const k of ['ev2:mood', 'ev2:cake', 'interactInvalid', 'delivered', 'orderExpired'] as const) bus.on(k, () => log.push(k));
-  const g = createGame({ events: true, eventsSeed: 7, ...(o.v2 === null ? {} : { eventsV2: o.v2 ?? true }), difficulty: o.difficulty ?? 'normal', recipes: o.recipes ?? false, bus });
+  const g = createGame({
+    events: true,
+    eventsSeed: 7,
+    ...(o.v2 === null ? {} : { eventsV2: o.v2 ?? true }),
+    difficulty: o.difficulty ?? 'normal',
+    recipes: o.recipes ?? false,
+    bus,
+  });
   for (let i = 1; i <= (o.chefs ?? 1); i++) addPlayer(g, i, i - 1);
   while (g.countdown > 0 || !g.started) tick(g, new Map());
   return { g, closes, log };
@@ -27,9 +34,19 @@ const run = (g: Game, ms: number, c: Map<number, Controls> = new Map()) => {
 };
 // the event of the round becomes `kind`, starting in 100 ms (the debug hook of the screen does the same)
 function force(g: Game, kind: EventKind) {
-  Object.assign(g.mid!, { kind, phase: 'wait', announceAt: g.time, startAt: g.time + 100, endAt: Infinity, dark: false, rat: null, queue: undefined });
+  Object.assign(g.mid!, {
+    kind,
+    phase: 'wait',
+    announceAt: g.time,
+    startAt: g.time + 100,
+    endAt: Infinity,
+    dark: false,
+    rat: null,
+    queue: undefined,
+  });
 }
-const stand = (g: Game, id: number, tx: number, ty: number) => Object.assign(g.players.get(id)!, { x: tx + 0.5, y: ty + 0.5, vx: 0, vy: 0 });
+const stand = (g: Game, id: number, tx: number, ty: number) =>
+  Object.assign(g.players.get(id)!, { x: tx + 0.5, y: ty + 0.5, vx: 0, vy: 0 });
 
 describe('eventsV2: the flag', () => {
   it('is off by default and in versus; on only with events', () => {
@@ -159,7 +176,7 @@ describe('eventsV2: cumpleaños', () => {
     p.fx = 0;
     p.fy = -1;
   }
-  it('the cake is the card\'s most complex dish and starts with no candle', () => {
+  it("the cake is the card's most complex dish and starts with no candle", () => {
     const { g } = room({ recipes: true });
     force(g, 'birthday');
     run(g, 200);

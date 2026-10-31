@@ -90,7 +90,13 @@ export function deliver(g: Game, p: Player) {
     const { tune, orderTtlMs } = g.params;
     const birthday = !!o.birthday; // the event's order: BIRTHDAY_POINTS flat, no tip (the streak still counts)
     const extra = o.recipe === 'casa' ? casaExtras(g.difficulty, item) : { points: 0, tip: 1, bonus: 1 }; // the upgrades of a Pizza de la casa (casa.ts); nothing for any other order
-    const base = birthday ? (o.cake ? CAKE_PRIZE[g.difficulty] : BIRTHDAY_POINTS) : o.recipe === 'bandeja' ? bandejaBase(g, o, tune) : recipeBase(o.recipe, tune) + extra.points; // R13
+    const base = birthday
+      ? o.cake
+        ? CAKE_PRIZE[g.difficulty]
+        : BIRTHDAY_POINTS
+      : o.recipe === 'bandeja'
+        ? bandejaBase(g, o, tune)
+        : recipeBase(o.recipe, tune) + extra.points; // R13
     const left = Math.min(1, Math.max(0, o.expiresAt - g.time) / orderTtlMs);
     const mult = birthday ? 1 : tipMultiplier(team.streak, tune); // R15: the streak multiplies only the tip
     const tip = birthday ? 0 : Math.round(base * tune.tipPct * left * extra.tip) * mult; // R14: up to +50% of the base, by the patience left
