@@ -1,5 +1,6 @@
 // The Pizzas lobby's team columns (versus), the sabotage pills and the events pills.
 import { SABOTAGE_BLURB, SABOTAGE_OPTION, sabotageOf } from '../../sim/sabotage-config';
+import { eventsHint } from '../../sim/ev2/lines';
 import { eventsOf } from '../../sim/midround';
 import { mutateOf } from '../../sim/mutate/plan';
 import { VERSUS_RANDOM, lobbySetup, sabotageNotice, teamSizes } from '../../sim/versus/lobby';
@@ -92,7 +93,7 @@ export function renderEvents() {
     [true, false]
       .map(
         (v) =>
-          `<button class="pill ${v === on ? 'sel' : ''}" data-ev="${v}" title="${v ? 'Un evento por ronda, entre el 1:00 y el 2:00' : 'Sin eventos'}">${v ? 'Sí' : 'No'}</button>`,
+          `<button class="pill ${v === on ? 'sel' : ''}" data-ev="${v}" title="${eventsHint(v, app.config.difficulty, isVersus())}">${v ? 'Sí' : 'No'}</button>`,
       )
       .join(''),
   );

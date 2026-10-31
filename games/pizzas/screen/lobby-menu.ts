@@ -4,6 +4,7 @@
 import { DIFFICULTIES, DIFFICULTY_LABEL, params, type Difficulty } from '@pichi/core/difficulty';
 import { hasModeChoice, selectableModes, type GameDef, type ModeId } from '@pichi/core/contract';
 import type { LobbyConfig, MenuActBody, MenuBody, MenuErrCode, MenuGroup, MenuItem, MenuOption, MenuRow } from '@pichi/core';
+import { eventsHint } from '../sim/ev2/lines';
 import { eventsOf } from '../sim/midround';
 import { COOP_MAPS, fixedMap, lobbyGroupOfMap, lobbyMaps, recommendedForN, type MapFamily } from '../sim/maps';
 import { mutateOf } from '../sim/mutate/plan';
@@ -163,7 +164,7 @@ export function buildLobbyMenu(st: PizzasLobbyState): MenuBody {
     label: 'Eventos',
     kind: 'toggle',
     value: ev,
-    hint: yesNo(ev, 'Un evento por ronda, entre el 1:00 y el 2:00', 'Sin eventos'),
+    hint: eventsHint(ev, c.difficulty, vs),
   });
   if (!vs) {
     const mu = mutateOf(c.modeOptions, c.difficulty);

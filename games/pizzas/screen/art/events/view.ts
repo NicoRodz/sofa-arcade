@@ -7,6 +7,7 @@ import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
 import type { TeamInfo } from '@pichi/core/lobby/teams';
 import { ANNOUNCE_MS, EVENT_INFO, dirtyPlates, type EventKind } from '../../../sim/midround';
+import { eventBlurb } from '../../../sim/ev2/lines';
 import { cakeLine } from '../../../sim/ev2/state';
 import { FrostView } from './frost-view';
 import { Ev2View } from './ev2-view';
@@ -87,9 +88,7 @@ export class EventsView {
     const blurbTxt =
       kind === 'rat' && this.game.magnet
         ? 'Esquiva el dash: atrápala cuando jadee'
-        : kind === 'birthday' && this.game.ev2
-          ? `${cakeLine(this.game.difficulty)} puntos, con vela`
-          : info.blurb;
+        : eventBlurb(kind, this.game.difficulty, !!this.game.ev2);
     const blurb = makeText(this.scene, 40, 22, blurbTxt, {
       size: 32,
       color: '#FFF1D6',

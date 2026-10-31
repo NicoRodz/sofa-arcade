@@ -194,3 +194,25 @@ export function recommendedForN(n: number | undefined, d: Difficulty, session: P
   }
   return out;
 }
+
+export type LobbyRow = { map: MapDef; status: MapStatus };
+/**
+ * What the TV's coop grid lists on one page: the recommended maps on top (classic page only), once each; the page's other maps; and the ones that cannot be picked for N
+ * folded away ("Otros mapas (N)") unless the host unfolded them or the selected map is one of them (it never hides). Blocked maps stay choosable once unfolded in the sense
+ * that they are listed with their reason; the rules still refuse them.
+ */
+export function coopLobbyView(
+  n: number,
+  group: ReturnType<typeof lobbyGroupOfMap>,
+  rec: readonly MapDef[],
+  selected: string,
+  showOthers: boolean,
+): { top: LobbyRow[]; shown: LobbyRow[]; folded: LobbyRow[]; unfolded: boolean } {
+  const all = lobbyMaps(n, COOP_MAPS);
+  const top = group === 'classic' ? rec.flatMap((m) => all.filter((r) => r.map.id === m.id)) : [];
+  const topIds = new Set(top.map((r) => r.map.id));
+  const list = all.filter((r) => lobbyGroupOfMap(r.map.id) === group && !topIds.has(r.map.id));
+  const folded = list.filter((r) => r.status.state === 'blocked');
+  const unfolded = showOthers || folded.some((r) => r.map.id === selected);
+  return { top, shown: list.filter((r) => r.status.state !== 'blocked' || unfolded), folded, unfolded };
+}

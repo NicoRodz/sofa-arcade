@@ -84,6 +84,11 @@ export function initLobbyView() {
     const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map;
     if (m === 'group') {
       const to = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.to;
+      if (to === 'others') {
+        pz.showOthers = !pz.showOthers;
+        renderMapPanel(isVersus(), connectedN());
+        return;
+      }
       pz.mapGroup = to === 'series' || to === 'taller' || to === 'plain' ? to : 'classic';
       if (lobbyGroupOfMap(app.config.map) !== 'classic' && lobbyGroupOfMap(app.config.map) !== pz.mapGroup) setConfig({ map: 'auto' }); // the picked map is not on this page any more
       renderMapPanel(isVersus(), connectedN());
