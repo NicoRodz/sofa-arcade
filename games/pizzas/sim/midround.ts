@@ -21,9 +21,10 @@ import { ratPull, stealOnEscape } from './feel/rat-loot';
 import type { Game, Item, Station } from './round/state';
 import { spill } from './mech/oil/spill';
 import { hazardParams } from './hazards/hazard-v2';
+import { hz3Params } from './hazards/hazard-v3';
 import { book } from './hazards/score-ledger';
 import { planEvents, type Planned } from './hazards/events-v2';
-import { ev2End, ev2Start, ev2Tick } from './ev2/events';
+import { ev2End, ev2SpillWatch, ev2Spilt, ev2Start, ev2Tick } from './ev2/events';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
 export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];
@@ -339,6 +340,7 @@ function inspect(g: Game) {
 // --- The clock of the event -------------------------------------------------------------------------------------------------------------------------
 export function midTick(g: Game, dtMs: number, fx: MidFx) {
   const m = g.mid!;
+  if (g.ev2) ev2SpillWatch(g); // EVENTS_V2: the oil of the Derrame outlives the event (it is `done` after 3 s), so this runs before the phase checks
   if (m.phase === 'done') return;
   if (m.phase === 'wait' && g.time >= m.announceAt) {
     m.phase = 'announced';
@@ -356,8 +358,10 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
     else if (m.kind === 'frost') {
       m.frost = true;
       g.surf ??= newSurfaceState(); // the ice rules only run in a round that has `surf`
-    } else if (m.kind === 'spill') spill(g, m.rng);
-    else if (m.kind === 'rat') spawnRat(g, m);
+    } else if (m.kind === 'spill') {
+      const tiles = spill(g, m.rng);
+      if (g.ev2) ev2Spilt(g, tiles, hz3Params(g).oil.spillDry);
+    } else if (m.kind === 'rat') spawnRat(g, m);
     return;
   }
   if (m.phase !== 'active') return;

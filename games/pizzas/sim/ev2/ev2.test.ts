@@ -7,11 +7,13 @@ import { cakeRecipe } from './events';
 import { chefHint } from '../hints';
 import { ev2Bot } from './bot';
 import { aStation } from '../round/targeting';
+import { OIL, at, setTile } from '../mech/oil/state';
+import { hz3Params } from '../hazards/hazard-v3';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 type Close = GameEvents['ev2:close'];
 
-function room(o: { v2?: boolean | null; difficulty?: 'normal' | 'hard'; chefs?: number; recipes?: boolean } = {}) {
+function room(o: { v2?: boolean | null; difficulty?: 'normal' | 'hard'; chefs?: number; recipes?: boolean; oil?: boolean } = {}) {
   const bus = new Emitter<GameEvents>();
   const closes: Close[] = [];
   const log: string[] = [];
@@ -23,6 +25,7 @@ function room(o: { v2?: boolean | null; difficulty?: 'normal' | 'hard'; chefs?: 
     ...(o.v2 === null ? {} : { eventsV2: o.v2 ?? true }),
     difficulty: o.difficulty ?? 'normal',
     recipes: o.recipes ?? false,
+    ...(o.oil ? { mech: { oil: true } } : {}),
     bus,
   });
   for (let i = 1; i <= (o.chefs ?? 1); i++) addPlayer(g, i, i - 1);
@@ -267,5 +270,75 @@ describe('eventsV2: bots', () => {
     run(g, 200);
     drive(g, () => g.ev2!.cake!.candled, 15_000, [1]);
     expect(g.ev2!.cake!.by).toBe(1);
+  });
+});
+
+describe('eventsV2: derrame', () => {
+  const spillRoom = () => {
+    const r = room({ oil: true });
+    force(r.g, 'spill');
+    run(r.g, 200); // the event starts and throws the patches
+    return r;
+  };
+  const patches = (g: Game) => g.ev2!.spill!.tiles;
+  const wipe = (g: Game, idx: number) => setTile(g, idx, 0, 0); // what a chef's B does when the wiping run is done (mech/oil/module.ts tickTiles)
+  it('keeps the patches and the plazo of the spill', () => {
+    const { g } = spillRoom();
+    const k = g.ev2!.spill!;
+    expect(k.tiles.length).toBe(hz3Params(g).oil.spillPatches);
+    expect(k.dryTicks).toBe(hz3Params(g).oil.spillDry);
+    expect(k.tiles.every((i) => at(g, i) === OIL)).toBe(true);
+  });
+  it('every patch wiped before it dries: +60 and "Cocina reluciente" on the card, once', () => {
+    const { g, closes } = spillRoom();
+    const before = g.teams[0]!.score;
+    for (const i of patches(g).slice(1)) wipe(g, i);
+    run(g, 3500); // the event is over (3 s) and one patch is still there: nothing yet
+    expect(g.mid!.phase).toBe('done');
+    expect(closes).toHaveLength(0);
+    wipe(g, patches(g)[0]!);
+    run(g, 100);
+    expect(closes).toHaveLength(1);
+    expect(closes[0]).toMatchObject({ kind: 'spill', points: 60, ok: true, title: 'Cocina reluciente' });
+    expect(g.teams[0]!.score).toBe(before + 60);
+    run(g, 5000);
+    expect(closes).toHaveLength(1);
+  });
+  it('a chef wiping the last patch with B closes it (the real wipe, not a poke at the floor)', () => {
+    const { g, closes } = spillRoom();
+    const [last, ...rest] = patches(g).reverse() as [number, ...number[]];
+    for (const i of rest) wipe(g, i);
+    const tx = last % 16,
+      ty = Math.floor(last / 16);
+    const spot = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ].find(([dx, dy]) => g.grid[ty + dy!]?.[tx + dx!]?.kind === 'floor')!;
+    stand(g, 1, tx + spot[0]!, ty + spot[1]!);
+    Object.assign(g.players.get(1)!, { fx: -spot[0]!, fy: -spot[1]! });
+    run(g, 3000, new Map([[1, { ...idle, b: true }]]));
+    expect(at(g, last)).not.toBe(OIL);
+    expect(closes.at(-1)).toMatchObject({ kind: 'spill', points: 60, ok: true });
+  });
+  it('the oil dries first: no prize and a card that says so', () => {
+    const { g, closes } = spillRoom();
+    const before = g.teams[0]!.score;
+    for (const i of patches(g).slice(1)) wipe(g, i);
+    run(g, (hz3Params(g).oil.spillDry / 60) * 1000 + 2000);
+    expect(patches(g).every((i) => at(g, i) === 0)).toBe(true); // it dried by itself: reads as clean to the floor, but too late
+    expect(closes).toHaveLength(1);
+    expect(closes[0]).toMatchObject({ kind: 'spill', points: 0, ok: false, title: 'El aceite se secó solo' });
+    expect(g.teams[0]!.score).toBe(before);
+  });
+  it('a round without eventsV2 plays the spill as before: no state, no card', () => {
+    const { g, closes } = room({ oil: true, v2: false });
+    force(g, 'spill');
+    run(g, 200);
+    for (let i = 0; i < 128; i++) setTile(g, i, 0, 0);
+    run(g, 1000);
+    expect(g.ev2).toBeUndefined();
+    expect(closes).toHaveLength(0);
   });
 });

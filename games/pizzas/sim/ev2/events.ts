@@ -6,8 +6,21 @@ import { RECIPE_PARTS } from '../recipes/defs';
 import type { Mid } from '../midround';
 import { book } from '../hazards/score-ledger';
 import { aStation } from '../round/targeting';
+import { FIRE, OIL, at } from '../mech/oil/state';
 import { announce, award } from './close';
-import { BLACKOUT_PRIZE, CAKE_PENALTY, CAKE_TTL_MS, FAST_MS, HOLD_CHEFS, HOLD_MS, PERFECT_PRIZE, RED_PRIZE, near, pickSpot } from './state';
+import {
+  BLACKOUT_PRIZE,
+  CAKE_PENALTY,
+  CAKE_TTL_MS,
+  FAST_MS,
+  HOLD_CHEFS,
+  HOLD_MS,
+  PERFECT_PRIZE,
+  RED_PRIZE,
+  SPILL_PRIZE,
+  near,
+  pickSpot,
+} from './state';
 
 const mood = (g: Game, kind: Mid['kind'], on: boolean) => g.bus.emit('ev2:mood', { kind, on });
 
@@ -170,5 +183,27 @@ export function ev2Expired(g: Game, t: TeamState, o: Order) {
     award(g, 'birthday', 'event:birthday', CAKE_PENALTY[g.difficulty], 'Torta vencida', 'Un globo se desinfló', false);
     g.bus.emit('ev2:cake', { step: 'expired' });
     mood(g, 'birthday', false);
+  }
+}
+
+// --- Derrame ----------------------------------------------------------------------------------------------------------------------------------------
+/** midround, right after spill() threw the patches: keep their tiles and how many ticks they have before they dry (the event itself is over in 3 s; the oil lasts 30-40). */
+export function ev2Spilt(g: Game, tiles: number[], dryTicks: number) {
+  g.ev2!.spill = { tiles, dryTicks, ticks: 0, closed: false };
+}
+
+/** midround, first thing of every tick (the event is already `done` while the oil is still there): all the patches wiped before they dry = +60 and the card; one tick before the
+ *  first one dries the chance is gone (a tile that dried by itself reads as clean, so the deadline is counted in ticks, not read from the floor). */
+export function ev2SpillWatch(g: Game) {
+  const k = g.ev2!.spill;
+  if (!k || k.closed) return;
+  k.ticks++;
+  const wiped = k.tiles.length > 0 && k.tiles.every((i) => at(g, i) !== OIL && at(g, i) !== FIRE);
+  if (wiped) {
+    k.closed = true;
+    award(g, 'spill', 'event:spill', SPILL_PRIZE, 'Cocina reluciente', `${k.tiles.length}/${k.tiles.length} manchas limpias`, true);
+  } else if (k.ticks >= k.dryTicks - 1) {
+    k.closed = true;
+    announce(g, 'spill', 0, 'El aceite se secó solo', 'Sin premio', false);
   }
 }
