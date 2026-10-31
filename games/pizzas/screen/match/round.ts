@@ -6,8 +6,10 @@ import { app } from '@pichi/screen-kit/shell/app-state';
 import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { COUNTDOWN_MS, addPlayer, createGame } from '../../sim';
 import { resolveMap } from '../../sim/generate';
-import { SERIES_MAPS, type MapChoice } from '../../sim/maps';
+import { SERIES_MAPS, familyOfMap, pickAutoMap, type MapChoice } from '../../sim/maps';
 import { patchMap } from '../../sim/maps/hazard-patches';
+import { mulberry32 } from '@pichi/core/rng';
+import { subSeed } from '../../sim/recipes/menu';
 import { usesSurfaces } from '../../sim/surfaces/legend';
 import { mechFlagsOf } from '../../sim/mech/ids';
 import { roundRules } from '../../sim/midround';
@@ -62,12 +64,24 @@ function startVersus(): MatchStart {
 
 function startCoop(): undefined {
   const n = connectedN();
-  const resolved = resolveMap(app.config.map as MapChoice, app.config.seed, app.config.difficulty, n, Math.random, {
-    mechs: mechsOf(app.config.modeOptions),
-    mechanics: pickedMechs(app.config.modeOptions).length ? pickedMechs(app.config.modeOptions) : undefined,
-    mutate: mutateOf(app.config.modeOptions, app.config.difficulty),
-  });
+  // menuV2: "Aleatorio" draws among every coop map with a dynamic (maps/lobby.ts), from a sub-stream of the seed (`lobby:<round>`), with the session's bag
+  const auto =
+    app.config.map === 'auto'
+      ? pickAutoMap(n, app.config.difficulty, mulberry32(subSeed(app.config.seed, `lobby:${pz.roundNo}`)), {
+          played: pz.played,
+          last: pz.autoLast,
+          first: pz.roundNo === 0,
+        })
+      : null;
+  const resolved =
+    auto ??
+    resolveMap(app.config.map as MapChoice, app.config.seed, app.config.difficulty, n, Math.random, {
+      mechs: mechsOf(app.config.modeOptions),
+      mechanics: pickedMechs(app.config.modeOptions).length ? pickedMechs(app.config.modeOptions) : undefined,
+      mutate: mutateOf(app.config.modeOptions, app.config.difficulty),
+    });
   const map = patchMap(resolved, app.config.difficulty); // HAZARD_V3: the dynamic of the fixed maps 10, 12-15, 22 and 27 (coop only)
+  if (/^\d+$/.test(map.id)) pz.autoLast = familyOfMap(map.id);
   pz.game = createGame({
     mapId: map.id,
     hazardsV3: true, // the harder numbers, the rat that takes an item when it escapes and the expired-order penalties (Easy keeps its own)
@@ -79,6 +93,7 @@ function startCoop(): undefined {
     bus: pizzasBus,
     eventsSeed: nextEventsSeed(),
     ...roundRules(app.config.modeOptions, app.config.difficulty),
+    menuV2: true, // 2-4 plates by difficulty with a bag (recipes/menu.ts) and the crate a third plate needs (maps/menu-patches.ts)
     adaptive: SERIES_MAPS.some((m) => m.id === map.id), // the Carta larga series paces its orders by the load of the queue
     upgradeOrders: SERIES_MAPS.some((m) => m.id === map.id), // ... and brings the Pizza de la casa with its upgrades, the portions and the Bandeja familiar
     sliceAfterBake: SERIES_MAPS.some((m) => m.id === map.id),

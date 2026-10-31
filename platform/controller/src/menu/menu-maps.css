@@ -9,5 +9,5 @@
 #cmenu .cm-card.sel em { color: var(--tomato2); }
 #cmenu .cm-card.sel .cm-st { color: var(--tomato2); }
 .cm-extras { margin-top: 2px; }
-.cm-tabs { flex-wrap: nowrap; }
+.cm-tabs { flex-wrap: wrap; } /* five tabs (Recomendados, Clásicos, Carta larga, Taller, Sin dinámica) do not fit one line at 320px */
 .cm-body[data-view=confirm] { justify-content: center; align-items: stretch; gap: 14px; }

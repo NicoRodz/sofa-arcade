@@ -1,6 +1,6 @@
 // The Pizzas lobby as the Captain's touch form: feeds the pure builder in games/pizzas/screen/lobby-menu.ts with the live lobby state and carries out what a
 // touch decided with the lobby's own functions (the same ones the clicks and the keys call), so every guard they have still applies.
-import { groupOfMap } from '../../sim/maps';
+import { lobbyGroupOfMap } from '../../sim/maps';
 import { FOCUS_ROW, buildLobbyMenu, decideMenuAct, type MenuEffect, type PizzasLobbyState } from '../lobby-menu';
 import { focusRow } from '@pichi/screen-kit/lobby/focus-nav-dom';
 import { startRound } from '@pichi/screen-kit/shell/round-flow';
@@ -20,6 +20,8 @@ const lobbyState = (): PizzasLobbyState => ({
   startProblem: startProblem(),
   mapNotice: pz.mapNotice,
   teamNotice: pz.teamNotice,
+  played: pz.played,
+  autoLast: pz.autoLast,
 });
 
 export const pizzasMenu = (): MenuBody => buildLobbyMenu(lobbyState());
@@ -51,7 +53,7 @@ function run(e: MenuEffect) {
     case 'group':
       // the TV shows the page the phone opened; a series map picked stays picked only on its own page, as with the click on the page's tab
       pz.mapGroup = e.value;
-      if (groupOfMap(app.config.map) !== e.value && groupOfMap(app.config.map) !== 'classic') return setConfig({ map: 'auto' });
+      if (lobbyGroupOfMap(app.config.map) !== e.value && lobbyGroupOfMap(app.config.map) !== 'classic') return setConfig({ map: 'auto' });
       return renderUi();
     case 'shuffle':
       return shuffleTeams();

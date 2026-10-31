@@ -81,6 +81,8 @@ const STATES: { name: string; wide?: boolean; intro?: boolean; steps: string[]; 
   { name: 'intro-wide-font', wide: true, steps: [], intro: true },
   { name: 'maps-page-1', steps: [tapEl('[data-cm=maps]')] },
   { name: 'maps-page-2', steps: [tapEl('[data-cm=maps]'), tapEl('[data-cm=tab][data-val=series]')] },
+  { name: 'maps-plain', steps: [tapEl('[data-cm=maps]'), tapEl('[data-cm=tab][data-val=plain]')] },
+  { name: 'maps-plain-wide-font', wide: true, steps: [tapEl('[data-cm=maps]'), tapEl('[data-cm=tab][data-val=plain]')] },
   { name: 'maps-wide-font', wide: true, steps: [tapEl('[data-cm=maps]')] },
   { name: 'confirm', steps: [tapEl('.cm-go'), 'WAIT'] },
   { name: 'confirm-wide-font', wide: true, steps: [tapEl('.cm-go'), 'WAIT'] },

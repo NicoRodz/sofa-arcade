@@ -3,7 +3,7 @@ import { params } from '@pichi/core/difficulty';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
 import { generate } from '../../sim/generate';
-import { COOP_MAPS, fixedMap, groupOfMap, lobbyMaps, mapFeatures, mapStatus } from '../../sim/maps';
+import { COOP_MAPS, fixedMap, lobbyGroupOfMap, lobbyMaps, mapFeatures, mapStatus, recommendedForN } from '../../sim/maps';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusLobbyMaps } from '../../sim/versus/lobby';
 import { versusMap } from '../../sim/versus/maps';
 import { drawMiniMap } from '../art/ui';
@@ -13,20 +13,25 @@ import { pz } from '../state';
 let lastMapKey = '';
 
 export function renderMapPanel(vs: boolean, n: number) {
-  if (groupOfMap(app.config.map) !== 'classic') pz.mapGroup = groupOfMap(app.config.map); // a series map picked (or kept from the last round) shows its own set
+  // "Recomendados para N" tops the home page: a recommended map picked from it keeps the page; any other map off the classics shows its own set
+  const rec = vs ? [] : recommendedForN(n, app.config.difficulty, { played: pz.played, last: pz.autoLast });
+  const picked = lobbyGroupOfMap(app.config.map);
+  if (picked !== 'classic' && !(pz.mapGroup === 'classic' && rec.some((m) => m.id === app.config.map))) pz.mapGroup = picked;
   const sizes = teamSizes(app.config.teams);
   const rows = vs
     ? versusLobbyMaps(sizes).map(({ map, status }) => ({
         map,
         status: status.state === 'recommended' ? { state: 'recommended' as const } : status,
       }))
-    : lobbyMaps(n, COOP_MAPS).filter(({ map }) => groupOfMap(map.id) === pz.mapGroup);
-  const cards = rows.map(({ map, status }) => {
+    : lobbyMaps(n, COOP_MAPS).filter(({ map }) => lobbyGroupOfMap(map.id) === pz.mapGroup);
+  const top = pz.mapGroup === 'classic' ? rec.flatMap((m) => lobbyMaps(n, COOP_MAPS).filter((r) => r.map.id === m.id)) : [];
+  const card = ({ map, status }: (typeof rows)[number], star = false) => {
     const f = mapFeatures(map.rows);
-    const cls = `mc ${status.state === 'recommended' ? 'rec' : status.state === 'warn' ? 'warn' : 'blk'} ${map.id === app.config.map ? 'sel' : ''}`;
+    const cls = `mc${star ? ' top' : ''} ${status.state === 'recommended' ? 'rec' : status.state === 'warn' ? 'warn' : 'blk'} ${map.id === app.config.map ? 'sel' : ''}`;
     const tags = `${f.cheese ? '<i class="tag" title="Queso: Margarita">Q</i>' : ''}${f.sink ? '<i class="tag l" title="Lavado de platos">L</i>' : ''}`;
     return `<button class="${cls}" data-map="${map.id}"><span class="t"><b>${map.id}</b>${esc(map.name)}</span><span class="m">${map.nMin}-${map.nMax}<span class="st">${'★'.repeat(map.stars)}</span>${tags}</span>${status.state === 'recommended' ? '' : `<span class="why">${status.reason}</span>`}</button>`;
-  });
+  };
+  const cards = [...top.map((r) => card(r, true)), ...rows.map((r) => card(r))];
   const special = (
     vs
       ? [
@@ -34,12 +39,13 @@ export function renderMapPanel(vs: boolean, n: number) {
           [VERSUS_RANDOM, 'Mapa generado', 'semilla nueva'],
         ]
       : pz.mapGroup !== 'classic'
-        ? [['group', '◂ Clásicos', 'los 19 de antes', 'classic']]
+        ? [['group', '◂ Inicio', 'recomendados y clásicos', 'classic']]
         : [
             ['auto', 'Aleatorio', 'de los ideales'],
             ['random', 'Mapa generado', 'semilla nueva'],
             ['group', 'Carta larga ▸', 'platos nuevos', 'series'],
             ['group', 'Taller ▸', 'mecánicas nuevas', 'taller'],
+            ['group', 'Sin dinámica ▸', 'los 6 simples', 'plain'],
           ]
   ).map(
     ([id, label, sub, to]) =>

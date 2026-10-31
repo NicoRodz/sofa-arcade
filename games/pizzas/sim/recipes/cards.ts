@@ -56,6 +56,26 @@ export const CARDS: Readonly<Record<string, Card>> = {
   V5: { recipes: [M, H] },
 };
 
+// menuV2 (design pizzas-tanda2 §2): the plates the card holds when the round plays "variety". Maps with one or two plates get a third, from the first of the
+// preference list whose stations the map already has (the calzone needs none beyond the basic ones); where none is there, maps/menu-patches.ts adds one
+// cheese crate ('3') and the third plate is a Pepperoni. The legacy CARDS above are untouched: a round without the flag plays them bit for bit.
+const V2_PAIR_PLUS_PEPPERONI: Card = { recipes: [M, C, P] }; // the maps with no topping crate: the patch adds the '3'
+export const CARDS_V2: Readonly<Record<string, Card>> = {
+  ...Object.fromEntries(
+    ['1', '2', '3', '4', '5', '6', '7', '8', '16', '17', '18', '19', '31', '32', '33', '34', '35'].map((id) => [
+      id,
+      V2_PAIR_PLUS_PEPPERONI,
+    ]),
+  ),
+  '10': { recipes: [M, H, C] },
+  '14': { recipes: [M, P, C] },
+  '29': { recipes: [M, Q, C] }, // Taller: the kneader map
+  '30': { recipes: [M, H, C] },
+  '36': { recipes: [M, P, C] },
+  V4: { recipes: [M, P, C] },
+  V5: { recipes: [M, H, C] },
+};
+
 // The surface maps (ice, belts; ids 16-19) play the plain pair: the surface is the twist.
 const SURFACE_CARD: Card = { recipes: [M, C] };
 
@@ -91,3 +111,10 @@ export function cardShapeProblems(card: Card): string[] {
     errors.push('a card has at most one recipe with a topping (the cheese crate gives one topping)');
   return errors;
 }
+
+/** The card of a map under menuV2: the new table where the map has an entry, else the legacy card (the other maps already hold three plates). */
+export const cardForV2 = (mapId: string | undefined): Card | undefined => {
+  if (mapId === undefined) return undefined;
+  const base = mapId.replace(/-vs$/, '');
+  return CARDS_V2[mapId] ?? CARDS_V2[base] ?? cardFor(mapId);
+};

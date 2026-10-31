@@ -3,7 +3,9 @@
 // validate.ts calls it from validateMap and validateVersus (per kitchen, with the other kitchen walled off); a map with no card is not checked.
 import type { Grid } from '../maps';
 import { accessTiles, analyze, stationsOf, type StationKey } from '../validate';
-import { cardShapeProblems, type Card } from './cards';
+import { DIFFICULTIES } from '@pichi/core/difficulty';
+import { cardForV2, cardShapeProblems, type Card } from './cards';
+import { menuRecipes } from './menu';
 import { RECIPE_DEFS } from './defs';
 
 export function cardProblems(card: Card, g: Grid): string[] {
@@ -24,4 +26,17 @@ export function cardProblems(card: Card, g: Grid): string[] {
     }
   }
   return errors;
+}
+
+/**
+ * menuV2: the card a round plays (sorted by effort and cut to the difficulty) against the map as the round plays it: `g` is the grid with the menu patch applied
+ * (in versus: each kitchen). Every difficulty is checked, so a cut that leaves out a plate cannot hide a station that the full card needs. Empty for a map with no card.
+ */
+export function menuCardProblems(mapId: string, g: Grid): string[] {
+  const card = cardForV2(mapId);
+  if (!card) return [];
+  const errors = new Set<string>();
+  for (const d of DIFFICULTIES)
+    for (const e of cardProblems({ ...card, recipes: menuRecipes(card.recipes, d) }, g)) errors.add(`menuV2 ${d}: ${e}`);
+  return [...errors];
 }

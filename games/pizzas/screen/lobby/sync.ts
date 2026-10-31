@@ -9,7 +9,7 @@ import { modeOf, type ModeId } from '@pichi/core/contract';
 import { SABOTAGE_OPTION } from '../../sim/sabotage-config';
 import { EVENTS_OPTION } from '../../sim/midround';
 import { MUTATE_OPTION } from '../../sim/mutate/plan';
-import { defaultMap, fixedMap, isMapChoice, mapStatus, replacementMap, type MapChoice } from '../../sim/maps';
+import { defaultCoopMap, fixedMap, isMapChoice, mapStatus, replacementMap, type MapChoice } from '../../sim/maps';
 import { versusMap } from '../../sim/versus/maps';
 import {
   VERSUS_AUTO,
@@ -50,7 +50,7 @@ export function setMode(id: ModeId) {
     teams,
     teamsLocked: false,
     modeOptions: id === 'versus' ? defaultModeOptions(mode, app.config.difficulty) : {},
-    map: id === 'versus' ? defaultVersusChoice(teamSizes(teams), pz.played) : defaultMap(connectedN(), pz.played).id,
+    map: id === 'versus' ? defaultVersusChoice(teamSizes(teams), pz.played) : defaultCoopMap(connectedN(), pz.played).id,
   });
 }
 // A phone ("Cambiar de equipo") or the host (click on a chip) moves a player; the lobby decides (locked teams, unknown team, a player that is not here).
@@ -117,11 +117,11 @@ export function syncLobby(n: number): boolean {
     if (!av.ok) {
       pz.teamNotice = `${av.reason}: se volvió a Cooperativo`;
       pz.mapTouched = false;
-      patchConfig({ modeId: 'coop', teams: null, teamsLocked: false, modeOptions: {}, map: defaultMap(n, pz.played).id });
+      patchConfig({ modeId: 'coop', teams: null, teamsLocked: false, modeOptions: {}, map: defaultCoopMap(n, pz.played).id });
     }
   }
   if (!isVersus()) {
-    if (isVersusChoice(app.config.map)) patchConfig({ map: defaultMap(n, pz.played).id });
+    if (isVersusChoice(app.config.map)) patchConfig({ map: defaultCoopMap(n, pz.played).id });
     syncMap(n);
     return false;
   }
@@ -162,7 +162,7 @@ export function versusGenerated(seed: number, difficulty: LobbyConfig['difficult
 // that got blocked because someone joined or left (saying so).
 function syncMap(n: number) {
   if (!pz.mapTouched) {
-    const d = defaultMap(n, pz.played).id;
+    const d = defaultCoopMap(n, pz.played).id;
     if (app.config.map !== d) patchConfig({ map: d });
     return;
   }

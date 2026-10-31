@@ -1,5 +1,5 @@
 // Before/after of HAZARD_V2 with the scripted chefs (same seeds, `hazardsV2` false vs true). Measurement tool: nothing in the game imports it.
-//   npx tsx tools/hazards/measure.ts rat|ice|fire|score [--v2 false] [--seeds 40] [--difficulty normal] [--tune '{"rat":{"touchRadius":0.4}}'] [--maps 2,9,11] [--ns 2,4]
+//   npx tsx tools/hazards/measure.ts rat|ice|fire|score [--v2 false] [--seeds 40] [--difficulty normal] [--tune '{"rat":{"touchRadius":0.4}}'] [--maps 2,9,11] [--ns 2,4] [--events false] [--split true]
 // --tune patches HAZARD_V2[difficulty] in this process only (deep merge), for scans.
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls } from '@pichi/game-pizzas/sim/overcooked';
 import { FIXED_MAPS, fixedMap, isFloor } from '@pichi/game-pizzas/sim/maps';
@@ -65,7 +65,10 @@ if (metric === 'rat') {
   for (const mapId of maps)
     for (const n of ns) {
       const sc: number[] = [],
-        big: number[] = [];
+        big: number[] = [],
+        split = new Map<string, number[]>(),
+        byKind = new Map<string, number[]>(),
+        stealRounds: number[] = [];
       for (let seed = 1; seed <= seeds; seed++) {
         const m = fixedMap(mapId)!;
         const g = createGame({
@@ -77,6 +80,7 @@ if (metric === 'rat') {
           seed,
           countdownMs: COUNTDOWN_MS,
           ...roundRules(undefined, diff),
+          ...(flag('events') ? { events: flag('events') !== 'false' } : {}),
           recipes: false,
           ...opts,
         });
@@ -86,6 +90,10 @@ if (metric === 'rat') {
         const fight = newFight();
         let t = 0,
           fires = 0;
+        const kinds: string[] = [];
+        let steals = 0;
+        g.bus.on('event:start', (e) => kinds.push(e.kind));
+        g.bus.on('rat:steal', () => steals++);
         g.bus.on('fire:start', (e) => {
           fires++;
           if (e.big) big.push(1);
@@ -100,9 +108,25 @@ if (metric === 'rat') {
         }
         sc.push(g.score);
         void fires;
+        const bonus = kinds.some((k) => k === 'rush' || k === 'birthday' || k === 'inspector');
+        const cls = kinds.length === 0 ? 'none' : bonus ? 'bonus' : 'hazards-only';
+        split.set(cls, [...(split.get(cls) ?? []), sc[sc.length - 1]!]);
+        for (const k of new Set(kinds)) if (!bonus) byKind.set(k, [...(byKind.get(k) ?? []), sc[sc.length - 1]!]);
+        stealRounds.push(kinds.includes('rat') ? steals : -1);
       }
       console.log(
         `score v2=${v2} ${diff} map ${mapId} N=${n} mean ${mean(sc).toFixed(0)}  median ${med(sc).toFixed(0)}  min ${Math.min(...sc)}  max ${Math.max(...sc)}  big fires ${big.length}`,
       );
+      if (flag('split')) {
+        const f = (m: Map<string, number[]>) =>
+          [...m]
+            .sort()
+            .map(([k, v]) => `${k} n=${v.length} mean ${mean(v).toFixed(0)}`)
+            .join(' | ');
+        const rr = stealRounds.filter((x) => x >= 0);
+        console.log(
+          `  by class: ${f(split)}\n  by kind (hazards-only rounds containing it): ${f(byKind)}\n  rat rounds ${rr.length}: steals/round ${mean(rr).toFixed(2)}`,
+        );
+      }
     }
 }
