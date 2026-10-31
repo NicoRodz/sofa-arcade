@@ -17,7 +17,6 @@ import {
   defaultModeOptions,
   defaultVersusChoice,
   isVersusChoice,
-  lobbySetup,
   resolveVersusMap,
   syncTeams,
   teamSizes,
@@ -25,6 +24,7 @@ import {
   versusLobbyMaps,
   versusMapStatus,
 } from '@pichi/game-pizzas/sim/versus/lobby';
+import { versusStartProblem } from '@pichi/game-pizzas/sim/versus/start-fit';
 import { PIZZAS, assistIds, connectedN, gameDef, isVersus, modeNow, pz } from './state';
 
 export function setMode(id: ModeId) {
@@ -100,8 +100,7 @@ export function setMutate(on: boolean) {
 export function startProblem(): string {
   if (!canStart([...app.players.values()].map((p) => p.info))) return 'Esperando jugadores';
   if (isVersus()) {
-    const s = lobbySetup(modeNow(), app.config.teams, new Set(assistIds()));
-    if (!s.ok) return s.problems[0]!;
+    return versusStartProblem(modeNow(), app.config.teams, new Set(assistIds())); // a split like 5 contra 3 has no map (all greyed): it does not start on one it just refused
   }
   return '';
 }

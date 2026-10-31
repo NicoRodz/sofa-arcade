@@ -5,13 +5,14 @@ import { teamOf } from '@pichi/core/lobby/teams';
 import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
 import { app, bindServices, dispatch, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
 import type { ScreenGame } from '@pichi/screen-kit/shell/game';
-import { addPlayer, dropPlayer, rejoinPlayer, removePlayer } from '@pichi/game-pizzas/sim';
+import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '@pichi/game-pizzas/sim';
 import { pizzasManifest } from '@pichi/game-pizzas/manifest';
 import { drawLogo } from '@pichi/game-pizzas/screen/art/ui';
 import { initAudio } from '@pichi/game-pizzas/screen/audio';
 import { phoneResult } from '@pichi/game-pizzas/sim/versus/report';
 import { pizzasDebug } from './debug';
 import { initHost, school, scene } from './host';
+import { versusKey } from './key-nav';
 import { difficultyPatch, initLobbyView, lobbyKey, renderLobby } from './lobby';
 import { moveToTeam } from './lobby-sync';
 import { pizzasMenu, pizzasMenuAct } from './lobby-menu';
@@ -75,7 +76,8 @@ export const pizzasScreen: ScreenGame = {
   players: {
     joined: (p) => addPlayer(pz.game, p.info.id, p.info.slot),
     updated: (p, back) => {
-      if (back && app.phase === 'playing' && pz.game.versus) rejoinPlayer(pz.game, p.info.id); // back within the grace time: same team, same chef
+      // back within the grace time: same team, same chef; later: the chef sits down again on its spawn tile (and a pause waiting for its team ends)
+      if (back && app.phase === 'playing' && pz.game.versus) returnPlayer(pz.game, p.info.id, p.info.slot);
     },
     left: (p) => {
       if (app.phase === 'playing' && pz.game.versus) dropPlayer(pz.game, p.info.id); // a ghost for GHOST_MS: what it held goes to a free counter
@@ -110,6 +112,6 @@ export const pizzasScreen: ScreenGame = {
       }
     }
   },
-  key: (key, repeat) => school.key(key, repeat),
+  key: (key, repeat) => versusKey(key, repeat) || school.key(key, repeat),
   debug: pizzasDebug,
 };

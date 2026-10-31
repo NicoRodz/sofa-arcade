@@ -10,6 +10,8 @@ import { SABOTAGE_LABEL, sabotageOf } from '@pichi/game-pizzas/sim/sabotage-conf
 import { parseObstOptions, setupLabel } from '@pichi/game-obstaculos/lobby';
 import { seenAfterPhase, shouldShowHowTo } from '@pichi/controller-kit/howto';
 import { announceAssist, assistLabel } from './assist-help';
+import { createWatch, waitText } from './watch';
+import { showVerdict } from './verdict';
 import { createSchoolUi } from '@pichi/game-pizzas/controller/school';
 import { kvOf } from '@pichi/game-pizzas/sim/school';
 import '@pichi/controller-kit/touch-guard'; // side effects only: the touch and zoom hardening of the page
@@ -38,7 +40,7 @@ import { attend } from '@pichi/controller-kit/attention';
 import { createCaptainMenu } from '@pichi/controller-kit/menu/captain-menu';
 import { bindRemote } from '@pichi/controller-kit/remote';
 import { createCreator } from '@pichi/controller-kit/creator/creator';
-import { outcomeFor, type Outcome, type PhoneResult } from '@pichi/game-pizzas/sim/versus/report';
+import type { PhoneResult } from '@pichi/game-pizzas/sim/versus/report';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const store = {
@@ -202,10 +204,11 @@ function showTeam(you: { teamId: number; color: string; icon: string; sideLabel?
     $(`tcside${k}`).textContent = you.sideLabel ? `· cocina ${you.sideLabel}` : '';
   }
 }
+const watch = createWatch({ phase: () => phase, myTeam: () => myTeam, view, renderCaptain });
 function applyTeams(t: TeamInfo[] | null, locked: boolean) {
   teams = t && t.length > 1 ? t : null;
   teamsLocked = locked;
-  if (!teams) showTeam(null);
+  if (!teams || (myId && !teams.some((t) => t.playerIds.includes(myId)))) showTeam(null); // also a team the relay no longer has this phone in
   ($('teamswap') as HTMLButtonElement).disabled = locked;
   $('teamswap').textContent = locked ? 'Equipos bloqueados' : 'Cambiar de equipo';
 }
@@ -264,7 +267,7 @@ function renderCaptain() {
   captainMenu.refresh();
   const crown = isCaptain() ? '👑 ' : '';
   for (const id of ['who', 'who2']) $(id).textContent = crown + myName;
-  $('waitmsg').textContent = !joined ? 'Esperando que inicie la partida' : isCaptain() ? 'Eres el Capitán' : 'Elige el Capitán';
+  $('waitmsg').textContent = waitText(joined, watch.watching(), isCaptain());
 }
 bindRemote(Array.from(document.querySelectorAll<HTMLElement>('#remote [data-nav]')), {
   isCaptain,
@@ -302,7 +305,6 @@ $('pswap').addEventListener('pointerup', (e) => {
   tx({ t: 'puesto', puestos: [next] });
 });
 
-const VERDICT_TEXT: Record<Outcome, string> = { won: '¡Ganaron!', lost: 'Perdieron', draw: '¡Empate!', none: 'Sin ganador' };
 function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?: PuestoMsgPz, result?: PhoneResult, campaign = false) {
   phase = p;
   const live = p === 'playing' || p === 'school'; // the school is played with the same pad as a round
@@ -322,18 +324,9 @@ function showPhase(p: Phase, scores?: { id: number; score: number }[], puestos?:
     const mine = scores.find((s) => s.id === myId) ?? scores[0]; // cooperative: every entry carries the team score
     $('rank').textContent = mine ? String(mine.score) : '-';
     $('myscore').textContent = mine ? 'puntos de equipo' : '';
-    // versus: the verdict and the score of this phone's own team (the screen sends every team's; the phone picks its own)
-    const outcome = result ? outcomeFor(result, myTeam) : null;
-    const own = result && myTeam !== null ? result.scores.find((x) => x.team === myTeam) : undefined;
-    if (outcome && own) {
-      $('rank').textContent = String(own.score);
-      $('myscore').textContent = 'puntos de tu equipo';
-      $('verdict').textContent = VERDICT_TEXT[outcome];
-      document.body.dataset.outcome = outcome;
-    } else delete document.body.dataset.outcome;
+    showVerdict(result, myTeam);
   } else delete document.body.dataset.outcome;
-  view(live ? 'playing' : p);
-  renderCaptain();
+  watch.show(live, p);
 }
 
 function connect() {
@@ -378,7 +371,9 @@ function connect() {
     else if (m.t === 'school') schoolUi.apply(m);
     else if (m.t === 'you') {
       showTeam(m);
+      watch.refresh();
     } else if (m.t === 'phase') {
+      watch.setVersusRound(m.match?.modeId === 'versus');
       const puestos = m.puestos as PuestoMsgPz | undefined; // the wire's slots are opaque: this screen knows Pizzas' stations
       showPhase(m.phase, m.scores, puestos, m.result as PhoneResult | undefined, m.match?.modeOptions.campaign === true);
     } else if (m.t === 'captain') {

@@ -63,12 +63,22 @@ function runSuite(only: string[] = []): Report {
 }
 
 // Browser tests (controller/test/layout) flake when 10 workers compete for the CPU: files that failed get one
-// retry ALONE; a real failure fails again. Retried files are reported so a flake never passes unnoticed.
+// retry ALONE (one file per run: the browser files share the dev-server and CDP ports, so two of them in one run collide); a real failure
+// fails again. Retried files are reported so a flake never passes unnoticed.
 function runWithRetry(): Report {
   const first = runSuite();
   if (!first.failedFiles.length) return first;
   console.error(`retrying alone: ${first.failedFiles.join(', ')}`);
-  const again = runSuite(first.failedFiles);
+  const runs = first.failedFiles.map((f) => runSuite([f]));
+  const again: Report = {
+    rows: runs.flatMap((r) => r.rows),
+    fileMs: Object.assign({}, ...runs.map((r) => r.fileMs)),
+    wallSec: runs.reduce((a, r) => a + r.wallSec, 0),
+    failed: 0,
+    badFiles: runs.flatMap((r) => r.badFiles),
+    failedFiles: runs.flatMap((r) => r.failedFiles),
+    retried: [],
+  };
   const redo = new Set(first.failedFiles);
   const rows = [...first.rows.filter((r) => !redo.has(r.file)), ...again.rows];
   const fileMs = { ...first.fileMs, ...again.fileMs };
