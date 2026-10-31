@@ -12,9 +12,13 @@ const SOFA = `<svg viewBox="0 0 136 116" aria-hidden="true"><g stroke="#1E1220" 
 <circle class="btn b2" cx="84" cy="66" r="14" fill="#FFC83D"/>
 </g></svg>`;
 
-/** Draws the sofa into the #logo host (decorative: the h1 carries the name). */
-export function mountSofaLogo(host: HTMLElement) {
-  host.innerHTML = SOFA;
+/** Fills the #logo host (decorative: the h1 carries the name) with the game's mark (`make`, keyed by `game`) or, without one, the sofa. Repaints only when the mark changes. */
+export function paintLogo(host: HTMLElement, game?: string, make?: () => HTMLElement) {
+  const key = make ? `g:${game}` : 'sofa';
+  if (host.dataset.logo === key) return;
+  if (make) host.replaceChildren(make());
+  else host.innerHTML = SOFA;
+  host.dataset.logo = key;
 }
 
 /** The hub title. In the menu it is the brand: first word cream, the rest mustard (textContent stays the plain name). Anywhere else it is plain text. */

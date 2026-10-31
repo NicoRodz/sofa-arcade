@@ -2,7 +2,7 @@
 // The rest of a lobby is the game's (ScreenGame.lobby.render). Moved out of apps/screen/src/main.ts (F4b).
 import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core/difficulty';
 import { PLATFORM } from '@pichi/core/contract';
-import { paintTitle } from '../art/sofa-brand';
+import { paintLogo, paintTitle } from '../art/sofa-brand';
 import { catalog } from '../shell/catalog';
 import { renderMenu } from '../menu/view';
 import { $, setHtml } from '../ui/dom';
@@ -24,6 +24,7 @@ export function paintUi() {
   $('debug').classList.toggle('off', !app.debugOverride);
   if (!hub) return;
   document.body.classList.toggle('sa-menu', inMenu); // the menu's own look (plum, Sofa pop); the lobbies keep the game's
+  paintLogo($('logo'), app.config.game, inMenu ? undefined : pickedGame().lobby.logo); // the menu wears the sofa; a lobby, its game's mark
   paintTitle($('title'), inMenu ? PLATFORM : catalog().name(app.config.game), inMenu);
   $('platform').textContent = inMenu ? 'Juegos de sillón · tu celular es el control' : PLATFORM;
   $('playersn').textContent = `${connectedCount()}/8`;
