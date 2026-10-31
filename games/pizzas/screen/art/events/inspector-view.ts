@@ -13,7 +13,7 @@ export class InspectorView {
 
   constructor(
     private scene: Phaser.Scene,
-    private game: Game,
+    game: Game,
     private fx: Fx,
     bus: Emitter<GameEvents>,
   ) {

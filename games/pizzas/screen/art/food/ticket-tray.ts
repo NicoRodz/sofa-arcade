@@ -39,6 +39,10 @@ export function trayParts(s: Phaser.Scene, parts: readonly Recipe[]): Tray {
 }
 
 /** The balloon and the flat prize of the birthday ticket ("Pedido de cumpleaños", midround.ts) and its pink frame. */
+/** What kind of special ticket an order is: the cake and the red ticket of eventsV2, the birthday order, or none. */
+export type TicketMark = true | 'red' | 'cake' | false;
+export const ticketMark = (o: { cake?: true; red?: true; birthday?: boolean }): TicketMark =>
+  o.cake ? 'cake' : o.red ? 'red' : !!o.birthday;
 export function birthdayParts(
   s: Phaser.Scene,
   frame: Phaser.GameObjects.Graphics,
