@@ -10,6 +10,8 @@ import { adaptiveDue, patienceMs } from '../recipes/pacing';
 import { bandejaBase, bandejaPatienceMs, pickParts, takePart } from '../recipes/bandeja';
 import { casaExtras } from '../recipes/casa';
 import { book } from '../hazards/score-ledger';
+import { ev2Cake, ev2CakeBlocks, ev2CakeServed, ev2Expired, ev2RedServed, ev2RushMark } from '../ev2/events';
+import { CAKE_PRIZE } from '../ev2/state';
 
 // R15: the tip multiplier for a delivery made after `streak` correct ones in a row.
 export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax, 1 + Math.max(0, streak));
@@ -71,6 +73,7 @@ function resetStreak(g: Game, team: TeamState) {
 export function deliver(g: Game, p: Player) {
   if (isDish(p.item) && g.teams[p.team]!.orders.length) {
     const team = g.teams[p.team]!;
+    if (g.ev2 && ev2CakeBlocks(g, p, team, (os) => pickOrder(g, os, p.item!))) return; // EVENTS_V2: no candle yet, the cake is not served
     const at = pickOrder(g, team.orders, p.item!); // recipes/sim.ts: the golden order first, then the birthday one, then the order that asked for this plate (a Margarita also satisfies a Marinara order, never the other way round)
     if (at < 0) {
       // R16: the wrong plate is refused, goes back dirty and pays nothing
@@ -87,7 +90,7 @@ export function deliver(g: Game, p: Player) {
     const { tune, orderTtlMs } = g.params;
     const birthday = !!o.birthday; // the event's order: BIRTHDAY_POINTS flat, no tip (the streak still counts)
     const extra = o.recipe === 'casa' ? casaExtras(g.difficulty, item) : { points: 0, tip: 1, bonus: 1 }; // the upgrades of a Pizza de la casa (casa.ts); nothing for any other order
-    const base = birthday ? BIRTHDAY_POINTS : o.recipe === 'bandeja' ? bandejaBase(g, o, tune) : recipeBase(o.recipe, tune) + extra.points; // R13
+    const base = birthday ? (o.cake ? CAKE_PRIZE[g.difficulty] : BIRTHDAY_POINTS) : o.recipe === 'bandeja' ? bandejaBase(g, o, tune) : recipeBase(o.recipe, tune) + extra.points; // R13
     const left = Math.min(1, Math.max(0, o.expiresAt - g.time) / orderTtlMs);
     const mult = birthday ? 1 : tipMultiplier(team.streak, tune); // R15: the streak multiplies only the tip
     const tip = birthday ? 0 : Math.round(base * tune.tipPct * left * extra.tip) * mult; // R14: up to +50% of the base, by the patience left
@@ -113,6 +116,8 @@ export function deliver(g: Game, p: Player) {
       ...(g.versus ? { team: team.id, k: team.k, ...(vip ? { vip: true as const } : {}) } : {}),
     });
     g.bus.emit('streak', { n: team.streak, mult: tipMultiplier(team.streak, tune), ...tag(g, team.id) });
+    if (g.ev2 && o.cake) ev2CakeServed(g, p, gain);
+    else if (g.ev2 && o.red) ev2RedServed(g);
     if (vip) {
       const round = g.vip.round!;
       team.vips++;
@@ -125,20 +130,25 @@ export function deliver(g: Game, p: Player) {
 // The two mid-round events that touch the queues: a rush is three orders in every queue (drawn at every slot, so the twin queues stay twins); the birthday order is worth BIRTHDAY_POINTS flat.
 export const MID_FX: MidFx = {
   rush(g) {
-    for (const t of g.teams)
+    for (const t of g.teams) {
+      const first = t.orderSeq;
       for (
         let i = 0, n = g.hz && g.mid?.queue ? rushOrdersV2([...g.players.values()].filter((p) => p.team === t.id).length) : RUSH_ORDERS;
         i < n;
         i++
       )
         spawnOrder(g, t, true);
+      if (g.ev2) ev2RushMark(g, t, first); // EVENTS_V2: these are the red tickets
+    }
   },
   birthday(g) {
     for (const t of g.teams) {
-      const o: Order = { id: t.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe: 'marinara', birthday: true };
+      const o: Order = g.ev2
+        ? ev2Cake(g, t) // EVENTS_V2: the card's most complex dish, with a candle step and its own countdown
+        : { id: t.orderSeq++, expiresAt: g.time + g.params.orderTtlMs, warned: false, recipe: 'marinara', birthday: true };
       if (t.orders.length >= EVENT_MAX_QUEUE) t.orders.unshift(o);
       else t.orders.push(o); // a full strip still shows it
-      g.bus.emit('orderNew', { order: o.id, recipe: 'marinara', ...tag(g, t.id), birthday: true });
+      g.bus.emit('orderNew', { order: o.id, recipe: o.recipe, ...tag(g, t.id), birthday: true });
     }
   },
 };
@@ -157,7 +167,11 @@ export function ordersTick(g: Game) {
       team.nextOrderAt += g.params.orderEveryMs;
     }
     const alive = team.orders.filter((o) => o.expiresAt > g.time);
-    for (const o of team.orders) if (!alive.includes(o)) g.bus.emit('orderExpired', { order: o.id, ...tag(g, team.id) });
+    for (const o of team.orders)
+      if (!alive.includes(o)) {
+        g.bus.emit('orderExpired', { order: o.id, ...tag(g, team.id) });
+        if (g.ev2) ev2Expired(g, team, o); // EVENTS_V2: a red that expires punishes twice; the cake lost costs 50 / 100
+      }
     const lost = team.orders.length - alive.length;
     const before = team.score;
     team.score = Math.max(0, team.score + lost * g.params.penalty); // the penalty is not multiplied by k

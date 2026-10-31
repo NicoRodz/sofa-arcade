@@ -1,5 +1,6 @@
 // Pure Overcooked-lite rules: no Phaser, no clock, no I/O. Units are tiles and milliseconds.
 // The state of a round: constants, items, stations, chefs, orders, teams, and the Game that holds them.
+import type { Ev2 } from '../ev2/state';
 import { MAP_H, MAP_W, isFloor, type Grid, type StationKind } from '../maps';
 import type { RosterEntry, TeamId, TeamResult } from '@pichi/core/lobby/teams';
 import type { FloorItem, Sabotage, Slip } from '../sabotage-config';
@@ -128,6 +129,8 @@ export interface Order {
   recipe: Recipe;
   vip?: boolean;
   birthday?: boolean;
+  red?: true; // eventsV2 (ev2/): a ticket of the Hora punta
+  cake?: true; // eventsV2: the cake of the Cumpleaños (a birthday order with a candle step)
   parts?: Recipe[]; // a Bandeja familiar (recipes/bandeja.ts): its three plates...
   served?: boolean[]; // ...which of them are already on the window
   firstAt?: number; // match time the first one went in
@@ -234,6 +237,7 @@ export interface Game {
   magnet: MagnetCfg | null; // magnetism for every chef (feel/magnet.ts): null (the default, and every golden round) = the plain targeting and feel
   // map mechanics (mech/): BOTH keys are absent unless some flag is on, so a round without them is the round of before, key for key
   flags?: { mech: MechFlags }; // flags.mech.<id>, off by default; the lobby turns on the ones a map declares
+  ev2?: Ev2; // EVENTS_V2 (ev2/state.ts): the events with presence; absent unless the round asked for `eventsV2` (coop with events)
   mech?: MechState; // the state of the active mechanics (their slices, and the hash of them)
 }
 

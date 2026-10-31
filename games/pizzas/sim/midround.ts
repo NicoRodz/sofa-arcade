@@ -23,6 +23,7 @@ import { spill } from './mech/oil/spill';
 import { hazardParams } from './hazards/hazard-v2';
 import { book } from './hazards/score-ledger';
 import { planEvents, type Planned } from './hazards/events-v2';
+import { ev2End, ev2Start, ev2Tick } from './ev2/events';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
 export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];
@@ -348,6 +349,7 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
     const dur = m.queue ? activeMs(g, m.kind) : ACTIVE_MS[m.kind];
     m.endAt = m.startAt + dur;
     g.bus.emit('event:start', { kind: m.kind, durationMs: dur });
+    if (g.ev2) ev2Start(g, m); // EVENTS_V2: the board, the mood
     if (m.kind === 'rush') fx.rush(g);
     else if (m.kind === 'birthday') fx.birthday(g);
     else if (m.kind === 'blackout') m.dark = true;
@@ -360,12 +362,14 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
   }
   if (m.phase !== 'active') return;
   if (m.kind === 'rat' && m.rat) ratStep(g, m, dtMs);
+  if (g.ev2) ev2Tick(g, m, dtMs); // EVENTS_V2: the board of the blackout may end the event now
   if (g.time < m.endAt && !(m.kind === 'rat' && !m.rat)) return;
   m.phase = 'done';
   if (m.kind === 'blackout') m.dark = false;
   else if (m.kind === 'frost') m.frost = false;
   else if (m.kind === 'inspector') inspect(g);
   else if (m.kind === 'rat') ratGone(g, m);
+  if (g.ev2) ev2End(g, m); // EVENTS_V2: the closing card and the prize
   g.bus.emit('event:end', { kind: m.kind });
   const next = m.queue?.shift();
   if (next)

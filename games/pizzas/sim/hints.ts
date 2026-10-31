@@ -15,6 +15,7 @@ import { canLoad, canStir, hasNonna, hasSauce, potTypeOf } from './recipes/sauce
 import { basilOn, canSlice } from './recipes/casa';
 import { kneaderA, kneaderB } from './mech/kneader/hint';
 import { bellowsA, bellowsB } from './mech/woodOven/hint';
+import { ev2Hint } from './ev2/hint';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
 const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón', 'Jamón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
@@ -124,7 +125,9 @@ export function chefHint(g: Game, p: Player): HintLabels {
       ? on(sab.a, sab.a === 'Cargar' || sab.a === 'Recoger' ? 'grab' : 'trash')
       : buttonA(g, p, sa, near);
   const b = aiming ? on('¡Lanzar!', 'star') : buttonB(g, p, s, g.magnet && !p.assist ? targetStation(g, p, true) : s);
-  return { a: a.label, b: b.label, aIcon: a.icon, bIcon: b.icon, ...(a.off ? { aOff: true } : {}), ...(b.off ? { bOff: true } : {}) };
+  const ev = g.ev2 ? ev2Hint(g, p) : null; // EVENTS_V2: the board (Subir luz), the candle drawer (Vela)
+  const [A, B] = [ev?.a ?? a, ev?.b ?? b];
+  return { a: A.label, b: B.label, aIcon: A.icon, bIcon: B.icon, ...(A.off ? { aOff: true } : {}), ...(B.off ? { bOff: true } : {}) };
 }
 
 // --- Sending: the state of every tick, whole --------------------------------------------------------------------------------------------------------

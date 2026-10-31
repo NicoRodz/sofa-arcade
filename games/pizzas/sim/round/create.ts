@@ -15,6 +15,7 @@ import { spawnOrder } from './orders';
 import { createSabotage } from '../sabotage';
 import { createBurn, fireAllowed } from '../burn';
 import { createMid } from '../midround';
+import { createEv2 } from '../ev2/state';
 import { HAZARD_V3 } from '../hazards/hazard-v3';
 import { newLedger } from '../hazards/score-ledger';
 import { anyMech, MECH_IDS, type MechFlags, type MechOpts } from '../mech/ids';
@@ -43,6 +44,7 @@ export function createGame(
     assist?: readonly number[];
     burn?: boolean;
     hazardsV3?: boolean; // HAZARD_V3 (hazards/hazard-v3.ts): the harder numbers and the expired-order penalties; off unless the lobby asks (the rounds without it are bit for bit as before)
+    eventsV2?: boolean; // EVENTS_V2 (ev2/): hora punta, cumpleaños, corte de luz with presence; coop with `events` only; off = the events of before
     ledger?: boolean; // keep the score book by source (hazards/score-ledger.ts) without hazardsV3 (measurement)
     hazardsV2?: boolean; // HAZARD_V2 under the flags burn / magnet / events / surf (hazard-v2.ts): on unless false (false = the first numbers, for the tests that pin them and for before/after runs)
     fire?: boolean;
@@ -232,6 +234,7 @@ export function createGame(
     ); // HAZARD_V2: fire sizes hash from the seed and the kitchen's own fire index
   if (opts.magnet) applyMagnet(g, opts.magnet === true ? 'normal' : opts.magnet); // magnetism: off unless the round's config asks
   if (opts.events) g.mid = createMid(g, opts.eventsSeed ?? seed); // `eventsSeed`: the coop lobby does not seed its orders (they are the same every round), but the event must still vary
+  if (opts.eventsV2 && g.mid && !versus) g.ev2 = createEv2(); // after the mid: the events with presence ride on it
   if (opts.mutate) g.mut = createMutate(g, seed); // coop maps with a mutation only; its own stream, nothing shared
   if (g.mech && opts.mutation && g.flags!.mech.mutation) armMutation(g, opts.mutation, invertOps(rows, opts.mutation.ops), rows); // the v2 mutation's data, before the modules start
   if (g.mech) mechStart(g); // onLoad, then init, of every module whose flag is on

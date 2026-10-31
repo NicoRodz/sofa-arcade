@@ -102,6 +102,10 @@ export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent | MutateEve
             ? [play('birthday')]
             : [], // the rat has its own sound (rat:appear)
   'event:end': (p) => (p.kind === 'blackout' ? [play('blackoutEnd')] : []),
+  // EVENTS_V2: the closing card sounds a win (the birthday song for the cake) or a failure; the candle is a high ding; the mood is the director's (audio/mood.ts)
+  'ev2:mood': () => [],
+  'ev2:close': (p) => (p.ok ? [play(p.kind === 'birthday' ? 'birthday' : 'ding')] : [play('buzz')]),
+  'ev2:cake': (p) => (p.step === 'candle' ? [{ kind: 'play', id: 'ding', semis: 7 }] : []),
   'event:inspector': (p) => [play(p.passed ? 'inspectorPass' : 'inspectorFail')],
   'rat:appear': () => [play('ratAppear')],
   'rat:steal': () => [play('ratSteal')],

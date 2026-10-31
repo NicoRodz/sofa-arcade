@@ -8,6 +8,7 @@ import { faceStation as magnetFace, magnetPull } from '../feel/magnet';
 import { unit, walk } from './movement';
 import { act } from './stations';
 import { mechClaimsB, mechControls, mechInteract } from '../mech/loop';
+import { ev2Candle, ev2Hold } from '../ev2/events';
 
 // One chef's tick, in this order: slipping or aiming take its control away; otherwise the target, the B edge, Picar (chop, wash, douse, fold),
 // the dash, walking and finally the A presses.
@@ -21,6 +22,11 @@ export function stepChef(g: Game, p: Player, raw: Controls, dt: number, dtMs: nu
     aimStep(g, p, c, dtMs);
     return;
   } // loaded the catapult: anchored there until B (or 3 s)
+  if (g.ev2 && ev2Hold(g, p, c)) {
+    p.vx = 0;
+    p.vy = 0;
+    return;
+  } // EVENTS_V2: B held at the board of the dark kitchen: the chef stays put and the light fills
   const target = targetStation(g, p);
   if (p.assist && target && !c.x && !c.y) faceStation(p, target); // Ayudante: turns to its station by itself
   p.dashCd = Math.max(0, p.dashCd - dtMs);
@@ -39,7 +45,7 @@ export function stepChef(g: Game, p: Player, raw: Controls, dt: number, dtMs: nu
     p.vy = 0;
   } else if (!applyChop(g, p, target, at, dtMs)) walk(g, p, c, dt, dtMs);
   if (g.mech && mechInteract(g, p, c, target, dtMs)) return; // onInteract: the module used this chef's A presses
-  pressA(g, p, c, dtMs);
+  pressA(g, p, g.ev2 && ev2Candle(g, p, c) ? { ...c, a: 0 } : c, dtMs); // EVENTS_V2: A at the candle drawer lights the candle
 }
 
 // R2 (phase 1: no third button): B pressed with empty hands and no station in front. Returns true when the dash started.
