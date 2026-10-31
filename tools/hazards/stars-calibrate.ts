@@ -33,6 +33,15 @@ for (const id of ids) {
     v2 = run(true);
   const old = e2(id, diff);
   console.log(
-    JSON.stringify({ map: id, series, diff, old, v1: Math.round(v1), v2: Math.round(v2), ratio: +(v2 / v1).toFixed(3), seriesE2: Math.round((0.6 * v2) / 10) * 10 }),
+    JSON.stringify({
+      map: id,
+      series,
+      diff,
+      old,
+      v1: Math.round(v1),
+      v2: Math.round(v2),
+      ratio: +(v2 / v1).toFixed(3),
+      seriesE2: Math.round((0.6 * v2) / 10) * 10,
+    }),
   );
 }

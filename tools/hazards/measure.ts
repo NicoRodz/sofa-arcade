@@ -119,9 +119,14 @@ if (metric === 'rat') {
       );
       if (flag('split')) {
         const f = (m: Map<string, number[]>) =>
-          [...m].sort().map(([k, v]) => `${k} n=${v.length} mean ${mean(v).toFixed(0)}`).join(' | ');
+          [...m]
+            .sort()
+            .map(([k, v]) => `${k} n=${v.length} mean ${mean(v).toFixed(0)}`)
+            .join(' | ');
         const rr = stealRounds.filter((x) => x >= 0);
-        console.log(`  by class: ${f(split)}\n  by kind (hazards-only rounds containing it): ${f(byKind)}\n  rat rounds ${rr.length}: steals/round ${mean(rr).toFixed(2)}`);
+        console.log(
+          `  by class: ${f(split)}\n  by kind (hazards-only rounds containing it): ${f(byKind)}\n  rat rounds ${rr.length}: steals/round ${mean(rr).toFixed(2)}`,
+        );
       }
     }
 }
