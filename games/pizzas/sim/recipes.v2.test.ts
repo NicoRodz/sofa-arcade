@@ -217,7 +217,7 @@ describe('in the sim: every plate of the cut card comes up in a round of 3 minut
             else expect(new Set(list), `map ${id} ${d} N${n} seed ${seed}`).toEqual(new Set(want));
             expect(g.rec!.recipes, `map ${id} ${d}`).toHaveLength(Math.min(MENU_SIZE[d], cardForV2(id)!.recipes.length));
           }
-  });
+  }, 120_000); // 26 s on the CI runner (limit 30 s): headroom against the flake
   it('a birthday cake in the middle of the round does not shift the other orders (it takes no plate of the sequence)', () => {
     for (const [id, d] of [
       ['9', 'normal'],
