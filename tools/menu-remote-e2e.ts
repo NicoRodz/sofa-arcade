@@ -257,7 +257,10 @@ async function main() {
     await irisFree();
     cap.nav('back');
     await sleep(150);
-    check(await cdp.eval<boolean>(`getComputedStyle(document.getElementById('iris')).display !== 'none'`), 'the iris is moving after Atrás');
+    check(
+      await cdp.eval<boolean>(`getComputedStyle(document.getElementById('iris')).display !== 'none'`),
+      'the iris is moving after Atrás',
+    );
     cap.nav('ok');
     for (let i = 0; i < 60 && (await phase()) !== 'menu'; i++) await sleep(100);
     check((await phase()) === 'menu', 'captain Atrás in the lobby goes back to the menu');
