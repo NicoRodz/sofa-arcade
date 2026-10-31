@@ -6,7 +6,8 @@ import { hasModeChoice, selectableModes, type GameDef, type ModeId } from '@pich
 import type { LobbyConfig, MenuActBody, MenuBody, MenuErrCode, MenuGroup, MenuItem, MenuOption, MenuRow } from '@pichi/core';
 import { eventsHint } from '../sim/ev2/lines';
 import { eventsOf } from '../sim/midround';
-import { coopLobbyView, fixedMap, lobbyGroupOfMap, recommendedForN, type LobbyRow, type MapFamily } from '../sim/maps';
+import { coopLobbyView, fixedMap, recommendedForN } from '../sim/maps';
+import type { LobbyRow, MapFamily, lobbyGroupOfMap } from '../sim/maps';
 import { mutateOf } from '../sim/mutate/plan';
 import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_OPTION, sabotageOf } from '../sim/sabotage-config';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusAvailability, versusLobbyMaps } from '../sim/versus/lobby';
