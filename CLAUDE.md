@@ -32,8 +32,8 @@ Juegos de fiesta en red local: la pantalla grande (Phaser + DOM) corre la simula
 
 ## Reglas duras
 
-- NUNCA actualices goldens (`games/pizzas/test/golden/fixtures/*.json`), hashes de regresión, capturas (`docs/screens/**`) ni `docs/refactor/baseline/` sin permiso explícito de Nico. Si un test rojo pide eso, detente y repórtalo; no regraba.
-- Nunca borres, saltes (`skip`/`todo`) ni renombres un test para ponerlo en verde. La lista de nombres es la del baseline.
+- Goldens (`games/pizzas/test/golden/fixtures/*.json`), hashes de regresión, capturas (`docs/screens/**`) y `docs/refactor/baseline/` se pueden regrabar, pero solo en un PR a master que explique por qué cambian y adjunte evidencia: capturas antes/después; para goldens, qué regla cambió y que los goldens sin flags no se movieron. Lo aprueba alguien distinto del autor. Nunca regraba para tapar un rojo sin entender la causa; si el rojo no es un cambio intencional, repórtalo.
+- Nunca borres, saltes (`skip`/`todo`) ni renombres un test sin justificarlo en el PR, y jamás para ponerlo en verde. La lista de nombres es la del baseline. Los tests nuevos se sabotean a mano para verlos en rojo. `baseline:check` verde (o explicado en el PR).
 - Mover un archivo de test lento a `*.slow.test.ts` no cambia su contenido.
 - Un verde que nace de no ejecutar nada no vale: un proyecto de Vitest con 0 tests es rojo.
 - `git add` con rutas explícitas de archivo, nunca de directorio. Worktree propio por frente; no toques el checkout compartido.
