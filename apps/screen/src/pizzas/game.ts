@@ -5,7 +5,7 @@ import { teamOf } from '@pichi/core/lobby/teams';
 import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
 import { app, bindServices, dispatch, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
 import type { ScreenGame } from '@pichi/screen-kit/shell/game';
-import { addPlayer, dropPlayer, rejoinPlayer, removePlayer, reseatPlayer } from '@pichi/game-pizzas/sim';
+import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '@pichi/game-pizzas/sim';
 import { pizzasManifest } from '@pichi/game-pizzas/manifest';
 import { initAudio } from '@pichi/game-pizzas/screen/audio';
 import { phoneResult } from '@pichi/game-pizzas/sim/versus/report';
@@ -66,8 +66,7 @@ export const pizzasScreen: ScreenGame = {
     joined: (p) => addPlayer(pz.game, p.info.id, p.info.slot),
     updated: (p, back) => {
       // back within the grace time: same team, same chef; later: the chef sits down again on its spawn tile (and a pause waiting for its team ends)
-      if (back && app.phase === 'playing' && pz.game.versus && !rejoinPlayer(pz.game, p.info.id))
-        reseatPlayer(pz.game, p.info.id, p.info.slot);
+      if (back && app.phase === 'playing' && pz.game.versus) returnPlayer(pz.game, p.info.id, p.info.slot);
     },
     left: (p) => {
       if (app.phase === 'playing' && pz.game.versus) dropPlayer(pz.game, p.info.id); // a ghost for GHOST_MS: what it held goes to a free counter

@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { GHOST_MS } from '@pichi/core/lobby/teams';
 import { Emitter, type GameEvents } from '../round/events';
-import { TICK_MS, addPlayer, createGame, dropPlayer, rejoinPlayer, reseatPlayer, tick, type Game } from '../overcooked';
+import { TICK_MS, addPlayer, createGame, dropPlayer, rejoinPlayer, reseatPlayer, returnPlayer, tick, type Game } from '../overcooked';
 import { MIRRORS, twinSpawns } from '../../test/golden/mirror-bot';
 
 const V1 = MIRRORS.v1;
@@ -33,6 +33,24 @@ const gone = (g: Game, id: number) => {
 };
 
 describe('a phone back after the grace time sits down again', () => {
+  it('returnPlayer (what the screen calls): inside the grace time it is the same chef, after it the chef sits down again', () => {
+    const early = mk([
+      [1, 2, 3],
+      [4, 5],
+    ]);
+    run(early.g, 2000);
+    dropPlayer(early.g, 3);
+    run(early.g, 5000);
+    const body = early.g.players.get(3);
+    expect(returnPlayer(early.g, 3, 2)).toBe(true);
+    expect(early.g.players.get(3)).toBe(body); // not rebuilt: it kept its body, its place and what it learnt
+    const late = mk([[1, 2], [3]]);
+    gone(late.g, 3);
+    expect(returnPlayer(late.g, 3, 2)).toBe(true);
+    expect(late.g.players.has(3)).toBe(true);
+    expect(late.g.paused).toBeNull();
+    expect(returnPlayer(late.g, 3, 2)).toBe(false); // nothing left to restore
+  });
   it('3 contra 2: the chef returns to its own kitchen, once, and k goes back with it', () => {
     const { g, log } = mk([
       [1, 2, 3],

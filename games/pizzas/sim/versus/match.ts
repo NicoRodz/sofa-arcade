@@ -128,6 +128,9 @@ export function reseatPlayer(g: Game, id: number, slot: number): boolean {
   return true;
 }
 
+/** The phone is back, whenever: within GHOST_MS the same chef wakes up, later the chef sits down again (what the screen calls). */
+export const returnPlayer = (g: Game, id: number, slot: number): boolean => rejoinPlayer(g, id) || reseatPlayer(g, id, slot);
+
 /** The host's answer to an empty team: carry on without a winner, or end the round now (also without one). */
 export function resolvePause(g: Game, choice: PauseChoice) {
   if (!g.paused) return;

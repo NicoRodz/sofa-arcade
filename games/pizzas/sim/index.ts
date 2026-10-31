@@ -30,4 +30,4 @@ export { spawnOrder, tipMultiplier } from './round/orders';
 export { floorItemNear } from './round/hazards';
 export { aStation, targetStation } from './round/targeting';
 export { tick } from './round/step';
-export { dropPlayer, rejoinPlayer, reseatPlayer, resolvePause } from './versus/match';
+export { dropPlayer, rejoinPlayer, reseatPlayer, resolvePause, returnPlayer } from './versus/match';
