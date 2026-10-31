@@ -5,6 +5,7 @@ import Phaser from 'phaser';
 import { C, H, W } from '../art/tokens';
 import { flushLag } from '../net/latency';
 import { games, type SceneSpec } from './game';
+import { runFrame } from './frame';
 
 let phaser: Phaser.Game | undefined;
 const byGame = new Map<string, SceneSpec[]>();
@@ -26,6 +27,7 @@ export function createPhaser() {
     scene: specs.map((s) => s.scene),
   });
   phaser.events.on(Phaser.Core.Events.POST_RENDER, flushLag);
+  phaser.events.on(Phaser.Core.Events.STEP, (_time: number, delta: number) => runFrame(delta)); // before the scenes update: the active game's logic, then its scene draws it
   return phaser;
 }
 

@@ -1,4 +1,4 @@
-// The Pizzas lobby's team columns (versus), the sabotage pills and the events pills. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts unchanged.
+// The Pizzas lobby's team columns (versus), the sabotage pills and the events pills.
 import { SABOTAGE_BLURB, SABOTAGE_OPTION, sabotageOf } from '../../sim/sabotage-config';
 import { eventsOf } from '../../sim/midround';
 import { mutateOf } from '../../sim/mutate/plan';

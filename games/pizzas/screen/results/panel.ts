@@ -1,5 +1,4 @@
-// Pizzas' results: the round summary (stars, score, stats, podium, kudos) or, in versus, the verdict (results-versus.ts).
-// TRANSITIONAL (F4b): the pizza branch of renderResults in apps/screen/src/main.ts, moved unchanged.
+// Pizzas' results: the round summary (stars, score, stats, podium, kudos) or, in versus, the verdict (versus-view.ts).
 import { chefCanvas } from '@pichi/screen-kit/art/chef';
 import { laterInResults } from '@pichi/screen-kit/results/timers';
 import { app, services } from '@pichi/screen-kit/shell/app-state';

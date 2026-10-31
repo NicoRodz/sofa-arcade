@@ -10,7 +10,7 @@ let sel = 0;
 
 /** Which of the two screens is up (null: neither, or not the Pizzas versus). */
 export function versusCtx(): Ctx | null {
-  if (app.activeGame !== PIZZAS || !pz.game.versus) return null;
+  if (app.config.game !== PIZZAS || !pz.game.versus) return null; // every game's key hook runs: only the picked one may answer
   if (app.phase === 'playing' && pz.game.paused) return 'pause';
   return app.phase === 'results' && !app.starting ? 'results' : null;
 }

@@ -1,5 +1,4 @@
 // Starting a Pizzas round: the coop round (map, orders, puestos) and the versus one (frozen teams and map, a puesto deal inside each kitchen).
-// TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts (setPhase's pizza branches and startVersus).
 import type { MatchStart } from '@pichi/core';
 import { pizzasBus } from '../bus';
 import { sendMsg } from '@pichi/screen-kit/net/socket';

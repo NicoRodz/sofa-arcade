@@ -15,7 +15,7 @@ import { buildEventTextures } from './art/events';
 import { addHazardFeel } from './art/feel/hazard-feel';
 
 export interface Host {
-  step(deltaMs: number): void; // advances the game logic
+  step?(deltaMs: number): void; // advances the game logic (Pizzas' host leaves it to ScreenGame.frame; the capture rigs of the tests still drive it from here)
   players(): Map<number, PublicPlayer>;
   puestos(): Map<number, PuestoView>; // suggested stations of the round, by player id
 }
@@ -67,7 +67,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   update(_t: number, delta: number) {
-    this.host.step(delta);
+    this.host.step?.(delta);
     this.world?.update(delta);
   }
 }

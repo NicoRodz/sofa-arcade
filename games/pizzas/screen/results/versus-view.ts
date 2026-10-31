@@ -1,6 +1,5 @@
 // Versus results (F4): the verdict, one card per team, the series of the session. The numbers come from versusReport (shared, tested);
 // this only lays them out. A short reveal: the scores count up from 0, then the winner's card lights up and the loser's slumps.
-// TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts unchanged, with the rematch buttons.
 import { chefCanvas } from '@pichi/screen-kit/art/chef';
 import { laterInResults } from '@pichi/screen-kit/results/timers';
 import { app, dispatch, services } from '@pichi/screen-kit/shell/app-state';

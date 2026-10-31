@@ -1,5 +1,4 @@
 // The Pizzas lobby's map panel: the cards, the preview, the seed, what the choice means for this group and the "can we start" state of the button.
-// TRANSITIONAL (F4b): the tail of renderUi in apps/screen/src/main.ts, moved unchanged.
 import { params } from '@pichi/core/difficulty';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';

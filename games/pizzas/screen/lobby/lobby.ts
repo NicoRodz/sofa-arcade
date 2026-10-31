@@ -1,5 +1,5 @@
 // Pizzas' half of the lobby as the shell's LobbyHooks: the branch of renderUi, the lobby-only keys (E: events, arrows: sabotage level) and the click handlers
-// of its panels. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts unchanged; F4c moves it into games/pizzas/screen.
+// of its panels.
 import { hasModeChoice, selectableModes, type ModeId } from '@pichi/core/contract';
 import { teamOf } from '@pichi/core/lobby/teams';
 import type { LobbyConfig } from '@pichi/core';

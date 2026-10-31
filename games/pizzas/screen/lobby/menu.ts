@@ -1,6 +1,5 @@
 // The Pizzas lobby as the Captain's touch form: feeds the pure builder in games/pizzas/screen/lobby-menu.ts with the live lobby state and carries out what a
 // touch decided with the lobby's own functions (the same ones the clicks and the keys call), so every guard they have still applies.
-// TRANSITIONAL (F4b): lives with the other lobby modules until F4c moves them into games/pizzas/screen.
 import { groupOfMap } from '../../sim/maps';
 import { FOCUS_ROW, buildLobbyMenu, decideMenuAct, type MenuEffect, type PizzasLobbyState } from '../lobby-menu';
 import { focusRow } from '@pichi/screen-kit/lobby/focus-nav-dom';

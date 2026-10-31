@@ -1,6 +1,5 @@
 // What the Pizzas screens share while the game is on the TV: the round, the lobby's team / map / sabotage bookkeeping, the versus verdict.
-// TRANSITIONAL (F4b): the module-level `let`s of apps/screen/src/main.ts that belong to Pizzas, as fields of `pz`. F4c moves all of apps/screen/src/pizzas
-// into games/pizzas/screen (coop-view, versus-view, results-panel) and turns this into the game's own state.
+// The module-level `let`s of the old main.ts that belong to Pizzas, as fields of `pz`: private to this package (the shell never reads it).
 import { modeOf, type GameDef } from '@pichi/core/contract';
 import { catalog } from '@pichi/screen-kit/shell/catalog';
 import { pizzasBus } from './bus';

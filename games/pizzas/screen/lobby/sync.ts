@@ -1,5 +1,5 @@
 // The Pizzas lobby's state and what keeps it coherent: modes and teams (Versus F1: the screen is the host, it owns the teams, the phones only ask),
-// the map and sabotage proposals that follow who is connected. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts unchanged.
+// the map and sabotage proposals that follow who is connected.
 import { canStart, type LobbyConfig } from '@pichi/core';
 import { movePlayer, reshuffleTeams } from '@pichi/core/lobby/teams';
 import { NAV_SFX } from '@pichi/screen-kit/menu';

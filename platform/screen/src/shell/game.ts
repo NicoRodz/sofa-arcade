@@ -1,8 +1,7 @@
 // The screen side of the game contract (core/contract has the pure half). EXPERIMENTAL (F4b).
 //
 // What the shell asks of a game. It started as the list of places where main.ts branched on the game (`config.game === OBST_ID`,
-// `activeGame === 'pizzas'`): each branch became one hook, so the shell names no game. Obstaculos implements all of them;
-// Pizzas implements them from apps/screen/src/pizzas/ until F4c moves that code into games/pizzas/screen.
+// `activeGame === 'pizzas'`): each branch became one hook, so the shell names no game. Both games implement them from their own screen folder.
 //
 // Where it differs from section 3 (evidence: apps/screen/src/main.ts before F4b):
 //  - `mount(ctx) -> GameView{render(s, events, alpha)}` is `startMatch()` + `scenes()`: a game's Phaser scene pulls its state each frame
@@ -70,6 +69,10 @@ export interface ScreenGame {
   /** Once, at boot, after the page and the shell exist: DOM listeners, audio, the game's own screens. */
   init?(): void;
   scenes?(): SceneSpec[];
+  /** Every Phaser frame while this is the active game (config.game; see frame.ts), just before the scenes update: advance the logic, sync the phones. */
+  frame?(deltaMs: number): void;
+  /** This game just became the active one (the first frame, or after another game was): drop what the last frame of a game that was not running left behind. */
+  activate?(): void;
   lobby: LobbyHooks;
   /** The phase became 'playing' with this game picked: build the round and show its scene. Returns what the phones need to know. */
   startMatch(): MatchStart | undefined;
