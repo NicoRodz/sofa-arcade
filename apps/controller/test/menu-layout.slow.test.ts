@@ -183,7 +183,8 @@ describe('Captain menu map tabs', () => {
       await s.load(open('tabs', '', snap).sc);
       if (wide) await s.eval(WIDE);
       await s.eval(tapEl('[data-cm=maps]'));
-      for (const v of wide ? TAB_VIEWPORTS.slice(1) : TAB_VIEWPORTS) { // Verdana at 320 px needs a third row: legible, but out of the two-row promise
+      for (const v of wide ? TAB_VIEWPORTS.slice(1) : TAB_VIEWPORTS) {
+        // Verdana at 320 px needs a third row: legible, but out of the two-row promise
         await s.setViewport(v, v.insets[0]!);
         await sleep(40);
         const m = await s.eval<{ bad: string[]; n: number }>(TABS_MEASURE);
