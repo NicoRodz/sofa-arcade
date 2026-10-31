@@ -195,16 +195,16 @@ describe('R17 stars by map x difficulty x team size', () => {
   });
   it('E(N) = E(2) x (1 + 0.4 (min(N,4) - 2) + 0.15 max(N-4, 0)): 1, 1.4, 1.8, 1.95, 2.1, 2.25, 2.4', () => {
     expect([2, 3, 4, 5, 6, 7, 8].map(teamFactor).map((v) => Math.round(v * 100) / 100)).toEqual([1, 1.4, 1.8, 1.95, 2.1, 2.25, 2.4]);
-    expect(expectedScore('1', 'normal', 6)).toBeCloseTo(350 * 2.1, 6);
+    expect(expectedScore('2', 'normal', 6)).toBeCloseTo(350 * 2.1, 6);
   });
   it('1, 2 and 3 stars are 35%, 60% and 85% of E(N); the boundaries are inclusive', () => {
-    const [a, b, c] = starThresholds('1', 'normal', 2); // E = 350
+    const [a, b, c] = starThresholds('2', 'normal', 2); // E = 350
     expect([a, b, c]).toEqual([122, 210, 298]);
-    expect([a - 1, a, b - 1, b, c - 1, c].map((s) => stars('1', 'normal', 2, s))).toEqual([0, 1, 1, 2, 2, 3]);
+    expect([a - 1, a, b - 1, b, c - 1, c].map((s) => stars('2', 'normal', 2, s))).toEqual([0, 1, 1, 2, 2, 3]);
   });
   it('the same score is worth fewer stars with more players, and map and difficulty change the bar', () => {
-    expect(stars('1', 'normal', 2, 220)).toBe(2);
-    expect(stars('1', 'normal', 6, 220)).toBe(0);
+    expect(stars('2', 'normal', 2, 220)).toBe(2);
+    expect(stars('2', 'normal', 6, 220)).toBe(0);
     expect(starThresholds('3', 'normal', 2)[2]).toBeLessThan(starThresholds('1', 'normal', 2)[2]); // a 2-star map has a lower bar
     expect(starThresholds('1', 'easy', 2)).not.toEqual(starThresholds('1', 'normal', 2));
   });
@@ -222,8 +222,12 @@ describe('R17 stars by map x difficulty x team size', () => {
           expect(0.7 * orders * perPizza, `${m.id} ${d} N=${n}`).toBeGreaterThanOrEqual(starThresholds(m.id, d, n)[2]);
         }
   });
+  it('the Hard bar is never above the Normal bar on any map (HAZARD_V2 rebase: Normal moved up, Hard down or stayed)', () => {
+    for (const m of FIXED_MAPS) expect(E2[m.id]!.hard, m.id).toBeLessThanOrEqual(E2[m.id]!.normal);
+    expect(E2_DEFAULT.hard).toBeLessThanOrEqual(E2_DEFAULT.normal);
+  });
   it('the results summary carries the stars, the missing points and the round numbers', () => {
-    const g = createGame({ mapId: '1', difficulty: 'normal', n: 2 });
+    const g = createGame({ mapId: '2', difficulty: 'normal', n: 2 });
     addPlayer(g, 1, 0);
     g.score = 150;
     g.delivered = 3;

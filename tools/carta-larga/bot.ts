@@ -229,6 +229,7 @@ export function seriesRound(o: {
   n: number;
   seed: number;
   force?: Recipe;
+  extra?: Record<string, unknown>; // more createGame options: tools/hazards/stars-calibrate.ts passes the lobby's roundRules and `hazardsV2`; `adaptive: false` etc. for the classics
   before?: (g: Game) => void;
   trace?: (g: Game, mem: Map<number, CMem>, t: number) => void;
 }): Game {
@@ -248,6 +249,7 @@ export function seriesRound(o: {
     upgradeOrders: true,
     sliceAfterBake: true,
     compoundOrders: true,
+    ...o.extra,
   });
   const crew: Crew = {
     g,
