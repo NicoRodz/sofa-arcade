@@ -43,7 +43,7 @@ describe('HAZARD_V3 patched maps are playable', () => {
           before: (gg) => {
             t++;
             if (t % 90 !== 0 || !gg.mech?.tile) return;
-            const i = gg.mech.tile.findIndex((v) => v === OIL);
+            const i = gg.mech.tile.indexOf(OIL);
             if (i >= 0) gg.mech.tile[i] = 0;
           },
         });
