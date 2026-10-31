@@ -3,6 +3,7 @@
 // One event per game: the rat is forced to appear at 3 s with two counters holding something for it to go for. `window` = from its first step to the moment it is gone.
 import { mulberry32, type Rng } from '@pichi/core/rng';
 import { HUMAN, type Ctl, type Sim } from './human-bot';
+import { hazardParams } from '../hazards/hazard-v2';
 
 export interface RatRun {
   caught: boolean;
@@ -99,6 +100,10 @@ export async function runRat(sim: Sim, mapIdx: number, seed: number, gameOpts: R
   g.bus.on('rat:gone', () => {
     gone = g.time;
   });
+  let lastDodge = -1e9; // HAZARD_V2: a dash into a rat that has just dodged is wasted; the chef keeps running at it and dashes again when the rat pants or its dodge is back
+  g.bus.on('rat:dodge', () => {
+    lastDodge = g.time;
+  });
   // the human
   const lat = Math.round((HUMAN.latMs[0] + (HUMAN.latMs[1] - HUMAN.latMs[0]) * r()) / (1000 / 60));
   const queue: Ctl[] = Array.from({ length: lat }, () => ({ x: 0, y: 0, a: 0, b: false }));
@@ -146,7 +151,8 @@ export async function runRat(sim: Sim, mapIdx: number, seed: number, gameOpts: R
       noise = noise * rho + HUMAN.noiseDeg * Math.sqrt(1 - rho * rho) * gauss(r);
       const [x, y] = rot(ux, uy, noise);
       c = { x: x * mag, y: y * mag, a: 0, b: false };
-      if (d < trig && now - lastPress > 700 && !p.item) {
+      const dodgeBack = now - lastDodge > (g.hz ? hazardParams(g.difficulty, 2).rat.dodgeCdMs : 0);
+      if (d < trig && now - lastPress > 700 && !p.item && (dodgeBack || (rat.pantMs ?? 0) > 0)) {
         lastPress = now;
         bTicks = 2;
       }

@@ -122,7 +122,7 @@ export const HAZARD_V2: Record<Difficulty, HazardParams> = {
   },
   normal: {
     fire: fire(8000, 5000, 2500, 3, 4000, 300, 8000, 2000),
-    rat: rat(2.2, 3.4, 540, 400, 0.45, 2.5, 0.9, 1.1, 3000),
+    rat: rat(2.2, 3.4, 540, 400, 0.45, 4.4, 0.9, 1.1, 3000),
     ice: { tauAccelMs: 1100, tauStopMs: 1300 },
     events: ev(
       [
@@ -134,7 +134,7 @@ export const HAZARD_V2: Record<Difficulty, HazardParams> = {
   },
   hard: {
     fire: fire(6000, 3000, 2000, 4, 5000, 500, 10_000, 1500),
-    rat: rat(2.6, 3.8, 540, 300, 0.45, 3.0, 0.8, 1.0, 2000),
+    rat: rat(2.6, 3.8, 540, 300, 0.45, 4.45, 0.8, 1.0, 2000),
     ice: { tauAccelMs: 1300, tauStopMs: 1600 },
     events: ev(
       [
