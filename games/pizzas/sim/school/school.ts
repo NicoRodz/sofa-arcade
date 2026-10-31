@@ -83,7 +83,7 @@ export function createSchool(o: SchoolOpts): School {
     acc = 0,
     doneAt: number | null = null,
     everyone = false;
-  const hints = createHintSync(o.send as Parameters<typeof createHintSync>[0]);
+  const hints = createHintSync(o.send as Parameters<typeof createHintSync>[0], 50); // the school keeps its own 50 ms: a scripted chef walks past a crate in under 200 ms and the practice names every verb it passes
   const sent = new Map<number, { key: string; at: number }>();
 
   const finish = (id: number, wasSkipped: boolean, step: number) => o.onAdvance?.(id, step, wasSkipped);

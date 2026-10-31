@@ -15,6 +15,7 @@ import { canLoad, canStir, hasNonna, hasSauce, potTypeOf } from './recipes/sauce
 import { basilOn, canSlice } from './recipes/casa';
 import { kneaderA, kneaderB } from './mech/kneader/hint';
 import { bellowsA, bellowsB } from './mech/woodOven/hint';
+import { ev2Hint } from './ev2/hint';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
 const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón', 'Jamón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)
@@ -124,11 +125,13 @@ export function chefHint(g: Game, p: Player): HintLabels {
       ? on(sab.a, sab.a === 'Cargar' || sab.a === 'Recoger' ? 'grab' : 'trash')
       : buttonA(g, p, sa, near);
   const b = aiming ? on('¡Lanzar!', 'star') : buttonB(g, p, s, g.magnet && !p.assist ? targetStation(g, p, true) : s);
-  return { a: a.label, b: b.label, aIcon: a.icon, bIcon: b.icon, ...(a.off ? { aOff: true } : {}), ...(b.off ? { bOff: true } : {}) };
+  const ev = g.ev2 ? ev2Hint(g, p) : null; // EVENTS_V2: the board (Subir luz), the candle drawer (Vela)
+  const [A, B] = [ev?.a ?? a, ev?.b ?? b];
+  return { a: A.label, b: B.label, aIcon: A.icon, bIcon: B.icon, ...(A.off ? { aOff: true } : {}), ...(B.off ? { bOff: true } : {}) };
 }
 
 // --- Sending: the state of every tick, whole --------------------------------------------------------------------------------------------------------
-export const HINT_MIN_MS = 50; // a chef's labels change at most this often on the wire (walking along a counter flaps them every step)
+export const HINT_MIN_MS = 200; // a chef's labels change at most this often on the wire: 5 per second (walking along a counter flaps them every step)
 export const HINT_REFRESH_MS = 1000; // ...and are sent again after this long even when nothing changed: a phone that reconnected, or missed one, is right again within a second
 type HintMsg = Extract<ClientMsg, { t: 'hint' }>;
 
@@ -137,7 +140,7 @@ type HintMsg = Extract<ClientMsg, { t: 'hint' }>;
  * from the last ones sent (not faster than HINT_MIN_MS) or when HINT_REFRESH_MS went by; `sync(null, now)` (no round running) hands every labelled
  * phone back to the game's own labels. A label is never an event: the phone keeps the last whole state it got.
  */
-export function createHintSync(send: (m: HintMsg) => void) {
+export function createHintSync(send: (m: HintMsg) => void, minMs = HINT_MIN_MS) {
   const sent = new Map<number, { key: string; at: number }>();
   return {
     sync(g: Game | null, now: number) {
@@ -151,7 +154,7 @@ export function createHintSync(send: (m: HintMsg) => void) {
         const h = chefHint(g, p),
           key = JSON.stringify(h),
           last = sent.get(p.id);
-        if (last && !(key !== last.key && now - last.at >= HINT_MIN_MS) && now - last.at < HINT_REFRESH_MS) continue;
+        if (last && !(key !== last.key && now - last.at >= minMs) && now - last.at < HINT_REFRESH_MS) continue;
         sent.set(p.id, { key, at: now });
         send({ t: 'hint', playerId: p.id, ...h });
       }

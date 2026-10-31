@@ -80,6 +80,10 @@ export interface GameEvents extends SabotageEvents {
   'event:start': { kind: EventKind; durationMs: number };
   'event:end': { kind: EventKind };
   'event:inspector': { passed: boolean; points: number; team?: number }; // the verdict for a team when the inspector leaves
+  // EVENTS_V2 (ev2/): the ambience (a mood per event, the latest wins), the closing card, and the cake's steps. Only a round with `eventsV2` emits them.
+  'ev2:mood': { kind: EventKind; on: boolean };
+  'ev2:close': { kind: EventKind; points: number; ok: boolean; title: string; detail: string; by?: number };
+  'ev2:cake': { step: 'candle' | 'served' | 'expired'; player?: number };
   'rat:appear': { at: [number, number] }; // coop only
   'rat:steal': { station: number; item: Item };
   'rat:scared': { player: number; returned: boolean; bonus?: number }; // a dash scared it; returned: it dropped the item back on its counter; bonus: points the gentle rat pays

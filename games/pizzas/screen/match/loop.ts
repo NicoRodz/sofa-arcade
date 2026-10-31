@@ -128,6 +128,10 @@ export function initHost() {
     pz.game.players.forEach((p) => (team === undefined || team === p.team) && buzz(p.id, kind)); // the whole team: a big fire needs two
   for (const k of ['event:announce', 'mutate:warn'] as const) pizzasBus.on(k, () => alert(() => true));
   pizzasBus.on('fire:start', (e) => (e.big ? teamPhones(e.team, 'big') : alert((t) => e.team === undefined || e.team === t)));
+  // EVENTS_V2: the phones take the colour of the event when it starts (every chef) and a win or a fail note when it closes; pizzasBus only carries them in a round with `eventsV2`
+  const EV2_BUZZ: Partial<Record<string, BuzzKind>> = { rush: 'evrush', birthday: 'evbday', blackout: 'evdark', spill: 'evspill' };
+  pizzasBus.on('event:start', (e) => EV2_BUZZ[e.kind] && pz.game.ev2 && teamPhones(undefined, EV2_BUZZ[e.kind]!));
+  pizzasBus.on('ev2:close', (e) => teamPhones(undefined, e.ok ? 'evwin' : 'evfail'));
   pizzasBus.on('rat:dodge', (e) => buzz(e.player, 'dodge')); // "¡Te esquivó!" on the phone of the chef that missed
   const iceSeen = new Set<number>();
   pizzasBus.on('surface:slide', (e) => {

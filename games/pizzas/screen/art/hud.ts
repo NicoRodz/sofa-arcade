@@ -7,7 +7,7 @@ import { C, H, W, hexNum, timerColor } from '@pichi/screen-kit/art/tokens';
 import { R } from '@pichi/screen-kit/art/gfx';
 import { Bar } from './stations';
 import { recipeParts } from './food/ticket';
-import { birthdayParts, trayParts, type Tray } from './food/ticket-tray';
+import { birthdayParts, ticketMark, trayParts, type Tray, type TicketMark } from './food/ticket-tray';
 import { MARGIN_MS } from '../../sim/recipes/bandeja';
 import { cardIntro } from './food/card-intro';
 import { makeText } from '@pichi/screen-kit/art/fx';
@@ -138,7 +138,7 @@ export class Hud {
     this.scene.tweens.add({ targets: box, scale: 1, duration: 260, ease: 'back.out' });
   }
 
-  private makeTicket(id: number, recipe: Recipe, team: number, vip: boolean, birthday = false, parts?: readonly Recipe[]): Ticket {
+  private makeTicket(id: number, recipe: Recipe, team: number, vip: boolean, mark: TicketMark, parts?: readonly Recipe[]): Ticket {
     const tray = parts && trayParts(this.scene, parts);
     const s = this.scene;
     const bg = s.add
@@ -152,13 +152,13 @@ export class Hud {
     const frame = s.add.graphics().setVisible(vip);
     frame.lineStyle(7, hexNum(C.cheese2), 1).strokeRoundedRect(-62, 3, 124, 96, 10);
     frame.lineStyle(3, hexNum(C.cheese), 1).strokeRoundedRect(-62, 3, 124, 96, 10);
-    const extra = birthday ? birthdayParts(s, frame) : []; // the "Pedido de cumpleaños" (midround.ts): a pink ticket with a pink frame, a balloon and what it pays
+    const extra = mark ? birthdayParts(s, frame, mark) : []; // the "Pedido de cumpleaños" (midround.ts): a pink ticket with a pink frame, a balloon and what it pays
     const root = s.add
       .container(W + 200, 6, [bg, frame, bar.root, ...(tray ? tray.objects : recipeParts(s, recipe)), num, ...extra])
       .setDepth(2100 + id * 0.001);
     root.setAngle((id % 3) - 1);
     if (vip) bg.setTint(hexNum(C.cheese));
-    else if (birthday) bg.setTint(0xffc9e2);
+    else if (mark) bg.setTint(mark === 'red' ? 0xffb199 : 0xffc9e2);
     const t: Ticket = { id, team, vip, bg, frame, root, bar, ...(tray ? { tray } : {}), x: NaN, enter: { v: 0 }, leaving: false };
     s.tweens.add({ targets: t.enter, v: 1, duration: 300, ease: 'back.out' });
     return t;
@@ -252,7 +252,7 @@ export class Hud {
       for (const o of q.orders.slice(0, MAX_TICKETS)) {
         const key = ticketKey(o.id, q.team);
         live.add(key);
-        if (!this.tickets.has(key)) this.tickets.set(key, this.makeTicket(o.id, o.recipe, q.team, !!o.vip, !!o.birthday, o.parts));
+        if (!this.tickets.has(key)) this.tickets.set(key, this.makeTicket(o.id, o.recipe, q.team, !!o.vip, ticketMark(o), o.parts));
       }
     for (const [key, t] of this.tickets) {
       if (!live.has(key) && !t.leaving) {

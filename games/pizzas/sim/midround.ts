@@ -21,8 +21,10 @@ import { ratPull, stealOnEscape } from './feel/rat-loot';
 import type { Game, Item, Station } from './round/state';
 import { spill } from './mech/oil/spill';
 import { hazardParams } from './hazards/hazard-v2';
+import { hz3Params } from './hazards/hazard-v3';
 import { book } from './hazards/score-ledger';
 import { planEvents, type Planned } from './hazards/events-v2';
+import { ev2End, ev2SpillWatch, ev2Spilt, ev2Start, ev2Tick } from './ev2/events';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
 export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];
@@ -338,6 +340,7 @@ function inspect(g: Game) {
 // --- The clock of the event -------------------------------------------------------------------------------------------------------------------------
 export function midTick(g: Game, dtMs: number, fx: MidFx) {
   const m = g.mid!;
+  if (g.ev2) ev2SpillWatch(g); // EVENTS_V2: the oil of the Derrame outlives the event (it is `done` after 3 s), so this runs before the phase checks
   if (m.phase === 'done') return;
   if (m.phase === 'wait' && g.time >= m.announceAt) {
     m.phase = 'announced';
@@ -348,24 +351,29 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
     const dur = m.queue ? activeMs(g, m.kind) : ACTIVE_MS[m.kind];
     m.endAt = m.startAt + dur;
     g.bus.emit('event:start', { kind: m.kind, durationMs: dur });
+    if (g.ev2) ev2Start(g, m); // EVENTS_V2: the board, the mood
     if (m.kind === 'rush') fx.rush(g);
     else if (m.kind === 'birthday') fx.birthday(g);
     else if (m.kind === 'blackout') m.dark = true;
     else if (m.kind === 'frost') {
       m.frost = true;
       g.surf ??= newSurfaceState(); // the ice rules only run in a round that has `surf`
-    } else if (m.kind === 'spill') spill(g, m.rng);
-    else if (m.kind === 'rat') spawnRat(g, m);
+    } else if (m.kind === 'spill') {
+      const tiles = spill(g, m.rng);
+      if (g.ev2) ev2Spilt(g, tiles, hz3Params(g).oil.spillDry);
+    } else if (m.kind === 'rat') spawnRat(g, m);
     return;
   }
   if (m.phase !== 'active') return;
   if (m.kind === 'rat' && m.rat) ratStep(g, m, dtMs);
+  if (g.ev2) ev2Tick(g, m, dtMs); // EVENTS_V2: the board of the blackout may end the event now
   if (g.time < m.endAt && !(m.kind === 'rat' && !m.rat)) return;
   m.phase = 'done';
   if (m.kind === 'blackout') m.dark = false;
   else if (m.kind === 'frost') m.frost = false;
   else if (m.kind === 'inspector') inspect(g);
   else if (m.kind === 'rat') ratGone(g, m);
+  if (g.ev2) ev2End(g, m); // EVENTS_V2: the closing card and the prize
   g.bus.emit('event:end', { kind: m.kind });
   const next = m.queue?.shift();
   if (next)

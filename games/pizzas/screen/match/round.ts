@@ -13,6 +13,7 @@ import { subSeed } from '../../sim/recipes/menu';
 import { usesSurfaces } from '../../sim/surfaces/legend';
 import { mechFlagsOf } from '../../sim/mech/ids';
 import { roundRules } from '../../sim/midround';
+import { eventsV2Of } from '../../sim/ev2/state';
 import { mutateOf } from '../../sim/mutate/plan';
 import { mechsOf, pickedMechs } from '../../sim/gen/lobby-opts';
 import { assignPuestos, featuresOf } from '../../sim/puestos';
@@ -93,6 +94,7 @@ function startCoop(): undefined {
     bus: pizzasBus,
     eventsSeed: nextEventsSeed(),
     ...roundRules(app.config.modeOptions, app.config.difficulty),
+    eventsV2: eventsV2Of(app.config.modeOptions), // EVENTS_V2: on in every coop lobby round with events (the sim ignores it otherwise); the option `eventsV2: false` turns it off
     menuV2: true, // 2-4 plates by difficulty with a bag (recipes/menu.ts) and the crate a third plate needs (maps/menu-patches.ts)
     adaptive: SERIES_MAPS.some((m) => m.id === map.id), // the Carta larga series paces its orders by the load of the queue
     upgradeOrders: SERIES_MAPS.some((m) => m.id === map.id), // ... and brings the Pizza de la casa with its upgrades, the portions and the Bandeja familiar

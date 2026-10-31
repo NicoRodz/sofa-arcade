@@ -4,7 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ASSIST_CARD_LINES, ASSIST_FOR, ASSIST_GIVES, assistLabel, assistToast } from '../src/assist-help';
 import { violations } from './checks';
-import { ORIENTATIONS, SCENARIOS, VIEWPORTS, insetsName, openSession, type Session } from './harness';
+import { ORIENTATIONS, SCENARIOS, VIEWPORTS, insetsName, openSession, type Box, type Session } from './harness';
 
 let s: Session;
 beforeAll(async () => {
@@ -13,6 +13,24 @@ beforeAll(async () => {
 afterAll(async () => {
   await s?.close();
 }, 30_000);
+
+const EVENT_NOTE_KINDS = ['evrush', 'evbday', 'evdark', 'evspill', 'evwin', 'evfail'];
+/** Buzz the phone with an event note and measure it once it is up (the fade-in is 150 ms). */
+async function showNote(kind: string, font: string) {
+  await s.eval(
+    `document.documentElement.style.setProperty('--font', ${JSON.stringify(font || 'inherit')}); window.dispatchEvent(new Event('resize'))`,
+  );
+  await s.eval(`window.__push({ t: 'buzz', playerId: 1, kind: '${kind}' })`);
+  await new Promise((r) => setTimeout(r, 300));
+  return s.eval<{ shown: boolean; pe: string; vw: number; sw: number; cw: number; boxes: Box[]; hits: string[]; btns: Box[] }>(`(() => {
+    const el = document.getElementById('evnote');
+    const box = (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; };
+    const id = (b) => { const e = document.elementFromPoint(b.x + b.w / 2, b.y + b.h / 2); const c = e && e.closest('[id]'); return c ? c.id : String(e && e.tagName); };
+    const btns = ['#btnA', '#btnB'].map((q) => box(document.querySelector(q)));
+    return { shown: !!el && Number(getComputedStyle(el).opacity) > 0.5, pe: el ? getComputedStyle(el).pointerEvents : '', vw: innerWidth, sw: el ? el.scrollWidth : 0, cw: el ? el.clientWidth : 0,
+      boxes: el ? [...el.children].map(box) : [], hits: btns.map(id), btns };
+  })()`);
+}
 
 describe('phone layout', () => {
   for (const [orientation, vps] of Object.entries(ORIENTATIONS)) {
@@ -379,4 +397,40 @@ describe('phone layout', () => {
     expect(quick.length).toBeGreaterThan(0);
     expect(quick.some((m) => 'sig' in m || 'go' in m)).toBe(false);
   }, 90_000);
+
+  it('event notes (#evnote): the text fits inside a 360 px wide screen and a wide font does not push it out', async () => {
+    const v = { name: '360x640', w: 360, h: 640, insets: [{ top: 0, right: 0, bottom: 0, left: 0 }] }; // portrait: the pad asks to rotate, the note still shows over it
+    await s.load(SCENARIOS.find((x) => x.name === 'play')!);
+    for (const font of ['', 'Verdana, sans-serif'])
+      for (const kind of EVENT_NOTE_KINDS) {
+        await s.setViewport(v, v.insets[0]!);
+        const m = await showNote(kind, font);
+        const at = `${kind} ${font || 'default font'}`;
+        expect(m.vw, at).toBe(360);
+        expect(m.shown, `${at}: the note is up`).toBe(true);
+        expect(m.sw, `${at}: no sideways overflow`).toBeLessThanOrEqual(m.cw);
+        expect(m.boxes, at).toHaveLength(2);
+        for (const b of m.boxes) {
+          expect(b.x, `${at}: text leaves the left edge`).toBeGreaterThanOrEqual(0);
+          expect(b.x + b.w, `${at}: text leaves the right edge`).toBeLessThanOrEqual(360);
+        }
+      }
+  }, 90_000);
+
+  it('event notes (#evnote): over the landscape pad it lets every touch through to A and B and its text stays clear of both buttons', async () => {
+    await s.load(SCENARIOS.find((x) => x.name === 'play')!);
+    for (const v of VIEWPORTS)
+      for (const ins of v.insets)
+        for (const kind of EVENT_NOTE_KINDS) {
+          await s.setViewport(v, ins);
+          const m = await showNote(kind, '');
+          const at = `${kind} @ ${v.name} ${insetsName(ins)}`;
+          expect(m.shown, `${at}: the note is up`).toBe(true);
+          expect(m.pe, `${at}: pointer-events`).toBe('none');
+          expect(m.hits, `${at}: A and B take their own touches`).toEqual(['btnA', 'btnB']);
+          for (const b of m.boxes)
+            for (const k of m.btns)
+              expect(b.x + b.w <= k.x || k.x + k.w <= b.x || b.y + b.h <= k.y || k.y + k.h <= b.y, `${at}: text over a button`).toBe(true);
+        }
+  }, 180_000);
 });
