@@ -82,7 +82,7 @@ async function playCoop(room: string, o: { frames: number; dropAt?: number; drop
   const map = fixedMap('2')!;
   const g: Game = createGame({ mapId: map.id, rows: map.rows, spawns: map.spawns, n: 2, seed: 11, countdownMs: COUNTDOWN_MS });
   phones.forEach((p, rank) => addPlayer(g, p.id, rank, rank));
-  const hs = createHintSync((m) => ws.send(JSON.stringify(m)));
+  const hs = createHintSync((m) => ws.send(JSON.stringify(m)), 50); // a golden-script bot passes states in under the 200 ms floor of a human phone (same 50 ms the school keeps)
   const mem = new Map(phones.map((p) => [p.id, { step: 0, since: 0, lastPress: -99, bin: false } as Mem]));
   const trackers = new Map(phones.map((p) => [p.id, new PressTracker()]));
   for (const p of phones) p.sendControls({ x: 0, y: 0, a: 0, b: false });

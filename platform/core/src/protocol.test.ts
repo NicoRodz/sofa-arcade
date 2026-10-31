@@ -68,7 +68,11 @@ describe('protocol', () => {
     expect(parseClientMessage('{"t":"buzz","playerId":3,"kind":"constructor"}')).toBeNull();
     expect(BUZZ_PATTERNS.pick).toEqual([20]);
     expect(BUZZ_PATTERNS.chop).toEqual([40]);
-    for (const p of Object.values(BUZZ_PATTERNS)) expect(p.reduce((a, b) => a + b, 0)).toBeLessThan(200);
+    for (const [k, p] of Object.entries(BUZZ_PATTERNS))
+      expect(
+        p.reduce((a, b) => a + b, 0),
+        k,
+      ).toBeLessThan(k.startsWith('ev') ? 800 : 200); // the event buzzes (eventsV2) are longer on purpose: a whole-phone note
   });
   it('the slip buzz is a single 120 ms pulse (sabotage); the hint message carries two labels of at most 14 characters, or null', () => {
     expect(BUZZ_PATTERNS.slip).toEqual([120]);
