@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { LobbyConfig, MenuActBody } from '@pichi/core';
 import { DEFAULT_CONFIG } from '@pichi/catalog';
 import { GAMES } from '@pichi/catalog';
-import { SERIES_MAPS } from '../sim/maps';
+import { OUT_OF_DRAW, SERIES_MAPS, autoMaps, recommendedForN } from '../sim/maps';
 import { FOCUS_ROW, buildLobbyMenu, decideMenuAct, type PizzasLobbyState } from './lobby-menu';
 
 const def = GAMES.find((g) => g.id === 'pizzas')!;
@@ -51,9 +51,28 @@ describe('buildLobbyMenu', () => {
     const blocked = items.filter((i) => !i.enabled);
     expect(blocked.length).toBeGreaterThan(0);
     for (const b of blocked) expect(b.reason, b.id).toMatch(/jugadores/);
-    expect(grid.groups!.map((g) => g.id)).toEqual(['classic', 'series', 'taller']);
-    expect(grid.groups![1]!.items.map((i) => i.id).sort()).toEqual(SERIES_MAPS.map((m) => m.id).sort());
+    expect(grid.groups!.map((g) => g.id)).toEqual(['rec', 'classic', 'series', 'taller', 'plain']);
+    expect(grid.groups![2]!.items.map((i) => i.id).sort()).toEqual(SERIES_MAPS.map((m) => m.id).sort());
     expect(grid.value).toBe('1');
+  });
+  it('"Recomendados para N" lists up to three maps of the bag, and the six plain maps wait in the folded "Sin dinámica" group (still pickable)', () => {
+    const st = coop({ n: 4, connected: 4 });
+    const grid = rowOf(st, 'map')!;
+    const rec = grid.groups!.find((g) => g.id === 'rec')!;
+    const plain = grid.groups!.find((g) => g.id === 'plain')!;
+    expect(rec.label).toBe('Recomendados para 4');
+    expect(rec.items.map((i) => i.id)).toEqual(recommendedForN(4, st.config.difficulty, { played: new Set() }).map((m) => m.id));
+    expect(rec.items.length).toBe(3);
+    for (const i of rec.items) expect(autoMaps(4, st.config.difficulty).map((m) => m.id)).toContain(i.id);
+    expect(plain.label).toBe('Sin dinámica');
+    expect(plain.items.map((i) => i.id).sort()).toEqual([...OUT_OF_DRAW].sort());
+    expect(grid.groups!.find((g) => g.id === 'classic')!.items.some((i) => OUT_OF_DRAW.includes(i.id))).toBe(false);
+    // the session bag: what was played is not recommended again
+    const played = new Set(rec.items.map((i) => i.id));
+    const next = rowOf(coop({ n: 4, connected: 4, played }), 'map')!.groups!.find((g) => g.id === 'rec')!;
+    for (const i of next.items) expect(played.has(i.id), i.id).toBe(false);
+    // a plain map is selectable by touch
+    expect(decideMenuAct(coop({ n: 4, connected: 4 }), act({ act: 'set', row: 'map', value: '1' }), 1)).toMatchObject({ ok: true, effect: { kind: 'map', value: '1' } });
   });
   it('the versus grid has one group and the generated / random picks as extras', () => {
     const grid = rowOf(versus(), 'map')!;
@@ -165,5 +184,7 @@ describe('decideMenuAct', () => {
       row: 'map',
     });
     expect(decideMenuAct(coop(), act({ act: 'focus', row: 'map', value: 'zzz' }), 1)).toMatchObject({ effect: { kind: 'focus' } });
+    expect(decideMenuAct(coop(), act({ act: 'focus', row: 'map', value: 'plain' }), 1)).toMatchObject({ effect: { kind: 'group', value: 'plain' } });
+    expect(decideMenuAct(coop(), act({ act: 'focus', row: 'map', value: 'rec' }), 1)).toMatchObject({ effect: { kind: 'group', value: 'classic' } }); // the TV lists them on its home page
   });
 });

@@ -60,6 +60,8 @@ describe('views', () => {
     expect(currentTab(setTab(openMaps(up()), 'series'))).toBe('series');
     const s = snapshot();
     s.rows.find((r) => r.id === 'map')!.value = '20';
+    expect(currentTab(onSnapshot(initialUi(), s, 0))).toBe('rec'); // a recommended map opens the first group that lists it
+    s.rows.find((r) => r.id === 'map')!.groups!.find((g) => g.id === 'rec')!.items.length = 0;
     expect(currentTab(onSnapshot(initialUi(), s, 0))).toBe('series');
   });
   it('pickedOf names the picked map, or an extra like "Aleatorio"', () => {
@@ -148,7 +150,7 @@ describe('rows changed by someone else (keyboard flash)', () => {
 
 describe('"Aptos para N" and the first-use card', () => {
   it('the filter keeps only the cards the screen says fit; off lists them all', () => {
-    const items = snapshot().rows.find((r) => r.kind === 'grid')!.groups![0]!.items;
+    const items = snapshot().rows.find((r) => r.kind === 'grid')!.groups!.find((g) => g.id === 'classic')!.items;
     expect(visibleItems(up(), items)).toHaveLength(4);
     expect(visibleItems(toggleFit(up()), items).map((i) => i.id)).toEqual(['1', '2', '3']);
   });

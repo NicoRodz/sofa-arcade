@@ -10,8 +10,10 @@ import {
   autoMaps,
   familyOfMap,
   fixedMap,
+  lobbyGroupOfMap,
   mapLevel,
   pickAutoMap,
+  recommendedForN,
   type MapFamily,
 } from './maps';
 
@@ -97,5 +99,28 @@ describe('the draw', () => {
       expect(mapLevel(pickAutoMap(4, 'normal', mulberry32(s), { played: new Set(), first: true })), `seed ${s}`).toBe(low);
     }
     expect(first(4, 'hard', 5).id).toBe(first(4, 'hard', 5).id);
+  });
+});
+
+describe('the lobby lists', () => {
+  it('the six plain maps are their own page; the rest keep the page of their set', () => {
+    for (const id of OUT_OF_DRAW) expect(lobbyGroupOfMap(id), id).toBe('plain');
+    expect([lobbyGroupOfMap('3'), lobbyGroupOfMap('20'), lobbyGroupOfMap('29')]).toEqual(['classic', 'series', 'taller']);
+  });
+  it('"Recomendados para N": up to 3 maps of the draw, one per family, none played, not the last family first, deterministic', () => {
+    for (const d of DIFFICULTIES)
+      for (let n = 2; n <= 8; n++) {
+        const rec = recommendedForN(n, d, { played: new Set() });
+        const ids = autoMaps(n, d).map((m) => m.id);
+        expect(rec.length, `${d} N${n}`).toBeGreaterThan(0);
+        expect(rec.length).toBeLessThanOrEqual(3);
+        expect(new Set(rec.map((m) => familyOfMap(m.id))).size).toBe(rec.length);
+        for (const m of rec) expect(ids).toContain(m.id);
+        expect(recommendedForN(n, d, { played: new Set() }).map((m) => m.id)).toEqual(rec.map((m) => m.id));
+        const played = new Set(rec.map((m) => m.id));
+        for (const m of recommendedForN(n, d, { played })) if (ids.length > played.size) expect(played.has(m.id), `${d} N${n} ${m.id}`).toBe(false);
+        const last = familyOfMap(rec[0]!.id);
+        if (rec.length > 1) expect(familyOfMap(recommendedForN(n, d, { played: new Set(), last })[0]!.id)).not.toBe(last);
+      }
   });
 });

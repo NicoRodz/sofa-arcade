@@ -5,7 +5,7 @@ import { teamOf } from '@pichi/core/lobby/teams';
 import type { LobbyConfig } from '@pichi/core';
 import { defaultSabotage, isSabotageMode, SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
 import { eventsOf } from '@pichi/game-pizzas/sim/midround';
-import { groupOfMap, fixedMap, isMapChoice, mapStatus } from '@pichi/game-pizzas/sim/maps';
+import { lobbyGroupOfMap, fixedMap, isMapChoice, mapStatus } from '@pichi/game-pizzas/sim/maps';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import { isVersusChoice, stepChoice, teamSizes, versusAvailability, versusMapStatus } from '@pichi/game-pizzas/sim/versus/lobby';
 import { chips, showTeams } from '@pichi/screen-kit/lobby/chips';
@@ -84,8 +84,8 @@ export function initLobbyView() {
     const m = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.map;
     if (m === 'group') {
       const to = (e.target as HTMLElement).closest<HTMLElement>('[data-map]')?.dataset.to;
-      pz.mapGroup = to === 'series' || to === 'taller' ? to : 'classic';
-      if (groupOfMap(app.config.map) !== 'classic' && groupOfMap(app.config.map) !== pz.mapGroup) setConfig({ map: 'auto' }); // the picked map is not on this page any more
+      pz.mapGroup = to === 'series' || to === 'taller' || to === 'plain' ? to : 'classic';
+      if (lobbyGroupOfMap(app.config.map) !== 'classic' && lobbyGroupOfMap(app.config.map) !== pz.mapGroup) setConfig({ map: 'auto' }); // the picked map is not on this page any more
       renderMapPanel(isVersus(), connectedN());
       return;
     }

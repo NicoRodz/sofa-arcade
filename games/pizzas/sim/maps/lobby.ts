@@ -1,6 +1,6 @@
 // Lobby rules for the fixed maps: which are recommended, warned or blocked for N players, and which one to pick.
 import type { Difficulty } from '@pichi/core/difficulty';
-import { COOP_MAPS, FIXED_MAPS, MAPS_BY_DIFFICULTY, fixedMap, type MapChoice } from './catalog';
+import { COOP_MAPS, FIXED_MAPS, MAPS_BY_DIFFICULTY, fixedMap, groupOfMap, type MapChoice } from './catalog';
 import type { MapDef } from './types';
 
 // Lobby: with N connected players every map is recommended (nMin <= N <= nMax), warned (minDuro <= N < nMin: playable but
@@ -159,4 +159,30 @@ export function pickAutoMap(n: number | undefined, d: Difficulty, rand: () => nu
   }
   const inFamily = pool.filter((m) => familyOfMap(m.id) === family);
   return inFamily[Math.floor(rand() * inFamily.length)]!;
+}
+
+// --- menuV2: the lobby lists (design pizzas-tanda2 §1.3, UI) ------------------------------------------------------------------------------------------------
+/** The page of the lobby's map grid a coop map lives on: the three sets of `groupOfMap`, and "plain" for the six maps out of the draw (the folded "Sin dinámica" group). */
+export const lobbyGroupOfMap = (id: string): ReturnType<typeof groupOfMap> | 'plain' => (OUT_OF_DRAW.includes(id) ? 'plain' : groupOfMap(id));
+/** How many maps "Recomendados para N" lists. */
+export const RECOMMENDED_COUNT = 3;
+/**
+ * "Recomendados para N": up to three maps from the bag of the session, a preview of what `auto` would serve. The same pool as the draw (autoMaps minus the maps already
+ * played, refilled when empty), deterministic: families that are not the last round's first, then one map per family while there are families left, each family's
+ * pick being its lowest level, then closest to the middle of the range, then lowest id.
+ */
+export function recommendedForN(n: number | undefined, d: Difficulty, session: Pick<AutoSession, 'played' | 'last'>): MapDef[] {
+  const all = autoMaps(n, d);
+  const bag = all.filter((m) => !session.played.has(m.id));
+  const pool = bag.length ? bag : all;
+  const k = Math.max(2, n ?? 4);
+  const best = (a: MapDef, b: MapDef) => mapLevel(a) - mapLevel(b) || Math.abs(centre(a) - k) - Math.abs(centre(b) - k) || Number(a.id) - Number(b.id);
+  const families = (['classic', 'surface', 'series', 'taller'] as const).filter((f) => pool.some((m) => familyOfMap(m.id) === f));
+  families.sort((a, b) => Number(a === session.last) - Number(b === session.last) || FAMILY_PCT[d][b] - FAMILY_PCT[d][a]);
+  const out: MapDef[] = [];
+  for (const f of families) {
+    const m = pool.filter((x) => familyOfMap(x.id) === f).sort(best)[0];
+    if (m && out.length < RECOMMENDED_COUNT) out.push(m);
+  }
+  return out;
 }
