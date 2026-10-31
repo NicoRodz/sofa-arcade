@@ -7,6 +7,11 @@ export async function runLobby({ cdp, bots, open, join }: Ctx) {
   await join('LOBY', 8, fixedMap('1')!.rows);
   await sleep(1200);
   await cdp.shot('lobby');
+  // nothing in the map grid may spill out of its card (a subtitle too long for its card, as "mecánicas nuevas" once did)
+  const spill = await cdp.eval<string[]>(
+    `[...document.querySelectorAll('#maps .mc')].flatMap((c) => { const r = c.getBoundingClientRect(); return [...c.querySelectorAll('*')].filter((e) => { const b = e.getBoundingClientRect(); return b.width && (b.right > r.right + 0.5 || b.bottom > r.bottom + 0.5 || e.scrollWidth > e.clientWidth + 1); }).map((e) => c.textContent.trim().slice(0, 24) + ' > ' + e.className); })`,
+  );
+  if (spill.length) throw new Error(`lobby map cards overflow: ${spill.join(' | ')}`);
   bots.splice(0).forEach((b) => b.close());
 }
 
