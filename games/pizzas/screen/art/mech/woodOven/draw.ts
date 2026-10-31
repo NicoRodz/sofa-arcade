@@ -3,7 +3,7 @@
 import type Phaser from 'phaser';
 import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
-import { CAP, bellows, blowers, feedOf, fuelOf, ovens } from '../../../../sim/mech/woodOven/state';
+import { woodCap, bellows, blowers, feedOf, fuelOf, ovens } from '../../../../sim/mech/woodOven/state';
 import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../../env/grid';
 
@@ -27,7 +27,7 @@ export function drawWood(gfx: Phaser.GameObjects.Graphics, g: Game, t: number) {
     const s = g.stations[w]!;
     const x = OX + s.tx * TILE,
       y = OY + s.ty * TILE;
-    const fuel = fuelOf(g, w) / CAP;
+    const fuel = fuelOf(g, w) / woodCap(g);
     // the fire bed: two logs, then flames that grow with the fuel
     gfx.fillStyle(hexNum(C.wood2), 1).fillRoundedRect(x + TILE * 0.2, y + TILE * 0.7, TILE * 0.6, TILE * 0.1, 4);
     gfx.fillStyle(hexNum(C.wood), 1).fillRoundedRect(x + TILE * 0.28, y + TILE * 0.62, TILE * 0.44, TILE * 0.1, 4);
@@ -70,7 +70,7 @@ export function drawWood(gfx: Phaser.GameObjects.Graphics, g: Game, t: number) {
         .lineStyle(3, hexNum(C.fire2), 0.8)
         .lineBetween(x + TILE * 0.9, y + TILE * 0.5, x + TILE * (0.98 + 0.1 * Math.sin(t / 60)), y + TILE * 0.5);
     const w = feedOf(g, q);
-    bar(gfx, x + TILE * 0.8, y + TILE * 0.12, TILE * 0.3, w === undefined ? 0 : fuelOf(g, w) / CAP);
+    bar(gfx, x + TILE * 0.8, y + TILE * 0.12, TILE * 0.3, w === undefined ? 0 : fuelOf(g, w) / woodCap(g));
   }
 }
 

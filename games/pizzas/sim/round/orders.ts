@@ -9,6 +9,7 @@ import { isDish, recipeBase } from '../recipes/defs';
 import { adaptiveDue, patienceMs } from '../recipes/pacing';
 import { bandejaBase, bandejaPatienceMs, pickParts, takePart } from '../recipes/bandeja';
 import { casaExtras } from '../recipes/casa';
+import { book } from '../score-ledger';
 
 // R15: the tip multiplier for a delivery made after `streak` correct ones in a row.
 export const tipMultiplier = (streak: number, t: Tuning) => Math.min(t.streakMax, 1 + Math.max(0, streak));
@@ -94,6 +95,7 @@ export function deliver(g: Game, p: Player) {
     const raw = (base + tip) * (vip ? VIP_MULT : 1) * extra.bonus;
     const gain = Math.round(raw * team.k); // the handicap k of this instant
     team.score += gain;
+    book(g, birthday ? 'event:birthday' : vip ? 'event:vip' : 'delivery', gain);
     team.gross += raw;
     team.reachedAt = g.time;
     team.tips += tip;
@@ -160,6 +162,7 @@ export function ordersTick(g: Game) {
     const before = team.score;
     team.score = Math.max(0, team.score + lost * g.params.penalty); // the penalty is not multiplied by k
     if (team.score !== before) team.reachedAt = g.time;
+    if (lost) book(g, 'penalty:expired', team.score - before);
     if (lost) {
       team.expired += lost;
       resetStreak(g, team);

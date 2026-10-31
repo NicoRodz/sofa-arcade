@@ -4,11 +4,15 @@
 //  - Fire: an oven on fire lights the oil next to it; it hops oil to oil every 45 ticks (tile order), never under a chef; a burning tile is a wall for 360 and then clean. A chef who holds B in front of a
 //    fire (180 ticks) or an oil tile (60) puts it out / wipes it: it is the extinguisher, with the same verb as the ovens. Two chefs add up.
 import type { MechModule } from '../types';
+import type { OilExt } from './state';
 import { noopHooks } from '../noop';
 import { oilValidate } from '../../validate/mech/oil';
 import { oilStamp } from '../../gen/stamps/oil';
 import { ICE_TAU_MS } from '../../surfaces/config';
 import { emitMech } from '../kneader/call';
+import { hz3Params } from '../../hazards/hazard-v3';
+import { book } from '../../score-ledger';
+import { addFloorItem } from '../../floor';
 import type { Game, Player } from '../../round/state';
 import {
   ageTiles,
@@ -46,6 +50,27 @@ function light(g: Game, idx: number) {
   }
 }
 
+/** Ticks of chef-B an oil tile needs: HAZARD_V3 raises it to 1.5 s alone; every chef adds one per tick, so two chefs take 0.75 s. */
+const wipeNeed = (g: Game): number => hz3Params(g).oil.wipeTicks;
+/** HAZARD_V3, Hard: a chef that steps onto oil with something in its hands drops it (at most one drop per `lossGapMs`). The oil is on the floor, visible, and a wipe of 1.5 s clears it. */
+function dropOnOil(g: Game, e: OilExt) {
+  const hz = hz3Params(g);
+  if (!hz.oil.dropOnSlip) return;
+  const now: Record<number, number> = {};
+  for (const p of [...g.players.values()].sort((a, b) => a.id - b.id)) {
+    if (p.ghost) continue;
+    const idx = Math.floor(p.y) * 16 + Math.floor(p.x);
+    now[p.id] = idx;
+    if (e.on[p.id] === idx || at(g, idx) !== OIL || !p.item || p.item === 'trashBag') continue;
+    if (g.time - (e.lastDropAt ?? -Infinity) < hz.lossGapMs) continue;
+    e.lastDropAt = g.time;
+    addFloorItem(g, { tx: Math.floor(p.x), ty: Math.floor(p.y), item: p.item, kind: 'dropped', team: p.team });
+    book(g, 'hazard:oil-drop', 0);
+    p.item = null;
+  }
+  e.on = now;
+}
+
 export const oilModule: MechModule = {
   ...noopHooks,
   id: 'oil',
@@ -64,7 +89,7 @@ export const oilModule: MechModule = {
         else if (t.mech === 'g') drops.push(y * 16 + x);
       }),
     );
-    g.mech!.ext = { ...g.mech!.ext, oil: { tick: 0, drops, drips: {}, sauce: {}, spilt: {}, work: {}, hot: {} } };
+    g.mech!.ext = { ...g.mech!.ext, oil: { tick: 0, drops, drips: {}, sauce: {}, spilt: {}, work: {}, hot: {}, on: {} } };
   },
   friction(g, tx, ty, tauMs) {
     const k = at(g, ty * 16 + tx);
@@ -108,14 +133,15 @@ export const oilModule: MechModule = {
       const idx = Number(k);
       if (!e.hot[idx])
         delete e.work[idx]; // the wiping is a run: nobody held B on it this tick, it starts again
-      else if (n >= (at(g, idx) === FIRE ? WIPE_FIRE : WIPE_OIL)) {
+      else if (n >= (at(g, idx) === FIRE ? WIPE_FIRE : wipeNeed(g))) {
         setTile(g, idx, 0, 0);
         delete e.work[idx];
         emitMech(g, 'mech:wiped', { tile: idx });
       }
     }
     e.hot = {};
-    if (e.tick % DRIP_EVERY === 0)
+    dropOnOil(g, e);
+    if (e.tick % hz3Params(g).oil.dripEvery === 0)
       for (const d of e.drops) {
         const n = (e.drips[d] = (e.drips[d] ?? -1) + 1);
         for (let i = 0; i < 4; i++) {

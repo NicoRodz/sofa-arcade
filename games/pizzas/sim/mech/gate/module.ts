@@ -5,7 +5,7 @@ import type { MechModule } from '../types';
 import { noopHooks } from '../noop';
 import { gateValidate } from '../../validate/mech/gate';
 import { gateStamp } from '../../gen/stamps/gate';
-import { GATE_CYCLE, GATE_OPEN_TICKS, gateMap, isDoor, scan, standingOn } from './state';
+import { doorOpenAt, gateCycleTicks, gateOpenTicks, gateMap, isDoor, scan, standingOn } from './state';
 
 export const gateModule: MechModule = {
   ...noopHooks,
@@ -20,7 +20,7 @@ export const gateModule: MechModule = {
     g.mech!.gate = { open: gateMap(g).timer, phase: 0 }; // phase: timer = ticks into the cycle; plate = ticks since the door last changed
   },
   canEnter(g, tx, ty, _dir, actor) {
-    if (!isDoor(g, tx, ty) || g.mech!.gate!.open) return true;
+    if (!isDoor(g, tx, ty) || doorOpenAt(g, ty * 16 + tx)) return true;
     return isDoor(g, Math.floor(actor.x), Math.floor(actor.y)); // closed: only a chef already in a doorway moves on through it
   },
   tickStations(g) {
@@ -28,8 +28,8 @@ export const gateModule: MechModule = {
     const m = gateMap(g);
     const inDoor = !!standingOn(g, m.doors);
     if (m.timer) {
-      if (!(s.open && s.phase === GATE_OPEN_TICKS - 1 && inDoor)) s.phase = (s.phase + 1) % GATE_CYCLE; // it waits at the last open tick while the doorway is occupied
-      s.open = s.phase < GATE_OPEN_TICKS;
+      if (!(s.open && s.phase === gateOpenTicks(g) - 1 && inDoor)) s.phase = (s.phase + 1) % gateCycleTicks(g); // it waits at the last open tick while the doorway is occupied
+      s.open = s.phase < gateOpenTicks(g);
       return;
     }
     const open = !!standingOn(g, m.plates) || (s.open && inDoor);

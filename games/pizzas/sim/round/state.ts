@@ -10,6 +10,7 @@ import type { Rng } from '@pichi/core/rng';
 import type { Kitchens } from '../versus/versus';
 import type { Burn } from '../burn';
 import type { Mid } from '../midround';
+import type { Ledger } from '../score-ledger';
 import type { Rec } from '../recipes/sim';
 import type { MagnetCfg } from '../feel/magnet';
 import type { SurfaceState } from '../surfaces/config';
@@ -201,6 +202,8 @@ export interface Game {
   spoilRaw: boolean; // ... and a raw ingredient that falls becomes rubbish
   sab: Sabotage | null; // versus sabotage (sabotage.ts): the bags, the catapults, the throws
   hz: boolean; // HAZARD_V2 numbers under the flags (create option `hazards`, default on)
+  hz3: boolean; // HAZARD_V3 (hazards/hazard-v3.ts): the harder numbers of the hazards and the penalties; off unless the round asks (create option `hazardsV3`)
+  ledger: Ledger | null; // the score book by source (score-ledger.ts): only a round with hazardsV3 or `ledger: true` keeps one
   burn: Burn | null; // the oven that burns and the fire (burn.ts): null (the default, and every golden round) = the oven never burns
   mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none
   rec: Rec | null; // the Carta del día of the round (recipes/sim.ts): null (the default) = the old recipes (Marinara, Margarita)

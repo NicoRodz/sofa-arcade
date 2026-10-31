@@ -1,7 +1,7 @@
 // Art of 'bridge' (drawn by code): planks across the water with rope rails; from 4 steps of wear the planks crack, at 6 it is about to give; a broken bridge shows only the water and a few floating splinters. Implemented by T1c.
 // The background paints a bridge tile as water (world.ts), so what is drawn here is the whole bridge.
 import type { MechArt } from '../../../../sim/mech/types';
-import { BRIDGE_BREAKS, BRIDGE_CRACKS, BRIDGE_MEND_TICKS, isBroken } from '../../../../sim/mech/bridge/module';
+import { bridgeBreaks, BRIDGE_CRACKS, BRIDGE_MEND_TICKS, isBroken } from '../../../../sim/mech/bridge/module';
 import { TILE } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
@@ -50,7 +50,7 @@ export const drawBridges: Draw = (scene, g, t) => {
     if (vertical) gfx.lineBetween(x, y + TILE * 0.06, x + TILE, y + TILE * 0.06).lineBetween(x, y + TILE * 0.94, x + TILE, y + TILE * 0.94);
     else gfx.lineBetween(x + TILE * 0.06, y, x + TILE * 0.06, y + TILE).lineBetween(x + TILE * 0.94, y, x + TILE * 0.94, y + TILE);
     if (b.uses >= BRIDGE_CRACKS) {
-      const wob = b.uses >= BRIDGE_BREAKS - 1 ? Math.sin(t / 60) * 2 : 0;
+      const wob = b.uses >= bridgeBreaks(g) - 1 ? Math.sin(t / 60) * 2 : 0;
       gfx.lineStyle(3, COL.crack, 1);
       for (let c = 0; c < b.uses - BRIDGE_CRACKS + 1; c++) {
         const cx = x + TILE * (0.28 + 0.22 * c) + wob;

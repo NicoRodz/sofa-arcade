@@ -15,6 +15,8 @@ import { spawnOrder } from './orders';
 import { createSabotage } from '../sabotage';
 import { createBurn, fireAllowed } from '../burn';
 import { createMid } from '../midround';
+import { HAZARD_V3 } from '../hazards/hazard-v3';
+import { newLedger } from '../score-ledger';
 import { anyMech, MECH_IDS, type MechFlags, type MechOpts } from '../mech/ids';
 import { mechStart } from '../mech/loop';
 import { armMutation } from '../mech/mutation/module';
@@ -55,6 +57,8 @@ export function createGame(
     sigma?: SigmaName;
     assist?: readonly number[];
     burn?: boolean;
+    hazardsV3?: boolean; // HAZARD_V3 (hazards/hazard-v3.ts): the harder numbers and the expired-order penalties; off unless the lobby asks (the rounds without it are bit for bit as before)
+    ledger?: boolean; // keep the score book by source (score-ledger.ts) without hazardsV3 (measurement)
     hazardsV2?: boolean; // HAZARD_V2 under the flags burn / magnet / events / surf (hazard-v2.ts): on unless false (false = the first numbers, for the tests that pin them and for before/after runs)
     fire?: boolean;
     events?: boolean;
@@ -87,6 +91,7 @@ export function createGame(
     p.orderEveryMs /= opts.pace;
     if (opts.pace >= 1.3) p.maxOrders += 1;
   }
+  if (opts.hazardsV3 && HAZARD_V3[difficulty].penalty) p.penalty = HAZARD_V3[difficulty].penalty; // -25 Normal, -40 Hard; Easy keeps 0
   const seed = opts.seed ?? 1;
   const kitchens = versus ? kitchenRegions(grid, teamCount, opts.spawns) : null;
   const stations: Station[] = [];
@@ -182,6 +187,8 @@ export function createGame(
     sab: null,
     burn: null,
     hz: opts.hazardsV2 !== false,
+    hz3: !!opts.hazardsV3,
+    ledger: opts.hazardsV3 || opts.ledger ? newLedger() : null,
     mid: null,
     rec: opts.recipes
       ? createRec(stations, opts.mapId, { upgrades: !!opts.upgradeOrders, compound: !!opts.compoundOrders && !versus })

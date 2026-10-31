@@ -29,6 +29,8 @@ export interface OilExt {
   spilt: Record<number, boolean>; // ... and whether it already oiled its neighbours for this batch
   work: Record<number, number>; // tile index -> ticks of B held on it in this run (it restarts when nobody holds B on it for a tick)
   hot: Record<number, boolean>; // tiles a chef held B on during this tick
+  on: Record<number, number>; // chef id -> the tile it stood on last tick (HAZARD_V3 drop on oil)
+  lastDropAt?: number; // match time of the last item an oil tile made a chef drop
 }
 export const ext = (g: Game) => g.mech!.ext!.oil as OilExt;
 export const at = (g: Game, idx: number) => g.mech!.tile![idx] ?? 0;

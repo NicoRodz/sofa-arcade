@@ -7,6 +7,7 @@ import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { COUNTDOWN_MS, addPlayer, createGame } from '../../sim';
 import { resolveMap } from '../../sim/generate';
 import { SERIES_MAPS, type MapChoice } from '../../sim/maps';
+import { patchMap } from '../../sim/maps/hazard-patches';
 import { usesSurfaces } from '../../sim/surfaces/legend';
 import { mechFlagsOf } from '../../sim/mech/ids';
 import { roundRules } from '../../sim/midround';
@@ -61,13 +62,15 @@ function startVersus(): MatchStart {
 
 function startCoop(): undefined {
   const n = connectedN();
-  const map = resolveMap(app.config.map as MapChoice, app.config.seed, app.config.difficulty, n, Math.random, {
+  const resolved = resolveMap(app.config.map as MapChoice, app.config.seed, app.config.difficulty, n, Math.random, {
     mechs: mechsOf(app.config.modeOptions),
     mechanics: pickedMechs(app.config.modeOptions).length ? pickedMechs(app.config.modeOptions) : undefined,
     mutate: mutateOf(app.config.modeOptions, app.config.difficulty),
   });
+  const map = patchMap(resolved, app.config.difficulty); // HAZARD_V3: the dynamic of the fixed maps 10, 12-15, 22 and 27 (coop only)
   pz.game = createGame({
     mapId: map.id,
+    hazardsV3: true, // the harder numbers, the rat that takes an item when it escapes and the expired-order penalties (Easy keeps its own)
     difficulty: app.config.difficulty,
     n,
     rows: map.rows,

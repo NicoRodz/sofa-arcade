@@ -4,7 +4,7 @@ import type Phaser from 'phaser';
 import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
 import { BELT_SPEED } from '../../../../sim/surfaces/config';
-import { BELT_WARN } from '../../../../sim/mech/beltReverse/module';
+import { beltWarn } from '../../../../sim/mech/beltReverse/module';
 import { TILE } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../../env/grid';
 
@@ -30,7 +30,7 @@ export class BeltReverseView {
     g.clear();
     const belt = this.game.mech?.belt;
     if (!belt) return;
-    const warn = belt.next <= BELT_WARN;
+    const warn = belt.next <= beltWarn(this.game);
     const flash = warn && Math.floor(this.t / 150) % 2 === 0;
     const phase = ((this.t / 1000) * BELT_SPEED) % 1;
     this.game.grid.forEach((row, ty) =>
