@@ -26,8 +26,8 @@ module.exports = {
     },
     {
       name: 'platform-not-games',
-      comment: 'platform/** must not import a game or an app. After the F3 move core, the kits and the registry still do (F4/F5 cut them).',
-      severity: 'warn',
+      comment: 'platform/** must not import a game or an app.',
+      severity: 'error',
       from: { path: '^platform/', pathNot: [TESTS] },
       to: { path: ['^games/', '^apps/'] },
     },
