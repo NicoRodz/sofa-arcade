@@ -2,10 +2,10 @@
 // teams refactor of the sim, so a change in them means the coop behaviour changed.
 //   npx tsx tools/record-golden.ts
 import { writeFileSync } from 'node:fs';
-import { MAGNET_SCENARIOS, RULES_SCENARIOS, SCENARIOS, runGolden } from '@pichi/game-pizzas/test/golden/bot';
+import { MAGNET_SCENARIOS, RULES_SCENARIOS, SCENARIOS, T2_SCENARIOS, runGolden } from '@pichi/game-pizzas/test/golden/bot';
 import { RECIPE_SCENARIOS, runRecipeGolden } from '@pichi/game-pizzas/test/golden/recipe-bot';
 
-for (const sc of [...SCENARIOS, ...RULES_SCENARIOS, ...MAGNET_SCENARIOS]) {
+for (const sc of [...SCENARIOS, ...RULES_SCENARIOS, ...MAGNET_SCENARIOS, ...T2_SCENARIOS]) {
   const run = runGolden(sc);
   const file = new URL(`../games/pizzas/test/golden/fixtures/${sc.name}.json`, import.meta.url);
   writeFileSync(file, JSON.stringify(run, null, 1) + '\n');

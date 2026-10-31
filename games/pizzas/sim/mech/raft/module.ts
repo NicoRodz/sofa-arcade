@@ -3,11 +3,13 @@
 import type { MechModule } from '../types';
 import { noopHooks } from '../noop';
 import type { Game } from '../../round/state';
+import { hz3Params } from '../../hazards/hazard-v3';
 import { raftValidate } from '../../validate/mech/raft';
 import { raftStamp } from '../../gen/stamps/raft';
 
 export const RAFT_STEP_TICKS = 40;
 export const RAFT_PAUSE_TICKS = 60;
+export const raftPause = (g: Game): number => hz3Params(g).raft.pause;
 
 interface Lane {
   tiles: number[]; // tile indexes along the lane, from one shore to the other
@@ -76,7 +78,7 @@ export const raftModule: MechModule = {
         }
       const end = r.pos + r.dir < 0 || r.pos + r.dir >= lane.tiles.length;
       if (end) r.dir = -r.dir;
-      r.wait = end ? RAFT_PAUSE_TICKS : RAFT_STEP_TICKS;
+      r.wait = end ? raftPause(g) : RAFT_STEP_TICKS;
     });
   },
   hashExtra: (g) => Object.values(g.mech!.raft!).flatMap((r) => [r.pos, r.dir, r.wait]),

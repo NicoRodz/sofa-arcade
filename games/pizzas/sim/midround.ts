@@ -17,9 +17,11 @@ import type { Difficulty } from '@pichi/core/difficulty';
 import { magnetFor } from './feel/magnet';
 import { newSurfaceState } from './surfaces/config';
 import { gentleRatStep, ratPrize } from './feel/rat';
+import { ratPull, stealOnEscape } from './feel/rat-loot';
 import type { Game, Item, Station } from './round/state';
 import { spill } from './mech/oil/spill';
 import { hazardParams } from './hazards/hazard-v2';
+import { book } from './hazards/score-ledger';
 import { planEvents, type Planned } from './hazards/events-v2';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
@@ -124,6 +126,7 @@ export interface Mid {
   frost: boolean; // frost in progress: surfaces/physics reads it (every floor tile is ice)
   rat: Rat | null;
   rng: Rng; // the stream of the events (the instant, the kind, the hole of the rat)
+  lossAt?: number; // HAZARD_V3: match time of the last item a hazard took (feel/rat-loot.ts)
   queue?: Planned[]; // HAZARD_V2: the events still to come after this one (events-v2.ts); absent = the old single event
 }
 
@@ -223,8 +226,9 @@ function spawnRat(g: Game, m: Mid) {
 function ratGone(g: Game, m: Mid) {
   const r = m.rat;
   if (!r) return;
+  const took = stealOnEscape(g, m, r); // HAZARD_V3: an escaping rat takes an item with it
   m.rat = null;
-  g.bus.emit('rat:gone', { stolen: r.item !== null });
+  g.bus.emit('rat:gone', { stolen: r.item !== null || took });
 }
 
 function scareRat(g: Game, m: Mid, playerId: number) {
@@ -262,7 +266,7 @@ function ratStep(g: Game, m: Mid, dtMs: number) {
       bestD = Infinity;
     g.stations.forEach((s, i) => {
       if (s.kind !== 'counter' || !s.item || s.fire !== undefined) return;
-      const d = Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y);
+      const d = Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y) - ratPull(g, s.item);
       if (d < bestD) {
         best = i;
         bestD = d;
@@ -323,6 +327,7 @@ function inspect(g: Game) {
     const points = passed ? Math.round(INSPECTOR_BONUS * t.k) : 0;
     if (passed) {
       t.score += points;
+      book(g, 'event:inspector', points);
       t.gross += INSPECTOR_BONUS;
       t.reachedAt = g.time;
     }

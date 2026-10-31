@@ -6,11 +6,11 @@ import { noopHooks } from '../noop';
 import { kneaderValidate } from '../../validate/mech/kneader';
 import { kneaderStamp } from '../../gen/stamps/kneader';
 import { emitMech, callOther } from './call';
+import { hz3Params } from '../../hazards/hazard-v3';
 import {
   GOAL,
   NEED_AFTER,
   PAIR,
-  SOLO,
   aloneTicks,
   handleOf,
   handlesOf,
@@ -84,7 +84,7 @@ export const kneaderModule: MechModule = {
       const st = g.mech!.kneader![i]!;
       const working = st.hands.filter((id) => id > 0);
       if (kneading(s) && working.length && s.fire === undefined) {
-        st.prog = Math.min(GOAL, st.prog + (working.length > 1 ? PAIR : SOLO));
+        st.prog = Math.min(GOAL, st.prog + (working.length > 1 ? PAIR : hz3Params(g).kneader.solo));
         s.progress = st.prog / GOAL;
         if (st.prog >= GOAL) {
           s.item = 'cut0'; // the dough is ready: the clac, for the chefs that were on the handles

@@ -1,10 +1,24 @@
 // Gate (Z plate + D door), shared reads: where the plates and doors are, who stands on them, whether the door is open. Implemented by T1b.
 import type { Game, Player } from '../../round/state';
+import { hz3Params } from '../../hazards/hazard-v3';
 
 export const GATE_OPEN_TICKS = 480; // timer mode (a D with no Z in the map): open 8 s...
 export const GATE_CLOSED_TICKS = 360; // ...closed 6 s
 export const GATE_BLINK_TICKS = 60; // the door blinks this long before it closes
 export const GATE_CYCLE = GATE_OPEN_TICKS + GATE_CLOSED_TICKS;
+/** The timer door's numbers of this round (HAZARD_V3 changes them; the legacy row is the constants above). */
+export const gateOpenTicks = (g: Game): number => hz3Params(g).gate.open;
+export const gateCycleTicks = (g: Game): number => hz3Params(g).gate.open + hz3Params(g).gate.closed;
+/** Is the door on tile index `idx` open now? Plate mode: the one state. Timer mode: the shared clock, shifted `offset` ticks per door in map order (HAZARD_V3 staggers them by 3 s). */
+export function doorOpenAt(g: Game, idx: number): boolean {
+  const gs = g.mech!.gate!,
+    m = gateMap(g),
+    off = hz3Params(g).gate.offset;
+  if (!m.timer || !off) return gs.open;
+  const i = Math.max(0, m.doors.indexOf(idx));
+  return (gs.phase + i * off) % gateCycleTicks(g) < gateOpenTicks(g);
+}
+export const gateBlinkTicks = (g: Game): number => hz3Params(g).gate.warn;
 
 export interface GateMap {
   plates: number[]; // tile index y * 16 + x of every Z

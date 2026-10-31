@@ -4,7 +4,7 @@
 import type Phaser from 'phaser';
 import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
-import { GATE_BLINK_TICKS, GATE_OPEN_TICKS, gateMap, standingOn } from '../../../../sim/mech/gate/state';
+import { doorOpenAt, gateBlinkTicks, gateOpenTicks, gateMap, standingOn } from '../../../../sim/mech/gate/state';
 import { TILE } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../../env/grid';
 
@@ -43,10 +43,11 @@ export class GateView {
     const gs = this.game.mech?.gate;
     if (!gs) return;
     const m = gateMap(this.game);
-    const blink = m.timer && gs.open && gs.phase >= GATE_OPEN_TICKS - GATE_BLINK_TICKS && Math.floor(this.t / 120) % 2 === 0;
+    const blink =
+      m.timer && gs.open && gs.phase >= gateOpenTicks(this.game) - gateBlinkTicks(this.game) && Math.floor(this.t / 120) % 2 === 0;
     for (const z of m.plates) for (const d of m.doors) this.cable(g, z, d);
     for (const z of m.plates) this.plate(g, z, !!standingOn(this.game, [z]));
-    for (const d of m.doors) this.door(g, d, gs.open, blink);
+    for (const d of m.doors) this.door(g, d, doorOpenAt(this.game, d), blink);
   }
 
   // dotted L-shaped cable: along the row of the plate, then down the column of the door

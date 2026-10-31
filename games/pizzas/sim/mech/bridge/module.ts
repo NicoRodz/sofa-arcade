@@ -5,11 +5,13 @@ import { noopHooks } from '../noop';
 import type { Game } from '../../round/state';
 import { emitMech } from '../kneader/call';
 import { BRIDGE_WEAR, carriesHeavy } from '../heavyTray/state';
+import { hz3Params } from '../../hazards/hazard-v3';
 import { bridgeValidate } from '../../validate/mech/bridge';
 import { bridgeStamp } from '../../gen/stamps/bridge';
 
 export const BRIDGE_CRACKS = 4;
 export const BRIDGE_BREAKS = 6;
+export const bridgeBreaks = (g: Game): number => hz3Params(g).bridge.breaks;
 export const BRIDGE_MEND_TICKS = 1200;
 
 interface BridgeExt {
@@ -62,7 +64,7 @@ export const bridgeModule: MechModule = {
       if (b.brokenUntil > 0 && b.brokenUntil <= e.tick) {
         b.brokenUntil = 0; // mended
         b.uses = 0;
-      } else if (b.uses >= BRIDGE_BREAKS && !b.brokenUntil && !occupied.has(idx)) {
+      } else if (b.uses >= bridgeBreaks(g) && !b.brokenUntil && !occupied.has(idx)) {
         b.brokenUntil = e.tick + BRIDGE_MEND_TICKS;
         emitMech(g, 'mech:bridgeBreak', { tile: idx });
       }

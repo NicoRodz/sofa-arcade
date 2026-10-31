@@ -12,6 +12,8 @@ import type { Game, Player } from '../round/state';
 import type { Mid, Rat } from '../midround';
 import { dodgeStep, ratGait, ratParams } from './rat-v2';
 import { evadeStep } from './rat-evade';
+import { book } from '../hazards/score-ledger';
+import { ratPull } from './rat-loot';
 
 export const RAT_GENTLE = {
   speed: 1.68, // tiles/s: 70% of the old RAT_SPEED (2.4)
@@ -51,6 +53,7 @@ export function scareReach(g: Game, p: Player): number {
 export function ratPrize(g: Game): number {
   const t = g.teams[0]!;
   t.score += RAT_BONUS;
+  book(g, 'event:rat', RAT_BONUS);
   t.gross += RAT_BONUS;
   t.reachedAt = g.time;
   return RAT_BONUS;
@@ -122,7 +125,7 @@ export function gentleRatStep(g: Game, m: Mid, dtMs: number, kit: RatKit): boole
       bestD = Infinity;
     g.stations.forEach((s, i) => {
       if (s.kind !== 'counter' || !s.item || s.fire !== undefined) return;
-      const d = Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y) - (i === r.target ? 0.5 : 0); // it keeps the counter it picked unless another is clearly nearer
+      const d = Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y) - (i === r.target ? 0.5 : 0) - ratPull(g, s.item); // it keeps the counter it picked unless another is clearly nearer
       if (d < bestD) {
         best = i;
         bestD = d;

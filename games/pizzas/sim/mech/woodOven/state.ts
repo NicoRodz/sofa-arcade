@@ -1,9 +1,12 @@
 // State of the wood oven (W) and its bellows (Q): the fuel of each W (0..900, `game.mech.wood[idx]`), which W each Q feeds, who is blowing.
 import type { Game, Station } from '../../round/state';
+import { hz3Params } from '../../hazards/hazard-v3';
 
 export const BLOW = 3; // fuel per tick while a chef holds B on Q
 export const DECAY = 1; // fuel lost per tick
 export const CAP = 900;
+/** The tank of one oven: HAZARD_V3 sizes it so that a full load burns for 40 s Normal / 30 s Hard (fuel decays by DECAY per tick). */
+export const woodCap = (g: Game): number => hz3Params(g).wood.cap;
 export const FAST = 1600; // permil of the normal speed while there is fuel; with none the oven is frozen (it neither bakes nor burns)
 
 interface Ext {

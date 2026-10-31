@@ -7,9 +7,12 @@ import { beltReverseValidate } from '../../validate/mech/beltReverse';
 import { beltReverseStamp } from '../../gen/stamps/beltReverse';
 import { newSurfaceState } from '../../surfaces/config';
 import type { Game } from '../../round/state';
+import { hz3Params } from '../../hazards/hazard-v3';
 
 export const BELT_PERIOD = 1800;
 export const BELT_WARN = 180;
+export const beltPeriod = (g: Game): number => hz3Params(g).belt.period;
+export const beltWarn = (g: Game): number => hz3Params(g).belt.warn;
 
 function flip(g: Game) {
   for (const row of g.grid)
@@ -24,7 +27,7 @@ export const beltReverseModule: MechModule = {
   validate: beltReverseValidate,
   stamp: beltReverseStamp,
   init(g) {
-    g.mech!.belt = { reversed: false, next: BELT_PERIOD };
+    g.mech!.belt = { reversed: false, next: beltPeriod(g) };
     g.surf ??= newSurfaceState();
   },
   beforeMove(g) {
@@ -32,7 +35,7 @@ export const beltReverseModule: MechModule = {
     if (--b.next > 0) return;
     flip(g);
     b.reversed = !b.reversed;
-    b.next = BELT_PERIOD;
+    b.next = beltPeriod(g);
   },
   hashExtra: (g) => [g.mech!.belt!.reversed ? 1 : 0, g.mech!.belt!.next],
 };

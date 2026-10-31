@@ -5,7 +5,7 @@ import { noopHooks } from '../noop';
 import { woodOvenValidate } from '../../validate/mech/woodOven';
 import { woodOvenStamp } from '../../gen/stamps/woodOven';
 import { callOther } from '../kneader/call';
-import { BLOW, CAP, DECAY, FAST, blowers, bellows, dryFlag, feedOf, loaded, ovens, start } from './state';
+import { BLOW, DECAY, FAST, woodCap, blowers, bellows, dryFlag, feedOf, loaded, ovens, start } from './state';
 
 export const woodOvenModule: MechModule = {
   ...noopHooks,
@@ -23,7 +23,7 @@ export const woodOvenModule: MechModule = {
     const q = g.stations.indexOf(target);
     const w = feedOf(g, q);
     if (w === undefined) return false;
-    g.mech!.wood![w] = Math.min(CAP, (g.mech!.wood![w] ?? 0) + BLOW);
+    g.mech!.wood![w] = Math.min(woodCap(g), (g.mech!.wood![w] ?? 0) + BLOW);
     blowers(g)[q] = p.id;
     return false; // A is not touched
   },

@@ -5,9 +5,11 @@ import { fixedMap, isFloor, DIRS } from '../../sim/maps';
 import { GameEvents, Emitter } from '../../sim/round/events';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player, type Station } from '../../sim/overcooked';
 import type { Difficulty } from '@pichi/core/difficulty';
-import type { MechId } from '../../sim/mech/ids';
+import { mechFlagsOf, type MechId } from '../../sim/mech/ids';
+import { patchMap } from '../../sim/maps/hazard-patches';
+import { usesSurfaces } from '../../sim/surfaces/legend';
 
-export interface RuleFlags { mech?: Partial<Record<MechId, boolean>>; burn?: boolean; fire?: boolean; events?: boolean; magnet?: boolean | 'strong' } // the new rules of the sim, all off by default: the three original goldens never set them
+export interface RuleFlags { mech?: Partial<Record<MechId, boolean>>; burn?: boolean; fire?: boolean; events?: boolean; magnet?: boolean | 'strong'; hazardsV3?: boolean } // the new rules of the sim, all off by default: the three original goldens never set them
 export interface Scenario { name: string; mapId: string; difficulty: Difficulty; n: number; seed: number; teams?: readonly { playerIds: readonly number[] }[]; assist?: readonly number[]; flags?: RuleFlags } // teams: declared roster (a single team must play exactly like none)
 export const SCENARIOS: readonly Scenario[] = [
   { name: 'coop-n2-map2-normal', mapId: '2', difficulty: 'normal', n: 2, seed: 11 },
@@ -32,6 +34,20 @@ export const MAGNET_SCENARIOS: readonly Scenario[] = [
   { name: 'coop-n2-map2-normal-magnet', mapId: '2', difficulty: 'normal', n: 2, seed: 23, flags: { ...FLAGS, magnet: true } },
   { name: 'coop-n4-map9-hard-magnet', mapId: '9', difficulty: 'hard', n: 4, seed: 22, flags: { magnet: true } },
   { name: 'coop-n6-map11-easy-magnet', mapId: '11', difficulty: 'easy', n: 6, seed: 33, flags: { magnet: 'strong' } },
+];
+
+// Tanda 2 (PR-B): the rounds the lobby plays with HAZARD_V3 on: the map patch of the dynamic (maps/hazard-patches.ts), its mechanics, the V3 numbers, the penalties and the rat that takes an item,
+// plus the lobby's other rules (burning oven, fire, events, magnet). N is the design's {2, 4, 8} clamped to what each map seats (10: 4-6, 13: 5-8, 22: 4-8, 31: 3-8). Own fixtures, recorded on purpose.
+const T2: RuleFlags = { ...FLAGS, magnet: true, hazardsV3: true };
+export const T2_SCENARIOS: readonly Scenario[] = [
+  { name: 'coop-n4-map10-normal-t2', mapId: '10', difficulty: 'normal', n: 4, seed: 7, flags: T2 },
+  { name: 'coop-n6-map10-hard-t2', mapId: '10', difficulty: 'hard', n: 6, seed: 7, flags: T2 },
+  { name: 'coop-n5-map13-normal-t2', mapId: '13', difficulty: 'normal', n: 5, seed: 7, flags: T2 },
+  { name: 'coop-n8-map13-hard-t2', mapId: '13', difficulty: 'hard', n: 8, seed: 7, flags: T2 },
+  { name: 'coop-n4-map22-normal-t2', mapId: '22', difficulty: 'normal', n: 4, seed: 7, flags: T2 },
+  { name: 'coop-n8-map22-hard-t2', mapId: '22', difficulty: 'hard', n: 8, seed: 7, flags: T2 },
+  { name: 'coop-n4-map31-normal-t2', mapId: '31', difficulty: 'normal', n: 4, seed: 7, flags: T2 },
+  { name: 'coop-n8-map31-hard-t2', mapId: '31', difficulty: 'hard', n: 8, seed: 7, flags: T2 },
 ];
 
 export interface GoldenRun {
@@ -138,9 +154,12 @@ export function decide(g: Game, p: Player, rank: number, m: Mem, tickNo: number)
 }
 
 export function runGolden(sc: Scenario): GoldenRun {
-  const map = fixedMap(sc.mapId)!;
+  const base = fixedMap(sc.mapId)!;
+  const map = sc.flags?.hazardsV3 ? patchMap(base, sc.difficulty) : base; // only a V3 scenario plays the patched map; the older ones never do
+  const v3 = sc.flags?.hazardsV3 !== undefined ? { // (the control of a V3 scenario, `hazardsV3: false`, still lights the flags of the mechanics its map declares)
+     mech: mechFlagsOf(map.mechanics), mutation: map.mutation, mutate: sc.difficulty !== 'easy', surfaces: usesSurfaces(map.rows) } : {};
   const bus = new RecBus();
-  const g = createGame({ mapId: map.id, difficulty: sc.difficulty, n: sc.n, rows: map.rows, spawns: map.spawns, seed: sc.seed, countdownMs: COUNTDOWN_MS, bus, teams: sc.teams, assist: sc.assist, ...sc.flags });
+  const g = createGame({ mapId: map.id, difficulty: sc.difficulty, n: sc.n, rows: map.rows, spawns: map.spawns, seed: sc.seed, countdownMs: COUNTDOWN_MS, bus, teams: sc.teams, assist: sc.assist, ...v3, ...sc.flags });
   const ids = Array.from({ length: sc.n }, (_v, i) => i + 1);
   ids.forEach((id, rank) => addPlayer(g, id, rank, rank));
   const mem = new Map(ids.map((id) => [id, { step: 0, since: 0, lastPress: -99, bin: false } as Mem]));

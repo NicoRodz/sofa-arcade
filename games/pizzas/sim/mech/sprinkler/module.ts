@@ -8,6 +8,7 @@ import { ageTiles, FIRE, WATER, WATER_TICKS, at, setTile, tileIdx } from '../oil
 import { ICE_TAU_MS } from '../../surfaces/config';
 import type { Game } from '../../round/state';
 import { emitMech } from '../kneader/call';
+import { hz3Params } from '../../hazards/hazard-v3';
 
 export const SPRAY_EVERY = 1200;
 export const SPRAY_TICKS = 120;
@@ -47,7 +48,9 @@ export const sprinklerModule: MechModule = {
   onLoad(g) {
     const hs: Head[] = [];
     g.grid.forEach((row, y) =>
-      row.forEach((t, x) => t.kind === 'floor' && t.mech === '*' && hs.push({ at: y * 16 + x, next: SPRAY_EVERY, on: 0, cool: 0 })),
+      row.forEach(
+        (t, x) => t.kind === 'floor' && t.mech === '*' && hs.push({ at: y * 16 + x, next: hz3Params(g).sprinkler.every, on: 0, cool: 0 }),
+      ),
     );
     g.mech!.ext = { ...g.mech!.ext, sprinkler: { tick: 0, heads: hs } satisfies Ext };
     g.mech!.tile ??= new Uint8Array(16 * 9); // the oil module makes them; a map with only a sprinkler still needs the water layer
@@ -57,11 +60,13 @@ export const sprinklerModule: MechModule = {
   tickTiles(g) {
     const e = ext(g);
     e.tick++;
+    const sp = hz3Params(g).sprinkler;
     for (const h of e.heads) {
+      if (sp.warn && !h.on && e.tick === h.next - sp.warn) emitMech(g, 'mech:drip', { tile: h.at }); // the warning drip: the spray is announced
       if (!h.on && (e.tick >= h.next || (e.tick >= h.cool && fireNear(g, h.at, 2)))) {
-        h.on = SPRAY_TICKS;
-        h.next = e.tick + SPRAY_EVERY;
-        h.cool = e.tick + SPRAY_TICKS + SPRAY_COOLDOWN;
+        h.on = sp.on;
+        h.next = e.tick + sp.every;
+        h.cool = e.tick + sp.on + SPRAY_COOLDOWN;
         emitMech(g, 'mech:spray', { tile: h.at });
       }
       if (!h.on) continue;

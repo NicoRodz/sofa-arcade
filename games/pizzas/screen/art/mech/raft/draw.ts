@@ -1,7 +1,7 @@
 // Art of 'raft' (drawn by code): the raft is a set of logs tied with rope sliding along its lane, a little bobbing; the lane shows as a dotted line of ripples on the water so people can read where it goes, and Implemented by T1c.
 // an arrow on the raft says which way it is heading. The background paints the whole lane as water (world.ts).
 import type { MechArt } from '../../../../sim/mech/types';
-import { RAFT_PAUSE_TICKS } from '../../../../sim/mech/raft/module';
+import { raftPause } from '../../../../sim/mech/raft/module';
 import { TILE } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
@@ -46,7 +46,7 @@ export const drawRafts: Draw = (scene, g, t) => {
         .lineBetween(x + TILE * 0.1, y + TILE * 0.3, x + TILE * 0.9, y + TILE * 0.3)
         .lineBetween(x + TILE * 0.1, y + TILE * 0.7, x + TILE * 0.9, y + TILE * 0.7);
     // heading arrow (hidden while it waits at the shore: then it blinks)
-    const wait = r.wait > 0 && (r.pos === 0 || r.pos === lane.tiles.length - 1) && r.wait <= RAFT_PAUSE_TICKS;
+    const wait = r.wait > 0 && (r.pos === 0 || r.pos === lane.tiles.length - 1) && r.wait <= raftPause(g);
     if (!wait || Math.floor(t / 200) % 2 === 0) {
       const ax = x + TILE / 2,
         ay = y + TILE / 2,
