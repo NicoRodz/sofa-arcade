@@ -5,7 +5,7 @@ import type { BuzzKind } from '@pichi/core';
 const NOTES: Partial<Record<BuzzKind, [string, string, number]>> = {
   slip: ['¡Resbalaste!', 'var(--cheese)', 900],
   big: ['¡Fuego grande! Necesitan 2', '#ff4d3d', 2200],
-  dodge: ['¡Te esquivó!', '#ffb02e', 1000],
+  dodge: ['¡Te esquivó! Atrápala cuando jadee', '#ffb02e', 1600],
   ice: ['Hielo: frena antes', '#8fd3ff', 1600],
 };
 let timer: ReturnType<typeof setTimeout> | undefined;

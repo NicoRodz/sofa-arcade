@@ -67,6 +67,7 @@ export async function runHzFire(ctx: Ctx) {
 export async function runHzRat(ctx: Ctx) {
   const { cdp, bots, snap } = ctx;
   const ids = await start(ctx, 'HZRA', true);
+  await ctx.waitFor((s) => s.time > 9000, 30_000); // the puesto pills are big for the first 8 s of play: let them go so they do not hide the rat
   await cdp.eval(`window.__pg.kit.event('rat')`);
   for (let i = 0; i < 60 && !((await snap()) as any).mid?.rat; i++) await sleep(200);
   await sleep(500);
@@ -84,9 +85,13 @@ export async function runHzRat(ctx: Ctx) {
   await cdp.shot('rat-1-dodge');
   await sleep(160);
   await cdp.shot('rat-2-landed');
-  await sleep(250);
+  // the window is 600 ms and a screenshot costs about as much: pin the remaining pant time before each shot so the frame is inside it (open ring, then nearly closed)
+  const pin = (ms: number) => cdp.eval(`(async () => { const r = ${PZ}.game.mid.rat; if (r) { r.pantMs = ${ms}; r.dodgeMs = 0; } })()`);
+  await pin(560);
+  await sleep(60);
   await cdp.shot('rat-3-panting');
-  await sleep(300);
+  await pin(230);
+  await sleep(40);
   await cdp.shot('rat-4-panting-later');
   console.log(
     'rat',

@@ -144,7 +144,12 @@ export class EventsView {
     g.fillStyle(0xffffff, 0.22).fillRoundedRect(-BANNER.w / 2 + 24, -BANNER.h / 2 + 16, BANNER.w - 48, 10, 5);
     const icon = place(this.scene, `ev_${kind}`, -BANNER.w / 2 + 96, 0, 1.55);
     const title = makeText(this.scene, 40, -34, info.title, { size: 66, color: C.cream, stroke: 9, depth: 0 });
-    const blurb = makeText(this.scene, 40, 22, info.blurb, { size: 32, color: '#FFF1D6', stroke: 5, depth: 0 });
+    const blurb = makeText(this.scene, 40, 22, kind === 'rat' && this.game.magnet ? 'Esquiva el dash: atrápala cuando jadee' : info.blurb, {
+      size: 32,
+      color: '#FFF1D6',
+      stroke: 5,
+      depth: 0,
+    });
     const count = makeText(this.scene, BANNER.w / 2 - 66, 0, '3', { size: 92, color: C.cheese, stroke: 10, depth: 0 });
     const bar = this.scene.add.graphics();
     this.bannerCount = count;
@@ -168,17 +173,18 @@ export class EventsView {
   private makePill(kind: EventKind): Pill {
     const col = EVENT_COLOR[kind],
       info = EVENT_INFO[kind];
+    const w = kind === 'rat' && this.game.magnet ? 800 : PILL.w; // the gentle rat's line is longer
     const g = this.scene.add.graphics();
-    g.fillStyle(0x2b1b17, 0.35).fillRoundedRect(-PILL.w / 2 + 3, -PILL.h / 2 + 4, PILL.w, PILL.h, 23);
-    g.fillStyle(hexNum(col.main), 0.96).fillRoundedRect(-PILL.w / 2, -PILL.h / 2, PILL.w, PILL.h, 23);
-    g.lineStyle(4, hexNum(C.ink), 1).strokeRoundedRect(-PILL.w / 2, -PILL.h / 2, PILL.w, PILL.h, 23);
-    const icon = place(this.scene, `ev_${kind}`, -PILL.w / 2 + 28, 0, 0.5);
+    g.fillStyle(0x2b1b17, 0.35).fillRoundedRect(-w / 2 + 3, -PILL.h / 2 + 4, w, PILL.h, 23);
+    g.fillStyle(hexNum(col.main), 0.96).fillRoundedRect(-w / 2, -PILL.h / 2, w, PILL.h, 23);
+    g.lineStyle(4, hexNum(C.ink), 1).strokeRoundedRect(-w / 2, -PILL.h / 2, w, PILL.h, 23);
+    const icon = place(this.scene, `ev_${kind}`, -w / 2 + 28, 0, 0.5);
     const text = makeText(this.scene, 24, -2, info.title, { size: 25, color: C.cream, stroke: 4, depth: 0 });
     const bar = this.scene.add.graphics();
     const y = this.game.versus ? PILL.yVersus : PILL.y;
     const root = this.scene.add.container(W / 2, y - 90, [g, icon, text, bar]).setDepth(2640);
     this.scene.tweens.add({ targets: root, y, duration: 300, ease: 'back.out' });
-    return { root, bar, text, kind, w: PILL.w };
+    return { root, bar, text, kind, w: w };
   }
 
   private start(kind: EventKind) {
@@ -253,10 +259,8 @@ export class EventsView {
         total = Math.max(1, m.endAt - m.startAt);
       const bar = p.bar;
       bar.clear();
-      bar.fillStyle(0x2b1b17, 0.45).fillRoundedRect(-PILL.w / 2 + 62, PILL.h / 2 - 11, PILL.w - 90, 6, 3);
-      bar
-        .fillStyle(hexNum(C.cream), 0.95)
-        .fillRoundedRect(-PILL.w / 2 + 62, PILL.h / 2 - 11, (PILL.w - 90) * Math.min(1, left / total), 6, 3);
+      bar.fillStyle(0x2b1b17, 0.45).fillRoundedRect(-p.w / 2 + 62, PILL.h / 2 - 11, p.w - 90, 6, 3);
+      bar.fillStyle(hexNum(C.cream), 0.95).fillRoundedRect(-p.w / 2 + 62, PILL.h / 2 - 11, (p.w - 90) * Math.min(1, left / total), 6, 3);
       if (p.kind === 'inspector') {
         const counts = g.teams.map((t) => dirtyPlates(g, t.id));
         const label = g.versus ? g.teams.map((t, i) => `${this.view?.teams?.[i]?.icon ?? ''} ${counts[i]}`).join('   ') : String(counts[0]);
@@ -267,7 +271,7 @@ export class EventsView {
           m.rat?.item
             ? '¡Se llevó algo! Dash para espantarla'
             : g.magnet
-              ? '¡UNA RATA! Dash o choca con ella: +50'
+              ? '¡UNA RATA! Esquiva el dash: atrápala cuando jadee · +50'
               : '¡UNA RATA! Dash para espantarla',
         );
       else if (p.kind === 'frost') p.text.setText(`¡OLA DE FRÍO! Todo resbala ${Math.ceil(left / 1000)} s`);

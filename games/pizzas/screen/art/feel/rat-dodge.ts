@@ -8,6 +8,7 @@ import { ratParams } from '../../../sim/feel/rat-v2';
 import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../env/grid';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
+import { place } from '../stations';
 
 /** Pixels the rat sprite rises now: an arc while it jumps aside, a small fast heave while it pants. */
 export function ratLift(g: Game): number {
@@ -20,9 +21,11 @@ export function ratLift(g: Game): number {
 
 export class RatDodge {
   readonly g: Phaser.GameObjects.Graphics;
+  private under: Phaser.GameObjects.Graphics;
   private now: Phaser.GameObjects.Text;
   private ghost = 0; // ms to the next ghost copy
   private sweat = 0; // ms to the next sweat drop
+  private drops: { x: number; y: number; vx: number; vy: number; age: number }[] = [];
   private t = 0;
   constructor(
     private scene: Phaser.Scene,
@@ -31,18 +34,20 @@ export class RatDodge {
     bus: Emitter<GameEvents>,
   ) {
     this.g = scene.add.graphics().setDepth(2150);
-    this.now = makeText(scene, 0, 0, '¡AHORA!', { size: 54, color: C.cheese, stroke: 9, depth: 2160 }).setVisible(false);
+    this.under = scene.add.graphics().setDepth(95); // under the rat sprite (depth 100 + y), so the glow never washes it out
+    this.now = makeText(scene, 0, 0, '¡AHORA!', { size: 92, color: C.cheese, stroke: 14, depth: 2160 }).setVisible(false);
     const off = bus.on('rat:dodge', () => {
       const r = game.mid?.rat;
       if (!r) return;
       const x = OX + r.x * TILE,
         y = OY + r.y * TILE;
-      this.fx.float(x, y - TILE * 0.95, '¡FIU!', '#FFFFFF', 64);
+      this.fx.float(x, y - TILE * 1.15, '¡FIU!', '#FFFFFF', 120);
       this.fx.ring(x, y + TILE * 0.2, 0xffffff, 0.3, 1.5);
     });
     this.g.once('destroy', () => {
       off();
       this.now.destroy();
+      this.under.destroy();
     });
   }
 
@@ -50,6 +55,7 @@ export class RatDodge {
     this.t += dtMs;
     const { g, game } = this;
     g.clear();
+    this.under.clear();
     const r = game.mid?.rat;
     if (!r || r.scared || game.over || !game.hz) return this.now.setVisible(false);
     const x = OX + r.x * TILE,
@@ -65,47 +71,61 @@ export class RatDodge {
       this.ghost -= dtMs;
       if (this.ghost <= 0) {
         this.ghost = 28;
-        const img = this.scene.add
-          .image(x, y, 'rat')
+        // same origin and scale as the rat sprite (events/view.ts), so a copy sits exactly on the rat's path
+        const img = place(this.scene, 'rat', x, y - ratLift(game), 0.92)
           .setTint(0xbfe8f5)
           .setAlpha(0.6)
-          .setDepth(2149)
-          .setScale(0.92 * (TILE / 120));
+          .setDepth(2149);
         img.setFlipX(x < fx0);
         this.scene.tweens.add({ targets: img, alpha: 0, duration: 240, onComplete: () => img.destroy() });
       }
     }
     const pant = r.pantMs ?? 0;
     if (pant <= 0) return this.now.setVisible(false);
-    // the window: a ring that closes on the rat, sweat drops, and the word
+    // the window (the whole of pantMs): a yellow ring that closes on a fixed target ring around the rat, "¡AHORA!" big over it, sweat flying off its head
     const total = ratParams(game).pantMs || 600,
       k = Math.max(0, Math.min(1, pant / total)),
-      pulse = 0.5 + 0.5 * Math.sin(this.t / 60);
-    g.lineStyle(8, hexNum(C.cheese), 0.6 + 0.4 * pulse).strokeCircle(x, y - TILE * 0.15, TILE * (0.42 + 0.5 * k));
-    g.lineStyle(4, 0x2b1b17, 0.8).strokeCircle(x, y - TILE * 0.15, TILE * (0.42 + 0.5 * k) + 6);
+      pulse = 0.5 + 0.5 * Math.sin(this.t / 60),
+      cy = y - TILE * 0.2 - ratLift(game),
+      rTarget = TILE * 0.6,
+      rRing = rTarget + TILE * 1.1 * k;
+    this.under.fillStyle(hexNum(C.cheese), 0.45 + 0.2 * pulse).fillCircle(x, cy, rTarget);
+    g.lineStyle(10, 0x2b1b17, 0.85)
+      .strokeCircle(x, cy, rTarget + 7)
+      .strokeCircle(x, cy, rRing + 9);
+    g.lineStyle(9, hexNum(C.cheese), 1).strokeCircle(x, cy, rTarget);
+    g.lineStyle(14, hexNum(C.cheese), 0.7 + 0.3 * pulse).strokeCircle(x, cy, rRing);
     this.now
       .setVisible(true)
-      .setPosition(x, y - TILE * 1.45)
+      .setPosition(Math.max(260, Math.min(this.scene.scale.width - 260, x)), cy - TILE * 1.25)
       .setScale(1 + 0.12 * pulse)
       .setColor(pulse > 0.5 ? C.cheese : '#FFFFFF');
     this.sweat -= dtMs;
     if (this.sweat <= 0) {
-      this.sweat = 85;
-      const side = Math.random() < 0.5 ? -1 : 1;
-      const d = this.scene.add
-        .image(x + side * TILE * 0.12, y - TILE * 0.5, 'fx_dot')
-        .setTint(0x7fd0f2)
-        .setScale(1.6)
-        .setDepth(2152);
-      this.scene.tweens.add({
-        targets: d,
-        x: d.x + side * (TILE * 0.3 + Math.random() * TILE * 0.2),
-        y: d.y + TILE * 0.35,
-        alpha: 0,
-        duration: 480,
-        ease: 'quad.in',
-        onComplete: () => d.destroy(),
-      });
+      this.sweat = 55;
+      for (const side of [-1, 1])
+        this.drops.push({
+          x: x + side * TILE * 0.12,
+          y: cy - TILE * 0.25,
+          vx: side * TILE * (0.5 + Math.random() * 0.7),
+          vy: -TILE * (0.6 + Math.random() * 0.5),
+          age: 0,
+        });
     }
+    // sweat: crisp blue drops thrown up and out, falling back (drawn here, not as soft particles, so they read against the floor)
+    for (const d of this.drops) {
+      d.age += dtMs;
+      d.x += (d.vx * dtMs) / 1000;
+      d.y += (d.vy * dtMs) / 1000;
+      d.vy += (TILE * 3.2 * dtMs) / 1000;
+      const a = Math.max(0, 1 - d.age / 650);
+      g.fillStyle(0x2b1b17, a)
+        .fillCircle(d.x, d.y, 11)
+        .fillStyle(0x5ec8f5, a)
+        .fillCircle(d.x, d.y, 8)
+        .fillStyle(0xffffff, a)
+        .fillCircle(d.x - 3, d.y - 3, 3);
+    }
+    this.drops = this.drops.filter((d) => d.age < 650);
   }
 }
