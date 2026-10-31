@@ -1,7 +1,7 @@
 // A round and its chefs: createGame builds the Game (map, stations, teams, queues, the optional rule sets), addPlayer / removePlayer seat the chefs.
 import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficulty } from '@pichi/core/difficulty';
 import { type GameEvents, Emitter } from './events';
-import { MAX_SLOTS, type Game, type Station, type TeamSeat, type TeamState } from './state';
+import { LEGACY, MAX_SLOTS, type Game, type Station, type TeamSeat, type TeamState } from './state';
 import { FIXED_MAPS, menuPatchRows, parseMap, spawnPoints, type Pos, type SigmaName } from '../maps';
 import type { SabotageMode } from '../sabotage-config';
 import { newSurfaceState } from '../surfaces/config';
@@ -19,21 +19,6 @@ import { anyMech, MECH_IDS, type MechFlags, type MechOpts } from '../mech/ids';
 import { mechStart } from '../mech/loop';
 import { armMutation } from '../mech/mutation/module';
 import { invertOps, type MutationV2 } from '../mech/mutation/ops';
-
-const LEGACY = [
-  'score',
-  'delivered',
-  'streak',
-  'bestStreak',
-  'tips',
-  'expired',
-  'rejected',
-  'orders',
-  'rng',
-  'dirtyDue',
-  'nextOrderAt',
-  'orderSeq',
-] as const;
 
 export function createGame(
   opts: {
