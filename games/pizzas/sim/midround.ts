@@ -19,6 +19,8 @@ import { newSurfaceState } from './surfaces/config';
 import { gentleRatStep, ratPrize } from './feel/rat';
 import type { Game, Item, Station } from './round/state';
 import { spill } from './mech/oil/spill';
+import { hazardParams } from './hazard-v2';
+import { planEvents, type Planned } from './events-v2';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
 export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];
@@ -100,6 +102,13 @@ export interface Rat {
   pauseMs?: number;
   target?: number;
   near?: boolean;
+  // HAZARD_V2 (feel/rat-v2.ts): the dodge of a dash and the panting after it
+  dodgeCd?: number;
+  dodgeMs?: number;
+  dodgeFrom?: [number, number];
+  dodgeTo?: [number, number];
+  pantMs?: number;
+  dashers?: number[];
 }
 export interface Mid {
   kind: EventKind;
@@ -111,6 +120,7 @@ export interface Mid {
   frost: boolean; // frost in progress: surfaces/physics reads it (every floor tile is ice)
   rat: Rat | null;
   rng: Rng; // the stream of the events (the instant, the kind, the hole of the rat)
+  queue?: Planned[]; // HAZARD_V2: the events still to come after this one (events-v2.ts); absent = the old single event
 }
 
 /** What the sim does for the two events that touch the queues; passed in so this file keeps no value import of the sim (the imports stay acyclic). */
@@ -139,10 +149,31 @@ export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations' |
 export function createMid(g: Game, seed: number): Mid {
   const rng = mulberry32((seed ^ EVENTS_SEED_TAG) >>> 0);
   const pool = eventPool(g);
+  const plan = g.hz ? planEvents(seed, g.difficulty, g.params.roundMs, pool, (k) => activeMs(g, k)) : [];
+  if (plan.length) {
+    // HAZARD_V2: the calendar comes from its own stream; `rng` stays untouched for the hole of the rat and the oil
+    const [first, ...rest] = plan as [Planned, ...Planned[]];
+    return {
+      kind: first.kind,
+      announceAt: first.startAt - ANNOUNCE_MS,
+      startAt: first.startAt,
+      endAt: Infinity,
+      phase: 'wait',
+      dark: false,
+      frost: false,
+      rat: null,
+      rng,
+      queue: rest,
+    };
+  }
   const kind = pool[Math.floor(rng() * pool.length)]!;
   const startAt = EVENT_FROM_MS + Math.floor(rng() * (EVENT_TO_MS - EVENT_FROM_MS + 1));
   return { kind, announceAt: startAt - ANNOUNCE_MS, startAt, endAt: Infinity, phase: 'wait', dark: false, frost: false, rat: null, rng };
 }
+
+/** How long an event counts as on: the table, except the blackout (12 s Normal, 15 s Hard under HAZARD_V2). */
+export const activeMs = (g: Pick<Game, 'difficulty'>, k: EventKind): number =>
+  k === 'blackout' ? hazardParams(g.difficulty).events.blackoutMs : ACTIVE_MS[k];
 
 // --- The rat ----------------------------------------------------------------------------------------------------------------------------------------
 const tileOf = (r: Rat): [number, number] => [Math.floor(r.x), Math.floor(r.y)];
@@ -305,8 +336,9 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
   }
   if (m.phase === 'announced' && g.time >= m.startAt) {
     m.phase = 'active';
-    m.endAt = m.startAt + ACTIVE_MS[m.kind];
-    g.bus.emit('event:start', { kind: m.kind, durationMs: ACTIVE_MS[m.kind] });
+    const dur = m.queue ? activeMs(g, m.kind) : ACTIVE_MS[m.kind];
+    m.endAt = m.startAt + dur;
+    g.bus.emit('event:start', { kind: m.kind, durationMs: dur });
     if (m.kind === 'rush') fx.rush(g);
     else if (m.kind === 'birthday') fx.birthday(g);
     else if (m.kind === 'blackout') m.dark = true;
@@ -326,4 +358,16 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
   else if (m.kind === 'inspector') inspect(g);
   else if (m.kind === 'rat') ratGone(g, m);
   g.bus.emit('event:end', { kind: m.kind });
+  const next = m.queue?.shift();
+  if (next)
+    Object.assign(m, {
+      kind: next.kind,
+      announceAt: next.startAt - ANNOUNCE_MS,
+      startAt: next.startAt,
+      endAt: Infinity,
+      phase: 'wait',
+      dark: false,
+      frost: false,
+      rat: null,
+    }); // the next one of the calendar
 }

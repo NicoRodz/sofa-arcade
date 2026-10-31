@@ -29,7 +29,7 @@ const ROWS = [
   '##CCCCCCCCCCCC##',
 ];
 const make = (surfaces: boolean): Game => {
-  const g = createGame({ rows: ROWS, surfaces, countdownMs: 0, n: 2 });
+  const g = createGame({ rows: ROWS, surfaces, countdownMs: 0, n: 2, hazardsV2: false });
   addPlayer(g, 1, 0);
   step(g); // starts the round
   return g;

@@ -64,7 +64,7 @@ export interface GameEvents extends SabotageEvents {
   'mech:wiped': { tile: number }; // a chef wiped the oil or put the flame out on this tile
   'mech:spray': { tile: number }; // the sprinkler at this tile started a burst
   'mech:bridgeBreak': { tile: number }; // a worn bridge broke
-  'fire:start': { station: number; team?: number }; // the oven caught fire
+  'fire:start': { station: number; team?: number; big?: boolean }; // the oven caught fire
   'fire:spread': { station: number; team?: number }; // the fire jumped to this counter
   'fire:out': { player: number; station: number; team?: number }; // a chef put this station out
   'fire:end': { team?: number }; // the last flame of the kitchen is out
@@ -82,6 +82,7 @@ export interface GameEvents extends SabotageEvents {
   'rat:appear': { at: [number, number] }; // coop only
   'rat:steal': { station: number; item: Item };
   'rat:scared': { player: number; returned: boolean; bonus?: number }; // a dash scared it; returned: it dropped the item back on its counter; bonus: points the gentle rat pays
+  'rat:dodge': { player: number }; // HAZARD_V2: the rat jumped aside from this chef's dash and now pants (feel/rat-v2.ts)
   'rat:target': { station: number }; // the gentle rat picked this counter (the screen draws an arrow to it)
   'rat:near': { station: number }; // ...and is about to get there
   'rat:gone': { stolen: boolean }; // it left (stolen: with an item)

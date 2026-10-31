@@ -200,6 +200,7 @@ export interface Game {
   slipDrops: boolean; // a chef that slips drops what it carries
   spoilRaw: boolean; // ... and a raw ingredient that falls becomes rubbish
   sab: Sabotage | null; // versus sabotage (sabotage.ts): the bags, the catapults, the throws
+  hz: boolean; // HAZARD_V2 numbers under the flags (create option `hazards`, default on)
   burn: Burn | null; // the oven that burns and the fire (burn.ts): null (the default, and every golden round) = the oven never burns
   mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none
   rec: Rec | null; // the Carta del día of the round (recipes/sim.ts): null (the default) = the old recipes (Marinara, Margarita)

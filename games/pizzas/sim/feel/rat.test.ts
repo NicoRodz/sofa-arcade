@@ -11,7 +11,7 @@ type Log = { t: number; type: string; p: Record<string, unknown> }[];
 
 /** A coop round of map 1 whose event is the rat at 3 s; `items` counters (by index in reading order) hold a raw tomato. */
 function round(magnet: boolean, items: number[] = [], seed = 5) {
-  const g = createGame({ mapId: MAP.id, rows: MAP.rows, spawns: MAP.spawns, n: 2, seed, events: true, magnet });
+  const g = createGame({ mapId: MAP.id, rows: MAP.rows, spawns: MAP.spawns, n: 2, seed, events: true, magnet, hazardsV2: false });
   addPlayer(g, 1, 0);
   addPlayer(g, 2, 1);
   Object.assign(g.mid!, { kind: 'rat', startAt: 3000, announceAt: 0, endAt: Infinity, phase: 'wait', dark: false, rat: null });

@@ -71,6 +71,7 @@ function mk(
     bus,
     events: o.events ?? true,
     burn: o.burn,
+    hazardsV2: false,
   });
   for (const k of KINDS)
     bus.on(k, ((p: never) => {

@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { MIRRORS, isoOf, runVersus } from '../test/golden/mirror-bot';
 import type { Game, Station } from './overcooked';
-import { FIRE_DELAY_MS, GRACE_MS } from './burn';
+import { HAZARD_V2 } from './hazard-v2';
 
 const bake = (g: Game, s: Station) => {
   s.inputs = [0, 1];
@@ -80,9 +80,9 @@ describe('prueba del espejo con horno que quema y fuego', () => {
     expect(eb).toEqual(ea);
     const burnt = Number(ea.find((e) => e.split('|')[1] === 'oven:burnt')!.split('|')[0]),
       fire = Number(ea.find((e) => e.split('|')[1] === 'fire:start')!.split('|')[0]);
-    expect((fire - burnt) * (1000 / 60)).toBeGreaterThan(FIRE_DELAY_MS - 50);
-    expect((fire - burnt) * (1000 / 60)).toBeLessThan(FIRE_DELAY_MS + 50);
-    expect(GRACE_MS.hard).toBe(8000);
+    expect((fire - burnt) * (1000 / 60)).toBeGreaterThan(HAZARD_V2.hard.fire.delayMs - 50);
+    expect((fire - burnt) * (1000 / 60)).toBeLessThan(HAZARD_V2.hard.fire.delayMs + 50);
+    expect(HAZARD_V2.hard.fire.graceMs).toBe(6000); // HAZARD_V2: 6 s of grace and 3 s of delay on Hard
   });
   it('the proof can fail: a pizza left to burn in one kitchen only breaks the tie', () => {
     const r = runVersus({ ...MIRRORS.v3, difficulty: 'normal', seed: 4, teams: [[1], [2]], flags }, neglect(MIRRORS.v3, 600, 0));

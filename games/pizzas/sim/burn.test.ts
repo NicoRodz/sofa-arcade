@@ -27,6 +27,7 @@ function mk(o: { map?: string; difficulty?: Difficulty; n?: number; burn?: boole
     bus,
     burn: o.burn ?? true,
     fire: o.fire ?? true,
+    hazardsV2: false,
   });
   const kinds = [
     'oven:warn',
@@ -259,7 +260,7 @@ describe('fire', () => {
     ];
     for (const [d, s, want] of cases) expect(fireAllowed(d, s), `${d} ${s}`).toBe(want);
   });
-  it('a versus round under Suave sabotage never has fire (createGame applies the cap); under Caos it can', () => {
+  it('a versus round under Suave sabotage has fire but never a big one (HAZARD_V2); under Caos it can be big', () => {
     const m = versusMap('V1')!;
     const mkv = (sabotage: SabotageMode) =>
       createGame({
@@ -273,7 +274,9 @@ describe('fire', () => {
         burn: true,
         fire: true,
       });
-    expect(mkv('soft').burn!.fire).toBe(false);
+    expect(mkv('soft').burn!.fire).toBe(true);
+    expect(mkv('soft').burn!.v2!.bigOk).toBe(false);
+    expect(mkv('chaos').burn!.v2!.bigOk).toBe(true);
     expect(mkv('chaos').burn!.fire).toBe(true);
     expect(mkv('off').burn!.fire).toBe(true);
   });
@@ -426,9 +429,9 @@ describe('the lobby turns the rules on', () => {
   const round = (difficulty: Difficulty, modeOptions: Record<string, boolean | string>) =>
     startVersusRound({ teams, choice: 'V1', difficulty, seed: 4, modeOptions, slotOf: (id) => id - 1, rand: mulberry32(1) }).game;
   it('a versus round from the lobby has the burning oven; the fire follows the difficulty and the sabotage level (Easy no, Suave no, Caos yes)', () => {
-    expect(round('normal', { sabotage: 'soft' }).burn).toMatchObject({ fire: false, graceMs: 8000 });
+    expect(round('normal', { sabotage: 'soft' }).burn).toMatchObject({ fire: true, graceMs: 8000 }); // Suave: small fires only (HAZARD_V2)
     expect(round('easy', { sabotage: 'chaos' }).burn).toMatchObject({ fire: false, graceMs: 15_000 });
-    expect(round('hard', { sabotage: 'chaos' }).burn).toMatchObject({ fire: true, graceMs: 8000 });
+    expect(round('hard', { sabotage: 'chaos' }).burn).toMatchObject({ fire: true, graceMs: 6000 }); // Hard V2: 6 s of grace
     expect(round('normal', { sabotage: 'off' }).burn!.fire).toBe(true);
     expect(round('normal', { sabotage: 'off' }).burn!.fires).toHaveLength(2); // one slot per kitchen: at most one fire each
   });

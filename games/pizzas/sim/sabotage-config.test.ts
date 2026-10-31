@@ -34,15 +34,15 @@ describe('sabotage config', () => {
     expect(sabotageOf({ sabotage: true })).toBe('off');
   });
   it('the balance table of the plan (section 5)', () => {
-    expect(RULES.soft).toMatchObject({ cooldownMs: 12_000, perMinute: 3, stock: 1, maxPiles: 2, decayMs: 20_000 });
-    expect(RULES.chaos).toMatchObject({ cooldownMs: 8_000, perMinute: 5, stock: 2, maxPiles: 3, decayMs: 35_000, double: true });
+    expect(RULES.soft).toMatchObject({ cooldownMs: 10_000, perMinute: 4, stock: 1, maxPiles: 3, decayMs: 25_000 });
+    expect(RULES.chaos).toMatchObject({ cooldownMs: 6_000, perMinute: 6, stock: 2, maxPiles: 4, decayMs: 40_000, double: true });
     expect(DESECHOS_PER_BAG).toBe(3);
     expect(LAND_AFTER_MS).toBe(700);
   });
-  it('the slip table of the plan (section 4): control lost 550 / 750 / 900 ms', () => {
-    expect(DIFFICULTIES.map((d) => SLIP[d].dist)).toEqual([1.5, 2.5, 3.0]);
-    expect(DIFFICULTIES.map(controlLostMs)).toEqual([550, 750, 900]);
-    expect(DIFFICULTIES.map((d) => SLIP[d].immuneMs)).toEqual([2000, 1500, 1200]);
+  it('the slip table of the plan (section 4): control lost 650 / 850 / 1050 ms', () => {
+    expect(DIFFICULTIES.map((d) => SLIP[d].dist)).toEqual([2.0, 3.0, 3.5]);
+    expect(DIFFICULTIES.map(controlLostMs)).toEqual([650, 850, 1050]);
+    expect(DIFFICULTIES.map((d) => SLIP[d].immuneMs)).toEqual([1600, 1200, 900]);
   });
   it('the item falls from Normal up and always in Caos; Suave on Fácil only slips', () => {
     expect(dropsItem('soft', 'easy')).toBe(false);

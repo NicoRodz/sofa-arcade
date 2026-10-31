@@ -97,6 +97,7 @@ export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent | MutateEve
   'rat:appear': () => [play('ratAppear')],
   'rat:steal': () => [play('ratSteal')],
   'rat:scared': (p) => (p.bonus ? [play('ratScared'), play('ding')] : [play('ratScared')]), // the prize for scaring the gentle rat is a ding
+  'rat:dodge': () => [play('ratScared')], // the dodge squeals
   'rat:target': () => [play('ratTarget')],
   'rat:near': () => [play('ratNear')],
   'rat:gone': () => [],

@@ -1,7 +1,7 @@
 // Chef movement: R1 velocity, R4 soft collisions between chefs, R5 dash pushes, walls. No stations here.
 import { RADIUS, SPEED, TICK_MS, isSolid, type Controls, type Game, type Player } from './state';
 import { magnetHug } from '../feel/magnet';
-import { beltPush, iceTau } from '../surfaces/physics';
+import { beltPush, iceTau, iceTurnLimit } from '../surfaces/physics';
 import { mechCanMove, mechFriction, mechNoCollide } from '../mech/loop';
 
 // R1: one integrator for the chef's velocity, v += (target - v) * (1 - e^(-dt/tau)). tau = 0 is "instant" (the old feel).
@@ -9,11 +9,15 @@ function steer(p: Player, c: Controls, g: Game, dtMs: number) {
   const { tauMs, tauStopMs } = g.params.tune;
   const moving = c.x !== 0 || c.y !== 0;
   const base = p.assist ? 0 : moving ? tauMs : tauStopMs; // Ayudante: no inertia
-  let tau = g.surf ? iceTau(g, p, base) : base; // ice: a long tau both ways (the stick only steers the slide)
+  const braking = !moving || c.x * p.vx + c.y * p.vy < 0; // on ice: no stick, or against the slide
+  let tau = g.surf ? iceTau(g, p, base, braking) : base; // ice: a long tau both ways (the stick only steers the slide)
   if (g.mech) tau = mechFriction(g, p.x, p.y, tau); // oil: the same on a patch
   const k = tau > 0 ? 1 - Math.exp(-dtMs / tau) : 1;
+  const ovx = p.vx,
+    ovy = p.vy;
   p.vx += (c.x * SPEED - p.vx) * k;
   p.vy += (c.y * SPEED - p.vy) * k;
+  if (g.surf) iceTurnLimit(g, p, ovx, ovy, dtMs);
   if (!moving && Math.hypot(p.vx, p.vy) < 0.02) {
     p.vx = 0;
     p.vy = 0;

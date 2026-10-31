@@ -10,6 +10,7 @@
 // The sim hands over its helpers (`RatKit`), so this file imports nothing from it but types.
 import type { Game, Player } from '../round/state';
 import type { Mid, Rat } from '../midround';
+import { dodgeStep, ratGait, ratParams } from './rat-v2';
 
 export const RAT_GENTLE = {
   speed: 1.68, // tiles/s: 70% of the old RAT_SPEED (2.4)
@@ -37,11 +38,12 @@ export interface RatKit {
 
 /** The radius within which this chef scares the rat now: dashing, just done dashing (within afterDashMs), or simply running (touchRadius); 0 when none. */
 export function scareReach(g: Game, p: Player): number {
-  if (Math.hypot(p.vx, p.vy) >= RAT_GENTLE.touchSpeed && !(p.dashMs > 0)) return RAT_GENTLE.touchRadius;
-  if (p.dashMs > 0) return RAT_GENTLE.scareRadius;
+  const rp = ratParams(g); // HAZARD_V2 numbers of the round's difficulty (feel/rat-v2.ts)
+  if (Math.hypot(p.vx, p.vy) >= rp.touchSpeed && !(p.dashMs > 0)) return rp.touchRadius;
+  if (p.dashMs > 0) return rp.scareRadius;
   const t = g.params.tune,
     sinceStart = t.dashCdMs - p.dashCd;
-  return p.dashCd > 0 && sinceStart > 0 && sinceStart <= t.dashMs + RAT_GENTLE.afterDashMs ? RAT_GENTLE.afterRadius : 0;
+  return p.dashCd > 0 && sinceStart > 0 && sinceStart <= t.dashMs + rp.afterDashMs ? rp.afterRadius : 0;
 }
 
 /** The prize for scaring the rat (the single team of a coop round). Returns the points. */
@@ -66,14 +68,16 @@ function walk(g: Game, r: Rat, goal: (x: number, y: number) => boolean, dtMs: nu
   const dx = step[0] + 0.5 - r.x,
     dy = step[1] + 0.5 - r.y,
     d = Math.hypot(dx, dy) || 1;
+  const rp = ratParams(g),
+    gait = ratGait(g, r, rp);
   const want = Math.atan2(dy, dx);
   let h = r.heading ?? want;
   let diff = want - h;
   while (diff > Math.PI) diff -= 2 * Math.PI;
   while (diff < -Math.PI) diff += 2 * Math.PI;
-  h += Math.sign(diff) * Math.min(Math.abs(diff), ((RAT_GENTLE.turnDps * Math.PI) / 180) * (dtMs / 1000));
+  h += Math.sign(diff) * Math.min(Math.abs(diff), ((gait.turnDps * Math.PI) / 180) * (dtMs / 1000));
   r.heading = h;
-  const move = (RAT_GENTLE.speed * dtMs) / 1000;
+  const move = (gait.speed * dtMs) / 1000;
   const nx = r.x + Math.cos(h) * move,
     ny = r.y + Math.sin(h) * move;
   if (kit.floor(g, Math.floor(nx), Math.floor(ny))) {
@@ -87,9 +91,9 @@ function walk(g: Game, r: Rat, goal: (x: number, y: number) => boolean, dtMs: nu
     r.heading = want;
   }
   r.runMs = (r.runMs ?? 0) + dtMs;
-  if (r.runMs >= RAT_GENTLE.runMs) {
+  if (r.runMs >= rp.runMs) {
     r.runMs = 0;
-    r.pauseMs = RAT_GENTLE.pauseMs;
+    r.pauseMs = rp.pauseMs;
   }
   return true;
 }
@@ -102,6 +106,7 @@ export function gentleRatStep(g: Game, m: Mid, dtMs: number, kit: RatKit): boole
   if (r.scared) return false;
   r.born ??= g.time;
   const age = g.time - r.born;
+  if (dodgeStep(g, r, dtMs, kit.floor)) return true; // HAZARD_V2: mid-jump it cannot be touched
   for (const p of g.players.values()) {
     if (p.ghost) continue;
     const reach = scareReach(g, p);

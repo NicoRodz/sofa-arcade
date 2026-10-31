@@ -5,6 +5,7 @@ import { stopKind } from './chop';
 import { RAW_OF } from '../recipes/defs';
 import { addFloorItem, removeFloorItem } from '../floor';
 import { sabotageAimPress } from '../sabotage';
+import { surfaceAt } from '../surfaces/physics';
 
 // --- Hazards (sabotage S1): rubbish on the floor makes a chef slip --------------------------------------------------------------------
 // The chef's centre enters a rubbish tile (within SLIP_TRIGGER of its centre) and it is not immune: it slides `dist` tiles along its
@@ -19,7 +20,8 @@ function startSlip(g: Game, p: Player) {
     vy = p.vy + p.ky;
   const fast = Math.hypot(vx, vy) >= SLIP_MIN_SPEED * SPEED;
   const [dx, dy] = fast ? unit(vx, vy) : unit(p.fx, p.fy);
-  const dist = sp.dist + (p.dashMs > 0 ? SLIP_DASH_EXTRA : 0);
+  const iceMul = g.hz && g.surf && surfaceAt(g, p.x, p.y)?.kind === 'ice' ? 1.5 : 1; // HAZARD_V2: a slip on ice goes a half farther
+  const dist = (sp.dist + (p.dashMs > 0 ? SLIP_DASH_EXTRA : 0)) * iceMul;
   const [tx, ty] = onTile(p);
   if (p.cutting) g.bus.emit(stopKind(g, p), { player: p.id, station: p.chopAt });
   let dropped: Item | null = null;

@@ -139,7 +139,7 @@ describe('the slip: dash, wall, buffered B', () => {
     expect(r.seen['dash']).toHaveLength(1);
     expect(r.end.x - r.start.x).toBeGreaterThan(SLIP.normal.dist + 0.5 - 0.05);
     expect(r.end.x - r.start.x).toBeLessThan(SLIP.normal.dist + 0.5 + 0.05);
-    expect(r.seen['chef:slip']![0]!.p.dist).toBe(3);
+    expect(r.seen['chef:slip']![0]!.p.dist).toBe(SLIP.normal.dist + 0.5);
   });
   it('a wall stops the slide dead; the time without control is the same', () => {
     const { g, seen } = mk();

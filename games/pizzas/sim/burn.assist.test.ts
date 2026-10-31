@@ -15,7 +15,7 @@ type Log = { [K in keyof GameEvents]?: { t: number }[] };
 function mk(assist: number[]) {
   const bus = new Emitter<GameEvents>();
   const log: Log = {};
-  const g = createGame({ rows: fixedMap('11')!.rows, mapId: '11', n: 2, seed: 5, bus, burn: true, fire: true, assist });
+  const g = createGame({ rows: fixedMap('11')!.rows, mapId: '11', n: 2, seed: 5, bus, burn: true, fire: true, assist, hazardsV2: false });
   for (const k of ['fire:out', 'douseStart', 'douseStop'] as const)
     bus.on(k, (() => {
       (log[k] ??= []).push({ t: g.time });

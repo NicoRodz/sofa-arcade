@@ -337,14 +337,14 @@ describe('the catapult: load, aim, throw', () => {
     expect(flights(g, 0)).toHaveLength(0);
     expect(catapultState(g, 0)).toBe('cooldown');
   });
-  it('an empty-handed rival chef within 0.6 tile of the landing catches the bag: no rubbish, it holds the bag', () => {
+  it('an empty-handed rival chef within 0.45 tile of the landing catches the bag: no rubbish, it holds the bag', () => {
     const { g, log } = mk();
     load(g, 1);
     run(g, 500);
     pressB(g, 1);
     const to = flights(g, 0)[0]!.to;
     const c = g.players.get(3)!;
-    Object.assign(c, { x: to[0] + 0.5 + 0.5, y: to[1] + 0.5, vx: 0, vy: 0 }); // 0.5 tile away (a floor tile: not necessarily, but close enough)
+    Object.assign(c, { x: to[0] + 0.5 + 0.4, y: to[1] + 0.5, vx: 0, vy: 0 }); // 0.4 tile away (a floor tile: not necessarily, but close enough)
     run(g, LAND_AFTER_MS + 40);
     expect(log['sabotage:caught']).toHaveLength(1);
     expect(log['sabotage:caught']![0]!.p).toMatchObject({ chef: 3, team: 0, target: 1 });
@@ -405,18 +405,18 @@ describe('limits: cooldown, per minute, piles', () => {
     expect(p.item).toBeNull();
     expect(g.sab!.teams[0]!.aim).not.toBeNull();
   });
-  it('Caos: 8 s between throws', () => {
+  it('Caos: 6 s between throws', () => {
     const { g } = mk({ mode: 'chaos' });
     load(g, 1);
     pressB(g, 1);
-    run(g, 7000);
+    run(g, 5000);
     expect(catapultState(g, 0)).toBe('cooldown');
     run(g, 1100);
     expect(['ready', 'piles']).toContain(catapultState(g, 0));
   });
-  it('Suave: 3 throws per sliding minute, then "window" until the first one is a minute old', () => {
+  it('Suave: 4 throws per sliding minute, then "window" until the first one is a minute old', () => {
     const { g, log } = mk({ mode: 'soft' });
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       load(g, 1);
       pressB(g, 1);
       run(g, RULES.soft.cooldownMs + 100);
@@ -432,9 +432,9 @@ describe('limits: cooldown, per minute, piles', () => {
     run(g, 60_000 - g.time + 600);
     expect(catapultState(g, 0)).toBe('ready');
   });
-  it('Caos: 5 throws per minute', () => {
+  it('Caos: 6 throws per minute', () => {
     const { g } = mk({ mode: 'chaos' });
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       load(g, 1);
       pressB(g, 1);
       run(g, RULES.chaos.cooldownMs + 100);
@@ -443,10 +443,11 @@ describe('limits: cooldown, per minute, piles', () => {
     expect(g.time).toBeLessThan(60_000);
     expect(catapultState(g, 0)).toBe('window');
   });
-  it('maximum piles on the rival floor (Suave 2, Caos 3), counting bags in the air: the catapult goes red and keeps the bag', () => {
+  it('maximum piles on the rival floor (Suave 3, Caos 4), counting bags in the air: the catapult goes red and keeps the bag', () => {
     const { g, log } = mk({ mode: 'soft' });
     const tiles = landingTiles(g, 1);
     addFloorItem(g, { tx: tiles[0]![0], ty: tiles[0]![1], item: 'trash', kind: 'trash', team: 1 });
+    addFloorItem(g, { tx: tiles[3]![0], ty: tiles[3]![1], item: 'trash', kind: 'trash', team: 1 });
     expect(catapultState(g, 0)).toBe('ready');
     addFloorItem(g, { tx: tiles[5]![0], ty: tiles[5]![1], item: 'trash', kind: 'trash', team: 1 });
     expect(catapultState(g, 0)).toBe('piles');
@@ -459,14 +460,15 @@ describe('limits: cooldown, per minute, piles', () => {
     // a bag in the air counts as a pile too
     const { g: h } = mk({ mode: 'soft' });
     addFloorItem(h, { tx: tiles[0]![0], ty: tiles[0]![1], item: 'trash', kind: 'trash', team: 1 });
+    addFloorItem(h, { tx: tiles[3]![0], ty: tiles[3]![1], item: 'trash', kind: 'trash', team: 1 });
     load(h, 1);
     pressB(h, 1);
     expect(flights(h, 0)).toHaveLength(1);
-    expect(pilesIn(h, 1)).toBe(1);
+    expect(pilesIn(h, 1)).toBe(2);
     run(h, RULES.soft.cooldownMs + 100);
-    expect(catapultState(h, 0)).toBe('piles'); // 1 down + 1 landed
+    expect(catapultState(h, 0)).toBe('piles'); // 2 down + 1 landed
   });
-  it('Caos: the bag leaves a double pile (the target and a neighbour), never above the maximum of 3', () => {
+  it('Caos: the bag leaves a double pile (the target and a neighbour), never above the maximum of 4', () => {
     const { g, log } = mk({ mode: 'chaos' });
     load(g, 1);
     pressB(g, 1);
@@ -479,9 +481,9 @@ describe('limits: cooldown, per minute, piles', () => {
     load(g, 1);
     pressB(g, 1);
     run(g, LAND_AFTER_MS + 40);
-    expect(pilesIn(g, 1)).toBeLessThanOrEqual(3);
+    expect(pilesIn(g, 1)).toBeLessThanOrEqual(4);
   });
-  it('Suave: single piles that last 20 s; Caos 35 s; on the kitchen of a team with k > 1 they last 0.7 times that', () => {
+  it('Suave: single piles that last 25 s; Caos 40 s; on the kitchen of a team with k > 1 they last 0.85 times that', () => {
     const t = (mode: SabotageMode, o: { teams?: number[][] } = {}) => {
       const { g, log } = mk({ mode, ...o });
       load(g, 1);
@@ -490,8 +492,8 @@ describe('limits: cooldown, per minute, piles', () => {
       const born = g.floor[0]!.bornAt;
       return { life: g.floor[0]!.expiresAt - born, g, log };
     };
-    expect(t('soft').life).toBe(20_000);
-    expect(t('chaos').life).toBe(35_000);
+    expect(t('soft').life).toBe(25_000);
+    expect(t('chaos').life).toBe(40_000);
     const small = t('soft', {
       teams: [
         [1, 2, 5],
@@ -499,8 +501,8 @@ describe('limits: cooldown, per minute, piles', () => {
       ],
     }); // team 1 is the small one: k = 1.22
     expect(small.g.teams[1]!.k).toBeGreaterThan(1);
-    expect(small.life).toBeCloseTo(20_000 * 0.7, 3);
-    run(small.g, 14_100);
+    expect(small.life).toBeCloseTo(25_000 * 0.85, 3);
+    run(small.g, 21_300);
     expect(small.g.floor).toHaveLength(0);
     expect(small.log['trash:decayed']).toHaveLength(1);
   });

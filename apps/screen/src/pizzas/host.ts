@@ -121,8 +121,16 @@ export function initHost() {
   pizzasBus.on('dash', (e) => buzz(e.player, 'dash'));
   // the phones that must look up: the whole kitchen for an event, a mutation or a fire; the defending team when rubbish is on its way
   const alert = (mine: (team: number | undefined) => boolean) => pz.game.players.forEach((p) => mine(p.team) && buzz(p.id, 'alert'));
+  const teamPhones = (team: number | undefined, kind: BuzzKind) =>
+    pz.game.players.forEach((p) => (team === undefined || team === p.team) && buzz(p.id, kind)); // the whole team: a big fire needs two
   for (const k of ['event:announce', 'mutate:warn'] as const) pizzasBus.on(k, () => alert(() => true));
-  pizzasBus.on('fire:start', (e) => alert((t) => e.team === undefined || e.team === t));
+  pizzasBus.on('fire:start', (e) => (e.big ? teamPhones(e.team, 'big') : alert((t) => e.team === undefined || e.team === t)));
+  pizzasBus.on('rat:dodge', (e) => buzz(e.player, 'dodge')); // "¡Te esquivó!" on the phone of the chef that missed
+  const iceSeen = new Set<number>();
+  pizzasBus.on('surface:slide', (e) => {
+    if (!iceSeen.has(e.player)) buzz(e.player, 'ice'); // the first ice of the match: "Hielo: frena antes"
+    iceSeen.add(e.player);
+  });
   // map mechanics: the mate who is called, and the chefs near a flame on the oil or a bridge that gave way
   pizzasBus.on('mech:need', (e) => buzz(e.player, 'alert'));
   const near = (tile: number) =>
