@@ -1,11 +1,10 @@
 // Versus HUD (F4): the scoreboard plates (score, handicap, streak, golden orders won), the golden order card on the barrier, the end
 // reveal and the little notices (a chef dropped, the handicap changed). The order queues of each kitchen stay in hud.ts.
 import type Phaser from 'phaser';
-import type { Game, Recipe } from '../../sim/overcooked';
 import type { TeamInfo } from '@pichi/core/lobby/teams';
 import { VIP_TTL_MS } from '../../sim/versus/versus';
 import { kText, scoreHidden, vipView } from '../../sim/versus/report';
-import { tipMultiplier } from '../../sim/overcooked';
+import { tipMultiplier, type Game, type Recipe } from '../../sim/overcooked';
 import { C, H, TILE, W, hexNum, timerColor } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from './env/grid';
 import { R } from '@pichi/screen-kit/art/gfx';

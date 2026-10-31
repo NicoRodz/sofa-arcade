@@ -1,16 +1,16 @@
 // One round on screen: background, station views, chefs, HUD and the reactions to game events.
 import type Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../sim/round/events';
-import type { Game, Item } from '../../sim/overcooked';
+import type { Game } from '../../sim/overcooked';
 import type { PublicPlayer } from '@pichi/core';
 import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from './env/grid';
 import { buildBackground } from './env';
-import { Chef, type HeldSkin } from '@pichi/screen-kit/art/chef';
+import { Chef } from '@pichi/screen-kit/art/chef';
 import { Fx } from '@pichi/screen-kit/art/fx';
 import { Hud, ticketKey, type RoundView } from './hud';
 import { StationViews, place } from './stations';
-import { foodKey, ITEM_KIND } from './food';
+import { foodKey, HELD } from './food';
 import { PuestoMarks, type PuestoView } from './puestos';
 import { FlagView } from './flag-view';
 import { SabotageView } from './sabotage';
@@ -22,9 +22,6 @@ import { chefFlags } from './surfaces/chef-flags';
 import { kText } from '../../sim/versus/report';
 import { paintGrid } from './mech/views';
 import { tintKitchens } from './env/versus-tint';
-
-// What a chef carries is food: the rig only knows a texture per item.
-const HELD: HeldSkin = { idle: foodKey('dough_raw'), keyOf: (item) => foodKey(ITEM_KIND[item as Item]) };
 
 export class World {
   private bg: Phaser.GameObjects.Image;
@@ -44,7 +41,6 @@ export class World {
   private magnet: MagnetView | null = null; // the bracket around each chef's target station (only when the round has the magnet)
   private paint: { mapId: string; seed: number }; // what rebuildKitchen needs to repaint the background
   private burn: BurnView | null = null; // the oven that burns: warning bubble, flames, extinguisher (only when the round has it)
-
   constructor(
     private scene: Phaser.Scene,
     private game: Game,

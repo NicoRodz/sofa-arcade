@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const ROOT = join(import.meta.dirname, '../../..');
+const ROOT = join(import.meta.dirname, '../..');
 const FOLDERS = ['platform/core/src', 'platform/screen/src'];
 const TEST_FILE = /(\.test\.ts|\.slow\.test\.ts)$|[\\/](test|harness)[\\/]/;
 // A game import, a path into games/, or a game id spelled as a string literal.

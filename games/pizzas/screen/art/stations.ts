@@ -72,7 +72,6 @@ interface View {
 export class StationViews {
   private views: View[] = [];
   private t = 0;
-
   constructor(
     private scene: Phaser.Scene,
     private game: Game,

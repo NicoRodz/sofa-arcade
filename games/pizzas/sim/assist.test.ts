@@ -2,28 +2,23 @@
 // Every effect is checked against a control chef (same place, same inputs, no flag) so a green cannot come from the situation being easy.
 import { describe, expect, it } from 'vitest';
 import { WASH_MS } from '@pichi/core/difficulty';
-import { ASSIST_IMMUNITY_K, ASSIST_REACH_MULT, ASSIST_WEIGHT, effectiveChefs } from './assist';
+import {
+  ASSIST_IMMUNITY_K,
+  ASSIST_REACH_MULT,
+  ASSIST_WEIGHT,
+  effectiveChefs,
+  matchStatus,
+  teamMultipliers,
+  validateTeamSetup,
+} from './assist';
 import { addFloorItem } from './floor';
 import { SCENARIOS as GOLDEN, runGolden } from '../test/golden/bot';
 import { DIRS, fixedMap, isFloor } from './maps';
-import {
-  REACH,
-  REACH_SLACK,
-  SPEED,
-  TICK_MS,
-  addPlayer,
-  createGame,
-  dropPlayer,
-  targetStation,
-  tick,
-  type Controls,
-  type Game,
-  type Station,
-} from './overcooked';
+import { REACH, REACH_SLACK, SPEED, TICK_MS, addPlayer, createGame, dropPlayer, targetStation, tick } from './overcooked';
+import type { Controls, Game, Station } from './overcooked';
 import { chefHint } from './hints';
 import { GAMES, modeOf } from '@pichi/catalog';
 import { handicapK } from '@pichi/core/lobby/teams';
-import { matchStatus, teamMultipliers, validateTeamSetup } from './assist';
 import { createVersusGame, lobbySetup, startVersusRound } from './versus/lobby';
 import { versusMap } from './versus/maps';
 import n4 from '../test/golden/fixtures/coop-n4-map9-hard.json';

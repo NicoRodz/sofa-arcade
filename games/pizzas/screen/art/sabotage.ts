@@ -277,7 +277,6 @@ export class SabotageView {
         v.ring.destroy();
         this.floor.delete(id);
       }
-
     // the reticle and the dotted line of whoever is aiming
     sab.teams.forEach((st, i) => {
       const r = this.reticles[i]!;

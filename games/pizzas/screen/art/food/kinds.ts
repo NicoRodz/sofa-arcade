@@ -1,5 +1,6 @@
 import type { Item } from '../../../sim/overcooked';
 import { C } from '@pichi/screen-kit/art/tokens';
+import type { HeldSkin } from '@pichi/screen-kit/art/chef';
 import { EXTRA_COLOR, EXTRA_ITEM_KIND, type RecipeFoodKind } from './recipes'; // the Carta del día: pepperoni, mushroom, calzone
 
 export type FoodKind =
@@ -49,3 +50,6 @@ export const ingredientColor = (type: number) =>
   type === 0 ? C.dough : type === 1 ? C.tomato : type === 2 ? C.cheese : (EXTRA_COLOR[type - 3] ?? C.cheese);
 
 export const foodKey = (k: FoodKind) => `it_${k}`;
+
+/** What a chef carries is food: the rig only knows a texture per item. */
+export const HELD: HeldSkin = { idle: foodKey('dough_raw'), keyOf: (item) => foodKey(ITEM_KIND[item as Item]) };
