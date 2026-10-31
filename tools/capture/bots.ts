@@ -26,8 +26,10 @@ export class Bot {
     this.ws.on('open', () => this.ws.send(JSON.stringify({ t: 'join', name, token: `bot-${room}-${slot}` })));
     this.ws.on('message', (d) => {
       const m = JSON.parse(d.toString());
-      if (m.t === 'joined') this.id = m.player.id;
-      else if (m.t === 'hint') this.hints.push(m);
+      if (m.t === 'joined') {
+        this.id = m.player.id;
+        this.ws.send(JSON.stringify({ t: 'schoolDone' })); // else the first "A cocinar" offers the Cocina escuela and the shots show it
+      } else if (m.t === 'hint') this.hints.push(m);
     });
     this.nextCrate = slot % 2;
   }

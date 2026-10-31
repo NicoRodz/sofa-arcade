@@ -98,7 +98,10 @@ class Phone {
     this.ws.on('open', () => this.send({ t: 'join', name, token }));
     this.ws.on('message', (d) => {
       const m = JSON.parse(d.toString()) as ServerMsg;
-      if (m.t === 'joined') this.id = m.player.id;
+      if (m.t === 'joined') {
+        this.id = m.player.id;
+        this.send({ t: 'schoolDone' }); // the Cocina escuela is offered at the first "A cocinar" to a phone that has not done it: these bots know it
+      }
       if (m.t === 'captain') this.captain = m.playerId;
     });
   }
@@ -111,6 +114,7 @@ class Phone {
 }
 
 let failures = 0;
+
 const check = (ok: boolean, what: string, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${what}${detail ? `  (${detail})` : ''}`);
   if (!ok) failures++;
@@ -158,6 +162,18 @@ async function main() {
     await cdp.send('Runtime.enable');
     await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${ROOM}` });
     const pg = <T>(expr: string) => cdp.eval<T>(`window.__pg.${expr}`);
+    // by state, not by sleeping: the iris (#iris is display:block while it moves, 1 s) swallows every key
+    const irisFree = async () => {
+      for (let i = 0; i < 80; i++) {
+        if (await cdp.eval<boolean>(`getComputedStyle(document.getElementById('iris')).display === 'none'`)) return;
+        await sleep(50);
+      }
+      throw new Error('the iris never freed');
+    };
+    const tap = async (p: Phone, key: string) => {
+      await irisFree();
+      p.nav(key);
+    };
     const phase = () => pg<string>('snapshot().phase');
     for (let i = 0; i < 60; i++) {
       try {
@@ -196,8 +212,8 @@ async function main() {
     check(cards.cards[0] === 'pizzas:ready', 'the pizzas card is pickable with 2 players', cards.cards.join(','));
 
     // 1. a phone that is not the captain does nothing, however it asks
-    other.nav('ok');
-    other.nav('ok');
+    await tap(other, 'ok');
+    await tap(other, 'ok');
     other.send(`{"t":"nav","key":"ok","from":${cap.id},"playerId":${cap.id}}`); // poses as the captain
     await sleep(900);
     check((await phase()) === 'menu', "the non-captain's OK (and one posing as the captain) is ignored at the menu");
@@ -208,13 +224,13 @@ async function main() {
     check((await phase()) === 'menu', "the screen itself refuses a nav whose id is not the captain's");
 
     // 3. the captain: menu -> lobby
-    cap.nav('right');
-    cap.nav('down');
-    cap.nav('left');
-    cap.nav('up'); // moves on a one-game grid: nothing breaks
+    await tap(cap, 'right');
+    await tap(cap, 'down');
+    await tap(cap, 'left');
+    await tap(cap, 'up'); // moves on a one-game grid: nothing breaks
     await sleep(200);
     check((await phase()) === 'menu', 'arrows alone do not leave the menu');
-    cap.nav('ok');
+    await tap(cap, 'ok');
     for (let i = 0; i < 30 && (await phase()) !== 'lobby'; i++) await sleep(100);
     check((await phase()) === 'lobby', 'captain OK picks the game: menu -> lobby');
     check(
@@ -226,25 +242,28 @@ async function main() {
 
     // 4. help opens the how-to card on the TV, OK closes it (the same as H and Enter on the keyboard)
     const howtoOpen = () => cdp.eval<boolean>(`!document.getElementById('howto').classList.contains('off')`);
-    cap.nav('help');
+    await tap(cap, 'help');
     await sleep(400);
     check(await howtoOpen(), 'captain ? opens the "Cómo se juega" card on the TV');
-    other.nav('ok');
+    await tap(other, 'ok');
     await sleep(400);
     check(await howtoOpen(), 'the non-captain cannot close it');
-    cap.nav('ok');
+    await tap(cap, 'ok');
     await sleep(400);
     check(!(await howtoOpen()), 'captain OK closes it');
 
-    // 5. back -> menu, then OK -> lobby again
+    // 5. back and OK without waiting for the iris: the OK lands while the iris moves, is held and runs when it is free
+    //    (menu -> lobby -> menu -> lobby); before the queue that OK was swallowed and the screen stayed at the menu
+    await irisFree();
     cap.nav('back');
-    for (let i = 0; i < 30 && (await phase()) !== 'menu'; i++) await sleep(100);
-    check((await phase()) === 'menu', 'captain Atrás in the lobby goes back to the menu');
-    await sleep(500);
+    await sleep(150);
+    check(await cdp.eval<boolean>(`getComputedStyle(document.getElementById('iris')).display !== 'none'`), 'the iris is moving after Atrás');
     cap.nav('ok');
-    for (let i = 0; i < 30 && (await phase()) !== 'lobby'; i++) await sleep(100);
-    await sleep(1200); // the iris is fully open again
-    check((await phase()) === 'lobby', 'captain OK at the menu: back in the lobby');
+    for (let i = 0; i < 60 && (await phase()) !== 'menu'; i++) await sleep(100);
+    check((await phase()) === 'menu', 'captain Atrás in the lobby goes back to the menu');
+    for (let i = 0; i < 60 && (await phase()) !== 'lobby'; i++) await sleep(100);
+    await irisFree();
+    check((await phase()) === 'lobby', 'the captain OK pressed during the iris is held and picks the game: back in the lobby');
     // the keyboard keeps the last word. H on the Mac opens the card (no iris involved, so nothing else can mask the rule);
     // a captain OK right behind it would close it: it is dropped inside the quiet window, and works after it
     await cdp.key('h', 'KeyH', 72);
@@ -257,18 +276,18 @@ async function main() {
     await sleep(500);
 
     // 6. start the round: OK in the lobby opens the card, OK skips it (the same Enter, Enter as on the Mac)
-    cap.nav('ok');
+    await tap(cap, 'ok');
     await sleep(900);
     check(await howtoOpen(), 'captain OK in the lobby starts the round: the how-to card shows');
-    other.nav('ok');
+    await tap(other, 'ok');
     await sleep(500);
     check(await howtoOpen(), 'the non-captain cannot skip the card');
-    cap.nav('ok');
+    await tap(cap, 'ok');
     for (let i = 0; i < 40 && (await phase()) !== 'playing'; i++) await sleep(100);
     check((await phase()) === 'playing', 'captain OK skips the card: lobby -> playing');
-    cap.nav('back');
-    cap.nav('ok');
-    cap.nav('help');
+    await tap(cap, 'back');
+    await tap(cap, 'ok');
+    await tap(cap, 'help');
     await sleep(400);
     check((await phase()) === 'playing', 'during the round the D-pad does nothing');
 
@@ -276,10 +295,10 @@ async function main() {
     await pg('fastForward(100)');
     for (let i = 0; i < 60 && (await phase()) !== 'results'; i++) await sleep(100);
     check((await phase()) === 'results', 'the round ends in the results');
-    other.nav('ok');
+    await tap(other, 'ok');
     await sleep(500);
     check((await phase()) === 'results', "the non-captain's OK does nothing at the results");
-    cap.nav('ok');
+    await tap(cap, 'ok');
     await sleep(500);
     check((await phase()) === 'lobby', 'captain OK at the results goes back to the lobby');
 
@@ -295,7 +314,7 @@ async function main() {
       'the TV moves the crown to the new captain',
     );
     await sleep(600);
-    other.nav('back');
+    await tap(other, 'back');
     for (let i = 0; i < 30 && (await phase()) !== 'menu'; i++) await sleep(100);
     check((await phase()) === 'menu', "the new captain's Atrás works (lobby -> menu)");
     check(cdp.errors.length === 0, 'no page errors on the screen', cdp.errors.join(' | '));

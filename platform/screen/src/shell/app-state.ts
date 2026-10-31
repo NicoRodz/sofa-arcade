@@ -83,9 +83,42 @@ export const setConfig = (patch: Partial<LobbyConfig>) => {
 export function transition(swap: () => void) {
   if (app.starting) return;
   app.starting = true;
-  services.iris(swap, () => {
-    app.starting = false;
-  });
+  services.iris(swap, endIris);
+}
+
+// The Captain's D-pad while the iris moves (1 s): the screen ignores keys then, so a tap used to vanish without a trace. The last key that
+// differs from the one just applied waits here and runs the moment the iris is free; a repeat of the key that began the iris (a double tap)
+// is dropped, or a second OK would also skip the card the first one opened.
+const DOUBLE_TAP_MS = 1500;
+let held: string | undefined;
+let lastCaptain: { key: string; at: number } | undefined;
+let sink: ((key: string) => void) | undefined;
+export const bindCaptainKeySink = (fn: (key: string) => void) => {
+  sink = fn;
+};
+/** A Captain key that passed the relay's filters: apply it, or hold it if the iris is moving. */
+export function routeCaptainKey(key: string, apply: (key: string) => void) {
+  const now = performance.now();
+  if (app.starting) {
+    if (!(lastCaptain && lastCaptain.key === key && now - lastCaptain.at < DOUBLE_TAP_MS)) held = key;
+    return;
+  }
+  lastCaptain = { key, at: now };
+  apply(key);
+}
+/** The iris is free again: run what the Captain pressed meanwhile. */
+export function endIris() {
+  app.starting = false;
+  const key = held;
+  held = undefined;
+  if (key === undefined) return;
+  lastCaptain = { key, at: performance.now() };
+  sink?.(key);
+}
+/** Tests: forget the held key. */
+export function resetCaptainKeys() {
+  held = undefined;
+  lastCaptain = undefined;
 }
 
 export function setPhase(next: Phase) {

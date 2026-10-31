@@ -5,7 +5,7 @@ import { catalog } from './catalog';
 import { $ } from '../ui/dom';
 import { NAV_SFX } from '../menu';
 import { isExpired, progress, secondsLeft, type HowToState } from '../howto';
-import { app, canStartNow, dispatch, pickedGame, services, transition } from './app-state';
+import { app, canStartNow, dispatch, endIris, pickedGame, services, transition } from './app-state';
 
 export function startRound() {
   if (app.phase !== 'lobby' || app.starting || app.howTo || !canStartNow()) return;
@@ -13,9 +13,7 @@ export function startRound() {
   app.starting = true;
   services.iris(
     () => openHowTo('start'),
-    () => {
-      app.starting = false;
-    },
+    endIris,
   );
 }
 
@@ -28,9 +26,7 @@ export function beginRound() {
       dispatch('start');
       app.gateUntil = performance.now() + 700;
     },
-    () => {
-      app.starting = false;
-    },
+    endIris,
   );
 }
 
