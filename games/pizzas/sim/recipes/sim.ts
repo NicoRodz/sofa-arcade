@@ -6,7 +6,9 @@
 //   - the window matches a plate to an order by recipe.
 import type { Game, Item, Order, Station, TeamState } from '../round/state';
 import type { Rng } from '@pichi/core/rng';
-import { cardFor, type Card } from './cards';
+import type { Difficulty } from '@pichi/core/difficulty';
+import { cardFor, cardForV2, type Card } from './cards';
+import { createMenu, menuNext, menuRecipes, type Menu } from './menu';
 import { stageCookMs } from './sauce';
 import { SLICE_MS, casaAccepts, casaCookMult, casaMask } from './casa';
 import { bandejaAllowed, partSlot } from './bandeja';
@@ -34,37 +36,50 @@ export interface Rec {
   weights: readonly number[]; // % of the orders of each, same order (they add up to 100)
   topping: number; // ingredient type the cheese crate gives: 2 cheese, 3 pepperoni, 4 mushroom
   topping2: number | null; // the second topping crate ('4'), on a map that has one
+  menu?: Menu; // menuV2 only (recipes/menu.ts): the cut card's bag and sequence; absent = one weighted draw per order, as always
 }
 
 /** The card of the round, or null when the map has none (a generated map): the round then plays the old recipes. `stations`: the sim's, to drop what the grid cannot make. */
 export function createRec(
   stations: readonly Station[],
   mapId: string | undefined,
-  flags: { upgrades?: boolean; compound?: boolean } = {},
+  flags: { upgrades?: boolean; compound?: boolean; menu?: { difficulty: Difficulty; seed: number } } = {},
 ): Rec | null {
-  const card = cardFor(mapId);
+  const v2 = flags.menu;
+  const card = v2 ? cardForV2(mapId) : cardFor(mapId);
   if (!card) return null;
   const hasTopping = stations.some((s) => s.kind === 'crate' && s.crate === 2);
   const hasTopping2 = hasTopping && stations.some((s) => s.kind === 'crate' && s.crate === 3);
-  const recipes = card.recipes.filter(
+  const playable = card.recipes.filter(
     (r) =>
       (hasTopping || RECIPE_DEFS[r].topping === null) &&
       (hasTopping2 || !RECIPE_DEFS[r].toppings) && // a recipe with a topping needs the crate that gives it
       (r !== 'casa' || !!flags.upgrades) && // the Pizza de la casa and the Bandeja are behind their flags (casa.ts, bandeja.ts)
       (r !== 'bandeja' || !!flags.compound),
   );
-  if (!recipes.includes('marinara')) return null;
+  if (!playable.includes('marinara')) return null;
+  const recipes = v2 ? menuRecipes(playable, v2.difficulty) : playable; // menuV2: sorted by effort and cut to the difficulty
   const others = recipes.length - 1;
-  const weights = recipes.map((r) => (others === 0 ? 100 : r === 'marinara' ? MARINARA_PCT : (100 - MARINARA_PCT) / others));
+  const menu = v2 ? createMenu(recipes, v2.difficulty, v2.seed) : undefined;
+  const pct = menu?.marinaraPct ?? MARINARA_PCT;
+  const weights = recipes.map((r) => (others === 0 ? 100 : r === 'marinara' ? pct : (100 - pct) / others));
   const top = recipes.map((r) => RECIPE_DEFS[r].topping).find((t) => t !== null);
   const bind = hasTopping2 ? card.bind : undefined; // the card says which crate gives which topping
-  return { card: { recipes, ...(bind ? { bind } : {}) }, recipes, weights, topping: bind?.[0] ?? top ?? 2, topping2: bind?.[1] ?? null };
+  return {
+    card: { recipes, ...(bind ? { bind } : {}) },
+    recipes,
+    weights,
+    topping: bind?.[0] ?? top ?? 2,
+    topping2: bind?.[1] ?? null,
+    ...(menu ? { menu } : {}),
+  };
 }
 
 /** The recipe of a new order. Old rounds: Margarita on a cheese map with probability cheesePct (a draw only when the map has cheese). Card rounds: one draw by the card's weights. */
-export function pickRecipe(g: Game, rng: Rng, team?: Pick<TeamState, 'orders'>): Recipe {
+export function pickRecipe(g: Game, rng: Rng, team?: Pick<TeamState, 'orders'> & { id?: number }): Recipe {
   const rec = g.rec;
   if (!rec) return g.hasCheese && rng() * 100 < g.params.cheesePct ? 'margarita' : 'marinara';
+  if (rec.menu && team?.id !== undefined) return open(g, menuNext(rec.menu, team.id), team); // menuV2: the team's next plate of the shared sequence (no draw from `rng`)
   const u = rng() * 100;
   let acc = 0;
   for (let i = 0; i < rec.recipes.length; i++) {

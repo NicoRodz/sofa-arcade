@@ -3,7 +3,8 @@ import { mechFlagsOf } from '../mech/ids';
 import { MAP_H, MAP_W, floorComponents, parseMap, posKey, type Grid, type MapDef, type Pos } from '../maps';
 import { accessTiles, hasCheese, hasSink, keysOf, legsOf, stationsOf, type StationKey } from './stations';
 import { cardFor } from '../recipes/cards';
-import { cardProblems } from '../recipes/card-check';
+import { cardProblems, menuCardProblems } from '../recipes/card-check';
+import { menuPatchRows } from '../maps/menu-patches';
 import { puestoProblems } from '../puestos';
 import { surfaceProblems } from './surfaces';
 import { spawnZoneProblems } from './spawn-zones';
@@ -114,6 +115,7 @@ export function validateMap(m: MapDef): { ok: boolean; errors: string[] } {
   const errors = [...validate(g).errors];
   const card = cardFor(m.id);
   if (card) errors.push(...cardProblems(card, g)); // the recipes of the map's card: every station they need, reachable
+  errors.push(...menuCardProblems(m.id, parseMap(menuPatchRows(m.id, m.rows), false, mechFlagsOf(m.mechanics)))); // ... and the menuV2 card, cut by difficulty, on the patched map
   if (!(m.nMin >= 2 && m.nMin <= m.nMax && m.nMax <= 8)) errors.push(`range ${m.nMin}-${m.nMax} is not within 2..8`);
   if (m.minDuro > m.nMin) errors.push(`minDuro ${m.minDuro} is above nMin ${m.nMin}`);
   const mp = minPlayers(g);

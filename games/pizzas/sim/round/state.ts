@@ -142,6 +142,22 @@ export interface Controls {
 export const COLS = MAP_W;
 export const ROWS = MAP_H;
 export const MAX_SLOTS = 8;
+
+/** The single-team fields of a round that read and write team 0's (createGame defines them as live views of it). */
+export const LEGACY = [
+  'score',
+  'delivered',
+  'streak',
+  'bestStreak',
+  'tips',
+  'expired',
+  'rejected',
+  'orders',
+  'rng',
+  'dirtyDue',
+  'nextOrderAt',
+  'orderSeq',
+] as const;
 export const COUNTDOWN_MS = 3000;
 export const WARNING_MS = 10_000; // an order with less patience left than this raises orderWarning
 

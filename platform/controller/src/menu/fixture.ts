@@ -42,6 +42,15 @@ export const snapshot = (over: Partial<MenuSnapshot> = {}): MenuSnapshot => ({
       ],
       groups: [
         {
+          id: 'rec',
+          label: 'Recomendados para 3',
+          items: [
+            { id: '3', label: 'Sótano', players: '2-4', stars: 1, enabled: true },
+            { id: '20', label: 'El río', players: '2-4', stars: 2, enabled: true },
+            { id: '29', label: 'Amasadora', players: '2-4', stars: 2, enabled: true },
+          ],
+        },
+        {
           id: 'classic',
           label: 'Clásicos',
           items: [
@@ -52,6 +61,8 @@ export const snapshot = (over: Partial<MenuSnapshot> = {}): MenuSnapshot => ({
           ],
         },
         { id: 'series', label: 'Carta larga', items: [{ id: '20', label: 'El río', players: '2-4', stars: 2, enabled: true }] },
+        { id: 'taller', label: 'Taller', items: [{ id: '29', label: 'Amasadora', players: '2-4', stars: 2, enabled: true }] },
+        { id: 'plain', label: 'Sin dinámica', items: [{ id: '1', label: 'Cocina Grande', players: '2-4', stars: 2, enabled: true }] },
       ],
     },
   ],

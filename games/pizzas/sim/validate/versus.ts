@@ -5,7 +5,7 @@ import { VERSUS_TOL, sideRows, teamRange, versusLayout } from './versus-layout';
 import { SIGMAS, isometryCheck } from '../symmetry';
 import { FLOOR_PER_PLAYER, floorTiles, minPlayers, spawnTiles, validate } from './reachability';
 import { cardFor } from '../recipes/cards';
-import { cardProblems } from '../recipes/card-check';
+import { cardProblems, menuCardProblems } from '../recipes/card-check';
 import { puestoProblems } from '../puestos';
 import { sabotageProblems } from './sabotage';
 
@@ -60,6 +60,7 @@ export function validateVersus(m: VersusMapDef, opts: { requireMirror?: boolean;
     for (const e of validate(sg).errors) errors.push(`kitchen ${name}: ${e}`);
     const card = cardFor(m.id);
     if (card) for (const e of cardProblems(card, sg)) errors.push(`kitchen ${name}: ${e}`); // the same card in both kitchens: each must be able to make every recipe
+    for (const e of menuCardProblems(m.id, sg)) errors.push(`kitchen ${name}: ${e}`); // ... and the menuV2 card, cut by difficulty
     const need = minPlayers(sg);
     if (need > team.min) errors.push(`kitchen ${name} needs ${need} chefs to finish the recipe but the smallest team has ${team.min}`);
     const s = spawnTiles(sg);

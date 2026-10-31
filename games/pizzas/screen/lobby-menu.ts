@@ -5,7 +5,7 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, params, type Difficulty } from '@pichi/
 import { hasModeChoice, selectableModes, type GameDef, type ModeId } from '@pichi/core/contract';
 import type { LobbyConfig, MenuActBody, MenuBody, MenuErrCode, MenuGroup, MenuItem, MenuOption, MenuRow } from '@pichi/core';
 import { eventsOf } from '../sim/midround';
-import { COOP_MAPS, fixedMap, groupOfMap, lobbyMaps } from '../sim/maps';
+import { COOP_MAPS, fixedMap, lobbyGroupOfMap, lobbyMaps, recommendedForN, type MapFamily } from '../sim/maps';
 import { mutateOf } from '../sim/mutate/plan';
 import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_OPTION, sabotageOf } from '../sim/sabotage-config';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusAvailability, versusLobbyMaps } from '../sim/versus/lobby';
@@ -21,6 +21,8 @@ export interface PizzasLobbyState {
   startProblem: string; // '' when the round can start
   mapNotice: string;
   teamNotice: string;
+  played?: ReadonlySet<string>; // maps played in this session: "Recomendados para N" draws from the bag of what is left
+  autoLast?: MapFamily; // family of the last coop round (not offered first)
 }
 
 // The page's own row ids (index.html, focus-rows.ts): a touch on a menu row moves the TV's focus ring to its box.
@@ -37,8 +39,8 @@ export const FOCUS_ROW: Readonly<Record<string, string>> = {
   start: 'start',
 };
 const MODE_LABEL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
-/** The pages of the coop map grid: the classics, the Carta larga series (its own plates) and the Taller series (the new mechanics). */
-export type MapGroup = ReturnType<typeof groupOfMap>;
+/** The pages of the coop map grid: the classics, the Carta larga series (its own plates), the Taller series (the new mechanics) and the folded "Sin dinámica" (the six plain maps). */
+export type MapGroup = ReturnType<typeof lobbyGroupOfMap>;
 const MODE_HINT: Partial<Record<ModeId, string>> = { coop: 'Cooperativo: todos cocinan juntos', versus: 'Versus: dos equipos compiten' };
 const OPTION_LABEL: Record<string, string> = { hiddenScore: 'Marcador oculto', handicap: 'Ventaja equipo chico' };
 const optRow = (id: string) => `opt-${id}`;
@@ -77,13 +79,19 @@ function mapRow(st: PizzasLobbyState, vs: boolean): MenuRow {
     ];
   else {
     const rows = lobbyMaps(st.n, COOP_MAPS).map(({ map, status }) => ({
-      group: groupOfMap(map.id),
+      group: lobbyGroupOfMap(map.id),
       ...item(map, status.state, 'reason' in status ? status.reason : undefined),
     }));
+    const of = (g: MapGroup) => rows.filter((r) => r.group === g).map(({ group: _g, ...i }) => i);
+    const rec = recommendedForN(st.n, st.config.difficulty, { played: st.played ?? new Set(), last: st.autoLast }).flatMap((m) =>
+      of(lobbyGroupOfMap(m.id)).filter((i) => i.id === m.id),
+    );
     groups = [
-      { id: 'classic', label: 'Clásicos', items: rows.filter((r) => r.group === 'classic').map(({ group: _g, ...i }) => i) },
-      { id: 'series', label: 'Carta larga', items: rows.filter((r) => r.group === 'series').map(({ group: _g, ...i }) => i) },
-      { id: 'taller', label: 'Taller', items: rows.filter((r) => r.group === 'taller').map(({ group: _g, ...i }) => i) },
+      ...(rec.length ? [{ id: 'rec', label: `Recomendados para ${st.n}`, items: rec }] : []),
+      { id: 'classic', label: 'Clásicos', items: of('classic') },
+      { id: 'series', label: 'Carta larga', items: of('series') },
+      { id: 'taller', label: 'Taller', items: of('taller') },
+      { id: 'plain', label: 'Sin dinámica', items: of('plain') },
     ];
   }
   const extras: MenuOption[] = vs
@@ -236,7 +244,7 @@ export function decideMenuAct(st: PizzasLobbyState, act: MenuActBody, rev: numbe
   if (act.act === 'focus') {
     const g = typeof act.value === 'string' && row.id === 'map' ? row.groups?.find((x) => x.id === act.value) : undefined;
     return g
-      ? { ok: true, effect: { kind: 'group', value: g.id as MapGroup }, row: row.id }
+      ? { ok: true, effect: { kind: 'group', value: (g.id === 'rec' ? 'classic' : g.id) as MapGroup }, row: row.id }
       : { ok: true, effect: { kind: 'focus' }, row: row.id };
   }
   if (act.act === 'press') {
