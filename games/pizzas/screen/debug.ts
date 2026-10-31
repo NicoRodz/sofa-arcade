@@ -1,11 +1,11 @@
 // Pizzas' part of window.__pg: hooks for the capture tool and the end-to-end checks (a score, a team, a pantry, a sabotage shot, an oven at a stage of its life).
-// Never used by the game itself. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts unchanged (`game` is `pz.game`).
+// Never used by the game itself.
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { phaserGame } from '@pichi/screen-kit/shell/game-host';
-import { dropPlayer } from '@pichi/game-pizzas/sim';
-import { addFloorItem } from '@pichi/game-pizzas/sim/floor';
-import { sabotageAimPress, sabotageLoad } from '@pichi/game-pizzas/sim/sabotage';
-import { school } from './host';
+import { dropPlayer } from '../sim';
+import { addFloorItem } from '../sim/floor';
+import { sabotageAimPress, sabotageLoad } from '../sim/sabotage';
+import { school } from './match/loop';
 import { pz, tally } from './state';
 
 export const pizzasDebug = () => ({

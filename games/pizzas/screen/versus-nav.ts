@@ -1,5 +1,5 @@
 // What a key does on the two versus screens that only answered to the mouse: the pause bar and the results buttons. Pure (the DOM glue is
-// apps/screen/src/pizzas/key-nav.ts). Left/Up and Right/Down move the highlight, Enter or Space presses it, Esc goes back where it makes sense.
+// match/key-nav.ts). Left/Up and Right/Down move the highlight, Enter or Space presses it, Esc goes back where it makes sense.
 export type VersusNavCtx = 'pause' | 'results';
 // The first button is what Enter always did (Seguir sin ganador; Revancha). `back`: the button Esc presses (the pause has none: Terminar is not a retreat).
 export const VERSUS_NAV: Record<VersusNavCtx, { buttons: readonly string[]; back: string | null }> = {

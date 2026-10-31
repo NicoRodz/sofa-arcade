@@ -1,21 +1,21 @@
 // The Pizzas round while it runs: the scene's host (the tick loop), the pause bar, the contextual button labels, the buzz on the phones and the
-// Cocina escuela glue. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts; F4c turns it into games/pizzas/screen/coop-view.
+// Cocina escuela glue.
 import type { BuzzKind } from '@pichi/core';
-import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
+import { pizzasBus } from '../bus';
 import { sendMsg } from '@pichi/screen-kit/net/socket';
 import { app, dispatch, services, transition } from '@pichi/screen-kit/shell/app-state';
 import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { openHowTo } from '@pichi/screen-kit/shell/round-flow';
 import { $ } from '@pichi/screen-kit/ui/dom';
-import { TICK_MS, resolvePause, tick, type Controls } from '@pichi/game-pizzas/sim';
-import { staleControls } from '@pichi/game-pizzas/sim/feel/stale';
-import { createHintSync } from '@pichi/game-pizzas/sim/hints';
-import { createMechPhone } from '@pichi/game-pizzas/sim/mech/phone';
-import { nextLead, scoreHidden } from '@pichi/game-pizzas/sim/versus/report';
-import { createSchoolHost } from '@pichi/game-pizzas/screen/school/host';
-import { MainScene, type Host } from '@pichi/game-pizzas/screen/scene';
+import { TICK_MS, resolvePause, tick, type Controls } from '../../sim';
+import { staleControls } from '../../sim/feel/stale';
+import { createHintSync } from '../../sim/hints';
+import { createMechPhone } from '../../sim/mech/phone';
+import { nextLead, scoreHidden } from '../../sim/versus/report';
+import { createSchoolHost } from '../school/host';
+import { MainScene, type Host } from '../scene';
 import { resetFocus } from './key-nav';
-import { PIZZAS, isVersus, pz, puestoOf } from './state';
+import { PIZZAS, isVersus, pz, puestoOf } from '../state';
 
 export const school = createSchoolHost({
   players: app.players,
@@ -33,7 +33,6 @@ export const school = createSchoolHost({
   prepare: () => {
     puestoOf.clear();
     pz.puestoMsg = undefined;
-    app.activeGame = PIZZAS;
     showScene(PIZZAS);
   },
   continueToRound: () => openHowTo('start'),
@@ -45,7 +44,7 @@ export const school = createSchoolHost({
 const hints = createHintSync(sendMsg);
 const mechPhone = createMechPhone();
 const syncHints = (now = performance.now()) => {
-  const live = app.phase === 'playing' && app.activeGame === PIZZAS ? pz.game : null;
+  const live = app.phase === 'playing' ? pz.game : null; // frame() only runs while Pizzas is the active game
   hints.sync(live, now);
   for (const id of mechPhone.sync(live)) sendMsg({ t: 'buzz', playerId: id, kind: 'alert' }); // a map mechanic needs this chef (the porter's plate, a door about to shut, the belt that turns, a cold oven)
 };
@@ -63,50 +62,52 @@ function syncPauseBar() {
       `${pz.game.paused!.teams.map((t) => pz.roundView.teams?.[t]?.name ?? `Equipo ${t + 1}`).join(' y ')} se quedó sin jugadores`;
 }
 
+/** The shell calls it every Phaser frame while Pizzas is the active game (ScreenGame.frame): the round's tick loop, the pause bar, the phones' labels, the school. */
+export function frame(delta: number) {
+  syncPauseBar();
+  if (app.phase !== 'playing' || performance.now() < app.gateUntil) {
+    pz.acc = 0;
+    syncHints();
+    school.step(delta);
+    return;
+  }
+  pz.acc += Math.min(delta, 100);
+  while (pz.acc >= TICK_MS) {
+    pz.acc -= TICK_MS;
+    const controls = new Map<number, Controls>();
+    for (const p of app.players.values()) {
+      const ctl = { ...p.ctl, a: p.pendA, bTaps: p.pendB };
+      controls.set(p.info.id, p.ctlAt === undefined ? ctl : staleControls(ctl, performance.now() - p.ctlAt));
+      p.pendA = 0;
+      p.pendB = 0;
+    }
+    tick(pz.game, controls);
+    if (pz.game.versus && !pz.game.over) {
+      // the lead changed hands: a cue, unless the scoreboard is hidden (the sound must not give the lead away)
+      const r = nextLead(
+        pz.lead,
+        pz.game.teams.map((t) => t.score),
+        scoreHidden(pz.roundView.hiddenScore, pz.game.countdown <= 0, pz.game.params.roundMs - pz.game.time),
+      );
+      pz.lead = r.state;
+      if (r.cue && pz.lead.leader !== null) pizzasBus.emit('comeback', { team: pz.lead.leader });
+    }
+    if (pz.game.over) {
+      pz.overAt ??= performance.now();
+      break;
+    }
+  }
+  syncHints(); // the labels of the state this frame ends in
+  // "¡TIEMPO!" stays on screen for a beat before the results
+  if (pz.game.over && pz.overAt !== null && performance.now() - pz.overAt > 1100) {
+    pz.overAt = null;
+    dispatch('timeout');
+  }
+}
+
 const host: Host = {
   players: () => new Map([...app.players].map(([id, p]) => [id, p.info])),
   puestos: () => puestoOf,
-  step(delta) {
-    syncPauseBar();
-    if (app.phase !== 'playing' || app.activeGame !== PIZZAS || performance.now() < app.gateUntil) {
-      pz.acc = 0;
-      syncHints();
-      school.step(delta);
-      return;
-    }
-    pz.acc += Math.min(delta, 100);
-    while (pz.acc >= TICK_MS) {
-      pz.acc -= TICK_MS;
-      const controls = new Map<number, Controls>();
-      for (const p of app.players.values()) {
-        const ctl = { ...p.ctl, a: p.pendA, bTaps: p.pendB };
-        controls.set(p.info.id, p.ctlAt === undefined ? ctl : staleControls(ctl, performance.now() - p.ctlAt));
-        p.pendA = 0;
-        p.pendB = 0;
-      }
-      tick(pz.game, controls);
-      if (pz.game.versus && !pz.game.over) {
-        // the lead changed hands: a cue, unless the scoreboard is hidden (the sound must not give the lead away)
-        const r = nextLead(
-          pz.lead,
-          pz.game.teams.map((t) => t.score),
-          scoreHidden(pz.roundView.hiddenScore, pz.game.countdown <= 0, pz.game.params.roundMs - pz.game.time),
-        );
-        pz.lead = r.state;
-        if (r.cue && pz.lead.leader !== null) pizzasBus.emit('comeback', { team: pz.lead.leader });
-      }
-      if (pz.game.over) {
-        pz.overAt ??= performance.now();
-        break;
-      }
-    }
-    syncHints(); // the labels of the state this frame ends in
-    // "¡TIEMPO!" stays on screen for a beat before the results
-    if (pz.game.over && pz.overAt !== null && performance.now() - pz.overAt > 1100) {
-      pz.overAt = null;
-      dispatch('timeout');
-    }
-  },
 };
 
 let main: MainScene | undefined;

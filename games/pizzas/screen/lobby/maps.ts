@@ -1,15 +1,14 @@
 // The Pizzas lobby's map panel: the cards, the preview, the seed, what the choice means for this group and the "can we start" state of the button.
-// TRANSITIONAL (F4b): the tail of renderUi in apps/screen/src/main.ts, moved unchanged.
 import { params } from '@pichi/core/difficulty';
 import { app } from '@pichi/screen-kit/shell/app-state';
 import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
-import { generate } from '@pichi/game-pizzas/sim/generate';
-import { COOP_MAPS, fixedMap, lobbyGroupOfMap, lobbyMaps, mapFeatures, mapStatus, recommendedForN } from '@pichi/game-pizzas/sim/maps';
-import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusLobbyMaps } from '@pichi/game-pizzas/sim/versus/lobby';
-import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
-import { drawMiniMap } from '@pichi/game-pizzas/screen/art/ui';
-import { startProblem, versusGenerated } from './lobby-sync';
-import { pz } from './state';
+import { generate } from '../../sim/generate';
+import { COOP_MAPS, fixedMap, lobbyGroupOfMap, lobbyMaps, mapFeatures, mapStatus, recommendedForN } from '../../sim/maps';
+import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusLobbyMaps } from '../../sim/versus/lobby';
+import { versusMap } from '../../sim/versus/maps';
+import { drawMiniMap } from '../art/ui';
+import { startProblem, versusGenerated } from './sync';
+import { pz } from '../state';
 
 let lastMapKey = '';
 

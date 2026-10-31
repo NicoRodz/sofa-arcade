@@ -1,21 +1,21 @@
 // Pizzas' half of the lobby as the shell's LobbyHooks: the branch of renderUi, the lobby-only keys (E: events, arrows: sabotage level) and the click handlers
-// of its panels. TRANSITIONAL (F4b): moved out of apps/screen/src/main.ts unchanged; F4c moves it into games/pizzas/screen.
+// of its panels.
 import { hasModeChoice, selectableModes, type ModeId } from '@pichi/core/contract';
 import { teamOf } from '@pichi/core/lobby/teams';
 import type { LobbyConfig } from '@pichi/core';
-import { defaultSabotage, isSabotageMode, SABOTAGE_OPTION } from '@pichi/game-pizzas/sim/sabotage-config';
-import { eventsOf } from '@pichi/game-pizzas/sim/midround';
-import { lobbyGroupOfMap, fixedMap, isMapChoice, mapStatus } from '@pichi/game-pizzas/sim/maps';
-import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
-import { isVersusChoice, stepChoice, teamSizes, versusAvailability, versusMapStatus } from '@pichi/game-pizzas/sim/versus/lobby';
+import { defaultSabotage, isSabotageMode, SABOTAGE_OPTION } from '../../sim/sabotage-config';
+import { eventsOf } from '../../sim/midround';
+import { lobbyGroupOfMap, fixedMap, isMapChoice, mapStatus } from '../../sim/maps';
+import { versusMap } from '../../sim/versus/maps';
+import { isVersusChoice, stepChoice, teamSizes, versusAvailability, versusMapStatus } from '../../sim/versus/lobby';
 import { chips, showTeams } from '@pichi/screen-kit/lobby/chips';
 import { app, connectedCount, setConfig } from '@pichi/screen-kit/shell/app-state';
 import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
 import type { Difficulty } from '@pichi/core/difficulty';
-import { renderMapPanel } from './lobby-maps';
-import { moveToTeam, setEvents, setMutate, setMode, setSabotage, shuffleTeams, syncLobby } from './lobby-sync';
-import { renderEvents, renderMutate, renderSabotage, renderTeams } from './lobby-teams';
-import { connectedN, gameDef, isVersus, modeNow, pz } from './state';
+import { renderMapPanel } from './maps';
+import { moveToTeam, setEvents, setMutate, setMode, setSabotage, shuffleTeams, syncLobby } from './sync';
+import { renderEvents, renderMutate, renderSabotage, renderTeams } from './teams';
+import { connectedN, gameDef, isVersus, modeNow, pz } from '../state';
 
 const MODE_PILL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
 

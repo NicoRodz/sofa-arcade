@@ -1,17 +1,16 @@
 // The Pizzas lobby as the Captain's touch form: feeds the pure builder in games/pizzas/screen/lobby-menu.ts with the live lobby state and carries out what a
 // touch decided with the lobby's own functions (the same ones the clicks and the keys call), so every guard they have still applies.
-// TRANSITIONAL (F4b): lives with the other lobby modules until F4c moves them into games/pizzas/screen.
-import { lobbyGroupOfMap } from '@pichi/game-pizzas/sim/maps';
-import { FOCUS_ROW, buildLobbyMenu, decideMenuAct, type MenuEffect, type PizzasLobbyState } from '@pichi/game-pizzas/screen/lobby-menu';
+import { lobbyGroupOfMap } from '../../sim/maps';
+import { FOCUS_ROW, buildLobbyMenu, decideMenuAct, type MenuEffect, type PizzasLobbyState } from '../lobby-menu';
 import { focusRow } from '@pichi/screen-kit/lobby/focus-nav-dom';
 import { startRound } from '@pichi/screen-kit/shell/round-flow';
 import { app, connectedCount, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
 import type { MenuActResult } from '@pichi/screen-kit/shell/game';
 import type { MenuActBody, MenuBody } from '@pichi/core';
-import { MECHS_OPTION, MECH_PICK_OPTION, withMech } from '@pichi/game-pizzas/sim/gen/lobby-opts';
+import { MECHS_OPTION, MECH_PICK_OPTION, withMech } from '../../sim/gen/lobby-opts';
 import { difficultyPatch } from './lobby';
-import { setEvents, setMode, setMutate, setSabotage, shuffleTeams, startProblem } from './lobby-sync';
-import { connectedN, gameDef, pz } from './state';
+import { setEvents, setMode, setMutate, setSabotage, shuffleTeams, startProblem } from './sync';
+import { connectedN, gameDef, pz } from '../state';
 
 const lobbyState = (): PizzasLobbyState => ({
   config: app.config,

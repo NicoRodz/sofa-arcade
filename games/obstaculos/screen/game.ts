@@ -1,5 +1,5 @@
 // Obstaculos on the screen, through the shell's contract (ScreenGame, EXPERIMENTAL): everything apps/screen/src/main.ts used to do for this game
-// behind `config.game === OBST_ID` / `activeGame === 'obstaculos'` is a hook here, so the shell names no game (F4b).
+// behind `config.game === OBST_ID` is a hook here, so the shell names no game (F4b).
 import { obstBus } from './bus';
 import { app, renderUi } from '@pichi/screen-kit/shell/app-state';
 import type { ScreenGame } from '@pichi/screen-kit/shell/game';
@@ -79,7 +79,7 @@ export const obstaculosScreen: ScreenGame = (() => {
       left: (p) => run.obst?.setConnected(p.info.slot, false),
       removed: (p) => run.obst?.setConnected(p.info.slot, false),
       input: (p, m) => {
-        if (app.activeGame === GAME_ID && app.phase === 'playing')
+        if (app.config.game === GAME_ID && app.phase === 'playing')
           run.obst?.receive(p.info.slot, { x: m.x, y: m.y, presses: m.presses, signal: m.sig as Packet['signal'], goHeld: m.go });
       },
     },

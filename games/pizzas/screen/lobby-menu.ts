@@ -1,6 +1,6 @@
 // The Pizzas lobby as the Captain's touch form: `buildLobbyMenu` turns the lobby state into the declarative snapshot the phone draws, and `decideMenuAct`
 // judges one touch against that same snapshot (the screen validates against its own state, never trusts the phone) and says what to do about it.
-// Pure: no DOM, no app state. apps/screen/src/pizzas/lobby-menu.ts feeds it and carries the effects out with the lobby's own functions.
+// Pure: no DOM, no app state. lobby/menu.ts feeds it and carries the effects out with the lobby's own functions.
 import { DIFFICULTIES, DIFFICULTY_LABEL, params, type Difficulty } from '@pichi/core/difficulty';
 import { hasModeChoice, selectableModes, type GameDef, type ModeId } from '@pichi/core/contract';
 import type { LobbyConfig, MenuActBody, MenuBody, MenuErrCode, MenuGroup, MenuItem, MenuOption, MenuRow } from '@pichi/core';
