@@ -8,6 +8,7 @@ import {
   MAP_DYNAMICS,
   OUT_OF_DRAW,
   autoMaps,
+  coopLobbyView,
   defaultCoopMap,
   familyOfMap,
   FIXED_MAPS,
@@ -144,5 +145,43 @@ describe('the coop lobby default (defaultCoopMap)', () => {
   it('walks the unplayed ones and wraps when all were played', () => {
     const first = defaultCoopMap(4, new Set());
     expect(defaultCoopMap(4, new Set([first.id])).id).not.toBe(first.id);
+  });
+});
+
+describe('the TV lobby grid (coopLobbyView)', () => {
+  const rec8 = recommendedForN(8, 'normal', { played: new Set(), last: undefined });
+  const view = (over: { group?: 'classic' | 'series' | 'taller' | 'plain'; selected?: string; showOthers?: boolean } = {}) =>
+    coopLobbyView(8, over.group ?? 'classic', rec8, over.selected ?? '12', over.showOthers ?? false);
+
+  it('a recommended map is listed once: on top, not again in the page below it', () => {
+    const v = view();
+    expect(v.top.map((r) => r.map.id)).toEqual(rec8.map((m) => m.id));
+    expect(v.top.length).toBeGreaterThan(0);
+    const ids = [...v.top, ...v.shown].map((r) => r.map.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(rec8.some((m) => m.id === '11')).toBe(true); // the reported case: map 11 used to show up twice
+  });
+  it('with 8 players the blocked maps fold away and the count says how many; unfolding lists them with their reason', () => {
+    const folded = view();
+    expect(folded.folded.length).toBeGreaterThan(5);
+    expect(folded.unfolded).toBe(false);
+    expect(folded.shown.every((r) => r.status.state !== 'blocked')).toBe(true);
+    const open = view({ showOthers: true });
+    expect(open.unfolded).toBe(true);
+    expect(
+      open.shown
+        .filter((r) => r.status.state === 'blocked')
+        .map((r) => r.map.id)
+        .sort(),
+    ).toEqual(open.folded.map((r) => r.map.id).sort());
+  });
+  it('the selected map never hides: a blocked selection unfolds the group by itself', () => {
+    const blocked = view().folded[0]!.map.id;
+    const v = view({ selected: blocked });
+    expect(v.unfolded).toBe(true);
+    expect(v.shown.some((r) => r.map.id === blocked)).toBe(true);
+  });
+  it('only the classic page carries the recommended band', () => {
+    expect(view({ group: 'series' }).top).toEqual([]);
   });
 });

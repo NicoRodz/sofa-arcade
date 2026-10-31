@@ -94,7 +94,7 @@
   .mc.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); color: var(--cream); text-shadow: 0 2px 0 rgba(43,27,23,.4); }
   .mc.sel .t b, .mc.sel .m, .mc.sel .st, .mc.sel .why { color: var(--cream); }
   .mc.special { background: #E6D5AF; justify-content: center; }
-  .mc.special.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+  .mc.special.sel { background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); } .mc.special .m { white-space: normal; display: block; min-width: 0; overflow-wrap: anywhere; } /* a subtitle wraps inside its card, never past it */ #maps .band { grid-column: span 3; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 7px; padding: 6px 7px 7px; border: 3px solid var(--tomato2); border-radius: 18px; background: rgba(185,40,20,.12); } #maps .grp { grid-column: 1 / -1; font: 800 15px/1 var(--font); letter-spacing: 3px; text-transform: uppercase; color: var(--tomato2); margin-left: 4px; } #maps > .mc { align-self: end; }
   #minimap { position: absolute; right: 26px; top: 12px; border: 4px solid var(--ink); border-radius: 10px; background: #2b1b17; width: 232px; height: 130px; }
   #hints { position: absolute; left: 26px; right: 26px; bottom: 10px; }
   #hints .hint.notice { color: var(--tomato2); }
@@ -434,7 +434,7 @@
         <div id="sabbox" class="off"><h3>Sabotaje</h3><div id="sabs" class="seg"></div><div id="sabinfo" class="hint"></div></div>
         <div id="pizzaops">
           <div id="maprow"><h3 style="margin-top:12px">Mapa <span id="mapfor" style="letter-spacing:0;text-transform:none"></span></h3>
-            <div id="evbox"><h3 title="Un evento por ronda, entre el 1:00 y el 2:00">Eventos <kbd>E</kbd></h3><div id="evs" class="seg"></div><h3 id="mutl" title="La cocina cambia a 1:30 (solo algunos mapas cooperativos)">Muta</h3><div id="muts" class="seg"></div></div></div>
+            <div id="evbox"><h3 title="Eventos de la ronda">Eventos <kbd>E</kbd></h3><div id="evs" class="seg"></div><h3 id="mutl" title="La cocina cambia a 1:30 (solo algunos mapas cooperativos)">Muta</h3><div id="muts" class="seg"></div></div></div>
           <div id="maps"></div>
           <div id="seedrow" class="off">Semilla <b id="seed"></b> <button id="again-seed" class="pill">Otra</button></div>
           <canvas id="minimap" width="232" height="130"></canvas>

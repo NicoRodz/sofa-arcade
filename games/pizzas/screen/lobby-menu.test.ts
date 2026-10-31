@@ -38,6 +38,13 @@ const rowOf = (st: PizzasLobbyState, id: string) => buildLobbyMenu(st).rows.find
 const act = (a: Partial<MenuActBody> & Pick<MenuActBody, 'act'>): MenuActBody => ({ rev: 1, ...a });
 
 describe('buildLobbyMenu', () => {
+  it('the Eventos hint states the events per round of the difficulty, not the old single event between 1:00 and 2:00', () => {
+    const hint = (d: 'easy' | 'normal' | 'hard') =>
+      rowOf(coop({ config: { ...DEFAULT_CONFIG, map: '1', difficulty: d, modeOptions: { events: true } } as LobbyConfig }), 'events')?.hint;
+    expect(hint('easy')).toMatch(/^1 evento por ronda/);
+    expect(hint('hard')).toMatch(/^3 eventos por ronda/);
+    expect(hint('normal')).not.toContain('1:00');
+  });
   it('sabotage and the team rows exist only in versus; the mutating kitchen only in coop', () => {
     const c = buildLobbyMenu(coop()).rows.map((r) => r.id);
     const v = buildLobbyMenu(versus()).rows.map((r) => r.id);
@@ -51,8 +58,17 @@ describe('buildLobbyMenu', () => {
     const blocked = items.filter((i) => !i.enabled);
     expect(blocked.length).toBeGreaterThan(0);
     for (const b of blocked) expect(b.reason, b.id).toMatch(/jugadores/);
-    expect(grid.groups!.map((g) => g.id)).toEqual(['rec', 'classic', 'series', 'taller', 'plain']);
-    expect(grid.groups![2]!.items.map((i) => i.id).sort()).toEqual(SERIES_MAPS.map((m) => m.id).sort());
+    expect(grid.groups!.map((g) => g.id)).toEqual(['rec', 'classic', 'series', 'taller', 'plain', 'others']);
+    // the blocked ones are all (and only) in the folded last tab; the series page keeps the rest
+    expect(grid.groups!.find((g) => g.id === 'others')!.items.every((i) => !i.enabled)).toBe(true);
+    expect(grid.groups!.filter((g) => g.id !== 'others').every((g) => g.items.every((i) => i.enabled))).toBe(true);
+    expect(
+      grid
+        .groups!.filter((g) => g.id === 'series' || g.id === 'others' || g.id === 'rec')
+        .flatMap((g) => g.items.map((i) => i.id))
+        .filter((id) => SERIES_MAPS.some((m) => m.id === id))
+        .sort(),
+    ).toEqual(SERIES_MAPS.map((m) => m.id).sort());
     expect(grid.value).toBe('1');
   });
   it('"Recomendados para N" lists up to three maps of the bag, and the six plain maps wait in the folded "Sin dinámica" group (still pickable)', () => {
@@ -65,7 +81,13 @@ describe('buildLobbyMenu', () => {
     expect(rec.items.length).toBe(3);
     for (const i of rec.items) expect(autoMaps(4, st.config.difficulty).map((m) => m.id)).toContain(i.id);
     expect(plain.label).toBe('Sin dinámica');
-    expect(plain.items.map((i) => i.id).sort()).toEqual([...OUT_OF_DRAW].sort());
+    const others = grid.groups!.find((g) => g.id === 'others')!;
+    expect(
+      [...plain.items, ...others.items]
+        .map((i) => i.id)
+        .filter((id) => OUT_OF_DRAW.includes(id))
+        .sort(),
+    ).toEqual([...OUT_OF_DRAW].sort());
     expect(grid.groups!.find((g) => g.id === 'classic')!.items.some((i) => OUT_OF_DRAW.includes(i.id))).toBe(false);
     // the session bag: what was played is not recommended again
     const played = new Set(rec.items.map((i) => i.id));
@@ -75,6 +97,59 @@ describe('buildLobbyMenu', () => {
     expect(decideMenuAct(coop({ n: 4, connected: 4 }), act({ act: 'set', row: 'map', value: '1' }), 1)).toMatchObject({
       ok: true,
       effect: { kind: 'map', value: '1' },
+    });
+  });
+  describe('the phone lists every map once and folds the ones that cannot be picked (the TV rule)', () => {
+    const ids = (st: PizzasLobbyState) => {
+      const g = rowOf(st, 'map')!.groups!;
+      return { g, all: g.flatMap((x) => x.items.map((i) => i.id)) };
+    };
+    it('no map shows twice: a recommended one is only under "Recomendados para N"', () => {
+      const { g, all } = ids(coop({ n: 4, connected: 4 }));
+      expect(all.filter((id, k) => all.indexOf(id) !== k)).toEqual([]);
+      const rec = g.find((x) => x.id === 'rec')!.items.map((i) => i.id);
+      expect(rec.length).toBe(3);
+      expect(g.find((x) => x.id === 'classic')!.items.some((i) => rec.includes(i.id))).toBe(false);
+    });
+    it('"Otros mapas (N)" counts the folded maps; with every map choosable there is no such tab', () => {
+      const { g } = ids(coop({ n: 2, connected: 2 }));
+      const o = g.find((x) => x.id === 'others')!;
+      expect(o.label).toBe(`Otros mapas (${o.items.length})`);
+      expect(o.items.length).toBeGreaterThan(0);
+      for (const i of o.items) expect(i.enabled, i.id).toBe(false);
+    });
+    it('the picked map is always listed, blocked or not (it never hides)', () => {
+      for (const n of [1, 2, 3, 4, 6, 8]) {
+        const probe = ids(coop({ n, connected: n }));
+        for (const map of probe.all)
+          expect(ids(coop({ n, connected: n, config: { ...DEFAULT_CONFIG, map } as LobbyConfig })).all, `${map} for ${n}`).toContain(map);
+      }
+      const blocked = rowOf(coop({ n: 2, connected: 2 }), 'map')!.groups!.find((x) => x.id === 'others')!.items[0]!;
+      expect(rowOf(coop({ n: 2, connected: 2, config: { ...DEFAULT_CONFIG, map: blocked.id } as LobbyConfig }), 'map')!.value).toBe(
+        blocked.id,
+      );
+    });
+    it('opening the "Otros mapas" tab from the phone is a touch of its own (the TV unfolds its list); a blocked map still cannot be set', () => {
+      const st = coop({ n: 2, connected: 2 });
+      expect(decideMenuAct(st, act({ act: 'focus', row: 'map', value: 'others' }), 1)).toMatchObject({
+        ok: true,
+        effect: { kind: 'others' },
+        row: 'map',
+      });
+      expect(decideMenuAct(st, act({ act: 'focus', row: 'map', value: 'series' }), 1)).toMatchObject({
+        ok: true,
+        effect: { kind: 'group', value: 'series' },
+      });
+      const blocked = rowOf(st, 'map')!.groups!.find((x) => x.id === 'others')!.items[0]!;
+      expect(decideMenuAct(st, act({ act: 'set', row: 'map', value: blocked.id }), 1)).toMatchObject({ ok: false, code: 'disabled' });
+    });
+    it('a choosable map of a series is set from its own tab, as before', () => {
+      const st = coop({ n: 4, connected: 4 });
+      const taller = rowOf(st, 'map')!.groups!.find((x) => x.id === 'taller')!.items[0]!;
+      expect(decideMenuAct(st, act({ act: 'set', row: 'map', value: taller.id }), 1)).toMatchObject({
+        ok: true,
+        effect: { kind: 'map', value: taller.id },
+      });
     });
   });
   it('the versus grid has one group and the generated / random picks as extras', () => {

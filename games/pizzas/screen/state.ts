@@ -27,6 +27,7 @@ export const pz = {
   lead: NO_LEAD as LeadState, // versus: who led last, for the comeback cue
   series: null as Series | null, // versus: who has won how many rounds of this group in this session
   mapGroup: 'classic' as MapGroup, // which set of coop maps the grid shows: the 19 classics, the Carta larga series (its own plates) or the Taller series (the new mechanics)
+  showOthers: false, // the coop grid unfolds its "Otros mapas (N)" (the maps that cannot be picked for this group)
   mapTouched: false, // the host picked a map by hand: stop proposing defaults
   sabotageTouched: false, // the host picked a sabotage level by hand: the difficulty stops proposing one
   mapNotice: '',

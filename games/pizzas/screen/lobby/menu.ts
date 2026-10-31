@@ -53,7 +53,11 @@ function run(e: MenuEffect) {
     case 'group':
       // the TV shows the page the phone opened; a series map picked stays picked only on its own page, as with the click on the page's tab
       pz.mapGroup = e.value;
+      pz.showOthers = false;
       if (lobbyGroupOfMap(app.config.map) !== e.value && lobbyGroupOfMap(app.config.map) !== 'classic') return setConfig({ map: 'auto' });
+      return renderUi();
+    case 'others':
+      pz.showOthers = true; // the maps that cannot be picked unfold on the TV as on the phone
       return renderUi();
     case 'shuffle':
       return shuffleTeams();
