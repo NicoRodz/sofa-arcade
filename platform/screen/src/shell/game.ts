@@ -32,6 +32,8 @@ export interface LobbyHooks {
   /** Config patch when this game is picked in the menu: a game must not inherit the teams or options of the one before (the relay would refuse the config). */
   pickReset(prev: string): Partial<LobbyConfig>;
   afterPick?(): void;
+  /** The mark beside the lobby title (a canvas or svg that fills its box): the game's identity. Absent: the Sofa Arcade sofa. */
+  logo?(): HTMLElement;
   /** The game's half of the lobby (everything below the difficulty pills); it also hides what belongs to the other games. */
   render(): void;
   /** Lobby-only keys (after the how-to card, the menu and the school had theirs). True when used. */

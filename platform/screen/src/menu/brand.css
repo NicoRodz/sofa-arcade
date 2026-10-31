@@ -1,0 +1,33 @@
+/* Sofa Arcade brand: the sofa logo (menu and lobbies) and the plum upholstery of the menu. Menu-only rules wear body.sa-menu (set by paintUi). */
+:root {
+  --sa-bg: #3b1f3a; --sa-bg-2: #44233f; --sa-ink: #1e1220; --sa-cream: #fff6e8;
+  --sa-mustard: #ffc83d; --sa-teal: #2ec4b6; --sa-coral: #ff6b57;
+  --sa-muted: #d9c6d5; --sa-ink-soft: #5a4858; --sa-off: #e4d8e0;
+}
+
+/* the logo: same slot beside the title in every hub mode, a bit bigger in the menu */
+#logo { position: absolute; left: 40px; top: 28px; width: 104px; height: 114px; display: grid; place-items: center; }
+#logo svg { width: 100%; height: auto; display: block; transform-origin: 50% 100%; animation: sa-sit 3.2s ease-in-out infinite; }
+#logo .btn { transform-box: fill-box; transform-origin: 50% 50%; animation: sa-press 1.6s ease-in-out infinite; }
+#logo .b2 { animation-delay: 0.8s; }
+#logo canvas { width: 100%; height: 100%; display: block; animation: sa-spin 14s linear infinite; filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.3)); }
+@keyframes sa-spin { to { transform: rotate(360deg); } }
+@keyframes sa-sit { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.035, 0.965); } }
+@keyframes sa-press { 0%, 60%, 100% { transform: translateY(0) scaleY(1); } 75% { transform: translateY(3px) scaleY(0.75); } }
+
+/* the plum upholstery: diagonal stripes drifting on a transform (not background-position) */
+body.sa-menu #lobbybg { background: var(--sa-bg); }
+body.sa-menu #lobbybg::before { opacity: 1; background: repeating-linear-gradient(135deg, var(--sa-bg) 0 60px, var(--sa-bg-2) 60px 120px); animation: sa-drift 30s linear infinite; }
+body.sa-menu #lobbybg::after { background: radial-gradient(ellipse 60% 55% at 62% 62%, rgba(255, 200, 61, 0.1), transparent 70%); }
+@keyframes sa-drift { to { transform: translateX(169.7px); } }
+
+/* title and tagline */
+body.sa-menu #logo { left: 80px; top: 30px; width: 136px; height: 116px; }
+body.sa-menu h1.title { left: 238px; top: 30px; height: 116px; display: flex; align-items: center; white-space: nowrap; font: 900 96px/1 var(--font); letter-spacing: -0.01em; color: var(--sa-cream); -webkit-text-stroke: 12px var(--sa-ink); paint-order: stroke fill; text-shadow: 6px 7px 0 var(--sa-ink); }
+body.sa-menu h1.title .w1 { color: var(--sa-cream); }
+body.sa-menu h1.title .w2 { color: var(--sa-mustard); margin-left: 0.28em; }
+body.sa-menu .platform { left: auto; right: 80px; top: 78px; font: 800 28px var(--font); letter-spacing: 0; text-transform: none; color: var(--sa-muted); text-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  #logo svg, #logo canvas, #logo .btn, body.sa-menu #lobbybg::before { animation: none; }
+}

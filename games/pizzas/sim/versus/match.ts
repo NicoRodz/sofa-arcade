@@ -3,6 +3,7 @@ import type { Game, TeamState } from '../round/state';
 import { holdsPlace, rankTeams, type PauseChoice, type TeamResult } from '@pichi/core/lobby/teams';
 import { matchStatus } from '../assist';
 import { stopKind } from '../round/chop';
+import { addPlayer } from '../round/create';
 import { sabotageCancelAim } from '../sabotage';
 
 const resultOf = (t: TeamState): TeamResult => ({
@@ -96,6 +97,39 @@ export function rejoinPlayer(g: Game, id: number): boolean {
   g.bus.emit('playerBack', { player: id, team: p.team });
   return true;
 }
+
+/**
+ * The phone came back after GHOST_MS (rejoinPlayer said no and refreshRoster already took the chef out): the chef sits down again in
+ * its own team's kitchen, on its spawn tile, and k goes back with it. A pause that was waiting for this team ends by itself: the
+ * ausente is here. False when the chef never was on a team of this match (a newcomer: it waits for the next round).
+ */
+export function reseatPlayer(g: Game, id: number, slot: number): boolean {
+  const e = g.roster.find((r) => r.id === id);
+  if (!g.versus || g.players.has(id) || !e || e.droppedAt === null || g.over) return false;
+  const old = g.roster;
+  g.roster = old.filter((r) => r.id !== id);
+  if (!addPlayer(g, id, slot)) {
+    g.roster = old;
+    return false;
+  }
+  g.bus.emit('playerBack', { player: id, team: g.players.get(id)!.team });
+  if (g.paused) {
+    const st = matchStatus(
+      g.teams.map((t) => t.id),
+      g.roster,
+      g.time,
+      g.handicap ? 'score-k' : 'none',
+    );
+    if (!st.paused) {
+      g.paused = null;
+      g.bus.emit('matchResumed', {});
+    }
+  }
+  return true;
+}
+
+/** The phone is back, whenever: within GHOST_MS the same chef wakes up, later the chef sits down again (what the screen calls). */
+export const returnPlayer = (g: Game, id: number, slot: number): boolean => rejoinPlayer(g, id) || reseatPlayer(g, id, slot);
 
 /** The host's answer to an empty team: carry on without a winner, or end the round now (also without one). */
 export function resolvePause(g: Game, choice: PauseChoice) {

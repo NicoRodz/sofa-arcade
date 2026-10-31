@@ -13,7 +13,7 @@ const node = (): HTMLElement | null => {
     el.id = 'capbanner';
     el.setAttribute('role', 'status');
     el.textContent = TEXT;
-    document.body.appendChild(el);
+    (document.getElementById('stage') ?? document.body).appendChild(el); // inside the stage: it scales with the title it must not touch
   }
   return el;
 };

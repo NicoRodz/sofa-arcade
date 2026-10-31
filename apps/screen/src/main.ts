@@ -2,7 +2,8 @@
 import './catalog';
 import { drawCardArt } from '@pichi/game-pizzas/screen/art/cards';
 import { iris } from '@pichi/game-pizzas/screen/art/iris';
-import { drawLogo, starCanvas } from '@pichi/game-pizzas/screen/art/ui';
+import { starCanvas } from '@pichi/game-pizzas/screen/art/ui';
+import { paintLogo } from '@pichi/screen-kit/art/sofa-brand';
 import { initChips } from '@pichi/screen-kit/lobby/chips';
 import { initLobby, paintUi } from '@pichi/screen-kit/lobby/view';
 import { initMenu } from '@pichi/screen-kit/menu/view';
@@ -24,7 +25,7 @@ bindServices({ iris, cardArt: drawCardArt, starCanvas, render: paintUi });
 for (const g of games().list()) g.init?.();
 initChips();
 initPage();
-drawLogo($('logo') as HTMLCanvasElement);
+paintLogo($('logo'));
 startConnection();
 createPhaser();
 exposeDebug();

@@ -8,8 +8,6 @@ Party game local para jugar en el sofá: la **pantalla grande** (un Mac o una TV
 
 ## Capturas
 
-Aviso: las capturas aún muestran la marca anterior (Pichiclub) hasta el rediseño de la pantalla de inicio.
-
 | Pizzas: entrega en el mostrador | Obstáculos: cruzando la playa |
 |---|---|
 | ![Ronda de Pizzas](docs/screens/game-map1-delivery.png) | ![Ronda de Obstáculos](docs/screens/obst/play-chain-6p-t10.png) |
@@ -76,12 +74,12 @@ tools/     capturas, e2e con Chrome, latencia y chequeos del repo (baseline, top
 
 Reglas duras (detalle en [CLAUDE.md](CLAUDE.md)):
 
-- **No toques goldens ni capturas.** `games/pizzas/test/golden/fixtures/*.json`, los hashes de regresión, `docs/screens/**` y `docs/refactor/baseline/` solo cambian con permiso explícito del dueño. Si un test rojo pide regrabarlos, detente y avisa.
-- **No borres, saltes ni renombres tests** para ponerlos en verde. Un proyecto de Vitest con 0 tests cuenta como rojo.
+- **Goldens y capturas se regraban solo por PR.** `games/pizzas/test/golden/fixtures/*.json`, los hashes de regresión, `docs/screens/**` y `docs/refactor/baseline/` pueden cambiar en un PR que explique por qué y adjunte evidencia: capturas antes/después; para goldens, qué regla cambió y que los goldens sin flags no se movieron. Otra persona distinta del autor aprueba el PR. Un test rojo que pide regrabar no se regraba en silencio: va al PR con su explicación.
+- **No borres, saltes ni renombres tests** sin justificarlo en el PR, y nunca para ponerlos en verde. Los tests nuevos se sabotean a mano para verlos en rojo. `npm run baseline:check` debe quedar verde (o el PR explica por qué no). Un proyecto de Vitest con 0 tests cuenta como rojo.
 - **Tamaño de archivos:** `.ts` 300 líneas aviso y 500 falla; tests 500/800; `.css` y `.html` 150/250; `index.ts` máximo 40 líneas y solo re-exports; carpeta 12/20 archivos. Límites en `size-budget.json`. Nada de `utils.ts`, `helpers.ts` ni `misc`.
 - **La plataforma no importa juegos** (ni apps); los juegos no se importan entre sí. Solo las apps ensamblan juegos y plataforma. Se revisa con `npm run deps`.
 - **`git add` con rutas explícitas de archivo**, nunca de directorio.
-- **Ramas y PR:** una rama por cambio (idealmente en su propio `git worktree`) y PR contra `master`.
+- **Ramas y PR:** una rama por cambio (idealmente en su propio `git worktree`) y PR contra `master`, con la plantilla de `.github/pull_request_template.md`. Todo cambio entra por PR, aprobado por alguien distinto del autor y con evidencia. El CI corre lint, typecheck, test:fast y deps.
 - Código en inglés, nombres de archivo en kebab-case. Antes de dar algo por listo: `npm run typecheck`, `npm run lint` y los tests del paquete que tocaste.
 
 Si programas con Claude Code, usa la skill del repo `/sofa-arcade-dev` (en `.claude/skills/`, se agrega al cerrar la reestructura en curso).

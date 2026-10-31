@@ -1,0 +1,72 @@
+/* Sofa Arcade start menu ("Sofa pop"): join card, players, game cards and key help. Everything wears body.sa-menu so the game lobbies keep their look. */
+
+/* section headings */
+#playersh { display: none; }
+body.sa-menu #playersh, body.sa-menu #menuh { display: block; position: absolute; left: 650px; margin: 0; font: 900 34px/1.2 var(--font); letter-spacing: 0; text-transform: none; color: var(--sa-cream); -webkit-text-stroke: 6px var(--sa-ink); paint-order: stroke fill; }
+body.sa-menu #playersh { top: 196px; }
+body.sa-menu #playersh small { font-size: 28px; color: var(--sa-mustard); }
+body.sa-menu #menuh { top: 498px; }
+
+/* join card */
+body.sa-menu #joincard { background: var(--sa-cream); border-color: var(--sa-ink); border-radius: 28px; box-shadow: 10px 10px 0 var(--sa-ink); padding: 20px 0; }
+body.sa-menu #joincard .lbl { font: 900 38px var(--font); color: var(--sa-ink); }
+body.sa-menu #code { color: var(--sa-ink); -webkit-text-stroke: 0; text-shadow: none; letter-spacing: 0.06em; margin: 8px 0 0 0.06em; }
+body.sa-menu #joinurl { color: var(--sa-ink-soft); font-weight: 700; }
+
+/* players: eight seats, the free ones dashed */
+body.sa-menu #chips { top: 244px; }
+body.sa-menu .chip { background: var(--sa-cream); color: var(--sa-ink); border: 4px solid var(--sa-ink); border-radius: 22px; box-shadow: inset 0 0 0 6px var(--c, var(--sa-muted)), 6px 6px 0 var(--sa-ink); padding-left: 14px; gap: 14px; }
+body.sa-menu .chip .nm { font: 900 32px/1 var(--font); }
+body.sa-menu .chip .sub, body.sa-menu .chip .num { display: none; }
+body.sa-menu .chip.empty { background: transparent; border: 4px dashed rgba(217, 198, 213, 0.45); box-shadow: none; color: var(--sa-muted); justify-content: center; padding-left: 0; }
+body.sa-menu .chip.empty .nm { font-size: 0; max-width: none; }
+body.sa-menu .chip.empty .nm::after { content: 'Libre'; font-size: 26px; color: var(--sa-muted); }
+body.sa-menu .chip.empty .av { display: none; }
+/* a player with no look of their own gets a neutral face (the chef is Pizzas'); a made-up avatar keeps its canvas */
+body.sa-menu .chip.chef .av { width: 68px; height: 68px; border: 4px solid var(--sa-ink); border-radius: 50%; background: radial-gradient(circle at 36% 46%, var(--sa-ink) 0 5px, transparent 6px), radial-gradient(circle at 64% 46%, var(--sa-ink) 0 5px, transparent 6px), var(--c); animation: sa-breathe 2.4s ease-in-out infinite; }
+body.sa-menu .chip.chef .av canvas:not(.hbadge) { display: none; }
+@keyframes sa-breathe { 50% { transform: scale(1.06, 0.95); } }
+
+/* game cards: the selected one rises, rings in mustard and wears a bouncing "Jugar" tab */
+body.sa-menu #menucards { top: 566px; height: 478px; }
+body.sa-menu .gc { overflow: visible; border-radius: 24px; background: var(--sa-cream); box-shadow: 8px 8px 0 var(--sa-ink); transition: transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.18s; }
+body.sa-menu .gc .art { flex: 1; width: calc(100% - 28px); margin: 14px 14px 0; border: 3px solid var(--sa-ink); border-radius: 14px; }
+body.sa-menu .gc .body { padding: 10px 18px 0; }
+body.sa-menu .gc .nm { color: var(--sa-ink); font-weight: 900; }
+body.sa-menu .gc .bl { color: var(--sa-ink-soft); font-weight: 700; }
+body.sa-menu .gc .pl { background: #f3e3ef; font-weight: 900; padding: 4px 16px; }
+body.sa-menu .gc .tag { display: none; }
+body.sa-menu .gc.ready:hover, body.sa-menu .gc.sel { transform: translateY(-8px) scale(1.02); }
+body.sa-menu .gc.sel { z-index: 2; border-color: var(--sa-ink); box-shadow: 0 0 0 8px var(--sa-mustard), 0 0 0 12px var(--sa-ink), 12px 14px 0 12px var(--sa-ink); }
+body.sa-menu .gc.sel.ready .nm { color: var(--sa-ink); }
+body.sa-menu .gc.sel::before { content: '\25B6  Jugar'; position: absolute; top: -32px; right: 20px; z-index: 3; padding: 4px 18px; border: 4px solid var(--sa-ink); border-radius: 999px; background: var(--sa-mustard); color: var(--sa-ink); font: 900 24px var(--font); box-shadow: 4px 4px 0 var(--sa-ink); animation: sa-bob 1s ease-in-out infinite; }
+@keyframes sa-bob { 50% { transform: translateY(-5px); } }
+body.sa-menu .gc.sel.few::before { content: 'Faltan jugadores'; background: var(--sa-coral); }
+body.sa-menu .gc.sel.many::before { content: 'Sobran jugadores'; background: var(--sa-coral); }
+
+/* few / many: grey art, a coral note in place of the player range */
+body.sa-menu .gc.few, body.sa-menu .gc.many { background: var(--sa-off); }
+body.sa-menu .gc.few .art, body.sa-menu .gc.many .art { filter: grayscale(1); opacity: 0.55; }
+body.sa-menu .gc.few .body, body.sa-menu .gc.many .body { filter: none; opacity: 1; }
+body.sa-menu .gc.few .pl, body.sa-menu .gc.many .pl { display: none; }
+body.sa-menu .gc.few .tag, body.sa-menu .gc.many .tag { display: block; left: 18px; right: 18px; top: auto; bottom: 18px; padding: 5px 12px; border-radius: 22px; background: var(--sa-coral); color: var(--sa-ink); font: 900 17px/1.2 var(--font); white-space: nowrap; text-align: center; box-shadow: none; }
+
+/* soon: see-through, dashed, with a teal ribbon (the card clips it) */
+body.sa-menu .gc.soon { overflow: hidden; background: rgba(255, 246, 232, 0.1); border: 4px dashed var(--sa-muted); box-shadow: none; color: var(--sa-cream); }
+body.sa-menu .gc.soon .art { filter: grayscale(1); opacity: 0.35; border-color: var(--sa-muted); }
+body.sa-menu .gc.soon .nm { color: var(--sa-cream); }
+body.sa-menu .gc.soon .bl { color: var(--sa-muted); }
+body.sa-menu .gc.soon .tag { display: block; left: auto; right: -78px; top: 46px; width: 320px; padding: 8px 0; border: 0; border-block: 4px solid var(--sa-ink); border-radius: 0; background: var(--sa-teal); color: var(--sa-ink); text-align: center; text-transform: none; letter-spacing: 0; font: 900 24px var(--font); transform: rotate(35deg); box-shadow: none; }
+
+/* key help */
+body.sa-menu #menuhint { top: 846px; text-align: left; display: grid; gap: 10px; font: 800 26px var(--font); }
+body.sa-menu #menuhint br { display: none; }
+body.sa-menu #menuhint span { margin: 0; display: flex; align-items: center; gap: 4px; }
+body.sa-menu #menuhint small { font: 700 22px/1.2 var(--font); color: var(--sa-muted); }
+body.sa-menu #menuhint kbd { display: inline-grid; place-items: center; min-width: 52px; height: 46px; margin: 0; padding: 0 12px; border: 3px solid var(--sa-ink); border-radius: 12px; background: var(--sa-cream); color: var(--sa-ink); box-shadow: 4px 4px 0 var(--sa-ink); font: 900 24px var(--font); }
+body.sa-menu #menuhint span kbd:last-of-type { margin-right: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  body.sa-menu .chip.chef .av, body.sa-menu .gc.sel::before { animation: none; }
+  body.sa-menu .gc { transition: none; }
+}

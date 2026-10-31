@@ -14,6 +14,7 @@ import { createMechPhone } from '@pichi/game-pizzas/sim/mech/phone';
 import { nextLead, scoreHidden } from '@pichi/game-pizzas/sim/versus/report';
 import { createSchoolHost } from '@pichi/game-pizzas/screen/school/host';
 import { MainScene, type Host } from '@pichi/game-pizzas/screen/scene';
+import { resetFocus } from './key-nav';
 import { PIZZAS, isVersus, pz, puestoOf } from './state';
 
 export const school = createSchoolHost({
@@ -56,6 +57,7 @@ function syncPauseBar() {
   if (on === pauseShown) return;
   pauseShown = on;
   $('pausebar').classList.toggle('off', !on);
+  if (on) resetFocus('pause');
   if (on)
     $('pausetxt').textContent =
       `${pz.game.paused!.teams.map((t) => pz.roundView.teams?.[t]?.name ?? `Equipo ${t + 1}`).join(' y ')} se quedó sin jugadores`;

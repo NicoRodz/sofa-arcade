@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<title>Pichiclub</title>
+<title>Sofa Arcade</title>
 <style>
   :root {
     --ink: #2B1B17; --cream: #FFF4E0; --cocoa: #3A2A24; --tomato: #E63B2E; --tomato2: #B5281F; --basil: #3FA34D; --basil2: #2A7A36;
@@ -71,7 +71,7 @@
   .plq.off .pl { background: rgba(43,27,23,.5); color: rgba(255,244,224,.6); }
   .act.down { transform: translateY(1.2vmin); box-shadow: 0 .5vmin 0 rgba(43,27,23,.4); filter: brightness(1.12); }
 
-  .brand { font: 800 clamp(30px, 11vmin, 44px) var(--font); letter-spacing: 1px; margin: 0; color: var(--c); -webkit-text-stroke: 9px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(43,27,23,.35); }
+  .brand { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font: 800 clamp(26px, 10vmin, 40px) var(--font); letter-spacing: 0; margin: 0; color: var(--c); -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(43,27,23,.35); } .brand::before { content: ''; flex: none; width: 1.05em; height: .9em; background: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20136%20116%22%3E%3Cg%20stroke=%22%231E1220%22%20stroke-width=%228%22%20stroke-linejoin=%22round%22%20stroke-linecap=%22round%22%3E%3Cpath%20d=%22M26%20100v10M110%20100v10%22%20fill=%22none%22/%3E%3Crect%20x=%2218%22%20y=%2214%22%20width=%22100%22%20height=%2256%22%20rx=%2218%22%20fill=%22%23FF6B57%22/%3E%3Crect%20x=%2224%22%20y=%2258%22%20width=%2288%22%20height=%2240%22%20rx=%2212%22%20fill=%22%23FF8A78%22/%3E%3Crect%20x=%225%22%20y=%2246%22%20width=%2230%22%20height=%2258%22%20rx=%2213%22%20fill=%22%23FF6B57%22/%3E%3Crect%20x=%22101%22%20y=%2246%22%20width=%2230%22%20height=%2258%22%20rx=%2213%22%20fill=%22%23FF6B57%22/%3E%3Ccircle%20cx=%2252%22%20cy=%2266%22%20r=%2214%22%20fill=%22%232EC4B6%22/%3E%3Ccircle%20cx=%2284%22%20cy=%2266%22%20r=%2214%22%20fill=%22%23FFC83D%22/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat; }
   #rank { color: var(--cheese); text-shadow: 0 3px 0 rgba(43,27,23,.4); }
   /* versus: how the round ended for this phone's team (the screen sends the verdict with the results), inside a frame in the team's colour */
   #verdict { display: none; font-size: clamp(30px, 11vmin, 46px); }
@@ -190,7 +190,7 @@
 </head>
 <body>
 <form id="join" autocomplete="off">
-  <h1 class="brand">Pichiclub</h1>
+  <h1 class="brand">Sofa Arcade</h1>
   <input id="name" maxlength="16" placeholder="Tu nombre" />
   <button type="submit">Entrar</button>
 </form>
@@ -213,8 +213,8 @@
   <div id="puesto"><span class="pi" id="pico"></span><div class="pt"><b id="pname"></b><span id="phint"></span></div><button id="pswap" type="button">Cambiar</button></div>
   <div id="school"><div class="sh"><span id="schoolstep"></span><span id="schooldots"></span></div><b id="schooltext"></b><div class="sb"><button id="schoolskip" type="button">Ya sé · saltar</button><button id="schoolall" type="button">Saltar a todos</button></div></div>
 </div>
-<div id="wait" class="overlay"><h1 class="brand">Pichiclub</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div id="teamcard"><span id="tcicon"></span><span id="tcname"></span><small id="tcside"></small></div><button id="teamswap" type="button">Cambiar de equipo</button><div id="waitmsg">Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><div id="lobbybtns"><button id="assist" type="button" aria-pressed="false"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 40V22"/><ellipse cx="14" cy="18" rx="11" ry="4.5"/><ellipse cx="34" cy="18" rx="11" ry="4.5"/><circle cx="24" cy="19" r="3.4"/></svg><span id="assistlbl">Ayudante: no</span></button><button id="howtoopen" type="button">Cómo se juega</button></div></div>
-<div id="choosing" class="overlay"><h1 class="brand">Pichiclub</h1><div class="big">Eligiendo juego…</div><div style="opacity:.8">La pantalla decide</div><div id="who2" style="opacity:.7"></div></div>
+<div id="wait" class="overlay"><h1 class="brand">Sofa Arcade</h1><div id="game"></div><div id="setup" style="opacity:.8"></div><div id="teamcard"><span id="tcicon"></span><span id="tcname"></span><small id="tcside"></small></div><button id="teamswap" type="button">Cambiar de equipo</button><div id="waitmsg">Esperando que inicie la partida</div><div id="who" style="opacity:.7"></div><div id="lobbybtns"><button id="assist" type="button" aria-pressed="false"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 40V22"/><ellipse cx="14" cy="18" rx="11" ry="4.5"/><ellipse cx="34" cy="18" rx="11" ry="4.5"/><circle cx="24" cy="19" r="3.4"/></svg><span id="assistlbl">Ayudante: no</span></button><button id="howtoopen" type="button">Cómo se juega</button></div></div>
+<div id="choosing" class="overlay"><h1 class="brand">Sofa Arcade</h1><div class="big">Eligiendo juego…</div><div style="opacity:.8">La pantalla decide</div><div id="who2" style="opacity:.7"></div></div>
 <div id="results" class="overlay"><div>Fin de la ronda</div><div id="verdict" class="big"></div><div id="rank" class="big"></div><div id="myscore"></div></div>
 <div id="howto" class="overlay"><div class="hhead"><h2>Cómo se juega</h2><div id="howtogame" class="gname"></div></div><div id="howtobody" style="display:contents"></div><button id="howtoclose" type="button">Entendido</button></div>
 <div id="rotate" class="overlay"><div class="big">&#8635;</div><div>Gira tu teléfono</div></div>
