@@ -271,7 +271,7 @@ describe('sabotage over the relay: bots that throw, slip, clean and cook', () =>
     wholeRound(r, 120);
     const [pure, cooks] = r.game.teams;
     expect(r.screen.ofType('sabotage:launch', 0).length, 'the saboteurs did throw').toBeGreaterThanOrEqual(1);
-    expect(cooks!.delivered, 'the cooks cooked').toBeGreaterThanOrEqual(2);
+    expect(cooks!.delivered, 'the cooks cooked').toBeGreaterThanOrEqual(1); // HAZARD_V2: harder sabotage (slips) and two events per round cost the cooks a delivery (was >= 2; either change alone gives 1)
     expect(pure!.delivered).toBe(0);
     expect(cooks!.score).toBeGreaterThan(pure!.score);
     expect(r.game.result!.winner).toBe(1);

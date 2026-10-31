@@ -9,7 +9,8 @@ function steer(p: Player, c: Controls, g: Game, dtMs: number) {
   const { tauMs, tauStopMs } = g.params.tune;
   const moving = c.x !== 0 || c.y !== 0;
   const base = p.assist ? 0 : moving ? tauMs : tauStopMs; // Ayudante: no inertia
-  let tau = g.surf ? iceTau(g, p, base) : base; // ice: a long tau both ways (the stick only steers the slide)
+  const braking = !moving || c.x * p.vx + c.y * p.vy < 0; // on ice: no stick, or against the slide
+  let tau = g.surf ? iceTau(g, p, base, braking) : base; // ice: a long tau both ways (the stick only steers the slide)
   if (g.mech) tau = mechFriction(g, p.x, p.y, tau); // oil: the same on a patch
   const k = tau > 0 ? 1 - Math.exp(-dtMs / tau) : 1;
   p.vx += (c.x * SPEED - p.vx) * k;

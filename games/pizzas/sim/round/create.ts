@@ -55,6 +55,7 @@ export function createGame(
     sigma?: SigmaName;
     assist?: readonly number[];
     burn?: boolean;
+    hazardsV2?: boolean; // HAZARD_V2 under the flags burn / magnet / events / surf (hazard-v2.ts): on unless false (false = the first numbers, for the tests that pin them and for before/after runs)
     fire?: boolean;
     events?: boolean;
     eventsSeed?: number;
@@ -180,6 +181,7 @@ export function createGame(
     spoilRaw: opts.spoilRaw ?? false,
     sab: null,
     burn: null,
+    hz: opts.hazardsV2 !== false,
     mid: null,
     rec: opts.recipes
       ? createRec(stations, opts.mapId, { upgrades: !!opts.upgradeOrders, compound: !!opts.compoundOrders && !versus })
@@ -221,7 +223,15 @@ export function createGame(
   for (const t of teams) for (let i = 0; i < p.initialOrders; i++) spawnOrder(g, t);
   if (opts.sabotage && opts.sabotage !== 'off') g.sab = createSabotage(g, opts.sabotage, opts.sigma); // null when the map cannot host it: the round plays without
   // the new rules, each behind its own flag (off by default): a pizza that waits burns (and, from Normal up and not under the Suave sabotage, sets the oven on fire); one event per round
-  if (opts.burn) g.burn = createBurn(difficulty, !!opts.fire && fireAllowed(difficulty, g.sab?.mode), teamCount);
+  if (opts.burn)
+    g.burn = createBurn(
+      difficulty,
+      !!opts.fire && fireAllowed(difficulty, g.sab?.mode, g.hz),
+      teamCount,
+      g.hz
+        ? { seed: opts.eventsSeed ?? seed, sabotage: g.sab?.mode, chefs: (k) => (g.open ? g.players.size : (g.teamIds[k]?.length ?? 0)) }
+        : undefined,
+    ); // HAZARD_V2: fire sizes hash from the seed and the kitchen's own fire index
   if (opts.magnet) applyMagnet(g, opts.magnet === true ? 'normal' : opts.magnet); // magnetism: off unless the round's config asks
   if (opts.events) g.mid = createMid(g, opts.eventsSeed ?? seed); // `eventsSeed`: the coop lobby does not seed its orders (they are the same every round), but the event must still vary
   if (opts.mutate) g.mut = createMutate(g, seed); // coop maps with a mutation only; its own stream, nothing shared

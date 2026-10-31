@@ -12,6 +12,7 @@ import { MechViews } from './art/mech/views';
 import type { RoundView } from './art/hud';
 import { buildPuestoIcons, type PuestoView } from './art/puestos';
 import { buildEventTextures } from './art/events';
+import { addHazardFeel } from './art/feel/hazard-feel';
 
 export interface Host {
   step(deltaMs: number): void; // advances the game logic
@@ -56,6 +57,7 @@ export class MainScene extends Phaser.Scene {
       seed,
       view,
     );
+    addHazardFeel(this, game, new Fx(this), pizzasBus); // the rat that dodges and pants, the drift arrow on ice (self-managed)
     if (game.mech) new MechViews(this, game); // the map mechanics: their own views and the arts that repaint a layer every frame
     if (game.mut || game.mech?.ext?.mutation) new MutateView(this, game, new Fx(this), pizzasBus); // the kitchen that mutates: banner, alarm outline, flash (self-managed, goes with the round)
   }

@@ -1,12 +1,15 @@
 {
- "generatedFrom": "3d9574e",
- "retriedAloneAfterFailing": [],
+ "generatedFrom": "19844e9",
+ "retriedAloneAfterFailing": [
+  "apps/controller/test/creator-flow.slow.test.ts",
+  "apps/controller/test/watch.slow.test.ts"
+ ],
  "vitest": "vitest/5.0.5 darwin-arm64 node-v25.8.1",
- "totalTests": 1928,
+ "totalTests": 2693,
  "skippedOrTodo": 0,
- "files": 127,
- "wallSeconds": 243.7,
- "loadAvg": 5.50341796875,
+ "files": 236,
+ "wallSeconds": 317.7,
+ "loadAvg": 2.822265625,
  "cores": 10,
  "failed": 0
 }

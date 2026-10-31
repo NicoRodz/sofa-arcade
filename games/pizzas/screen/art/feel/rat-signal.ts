@@ -53,9 +53,14 @@ export class RatSignal {
     );
   }
 
-  private arrow(x: number, y: number, size: number, alpha: number) {
-    // a down-pointing arrow whose tip is at (x, y)
+  private arrow(x: number, y: number, size: number, alpha: number, up = false) {
+    // a down-pointing arrow whose tip is at (x, y); `up` mirrors it (tip at (x, y), body below)
     const g = this.g;
+    if (up) {
+      g.fillStyle(0x2b1b17, alpha).fillTriangle(x - size - 4, y + size + 8, x + size + 4, y + size + 8, x, y - 6);
+      g.fillStyle(hexNum(C.danger), alpha).fillTriangle(x - size, y + size + 4, x + size, y + size + 4, x, y);
+      return;
+    }
     g.fillStyle(0x2b1b17, alpha).fillTriangle(x - size - 4, y - size - 8, x + size + 4, y - size - 8, x, y + 6);
     g.fillStyle(hexNum(C.danger), alpha).fillTriangle(x - size, y - size - 4, x + size, y - size - 4, x, y);
   }
@@ -70,7 +75,12 @@ export class RatSignal {
     const bounce = Math.abs(Math.sin(this.t / 220)) * 10;
     const rx = OX + r.x * TILE,
       ry = OY + r.y * TILE;
-    this.arrow(rx, ry - TILE * 0.62 - bounce, 15, 0.95); // over the rat
+    // over the rat; when a chef stands right above it the arrow would cover that chef's name tag, so it points up from below instead
+    const covers = [...game.players.values()].some(
+      (p) => !p.ghost && Math.abs(OX + p.x * TILE - rx) < TILE * 0.6 && OY + p.y * TILE < ry && OY + p.y * TILE > ry - TILE * 1.45,
+    );
+    if (covers) this.arrow(rx, ry + TILE * 0.5 + bounce, 15, 0.95, true);
+    else this.arrow(rx, ry - TILE * 0.62 - bounce, 15, 0.95);
     const s = this.target >= 0 && r.state === 'seek' ? game.stations[this.target] : null;
     if (!s || !s.item) return;
     const tx = OX + (s.tx + 0.5) * TILE,

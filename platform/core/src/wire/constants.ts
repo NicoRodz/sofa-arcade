@@ -28,7 +28,7 @@ export type Phase = (typeof PHASES)[number];
 // R7: a short vibration on one phone (Android); iOS has no vibration API, so the phone flashes its colour instead.
 // The screen decides when (it owns the game events); the phone only plays the pattern, in ms on / off / on...
 // biome-ignore format: one line per pattern would add five lines to a file at its size cap
-export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15], slip: [120], alert: [60, 40, 60] } as const satisfies Record<string, readonly number[]>;
+export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15], slip: [120], alert: [60, 40, 60], big: [80, 30, 80], dodge: [50, 30, 50], ice: [40] } as const satisfies Record<string, readonly number[]>;
 export type BuzzKind = keyof typeof BUZZ_PATTERNS;
 export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.hasOwn(BUZZ_PATTERNS, v);
 

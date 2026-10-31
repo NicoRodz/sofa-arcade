@@ -2,6 +2,7 @@
 import type { Surface } from '../maps/types';
 import type { Game, Player } from '../round/state';
 import { BELT_SPEED, ICE_TAU_MS } from './config';
+import { hazardParams } from '../hazards/hazard-v2';
 
 const ICE: Surface = { kind: 'ice' };
 export function surfaceAt(g: Game, x: number, y: number): Surface | null {
@@ -11,9 +12,12 @@ export function surfaceAt(g: Game, x: number, y: number): Surface | null {
 }
 
 /** Velocity time constant (ms) under the chef: on ice never shorter than ICE_TAU_MS, in or out of the stick (Ayudante keeps 0: no inertia). */
-export function iceTau(g: Game, p: Player, tau: number): number {
+export function iceTau(g: Game, p: Player, tau: number, braking = false): number {
   if (p.assist) return tau;
-  return surfaceAt(g, p.x, p.y)?.kind === 'ice' ? Math.max(tau, ICE_TAU_MS) : tau;
+  if (surfaceAt(g, p.x, p.y)?.kind !== 'ice') return tau;
+  if (!g.hz) return Math.max(tau, ICE_TAU_MS);
+  const ice = hazardParams(g.difficulty).ice; // HAZARD_V2: one tau to speed up, a longer one to brake (no stick, or against the slide)
+  return Math.max(tau, braking ? ice.tauStopMs : ice.tauAccelMs);
 }
 
 /** The belt's drift (tiles/s) at the chef's centre, or null off a belt. */

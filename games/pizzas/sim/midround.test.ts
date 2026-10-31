@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { type GameEvents, Emitter } from './round/events';
 import { DIRS, fixedMap, isFloor } from './maps';
-import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from './overcooked';
+import { TICK_MS, addPlayer, createGame, recipeBase, tick, type Controls, type Game, type Station } from './overcooked';
 import {
   ACTIVE_MS,
   ANNOUNCE_MS,
@@ -25,7 +25,6 @@ import {
   type EventKind,
 } from './midround';
 import { GRACE_MS } from './burn';
-import { recipeBase } from './overcooked';
 import { params } from '@pichi/core/difficulty';
 import { MIRRORS } from '../test/golden/mirror-bot';
 import { GAMES, modeOf } from '@pichi/catalog';
@@ -71,6 +70,7 @@ function mk(
     bus,
     events: o.events ?? true,
     burn: o.burn,
+    hazardsV2: false,
   });
   for (const k of KINDS)
     bus.on(k, ((p: never) => {

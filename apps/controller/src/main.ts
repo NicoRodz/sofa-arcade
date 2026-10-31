@@ -1,4 +1,5 @@
 import nipplejs from 'nipplejs';
+import { showNote } from './notes';
 import { DIFFICULTY_LABEL } from '@pichi/core/difficulty';
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { VERSUS_AUTO, VERSUS_RANDOM, versusMap } from '@pichi/game-pizzas/sim/versus/maps';
@@ -167,15 +168,9 @@ $('howtoopen').addEventListener('pointerup', () => setHowTo(true));
 
 // R7: vibrate where the browser can (Android), flash the phone's colour where it cannot (iOS Safari has no vibration API).
 let flashTimer: ReturnType<typeof setTimeout> | undefined;
-let slipTimer: typeof flashTimer;
 function buzz(kind: BuzzKind) {
   if (phase !== 'playing' && phase !== 'school') return; // the school buzzes like a round
-  if (kind === 'slip') {
-    // sabotage: the chef slipped on rubbish
-    $('slip').classList.add('on');
-    clearTimeout(slipTimer);
-    slipTimer = setTimeout(() => $('slip').classList.remove('on'), 900);
-  }
+  showNote(kind); // a note over the pad: slip, big fire, a rat that dodged, first ice
   const pattern = BUZZ_PATTERNS[kind];
   try {
     if (typeof navigator.vibrate === 'function' && navigator.vibrate([...pattern])) return;

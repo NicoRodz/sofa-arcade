@@ -65,7 +65,7 @@ export const MIRRORS = {
   v3: { rows: ROT_V3, sigma: SIGMAS.rot180, half: (_x: number, y: number) => y < MAP_H / 2 },
 } as const;
 
-const snap = (v: number) => Math.round(v * 1e9) / 1e9;
+const snap = (v: number) => Math.round(v * 1e13) / 1e13;
 
 export interface VersusResult { g: Game; bus: RecBus; ticks: number }
 

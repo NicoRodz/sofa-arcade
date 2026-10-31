@@ -21,7 +21,7 @@ const rate = (rs: RatRun[]) => rs.filter((r) => r.caught).length / rs.length;
 
 describe('the imperfect chef against the rat', () => {
   it('reaches the gentle rat in at least 70% of the events, hands full or not; the old rat in under 40%', async () => {
-    const on = await events({ magnet: true }),
+    const on = await events({ magnet: true, hazardsV2: false }), // the first gentle rat (HAZARD_V2 off)
       off = await events({});
     expect(on.length).toBeGreaterThanOrEqual(50);
     expect(rate(on)).toBeGreaterThanOrEqual(0.7);
@@ -38,5 +38,14 @@ describe('the imperfect chef against the rat', () => {
     expect(Math.min(...on.filter((r) => !r.caught).map((r) => r.windowMs))).toBeGreaterThanOrEqual(RAT_GENTLE.minStayMs);
     expect(Math.min(...off.filter((r) => r.stolen).map((r) => r.stealMs))).toBeLessThan(RAT_GENTLE.graceMs);
     expect(Math.min(...off.filter((r) => !r.caught).map((r) => r.windowMs))).toBeLessThan(RAT_GENTLE.minStayMs);
+  });
+  it('HAZARD_V2 rat (it flees contact, pants after a burst): Normal is reached in 35-45% of the events, and still in 20%+ with full hands; Hard in 25-35%', async () => {
+    const normal = await events({ magnet: true }, 12),
+      hard = await events({ magnet: true, difficulty: 'hard' }, 12);
+    expect(rate(normal)).toBeGreaterThanOrEqual(0.33);
+    expect(rate(normal)).toBeLessThanOrEqual(0.47);
+    expect(rate(normal.filter((r) => r.carry))).toBeGreaterThanOrEqual(0.17);
+    expect(rate(hard)).toBeGreaterThanOrEqual(0.23);
+    expect(rate(hard)).toBeLessThanOrEqual(0.37);
   });
 });

@@ -44,8 +44,8 @@ export interface SabotageRules {
   spoilRaw: boolean; // a raw ingredient that falls becomes rubbish (it only serves for the bin)
 }
 export const RULES: Record<Exclude<SabotageMode, 'off'>, SabotageRules> = {
-  soft: { cooldownMs: 12_000, perMinute: 3, stock: 1, maxPiles: 2, decayMs: 20_000, double: false, spoilRaw: false },
-  chaos: { cooldownMs: 8_000, perMinute: 5, stock: 2, maxPiles: 3, decayMs: 35_000, double: true, spoilRaw: true },
+  soft: { cooldownMs: 10_000, perMinute: 4, stock: 1, maxPiles: 3, decayMs: 25_000, double: false, spoilRaw: false },
+  chaos: { cooldownMs: 6_000, perMinute: 6, stock: 2, maxPiles: 4, decayMs: 40_000, double: true, spoilRaw: true },
 };
 /** The chef drops what it carries when it slips: always in Caos, otherwise from Normal up (Suave on Fácil only slips). Decision: the plan's "Suave / Normal y Caos" mixes the mode with the difficulty. */
 export const dropsItem = (mode: Exclude<SabotageMode, 'off'>, d: Difficulty) => mode === 'chaos' || d !== 'easy';
@@ -56,7 +56,7 @@ export const DESECHOS_DRIP_MS = 15_000; // base trickle: +1 this often
 export const DESECHOS_OF = { item: 1, pizza: 2, trash: 1, bag: DESECHOS_PER_BAG } as const; // an item binned, a baked pizza binned, rival rubbish cleaned, a caught bag
 export const COMEBACK_BEHIND = 2; // orders behind from which the trickle is faster
 export const COMEBACK_RATE = 1.5;
-export const SMALL_KITCHEN_DECAY = 0.7; // banana-skins that fall in the kitchen of a team with k > 1 last this share
+export const SMALL_KITCHEN_DECAY = 0.85; // banana-skins that fall in the kitchen of a team with k > 1 last this share
 
 // --- The throw -------------------------------------------------------------------------------------------------------------------
 export const RETICLE_STEP_MS = 250; // the reticle moves one tile this often
@@ -64,7 +64,7 @@ export const AIM_MAX_MS = 3000; // no B in this long and it fires by itself
 export const WINDUP_MS = 200; // from B to the bag leaving the catapult
 export const FLIGHT_MS = 500; // the parabola over the barrier
 export const LAND_AFTER_MS = WINDUP_MS + FLIGHT_MS; // the shadow is on the target this long before the impact (700 ms of warning)
-export const CATCH_RADIUS = 0.6; // an empty-handed rival chef this close to the landing tile catches the bag
+export const CATCH_RADIUS = 0.45; // an empty-handed rival chef this close to the landing tile catches the bag
 export const ADJUST_MAX = 2; // the landing tile moves at most this many steps to a valid one; farther and the bag bursts
 export const MIN_LANDING_TILES = 6; // validator: valid landing tiles in every kitchen
 export const WINDOW_MS = 60_000; // the "per minute" window
@@ -81,9 +81,9 @@ export interface SlipParams {
   immuneMs: number;
 }
 export const SLIP: Record<Difficulty, SlipParams> = {
-  easy: { dist: 1.5, slideMs: 450, recoverMs: 100, immuneMs: 2000 },
-  normal: { dist: 2.5, slideMs: 600, recoverMs: 150, immuneMs: 1500 },
-  hard: { dist: 3.0, slideMs: 700, recoverMs: 200, immuneMs: 1200 },
+  easy: { dist: 2.0, slideMs: 550, recoverMs: 100, immuneMs: 1600 },
+  normal: { dist: 3.0, slideMs: 700, recoverMs: 150, immuneMs: 1200 },
+  hard: { dist: 3.5, slideMs: 850, recoverMs: 200, immuneMs: 900 },
 };
 /** Total time without control: the slide plus the getting up (550 / 750 / 900 ms). */
 export const controlLostMs = (d: Difficulty) => SLIP[d].slideMs + SLIP[d].recoverMs;

@@ -15,24 +15,21 @@ describe('coop golden rounds with the new rules on', () => {
     expect(RULES_SCENARIOS.every((s) => s.flags && Object.values(s.flags).some(Boolean))).toBe(true);
     expect(SCENARIOS.every((s) => s.flags === undefined)).toBe(true);
   });
-  it('the fixtures cover what they are for: a pizza that burns, a fire that jumps, a pizza rescued, an event of each kind that shows (rat, rush, blackout), a round with deliveries', () => {
+  it('the fixtures cover what they are for: a pizza that burns, a fire that jumps, the events of HAZARD_V2 (rat, rush, blackout among them), a round with deliveries', () => {
     expect(count(b, 'oven:burnt')).toBeGreaterThanOrEqual(1);
-    expect(count(b, 'fire:start')).toBe(1);
+    expect(count(b, 'fire:start')).toBe(1); // (a rescue and a fire exclude each other for these bots in v2: the rescue is pinned in burn.test.ts)
     expect(count(b, 'fire:spread')).toBeGreaterThanOrEqual(1);
-    expect(count(b, 'oven:rescued')).toBeGreaterThanOrEqual(1);
     expect(count(c, 'fire:start')).toBe(1);
     expect(count(c, 'fire:spread')).toBeGreaterThanOrEqual(2);
-    const kind = (r: GoldenRun) =>
-      r.events
-        .find((e) => e.split('|')[1] === 'event:start')!
-        .split('"kind":"')[1]!
-        .split('"')[0];
-    expect([kind(a), kind(b), kind(c)]).toEqual(['rat', 'rush', 'blackout']);
+    const kinds = (r: GoldenRun) => r.events.filter((e) => e.split('|')[1] === 'event:start').map((e) => e.split('"kind":"')[1]!.split('"')[0]);
+    expect(new Set([a, b, c].flatMap(kinds))).toEqual(new Set(['rat', 'rush', 'blackout', 'birthday'])); // v2 plays 2 events on Normal, 3 on Hard
     for (const r of [a, b, c]) {
-      expect(count(r, 'event:announce')).toBe(1);
-      expect(count(r, 'event:start')).toBe(1);
-      expect(count(r, 'event:end')).toBe(1);
+      expect(count(r, 'event:announce')).toBe(count(r, 'event:start'));
+      expect(count(r, 'event:start')).toBe(count(r, 'event:end'));
     }
+    expect(count(a, 'event:start')).toBe(2);
+    expect(count(b, 'event:start')).toBe(3);
+    expect(count(c, 'event:start')).toBe(2);
     expect(count(a, 'rat:steal')).toBe(1);
     expect(count(a, 'rat:gone')).toBe(1);
     for (const r of [a, b, c]) expect(r.delivered).toBeGreaterThan(0);

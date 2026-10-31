@@ -70,7 +70,16 @@ export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent | MutateEve
   'oven:warn': () => [play('ovenWarn')],
   'oven:burnt': () => [play('burnt')],
   'oven:rescued': () => [play('rescued')],
-  'fire:start': (p) => [play('fireStart'), { kind: 'loopStart', key: fireKey(p), loop: 'blaze' }],
+  // a BIG fire (two chefs needed) does not sound like a small one: two layers of the ignition dropped an octave, a burnt-buzz under them, the same crackle after
+  'fire:start': (p) =>
+    p.big
+      ? [
+          { kind: 'play', id: 'fireStart', semis: -12 },
+          { kind: 'play', id: 'fireStart', semis: -5 },
+          { kind: 'play', id: 'burnt', semis: -9 },
+          { kind: 'loopStart', key: fireKey(p), loop: 'blaze' },
+        ]
+      : [play('fireStart'), { kind: 'loopStart', key: fireKey(p), loop: 'blaze' }],
   'fire:spread': (p) => [play('fireSpread'), { kind: 'loopStart', key: fireKey(p), loop: 'blaze' }],
   'fire:out': (p) => [{ kind: 'loopStop', key: fireKey(p) }, { kind: 'loopStop', key: douseKey(p) }, play('fireOut')],
   'fire:end': () => [],
@@ -97,6 +106,10 @@ export const ACTIONS: { [K in Exclude<keyof GameEvents, SurfaceEvent | MutateEve
   'rat:appear': () => [play('ratAppear')],
   'rat:steal': () => [play('ratSteal')],
   'rat:scared': (p) => (p.bonus ? [play('ratScared'), play('ding')] : [play('ratScared')]), // the prize for scaring the gentle rat is a ding
+  'rat:dodge': () => [
+    { kind: 'play', id: 'whoosh', semis: 6 },
+    { kind: 'play', id: 'ratScared', semis: 4 },
+  ], // the dodge: a quick whoosh and a squeak (the panting follows: PANT_AT_MS)
   'rat:target': () => [play('ratTarget')],
   'rat:near': () => [play('ratNear')],
   'rat:gone': () => [],

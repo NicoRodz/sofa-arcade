@@ -17,19 +17,19 @@ export const SCENARIOS: readonly Scenario[] = [
 
 // Rounds with the new rules switched on (the oven that burns, the fire, the mid-round event), fixtures of their own, re-recorded on purpose with
 // tools/record-golden.ts. The three above stay byte for byte what they were: they never set a flag. These were picked by scanning (map, difficulty, n, seed)
-// for scripted chefs that leave pizzas in the oven: map 2 on Hard with 4 chefs (seed 2: Hora punta) burns one, the fire jumps to a counter and a pizza is rescued;
-// map 11 on Normal with 6 chefs (seed 1: Corte de luz) burns one and the fire jumps four times; the 2-chef round (seed 11) is the quiet one and has the rat steal a dish.
+// for scripted chefs that leave pizzas in the oven: map 2 on Hard with 4 chefs (seed 15, HAZARD_V2: three events) burns two and the fire jumps to a counter (for these bots a rescue and a fire exclude each other: the rescue lives in burn.test.ts);
+// map 11 on Normal with 6 chefs (seed 1) burns one and the fire jumps four times; the 2-chef round (seed 23, also the magnet's) has the rat steal a dish (scared off under the magnet).
 const FLAGS: RuleFlags = { burn: true, fire: true, events: true };
 export const RULES_SCENARIOS: readonly Scenario[] = [
-  { name: 'coop-n2-map2-normal-rules', mapId: '2', difficulty: 'normal', n: 2, seed: 11, flags: FLAGS },
-  { name: 'coop-n4-map2-hard-rules', mapId: '2', difficulty: 'hard', n: 4, seed: 2, flags: FLAGS },
+  { name: 'coop-n2-map2-normal-rules', mapId: '2', difficulty: 'normal', n: 2, seed: 23, flags: FLAGS },
+  { name: 'coop-n4-map2-hard-rules', mapId: '2', difficulty: 'hard', n: 4, seed: 15, flags: FLAGS },
   { name: 'coop-n6-map11-normal-rules', mapId: '11', difficulty: 'normal', n: 6, seed: 1, flags: FLAGS },
 ];
 
 // Rounds with the magnetism on (feel/magnet.ts), their own fixtures; the six above never set it and stay byte for byte. Normal and Hard get the normal magnet, Easy the strong one;
 // the first also has the lobby's other rules on (burning oven, fire, the rat event: the gentle rat is part of the magnet's feel rules).
 export const MAGNET_SCENARIOS: readonly Scenario[] = [
-  { name: 'coop-n2-map2-normal-magnet', mapId: '2', difficulty: 'normal', n: 2, seed: 11, flags: { ...FLAGS, magnet: true } },
+  { name: 'coop-n2-map2-normal-magnet', mapId: '2', difficulty: 'normal', n: 2, seed: 23, flags: { ...FLAGS, magnet: true } },
   { name: 'coop-n4-map9-hard-magnet', mapId: '9', difficulty: 'hard', n: 4, seed: 22, flags: { magnet: true } },
   { name: 'coop-n6-map11-easy-magnet', mapId: '11', difficulty: 'easy', n: 6, seed: 33, flags: { magnet: 'strong' } },
 ];

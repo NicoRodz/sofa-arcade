@@ -2,6 +2,7 @@
 import { DIRTY_MS, type Tuning } from '@pichi/core/difficulty';
 import { WARNING_MS, tag, type Game, type Order, type Player, type TeamState } from './state';
 import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, type MidFx } from '../midround';
+import { rushOrdersV2 } from '../hazards/events-v2';
 import { pickOrder, pickRecipe } from '../recipes/sim';
 import { VIP_EVERY_MS, VIP_MULT, VIP_TTL_MS } from '../versus/versus';
 import { isDish, recipeBase } from '../recipes/defs';
@@ -122,7 +123,13 @@ export function deliver(g: Game, p: Player) {
 // The two mid-round events that touch the queues: a rush is three orders in every queue (drawn at every slot, so the twin queues stay twins); the birthday order is worth BIRTHDAY_POINTS flat.
 export const MID_FX: MidFx = {
   rush(g) {
-    for (const t of g.teams) for (let i = 0; i < RUSH_ORDERS; i++) spawnOrder(g, t, true);
+    for (const t of g.teams)
+      for (
+        let i = 0, n = g.hz && g.mid?.queue ? rushOrdersV2([...g.players.values()].filter((p) => p.team === t.id).length) : RUSH_ORDERS;
+        i < n;
+        i++
+      )
+        spawnOrder(g, t, true);
   },
   birthday(g) {
     for (const t of g.teams) {
