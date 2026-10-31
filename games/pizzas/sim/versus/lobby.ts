@@ -30,7 +30,6 @@ import { VERSUS_AUTO, VERSUS_MAPS, VERSUS_RANDOM, versusMap, type VersusChoice }
 export { VERSUS_AUTO, VERSUS_RANDOM, VERSUS_CHOICES, isVersusChoice, type VersusChoice } from './maps';
 
 // --- Can the mode be picked? --------------------------------------------------------------------------------------------------------
-
 export const VERSUS_MIN_EVEN = 4; // an even lobby needs 2 against 2 at least (1 against 1 is not offered)
 
 export interface VersusAvailability {
@@ -277,6 +276,7 @@ export function createVersusGame(o: VersusStart): Game {
     shared: o.map.shared,
     sabotage: sabotageOf(o.modeOptions),
     sigma: o.map.sigma, // the sim switches it off by itself on a map with no catapult
+    menuV2: true, // the card cut by difficulty, one shared sequence for both kitchens (recipes/menu.ts)
     ...roundRules(o.modeOptions, o.difficulty), // the oven burns in every round (the sim itself leaves the fire out on Easy and under the Suave sabotage); the event follows the lobby option
     assist: o.assist,
   });

@@ -7,7 +7,7 @@ import { pizzasBus } from '@pichi/game-pizzas/screen/bus';
 import { app, connectedCount } from '@pichi/screen-kit/shell/app-state';
 import type { PuestoMsgPz } from '@pichi/game-pizzas/sim/puestos';
 import { createGame } from '@pichi/game-pizzas/sim';
-import { lobbyN } from '@pichi/game-pizzas/sim/maps';
+import { lobbyN, type MapFamily } from '@pichi/game-pizzas/sim/maps';
 import { tallyKitchen } from '@pichi/game-pizzas/sim/kudos';
 import { NO_LEAD, tallyDeliveries, type LeadState, type Series, type VersusReport } from '@pichi/game-pizzas/sim/versus/report';
 import type { RoundView } from '@pichi/game-pizzas/screen/art/hud';
@@ -19,6 +19,7 @@ export const pz = {
   game: createGame(),
   roundNo: 0, // rounds started in this session: the mid-round event of each one comes from the lobby seed plus this, so a rematch (same orders, same seed) gets another event
   played: new Set<string>(), // maps already played in this session (coop and versus ids): the lobby proposes a new one by default
+  autoLast: undefined as MapFamily | undefined, // family of the last coop map played: `auto` does not repeat it twice in a row
   teamsTouched: false, // somebody moved a player by hand: the lobby stops rebalancing the teams on its own
   lockBeforeStart: false, // the teams lock while a match runs; this is what the host had set
   teamNotice: '', // why the last move or mode change was refused

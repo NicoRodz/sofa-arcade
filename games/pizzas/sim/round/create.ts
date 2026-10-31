@@ -2,7 +2,7 @@
 import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficulty } from '@pichi/core/difficulty';
 import { type GameEvents, Emitter } from './events';
 import { MAX_SLOTS, type Game, type Station, type TeamSeat, type TeamState } from './state';
-import { FIXED_MAPS, parseMap, spawnPoints, type Pos, type SigmaName } from '../maps';
+import { FIXED_MAPS, menuPatchRows, parseMap, spawnPoints, type Pos, type SigmaName } from '../maps';
 import type { SabotageMode } from '../sabotage-config';
 import { newSurfaceState } from '../surfaces/config';
 import { createMutate } from '../mutate/step';
@@ -69,12 +69,14 @@ export function createGame(
     upgradeOrders?: boolean; // the Pizza de la casa takes upgrades (recipes/casa.ts)
     sliceAfterBake?: boolean; // ... and can be cut into portions on a board
     compoundOrders?: boolean; // the Bandeja familiar: one ticket of three plates (recipes/bandeja.ts); coop only
+    menuV2?: boolean; // variety of plates (recipes/menu.ts, maps/menu-patches.ts): the card's 2-4 plates by difficulty with a bag so each one comes up; needs `recipes`
     adaptive?: boolean; // the order flow follows the load of the queue (recipes/pacing.ts)
     pace?: number; // order-flow speed-up (1 = the table as it is): orders arrive 1/pace as far apart and the queue holds one more from 1.3 up
   } = {},
 ): Game {
   const mechOn = anyMech(opts.mech);
-  const grid = parseMap(opts.rows ?? FIXED_MAPS[0]!.rows, (opts.teams?.length ?? 1) > 1, opts.mech); // the catapult letter belongs to versus maps; a mechanic's letter needs its flag
+  const rows = opts.menuV2 ? menuPatchRows(opts.mapId, opts.rows ?? FIXED_MAPS[0]!.rows) : (opts.rows ?? FIXED_MAPS[0]!.rows); // menuV2: the crate a third plate needs
+  const grid = parseMap(rows, (opts.teams?.length ?? 1) > 1, opts.mech); // the catapult letter belongs to versus maps; a mechanic's letter needs its flag
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
   if (seats && !seats.length) throw new RangeError('a round needs at least one team');
@@ -184,7 +186,11 @@ export function createGame(
     hz: opts.hazardsV2 !== false,
     mid: null,
     rec: opts.recipes
-      ? createRec(stations, opts.mapId, { upgrades: !!opts.upgradeOrders, compound: !!opts.compoundOrders && !versus })
+      ? createRec(stations, opts.mapId, {
+          upgrades: !!opts.upgradeOrders,
+          compound: !!opts.compoundOrders && !versus,
+          ...(opts.menuV2 ? { menu: { difficulty, seed: opts.eventsSeed ?? seed } } : {}),
+        })
       : null,
     assist,
     frostEvent: !!opts.frost,
@@ -235,8 +241,7 @@ export function createGame(
   if (opts.magnet) applyMagnet(g, opts.magnet === true ? 'normal' : opts.magnet); // magnetism: off unless the round's config asks
   if (opts.events) g.mid = createMid(g, opts.eventsSeed ?? seed); // `eventsSeed`: the coop lobby does not seed its orders (they are the same every round), but the event must still vary
   if (opts.mutate) g.mut = createMutate(g, seed); // coop maps with a mutation only; its own stream, nothing shared
-  if (g.mech && opts.mutation && g.flags!.mech.mutation)
-    armMutation(g, opts.mutation, invertOps(opts.rows ?? FIXED_MAPS[0]!.rows, opts.mutation.ops), opts.rows ?? FIXED_MAPS[0]!.rows); // the v2 mutation's data, before the modules start
+  if (g.mech && opts.mutation && g.flags!.mech.mutation) armMutation(g, opts.mutation, invertOps(rows, opts.mutation.ops), rows); // the v2 mutation's data, before the modules start
   if (g.mech) mechStart(g); // onLoad, then init, of every module whose flag is on
   return g;
 }
