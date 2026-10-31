@@ -14,6 +14,7 @@ import { roundRules } from '@pichi/game-pizzas/sim/midround';
 import { mutateOf } from '@pichi/game-pizzas/sim/mutate/plan';
 import { mechsOf, pickedMechs } from '@pichi/game-pizzas/sim/gen/lobby-opts';
 import { assignPuestos, featuresOf } from '@pichi/game-pizzas/sim/puestos';
+import { dealVersusPuestos } from '@pichi/game-pizzas/sim/versus/deal';
 import { NO_LEAD } from '@pichi/game-pizzas/sim/versus/report';
 import { startVersusRound } from '@pichi/game-pizzas/sim/versus/lobby';
 import { scene } from './host';
@@ -44,9 +45,9 @@ function startVersus(): MatchStart {
   }
   puestoOf.clear();
   const f = featuresOf(pz.game.stations);
-  const assign = teams.flatMap((t) => assignPuestos(t.playerIds, f).assign); // chef i of a team = puesto i; the default table is the same for both kitchens
-  pz.puestoMsg = { cheese: f.cheese, sink: f.sink, assign };
-  assign.forEach((a) => puestoOf.set(a.id, { ids: a.puestos, stamp: ++pz.puestoStamp }));
+  const dealt = dealVersusPuestos(teams, f); // chef i of a team = puesto i; the default table is the same for both kitchens; a chef alone gets none
+  pz.puestoMsg = dealt;
+  dealt.assign.forEach((a) => puestoOf.set(a.id, { ids: a.puestos, stamp: ++pz.puestoStamp }));
   pz.overAt = null;
   tally.reset();
   kitchen.reset();
