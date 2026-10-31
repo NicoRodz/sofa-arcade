@@ -5,7 +5,6 @@ import { fixedMap, isFloor } from './maps';
 import { versusMap } from './versus/maps';
 import { douse } from './burn';
 import { fireIsBig, hash32 } from './hazard-v2';
-import { iceTurnLimit } from './surfaces/physics';
 import { planEvents } from './events-v2';
 import type { Rat } from './midround';
 
@@ -180,7 +179,7 @@ describe('rat: dodge of a dash, then it pants', () => {
   });
 });
 
-describe('ice: separate taus and a turn limit; the calendar', () => {
+describe('ice: separate taus; the calendar', () => {
   const ROWS = [
     '##C1C2CKCKCOCOC#',
     '#.............↓#',
@@ -211,18 +210,6 @@ describe('ice: separate taus and a turn limit; the calendar', () => {
     const start = p.vx;
     mv(0, 1300);
     expect(p.vx / start).toBeGreaterThan(0.3); // one stopping tau leaves ~37% (the old 750 ms: 18% after the same time)
-  });
-  it('the velocity vector turns at most turnDps (180 deg/s on Normal) on ice', () => {
-    const g = iceGame(),
-      p = g.players.get(1)!;
-    Object.assign(p, { x: 7.5, y: 2.5, vx: 4, vy: 0 });
-    const ovx = p.vx,
-      ovy = p.vy;
-    Object.assign(p, { vx: 0, vy: 4 }); // a velocity that jumped 90 degrees in one tick
-    iceTurnLimit(g, p, ovx, ovy, TICK_MS);
-    const deg = (Math.atan2(p.vy, p.vx) * 180) / Math.PI;
-    expect(deg).toBeCloseTo(180 * (TICK_MS / 1000), 3);
-    expect(Math.hypot(p.vx, p.vy)).toBeCloseTo(4, 6);
   });
   it('the calendar: Normal 2 events, Hard 3, no kind twice, the gap between events, in windows of the round', () => {
     const pool = ['rush', 'blackout', 'birthday', 'rat', 'frost'] as const;

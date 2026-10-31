@@ -60,10 +60,10 @@ describe('prueba del espejo con eventos a mitad de ronda', () => {
       const r = runVersus({ ...MIRRORS.v1, difficulty: 'normal', seed, teams, flags: { events: true } });
       const ea = own(r.bus, 0),
         eb = own(r.bus, 1);
-      expect(global(r.bus, 'event:start')).toHaveLength(1);
+      expect(global(r.bus, 'event:start')).toHaveLength(2); // HAZARD_V2: Normal has two events per round (was 1)
       expect(r.bus.log.some((l) => l.includes('|event:start|') && l.includes(`"kind":"${kind}"`))).toBe(true);
-      expect(global(r.bus, 'event:announce')).toHaveLength(1);
-      expect(global(r.bus, 'event:end')).toHaveLength(1);
+      expect(global(r.bus, 'event:announce')).toHaveLength(2);
+      expect(global(r.bus, 'event:end')).toHaveLength(2);
       if (kind === 'birthday')
         for (const e of [ea, eb]) expect(e.filter((x) => x.includes('"birthday":true') && x.includes('|orderNew|'))).toHaveLength(1);
       if (kind === 'rush') expect(count(ea, 'orderNew')).toBe(count(eb, 'orderNew'));
@@ -101,7 +101,7 @@ describe('prueba del espejo con eventos a mitad de ronda', () => {
         eb = own(r.bus, 1);
       expect(count(ea, 'fire:start'), kind).toBe(1);
       expect(count(ea, 'fire:spread'), kind).toBeGreaterThanOrEqual(1);
-      expect(global(r.bus, 'event:start'), kind).toHaveLength(1);
+      expect(global(r.bus, 'event:start'), kind).toHaveLength(3); // HAZARD_V2: Hard has three events per round (was 1)
       expect(eb, kind).toEqual(ea);
       const [a, b] = r.g.teams;
       expect([b!.score, b!.delivered, b!.expired, b!.reachedAt], kind).toEqual([a!.score, a!.delivered, a!.expired, a!.reachedAt]);

@@ -44,7 +44,6 @@ export interface RatParams {
 export interface IceParams {
   tauAccelMs: number;
   tauStopMs: number;
-  turnDps: number; // max turning rate of the velocity vector
 }
 export interface EventParams {
   windows: readonly (readonly [number, number])[]; // fractions of the round: [from, to] of each event's start
@@ -118,13 +117,13 @@ export const HAZARD_V2: Record<Difficulty, HazardParams> = {
   easy: {
     fire: fire(15_000, 5000, 3000, 2, 3000, 0, 0, 3000), // Easy has no fire (burn.fireAllowed): the row only keeps the old numbers
     rat: rat(1.9, 2.8, 450, 600, 0.5, 2.0, 1.1, 1.3, 5000),
-    ice: { tauAccelMs: 900, tauStopMs: 1000, turnDps: 270 },
+    ice: { tauAccelMs: 900, tauStopMs: 1000 },
     events: ev([[0.333, 0.667]], 10_000), // switched on by hand in Easy: one event, as before
   },
   normal: {
     fire: fire(8000, 5000, 2500, 3, 4000, 300, 8000, 2000),
     rat: rat(2.2, 3.4, 540, 400, 0.45, 2.5, 0.9, 1.1, 3000),
-    ice: { tauAccelMs: 1100, tauStopMs: 1300, turnDps: 180 },
+    ice: { tauAccelMs: 1100, tauStopMs: 1300 },
     events: ev(
       [
         [0.2, 0.4],
@@ -136,7 +135,7 @@ export const HAZARD_V2: Record<Difficulty, HazardParams> = {
   hard: {
     fire: fire(6000, 3000, 2000, 4, 5000, 500, 10_000, 1500),
     rat: rat(2.6, 3.8, 540, 300, 0.45, 3.0, 0.8, 1.0, 2000),
-    ice: { tauAccelMs: 1300, tauStopMs: 1600, turnDps: 140 },
+    ice: { tauAccelMs: 1300, tauStopMs: 1600 },
     events: ev(
       [
         [0.15, 0.3],
