@@ -2,6 +2,7 @@
 // organised in JOBS, one per pizza: a job claims an oven when it starts, a sauce pot when it needs one, and walks the steps of tools/carta-larga/steps.ts. Any chef that can reach the station of the
 // job's next step works on it. When the next step is across a wall (the H hatches of map 26: items cross, chefs do not), the chef puts what it holds on a hatch and parks the job; a chef of the
 // other side picks it up there. New jobs follow the queue (a Bandeja asks for its plates one by one). A chef that has not moved for a while steps aside: two chefs head-on stop dead in the sim.
+import { ev2Bot } from '@pichi/game-pizzas/sim/ev2/bot';
 import {
   COUNTDOWN_MS,
   TICK_MS,
@@ -135,6 +136,8 @@ function drop(c: Crew, m: CMem) {
 
 function decide(c: Crew, p: Player, rank: number, m: CMem, tickNo: number): Controls {
   const g = c.g;
+  const ev = g.ev2 ? ev2Bot(g, p, rank, tickNo) : null; // EVENTS_V2: the light board and the candle drawer come before the kitchen
+  if (ev) return ev;
   let j = m.job;
   if (!j && !m.bin) {
     j = takeParked(c, p, rank) ?? (p.item ? null : startJob(c, p, rank));

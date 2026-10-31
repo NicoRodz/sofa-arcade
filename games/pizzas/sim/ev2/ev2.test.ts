@@ -5,6 +5,7 @@ import type { EventKind } from '../midround';
 import { BOARD_RADIUS, HOLD_MS, pickSpot } from './state';
 import { cakeRecipe } from './events';
 import { chefHint } from '../hints';
+import { ev2Bot } from './bot';
 import { aStation } from '../round/targeting';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
@@ -213,5 +214,35 @@ describe('eventsV2: cumpleaños', () => {
     stand(g, 1, d.tx, d.ty + 1);
     Object.assign(g.players.get(1)!, { fx: 0, fy: -1 });
     expect(aStation(g, g.players.get(1)!)).toBe(g.stations[d.station]);
+  });
+});
+
+describe('eventsV2: bots', () => {
+  const drive = (g: Game, until: () => boolean, ms: number, ids: number[]) => {
+    for (let t = 0, n = 0; t < ms && !until(); t += TICK_MS, n++) {
+      const c = new Map<number, Controls>();
+      ids.forEach((id, rank) => c.set(id, ev2Bot(g, g.players.get(id)!, rank, n) ?? idle));
+      tick(g, c);
+    }
+  };
+  it('a bot walks to the board, holds B and the light is back within 8 s of the start', () => {
+    const { g, closes } = room();
+    force(g, 'blackout');
+    drive(g, () => !!closes.length, 12_000, [1]);
+    expect(closes[0]).toMatchObject({ kind: 'blackout', ok: true });
+    expect(g.ev2!.restoredAt! - g.mid!.startAt).toBeLessThan(8000);
+  });
+  it('two Hard bots do it together', () => {
+    const { g, closes } = room({ difficulty: 'hard', chefs: 2 });
+    force(g, 'blackout');
+    drive(g, () => !!closes.length, 15_000, [1, 2]);
+    expect(closes[0]).toMatchObject({ kind: 'blackout', ok: true });
+  });
+  it('a bot with free hands lights the candle', () => {
+    const { g } = room();
+    force(g, 'birthday');
+    run(g, 200);
+    drive(g, () => g.ev2!.cake!.candled, 15_000, [1]);
+    expect(g.ev2!.cake!.by).toBe(1);
   });
 });
