@@ -54,7 +54,7 @@ export function renderChips() {
       c.who = -1;
       c.look = '';
       c.making = false;
-      c.el.classList.remove('making');
+      c.el.classList.remove('making', 'chef');
       c.av.replaceChildren();
       c.nm.textContent = 'Esperando…';
       c.sub.textContent = '';
@@ -66,6 +66,7 @@ export function renderChips() {
     const joined = c.who !== info.id;
     if (joined || look !== c.look) {
       // a look that changes under a seated player (live creator updates) puffs; a new player pops the whole chip
+      c.el.classList.toggle('chef', !info.ap); // no look of its own: the menu shows a neutral face instead of Pizzas' chef
       c.av.replaceChildren(info.ap ? avatarCanvas(info.ap, slotColor) : chefCanvas(i, 'idle', true));
       if (!joined) replay(c.av, 'puff');
       c.look = look;

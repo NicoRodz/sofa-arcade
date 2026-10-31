@@ -1,5 +1,6 @@
 // Start menu: one persistent card per registry game (plus the announced ones), so the art is drawn once and the idle state never restarts.
 // Moved out of apps/screen/src/main.ts (F4b); picking a game asks the game for its config reset and its after-pick step.
+import './menu.css';
 import { clampSel, menuCards, menuPick, soundFor, NAV_SFX, type MenuAction } from '../menu';
 import { $, esc } from '../ui/dom';
 import { app, connectedCount, dispatch, renderUi, services, setConfig, transition } from '../shell/app-state';

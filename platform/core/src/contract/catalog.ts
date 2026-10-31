@@ -10,7 +10,7 @@ import type { GameManifest } from './game';
 import { COOP_TEAMS, isModeId } from './options';
 import type { ChoiceSpec, ModeId, ModeSpec } from './options';
 
-export const PLATFORM = 'Pichiclub';
+export const PLATFORM = 'Sofa Arcade';
 
 /** The choice as a vote.ts option (menus voting engine), so a vote and the lobby read the same registry. */
 export const choiceVoteSpec = (c: ChoiceSpec, votable = true): VoteOptionSpec => ({

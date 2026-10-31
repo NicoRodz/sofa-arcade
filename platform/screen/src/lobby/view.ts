@@ -2,10 +2,11 @@
 // The rest of a lobby is the game's (ScreenGame.lobby.render). Moved out of apps/screen/src/main.ts (F4b).
 import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core/difficulty';
 import { PLATFORM } from '@pichi/core/contract';
+import { paintTitle } from '../art/sofa-brand';
 import { catalog } from '../shell/catalog';
 import { renderMenu } from '../menu/view';
 import { $, setHtml } from '../ui/dom';
-import { app, pickedGame, setConfig } from '../shell/app-state';
+import { app, connectedCount, pickedGame, setConfig } from '../shell/app-state';
 import { renderChips, showTeams } from './chips';
 import { paintFocus } from './focus-nav-dom';
 import { scheduleMenu } from './menu-bridge';
@@ -22,8 +23,10 @@ export function paintUi() {
   $('results').classList.toggle('off', app.phase !== 'results');
   $('debug').classList.toggle('off', !app.debugOverride);
   if (!hub) return;
-  $('title').textContent = inMenu ? PLATFORM : catalog().name(app.config.game);
-  $('platform').textContent = inMenu ? 'Elige un juego' : PLATFORM;
+  document.body.classList.toggle('sa-menu', inMenu); // the menu's own look (plum, Sofa pop); the lobbies keep the game's
+  paintTitle($('title'), inMenu ? PLATFORM : catalog().name(app.config.game), inMenu);
+  $('platform').textContent = inMenu ? 'Juegos de sillón · tu celular es el control' : PLATFORM;
+  $('playersn').textContent = `${connectedCount()}/8`;
   renderChips();
   if (inMenu) {
     showTeams(false);
