@@ -5,33 +5,23 @@ import { catalog } from './catalog';
 import { $ } from '../ui/dom';
 import { NAV_SFX } from '../menu';
 import { isExpired, progress, secondsLeft, type HowToState } from '../howto';
-import { app, canStartNow, dispatch, pickedGame, services, transition } from './app-state';
+import { app, canStartNow, dispatch, endIris, pickedGame, services, transition } from './app-state';
 
 export function startRound() {
   if (app.phase !== 'lobby' || app.starting || app.howTo || !canStartNow()) return;
   if (pickedGame().lobby.beforeStart?.()) return; // the school took over
   app.starting = true;
-  services.iris(
-    () => openHowTo('start'),
-    () => {
-      app.starting = false;
-    },
-  );
+  services.iris(() => openHowTo('start'), endIris);
 }
 
 export function beginRound() {
   if (app.starting) return;
   app.starting = true;
-  services.iris(
-    () => {
-      closeHowTo();
-      dispatch('start');
-      app.gateUntil = performance.now() + 700;
-    },
-    () => {
-      app.starting = false;
-    },
-  );
+  services.iris(() => {
+    closeHowTo();
+    dispatch('start');
+    app.gateUntil = performance.now() + 700;
+  }, endIris);
 }
 
 export function openHowTo(mode: HowToState['mode']) {

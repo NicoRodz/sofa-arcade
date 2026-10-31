@@ -1,12 +1,14 @@
 // The screen's side of the relay protocol: connect (and reconnect), the player table the messages keep up to date, and the dispatch of
 // each message to the shell or, when the shell does not own it, to the games. Moved out of apps/screen/src/main.ts (F4b).
 import { PING_MS, PressTracker, WS_PATH, acceptNav, navToKey, remoteBlocked, type PublicPlayer, type ServerMsg } from '@pichi/core';
-import { app, renderUi, services, sync } from '../shell/app-state';
+import { app, bindCaptainKeySink, renderUi, routeCaptainKey, services, sync } from '../shell/app-state';
 import { games } from '../shell/game';
 import { onKey } from '../vote/dpad-vote';
 import { onMenuAct, scheduleMenu } from '../lobby/menu-bridge';
 import { latency, queueLag, record } from './latency';
 import { sendMsg, setSocket, socket } from './socket';
+
+bindCaptainKeySink((k) => onKey(k, false));
 
 function upsert(info: PublicPlayer, reset = false) {
   let p = app.players.get(info.id);
@@ -86,7 +88,7 @@ export function onMessage(m: ServerMsg) {
     case 'nav': {
       // the Captain's D-pad: the same handler as the keyboard, fed with the key that intent stands for
       if (!acceptNav(app.captainId, m.from) || remoteBlocked(app.lastKeyAt, performance.now())) break;
-      onKey(navToKey(m.key), false);
+      routeCaptainKey(navToKey(m.key), (k) => onKey(k, false)); // held through the iris, not lost
       break;
     }
     case 'rtt': {
