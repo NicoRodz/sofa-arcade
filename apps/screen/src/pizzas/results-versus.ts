@@ -10,6 +10,7 @@ import { DECIDED_TEXT, recordRound, seriesLine, versusReport } from '@pichi/game
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import type { LobbyConfig } from '@pichi/core';
 import { startProblem, shuffleTeams } from './lobby-sync';
+import { resetFocus } from './key-nav';
 import { isVersus, pz, stats } from './state';
 
 const lightOf = (hex: string) => {
@@ -66,6 +67,7 @@ export function renderVersusResults() {
       );
     })
     .join('');
+  resetFocus('results');
   const line = seriesLine(pz.series, names);
   $('vsseries').innerHTML = line ? `<small>Serie</small>${esc(line)}` : '';
   // the flags wave (winner), hang (loser) or rest, redrawn every frame while the screen is up
