@@ -9,6 +9,7 @@
   "dependencies": {
     "@pichi/catalog": "*",
     "@pichi/core": "*",
+    "@pichi/game-arena": "*",
     "@pichi/game-obstaculos": "*",
     "@pichi/game-pizzas": "*",
     "@pichi/screen-kit": "*",

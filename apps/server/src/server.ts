@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import express from 'express';
 import QRCode from 'qrcode';
-import { CATALOG, DEFAULT_CONFIG, parseClientMessage } from '@pichi/catalog';
+import { DEFAULT_CONFIG, DEV_CATALOG, parseDevClientMessage } from '@pichi/catalog';
 import { attachRelay, lanIp } from '@pichi/server-kit';
 import { ExpeditionStore, mountExpeditions } from '@pichi/game-obstaculos/server';
 export type Mode = 'none' | 'dev' | 'static';
@@ -13,7 +13,7 @@ const area = (p: string) => (req: express.Request) => req.path === p || req.path
 export async function startServer(opts: { port: number; mode: Mode; dataDir?: string }) {
   const app = express();
   const server = createServer(app);
-  const relay = attachRelay(server, { catalog: CATALOG, parse: parseClientMessage, defaultConfig: DEFAULT_CONFIG });
+  const relay = attachRelay(server, { catalog: DEV_CATALOG, parse: parseDevClientMessage, defaultConfig: DEFAULT_CONFIG });
   const closers: (() => Promise<unknown>)[] = [];
 
   app.get('/', (_req, res) => res.redirect('/screen'));

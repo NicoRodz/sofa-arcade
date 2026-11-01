@@ -10,6 +10,7 @@
     "@pichi/catalog": "*",
     "@pichi/controller-kit": "*",
     "@pichi/core": "*",
+    "@pichi/game-arena": "*",
     "@pichi/game-obstaculos": "*",
     "@pichi/game-pizzas": "*",
     "nipplejs": "^1.0.4",

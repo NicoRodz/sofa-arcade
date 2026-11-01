@@ -1,0 +1,1 @@
+export { arenaController } from './game';
