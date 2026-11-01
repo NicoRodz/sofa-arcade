@@ -15,12 +15,27 @@ export async function runLobby({ cdp, bots, open, join }: Ctx) {
   bots.splice(0).forEach((b) => b.close());
 }
 
+// A map outside the draw (as 1) lives on its group's page of the lobby grid, not on the first one: go through the group cards until its card shows up.
+const pickMap = async ({ click, cdp }: Ctx, id: string) => {
+  const has = (sel: string) => cdp.eval<boolean>(`!!document.querySelector(${JSON.stringify(sel)})`);
+  for (const to of [null, 'plain', 'taller', 'series']) {
+    if (to && !(await has(`[data-map="group"][data-to="${to}"]`))) continue;
+    if (to) {
+      await click(`[data-map="group"][data-to="${to}"]`);
+      await sleep(300);
+    }
+    if (await has(`[data-map="${id}"]`)) return click(`[data-map="${id}"]`);
+    if (to) await click('[data-map="group"][data-to="classic"]'); // back to the first page for the next group
+  }
+  throw new Error(`capture: no map card ${id} on any page of the lobby grid`);
+};
+
 const play = async (c: Ctx, mapId: string, n: number, tag: string, results: boolean) => {
   const { cdp, bots, timers, open, join, click, snap, waitFor } = c;
   const room = `G${mapId}${tag}`.toUpperCase().slice(0, 4);
   await open(room);
   await join(room, n, fixedMap(mapId)!.rows);
-  await click(`[data-map="${mapId}"]`);
+  await pickMap(c, mapId);
   await click('[data-diff="easy"]');
   await sleep(300);
   await click('#start');
@@ -64,7 +79,8 @@ const play = async (c: Ctx, mapId: string, n: number, tag: string, results: bool
   bots.splice(0).forEach((b) => b.close());
 };
 
-export const runCast = (c: Ctx) => play(c, '1', 8, 'c', false);
+// map 1 holds 2-4 chefs and the grid folds it away for 8; map 12 (5-8) is the 8-chef map
+export const runCast = (c: Ctx) => play(c, '12', 8, 'c', false);
 
 export async function runSolo({ timers, open, join }: Ctx) {
   await open('SOLO');

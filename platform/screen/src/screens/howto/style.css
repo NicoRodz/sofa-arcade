@@ -1,0 +1,17 @@
+#howto { position: fixed; inset: 0; z-index: 40; background: rgba(28,16,12,.78); backdrop-filter: blur(5px); }
+#howtoInner { position: absolute; inset: 0; margin: auto; width: 1480px; height: max-content; padding: 26px 48px 30px; animation: slideup .5s cubic-bezier(.2,1.2,.3,1) both; }
+#howto h2 { margin: 0; text-align: center; font: 800 68px/1 var(--font); color: var(--tomato); -webkit-text-stroke: 14px var(--ink); paint-order: stroke fill; text-shadow: 0 6px 0 rgba(43,27,23,.3); }
+#howto .gname { text-align: center; font: 800 30px var(--font); letter-spacing: 4px; text-transform: uppercase; color: var(--muted); margin: 14px 0 18px; }
+#howto .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+#howto .steps li { display: flex; align-items: center; gap: 20px; min-height: 160px; padding: 16px 22px; border: 4px solid var(--ink); border-radius: 18px; background: #F6E8CB; position: relative; box-shadow: 0 6px 0 rgba(43,27,23,.2); }
+#howto .steps .n { position: absolute; left: -16px; top: -16px; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); border: 4px solid var(--ink); color: var(--cream); font: 800 32px/44px var(--font); text-align: center; text-shadow: 0 2px 0 rgba(43,27,23,.4); }
+#howto .steps .ic { flex: none; width: 112px; height: 112px; border-radius: 50%; background: var(--cream); border: 4px solid var(--ink); display: flex; align-items: center; justify-content: center; color: var(--tomato2); }
+#howto .steps .ic .ico { width: 70px; height: 70px; }
+#howto .steps .tx { font: 800 40px/1.12 var(--font); color: var(--ink); }
+#howto .note { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 22px; font: 800 36px var(--font); color: var(--basil2); }
+#howto .note .ic { width: 48px; height: 48px; color: var(--cheese2); }
+#howto .note .ico { width: 100%; height: 100%; fill: var(--cheese); }
+#howtobar { height: 18px; margin-top: 24px; border: 3px solid var(--ink); border-radius: 12px; background: #E5D4B0; overflow: hidden; }
+#howtofill { height: 100%; width: 0; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+#howtohint { text-align: center; font: 800 30px var(--font); color: var(--muted); margin-top: 12px; }
+#howtohint b { color: var(--ink); }

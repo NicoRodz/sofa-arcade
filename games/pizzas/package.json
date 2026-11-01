@@ -12,6 +12,8 @@
     "./sim/validate": "./sim/validate/index.ts",
     "./screen/art/food": "./screen/art/food/index.ts",
     "./controller": "./controller/index.ts",
+    "./screen/markup/*.html": "./screen/markup/*.html",
+    "./screen/markup/*.css": "./screen/markup/*.css",
     "./*": "./*.ts"
   },
   "scripts": {

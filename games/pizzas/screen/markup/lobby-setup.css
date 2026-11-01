@@ -1,0 +1,27 @@
+#maps { display: grid; grid-template-columns: repeat(8, 1fr); gap: 7px; } /* 22 cards = 3 rows of 8; 4 rows overflow into #hints */
+#minimap { position: absolute; right: 26px; top: 12px; border: 4px solid var(--ink); border-radius: 10px; background: #2b1b17; width: 232px; height: 130px; }
+#hints { position: absolute; left: 26px; right: 26px; bottom: 10px; }
+#hints .hint.notice { color: var(--tomato2); }
+#hints .hint { margin: 0; min-height: 30px; }
+/* the sabotage level: one line under Dificultad / Modalidad (versus only): label, three pills, what the level does */
+#sabbox { display: flex; align-items: center; gap: 14px; margin-top: 10px; width: 906px; }
+#sabbox.off { display: none; }
+#sabbox h3 { margin: 0; flex: none; }
+#sabs { flex-wrap: nowrap; flex: none; }
+#sabs .pill { height: 44px; padding: 0 16px; font-size: 22px; }
+#sabinfo { margin: 0; min-height: 0; flex: 1; min-width: 0; font-size: 19px; line-height: 1.15; }
+#sabinfo.notice { color: var(--tomato2); }
+/* the mid-round events option: label, Sí / No, on the line of the map heading (both modes of the pizza game) */
+#maprow { display: flex; align-items: flex-end; justify-content: space-between; }
+#evbox { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; margin-right: 250px; } /* left of the minimap */
+#evbox.off { display: none; }
+#evbox h3 { margin: 0; flex: none; }
+#evbox kbd { font-size: 13px; min-width: 0; line-height: 18px; padding: 0 5px; letter-spacing: 0; }
+#evs, #muts { flex-wrap: nowrap; flex: none; }
+#evs .pill, #muts .pill { height: 38px; padding: 0 18px; font-size: 20px; }
+#seedrow { margin-top: 8px; font: 600 22px var(--font); color: var(--muted); }
+#seedrow b { color: var(--ink); }
+#again-seed { height: 40px; font-size: 20px; padding: 0 16px; margin-left: 10px; }
+#schoolbtn { margin-top: 4px; height: 44px; font-size: 22px; padding: 0 18px; }
+#lobbyui:has(#pizzaops.off) #schoolbtn { display: none; } /* the school is a pizza thing */
+#diffinfo.notice { color: var(--tomato2); }

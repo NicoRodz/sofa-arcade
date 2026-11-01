@@ -25,7 +25,8 @@ describe('versus pause and results: keys and the Captain D-pad', () => {
   });
   it('every button of the table exists in the screen HTML', async () => {
     const { readFileSync } = await import('node:fs');
-    const html = readFileSync(new URL('../../../apps/screen/index.html', import.meta.url), 'utf8');
+    const markup = (f: string) => readFileSync(new URL(`./markup/${f}`, import.meta.url), 'utf8');
+    const html = markup('results.html') + markup('pausebar.html'); // the buttons are Pizzas' own markup (versus results and the pause bar)
     for (const ctx of Object.values(VERSUS_NAV)) for (const id of ctx.buttons) expect(html).toContain(`id="${id}"`);
   });
 });
