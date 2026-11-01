@@ -14,11 +14,11 @@ const NAMES = { v1: 'mirrorX', v3: 'rot180' } as const;
 const KEYS = ['v1', 'v3'] as const;
 const EPS = 1e-9;
 
-function setup(key: (typeof KEYS)[number]) {
+function setup(key: (typeof KEYS)[number], rows: readonly string[] = MIRRORS[key].rows) {
   const m = MIRRORS[key];
-  const spawns = m.rows.flatMap((r, y) => [...r].flatMap((c, x): [number, number][] => (c === 'S' ? [[x, y]] : [])));
+  const spawns = rows.flatMap((r, y) => [...r].flatMap((c, x): [number, number][] => (c === 'S' ? [[x, y]] : [])));
   const g = createGame({
-    rows: m.rows,
+    rows,
     spawns,
     teams: TEAMS,
     sigma: NAMES[key],
@@ -137,6 +137,28 @@ describe('VERSUS_V3 rat, the two rats are twins', () => {
       expect(walks).toBeGreaterThan(100);
       expect(ties, `${key} walks with two equal shortest paths`).toBeGreaterThan(20);
     }
+  });
+
+  it('a rat that can go round a pillar either way takes the twin way', () => {
+    // V1 with its two-tile islands cut down to a single column (x = 3 and 12): a rat above the pillar and a counter below it is the same distance by the left and by the right
+    const rows = [...MIRRORS.v1.rows];
+    rows[3] = 'K..C...##...C..K';
+    rows[4] = 'C..C...##...C..C';
+    const { g, iso } = setup('v1', rows);
+    quiet(g, []);
+    const c = g.stations.find((st) => st.tx === 12 && st.ty === 4)!;
+    const [tx, ty] = iso.tile(12, 4);
+    c.item = 'raw0';
+    g.stations.find((st) => st.tx === tx && st.ty === ty)!.item = 'raw0';
+    expect(hasTie(g, c, 12, 2)).toBe(true); // by an independent BFS: two equal shortest paths from the rat's tile
+    place(g, iso, 12.5, 2.5);
+    let first = 0;
+    for (let i = 0; i < 20; i++) {
+      tick(g, new Map());
+      same(iso, ratOf(g, 0), ratOf(g, 1), `pillar t${i}`);
+      if (!first && Math.abs(ratOf(g, 1)!.x - 12.5) > 0.2) first = Math.sign(ratOf(g, 1)!.x - 12.5);
+    }
+    expect(first).not.toBe(0); // it went round the pillar, one way
   });
 
   it('a chef dashing at the rat makes both rats jump to the twin side and pant alike', () => {
