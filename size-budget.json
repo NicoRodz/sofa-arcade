@@ -1,6 +1,6 @@
 {
  "limits": {"code":{"soft":300,"hard":500},"test":{"soft":500,"hard":800},"markup":{"soft":150,"hard":250},"index":{"hard":40},"folder":{"soft":12,"hard":20},"shrinkSlack":25,"folderShrinkSlack":3},
- "exemptDirs": ["data","fixtures","levels","golden"],
+ "exemptPaths": ["games/obstaculos/levels/","games/pizzas/test/golden/fixtures/"],
  "files": {
   "apps/controller/index.html": { "max": 234, "until": "2027-03-31" },
   "apps/controller/test/checks.ts": { "max": 329, "until": "2027-03-31" },
