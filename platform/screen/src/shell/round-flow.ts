@@ -4,7 +4,9 @@ import { howToHtml } from '@pichi/core';
 import { catalog } from './catalog';
 import { $ } from '../ui/dom';
 import { NAV_SFX } from '../menu';
-import { isExpired, progress, secondsLeft, type HowToState } from '../howto';
+import type { HowToState } from '../howto';
+import { howToView } from '../screens/howto/model';
+import { renderHowTo } from '../screens/howto/view';
 import { app, canStartNow, dispatch, endIris, pickedGame, services, transition } from './app-state';
 
 export function startRound() {
@@ -24,12 +26,12 @@ export function beginRound() {
   }, endIris);
 }
 
+// Game name and steps are read once when the card opens, as before: a config change while it shows does not rewrite it.
+let card = { game: '', bodyHtml: '' };
 export function openHowTo(mode: HowToState['mode']) {
   const g = catalog().games.find((x) => x.id === app.config.game) ?? catalog().games[0]!;
+  card = { game: g.name, bodyHtml: howToHtml(catalog().info(g.id, app.config.modeId).howTo) };
   app.howTo = { mode, startedAt: performance.now() };
-  $('howtogame').textContent = g.name;
-  $('howtobody').innerHTML = howToHtml(catalog().info(g.id, app.config.modeId).howTo);
-  $('howtobar').style.visibility = mode === 'start' ? 'visible' : 'hidden';
   $('howto').classList.remove('off');
   tickHowTo();
 }
@@ -40,18 +42,9 @@ export function closeHowTo() {
 function tickHowTo() {
   const howTo = app.howTo;
   if (!howTo) return;
-  const now = performance.now();
-  if (howTo.mode === 'start') {
-    if (isExpired(howTo, now)) {
-      beginRound();
-      return;
-    }
-    ($('howtofill') as HTMLElement).style.width = `${(progress(howTo.startedAt, now) * 100).toFixed(1)}%`;
-    $('howtohint').innerHTML = `Empieza en <b>${secondsLeft(howTo.startedAt, now)}</b> · Enter para saltar`;
-  } else {
-    ($('howtofill') as HTMLElement).style.width = '0';
-    $('howtohint').innerHTML = '<b>H</b> o <b>Enter</b> para cerrar';
-  }
+  const view = howToView(howTo, performance.now(), card.game, card.bodyHtml);
+  if (!view) beginRound();
+  else renderHowTo(view);
 }
 
 export function initRoundFlow() {
