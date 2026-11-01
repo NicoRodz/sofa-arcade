@@ -359,6 +359,22 @@ describe('lobby config', () => {
     [screen.ws, a.ws, b.ws].forEach((w) => w.close());
   });
 
+  it('a game in development (arena) is picked only by the screen: a phone asking for it changes nothing in the room', async () => {
+    const screen = new Client('?role=screen&room=c-arena');
+    const a = new Client('?room=c-arena');
+    await Promise.all([screen.open(), a.open()]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    await a.next('joined');
+    await a.next('config');
+    a.send({ t: 'config', game: 'arena', difficulty: 'normal', map: 'auto', seed: 1 });
+    await settle();
+    expect(a.msgs.filter((m) => m.t === 'config')).toEqual([]); // no broadcast
+    expect(srv.relay.rooms.get('c-arena')!.config.game).toBe('pizzas'); // the lobby did not move
+    screen.send({ t: 'config', game: 'arena', difficulty: 'normal', map: 'auto', seed: 1 }); // what the screen sends under ?soon=1
+    expect(await a.next('config')).toMatchObject({ game: 'arena' });
+    [screen.ws, a.ws].forEach((w) => w.close());
+  });
+
   it('config carries the game control labels and how-to steps, on join and on change', async () => {
     const screen = new Client('?role=screen&room=c2');
     const a = new Client('?room=c2');
