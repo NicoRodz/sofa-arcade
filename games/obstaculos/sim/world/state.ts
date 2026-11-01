@@ -2,6 +2,7 @@
 import type { Difficulty } from '@pichi/core';
 import type { DifficultyParams } from '../../constants';
 import type { AllObstEvents, ObstEventName } from '../../events';
+import type { WindPhase } from './wind-type';
 import type { ParsedLevel } from '../../parse';
 import type { Cell, EntityParam, GameMode, Weight } from '../../types';
 import type { PxRect } from './collide';
@@ -155,7 +156,7 @@ export interface PickE {
   homeY: number;
   heldBy: number;
 }
-export type WindPhase = 'calm' | 'warn' | 'gust';
+export type { WindPhase };
 export interface CheckpointE {
   cell: Cell;
   activated: boolean;

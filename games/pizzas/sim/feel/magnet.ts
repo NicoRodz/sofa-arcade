@@ -11,33 +11,18 @@
 //  4. DASH HUG: a dash that ends within `hugMax` of a station right in front of it goes on (a few ms) until it touches it.
 //  5. Feel: inertia and the dash/buffer knobs from MAGNET_TUNING replace the difficulty's (`tuneFor`): a quicker stick, a shorter dash cooldown.
 // The Ayudante keeps its own rules (assist.ts) and reach x1.5, plus `assistExtra` of reach more when the magnet is on.
+import type { MagnetCfg, MagnetLevel } from './types';
+export type { MagnetCfg, MagnetLevel } from './types';
 import { isFloor } from '../maps';
 import type { Difficulty, Tuning } from '@pichi/core';
 import type { Game, Player, Station } from '../round/state';
 
-export type MagnetLevel = 'normal' | 'strong';
 export const MAGNET_OPTION = 'magnet'; // lobby option (false switches it off for the round); missing = the difficulty's default
 export const BASE_REACH = 1.1; // REACH + REACH_SLACK of the plain rule: the reach the multipliers scale (feel/magnet.test.ts pins it to the sim's constants)
 export const CHEF_RADIUS = 0.35; // = RADIUS of the sim (pinned too)
 const TOUCH = CHEF_RADIUS + 0.1; // from here a station is "touching": the cone no longer matters for which one is nearest, only the score
 
 /** TUNING of the magnet, one table. Every number is a first guess that docs/feel/diagnostico.md measured with the human bot (tools/feel-measure.ts --opts '{"magnet":true}'). */
-export interface MagnetCfg {
-  level: MagnetLevel;
-  reachMult: number; // interaction radius, times the plain one (BASE_REACH)
-  assistExtra: number; // Ayudante: added to ASSIST_REACH_MULT
-  coneDeg: number; // a station further than TOUCH must lie within this angle of where the chef heads
-  facingBonus: number; // tiles: the station the chef heads for counts this much nearer (and the one behind it this much farther)
-  pullDps: number; // the slow pull towards the target: degrees per second of facing
-  pullGap: number; // ...only within this gap (tiles from the chef's body to the station's edge)
-  pullSpeed: number; // ...and only below this speed (tiles/s)
-  hugMax: number; // a dash that ends this far (tiles from the body) from a station in front of it goes on until it touches
-  hugConeDeg: number;
-  tauMs: number; // R1 inertia while the stick is held: the lower of this and the difficulty's (Easy and Hard are already instant)
-  tauStopMs: number;
-  dashCdMs: number; // the lower of this and the difficulty's
-  bufferMs: number; // the higher of this and the difficulty's
-}
 export const MAGNET_TUNING: Record<MagnetLevel, MagnetCfg> = {
   normal: {
     level: 'normal',

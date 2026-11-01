@@ -11,15 +11,18 @@
 //   spill      Derrame            six patches of oil on the floor (mech/oil, only in a round with the oil mechanic)
 //   rat        Rata               a rat steals the item of a counter; a dash scares it (and the item goes back). Cooperative only
 // Versus: the same event, at the same instant, to both teams (one global state). The rat is never in the pool there (it would double the sabotage).
+import { ANNOUNCE_MS } from './announce';
+import type { EventKind, Mid, Rat } from './types';
+export type { EventKind, Mid, Rat } from './types';
 import { DIRS, isFloor } from '../maps';
-import { mulberry32, type Rng } from '@pichi/core';
+import { mulberry32 } from '@pichi/core';
 import type { Difficulty } from '@pichi/core';
 import { magnetFor } from '../feel/magnet';
 import { newSurfaceState } from '../surfaces/config';
 import { gentleRatStep, ratPrize } from '../feel/rat';
 import { ratPull, stealOnEscape } from '../feel/rat-loot';
 import { ratCaves } from '../feel/rat-caves';
-import type { Game, Item, Station } from '../round/state';
+import type { Game, Station } from '../round/state';
 import { spill } from '../mech/oil/spill';
 import { hazardParams } from '../hazards/hazard-v2';
 import { hz3Params } from '../hazards/hazard-v3';
@@ -28,12 +31,11 @@ import { planEvents, type Planned } from '../hazards/events-v2';
 import { endVersusRats, spawnVersusRats, stepVersusRats, versusRats } from '../feel/rat-versus';
 import { ev2End, ev2SpillWatch, ev2Spilt, ev2Start, ev2Tick } from '../ev2/events';
 
-export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
 export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];
 export const EVENTS_SEED_TAG = 0xe7e47e55;
 export const EVENT_FROM_MS = 60_000; // the event starts between these two instants of the match
 export const EVENT_TO_MS = 120_000;
-export const ANNOUNCE_MS = 3000; // the banner is up this long before it starts
+export { ANNOUNCE_MS } from './announce';
 export const ACTIVE_MS: Record<EventKind, number> = {
   rush: 3000,
   inspector: 20_000,
@@ -92,49 +94,6 @@ export const roundRules = (modeOptions: Readonly<Record<string, boolean | number
   frost: true,
   versusV3: true, // VERSUS_V3: a rat per kitchen and the Ola de frio in versus (ignored by a coop round)
 }); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
-
-export interface Rat {
-  x: number;
-  y: number; // tile units, centre
-  state: 'seek' | 'flee';
-  item: Item | null; // what it carries
-  from: number; // station index it stole from (-1: nothing yet)
-  hole: [number, number]; // where it came in and where it leaves
-  scared: boolean;
-  idleMs: number;
-  // the gentle rat only (feel/rat.ts): absent in a round without the magnet
-  born?: number;
-  heading?: number;
-  runMs?: number;
-  pauseMs?: number;
-  target?: number;
-  near?: boolean;
-  // HAZARD_V2 (feel/rat-v2.ts): the dodge of a dash and the panting after it
-  dodgeCd?: number;
-  dodgeMs?: number;
-  dodgeFrom?: [number, number];
-  dodgeTo?: [number, number];
-  pantMs?: number;
-  dashers?: number[];
-  evadeMs?: number; // feel/rat-evade.ts: a burst away from a chef in progress, its unit direction and cooldown
-  evadeDx?: number;
-  evadeDy?: number;
-  evadeCd?: number;
-}
-export interface Mid {
-  kind: EventKind;
-  announceAt: number;
-  startAt: number;
-  endAt: number; // Infinity until it starts
-  phase: 'wait' | 'announced' | 'active' | 'done';
-  dark: boolean; // blackout in progress
-  frost: boolean; // frost in progress: surfaces/physics reads it (every floor tile is ice)
-  rat: Rat | null;
-  rats?: Mid[]; // VERSUS_V3 (feel/rat-versus.ts): one sub-Mid per kitchen, each with its own `rat`; `rat` stays null
-  rng: Rng; // the stream of the events (the instant, the kind, the hole of the rat)
-  lossAt?: number; // HAZARD_V3: match time of the last item a hazard took (feel/rat-loot.ts)
-  queue?: Planned[]; // HAZARD_V2: the events still to come after this one (events-v2.ts); absent = the old single event
-}
 
 /** What the sim does for the two events that touch the queues; passed in so this file keeps no value import of the sim (the imports stay acyclic). */
 export interface MidFx {

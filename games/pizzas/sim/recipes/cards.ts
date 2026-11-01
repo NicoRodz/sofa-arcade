@@ -2,12 +2,10 @@
 // (cardCheck.ts) proves every station a recipe needs is on the map and reachable (in versus: in EACH kitchen). A versus round plays one card for both teams.
 // Rules of a card: 2 to 4 different recipes, always including the Marinara (the staple: the birthday event orders it and every kitchen can make it), and at
 // most one recipe with a topping (the cheese crate gives one topping per round, see defs.ts). Maps 1 to 8 have no cheese crate: their card is Marinara + Calzone.
+import type { Card } from './types';
+export type { Card } from './types';
 import { isRecipe, RECIPE_DEFS, type Recipe } from './defs';
 
-export interface Card {
-  recipes: readonly Recipe[];
-  bind?: readonly [number, number]; // a map with two topping crates ('3' and '4'): the topping each one gives (2 cheese, 3 pepperoni, 4 mushroom)
-}
 export const CARD_MIN = 2;
 export const CARD_MAX = 4; // the Carta larga 9 holds four (the Bandeja draws its plates from the others)
 

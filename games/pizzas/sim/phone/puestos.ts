@@ -1,5 +1,6 @@
 // Suggested stations ("puestos"): who starts where. Nothing here is enforced: any chef can use any station.
 // Spawn i gets puesto i (design 15-mapas §1.2): the map author orders the S tiles so spawn i sits next to the stations of puesto i.
+import type { PuestoId } from './puesto-id';
 import { mechFlagsOf } from '../mech/ids';
 import type { IconId, PuestoMsg } from '@pichi/core';
 import type { Slots } from '@pichi/core/contract';
@@ -11,9 +12,7 @@ const accessTiles = (g: Grid, x: number, y: number): Pos[] =>
 
 /** The stations message with Pizzas' own puesto ids (the wire types them as opaque strings). */
 export type PuestoMsgPz = PuestoMsg<Slots & { puesto: PuestoId }>;
-export const PUESTO_IDS = ['masa', 'corte', 'queso', 'horno', 'reparto', 'lavado', 'apoyo', 'prep', 'platos', 'entrega'] as const;
-export type PuestoId = (typeof PUESTO_IDS)[number];
-export const isPuestoId = (v: unknown): v is PuestoId => PUESTO_IDS.includes(v as PuestoId);
+export { PUESTO_IDS, isPuestoId, type PuestoId } from './puesto-id';
 
 export interface Features {
   cheese: boolean;

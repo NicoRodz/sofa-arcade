@@ -9,7 +9,7 @@
 //  - a prize for scaring it: RAT_BONUS points to the team
 // The sim hands over its helpers (`RatKit`), so this file imports nothing from it but types.
 import type { Game, Player } from '../round/state';
-import type { Mid, Rat } from '../rules/midround';
+import type { Mid, Rat } from '../rules/types';
 import { dodgeStep, ratGait, ratParams } from './rat-v2';
 import { evadeStep } from './rat-evade';
 import { book } from '../hazards/score-ledger';

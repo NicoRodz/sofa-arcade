@@ -4,14 +4,16 @@
 //   - the cheese crate gives the topping of the card's recipe (cheese, pepperoni or mushroom);
 //   - slicing pepperoni takes longer; a pot with dough and tomato can be FOLDED (hold Picar at the oven) into a calzone, which bakes longer;
 //   - the window matches a plate to an order by recipe.
+import type { Rec } from './types';
+export type { Rec } from './types';
 import type { Game, Item, Order, Station, TeamState } from '../round/state';
 import type { Rng, Difficulty } from '@pichi/core';
-import { cardFor, cardForV2, type Card } from './cards';
-import { createMenu, menuNext, menuRecipes, type Menu } from './menu';
+import { cardFor, cardForV2 } from './cards';
+import { createMenu, menuNext, menuRecipes } from './menu';
 import { stageCookMs } from './sauce';
 import { SLICE_MS, casaAccepts, casaCookMult, casaMask } from './casa';
 import { bandejaAllowed, partSlot } from './bandeja';
-export { isBaking } from './sauce';
+export { isBaking, potCapacity } from './sauce';
 import {
   CALZONE_COOK_MULT,
   FOLD_MS,
@@ -28,15 +30,6 @@ import {
 } from './defs';
 
 export const MARINARA_PCT = 40; // share of the Marinara in the orders; the other recipes of the card split the rest equally
-
-export interface Rec {
-  card: Card; // the map's card as it plays (a recipe whose station the map lacks is dropped)
-  recipes: readonly Recipe[]; // card.recipes in order, Marinara first
-  weights: readonly number[]; // % of the orders of each, same order (they add up to 100)
-  topping: number; // ingredient type the cheese crate gives: 2 cheese, 3 pepperoni, 4 mushroom
-  topping2: number | null; // the second topping crate ('4'), on a map that has one
-  menu?: Menu; // menuV2 only (recipes/menu.ts): the cut card's bag and sequence; absent = one weighted draw per order, as always
-}
 
 /** The card of the round, or null when the map has none (a generated map): the round then plays the old recipes. `stations`: the sim's, to drop what the grid cannot make. */
 export function createRec(
@@ -140,9 +133,6 @@ export const canFold = (g: Game, s: Station): boolean =>
 /** Dough, tomato, cheese and ham in the oven of a card with the stuffed calzone. */
 export const isStuffed = (g: Game, s: Station): boolean =>
   !!g.rec?.recipes.includes('calzonerel') && s.inputs.length === 4 && [0, 1, 2, 5].every((t) => s.inputs.includes(t));
-
-/** How many ingredients an oven takes: dough, tomato and a topping; four on a map with a second topping crate. */
-export const potCapacity = (g: Pick<Game, 'rec'>): number => (g.rec?.topping2 == null ? 3 : 4);
 
 /** `dtMs` more of Picar folding the pot; at FOLD_MS the calzone is folded (it keeps cooking, longer). */
 export function foldStep(g: Game, playerId: number, s: Station, dtMs: number) {

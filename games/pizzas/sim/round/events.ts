@@ -1,9 +1,11 @@
 // Typed events emitted by the pure game logic. The sound layer (and anything else) subscribes to these;
 // the logic knows nothing about who listens.
 import type { TeamResult } from '@pichi/core/lobby';
-import type { Item, Recipe, StationKind } from '../index';
+import type { StationKind } from '../maps';
+import type { Item } from './item';
+import type { Recipe } from '../recipes/types';
 import type { SabotageEvents } from '../sabotage-config';
-import type { EventKind } from '../rules/midround';
+import type { EventKind } from '../rules/types';
 
 // `team` (optional, on the team-level events): the id of the team the event belongs to, for the HUD and the sounds. It is present
 // only in versus (two or more teams); a cooperative round is one team and its events carry no team, exactly as before the teams refactor.

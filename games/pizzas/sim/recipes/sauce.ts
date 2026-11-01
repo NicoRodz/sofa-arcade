@@ -6,7 +6,6 @@
 import type { Difficulty } from '@pichi/core';
 import type { Game, Item, Station } from '../round/state';
 import { cutType } from './defs';
-import { potCapacity } from './sim';
 import { hasCasa } from './casa';
 
 export const STIR_MS = 3000; // of Picar to turn a pot of chopped tomato into sauce
@@ -118,3 +117,6 @@ export function stirStep(g: Game, s: Station, dtMs: number): boolean {
 export function stickTick(g: Game, s: Station) {
   if (s.done && !s.burnt && s.readyAt !== undefined && g.time - s.readyAt >= STICK_MS[g.difficulty]) s.burnt = true;
 }
+
+/** How many ingredients an oven takes: dough, tomato and a topping; four on a map with a second topping crate. */
+export const potCapacity = (g: Pick<Game, 'rec'>): number => (g.rec?.topping2 == null ? 3 : 4);

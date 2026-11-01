@@ -1,11 +1,9 @@
 // The score book (HAZARD_V3 instrument): every sum or subtraction on a team's score, with its source: `delivery`, `tip`, `event:*`, `penalty:*`, plus the counted losses of hazards (`hazard:*`, no points).
 // A round keeps one only with `hazardsV3` or the `ledger` option; without it `book` is a no-op and the sim is untouched. Pure: no stream, no clock.
+import type { Ledger } from '../rules/types';
+export type { Ledger } from '../rules/types';
 import type { Game } from '../round/state';
 
-export interface Ledger {
-  points: Record<string, number>; // source -> net points (after the k of the handicap, as the score moves)
-  count: Record<string, number>; // source -> how many entries
-}
 export const newLedger = (): Ledger => ({ points: {}, count: {} });
 
 /** Write one entry. `points` may be 0 (a loss of an item that costs no score: it is only counted). */

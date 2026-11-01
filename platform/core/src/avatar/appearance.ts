@@ -1,19 +1,9 @@
 import { APPEARANCE_VERSION, FIELDS, FIELD_DEFAULT, FIELD_SIZE, clothesDefault, styleDefault, type AppearanceField } from './catalog';
 import { mulberry32 } from '../rng';
+import type { Appearance } from './appearance-type';
 import { randomAppearance } from './random';
 
-/** What a player looks like: version plus eight small integers (see catalog.ts for the ranges). */
-export interface Appearance {
-  v: 1;
-  g: number;
-  s: number;
-  hc: number;
-  sk: number;
-  hat: number;
-  gl: number;
-  bk: number;
-  cl: number;
-}
+export type { Appearance };
 
 /** The look of a phone that sent none (an old client) or garbage: a seeded random one, so two old phones also differ. */
 export const defaultAppearance = (slot: number): Appearance => randomAppearance(mulberry32(Number.isInteger(slot) ? slot : 0));

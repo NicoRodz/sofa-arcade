@@ -2,15 +2,10 @@
 import { BUS_GAIN, COMPRESSOR, MASTER_GAIN, softClip } from './mixer';
 import type { Note, Scheduled } from './music';
 import { SFX, type SfxId, type Voice } from './recipes';
+import type { Chain } from './chain-type';
 import { playHybrid } from './synth-perc';
 
-export interface Chain {
-  master: GainNode;
-  music: GainNode;
-  sfx: GainNode;
-  ui: GainNode;
-  noise: AudioBuffer;
-}
+export type { Chain };
 
 // buses -> master -> compressor -> destination
 export function createChain(ctx: BaseAudioContext): Chain {

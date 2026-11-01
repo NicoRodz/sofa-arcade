@@ -2,7 +2,8 @@
 // be on the grid AND reachable: some floor tile next to it must belong to a zone (floor regions joined by passing counters) that holds a spawn.
 // validate.ts calls it from validateMap and validateVersus (per kitchen, with the other kitchen walled off); a map with no card is not checked.
 import type { Grid } from '../maps';
-import { accessTiles, analyze, stationsOf, type StationKey } from '../validate';
+import { analyze } from '../validate/analyze';
+import { accessTiles, stationsOf, type StationKey } from '../validate/stations';
 import { DIFFICULTIES } from '@pichi/core';
 import { cardForV2, cardShapeProblems, type Card } from './cards';
 import { menuRecipes } from './menu';

@@ -1,23 +1,6 @@
-// The contract of a mechanic module (design section 7) and the shape of `game.mech`. Shared file: only T0 edits it; a tanda that needs another hook asks for it.
-// Everything is an integer (ticks, permil); a module never calls the RNG (the generator rolls, the sim does not).
+export type { MechState } from './state';
 import type { Controls, Game, Player, Station } from '../round/state';
 import type { MechId } from './ids';
-
-/** `game.mech`: exists only when some flag is on. Slices follow the design (section 3 "Estado"); a module creates its own in `init`. */
-export interface MechState {
-  hash: number; // fingerprint of every active module's hashExtra, refreshed at the end of each tick
-  kneader?: Record<number, { prog: number; hands: number[] }>; // station index -> progress (ticks) and the chefs on the handles
-  wood?: Record<number, number>; // oven station index -> fuel (bellows, cap 900)
-  gate?: { open: boolean; phase: number };
-  heat?: Record<number, number>; // oven station index -> temp 0..1000
-  tile?: Uint8Array; // 0 nothing, 1 oil, 2 fire, 3 water; index y * 16 + x
-  tileT?: Uint16Array;
-  bridge?: Record<number, { uses: number; brokenUntil: number }>;
-  raft?: Record<number, { pos: number; dir: number; wait: number }>;
-  belt?: { reversed: boolean; next: number };
-  tray?: { carrier: number | null; helper: number | null };
-  ext?: Record<string, unknown>; // anything else a module needs
-}
 
 /** Where a station fire changes (burn.ts): it starts at an oven, spreads to a counter, or is put out. */
 export type FirePhase = 'start' | 'spread' | 'out';

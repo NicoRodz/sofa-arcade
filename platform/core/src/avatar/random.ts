@@ -1,6 +1,6 @@
 import { APPEARANCE_VERSION, CLOTHES_BY_GENDER, FIELD_SIZE } from './catalog';
 import { pick, randInt, type Rng } from '../rng';
-import type { Appearance } from './appearance';
+import type { Appearance } from './appearance-type';
 
 /** A random look; `cl` always comes from the gender's list. Deterministic for a given rng. */
 export function randomAppearance(rng: Rng): Appearance {

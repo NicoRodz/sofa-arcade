@@ -1,5 +1,7 @@
 // EVENTS_V2 (design pizzas-tanda2 section 4): the state of the events with presence. Exists only in a cooperative round whose config asked for `eventsV2` and has events on:
 // without it `game.ev2` is absent, no hook below runs and the round is bit for bit the round of before. Everything here is integers and tick time: no stream, no wall clock.
+import type { Ev2, Spot } from './types';
+export type { Ev2, Spot } from './types';
 import type { Difficulty } from '@pichi/core';
 import { isFloor } from '../maps';
 import type { Game, Station } from '../round/state';
@@ -22,20 +24,6 @@ export const cakeLine = (d: Difficulty) => `Torta de ${CAKE_PRIZE[d]}`;
 export const SPILL_PRIZE = 60; // every patch wiped before it dries
 export const CAKE_PENALTY: Record<Difficulty, number> = { easy: -50, normal: -50, hard: -100 };
 
-export interface Spot {
-  tx: number;
-  ty: number;
-  station: number; // index in game.stations of the counter it sits on
-}
-export interface Ev2 {
-  board: Spot | null; // the light board of the blackout (set when the blackout starts)
-  hold: number; // ms of B held at the board by enough chefs
-  holders: number[]; // chefs holding it this tick (for the view)
-  restoredAt: number | null; // match time a chef brought the light back (null: it came back by itself)
-  rush: { total: number; ok: number; late: number; closed: boolean } | null;
-  cake: { drawer: Spot; candled: boolean; by: number | null; order: number; closed: boolean } | null;
-  spill: { tiles: number[]; dryTicks: number; ticks: number; closed: boolean } | null; // the patches the Derrame threw (tile indexes) and the ticks they have before they dry
-}
 export const createEv2 = (): Ev2 => ({ board: null, hold: 0, holders: [], restoredAt: null, rush: null, cake: null, spill: null });
 
 /** The free counter nearest to `to` (default: the centroid of the floor), ties by (y, x). Null when the map has no free counter. */
