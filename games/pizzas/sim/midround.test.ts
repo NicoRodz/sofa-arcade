@@ -74,7 +74,8 @@ function mk(
   });
   for (const k of KINDS)
     bus.on(k, ((p: never) => {
-      ((log[k] ??= []) as { t: number; p: unknown }[]).push({ t: g.time, p });
+      if (!log[k]) log[k] = [];
+      (log[k] as { t: number; p: unknown }[]).push({ t: g.time, p });
     }) as never);
   for (let i = 1; i <= (o.n ?? 1); i++) addPlayer(g, i, i - 1, i - 1);
   if (o.kind) force(g, o.kind, o.startAt ?? 5000);
@@ -238,10 +239,10 @@ describe('Pedido de cumpleaños: a pizza order worth 150', () => {
   });
   it('versus: one for each team, each worth 150 times its own k', () => {
     const g = createGame({ rows: MIRRORS.v1.rows, teams: [{ playerIds: [1, 2, 3] }, { playerIds: [4, 5] }], events: true, seed: 6 });
-    for (const [i, ids] of [
+    for (const ids of [
       [1, 2, 3],
       [4, 5],
-    ].entries())
+    ])
       ids.forEach((id, r) => addPlayer(g, id, r, r));
     force(g, 'birthday', 3000);
     run(g, 3100);

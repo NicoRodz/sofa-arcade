@@ -90,7 +90,7 @@ export class RatSignal {
     else this.arrow(rx, ry - TILE * 0.62 - bounce, 15, 0.95);
     const target = this.target.get(team) ?? -1;
     const s = target >= 0 && r.state === 'seek' ? game.stations[target] : null;
-    if (!s || !s.item) return;
+    if (!s?.item) return;
     const tx = OX + (s.tx + 0.5) * TILE,
       ty = OY + (s.ty + 0.5) * TILE;
     const dist = Math.hypot(tx - rx, ty - ry),
