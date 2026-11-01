@@ -34,7 +34,8 @@ export function caves(g: Game, team: number): Pt[] {
       if (k.comp[y]?.[x] === k.regions[team] && isFloor(g.grid, x, y)) mine.push([x, y]);
     }),
   );
-  const near = (kind: (c: string | undefined) => boolean) => mine.filter(([x, y]) => DIRS.some(([dx, dy]) => kind(g.grid[y + dy]?.[x + dx]?.kind)));
+  const near = (kind: (c: string | undefined) => boolean) =>
+    mine.filter(([x, y]) => DIRS.some(([dx, dy]) => kind(g.grid[y + dy]?.[x + dx]?.kind)));
   const edge = near((c) => c === 'wall');
   const out = edge.length ? edge : near((c) => c !== 'floor');
   return (out.length ? out : mine).sort((a, b) => {
@@ -55,17 +56,6 @@ export function spawnVersusRats(g: Game, m: Mid) {
     sub.rat = { x: hole[0] + 0.5, y: hole[1] + 0.5, state: 'seek', item: null, from: -1, hole, scared: false, idleMs: 0 };
     g.bus.emit('rat:appear', { at: hole, team: t.id });
     return sub;
-  });
-}
-
-/** The four directions in the order this kitchen's search tries them: team 1 as they are, team 0 through sigma, so a tie between two equal paths is broken the same way in both frames. */
-function dirsOf(g: Game, team: number): readonly (readonly [number, number])[] {
-  const sigma = g.vz3?.sigma;
-  if (!sigma || team !== 0) return DIRS;
-  const [ox, oy] = SIGMAS[sigma](0, 0, MAP_W, MAP_H);
-  return DIRS.map(([dx, dy]): Pt => {
-    const [px, py] = SIGMAS[sigma](dx, dy, MAP_W, MAP_H);
-    return [px - ox, py - oy];
   });
 }
 
@@ -91,7 +81,6 @@ function view(g: Game, team: number): Game {
     stations,
     players: new Map([...g.players].filter(([, p]) => p.team === team)),
     teams: [g.teams[team]!],
-    vz3: { ...g.vz3!, dirs: dirsOf(g, team) },
     bus: { emit: (k: string, p: object) => bus.emit(k as never, { ...p, team } as never), on: bus.on.bind(bus) },
   });
 }

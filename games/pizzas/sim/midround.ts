@@ -197,7 +197,7 @@ function nextTile(g: Game, from: [number, number], goal: (x: number, y: number) 
   const queue: [number, number][] = [from];
   for (let i = 0; i < queue.length; i++) {
     const [x, y] = queue[i]!;
-    for (const [dx, dy] of g.vz3?.dirs ?? DIRS) {
+    for (const [dx, dy] of DIRS) {
       const nx = x + dx,
         ny = y + dy,
         k = `${nx},${ny}`;

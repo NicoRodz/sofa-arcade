@@ -9,8 +9,14 @@ import { versusRats } from './feel/rat-versus';
 type M = (typeof MIRRORS)[keyof typeof MIRRORS];
 const NAMES = { v1: 'mirrorX', v3: 'rot180' } as const;
 const FLAGS = { events: true, frost: true, versusV3: true, magnet: true } as const;
-const T3 = [[1, 2, 3], [4, 5, 6]];
-const T2 = [[1, 2], [3, 4]];
+const T3 = [
+  [1, 2, 3],
+  [4, 5, 6],
+];
+const T2 = [
+  [1, 2],
+  [3, 4],
+];
 
 const own = (bus: { log: string[] }, team: number) =>
   bus.log
@@ -53,7 +59,10 @@ const bait = (key: keyof typeof MIRRORS) => {
 };
 
 describe('VERSUS_V3 under the mirror proof', () => {
-  for (const [key, teams] of [['v1', T3], ['v3', T2]] as const)
+  for (const [key, teams] of [
+    ['v1', T3],
+    ['v3', T2],
+  ] as const)
     it(`${key}: a rat per kitchen walks twin paths, takes twin items, and the two sides tie`, () => {
       const m = MIRRORS[key];
       const iso = isoOf(m.sigma);
@@ -112,7 +121,14 @@ describe('VERSUS_V3 under the mirror proof', () => {
     const g = createGame({ rows: MIRRORS.v1.rows, teams: T3.map((playerIds) => ({ playerIds })), events: true, frost: true, seed: 1 });
     expect(eventPool(g)).not.toContain('rat');
     expect(eventPool(g)).not.toContain('frost');
-    const g3 = createGame({ rows: MIRRORS.v1.rows, teams: T3.map((playerIds) => ({ playerIds })), events: true, frost: true, versusV3: true, seed: 1 });
+    const g3 = createGame({
+      rows: MIRRORS.v1.rows,
+      teams: T3.map((playerIds) => ({ playerIds })),
+      events: true,
+      frost: true,
+      versusV3: true,
+      seed: 1,
+    });
     expect(eventPool(g3)).toEqual(expect.arrayContaining(['rat', 'frost']));
     expect(versusRats(g3.mid!)).toEqual([]);
   });

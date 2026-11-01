@@ -222,7 +222,7 @@ export interface Game {
   sab: Sabotage | null; // versus sabotage (sabotage.ts): the bags, the catapults, the throws
   hz: boolean; // HAZARD_V2 numbers under the flags (create option `hazards`, default on)
   hz3: boolean; // HAZARD_V3 (hazards/hazard-v3.ts): the harder numbers of the hazards and the penalties; off unless the round asks (create option `hazardsV3`)
-  vz3: { sigma?: SigmaName; seed: number; dirs?: readonly [number, number][] } | null; // VERSUS_V3 (feel/rat-versus.ts): the rat per kitchen and the Ola de frio in a versus round; null unless the round asks (`versusV3`, versus only)
+  vz3: { sigma?: SigmaName; seed: number } | null; // VERSUS_V3 (feel/rat-versus.ts): the rat per kitchen and the Ola de frio in a versus round; null unless the round asks (`versusV3`, versus only)
   ledger: Ledger | null; // the score book by source (hazards/score-ledger.ts): only a round with hazardsV3 or `ledger: true` keeps one
   burn: Burn | null; // the oven that burns and the fire (burn.ts): null (the default, and every golden round) = the oven never burns
   mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none
