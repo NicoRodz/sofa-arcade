@@ -48,13 +48,20 @@ const roomCode = (() => {
 })();
 
 export const sync = new ClockSync();
+// The lobby config starts from the bound catalog's defaults, read on first use: never at module load, or importing the shell barrel before bindCatalog() would throw.
+let config: LobbyConfig | undefined;
 export const app = {
   players: new Map<number, PlayerRec>(),
   room: roomCode,
   captainId: null as number | null, // the phone that holds the crown (the relay elects it): the only one whose D-pad moves the menus
   lastKeyAt: null as number | null, // when the Mac keyboard last pressed something: it keeps the last word over the D-pad
   phase: 'menu' as Phase, // Pichiclub start: the screen picks the game, then that game's lobby
-  config: { ...defaultConfig(), seed: (Math.random() * 2 ** 32) >>> 0 } as LobbyConfig,
+  get config(): LobbyConfig {
+    return (config ??= { ...defaultConfig(), seed: (Math.random() * 2 ** 32) >>> 0 } as LobbyConfig);
+  },
+  set config(next: LobbyConfig) {
+    config = next;
+  },
   starting: false, // the iris is moving
   gateUntil: 0, // the logic waits for the iris to open
   howTo: null as HowToState | null,
