@@ -78,7 +78,7 @@ describe('arena sim', () => {
   });
 
   it('a push has a cooldown: a second one right after does nothing', () => {
-    const s = duel(PUSH_RANGE - 5);
+    const s = duel(60); // close enough that the thrown one is still in range on the next step
     const push = new Map([[0, inp({ push: true })]]);
     step(s, push, DT);
     const v = s.fighters[1]!.vx;
