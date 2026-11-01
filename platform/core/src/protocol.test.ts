@@ -11,7 +11,7 @@ import {
   youMsg,
 } from './protocol';
 import { DEFAULT_CONFIG, GAMES, configMsg, parseClientMessage } from '@pichi/catalog';
-import { assignPuestos } from '@pichi/game-pizzas/sim/puestos';
+import { assignPuestos } from '@pichi/game-pizzas/sim/phone/puestos';
 
 describe('protocol', () => {
   it('rejects malformed messages and clamps input', () => {

@@ -3,7 +3,7 @@ import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { patchMap } from '@pichi/game-pizzas/sim/maps/hazard-patches';
 import { mechFlagsOf } from '@pichi/game-pizzas/sim/mech/ids';
 import { usesSurfaces } from '@pichi/game-pizzas/sim/surfaces/legend';
-import { roundRules } from '@pichi/game-pizzas/sim/midround';
+import { roundRules } from '@pichi/game-pizzas/sim/rules/midround';
 import { eventsV2Of } from '@pichi/game-pizzas/sim/ev2/state';
 import type { Difficulty } from '@pichi/core/difficulty';
 

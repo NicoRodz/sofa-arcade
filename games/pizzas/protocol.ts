@@ -1,7 +1,7 @@
 // What Pizzas tells the platform about the opaque slots of the wire protocol: which maps, puestos and verdicts travel as `map`, `puestos` and `result`.
 import type { GameProtocol, Slots } from '@pichi/core/contract';
 import { DEFAULT_MAP, isMapChoice, type MapChoice } from './sim/maps';
-import { PUESTO_IDS, isPuestoId, type PuestoId } from './sim/puestos';
+import { PUESTO_IDS, isPuestoId, type PuestoId } from './sim/phone/puestos';
 import { isVersusChoice, type VersusChoice } from './sim/versus/maps';
 import { parsePhoneResult } from './sim/versus/phone-result';
 import type { PhoneResult } from './sim/versus/report';

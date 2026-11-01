@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MECH_MODULES, mechModule } from '../../sim/mech/registry';
 import { mechHash } from '../../sim/mech/loop';
 import { addPlayer, createGame, tick, type Controls } from '../../sim/overcooked';
-import { douse } from '../../sim/burn';
+import { douse } from '../../sim/rules/burn';
 import { withLetter } from './rows';
 
 const right: Controls = { x: 1, y: 0, a: 0, b: false };

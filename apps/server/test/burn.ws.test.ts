@@ -2,7 +2,7 @@
 // to a Node "screen" that hosts the sim (one tick per frame), exactly like sabotage.ws.test.ts (the kit is in rules-kit.ts). One pizza is left to burn in an oven; the
 // bots are scripted chefs: a cook (the golden recipe of golden/bot.ts), a firefighter (walks to what is burning and holds Picar in front of it) and an idle one.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DOUSE_MS, GRACE_MS } from '@pichi/game-pizzas/sim/burn';
+import { DOUSE_MS, GRACE_MS } from '@pichi/game-pizzas/sim/rules/burn';
 import { startServer } from '../src/server';
 import { kit, neglectedPizza, playRound } from './rules-kit';
 

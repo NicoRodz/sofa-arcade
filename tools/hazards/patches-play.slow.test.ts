@@ -13,7 +13,7 @@ import { patchMap } from '@pichi/game-pizzas/sim/maps/hazard-patches';
 import { mechFlagsOf } from '@pichi/game-pizzas/sim/mech/ids';
 import { OIL } from '@pichi/game-pizzas/sim/mech/oil/state';
 import { usesSurfaces } from '@pichi/game-pizzas/sim/surfaces/legend';
-import { roundRules } from '@pichi/game-pizzas/sim/midround';
+import { roundRules } from '@pichi/game-pizzas/sim/rules/midround';
 
 describe('HAZARD_V3 patched maps are playable', () => {
   it('12: the kneader pairing team delivers on the patched rows (N=5 and 8, 3 seeds each)', () => {

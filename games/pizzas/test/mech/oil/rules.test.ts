@@ -6,7 +6,7 @@ import { mechOnFire } from '../../../sim/mech/loop';
 import { DRIP_EVERY, FIRE, FIRE_TICKS, OIL, OIL_TICKS, SAUCE_WAIT, WATER, WIPE_OIL, at, setTile } from '../../../sim/mech/oil/state';
 import { freeFloor } from '../../../sim/mech/oil/state';
 import { SPILL_PATCHES, spill } from '../../../sim/mech/oil/spill';
-import { eventPool } from '../../../sim/midround';
+import { eventPool } from '../../../sim/rules/midround';
 import { mulberry32 } from '@pichi/core/rng';
 import { OIL_ROWS } from './map';
 

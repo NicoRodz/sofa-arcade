@@ -1,7 +1,7 @@
 // One chef's turn inside a tick: the order of the steps is what the golden rounds pin.
 import type { Controls, Game, Player, Station } from './state';
 import { aimStep, pickFloor, slipStep } from './hazards';
-import { isAiming } from '../sabotage';
+import { isAiming } from '../rules/sabotage';
 import { aStation, faceStation, targetStation } from './targeting';
 import { applyChop, cuttableAt, updateChop } from './chop';
 import { faceStation as magnetFace, magnetPull } from '../feel/magnet';

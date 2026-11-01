@@ -7,7 +7,7 @@ import { app, dispatch, services, transition, showScene, openHowTo } from '@pich
 import { $ } from '@pichi/screen-kit/ui';
 import { TICK_MS, resolvePause, tick, type Controls } from '../../sim';
 import { staleControls } from '../../sim/feel/stale';
-import { createHintSync } from '../../sim/hints';
+import { createHintSync } from '../../sim/phone/hints';
 import { createMechPhone } from '../../sim/mech/phone';
 import { nextLead, scoreHidden } from '../../sim/versus/report';
 import { createSchoolHost } from '../school/host';

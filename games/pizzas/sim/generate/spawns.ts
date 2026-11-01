@@ -1,7 +1,7 @@
 import type { Layout, Mech, Zone } from './layout';
 import { pick, type Rng, teamSize } from '@pichi/core';
 import { parseMap, posKey, type Pos } from '../maps';
-import { PUESTOS, puestosFor, type PuestoId } from '../puestos';
+import { PUESTOS, puestosFor, type PuestoId } from '../phone/puestos';
 
 // Spawns: floor tiles that are nobody's access tile, 2+ apart, alternating zones when the map has them. One per chef of nMax.
 export function placeSpawns(l: Layout, nMax: number, claimed: Set<string>, rng: Rng): boolean {

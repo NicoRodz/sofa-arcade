@@ -1,9 +1,9 @@
 // The mirror proof with the oven that burns and the fire switched on (golden/mirror-bot.ts plays both kitchens as each other's isometry): an oven that
 // nobody looks after burns and catches fire in both kitchens in the same tick, the fire jumps to the reflected counters, and the two teams tie exactly.
 import { describe, expect, it } from 'vitest';
-import { MIRRORS, isoOf, runVersus } from '../test/golden/mirror-bot';
-import type { Game, Station } from './overcooked';
-import { HAZARD_V2 } from './hazards/hazard-v2';
+import { MIRRORS, isoOf, runVersus } from '../../test/golden/mirror-bot';
+import type { Game, Station } from '../overcooked';
+import { HAZARD_V2 } from '../hazards/hazard-v2';
 
 const bake = (g: Game, s: Station) => {
   s.inputs = [0, 1];

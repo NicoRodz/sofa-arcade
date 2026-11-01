@@ -1,9 +1,9 @@
 // The event in the middle of the round (midround.ts) on the real maps: pure logic. One event per round between 1:00 and 2:00, announced 3 s before, the same for both
 // teams of a versus round; rush, inspector, blackout, birthday and (coop only) the rat.
 import { describe, expect, it } from 'vitest';
-import { type GameEvents, Emitter } from './round/events';
-import { DIRS, fixedMap, isFloor } from './maps';
-import { TICK_MS, addPlayer, createGame, recipeBase, tick, type Controls, type Game, type Station } from './overcooked';
+import { type GameEvents, Emitter } from '../round/events';
+import { DIRS, fixedMap, isFloor } from '../maps';
+import { TICK_MS, addPlayer, createGame, recipeBase, tick, type Controls, type Game, type Station } from '../overcooked';
 import {
   ACTIVE_MS,
   ANNOUNCE_MS,
@@ -26,10 +26,10 @@ import {
 } from './midround';
 import { GRACE_MS } from './burn';
 import { params } from '@pichi/core/difficulty';
-import { MIRRORS } from '../test/golden/mirror-bot';
+import { MIRRORS } from '../../test/golden/mirror-bot';
 import { GAMES, modeOf } from '@pichi/catalog';
 import { mulberry32 } from '@pichi/core/rng';
-import { startVersusRound, syncTeams } from './versus/lobby';
+import { startVersusRound, syncTeams } from '../versus/lobby';
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 type Log = { [K in keyof GameEvents]?: { t: number; p: GameEvents[K] }[] };
 const KINDS = [

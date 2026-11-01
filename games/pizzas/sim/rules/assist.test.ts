@@ -12,16 +12,16 @@ import {
   validateTeamSetup,
 } from './assist';
 import { addFloorItem } from './floor';
-import { SCENARIOS as GOLDEN, runGolden } from '../test/golden/bot';
-import { DIRS, fixedMap, isFloor } from './maps';
-import { REACH, REACH_SLACK, SPEED, TICK_MS, addPlayer, createGame, dropPlayer, targetStation, tick } from './overcooked';
-import type { Controls, Game, Station } from './overcooked';
-import { chefHint } from './hints';
+import { SCENARIOS as GOLDEN, runGolden } from '../../test/golden/bot';
+import { DIRS, fixedMap, isFloor } from '../maps';
+import { REACH, REACH_SLACK, SPEED, TICK_MS, addPlayer, createGame, dropPlayer, targetStation, tick } from '../overcooked';
+import type { Controls, Game, Station } from '../overcooked';
+import { chefHint } from '../phone/hints';
 import { GAMES, modeOf } from '@pichi/catalog';
 import { handicapK } from '@pichi/core/lobby/teams';
-import { createVersusGame, lobbySetup, startVersusRound } from './versus/lobby';
-import { versusMap } from './versus/maps';
-import n4 from '../test/golden/fixtures/coop-n4-map9-hard.json';
+import { createVersusGame, lobbySetup, startVersusRound } from '../versus/lobby';
+import { versusMap } from '../versus/maps';
+import n4 from '../../test/golden/fixtures/coop-n4-map9-hard.json';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const MAP = fixedMap('10')!;

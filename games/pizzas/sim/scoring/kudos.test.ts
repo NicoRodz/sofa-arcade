@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type GameEvents, Emitter } from './round/events';
+import { type GameEvents, Emitter } from '../round/events';
 import { kudosLines, tallyKitchen } from './kudos';
 
 const name = (id: number) => ({ 1: 'Ana', 2: 'Beto', 3: 'Caro' })[id as 1 | 2 | 3] ?? `J${id}`;

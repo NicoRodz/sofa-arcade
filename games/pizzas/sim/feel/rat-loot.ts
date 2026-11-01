@@ -1,7 +1,7 @@
 // HAZARD_V3, the rat that escapes: a rat that reaches its hole without having been scared and without loot takes one item from the counter nearest to its hole (ready dishes first).
 // Pure and deterministic: candidates are ordered by (is it a dish, distance to the hole, station index); no stream. At most one loss per `lossGapMs` (anti-frustration); Easy never loses an item.
 import type { Game, Item } from '../round/state';
-import type { Mid, Rat } from '../midround';
+import type { Mid, Rat } from '../rules/midround';
 import { hz3Params } from '../hazards/hazard-v3';
 import { isDish } from '../recipes/defs';
 import { book } from '../hazards/score-ledger';

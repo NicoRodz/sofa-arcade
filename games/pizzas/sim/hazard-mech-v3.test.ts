@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { addPlayer, createGame, tick, TICK_MS, type Controls, type Game } from './overcooked';
 import { fixedMap } from './maps';
-import { chefHint } from './hints';
+import { chefHint } from './phone/hints';
 import { patchMap } from './maps/hazard-patches';
 import { mechFlagsOf } from './mech/ids';
 import { wear, isBroken, mendProgress } from './mech/bridge/module';
@@ -11,7 +11,7 @@ import { OIL, setTile } from './mech/oil/state';
 import { raftModule } from './mech/raft/module';
 import { liveOf } from './mech/mutation/module';
 import { applyRows } from './mech/mutation/ops';
-import { ACTIVE_MS, ANNOUNCE_MS } from './midround';
+import { ACTIVE_MS, ANNOUNCE_MS } from './rules/midround';
 import { BRIDGE_ROWS } from '../test/mech/bridge/map';
 import { RAFT_ROWS } from '../test/mech/raft/map';
 import type { Difficulty } from '@pichi/core/difficulty';

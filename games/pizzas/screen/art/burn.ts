@@ -4,7 +4,7 @@
 import Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../sim/round/events';
 import type { Game } from '../../sim/overcooked';
-import { DOUSE_MS } from '../../sim/burn';
+import { DOUSE_MS } from '../../sim/rules/burn';
 import { fireNeedMs } from '../../sim/hazards/fire-v2';
 import { C, TILE, U, hexNum, R } from '@pichi/screen-kit/art';
 import { OX, OY } from './env/grid';

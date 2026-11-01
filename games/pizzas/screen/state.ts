@@ -3,10 +3,10 @@
 import { modeOf, type GameDef } from '@pichi/core/contract';
 import { catalog, app, connectedCount } from '@pichi/screen-kit/shell';
 import { pizzasBus } from './bus';
-import type { PuestoMsgPz } from '../sim/puestos';
+import type { PuestoMsgPz } from '../sim/phone/puestos';
 import { createGame } from '../sim';
 import { lobbyN, type MapFamily } from '../sim/maps';
-import { tallyKitchen } from '../sim/kudos';
+import { tallyKitchen } from '../sim/scoring/kudos';
 import { NO_LEAD, tallyDeliveries, type LeadState, type Series, type VersusReport } from '../sim/versus/report';
 import type { RoundView } from './art/hud';
 import type { MapGroup } from './lobby-menu';

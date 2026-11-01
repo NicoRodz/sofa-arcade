@@ -12,11 +12,11 @@ import {
   type Mech,
 } from './layout';
 import { mulberry32, pickWeighted, randInt, type Rng } from '@pichi/core';
-import { SIGMAS } from '../symmetry';
+import { SIGMAS } from '../maps/symmetry';
 import { spawnTiles, teamRange, validateVersus } from '../validate';
 import { pickMech } from './coop';
 import { orderSpawns, placeSpawns } from './spawns';
-import { metric } from '../score';
+import { metric } from '../scoring/score';
 import { VERSUS_BASE_MAPS } from '../versus/maps';
 
 // --- Versus ----------------------------------------------------------------------------------------------------------------------

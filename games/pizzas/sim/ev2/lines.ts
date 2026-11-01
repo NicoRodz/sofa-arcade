@@ -2,7 +2,7 @@
 // (the cake pays CAKE_PRIZE with a candle, not the flat 150 of EVENT_INFO), and the number of events per round is the calendar of the difficulty (hazards/events-v2.ts).
 import type { Difficulty } from '@pichi/core';
 import { hazardParams } from '../hazards/hazard-v2';
-import { EVENT_INFO, type EventKind } from '../midround';
+import { EVENT_INFO, type EventKind } from '../rules/midround';
 import { RED_PRIZE, SPILL_PRIZE, cakeLine } from './state';
 
 const V2_BLURB: Partial<Record<EventKind, (d: Difficulty) => string>> = {

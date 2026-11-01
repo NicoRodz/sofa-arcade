@@ -3,7 +3,7 @@
 // the blackout (the kitchen goes dark, a crossed-out bolt over every oven), the birthday (balloons and confetti; the order's ticket is in hud.ts) and the rat (a little
 // grey rat that runs across the floor, grabs an item and is scared off by a dash). Everything is drawn by code. Only exists when `game.mid` does.
 import type Phaser from 'phaser';
-import type { EventKind } from '../../../sim/midround';
+import type { EventKind } from '../../../sim/rules/midround';
 import { C, circle, drawOutlined, makeTex, vgrad } from '@pichi/screen-kit/art';
 import { badge, GLYPH } from './glyphs';
 

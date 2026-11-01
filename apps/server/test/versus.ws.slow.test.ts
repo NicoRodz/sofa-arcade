@@ -7,7 +7,7 @@ import { PressTracker, type ClientMsg, type LobbyConfig } from '@pichi/core';
 import { DEFAULT_CONFIG, type ServerMsg } from '@pichi/catalog';
 import { GAMES, modeOf } from '@pichi/catalog';
 import { COUNTDOWN_MS, TICK_MS, tick, type Controls, type Game, type Player, type Station } from '@pichi/game-pizzas/sim';
-import { summarizeTeam } from '@pichi/game-pizzas/sim/results';
+import { summarizeTeam } from '@pichi/game-pizzas/sim/scoring/results';
 import { movePlayer, teamOf, type TeamInfo } from '@pichi/core/lobby/teams';
 import { VERSUS_AUTO, lobbySetup, startVersusRound, syncTeams } from '@pichi/game-pizzas/sim/versus/lobby';
 import { outcomeFor, phoneResult, tallyDeliveries, versusReport, type VersusReport } from '@pichi/game-pizzas/sim/versus/report';
@@ -15,7 +15,7 @@ import { type GameEvents, Emitter } from '@pichi/game-pizzas/sim/round/events';
 import { mulberry32 } from '@pichi/core/rng';
 import { decide, type Mem } from '@pichi/game-pizzas/test/golden/bot';
 import { isoOf } from '@pichi/game-pizzas/test/golden/mirror-bot';
-import { SIGMAS } from '@pichi/game-pizzas/sim/symmetry';
+import { SIGMAS } from '@pichi/game-pizzas/sim/maps/symmetry';
 import { startServer } from '../src/server';
 
 let srv: Awaited<ReturnType<typeof startServer>>;

@@ -6,10 +6,10 @@
 // through it), so "the same script on both sides" is exact by construction and any difference in the round comes from the sim.
 import { DIRS, isFloor, type Pos } from '../../sim/maps';
 import { TICK_MS, type Controls, type Game, type Player, type Station } from '../../sim/overcooked';
-import type { FloorItem } from '../../sim/sabotage-config';
+import type { FloorItem } from '../../sim/rules/sabotage-config';
 import { isoOf, MIRRORS } from './mirror-bot';
 import { decide, type Mem as CookMem } from './bot';
-import { SIGMAS } from '../../sim/symmetry';
+import { SIGMAS } from '../../sim/maps/symmetry';
 
 export type Role = 'saboteur' | 'janitor' | 'cook' | 'idle';
 export interface SabMem { cook: CookMem; throws: number; seenTrashAt: Map<number, number>; pressedAt: number; goal: string }

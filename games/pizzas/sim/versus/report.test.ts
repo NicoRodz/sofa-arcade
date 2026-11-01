@@ -5,8 +5,8 @@ import { COLORS } from '@pichi/core';
 import { VERSUS_STYLES } from '@pichi/game-pizzas/manifest';
 import { type GameEvents, Emitter } from '../round/events';
 import { TICK_MS, addPlayer, createGame, resolvePause, tick, type Game, type TeamState } from '../overcooked';
-import { summarizeTeam } from '../results';
-import { starThresholds } from '../stars';
+import { summarizeTeam } from '../scoring/results';
+import { starThresholds } from '../scoring/stars';
 import { VIP_TTL_MS } from './versus';
 import { MIRRORS, twinSpawns } from '../../test/golden/mirror-bot';
 import {

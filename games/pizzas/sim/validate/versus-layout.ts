@@ -1,6 +1,6 @@
 // Versus layout: which kitchen owns each tile and whether the two floors are twins under sigma.
 import { floorComponents, isFloor, posKey, type Grid, type Pos } from '../maps';
-import { SIGMAS } from '../symmetry';
+import { SIGMAS } from '../maps/symmetry';
 import { accessTiles } from './stations';
 
 // --- Versus ---------------------------------------------------------------------------------------------------------------

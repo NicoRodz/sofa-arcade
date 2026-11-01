@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { LABEL_MAX } from '@pichi/core/contract';
 import { isIconId } from '@pichi/core/icons';
 import { createHintSync, chefHint, HINT_MIN_MS, HINT_REFRESH_MS } from './hints';
-import { DIRS, fixedMap, isFloor } from './maps';
-import { addPlayer, createGame, tick, type Controls, type Game, type Item, type Station } from './overcooked';
-import { addFloorItem } from './floor';
-import { createVersusGame } from './versus/lobby';
-import { versusMap } from './versus/maps';
+import { DIRS, fixedMap, isFloor } from '../maps';
+import { addPlayer, createGame, tick, type Controls, type Game, type Item, type Station } from '../overcooked';
+import { addFloorItem } from '../rules/floor';
+import { createVersusGame } from '../versus/lobby';
+import { versusMap } from '../versus/maps';
 import type { ClientMsg } from '@pichi/core';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };

@@ -28,7 +28,7 @@ import { PANT_AT_MS, SURFACE_ACTIONS } from './surfaces';
 import { MUTATE_ACTIONS } from './mutate';
 import { MECH_ACTIONS } from './mech';
 import { GLIDE_S, moodOf, moodStack } from './mood';
-import type { EventKind } from '../../sim/midround';
+import type { EventKind } from '../../sim/rules/midround';
 
 export interface AudioController {
   playerJoined(): void;

@@ -37,10 +37,10 @@ import {
 } from './recipes/defs';
 import { canFold, createRec, crateItem, pickOrder, pickRecipe } from './recipes/sim';
 import { recipeStarFactor, starsTable } from './recipes/stars';
-import { starThresholds } from './stars';
-import { summarize } from './results';
+import { starThresholds } from './scoring/stars';
+import { summarize } from './scoring/results';
 import { mulberry32 } from '@pichi/core/rng';
-import { chefHint } from './hints';
+import { chefHint } from './phone/hints';
 import { LABEL_MAX } from '@pichi/core/contract';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };

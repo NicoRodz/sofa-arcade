@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { MIRRORS, isoOf, runVersus } from '../test/golden/mirror-bot';
 import { createGame, type Game, type Station } from './overcooked';
-import { createMid, type EventKind } from './midround';
+import { createMid, type EventKind } from './rules/midround';
 
 const own = (bus: { log: string[] }, team: number) =>
   bus.log

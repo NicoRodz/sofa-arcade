@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { Emitter, type GameEvents } from '../round/events';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '../overcooked';
-import type { EventKind } from '../midround';
+import type { EventKind } from '../rules/midround';
 import { BOARD_RADIUS, HOLD_MS, cakeLine, eventsV2Of, pickSpot } from './state';
 import { cakeRecipe } from './events';
-import { chefHint } from '../hints';
+import { chefHint } from '../phone/hints';
 import { ev2Bot } from './bot';
 import { aStation } from '../round/targeting';
 import { OIL, at, setTile } from '../mech/oil/state';

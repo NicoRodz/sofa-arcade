@@ -1,6 +1,6 @@
 // Difficulty metric D = (L + 14 T + 6 C) * (1 + 0.25 max(0, N / boards - 1)).
-import { DIRS, floorComponents, isFloor, posKey, type Grid, type Pos } from './maps';
-import { RECIPE_LEGS, accessTiles, analyze, stationsOf } from './validate';
+import { DIRS, floorComponents, isFloor, posKey, type Grid, type Pos } from '../maps';
+import { RECIPE_LEGS, accessTiles, analyze, stationsOf } from '../validate';
 
 export interface Metric {
   L: number;

@@ -12,7 +12,7 @@ import { GAMES, modeOf } from '@pichi/catalog';
 import { COUNTDOWN_MS, TICK_MS, tick, type Controls, type Game } from '@pichi/game-pizzas/sim';
 import { syncTeams, startVersusRound } from '@pichi/game-pizzas/sim/versus/lobby';
 import { type GameEvents, Emitter } from '@pichi/game-pizzas/sim/round/events';
-import { RULES } from '@pichi/game-pizzas/sim/sabotage-config';
+import { RULES } from '@pichi/game-pizzas/sim/rules/sabotage-config';
 import { mulberry32 } from '@pichi/core/rng';
 import { newSabMem, sabotageControls, type Role } from '@pichi/game-pizzas/test/golden/sabotage-bot';
 import { startServer } from '../src/server';

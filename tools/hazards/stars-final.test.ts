@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { seriesRound } from '../carta-larga/bot';
 import { lobbyExtra } from './lobby-config';
 import { SERIES_MAPS } from '@pichi/game-pizzas/sim/maps';
-import { roundRules } from '@pichi/game-pizzas/sim/midround';
-import { E2, starThresholds } from '@pichi/game-pizzas/sim/stars';
+import { roundRules } from '@pichi/game-pizzas/sim/rules/midround';
+import { E2, starThresholds } from '@pichi/game-pizzas/sim/scoring/stars';
 import { recipeStarFactor } from '@pichi/game-pizzas/sim/recipes/stars';
 
 describe('the star calibration plays the lobby configuration', () => {

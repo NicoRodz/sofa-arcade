@@ -6,7 +6,7 @@ import { generate } from '../generate/coop';
 import { floorTiles, minPlayers, validateMap, FLOOR_PER_PLAYER } from '../validate';
 import { multistateProblems } from '../validate/multistate';
 import { parseMap, type MapDef, type Pos } from '../maps';
-import type { PuestoId } from '../puestos';
+import type { PuestoId } from '../phone/puestos';
 import { mechFlagsOf, type MechId } from '../mech/ids';
 import { mechModule } from '../mech/registry';
 import { MAX_OPS, opsProblems, type MutationV2, type Op } from '../mech/mutation/ops';

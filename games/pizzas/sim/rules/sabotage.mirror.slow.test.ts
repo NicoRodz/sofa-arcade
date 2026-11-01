@@ -2,9 +2,9 @@
 // tie exactly: bags, throws, landings (twins), slips, drops, cleaning, desechos. Anything the sim does differently on the two sides breaks it.
 import { describe, expect, it } from 'vitest';
 import type { Difficulty } from '@pichi/core/difficulty';
-import { MAP_H, MAP_W } from './maps';
-import type { RecBus } from '../test/golden/bot';
-import { runSabotage, type Role } from '../test/golden/sabotage-run';
+import { MAP_H, MAP_W } from '../maps';
+import type { RecBus } from '../../test/golden/bot';
+import { runSabotage, type Role } from '../../test/golden/sabotage-run';
 import type { SabotageMode } from './sabotage-config';
 
 type Row = { t: number; type: string; p: Record<string, unknown> };

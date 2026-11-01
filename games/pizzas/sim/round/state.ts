@@ -3,13 +3,13 @@
 import type { Ev2 } from '../ev2/state';
 import { MAP_H, MAP_W, isFloor, type Grid, type SigmaName, type StationKind } from '../maps';
 import type { RosterEntry, TeamId, TeamResult } from '@pichi/core/lobby';
-import type { FloorItem, Sabotage, Slip } from '../sabotage-config';
+import type { FloorItem, Sabotage, Slip } from '../rules/sabotage-config';
 import type { Recipe } from '../recipes/defs';
 import type { GameEvents, Emitter } from './events';
 import type { Difficulty, Params, Rng } from '@pichi/core';
 import type { Kitchens } from '../versus/versus';
-import type { Burn } from '../burn';
-import type { Mid } from '../midround';
+import type { Burn } from '../rules/burn';
+import type { Mid } from '../rules/midround';
 import type { RatFrame } from '../feel/rat-frame';
 import type { Ledger } from '../hazards/score-ledger';
 import type { Rec } from '../recipes/sim';

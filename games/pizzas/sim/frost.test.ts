@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { addPlayer, createGame, tick } from './overcooked';
-import { eventPool } from './midround';
+import { eventPool } from './rules/midround';
 import { FIXED_MAPS } from './maps';
 import { MIRRORS } from '../test/golden/mirror-bot';
 

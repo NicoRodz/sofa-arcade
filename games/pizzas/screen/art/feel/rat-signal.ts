@@ -7,7 +7,7 @@ import type { Game } from '../../../sim/overcooked';
 import { C, TILE, hexNum } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 import type { Fx } from '@pichi/screen-kit/art/fx';
-import type { Rat } from '../../../sim/midround';
+import type { Rat } from '../../../sim/rules/midround';
 import { ratOfTeam, ratsOf } from './rats';
 
 export class RatSignal {

@@ -1,6 +1,6 @@
 // The close of an event with presence: the number (+/-) written to the score book with its source, and the event the TV card and the sounds read.
 import type { Game } from '../round/state';
-import type { EventKind } from '../midround';
+import type { EventKind } from '../rules/midround';
 import { book } from '../hazards/score-ledger';
 
 /** The closing card of an event (TV: 2 s in the middle with the number; phones: a success or failure note). `ok` picks the tone. */

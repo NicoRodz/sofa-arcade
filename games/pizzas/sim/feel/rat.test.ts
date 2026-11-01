@@ -1,7 +1,7 @@
 // The gentle rat (feel/rat.ts), each rule against the old rat in the same situation (flag off = the control).
 import { describe, expect, it } from 'vitest';
 import { fixedMap } from '../maps';
-import { RAT_SPEED } from '../midround';
+import { RAT_SPEED } from '../rules/midround';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '../overcooked';
 import { RAT_BONUS, RAT_GENTLE } from './rat';
 

@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ClientMsg } from '@pichi/core';
 import type { ControllerHost } from '@pichi/controller-kit/contract';
-import { PUESTOS, assignPuestos } from '../sim/puestos';
+import { PUESTOS, assignPuestos } from '../sim/phone/puestos';
 import { createPuestos } from './puestos';
 
 type FakeEl = {

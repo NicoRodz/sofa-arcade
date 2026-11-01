@@ -1,6 +1,6 @@
 // The extra lines of the results (council: "parte de resultados"): who pulled pizzas out of the oven just before they burnt ("rescató pizzas del fuego") and who
 // put fires out. Counted from the bus; pure. They say nothing when nobody did either (a round without the burn rules never emits those events).
-import type { GameEvents, Emitter } from './round/events';
+import type { GameEvents, Emitter } from '../round/events';
 
 export interface KitchenTally {
   rescued: Map<number, number>;

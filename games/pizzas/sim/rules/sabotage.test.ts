@@ -1,15 +1,15 @@
 // Sabotage S2: the rules of the bags, the catapult, the reticle, the landing, the limits and the cleaning, on the real versus maps V1 and V3.
 // Pure logic: chefs are put next to the stations by hand and the ticks are run directly.
 import { describe, expect, it } from 'vitest';
-import { type GameEvents, Emitter } from './round/events';
-import { FIXED_MAPS, DIRS, isFloor, parseMap } from './maps';
-import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Item, type Player, type Station } from './overcooked';
+import { type GameEvents, Emitter } from '../round/events';
+import { FIXED_MAPS, DIRS, isFloor, parseMap } from '../maps';
+import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Item, type Player, type Station } from '../overcooked';
 import { addFloorItem, pilesIn } from './floor';
 import { RULES, SLIP, AIM_MAX_MS, LAND_AFTER_MS, RETICLE_STEP_MS, DESECHOS_DRIP_MS, type SabotageMode } from './sabotage-config';
 import { adjustLanding, catapultState, kitchenTiles, landingTiles, reticleAt, sabotageHint, sweepOrder } from './sabotage';
-import { floorItemNear, targetStation } from './overcooked';
+import { floorItemNear, targetStation } from '../overcooked';
 import { LABEL_MAX } from '@pichi/core/contract';
-import { versusMap } from './versus/maps';
+import { versusMap } from '../versus/maps';
 import type { Difficulty } from '@pichi/core/difficulty';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
@@ -537,7 +537,7 @@ describe('limits: cooldown, per minute, piles', () => {
     load(g, 1);
     expect(g.sab!.teams[0]!.bags).toBe(0);
     // dropPlayer lives in the sim
-    return import('./overcooked').then(({ dropPlayer }) => {
+    return import('../overcooked').then(({ dropPlayer }) => {
       dropPlayer(g, 1);
       expect(g.sab!.teams[0]!.aim).toBeNull();
       expect(g.sab!.teams[0]!.bags).toBe(1);

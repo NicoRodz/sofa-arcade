@@ -5,10 +5,10 @@ import { cookMsOf, crateItem } from '../recipes/sim';
 import { bellTick, canLoad, hasNonna, interactSaucepot, isBaking, potTypeOf, ringBell, stageAfterLoad, stickTick } from '../recipes/sauce';
 import { cutOf, dishFor, isDish } from '../recipes/defs';
 import { basilOn, canSlice, hasCasa } from '../recipes/casa';
-import { sabotageBinned, sabotageLoad, sabotageTakeBag } from '../sabotage';
+import { sabotageBinned, sabotageLoad, sabotageTakeBag } from '../rules/sabotage';
 import { DIRTY_MS } from '@pichi/core';
 import { deliver } from './orders';
-import { clearPot, isDark } from '../burn';
+import { clearPot, isDark } from '../rules/burn';
 import { mechOvenRate } from '../mech/loop';
 
 function interact(g: Game, p: Player, s: Station) {

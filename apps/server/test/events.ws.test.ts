@@ -1,7 +1,7 @@
 // The mid-round events over the relay: bots on websockets (rules-kit.ts). A rat steals the dish left on a counter and leaves with it; a ratcatcher phone that runs at it and
 // dashes scares it and the dish comes back; a rush brings three orders at once to a team that is cooking; a blackout stops the oven while a cook waits at it.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { RUSH_ORDERS } from '@pichi/game-pizzas/sim/midround';
+import { RUSH_ORDERS } from '@pichi/game-pizzas/sim/rules/midround';
 import { startServer } from '../src/server';
 import { forceEvent, kit, playRound } from './rules-kit';
 

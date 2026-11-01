@@ -11,11 +11,11 @@
 // same verb the brief proposes as the fallback, and the art draws the extinguisher (a red cylinder in the chef's hands and a cloud of foam) while it happens.
 // Mirror: a spread ignites EVERY counter next to the fire (no tie-break between neighbours), so a reflected kitchen burns as the reflected kitchen.
 import type { Difficulty } from '@pichi/core';
-import type { Game, Station } from './round/state';
+import type { Game, Station } from '../round/state';
 import type { SabotageMode } from './sabotage-config';
-import { mechOnFire, mechOvenRate } from './mech/loop';
-import { hazardParams, fireIsBig, type FireParams } from './hazards/hazard-v2';
-import { fireDouseTick, newFireV2, registerDouse, type FireV2 } from './hazards/fire-v2';
+import { mechOnFire, mechOvenRate } from '../mech/loop';
+import { hazardParams, fireIsBig, type FireParams } from '../hazards/hazard-v2';
+import { fireDouseTick, newFireV2, registerDouse, type FireV2 } from '../hazards/fire-v2';
 
 export const GRACE_MS: Record<Difficulty, number> = { easy: 15_000, normal: 8_000, hard: 8_000 }; // from "ready" to "burnt"
 export const WARN_BEFORE_MS = 3000; // the warning beep comes this long before the pizza burns

@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { MIRRORS, isoOf, runVersus } from '../test/golden/mirror-bot';
 import { createGame, type Game } from './overcooked';
-import { eventPool, type EventKind } from './midround';
+import { eventPool, type EventKind } from './rules/midround';
 import { versusRats } from './feel/rat-versus';
 import { iceRows } from './versus/ice-patch';
 

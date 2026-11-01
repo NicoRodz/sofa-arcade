@@ -1,7 +1,7 @@
 // Pizzas' entry in the game registry: what the menu, the lobby and the phones need to know about it (the contract's GameManifest, EXPERIMENTAL).
 // Moved from platform/core/src/games.ts (F4a): the content is the same, only its home changed; core/games.ts lists it in GAMES.
 import { COOP_TEAMS, type GameManifest, type TeamStyle } from '@pichi/core/contract';
-import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_MODES, SABOTAGE_OPTION } from './sim/sabotage-config';
+import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_MODES, SABOTAGE_OPTION } from './sim/rules/sabotage-config';
 
 export const VERSUS_STYLES: readonly TeamStyle[] = [
   // chili red-orange + triangle against navy + circle: apart for colour-blind players too. Both are darker than every chef colour (palette in

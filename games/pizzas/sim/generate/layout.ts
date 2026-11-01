@@ -1,6 +1,6 @@
 // Kitchen layouts: the archetypes, the difficulty bands, the shell with obstacles and the station slots (shared by coop and versus halves).
 import { teamSize, type Difficulty, pick, randInt, type Rng } from '@pichi/core';
-import type { Features } from '../puestos';
+import type { Features } from '../phone/puestos';
 import { MAP_H, MAP_W, parseMap, posKey, type Pos } from '../maps';
 import { accessTiles, analyze } from '../validate';
 

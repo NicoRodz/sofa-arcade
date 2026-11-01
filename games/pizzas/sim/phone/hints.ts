@@ -4,18 +4,18 @@
 // keeps two: only their names, glyphs and greying change.
 // It mirrors interact() / the B rules of overcooked.ts; hints.test.ts pins each case against what the sim really does.
 import type { IconId, ClientMsg, HintLabels } from '@pichi/core';
-import { aStation, targetStation } from './round/targeting';
-import { floorItemNear } from './round/hazards';
-import type { Game, Item, Player, Station } from './round/state';
-import { isAiming, sabotageHint } from './sabotage';
-import { RAW_OF, cutType, isDish } from './recipes/defs';
-import { canFold } from './recipes/sim';
-import { canLoad, canStir, hasNonna, hasSauce, potTypeOf } from './recipes/sauce';
-import { basilOn, canSlice } from './recipes/casa';
-import { kneaderA, kneaderB } from './mech/kneader/hint';
-import { bellowsA, bellowsB } from './mech/woodOven/hint';
-import { ev2Hint } from './ev2/hint';
-import { bridgeHint } from './mech/bridge/hint';
+import { aStation, targetStation } from '../round/targeting';
+import { floorItemNear } from '../round/hazards';
+import type { Game, Item, Player, Station } from '../round/state';
+import { isAiming, sabotageHint } from '../rules/sabotage';
+import { RAW_OF, cutType, isDish } from '../recipes/defs';
+import { canFold } from '../recipes/sim';
+import { canLoad, canStir, hasNonna, hasSauce, potTypeOf } from '../recipes/sauce';
+import { basilOn, canSlice } from '../recipes/casa';
+import { kneaderA, kneaderB } from '../mech/kneader/hint';
+import { bellowsA, bellowsB } from '../mech/woodOven/hint';
+import { ev2Hint } from '../ev2/hint';
+import { bridgeHint } from '../mech/bridge/hint';
 
 const CRATE_VERB = ['Tomar masa', 'Tomar tomate', 'Tomar queso'] as const;
 const TOPPING_VERB = ['Tomar queso', 'Pepperoni', 'Champiñón', 'Jamón'] as const; // the cheese crate of a round with a Carta del día gives the card's topping (14 characters at most, LABEL_MAX)

@@ -4,7 +4,7 @@
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls } from '@pichi/game-pizzas/sim/overcooked';
 import { FIXED_MAPS, fixedMap, isFloor } from '@pichi/game-pizzas/sim/maps';
 import { HAZARD_V2 } from '@pichi/game-pizzas/sim/hazards/hazard-v2';
-import { roundRules } from '@pichi/game-pizzas/sim/midround';
+import { roundRules } from '@pichi/game-pizzas/sim/rules/midround';
 import { runRat } from '@pichi/game-pizzas/sim/feel/rat-bot';
 import type { Sim } from '@pichi/game-pizzas/sim/feel/human-bot';
 import type { Difficulty } from '@pichi/core/difficulty';

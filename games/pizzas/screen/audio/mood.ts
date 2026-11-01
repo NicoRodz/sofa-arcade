@@ -1,6 +1,6 @@
 // EVENTS_V2: the mood of the music while an event with presence is on: tempo, a low-pass and a level (design pizzas-tanda2 section 4). Two events at once: the latest wins.
 // Pure table and stack; the director applies them (0.5 s of glide) to the music bus only, never to the sfx.
-import type { EventKind } from '../../sim/midround';
+import type { EventKind } from '../../sim/rules/midround';
 
 export interface Mood {
   bpmMul: number; // tempo multiplier

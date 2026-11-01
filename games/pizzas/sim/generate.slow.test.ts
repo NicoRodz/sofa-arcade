@@ -17,9 +17,9 @@ import {
 } from './generate';
 import { mulberry32 } from '@pichi/core/rng';
 import { createGame, addPlayer } from './overcooked';
-import { metric } from './score';
+import { metric } from './scoring/score';
 import { accessTiles, keysOf, minPlayers, stationsOf, validate, validateMap, zoneShareProblems, zoneShares } from './validate';
-import { PUESTOS, puestosFor } from './puestos';
+import { PUESTOS, puestosFor } from './phone/puestos';
 
 describe('mulberry32', () => {
   it('is deterministic, in [0, 1) and differs between seeds', () => {

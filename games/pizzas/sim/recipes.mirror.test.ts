@@ -175,7 +175,7 @@ describe('prueba del espejo con la carta del día', () => {
     expect(own(folded.bus, 1)).not.toEqual(own(folded.bus, 0));
   });
   it('a derived versus map plays the card of its coop map, and a versus round made through the lobby has the card on (and off with the option)', async () => {
-    const { roundRules } = await import('./midround');
+    const { roundRules } = await import('./rules/midround');
     expect(cardFor(versusMap('11-vs')!.id)).toBe(cardFor('11'));
     expect(roundRules({}, 'normal').recipes).toBe(true);
     expect(roundRules({ recipes: false }, 'normal').recipes).toBe(false);

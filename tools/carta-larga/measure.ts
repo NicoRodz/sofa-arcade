@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs';
 import { seriesRound } from './bot';
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { cardFor } from '@pichi/game-pizzas/sim/recipes/cards';
-import { summarize } from '@pichi/game-pizzas/sim/results';
+import { summarize } from '@pichi/game-pizzas/sim/scoring/results';
 import type { Difficulty } from '@pichi/core/difficulty';
 import type { Game } from '@pichi/game-pizzas/sim/round/state';
 

@@ -11,22 +11,22 @@
 //   spill      Derrame            six patches of oil on the floor (mech/oil, only in a round with the oil mechanic)
 //   rat        Rata               a rat steals the item of a counter; a dash scares it (and the item goes back). Cooperative only
 // Versus: the same event, at the same instant, to both teams (one global state). The rat is never in the pool there (it would double the sabotage).
-import { DIRS, isFloor } from './maps';
+import { DIRS, isFloor } from '../maps';
 import { mulberry32, type Rng } from '@pichi/core';
 import type { Difficulty } from '@pichi/core';
-import { magnetFor } from './feel/magnet';
-import { newSurfaceState } from './surfaces/config';
-import { gentleRatStep, ratPrize } from './feel/rat';
-import { ratPull, stealOnEscape } from './feel/rat-loot';
-import { ratCaves } from './feel/rat-caves';
-import type { Game, Item, Station } from './round/state';
-import { spill } from './mech/oil/spill';
-import { hazardParams } from './hazards/hazard-v2';
-import { hz3Params } from './hazards/hazard-v3';
-import { book } from './hazards/score-ledger';
-import { planEvents, type Planned } from './hazards/events-v2';
-import { endVersusRats, spawnVersusRats, stepVersusRats, versusRats } from './feel/rat-versus';
-import { ev2End, ev2SpillWatch, ev2Spilt, ev2Start, ev2Tick } from './ev2/events';
+import { magnetFor } from '../feel/magnet';
+import { newSurfaceState } from '../surfaces/config';
+import { gentleRatStep, ratPrize } from '../feel/rat';
+import { ratPull, stealOnEscape } from '../feel/rat-loot';
+import { ratCaves } from '../feel/rat-caves';
+import type { Game, Item, Station } from '../round/state';
+import { spill } from '../mech/oil/spill';
+import { hazardParams } from '../hazards/hazard-v2';
+import { hz3Params } from '../hazards/hazard-v3';
+import { book } from '../hazards/score-ledger';
+import { planEvents, type Planned } from '../hazards/events-v2';
+import { endVersusRats, spawnVersusRats, stepVersusRats, versusRats } from '../feel/rat-versus';
+import { ev2End, ev2SpillWatch, ev2Spilt, ev2Start, ev2Tick } from '../ev2/events';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
 export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];

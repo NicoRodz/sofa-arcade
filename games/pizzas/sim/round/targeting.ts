@@ -1,7 +1,7 @@
 import { REACH, REACH_SLACK, isSolid, type Controls, type Game, type Player, type Station } from './state';
 import { floorWins, magnetStation } from '../feel/magnet';
 import { floorItemNear } from './hazards';
-import { ASSIST_FACING_BONUS, ASSIST_REACH_MULT } from '../assist';
+import { ASSIST_FACING_BONUS, ASSIST_REACH_MULT } from '../rules/assist';
 import { unit } from './movement';
 
 // The station in front of the chef, among the ones it may use (its own team's, or shared).

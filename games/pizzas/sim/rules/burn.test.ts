@@ -1,14 +1,14 @@
 // The oven that burns, the fire and the extinguishing (burn.ts) on the real maps: pure logic, chefs are put next to the stations by hand and the ticks are run directly.
 // Map 1 has its two ovens at (11, 0) and (13, 0) with counters at (10, 0), (12, 0) and (14, 0): the fire has neighbours to jump to.
 import { describe, expect, it } from 'vitest';
-import { type GameEvents, Emitter } from './round/events';
-import { fixedMap, DIRS, isFloor } from './maps';
-import { TICK_MS, addPlayer, createGame, dropPlayer, tick, type Controls, type Game, type Station } from './overcooked';
+import { type GameEvents, Emitter } from '../round/events';
+import { fixedMap, DIRS, isFloor } from '../maps';
+import { TICK_MS, addPlayer, createGame, dropPlayer, tick, type Controls, type Game, type Station } from '../overcooked';
 import { DOUSE_MS, FIRE_DELAY_MS, FIRE_RINGS, FIRE_SPREAD_MS, GRACE_MS, WARN_BEFORE_MS, createBurn, fireAllowed, ovenStage } from './burn';
-import { versusMap } from './versus/maps';
+import { versusMap } from '../versus/maps';
 import { GAMES, modeOf } from '@pichi/catalog';
 import { mulberry32 } from '@pichi/core/rng';
-import { startVersusRound, syncTeams } from './versus/lobby';
+import { startVersusRound, syncTeams } from '../versus/lobby';
 import type { Difficulty } from '@pichi/core/difficulty';
 import type { SabotageMode } from './sabotage-config';
 

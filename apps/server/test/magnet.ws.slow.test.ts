@@ -7,7 +7,7 @@ import { PressTracker, type ServerMsg } from '@pichi/core';
 import { DEFAULT_CONFIG } from '@pichi/catalog';
 import { addPlayer, createGame, tick, type Controls } from '@pichi/game-pizzas/sim';
 import { FIXED_MAPS, isFloor } from '@pichi/game-pizzas/sim/maps';
-import { roundRules } from '@pichi/game-pizzas/sim/midround';
+import { roundRules } from '@pichi/game-pizzas/sim/rules/midround';
 import { ACTIONS, runGame, stationsFor, type Action, type Sim } from '@pichi/game-pizzas/sim/feel/human-bot';
 import { startServer } from '../src/server';
 import { Phone, forceEvent, kit, idle, playRound, until } from './rules-kit';

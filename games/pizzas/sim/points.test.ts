@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { TICK_MS, addPlayer, createGame, recipeBase, tick, tipMultiplier, type Controls, type Game, type Recipe } from './overcooked';
 import { DIFFICULTIES, TUNING, params, type Difficulty } from '@pichi/core/difficulty';
 import { DIRS, FIXED_MAPS, fixedMap, isFloor } from './maps';
-import { E2, E2_DEFAULT, expectedScore, starThresholds, stars, teamFactor } from './stars';
-import { summarize } from './results';
+import { E2, E2_DEFAULT, expectedScore, starThresholds, stars, teamFactor } from './scoring/stars';
+import { summarize } from './scoring/results';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const run = (g: Game, ms: number) => {

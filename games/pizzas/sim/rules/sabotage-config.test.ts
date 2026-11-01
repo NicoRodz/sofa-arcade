@@ -1,6 +1,6 @@
 // S0: the sabotage contract (constants, the event names and their shape) is pinned before any logic uses it.
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import { type GameEvents, Emitter } from './round/events';
+import { type GameEvents, Emitter } from '../round/events';
 import { DIFFICULTIES } from '@pichi/core/difficulty';
 import {
   CATAPULT_CHAR,

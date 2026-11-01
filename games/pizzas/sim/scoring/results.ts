@@ -1,7 +1,7 @@
 // What the results screen shows, as plain data (R17 + the numbers that explain the score).
-import type { Game } from './round/state';
+import type { Game } from '../round/state';
 import { starThresholds, stars } from './stars';
-import { recipeStarFactor, starsTable } from './recipes/stars';
+import { recipeStarFactor, starsTable } from '../recipes/stars';
 
 export interface Summary {
   score: number;

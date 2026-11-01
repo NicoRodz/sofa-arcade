@@ -2,7 +2,7 @@
 // and its stations glow in the chef's colour; afterwards only a small icon stays over the head. Nothing here blocks play.
 import type Phaser from 'phaser';
 import { ICONS, type IconId } from '@pichi/core';
-import { PUESTOS, puestoStations, type PuestoId } from '../../sim/puestos';
+import { PUESTOS, puestoStations, type PuestoId } from '../../sim/phone/puestos';
 import type { Game } from '../../sim/overcooked';
 import { C, TILE, chefOf, hexNum } from '@pichi/screen-kit/art';
 import { OX, OY } from './env/grid';

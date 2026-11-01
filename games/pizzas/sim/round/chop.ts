@@ -4,10 +4,10 @@ import { cutOf } from '../recipes/defs';
 import { canSlice, slicedOf } from '../recipes/casa';
 import { canFold, cutMsOf, foldStep } from '../recipes/sim';
 import { canStir, stirStep } from '../recipes/sauce';
-import { ASSIST_STICK_CANCEL } from '../assist';
+import { ASSIST_STICK_CANCEL } from '../rules/assist';
 import { pushesInto } from './targeting';
 import { WASH_MS } from '@pichi/core';
-import { douse } from '../burn';
+import { douse } from '../rules/burn';
 
 // The event that ends what a chef's Picar was doing: putting a fire out, scrubbing plates at a sink, or chopping.
 export const stopKind = (g: Game, p: Player) =>

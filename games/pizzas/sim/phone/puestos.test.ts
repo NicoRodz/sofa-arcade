@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED_MAPS, fixedMap, parseMap } from './maps';
-import { createGame } from './overcooked';
+import { FIXED_MAPS, fixedMap, parseMap } from '../maps';
+import { createGame } from '../overcooked';
 import { PUESTOS, PUESTO_IDS, assignPuestos, featuresOf, puestoProblems, puestoStations, puestosFor } from './puestos';
 import { ICON_IDS } from '@pichi/core/icons';
 

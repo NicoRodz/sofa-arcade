@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED_MAPS, parseMap } from './maps';
+import { FIXED_MAPS, parseMap } from '../maps';
 import { metric } from './score';
 
 const D = (i: number, n = 2) => metric(parseMap(FIXED_MAPS[i]!.rows), n);

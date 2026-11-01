@@ -6,7 +6,7 @@ import { fixedMap } from './maps';
 import { pickOrder } from './recipes/sim';
 import { STICK_MS, STIR_MS } from './recipes/sauce';
 import { dishFor } from './recipes/defs';
-import { chefHint } from './hints';
+import { chefHint } from './phone/hints';
 import type { Difficulty } from '@pichi/core/difficulty';
 
 const make = (difficulty: Difficulty = 'normal', mapId = '25'): Game => {

@@ -2,7 +2,7 @@
 // which versus maps fit the teams, and how the lobby choices become a running round (createGame with teams, map, handicap).
 import { describe, expect, it } from 'vitest';
 import { GAMES, choiceVoteSpec, gameProblems, modeOf } from '@pichi/catalog';
-import { SABOTAGE_MODES, SABOTAGE_OPTION } from '../sabotage-config';
+import { SABOTAGE_MODES, SABOTAGE_OPTION } from '../rules/sabotage-config';
 import { cast, openVote, settle, makeRoster, snapshot, type VoteConfig } from '@pichi/core/lobby/vote';
 import { mulberry32 } from '@pichi/core/rng';
 import type { TeamInfo } from '@pichi/core/lobby/teams';

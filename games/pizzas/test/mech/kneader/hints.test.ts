@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { KNEADER_ROWS } from './map';
 import { WOOD_ROWS } from '../woodOven/map';
 import { press, put, rig, run, station } from './rig';
-import { chefHint } from '../../../sim/hints';
+import { chefHint } from '../../../sim/phone/hints';
 import type { Controls } from '../../../sim/overcooked';
 
 const hold = (...ids: number[]) => new Map<number, Controls>(ids.map((id) => [id, press(true, 0, id === 1 ? 1 : -1, 0)]));
