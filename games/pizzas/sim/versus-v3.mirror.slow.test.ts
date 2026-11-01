@@ -5,6 +5,7 @@ import { MIRRORS, isoOf, runVersus } from '../test/golden/mirror-bot';
 import { createGame, type Game } from './overcooked';
 import { eventPool, type EventKind } from './midround';
 import { versusRats } from './feel/rat-versus';
+import { iceRows } from './versus/ice-patch';
 
 type M = (typeof MIRRORS)[keyof typeof MIRRORS];
 const NAMES = { v1: 'mirrorX', v3: 'rot180' } as const;
@@ -106,6 +107,48 @@ describe('VERSUS_V3 under the mirror proof', () => {
     expect(slides(1)).toBe(slides(0));
     const [a, b] = r.g.teams;
     expect([b!.score, b!.delivered, b!.expired]).toEqual([a!.score, a!.delivered, a!.expired]);
+  });
+
+  const slidesOf = (r: ReturnType<typeof runVersus>, team: number) =>
+    r.bus.log.filter((l) => {
+      const [, type, p] = l.split('|');
+      return type === 'surface:slide' && r.g.teamIds[team]!.includes((JSON.parse(p!) as { player: number }).player);
+    }).length;
+  for (const [key, teams] of [
+    ['v1', T3],
+    ['v3', T2],
+  ] as const)
+    it(`${key}: the patch of ice in both kitchens plays the same, slides and tie`, () => {
+      const m = MIRRORS[key];
+      const rows = iceRows(m.rows, NAMES[key]);
+      expect(rows.join('')).toContain('i');
+      const r = runVersus({
+        ...m,
+        rows,
+        difficulty: 'normal',
+        seed: 4,
+        teams,
+        flags: { ...FLAGS, events: false, surfaces: true, sigma: NAMES[key] },
+      });
+      expect(slidesOf(r, 0)).toBeGreaterThan(0); // the chefs do cross it
+      expect(slidesOf(r, 1)).toBe(slidesOf(r, 0));
+      const [a, b] = r.g.teams;
+      expect(a!.delivered).toBeGreaterThanOrEqual(2);
+      expect([b!.score, b!.delivered, b!.expired, b!.reachedAt]).toEqual([a!.score, a!.delivered, a!.expired, a!.reachedAt]);
+    });
+
+  it('the proof can fail: ice in one kitchen only breaks the slides', () => {
+    const m = MIRRORS.v1;
+    const rows = iceRows(m.rows, 'mirrorX').map((r) => `${r.slice(0, 8).replaceAll('i', '.')}${r.slice(8)}`); // the left half loses its ice
+    const r = runVersus({
+      ...m,
+      rows,
+      difficulty: 'normal',
+      seed: 4,
+      teams: T3,
+      flags: { ...FLAGS, events: false, surfaces: true, sigma: 'mirrorX' },
+    });
+    expect(slidesOf(r, 1)).not.toBe(slidesOf(r, 0));
   });
 
   it('the proof can fail: a rat that robs only one kitchen breaks the tie', () => {

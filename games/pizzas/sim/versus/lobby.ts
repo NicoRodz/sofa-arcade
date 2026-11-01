@@ -22,6 +22,8 @@ import {
 import { validateTeamSetup } from '../assist';
 import { kitchenRegions } from './versus';
 import { roundRules } from '../midround';
+import { iceRows } from './ice-patch';
+import { usesSurfaces } from '../surfaces/legend';
 import { CATAPULT_CHAR, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '../sabotage-config';
 import { VERSUS_AUTO, VERSUS_MAPS, VERSUS_RANDOM, versusMap, type VersusChoice } from './maps';
 
@@ -262,10 +264,13 @@ export const withSides = (teams: readonly TeamInfo[], map: Pick<ResolvedVersusMa
 
 /** The lobby's choices as a running round: createGame with the teams (ids = position), the versus map and the handicap option, every chef added to its team. */
 export function createVersusGame(o: VersusStart): Game {
+  const rules = roundRules(o.modeOptions, o.difficulty);
+  const rows = rules.versusV3 ? iceRows(o.map.rows, o.map.sigma) : o.map.rows; // VERSUS_V3: the same patch of ice in both kitchens
   const game = createGame({
     mapId: o.map.id,
     difficulty: o.difficulty,
-    rows: o.map.rows,
+    rows,
+    surfaces: usesSurfaces(rows),
     spawns: o.map.spawns,
     seed: o.seed,
     eventsSeed: o.eventsSeed,
@@ -277,7 +282,7 @@ export function createVersusGame(o: VersusStart): Game {
     sabotage: sabotageOf(o.modeOptions),
     sigma: o.map.sigma, // the sim switches it off by itself on a map with no catapult
     menuV2: true, // the card cut by difficulty, one shared sequence for both kitchens (recipes/menu.ts)
-    ...roundRules(o.modeOptions, o.difficulty), // the oven burns in every round (the sim itself leaves the fire out on Easy and under the Suave sabotage); the event follows the lobby option
+    ...rules, // the oven burns in every round (the sim itself leaves the fire out on Easy and under the Suave sabotage); the event follows the lobby option
     assist: o.assist,
   });
   for (const t of o.teams) t.playerIds.forEach((id, rank) => addPlayer(game, id, o.slotOf(id), rank));
