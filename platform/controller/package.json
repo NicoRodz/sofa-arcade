@@ -9,6 +9,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@pichi/core": "*"
+    "@pichi/core": "*",
+    "nipplejs": "^1.0.4"
   }
 }

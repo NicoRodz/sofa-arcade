@@ -12,12 +12,14 @@
     "./screen": "./screen/index.ts",
     "./screen/audio": "./screen/audio/index.ts",
     "./validator": "./validator/index.ts",
+    "./controller": "./controller/index.ts",
     "./*": "./*.ts"
   },
   "scripts": {
     "typecheck": "tsc -p . && tsc -p server"
   },
   "dependencies": {
+    "@pichi/controller-kit": "*",
     "@pichi/core": "*",
     "@pichi/screen-kit": "*",
     "express": "^5.2.0",
