@@ -17,14 +17,12 @@ import {
   type Mech,
   type Zone,
 } from './layout';
-import { MAPS_BY_DIFFICULTY, fixedMap, parseMap, pickFixedMap, recommendedMaps, type MapChoice, type MapDef, type Pos } from '../maps';
+import { MAPS_BY_DIFFICULTY, fixedMap, parseMap, recommendedMaps, type MapDef, type Pos } from '../maps';
 import type { PuestoId } from '../phone/puestos';
-import { mulberry32, pickWeighted, type Rng, teamSize, type Difficulty } from '@pichi/core';
+import { mulberry32, pickWeighted, teamSize, type Difficulty } from '@pichi/core';
 import { orderSpawns, placeSpawns, zonePuestos } from './spawns';
 import { FLOOR_PER_PLAYER, floorTiles, minPlayers, spawnTiles, validateMap, zoneShareProblems } from '../validate';
 import { metric } from '../scoring/score';
-import { generateMech } from '../gen/core';
-import type { MechId } from '../mech/ids';
 
 export interface Generated {
   rows: string[];
@@ -111,51 +109,4 @@ function alternate(spawns: readonly Pos[], zoneAt: (x: number) => Zone): Pos[] {
     if (b[i]) out.push(b[i]!);
   }
   return out;
-}
-
-// The map a lobby choice stands for. "random" is generated from the lobby seed; the rest are fixed maps.
-export function resolveMap(
-  choice: MapChoice,
-  seed: number,
-  diff: Difficulty,
-  n: number,
-  rand: Rng,
-  gen?: { mechs: boolean; mechanics?: readonly MechId[]; mutate?: boolean }, // the lobby's choices for the generated map: mechanics Sí / No and the ticked ones
-): {
-  id: string;
-  name: string;
-  rows: readonly string[];
-  spawns?: readonly Pos[];
-  puestos?: MapDef['puestos'];
-  mechanics?: MapDef['mechanics'];
-  mutation?: MapDef['mutation'];
-  caves?: MapDef['caves'];
-} {
-  if (choice === 'random') {
-    if (gen?.mechs) {
-      const g = generateMech({ seed, n, difficulty: diff, mechanics: gen.mechanics, mutate: gen.mutate });
-      return {
-        id: 'random',
-        name: `Aleatorio ${seed}`,
-        rows: g.rows,
-        spawns: g.spawns,
-        puestos: g.puestos,
-        mechanics: g.mechanics.length ? g.mechanics : undefined,
-        mutation: g.mutation,
-      };
-    }
-    const g = generate(seed, diff, n);
-    return { id: 'random', name: `Aleatorio ${seed}`, rows: g.rows, spawns: g.spawns, puestos: g.puestos };
-  }
-  const m = pickFixedMap(choice, diff, rand, n);
-  return {
-    id: m.id,
-    name: m.name,
-    rows: m.rows,
-    spawns: m.spawns,
-    puestos: m.puestos,
-    mechanics: m.mechanics,
-    mutation: m.mutation,
-    caves: m.caves,
-  };
 }

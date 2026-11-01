@@ -65,7 +65,7 @@ module.exports = {
     },
     {
       name: 'no-circular',
-      severity: 'warn',
+      severity: 'error',
       from: {},
       to: { circular: true },
     },

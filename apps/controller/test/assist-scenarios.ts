@@ -1,6 +1,6 @@
 // Modo Ayudante, explained: what the layout harness measures for it (selectors) and the states it is measured in (notice, "¿Qué es?" card).
 import { CREATOR_PROBE, CR_STACK, CREATOR_TOUCH, creatorScenarios } from './creator-scenarios';
-import type { Scenario } from './harness';
+import type { Builders, Scenario } from './scenario-types';
 
 export { CR_STACK };
 
@@ -21,16 +21,7 @@ export const ASSIST_PROBE = [
   ...CREATOR_PROBE,
 ];
 
-type Msg = unknown;
-export interface Builders {
-  player: (name: string) => Msg;
-  config: () => Msg;
-  vsConfig: () => Msg;
-  you: (team: number) => Msg;
-  captain: () => Msg;
-  phase: (p: string) => Msg;
-  WIDE: string;
-}
+export type { Builders };
 const TOAST = `document.getElementById('assisttoast').textContent = 'Ayudante activado: llevarás un gorro con hélice'; document.body.dataset.assisttoast = 'on'`;
 const CARD = `document.body.dataset.assisthelp = 'open'`;
 const CLOSED = `document.body.dataset.howto = 'closed'`;

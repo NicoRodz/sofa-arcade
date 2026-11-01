@@ -1,5 +1,5 @@
 // Web Audio voices for the hybrid themes: tribal percussion (pitch-dropping sines plus noise) and the marimba/flute leads.
-import type { Chain } from './synth';
+import type { Chain } from './chain-type';
 import type { Scheduled } from './music';
 
 function env(ctx: BaseAudioContext, out: AudioNode, t: number, dur: number, peak: number, att = 0.003): GainNode {

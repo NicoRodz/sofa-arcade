@@ -1,7 +1,7 @@
 // Map solvability: floor regions, the zone graph over passing counters, recipe legs, spawns per zone, and a fixed map against its own metadata.
 import { mechFlagsOf } from '../mech/ids';
-import { MAP_H, MAP_W, floorComponents, parseMap, posKey, type Grid, type MapDef, type Pos } from '../maps';
-import { analyze, type Analysis } from './analyze';
+import { MAP_H, MAP_W, parseMap, posKey, type Grid, type MapDef, type Pos } from '../maps';
+import { analyze } from './analyze';
 import { accessTiles, hasCheese, hasSink, keysOf, legsOf, stationsOf, type StationKey } from './stations';
 import { cardFor } from '../recipes/cards';
 import { cardProblems, menuCardProblems } from '../recipes/card-check';

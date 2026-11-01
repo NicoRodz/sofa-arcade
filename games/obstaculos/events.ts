@@ -1,7 +1,7 @@
 // Events of the game ("obst.*"). The world returns them on every step and the scene publishes them on the session bus
 // (games/obstaculos/screen/bus.ts types it as Bus<AllObstEvents>); sound and juice subscribe there. Plan §14.
 import type { SignalKind } from './sim/rules/campaign';
-import type { WindPhase } from './sim/world/state';
+import type { WindPhase } from './sim/world/wind-type';
 export type DeathCause = 'spikes' | 'liquid' | 'crush' | 'fall' | 'hazard';
 export type GrabTarget = 'ring' | 'player' | 'box' | 'lever';
 

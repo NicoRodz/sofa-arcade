@@ -15,7 +15,8 @@ export {
   type Mech,
 } from './layout';
 export { orderSpawns, zonePuestos } from './spawns';
-export { pickMech, generate, resolveMap, type GenOpts, type Generated } from './coop';
+export { pickMech, generate, type GenOpts, type Generated } from './coop';
+export { resolveMap } from './resolve';
 export {
   VERSUS_TOPOLOGIES,
   composeVersus,

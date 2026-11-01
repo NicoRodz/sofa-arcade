@@ -1,7 +1,6 @@
 // Character creator (platform/controller/src/creator): what the layout harness measures for it and the states it is measured in.
 // The scenarios drive the real page: the name form is submitted, so the creator opens exactly as it does for a player (join with `ap` and customizing).
-import type { Builders } from './assist-scenarios';
-import type { Scenario } from './harness';
+import type { Builders, Scenario } from './scenario-types';
 
 export const CREATOR_TOUCH = ['#creator button', '#cr-edit'];
 export const CR_STACK = ['#creator [data-ov]']; // leaf cells of the creator: none may sit on another

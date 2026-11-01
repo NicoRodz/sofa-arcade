@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
 import { WebSocket } from 'ws';
 import { portFor } from './free-port';
+import type { Scenario } from './scenario-types';
 import { ASSIST_PROBE, ASSIST_TOUCH, assistHelpScenarios } from './assist-scenarios';
 
 const CHROME = process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -317,13 +318,7 @@ const HOWTO_LONG = {
 const POOL = ['masa', 'corte', 'queso', 'horno', 'reparto', 'lavado', 'apoyo', 'prep'];
 const puestos = (id: number, list: string[], cheese = true) => ({ cheese, sink: true, assign: [{ id, puestos: list, pool: POOL }] });
 
-export interface Scenario {
-  name: string;
-  fresh?: boolean;
-  msgs: object[];
-  after?: string;
-  storedName?: boolean;
-}
+export type { Scenario };
 const player = (name: string, id = 1, color = '#E63B2E') => ({ t: 'joined', player: { id, name, color, slot: 0 }, room: 'main' });
 const config = (controls: ControlsMsg = PIZZAS, howTo = HOWTO) => ({
   t: 'config',
