@@ -8,7 +8,7 @@
 // as a share of the 173 px jump, whichever is larger. It is measured by re-running the very plan that validated the edge.
 import { JUMP_PEAK_PX, PLAYER_H, TILE } from '../constants';
 import { isHazardKind } from '../legend';
-import { tileAt } from '../sim/tiles';
+import { tileAt } from '../sim/world/tiles';
 import { EDGE_MOVE_SCALE, simPlan } from '../validator/sim';
 import { planSet, surfaceTiming, type Edge, type Graph } from '../validator/graph';
 import type { ValidationReport } from '../validator/validate';

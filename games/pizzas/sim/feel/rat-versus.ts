@@ -9,7 +9,7 @@ import { ratFrame } from './rat-frame';
 import { mulberry32 } from '@pichi/core';
 import { subSeed } from '../recipes/menu';
 import type { Game, Station } from '../round/state';
-import type { Mid, Rat } from '../midround';
+import type { Mid, Rat } from '../rules/midround';
 
 /** What the versus rat borrows from midround.ts (passed in: this file keeps no value import of the sim). */
 export interface RatCoop {

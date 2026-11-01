@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../levels';
 import { difficultyOf } from '../metric';
 import { validateState } from '../validator';
-import { CAMPAIGN, campaignLevel, catalogErrors } from './catalog';
-import { lintHints } from './learning';
-import { inBand, bandOf } from './world';
-import { campaignParams } from '../sim/campaign';
-import type { CampaignLevel } from './types';
+import { CAMPAIGN, campaignLevel, catalogErrors } from './catalog/catalog';
+import { lintHints } from './progress/learning';
+import { inBand, bandOf } from './worlds/world';
+import { campaignParams } from '../sim/rules/campaign';
+import type { CampaignLevel } from './catalog/types';
 
 describe('the catalog: 5 worlds x 7 + 5 Cumbres = 40 (plan §2)', () => {
   it('has 40 levels in order, 7 per world, 5 Cumbres, a boss at the end of each world', () => {

@@ -1,7 +1,7 @@
 // Test support of the T1b mechanics: a full coop round on a test map with the golden chefs (test/golden/bot.ts), their controls optionally rewritten each tick by the mechanic's bot job.
 // Reports the stars, the score and the longest stall (no change in the kitchen for that many ticks: the "30 s without progress = fail" of the design). Nothing in the game imports it.
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '../../../sim/overcooked';
-import { summarize } from '../../../sim/results';
+import { summarize } from '../../../sim/scoring/results';
 import { mechFlagsOf, type MechId } from '../../../sim/mech/ids';
 import { RecBus, decide, type Mem } from '../../golden/bot';
 import type { Difficulty } from '@pichi/core/difficulty';

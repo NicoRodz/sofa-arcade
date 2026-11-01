@@ -1,8 +1,8 @@
 // One fixed 60 Hz step over players, rope, grabs, entities and rules. The call order below is frozen (the regression hashes depend on it).
 import { DT, JUMP_V0, PLAYER_H, PLAYER_W, ROPE_JUMP_MULT, RUN_SPEED } from '../../constants';
 import { T } from '../../legend';
-import { applyA, applyB, handCatchStep, releaseHolding } from '../actions';
-import { moveXLedge, pushBody, supportBelow } from '../collide';
+import { applyA, applyB, handCatchStep, releaseHolding } from '../player/actions';
+import { moveXLedge, pushBody, supportBelow } from './collide';
 import {
   beltDx,
   computeLoads,
@@ -15,14 +15,14 @@ import {
   stepMovers,
   stepTargets,
 } from '../entities';
-import type { PlayerStep } from '../input';
-import { hangingOnRope, invMassOf, solveRopes, type RopeNode } from '../rope';
-import { applySlides, edgeAssist, prepareAnchors, registerGroundJump, stepCampaignInputs, stepIce, stepWind } from '../campaignrules';
-import { stepEnemies } from '../enemies';
-import { stepPick, stepPickaxes } from '../pickaxe';
-import { elasticOf, markElastic, stretchedEnd } from '../bungee';
-import { stepLanterns } from '../lantern';
-import { stepGeysers, stepSinkers } from '../floaters';
+import type { PlayerStep } from './input';
+import { hangingOnRope, invMassOf, solveRopes, type RopeNode } from '../player/rope';
+import { applySlides, edgeAssist, prepareAnchors, registerGroundJump, stepCampaignInputs, stepIce, stepWind } from '../rules/campaignrules';
+import { stepEnemies } from '../entities/enemies';
+import { stepPick, stepPickaxes } from '../player/pickaxe';
+import { elasticOf, markElastic, stretchedEnd } from '../player/bungee';
+import { stepLanterns } from '../player/lantern';
+import { stepGeysers, stepSinkers } from '../entities/floaters';
 import {
   dropCrumbs,
   progressOf,
@@ -34,10 +34,10 @@ import {
   stepStars,
   stepStragglers,
 } from '../rules';
-import { emit, isActive, playerOf, type ObstEvent, type World } from '../state';
-import { headPlatform, stepPlayer, type Body, type Platform } from '../player';
-import { boxTouches } from '../tiles';
-import { CLIMB_SIDE_MULT, CLIMB_SPEED, PLANT_AIR_STEPS, THROW_VX } from '../tuning';
+import { emit, isActive, playerOf, type ObstEvent, type World } from './state';
+import { headPlatform, stepPlayer, type Body, type Platform } from '../player/player';
+import { boxTouches } from './tiles';
+import { CLIMB_SIDE_MULT, CLIMB_SPEED, PLANT_AIR_STEPS, THROW_VX } from './tuning';
 
 export interface StepOptions {
   offCamera?: readonly boolean[];

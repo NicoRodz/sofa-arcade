@@ -3,8 +3,8 @@
 import { app, phaserGame } from '@pichi/screen-kit/shell';
 import { dropPlayer } from '../sim';
 import { ev2CakeServed, ev2RedServed } from '../sim/ev2/events';
-import { addFloorItem } from '../sim/floor';
-import { sabotageAimPress, sabotageLoad } from '../sim/sabotage';
+import { addFloorItem } from '../sim/rules/floor';
+import { sabotageAimPress, sabotageLoad } from '../sim/rules/sabotage';
 import { school } from './match/loop';
 import { pz, tally } from './state';
 

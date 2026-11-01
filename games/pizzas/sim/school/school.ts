@@ -3,11 +3,11 @@
 // (`step` with the roster and a function that hands over each chef's controls), and it only talks through `send` (the hints of the contextual buttons and the
 // school messages to the phones).
 import type { GameEvents, Emitter } from '../round/events';
-import { chefHint, createHintSync } from '../hints';
+import { chefHint, createHintSync } from '../phone/hints';
 import { TICK_MS, type Controls, type Game } from '../round/state';
 import { addPlayer, createGame, removePlayer } from '../round/create';
 import { tick } from '../round/step';
-import { clearPot } from '../burn';
+import { clearPot } from '../rules/burn';
 import type { ClientMsg } from '@pichi/core';
 import { SCHOOL_MAP_ID, SCHOOL_ROWS } from './school-map';
 import {

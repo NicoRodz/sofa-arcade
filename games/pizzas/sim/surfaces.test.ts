@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { SPEED, TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Player } from './overcooked';
 import { parseMap } from './maps';
-import { addFloorItem } from './floor';
+import { addFloorItem } from './rules/floor';
 import { ICE_TAU_MS } from './surfaces/config';
 import { usesSurfaces } from './surfaces/legend';
 import { surfaceProblems, validateMap } from './validate';

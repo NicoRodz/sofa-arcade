@@ -1,7 +1,7 @@
 // Rules: the expedition (3 levels, retry at x0.5, run end) and the awards.
 import { levelScore } from './goal';
 import { EXPEDITION_LEVELS } from '../../constants';
-import type { ObstEvent, PlayerStats, World } from '../state';
+import type { ObstEvent, PlayerStats, World } from '../world/state';
 
 // --- the expedition: 3 levels; with 0 lives the level is retried at x0.5; the second failure ends the run (assumed: counted over the whole run)
 export interface RunState {

@@ -7,7 +7,7 @@ import { sendMsg } from '@pichi/screen-kit/net';
 import { app, connectedCount, connectedIds, renderUi, services, setConfig } from '@pichi/screen-kit/shell';
 import { modeOf, type ModeId } from '@pichi/core/contract';
 import { SABOTAGE_OPTION } from '../../sim/sabotage-config';
-import { EVENTS_OPTION } from '../../sim/midround';
+import { EVENTS_OPTION } from '../../sim/rules/midround';
 import { MUTATE_OPTION } from '../../sim/mutate/plan';
 import { defaultCoopMap, fixedMap, isMapChoice, mapStatus, replacementMap, type MapChoice } from '../../sim/maps';
 import { versusMap } from '../../sim/versus/maps';

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { JUMP_V0, PLAYER_H, PLAYER_W, TILE } from '../constants';
 import { TILE_CHARS } from '../legend';
-import { physicsFor } from '../sim/player';
-import type { TileGrid } from '../sim/tiles';
+import { physicsFor } from '../sim/player/player';
+import type { TileGrid } from '../sim/world/tiles';
 import { EDGE_MOVE_SCALE, ropeJumpLaunch, simPlan, feetOfRow, type Plan, type CatchZone } from './sim';
 
 const grid = (rows: string[]): TileGrid => ({

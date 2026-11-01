@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { TICK_MS, addPlayer, createGame, tick, type Game, type Station } from '../overcooked';
 import { fixedMap, isFloor } from '../maps';
 import { versusMap } from '../versus/maps';
-import { douse } from '../burn';
+import { douse } from '../rules/burn';
 import { fireIsBig, hash32 } from './hazard-v2';
 import { planEvents } from './events-v2';
-import type { Rat } from '../midround';
+import type { Rat } from '../rules/midround';
 
 const bigSeed = (want: boolean, chefs = 2) => {
   for (let s = 1; s < 500; s++) if (fireIsBig(s, 0, 'normal', chefs, true) === want) return s;

@@ -9,7 +9,7 @@ import { C, TILE, hexNum } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';
-import type { Rat } from '../../../sim/midround';
+import type { Rat } from '../../../sim/rules/midround';
 import { ratOfTeam, ratsOf } from './rats';
 
 /** Pixels the rat sprite rises now: an arc while it jumps aside, a small fast heave while it pants. */

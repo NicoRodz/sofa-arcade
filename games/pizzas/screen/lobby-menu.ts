@@ -5,7 +5,7 @@ import { DIFFICULTIES, DIFFICULTY_LABEL, params, type Difficulty } from '@pichi/
 import { hasModeChoice, selectableModes, type GameDef, type ModeId } from '@pichi/core/contract';
 import type { LobbyConfig, MenuActBody, MenuBody, MenuErrCode, MenuGroup, MenuItem, MenuOption, MenuRow } from '@pichi/core';
 import { eventsHint } from '../sim/ev2/lines';
-import { eventsOf } from '../sim/midround';
+import { eventsOf } from '../sim/rules/midround';
 import { coopLobbyView, fixedMap, recommendedForN } from '../sim/maps';
 import type { LobbyRow, MapFamily, lobbyGroupOfMap } from '../sim/maps';
 import { mutateOf } from '../sim/mutate/plan';

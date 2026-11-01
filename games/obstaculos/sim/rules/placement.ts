@@ -2,9 +2,9 @@
 import { BUBBLE_INVULN_SEC, DT, PLAYER_H, PLAYER_W, TILE } from '../../constants';
 import { T } from '../../legend';
 import type { ParsedLevel } from '../../parse';
-import { emit, isActive, type PlayerState, type World } from '../state';
-import { boxHitsSolid } from '../tiles';
-import { SPAWN_SPREAD } from '../tuning';
+import { emit, isActive, type PlayerState, type World } from '../world/state';
+import { boxHitsSolid } from '../world/tiles';
+import { SPAWN_SPREAD } from '../world/tuning';
 
 export const steps = (sec: number) => Math.round(sec / DT);
 

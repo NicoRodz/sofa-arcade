@@ -1,10 +1,10 @@
 // Free boxes: gravity, landing, pushing.
 import { DT, GRAVITY_DOWN_MULT, GRAVITY_UP, MAX_FALL, PLAYER_H, PLAYER_W, TILE } from '../../constants';
 import { isHazardKind, isOneWayKind, isSolidKind } from '../../legend';
-import { pushRect } from '../collide';
-import { isActive, type BoxE, type PlayerState, type World } from '../state';
-import { BOX_SIZE, HEAVY_GRIPS, HOLD_BREAK } from '../tuning';
-import { boxTouches, tileAt, tileOf, type TileGrid } from '../tiles';
+import { pushRect } from '../world/collide';
+import { isActive, type BoxE, type PlayerState, type World } from '../world/state';
+import { BOX_SIZE, HEAVY_GRIPS, HOLD_BREAK } from '../world/tuning';
+import { boxTouches, tileAt, tileOf, type TileGrid } from '../world/tiles';
 
 // --- boxes
 function landBox(g: TileGrid, b: BoxE): void {

@@ -9,7 +9,7 @@ import type { Fx } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';
 import { ratLift } from '../feel/rat-dodge';
 import { ratOfTeam, ratsOf } from '../feel/rats';
-import type { Rat } from '../../../sim/midround';
+import type { Rat } from '../../../sim/rules/midround';
 
 export class RatView {
   private off: (() => void)[] = [];

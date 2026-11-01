@@ -4,7 +4,7 @@ import { hasModeChoice, selectableModes, type ModeId } from '@pichi/core/contrac
 import { teamOf } from '@pichi/core/lobby';
 import type { LobbyConfig, Difficulty } from '@pichi/core';
 import { defaultSabotage, isSabotageMode, SABOTAGE_OPTION } from '../../sim/sabotage-config';
-import { eventsOf } from '../../sim/midround';
+import { eventsOf } from '../../sim/rules/midround';
 import { lobbyGroupOfMap, fixedMap, isMapChoice, mapStatus } from '../../sim/maps';
 import { versusMap } from '../../sim/versus/maps';
 import { isVersusChoice, stepChoice, teamSizes, versusAvailability, versusMapStatus } from '../../sim/versus/lobby';

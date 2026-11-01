@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { playWithBots } from '../campaign/botplay';
+import { playWithBots } from '../campaign/tools/botplay';
 import { validateState } from '../validator';
 import type { LevelDef } from '../types';
 import { LEVEL_01 } from './level01';

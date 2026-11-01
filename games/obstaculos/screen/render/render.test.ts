@@ -3,7 +3,7 @@ import { BIOMES, T, buildGrid, parseLevelStrict, type Biome } from '../../index'
 import { LEVEL_01 } from '../../levels';
 import { PALETTES, ROPE_COLORS, tagColor, lerpColor } from './biome';
 import { E_, N_, S_, W_, cellRand, terrainMask } from './tiledraw';
-import { clockText, medalFor } from './hudlogic';
+import { clockText, medalFor } from './hud/hudlogic';
 
 describe('palettes', () => {
   it('every biome has its palette with the plan colours', () => {

@@ -4,7 +4,7 @@ import { chefCanvas } from '@pichi/screen-kit/art/chef';
 import { laterInResults } from '@pichi/screen-kit/results';
 import { app, dispatch, services } from '@pichi/screen-kit/shell';
 import { $, esc } from '@pichi/screen-kit/ui';
-import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from '../art/flags';
+import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from '../art/flags/flags';
 import { recordRound, seriesLine, versusReport } from '../../sim/versus/report';
 import { resultNote } from '../../sim/versus/notes';
 import { versusMap } from '../../sim/versus/maps';

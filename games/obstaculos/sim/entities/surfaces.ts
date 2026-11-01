@@ -1,9 +1,9 @@
 // Surfaces that move or change under a body: movers and balances (step 1), crumbling tiles and belts.
 import { DT, PLAYER_H, PLAYER_W, TILE } from '../../constants';
 import { T } from '../../legend';
-import { emit, isActive, type CrumbleE, type Entities, type Objective, type PlayerState, type World } from '../state';
-import { BELT_SPEED } from '../tuning';
-import { setTile, tileAt, tileOf } from '../tiles';
+import { emit, isActive, type CrumbleE, type Entities, type Objective, type PlayerState, type World } from '../world/state';
+import { BELT_SPEED } from '../world/tuning';
+import { setTile, tileAt, tileOf } from '../world/tiles';
 import { CRUMBLE_BACK_SEC, CRUMBLE_FALL_SEC } from '../../constants';
 import { occupied } from './activation';
 

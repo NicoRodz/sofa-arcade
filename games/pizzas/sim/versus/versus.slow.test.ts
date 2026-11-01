@@ -19,7 +19,7 @@ import {
   type Game,
   type Recipe,
 } from '../overcooked';
-import { summarizeTeam } from '../results';
+import { summarizeTeam } from '../scoring/results';
 import { VIP_EVERY_MS, VIP_TTL_MS } from './versus';
 import { MIRRORS, runVersus, twinSpawns } from '../../test/golden/mirror-bot';
 import { runGolden, SCENARIOS, type GoldenRun } from '../../test/golden/bot';

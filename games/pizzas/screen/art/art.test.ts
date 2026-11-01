@@ -29,8 +29,8 @@ import {
   clockText,
   ticketXs,
   vipCardAt,
-} from './layout';
-import { FLAG_H, FLAG_W } from './flags';
+} from './hud/layout';
+import { FLAG_H, FLAG_W } from './flags/flags';
 import { isVersusMapId, VERSUS_FLOOR } from '@pichi/screen-kit/art/tokens';
 import { VERSUS_MAP_IDS } from '../../sim/versus/maps';
 import { CUT_KIND, ITEM_KIND, RAW_KIND } from './food';

@@ -3,7 +3,7 @@
 // `dodgeMs` (untouchable meanwhile) and then PANTS for `pantMs` at half speed: that is the window for a second chef (or the same one, once its dash is back). No RNG: the side is
 // the one with more free floor beyond the landing point, the left of the chef's heading on a tie.
 import type { Game } from '../round/state';
-import type { Rat } from '../midround';
+import type { Rat } from '../rules/midround';
 import { hazardParams, type RatParams } from '../hazards/hazard-v2';
 
 export const ratParams = (g: Game): RatParams => (g.hz ? hazardParams(g.difficulty, g.players.size).rat : RAT_V1);

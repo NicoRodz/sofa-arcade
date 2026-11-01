@@ -4,7 +4,7 @@ import { seriesRound } from '../carta-larga/bot';
 import { lobbyExtra } from './lobby-config';
 import { SERIES_MAPS, fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { recipeStarFactor } from '@pichi/game-pizzas/sim/recipes/stars';
-import { stars } from '@pichi/game-pizzas/sim/stars';
+import { stars } from '@pichi/game-pizzas/sim/scoring/stars';
 import { OIL } from '@pichi/game-pizzas/sim/mech/oil/state';
 import type { Game } from '@pichi/game-pizzas/sim/round/state';
 import type { Difficulty } from '@pichi/core/difficulty';

@@ -1,14 +1,14 @@
 // snapshot for rendering: plain data, safe to keep between frames (except `grid`, which is live and read only).
 import { DT, TILE } from '../../constants';
 import type { GameMode } from '../../types';
-import { previewB as previewBPlayer, type BPreview } from '../actions';
-import type { PxRect } from '../collide';
+import { previewB as previewBPlayer, type BPreview } from '../player/actions';
+import type { PxRect } from './collide';
 import { objRect } from '../entities';
-import type { CampaignParams, SignalKind } from '../campaign';
-import { throwArc } from '../campaignrules';
-import { darkView } from '../lantern';
+import type { CampaignParams, SignalKind } from '../rules/campaign';
+import { throwArc } from '../rules/campaignrules';
+import { darkView } from '../player/lantern';
 import { goalZone } from '../rules';
-import { isActive, type LevelResult, type Objective, type PlayerState, type WindPhase, type World, type WorldStatus } from '../state';
+import { isActive, type LevelResult, type Objective, type PlayerState, type WindPhase, type World, type WorldStatus } from './state';
 
 export interface PlayerSnap {
   slot: number;

@@ -1,9 +1,9 @@
 // Keys and doors, and the rising hazards (avalanche, tide, fire): speeds are tiles/s, scaled by difficulty in createEntities.
 import { DT, PLAYER_H, PLAYER_W, TILE } from '../../constants';
 import { T } from '../../legend';
-import { emit, isActive, type PlayerState, type World } from '../state';
-import { FREEZE_SEC, KEY_REACH, TIDE_PERIOD_SEC } from '../tuning';
-import { setTile, tileOf } from '../tiles';
+import { emit, isActive, type PlayerState, type World } from '../world/state';
+import { FREEZE_SEC, KEY_REACH, TIDE_PERIOD_SEC } from '../world/tuning';
+import { setTile, tileOf } from '../world/tiles';
 import { idx } from './create';
 
 // --- keys and doors

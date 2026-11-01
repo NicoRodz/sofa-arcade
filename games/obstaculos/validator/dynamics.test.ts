@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { TILE } from '../constants';
 import type { Mechanic } from '../mechanics';
 import { parseLevel } from '../parse';
-import { campaignParams } from '../sim/campaign';
+import { campaignParams } from '../sim/rules/campaign';
 import type { EntityParam, LevelDef } from '../types';
 import { buildGraph } from './graph';
 import { lint, validateState } from './validate';

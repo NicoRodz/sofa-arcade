@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PLAYER_H, TILE } from '../constants';
 import { T } from '../legend';
 import { requiredWeight } from './entities';
-import { draw, hall, inp, level, names, obj, of, pl, run, teleport, tile, vline, world } from './testkit';
+import { draw, hall, inp, level, names, obj, of, pl, run, teleport, tile, vline, world } from './testkit/testkit';
 
 const GROUND = 11; // hall(60, 14): floor top on row 12, so feet on the bottom of row 11
 const gateLevel = (latch: boolean, weight: number | 'all' = 1) =>

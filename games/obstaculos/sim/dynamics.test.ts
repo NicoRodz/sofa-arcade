@@ -2,8 +2,8 @@
 // that must NOT show it (the layer is opt-in) and the numbers that params(2) freezes (campaign.test.ts).
 import { describe, expect, it } from 'vitest';
 import { DT, JUMP_V0, PLAYER_H, TILE } from '../constants';
-import { campaignParams } from './campaign';
-import { draw, hall, inp, level, names, obj, of, pl, run, teleport, vline, world } from './testkit';
+import { campaignParams } from './rules/campaign';
+import { draw, hall, inp, level, names, obj, of, pl, run, teleport, vline, world } from './testkit/testkit';
 import { previewB, snapshot, step } from './world';
 
 const camp = (n?: number) => ({ campaign: { world: 'forest' as const, n } });

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { FIXED_MAPS, isFloor } from '../maps';
 import { addPlayer, createGame, tick, type Controls, type Game } from '../overcooked';
-import type { Rat } from '../midround';
+import type { Rat } from '../rules/midround';
 
 const RUN: Controls = { x: 1, y: 0, a: 0, b: false };
 const LEFT: Controls = { x: -1, y: 0, a: 0, b: false };

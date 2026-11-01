@@ -1,5 +1,5 @@
 // Map types: tiles and grids, a map definition, and what a versus map adds.
-import type { PuestoId } from '../puestos';
+import type { PuestoId } from '../phone/puestos';
 import type { SIGMAS } from '../symmetry';
 import type { MechId } from '../mech/ids';
 import type { MutationV2 } from '../mech/mutation/ops';

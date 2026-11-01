@@ -6,7 +6,7 @@ import { SIGMAS, isometryCheck } from '../symmetry';
 import { FLOOR_PER_PLAYER, floorTiles, minPlayers, spawnTiles, validate } from './reachability';
 import { cardFor } from '../recipes/cards';
 import { cardProblems, menuCardProblems } from '../recipes/card-check';
-import { puestoProblems } from '../puestos';
+import { puestoProblems } from '../phone/puestos';
 import { sabotageProblems } from './sabotage';
 
 /**

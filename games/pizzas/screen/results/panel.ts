@@ -3,8 +3,8 @@ import { chefCanvas } from '@pichi/screen-kit/art/chef';
 import { laterInResults } from '@pichi/screen-kit/results';
 import { app, services } from '@pichi/screen-kit/shell';
 import { $, esc, setHtml } from '@pichi/screen-kit/ui';
-import { kudosLines } from '../../sim/kudos';
-import { summarize } from '../../sim/results';
+import { kudosLines } from '../../sim/scoring/kudos';
+import { summarize } from '../../sim/scoring/results';
 import { cancelFlagLoop, renderVersusResults } from './versus-view';
 import { kitchen, pz, stats } from '../state';
 

@@ -7,7 +7,7 @@ import { buildFxTextures } from '@pichi/screen-kit/art/fx';
 import type { Anchor } from '../rope';
 import { buildEntityTextures } from '../entities';
 import { Explorer, buildRigTextures } from '../rig';
-import { medalFor } from '../hud';
+import { medalFor } from '../hud/hud';
 import { VIEW_H, VIEW_W, computeCamera, progressAt, type CamPlayer } from '../camera';
 
 export function buildObstacleTextures(scene: Phaser.Scene): void {

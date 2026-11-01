@@ -9,8 +9,8 @@ import { Fx, buildFxTextures } from '@pichi/screen-kit/art/fx';
 import { World } from './art/world';
 import { MutateView } from './art/mutate/mutate-view';
 import { MechViews } from './art/mech/views';
-import type { RoundView } from './art/hud';
-import { buildPuestoIcons, type PuestoView } from './art/puestos';
+import type { RoundView } from './art/hud/hud';
+import { buildPuestoIcons, type PuestoView } from './art/hud/puestos';
 import { buildEventTextures } from './art/events';
 import { addHazardFeel } from './art/feel/hazard-feel';
 

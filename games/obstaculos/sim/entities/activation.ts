@@ -2,10 +2,10 @@
 import { DT } from '../../constants';
 import { T } from '../../legend';
 import type { Cell } from '../../types';
-import { bodyRect, cellRect, overlaps, type PxRect } from '../collide';
-import { emit, isActive, type Objective, type World } from '../state';
-import { BOX_SIZE } from '../tuning';
-import { setTile } from '../tiles';
+import { bodyRect, cellRect, overlaps, type PxRect } from '../world/collide';
+import { emit, isActive, type Objective, type World } from '../world/state';
+import { BOX_SIZE } from '../world/tuning';
+import { setTile } from '../world/tiles';
 import { requiredWeight } from './loads';
 
 const px = (c: Cell): PxRect => cellRect(c.x, c.y);

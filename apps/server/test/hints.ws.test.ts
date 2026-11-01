@@ -7,7 +7,7 @@ import { WebSocket } from 'ws';
 import { PressTracker, type ClientMsg, type ServerMsg } from '@pichi/core';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '@pichi/game-pizzas/sim';
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
-import { HINT_REFRESH_MS, createHintSync } from '@pichi/game-pizzas/sim/hints';
+import { HINT_REFRESH_MS, createHintSync } from '@pichi/game-pizzas/sim/phone/hints';
 import { decide, type Mem } from '@pichi/game-pizzas/test/golden/bot';
 import { startServer } from '../src/server';
 

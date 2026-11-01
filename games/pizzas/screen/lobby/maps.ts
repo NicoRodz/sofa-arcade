@@ -7,7 +7,7 @@ import type { MapDef } from '../../sim/maps/types';
 import { coopLobbyView, fixedMap, lobbyGroupOfMap, mapFeatures, mapStatus, type MapStatus, recommendedForN } from '../../sim/maps';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusLobbyMaps } from '../../sim/versus/lobby';
 import { versusMap } from '../../sim/versus/maps';
-import { drawMiniMap } from '../art/ui';
+import { drawMiniMap } from '../art/dom/ui';
 import { startProblem, versusGenerated } from './sync';
 import { pz } from '../state';
 

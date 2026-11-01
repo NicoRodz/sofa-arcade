@@ -13,11 +13,11 @@ import {
 } from '../../constants';
 import type { Difficulty } from '@pichi/core';
 import type { ParsedLevel } from '../../parse';
-import { dropAll } from '../actions';
-import { bodyRect, cellRect, overlaps } from '../collide';
+import { dropAll } from '../player/actions';
+import { bodyRect, cellRect, overlaps } from '../world/collide';
 import { freezeHazard } from '../entities';
-import { emit, isActive, type LevelResult, type World } from '../state';
-import { GOAL_PAD_X, GOAL_PAD_Y, REUNION_TILES, STAR_STREAK_SEC } from '../tuning';
+import { emit, isActive, type LevelResult, type World } from '../world/state';
+import { GOAL_PAD_X, GOAL_PAD_Y, REUNION_TILES, STAR_STREAK_SEC } from '../world/tuning';
 
 // --- checkpoints, stars, goal
 export function stepCheckpoints(w: World): void {

@@ -12,7 +12,7 @@ import { ICE_TAU_MS } from '../../surfaces/config';
 import { emitMech } from '../kneader/call';
 import { hz3Params } from '../../hazards/hazard-v3';
 import { book } from '../../hazards/score-ledger';
-import { addFloorItem } from '../../floor';
+import { addFloorItem } from '../../rules/floor';
 import { carriesTray } from '../heavyTray/state';
 import type { Game, Player } from '../../round/state';
 import {

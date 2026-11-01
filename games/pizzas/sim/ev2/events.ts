@@ -3,7 +3,7 @@
 // from the drawer, 75 / 60 s. Corte de luz: hold B at the board to bring the light back (2 s, Hard: two chefs 1.5 s), or it comes back by itself. Coop only.
 import type { Game, Order, Player, TeamState, Controls } from '../round/state';
 import { RECIPE_PARTS } from '../recipes/defs';
-import type { Mid } from '../midround';
+import type { Mid } from '../rules/midround';
 import { book } from '../hazards/score-ledger';
 import { aStation } from '../round/targeting';
 import { FIRE, OIL, at } from '../mech/oil/state';

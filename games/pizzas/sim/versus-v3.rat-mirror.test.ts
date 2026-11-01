@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { MIRRORS, isoOf } from '../test/golden/mirror-bot';
 import { addPlayer, createGame, tick, type Controls, type Game } from './overcooked';
-import type { Rat } from './midround';
+import type { Rat } from './rules/midround';
 
 const TEAMS = [
   [1, 2],

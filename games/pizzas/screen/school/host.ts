@@ -18,7 +18,7 @@ import {
   type School,
   type SchoolMember,
 } from '../../sim/school/index';
-import type { RoundView } from '../art/hud';
+import type { RoundView } from '../art/hud/hud';
 import { chefOf } from '@pichi/screen-kit/art';
 import type { SfxId } from '@pichi/screen-kit/audio';
 import { createSchoolView, type SchoolView } from './view';

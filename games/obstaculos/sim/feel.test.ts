@@ -1,8 +1,8 @@
 // The FEEL of the numbers A5 assumed, measured with bots on the real sim (feelkit.ts; tools/s1-feel.ts prints the full tables). These tests lock the conclusions written in tuning.ts
 // ("A6 feel"): if someone changes the wind, the shove or the slide, the verdict below moves and says so.
 import { describe, expect, it } from 'vitest';
-import { campaignParams } from './campaign';
-import { anchorTrial, enemyLevel, playBots, windLevel } from './feelkit';
+import { campaignParams } from './rules/campaign';
+import { anchorTrial, enemyLevel, playBots, windLevel } from './testkit/feelkit';
 
 const mean = (a: number[]) => a.reduce((s, v) => s + v, 0) / a.length;
 const phases = (n: number, every: number) => Array.from({ length: n }, (_, k) => k * every);

@@ -16,7 +16,7 @@ import { SIGMAS } from '../symmetry';
 import { spawnTiles, teamRange, validateVersus } from '../validate';
 import { pickMech } from './coop';
 import { orderSpawns, placeSpawns } from './spawns';
-import { metric } from '../score';
+import { metric } from '../scoring/score';
 import { VERSUS_BASE_MAPS } from '../versus/maps';
 
 // --- Versus ----------------------------------------------------------------------------------------------------------------------

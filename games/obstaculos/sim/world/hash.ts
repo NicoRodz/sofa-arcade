@@ -1,6 +1,6 @@
-import { hashRopes } from '../rope';
-import type { World } from '../state';
-import { hashBodies } from '../player';
+import { hashRopes } from '../player/rope';
+import type { World } from './state';
+import { hashBodies } from '../player/player';
 
 // --- hash
 export function hashState(w: World): number {

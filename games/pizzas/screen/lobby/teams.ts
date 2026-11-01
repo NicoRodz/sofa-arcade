@@ -1,7 +1,7 @@
 // The Pizzas lobby's team columns (versus), the sabotage pills and the events pills.
 import { SABOTAGE_BLURB, SABOTAGE_OPTION, sabotageOf } from '../../sim/sabotage-config';
 import { eventsHint } from '../../sim/ev2/lines';
-import { eventsOf } from '../../sim/midround';
+import { eventsOf } from '../../sim/rules/midround';
 import { mutateOf } from '../../sim/mutate/plan';
 import { VERSUS_RANDOM, lobbySetup, sabotageNotice, teamSizes } from '../../sim/versus/lobby';
 import { versusMap } from '../../sim/versus/maps';

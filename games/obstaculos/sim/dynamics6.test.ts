@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { DT, JUMP_V0, PLAYER_H, ROPE_LEN, TILE } from '../constants';
 import { T } from '../legend';
-import { draw, hall, inp, level, names, obj, of, pl, run, teleport, tile, vline, world } from './testkit';
+import { draw, hall, inp, level, names, obj, of, pl, run, teleport, tile, vline, world } from './testkit/testkit';
 import { previewB, snapshot } from './world';
 
 const camp = (n?: number) => ({ campaign: { world: 'mine' as const, n } });

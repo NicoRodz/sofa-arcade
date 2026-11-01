@@ -5,7 +5,7 @@ import { accessTiles, hasCheese, hasSink, keysOf, legsOf, stationsOf, type Stati
 import { cardFor } from '../recipes/cards';
 import { cardProblems, menuCardProblems } from '../recipes/card-check';
 import { menuPatchRows } from '../maps/menu-patches';
-import { puestoProblems } from '../puestos';
+import { puestoProblems } from '../phone/puestos';
 import { surfaceProblems } from './surfaces';
 import { spawnZoneProblems } from './spawn-zones';
 

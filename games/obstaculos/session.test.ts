@@ -5,8 +5,8 @@ import { RANDOM_LEVEL, compatibleLevels, fixedExpedition, levelCompat, parseObst
 import { BETWEEN_MS, COUNTDOWN_MS, NEXT_COUNTDOWN_MS, OVER_HOLD_MS, ObstSession, planExpedition, type SessionOpts } from './session';
 import { hashState, snapshot } from './sim/world';
 import { levelScore } from './sim/rules';
-import { teleport } from './sim/testkit';
-import type { ObstEvent } from './sim/state';
+import { teleport } from './sim/testkit/testkit';
+import type { ObstEvent } from './sim/world/state';
 import { ObstBot } from './bot';
 import { DIFFICULTY_LABEL } from '@pichi/core/difficulty';
 

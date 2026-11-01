@@ -9,8 +9,8 @@
 //   setConnected(world, slot, connected)          join / leave in the middle of a level
 //   previewB(world, player)      -> BPreview      what B would do now (icon above the head)
 export { TILE } from '../../constants';
-export type { BPreview } from '../actions';
-export type { ObstEvent, World, PlayerState, WorldStatus, LevelResult } from '../state';
+export type { BPreview } from '../player/actions';
+export type { ObstEvent, World, PlayerState, WorldStatus, LevelResult } from './state';
 export { createWorld, previewB, setConnected } from './create';
 export type { WorldOptions } from './create';
 export { hashState } from './hash';

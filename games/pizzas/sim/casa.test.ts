@@ -7,7 +7,7 @@ import { fixedMap } from './maps';
 import { pickOrder } from './recipes/sim';
 import { dishFor, isDish } from './recipes/defs';
 import { casaExtras, casaMask } from './recipes/casa';
-import { chefHint } from './hints';
+import { chefHint } from './phone/hints';
 import { deliver } from './round/orders';
 import type { Difficulty } from '@pichi/core/difficulty';
 

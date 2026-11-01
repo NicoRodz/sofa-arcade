@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '@pichi/core/rng';
 import { ROPE_LEN, TILE } from '../constants';
 import { LEVEL_01, LEVEL_04, LEVEL_08 } from '../levels';
-import type { PlayerStep } from './input';
+import type { PlayerStep } from './world/input';
 import { T } from '../legend';
-import { draw, hall, inp, level, names, pl, run, teleport, tile, world } from './testkit';
+import { draw, hall, inp, level, names, pl, run, teleport, tile, world } from './testkit/testkit';
 import { createWorld, hashState, setConnected, snapshot, step } from './world';
 
 // Scripted "phones": each slot holds a direction for a while, jumps and grabs at random, from one seed.

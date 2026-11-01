@@ -2,9 +2,9 @@
 import { JUMP_V0, PLAYER_H, PLAYER_W, TILE } from '../../constants';
 import { T } from '../../legend';
 import type { ParsedLevel } from '../../parse';
-import { tileAt } from '../../sim/tiles';
-import { campaignParams, superJumpV0 } from '../../sim/campaign';
-import { THROW_VX, THROW_VY } from '../../sim/tuning';
+import { tileAt } from '../../sim/world/tiles';
+import { campaignParams, superJumpV0 } from '../../sim/rules/campaign';
+import { THROW_VX, THROW_VY } from '../../sim/world/tuning';
 import type { Cell } from '../../types';
 import { EDGE_MOVE_SCALE, feetOfRow, simPlan, type Landing, type Plan } from '../sim';
 import { catchZonesFor, planSet, towerPlans } from './plans';

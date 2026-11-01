@@ -2,9 +2,9 @@
 import { DIFFICULTY_PARAMS, type DifficultyParams, PLAYER_H, PLAYER_W, ROPE_LEN, TILE } from '../../constants';
 import { T, isHazardKind, isSolidKind } from '../../legend';
 import type { ParsedLevel, LevelObject } from '../../parse';
-import { buildGrid, tileAt, tileOf, type TileGrid } from '../../sim/tiles';
-import { physicsFor, type PhysicsParams } from '../../sim/player';
-import { campaignParams, dparamsForCampaign, physicsOfWorld } from '../../sim/campaign';
+import { buildGrid, tileAt, tileOf, type TileGrid } from '../../sim/world/tiles';
+import { physicsFor, type PhysicsParams } from '../../sim/player/player';
+import { campaignParams, dparamsForCampaign, physicsOfWorld } from '../../sim/rules/campaign';
 import type { Mechanic } from '../../mechanics';
 import type { Cell } from '../../types';
 import { feetOfRow } from '../sim';

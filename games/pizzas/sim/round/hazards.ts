@@ -3,8 +3,8 @@ import { SLIP, SLIP_DASH_EXTRA, SLIP_MIN_SPEED, SLIP_PUSH, SLIP_TRIGGER, type Fl
 import { KNOCK_FADE_MS, blocked, unit } from './movement';
 import { stopKind } from './chop';
 import { RAW_OF } from '../recipes/defs';
-import { addFloorItem, removeFloorItem } from '../floor';
-import { sabotageAimPress } from '../sabotage';
+import { addFloorItem, removeFloorItem } from '../rules/floor';
+import { sabotageAimPress } from '../rules/sabotage';
 import { surfaceAt } from '../surfaces/physics';
 
 // --- Hazards (sabotage S1): rubbish on the floor makes a chef slip --------------------------------------------------------------------

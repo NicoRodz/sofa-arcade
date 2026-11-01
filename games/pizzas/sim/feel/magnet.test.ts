@@ -19,9 +19,9 @@ import {
   type Game,
   type Player,
 } from '../overcooked';
-import { ASSIST_REACH_MULT } from '../assist';
-import { chefHint } from '../hints';
-import { addFloorItem } from '../floor';
+import { ASSIST_REACH_MULT } from '../rules/assist';
+import { chefHint } from '../phone/hints';
+import { addFloorItem } from '../rules/floor';
 import { BASE_REACH, CHEF_RADIUS, MAGNET_TUNING, magnetFor } from './magnet';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };

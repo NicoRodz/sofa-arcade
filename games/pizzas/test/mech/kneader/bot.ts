@@ -18,7 +18,7 @@ import type { MechId } from '../../../sim/mech/ids';
 import type { MapDef } from '../../../sim/maps';
 import { handlesOf } from '../../../sim/mech/kneader/state';
 import { feedOf } from '../../../sim/mech/woodOven/state';
-import { summarize } from '../../../sim/results';
+import { summarize } from '../../../sim/scoring/results';
 import type { Difficulty } from '@pichi/core/difficulty';
 
 type At = 'crate0' | 'crate1' | 'board' | 'pot' | 'plates' | 'window' | 'M';

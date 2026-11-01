@@ -1,7 +1,7 @@
 import type { Weight } from '../../types';
-import { bodyRect, type PxRect } from '../collide';
-import { isActive, type World } from '../state';
-import { BOX_SIZE, MOVER_ID0 } from '../tuning';
+import { bodyRect, type PxRect } from '../world/collide';
+import { isActive, type World } from '../world/state';
+import { BOX_SIZE, MOVER_ID0 } from '../world/tuning';
 
 // --- 2. what stands on what: loads for plates and balance plates
 interface Unit {

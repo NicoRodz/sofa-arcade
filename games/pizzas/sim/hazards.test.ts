@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTIES, type Difficulty } from '@pichi/core/difficulty';
 import { type GameEvents, Emitter } from './round/events';
-import { addFloorItem } from './floor';
+import { addFloorItem } from './rules/floor';
 import { fixedMap } from './maps';
 import { SPEED, TICK_MS, addPlayer, createGame, dropPlayer, tick, type Controls, type Game, type Item } from './overcooked';
 import { SLIP, controlLostMs } from './sabotage-config';
