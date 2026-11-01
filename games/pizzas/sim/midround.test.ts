@@ -476,7 +476,7 @@ describe('the lobby option', () => {
     expect(eventsOf({ [EVENTS_OPTION]: 'nonsense' }, 'hard')).toBe(true); // anything that is not a boolean is "no choice made"
   });
   it('roundRules: the burning oven always, the event by the option', () => {
-    const always = { burn: true, fire: true, recipes: true, frost: true };
+    const always = { burn: true, fire: true, recipes: true, frost: true, versusV3: true }; // versusV3 (VERSUS_V3): the lobby switches it on, a coop round ignores it
     expect(roundRules({}, 'normal')).toEqual({ ...always, events: true, magnet: 'normal', pace: 1.6 });
     expect(roundRules({}, 'easy')).toEqual({ ...always, events: false, magnet: 'strong', pace: 1.2 }); // Easy: a stronger magnet
     expect(roundRules({}, 'hard').magnet).toBe('normal');
@@ -489,7 +489,7 @@ describe('the lobby option', () => {
     const round = (difficulty: 'easy' | 'normal' | 'hard', modeOptions: Record<string, boolean | string>, eventsSeed?: number) =>
       startVersusRound({ teams, choice: 'V1', difficulty, seed: 4, eventsSeed, modeOptions, slotOf: (id) => id - 1, rand: mulberry32(1) })
         .game;
-    expect(round('normal', {}).mid).not.toBeNull();
+    expect([round('normal', {}).mid, round('normal', {}).vz3].every((x) => x !== null)).toBe(true); // the event, and VERSUS_V3 (a rat per kitchen, the Ola de frio) from the lobby
     expect(round('easy', {}).mid).toBeNull();
     expect(round('easy', { events: true }).mid).not.toBeNull();
     expect(round('hard', { events: false }).mid).toBeNull();
