@@ -12,7 +12,7 @@ import { balanceTeams, joinSmallestTeam, leaveTeams, makeTeams, modeAvailability
 import { validateTeamSetup } from '../rules/assist';
 import { iceRound, kitchenRegions } from './versus';
 import { roundRules } from '../rules/midround';
-import { CATAPULT_CHAR, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '../rules/sabotage-config';
+import { CATAPULT_CHAR, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '../sabotage-config';
 import { VERSUS_AUTO, VERSUS_MAPS, VERSUS_RANDOM, versusMap, type VersusChoice } from './maps';
 
 // --- Map choice ---------------------------------------------------------------------------------------------------------------------

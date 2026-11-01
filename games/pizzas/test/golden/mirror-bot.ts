@@ -3,7 +3,7 @@
 // sigma into team 0's frame, the script decides there, and the stick it returns goes back through sigma. So "mirrored scripts" are
 // exact by construction and any difference in the round comes from the sim, not from the bots.
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Player, type Station } from '../../sim/overcooked';
-import { SIGMAS, type Sigma } from '../../sim/maps/symmetry';
+import { SIGMAS, type Sigma } from '../../sim/symmetry';
 import type { Difficulty } from '@pichi/core/difficulty';
 import { MAP_H, MAP_W, type SigmaName } from '../../sim/maps';
 import { RecBus, decide, type Mem } from './bot';

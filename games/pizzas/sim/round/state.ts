@@ -3,7 +3,7 @@
 import type { Ev2 } from '../ev2/state';
 import { MAP_H, MAP_W, isFloor, type Grid, type SigmaName, type StationKind } from '../maps';
 import type { RosterEntry, TeamId, TeamResult } from '@pichi/core/lobby';
-import type { FloorItem, Sabotage, Slip } from '../rules/sabotage-config';
+import type { FloorItem, Sabotage, Slip } from '../sabotage-config';
 import type { Recipe } from '../recipes/defs';
 import type { GameEvents, Emitter } from './events';
 import type { Difficulty, Params, Rng } from '@pichi/core';

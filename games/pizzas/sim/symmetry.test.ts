@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIXED_MAPS } from '.';
+import { FIXED_MAPS } from './maps';
 import { SIGMAS, isometryCheck, type Sigma } from './symmetry';
 
 // the V1 and V3 drawings of the design (legend of the design: '|' barrier, a/b starts), as plain strings

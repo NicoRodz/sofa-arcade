@@ -10,7 +10,7 @@ import { GAMES, modeOf } from '@pichi/catalog';
 import { mulberry32 } from '@pichi/core/rng';
 import { startVersusRound, syncTeams } from '../versus/lobby';
 import type { Difficulty } from '@pichi/core/difficulty';
-import type { SabotageMode } from './sabotage-config';
+import type { SabotageMode } from '../sabotage-config';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 type Log = { [K in keyof GameEvents]?: { t: number; p: GameEvents[K] }[] };

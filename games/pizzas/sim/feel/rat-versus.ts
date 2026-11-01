@@ -4,7 +4,7 @@
 // The coop rat code is reused as it is. Each tick a team's rat runs on a VIEW of the round (the same Game with this team's stations, chefs, score and bus) and a
 // per-team Mid (`Object.create(mid)` with its own `rat` and `lossAt`). Stations keep their global index (a sparse array: `forEach` skips the other kitchen).
 import { DIRS, isFloor, MAP_H, MAP_W } from '../maps';
-import { SIGMAS } from '../maps/symmetry';
+import { SIGMAS } from '../symmetry';
 import { ratFrame } from './rat-frame';
 import { mulberry32 } from '@pichi/core';
 import { subSeed } from '../recipes/menu';

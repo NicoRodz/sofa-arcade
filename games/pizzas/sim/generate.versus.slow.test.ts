@@ -10,7 +10,7 @@ import {
   stationCounts,
   type GeneratedVersus,
 } from './generate';
-import { SIGMAS, isometryCheck } from './maps/symmetry';
+import { SIGMAS, isometryCheck } from './symmetry';
 import { spawnTiles, stationsOf, teamRange, validateVersus } from './validate';
 
 const asMap = (g: GeneratedVersus): VersusMapDef => ({

@@ -1,10 +1,10 @@
 // Test support: a whole versus round where every chef runs a sabotage role (golden/sabotage-bot.ts), through the public controls of the sim.
 import type { Difficulty } from '@pichi/core/difficulty';
-import { SIGMAS } from '../../sim/maps/symmetry';
+import { SIGMAS } from '../../sim/symmetry';
 import { RecBus } from './bot';
 import { newSabMem, sabotageControls, type Role } from './sabotage-bot';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '../../sim/overcooked';
-import type { SabotageMode } from '../../sim/rules/sabotage-config';
+import type { SabotageMode } from '../../sim/sabotage-config';
 import { versusMap } from '../../sim/versus/maps';
 export type { Role } from './sabotage-bot';
 

@@ -6,7 +6,7 @@ import { type GameEvents, Emitter } from './round/events';
 import { addFloorItem } from './rules/floor';
 import { fixedMap } from './maps';
 import { SPEED, TICK_MS, addPlayer, createGame, dropPlayer, tick, type Controls, type Game, type Item } from './overcooked';
-import { SLIP, controlLostMs } from './rules/sabotage-config';
+import { SLIP, controlLostMs } from './sabotage-config';
 
 const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const ROWS_1 = fixedMap('1')!.rows; // an open kitchen: floor from column 1 to 14, counters on the walls

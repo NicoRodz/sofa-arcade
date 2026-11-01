@@ -6,8 +6,8 @@
 // Everything here is deterministic: the reticle is a function of the aim time, the landing tile is adjusted by a BFS in a fixed frame,
 // nothing draws from an RNG (if it ever must, it goes in a substream: seed XOR SABOTAGE_SEED_TAG, never the orders' stream).
 import type { Difficulty } from '@pichi/core';
-import type { Item } from '../round/state';
-import type { Pos, SigmaName } from '../maps';
+import type { Item } from './round/state';
+import type { Pos, SigmaName } from './maps';
 
 export const SABOTAGE_SEED_TAG = 0x5ab07a6e; // reserved for a substream: unused today
 

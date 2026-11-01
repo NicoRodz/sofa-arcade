@@ -12,7 +12,7 @@
 // Mirror: a spread ignites EVERY counter next to the fire (no tie-break between neighbours), so a reflected kitchen burns as the reflected kitchen.
 import type { Difficulty } from '@pichi/core';
 import type { Game, Station } from '../round/state';
-import type { SabotageMode } from './sabotage-config';
+import type { SabotageMode } from '../sabotage-config';
 import { mechOnFire, mechOvenRate } from '../mech/loop';
 import { hazardParams, fireIsBig, type FireParams } from '../hazards/hazard-v2';
 import { fireDouseTick, newFireV2, registerDouse, type FireV2 } from '../hazards/fire-v2';

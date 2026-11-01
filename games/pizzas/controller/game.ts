@@ -4,7 +4,7 @@ import { DIFFICULTY_LABEL } from '@pichi/core';
 import type { LobbyConfig } from '@pichi/core';
 import { fixedMap } from '../sim/maps';
 import type { PuestoMsgPz } from '../sim/phone/puestos';
-import { SABOTAGE_LABEL, sabotageOf } from '../sim/rules/sabotage-config';
+import { SABOTAGE_LABEL, sabotageOf } from '../sim/sabotage-config';
 import { kvOf } from '../sim/school';
 import { VERSUS_AUTO, VERSUS_RANDOM, versusMap } from '../sim/versus/maps';
 import type { PhoneResult } from '../sim/versus/report';

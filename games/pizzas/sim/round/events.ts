@@ -2,7 +2,7 @@
 // the logic knows nothing about who listens.
 import type { TeamResult } from '@pichi/core/lobby';
 import type { Item, Recipe, StationKind } from '../index';
-import type { SabotageEvents } from '../rules/sabotage-config';
+import type { SabotageEvents } from '../sabotage-config';
 import type { EventKind } from '../rules/midround';
 
 // `team` (optional, on the team-level events): the id of the team the event belongs to, for the HUD and the sounds. It is present

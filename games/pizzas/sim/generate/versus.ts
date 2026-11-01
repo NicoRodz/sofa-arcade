@@ -12,7 +12,7 @@ import {
   type Mech,
 } from './layout';
 import { mulberry32, pickWeighted, randInt, type Rng } from '@pichi/core';
-import { SIGMAS } from '../maps/symmetry';
+import { SIGMAS } from '../symmetry';
 import { spawnTiles, teamRange, validateVersus } from '../validate';
 import { pickMech } from './coop';
 import { orderSpawns, placeSpawns } from './spawns';

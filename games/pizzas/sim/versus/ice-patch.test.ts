@@ -2,9 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import { VERSUS_BASE_MAPS } from './maps';
 import { iceRows } from './ice-patch';
-import { isometryCheck } from '../maps/symmetry';
+import { isometryCheck } from '../symmetry';
 import { MAP_H, MAP_W } from '../maps';
-import { SIGMAS } from '../maps/symmetry';
+import { SIGMAS } from '../symmetry';
 import { createVersusGame } from './lobby';
 import type { Game } from '../overcooked';
 

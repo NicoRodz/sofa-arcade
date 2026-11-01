@@ -9,7 +9,7 @@ import { eventsOf } from '../sim/rules/midround';
 import { coopLobbyView, fixedMap, recommendedForN } from '../sim/maps';
 import type { LobbyRow, MapFamily, lobbyGroupOfMap } from '../sim/maps';
 import { mutateOf } from '../sim/mutate/plan';
-import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_OPTION, sabotageOf } from '../sim/rules/sabotage-config';
+import { SABOTAGE_BLURB, SABOTAGE_LABEL, SABOTAGE_OPTION, sabotageOf } from '../sim/sabotage-config';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusAvailability, versusLobbyMaps } from '../sim/versus/lobby';
 import { versusMap } from '../sim/versus/maps';
 import { MECHS_ROW, SEED_ROW, mechIdOfRow, mechRows } from './lobby-menu-mech';

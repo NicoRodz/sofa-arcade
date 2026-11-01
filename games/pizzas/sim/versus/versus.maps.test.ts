@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FIXED_MAPS, MAP_IDS, lobbyMaps, parseMap, type HalfName, type VersusMapDef } from '../maps';
-import { SIGMAS, isometryCheck } from '../maps/symmetry';
+import { SIGMAS, isometryCheck } from '../symmetry';
 import { VERSUS_BASE_MAPS, VERSUS_MAPS, VERSUS_MAP_IDS, deriveVersus, mirrorize, versusMap, versusMapsFor } from './maps';
 import { teamRange, validateVersus, versusLayout } from '../validate';
 

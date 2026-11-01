@@ -5,7 +5,7 @@ import { type GameEvents, Emitter } from '../round/events';
 import { FIXED_MAPS, DIRS, isFloor, parseMap } from '../maps';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Item, type Player, type Station } from '../overcooked';
 import { addFloorItem, pilesIn } from './floor';
-import { RULES, SLIP, AIM_MAX_MS, LAND_AFTER_MS, RETICLE_STEP_MS, DESECHOS_DRIP_MS, type SabotageMode } from './sabotage-config';
+import { RULES, SLIP, AIM_MAX_MS, LAND_AFTER_MS, RETICLE_STEP_MS, DESECHOS_DRIP_MS, type SabotageMode } from '../sabotage-config';
 import { adjustLanding, catapultState, kitchenTiles, landingTiles, reticleAt, sabotageHint, sweepOrder } from './sabotage';
 import { floorItemNear, targetStation } from '../overcooked';
 import { LABEL_MAX } from '@pichi/core/contract';

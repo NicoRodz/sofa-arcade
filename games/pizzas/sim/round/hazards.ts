@@ -1,5 +1,5 @@
 import { RADIUS, SPEED, type Controls, type Game, type Item, type Player } from './state';
-import { SLIP, SLIP_DASH_EXTRA, SLIP_MIN_SPEED, SLIP_PUSH, SLIP_TRIGGER, type FloorItem } from '../rules/sabotage-config';
+import { SLIP, SLIP_DASH_EXTRA, SLIP_MIN_SPEED, SLIP_PUSH, SLIP_TRIGGER, type FloorItem } from '../sabotage-config';
 import { KNOCK_FADE_MS, blocked, unit } from './movement';
 import { stopKind } from './chop';
 import { RAW_OF } from '../recipes/defs';

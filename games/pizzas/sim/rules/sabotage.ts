@@ -9,7 +9,7 @@
 // Mirror: everything that picks a tile (the reticle order, the BFS tie-break, the neighbour of a double pile) is computed in the frame of ONE
 // kitchen (the "canonical" one, team 1's) and mapped back through sigma, so a team-1 script reflected by sigma gets the reflected outcome.
 import { DIRS, MAP_H, MAP_W, isFloor, type Pos, type SigmaName } from '../maps';
-import { SIGMAS } from '../maps/symmetry';
+import { SIGMAS } from '../symmetry';
 import { isDish } from '../recipes/defs';
 import { addFloorItem, pilesIn } from './floor';
 import type { Game, Item, Player, Station } from '../round/state';
@@ -32,7 +32,7 @@ import {
   type Sabotage,
   type SabotageMode,
   type SabTeam,
-} from './sabotage-config';
+} from '../sabotage-config';
 
 const key = (x: number, y: number) => `${x},${y}`;
 

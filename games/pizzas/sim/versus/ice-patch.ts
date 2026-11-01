@@ -2,7 +2,7 @@
 // through sigma), so a versus map keeps being two equal halves. The versus maps themselves are untouched: the lobby applies this to the rows only when the round has `versusV3`.
 import { MAP_H, MAP_W, type SigmaName } from '../maps';
 import { ICE_CHAR } from '../surfaces/legend';
-import { SIGMAS } from '../maps/symmetry';
+import { SIGMAS } from '../symmetry';
 import { usesSurfaces } from '../surfaces/legend';
 
 const BLOCK = [

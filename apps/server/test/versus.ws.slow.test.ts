@@ -15,7 +15,7 @@ import { type GameEvents, Emitter } from '@pichi/game-pizzas/sim/round/events';
 import { mulberry32 } from '@pichi/core/rng';
 import { decide, type Mem } from '@pichi/game-pizzas/test/golden/bot';
 import { isoOf } from '@pichi/game-pizzas/test/golden/mirror-bot';
-import { SIGMAS } from '@pichi/game-pizzas/sim/maps/symmetry';
+import { SIGMAS } from '@pichi/game-pizzas/sim/symmetry';
 import { startServer } from '../src/server';
 
 let srv: Awaited<ReturnType<typeof startServer>>;

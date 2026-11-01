@@ -1,7 +1,7 @@
 import { DIRS, MAP_H, MAP_W, floorComponents, isFloor, type Grid, type Pos } from '../maps';
 import type { VersusLayout } from './versus-layout';
 import { accessTiles } from './stations';
-import { MIN_LANDING_TILES } from '../rules/sabotage-config';
+import { MIN_LANDING_TILES } from '../sabotage-config';
 
 // Sabotage (plan versus-sabotaje-basura section 7): a map with catapults ('Y') needs one per kitchen, twins, next to the barrier and reachable from a
 // spawn; every place a bag can land (floor that is not a spawn) must be reachable from that kitchen's bin, there must be MIN_LANDING_TILES of them, and

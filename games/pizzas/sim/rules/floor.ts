@@ -1,6 +1,6 @@
 // Things on the floor (sabotage S1): rubbish that makes chefs slip and the items a chef dropped when it slipped. Pure helpers on the
 // game's `floor` list; the sim (round/) and the sabotage rules (sabotage.ts) both use them, so they live apart to keep the imports acyclic.
-import { SLIP_TRIGGER, type FloorItem } from './sabotage-config';
+import { SLIP_TRIGGER, type FloorItem } from '../sabotage-config';
 import type { Game } from '../round/state';
 
 type Host = Pick<Game, 'floor' | 'players' | 'time'>;

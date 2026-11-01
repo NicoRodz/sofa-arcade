@@ -5,7 +5,7 @@ import type { Difficulty } from '@pichi/core/difficulty';
 import { MAP_H, MAP_W } from '../maps';
 import type { RecBus } from '../../test/golden/bot';
 import { runSabotage, type Role } from '../../test/golden/sabotage-run';
-import type { SabotageMode } from './sabotage-config';
+import type { SabotageMode } from '../sabotage-config';
 
 type Row = { t: number; type: string; p: Record<string, unknown> };
 const rows = (bus: RecBus): Row[] =>

@@ -20,7 +20,7 @@ import {
   type SigmaName,
   type VersusMapDef,
 } from '../maps';
-import { SIGMAS } from '../maps/symmetry';
+import { SIGMAS } from '../symmetry';
 
 const twin = (sigma: SigmaName, [x, y]: Pos): Pos => SIGMAS[sigma](x, y, MAP_W, MAP_H);
 const twins = (sigma: SigmaName, list: readonly Pos[]): Pos[] => list.map((p) => twin(sigma, p));

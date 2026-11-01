@@ -2,7 +2,7 @@
 // jump (left of the heading first) and the angle of the burst (+30 degrees first). Kitchen 1 is the canonical frame; kitchen 0 is its image under sigma, and an image reorders the
 // directions and, under a reflection, swaps left and right. So the view of kitchen 0 carries this frame: its DIRS are the image of the canonical ones and `flip` mirrors the two sides.
 import { DIRS, MAP_H, MAP_W } from '../maps';
-import { SIGMAS, type Sigma } from '../maps/symmetry';
+import { SIGMAS, type Sigma } from '../symmetry';
 import type { SigmaName } from '../maps';
 
 export interface RatFrame {

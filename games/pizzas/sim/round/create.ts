@@ -3,7 +3,7 @@ import { DEFAULT_DIFFICULTY, params as difficultyParams, teamSize, type Difficul
 import { type GameEvents, Emitter } from './events';
 import { LEGACY, MAX_SLOTS, type Game, type Station, type TeamSeat, type TeamState } from './state';
 import { FIXED_MAPS, menuPatchRows, parseMap, spawnPoints, type Pos, type SigmaName } from '../maps';
-import type { SabotageMode } from '../rules/sabotage-config';
+import type { SabotageMode } from '../sabotage-config';
 import { newSurfaceState } from '../surfaces/config';
 import { createMutate } from '../mutate/step';
 import { applyMagnet, type MagnetLevel } from '../feel/magnet';
