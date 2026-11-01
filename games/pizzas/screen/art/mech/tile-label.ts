@@ -1,7 +1,7 @@
 // A text pinned over a tile for the arts that repaint every frame ("Mantén B" over a broken bridge). One Text per (scene, key), made once, moved and shown by `tileLabel`, hidden by `hideLabels`
 // (call it at the top of the frame, then `tileLabel` for each one still wanted). The texts go away with the scene's children.
 import type Phaser from 'phaser';
-import { makeText } from '@pichi/screen-kit/art/fx';
+import { C, FONT } from '@pichi/screen-kit/art/tokens'; // not fx.ts: it pulls Phaser in at load and the registry test imports every art in node
 
 const pool = new WeakMap<Phaser.Scene, Map<string, Phaser.GameObjects.Text>>();
 
@@ -12,6 +12,21 @@ export function tileLabel(scene: Phaser.Scene, key: string, text: string, x: num
   let m = pool.get(scene);
   if (!m) pool.set(scene, (m = new Map()));
   let t = m.get(key);
-  if (!t || !t.scene) m.set(key, (t = makeText(scene, x, y, text, { size, color, stroke: 7, depth })));
+  if (!t || !t.scene)
+    m.set(
+      key,
+      (t = scene.add
+        .text(x, y, text, {
+          fontFamily: FONT,
+          fontStyle: 'bold',
+          fontSize: `${size}px`,
+          color,
+          stroke: C.ink,
+          strokeThickness: 7,
+          resolution: 2,
+        })
+        .setOrigin(0.5)
+        .setDepth(depth)),
+    );
   t.setText(text).setPosition(x, y).setVisible(true);
 }
