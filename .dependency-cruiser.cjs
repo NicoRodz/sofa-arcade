@@ -1,12 +1,11 @@
 // Dependency rules of the plan (reestructura-repo, section 5) on the F3 tree: platform/{core,screen,controller,server}, games/<id>/, apps/<name>/.
-// All of them are "warn" until F6, which promotes them to "error" once F4/F5 have cut the platform -> game imports that the mechanical move of F3
-// left behind (see decisions.known-violations in scripts/moves.json and docs/refactor/depcruise-report.md).
+// All of them are "error" (frente G): each reached 0 violations and stays there, so `npm run deps` exits non-zero on any new one.
 //
 //   apps     = apps/*/src/main.ts (the entry points; the only place that may compose games and platform)
 //   game     = games/<id>/**
 //   sim      = platform/core and the pure parts of a game (everything but screen/, controller/, server/ and test/)
 //   platform = platform/**
-// Run: npm run deps (prints warnings)   npm run deps:report (writes docs/refactor/depcruise-report.md)
+// Run: npm run deps   npm run deps:report (writes docs/refactor/depcruise-report.md)
 
 const APPS = '^apps/[^/]+/src/main\\.ts$';
 const TESTS = '(\\.test\\.ts$|/test/|/harness/)';
@@ -20,7 +19,7 @@ module.exports = {
     {
       name: 'no-cross-game',
       comment: 'games/X must not import games/Y (group $2 is the game id).',
-      severity: 'warn',
+      severity: 'error',
       from: { path: '(^|/)games/([^/]+)/' },
       to: { path: '(^|/)games/([^/]+)/', pathNot: '(^|/)games/$2/' },
     },
@@ -34,7 +33,7 @@ module.exports = {
     {
       name: 'only-apps-compose',
       comment: 'Nobody imports an app entry point (main.ts); apps only import.',
-      severity: 'warn',
+      severity: 'error',
       from: {},
       to: { path: APPS },
     },
@@ -42,7 +41,7 @@ module.exports = {
       name: 'pure-sim',
       comment:
         'platform/core and the sim side of a game stay free of DOM/Node/Phaser/ws/express and of the screen, controller and server packages.',
-      severity: 'warn',
+      severity: 'error',
       from: { path: SIM, pathNot: [TESTS, '^games/[^/]+/server/'] },
       to: {
         path: ['^node_modules/(phaser|ws|express)/', `^platform/${UI}/`, `^games/[^/]+/${UI}/`],
@@ -51,7 +50,7 @@ module.exports = {
     {
       name: 'pure-sim-node-core',
       comment: 'Second half of pure-sim: no node:* / Node core modules in the sim side.',
-      severity: 'warn',
+      severity: 'error',
       from: { path: SIM, pathNot: [TESTS, '^games/[^/]+/server/', '^games/pizzas/test/golden/'] },
       to: { dependencyTypes: ['core'] },
     },
@@ -72,7 +71,7 @@ module.exports = {
     {
       name: 'no-test-in-prod',
       comment: 'Production code must not import a test file or the test harness.',
-      severity: 'warn',
+      severity: 'error',
       from: { path: '^(platform|games|apps)/', pathNot: [TESTS, '^games/obstaculos/screen/harness/'] },
       to: { path: ['\\.test\\.ts$', '^(games/[^/]+|apps/[^/]+)/test/'] },
     },
