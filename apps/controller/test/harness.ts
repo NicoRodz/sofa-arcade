@@ -8,10 +8,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
 import { WebSocket } from 'ws';
+import { portFor } from './free-port';
 import { ASSIST_PROBE, ASSIST_TOUCH, assistHelpScenarios } from './assist-scenarios';
 
-export const PORT = Number(process.env.PG_PORT ?? 3600); // 3000 / 3100 belong to the dev servers of the user; PG_PORT / PG_CDP_PORT let two worktrees run this suite at once
-const CDP_PORT = Number(process.env.PG_CDP_PORT ?? 9366);
 const CHROME = process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -697,6 +696,7 @@ export interface Session {
 }
 
 export async function openSession(): Promise<Session> {
+  const [PORT, CDP_PORT] = await Promise.all([portFor(process.env.PG_PORT), portFor(process.env.PG_CDP_PORT)]);
   const vite: ViteDevServer = await createServer({
     root: path.resolve(HERE, '..'),
     configFile: path.resolve(HERE, '../vite.config.ts'),

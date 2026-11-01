@@ -62,13 +62,17 @@ function runSuite(only: string[] = []): Report {
   return { rows, fileMs, wallSec, failed, badFiles, failedFiles, retried: [] };
 }
 
-// Browser tests (controller/test/layout) flake when 10 workers compete for the CPU: files that failed get one
-// retry ALONE (one file per run: the browser files share the dev-server and CDP ports, so two of them in one run collide); a real failure
-// fails again. Retried files are reported so a flake never passes unnoticed.
+// Browser tests (apps/controller/test) flake when 10 workers compete for the CPU (layout.slow alone needs ~5 min and hits the 30 s test timeout when starved):
+// files that failed get one retry ALONE (one file per run, so nothing else competes); a real failure fails again. The browser files take free ports from the OS
+// (harness.ts openSession), so they no longer collide with each other or with another worktree. Why each file failed the first time is printed, and retried files are
+// reported, so a flake never passes unnoticed.
 function runWithRetry(): Report {
   const first = runSuite();
   if (!first.failedFiles.length) return first;
   console.error(`retrying alone: ${first.failedFiles.join(', ')}`);
+  for (const b of first.badFiles) console.error(`  first run, file failed: ${b}`);
+  for (const r of first.rows.filter((r) => r.status === 'failed').slice(0, 10))
+    console.error(`  first run, test failed: ${r.file} :: ${r.name}`);
   const runs = first.failedFiles.map((f) => runSuite([f]));
   const again: Report = {
     rows: runs.flatMap((r) => r.rows),
