@@ -13,6 +13,9 @@
 //  - Classics are also capped by the test "3 stars are within reach" (70% of the orders at half patience): Easy 340, Normal 390 on maps 1-8 (no cheese); and Hard <= Normal.
 //  - Maps 10, 12, 13, 14, 15 keep their rows: the bot does not knead (12: 0), does not avoid oil (with a janitor that wipes one tile every 1.5 s: 10/14/15 Hard score 60% of the base, 15 Normal is bimodal
 //    by N, p25-p75 221-801) and has no gate job (13). Those 0.6 are the bot's limit, not the maps': lower them only with a playtest.
+//  - Hard never asks for more than Normal on any map (26: 420 -> 370, 27: 660 -> 600; the bot's Hard is not below its Normal there, but a human's is: more hazards and a faster pace).
+//  - teamFactor at N = 6-8 was checked with tools/hazards/stars-byn.ts (16-24 seeds, Normal): score / teamFactor stays within ~15% of the N = 2-4 values on maps 11, 14, 22, 24, 27, and the bot reaches
+//    1 and 2 stars in 100% of the runs at N = 6 and 8 (3 stars: 100% on 11, 14, 22, 24, 27; map 13 gives 88% at N = 6 and 58% at N = 8, the map whose gate job the bot does not do). No change.
 // A row only moves when the ratio is off by 5% or more (the noise of the measure).
 import type { Difficulty } from '@pichi/core/difficulty';
 import { params, teamSize } from '@pichi/core/difficulty';
@@ -41,8 +44,8 @@ export const E2: Record<string, Record<Difficulty, number>> = {
   '23': { easy: 730, normal: 560, hard: 330 },
   '24': { easy: 840, normal: 1300, hard: 1080 },
   '25': { easy: 1080, normal: 1060, hard: 500 },
-  '26': { easy: 280, normal: 370, hard: 420 },
-  '27': { easy: 590, normal: 600, hard: 660 },
+  '26': { easy: 280, normal: 370, hard: 370 },
+  '27': { easy: 590, normal: 600, hard: 600 },
   '28': { easy: 660, normal: 620, hard: 520 },
 };
 // Generated maps ("random") and anything not in the table: a middle row (2 stars, a bit of Margarita).

@@ -25,10 +25,19 @@ describe('the star calibration plays the lobby configuration', () => {
         expect(g.score, `${id} ${d}`).toBeGreaterThanOrEqual(starThresholds(id, d, 3, recipeStarFactor(g))[2]);
       }
   });
-  it('Hard never asks for more than Normal on a classic and no row is empty', () => {
+  it('Hard never asks for more than Normal on any map (classics and Carta larga) and no row is empty', () => {
     for (const [id, row] of Object.entries(E2)) {
       expect(row.easy, id).toBeGreaterThan(0);
-      if (Number(id) <= 15) expect(row.hard, id).toBeLessThanOrEqual(row.normal);
+      expect(row.hard, id).toBeLessThanOrEqual(row.normal);
+    }
+  });
+  it('with 8 chefs the capable bot still earns 1 and 2 stars on Normal (teamFactor is not optimistic at N = 8)', () => {
+    for (const id of ['11', '14']) {
+      const series = SERIES_MAPS.some((s) => s.id === id);
+      const g = seriesRound({ mapId: id, difficulty: 'normal', n: 8, seed: 1, extra: lobbyExtra(id, 'normal', series, 7932).extra });
+      const [one, two] = starThresholds(id, 'normal', 8, recipeStarFactor(g));
+      expect(g.score, `${id} 1 star`).toBeGreaterThanOrEqual(one);
+      expect(g.score, `${id} 2 stars`).toBeGreaterThanOrEqual(two);
     }
   });
 });
