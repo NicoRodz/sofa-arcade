@@ -786,6 +786,28 @@
  "overlay": {
   ".dependency-cruiser.cjs": "scripts/move-overlay/dependency-cruiser.cjs"
  },
+ "testMoves": {
+  "games/obstaculos/campaign/learning.slow.test.ts": "games/obstaculos/campaign/progress/learning.slow.test.ts",
+  "games/obstaculos/campaign/practice.test.ts": "games/obstaculos/campaign/progress/practice.test.ts",
+  "games/obstaculos/campaign/progress.test.ts": "games/obstaculos/campaign/progress/progress.test.ts",
+  "games/obstaculos/sim/actions.test.ts": "games/obstaculos/sim/player/actions.test.ts",
+  "games/obstaculos/sim/campaign.test.ts": "games/obstaculos/sim/rules/campaign.test.ts",
+  "games/obstaculos/sim/input.test.ts": "games/obstaculos/sim/world/input.test.ts",
+  "games/obstaculos/sim/player.test.ts": "games/obstaculos/sim/player/player.test.ts",
+  "games/obstaculos/sim/rope.test.ts": "games/obstaculos/sim/player/rope.test.ts",
+  "games/obstaculos/sim/tiles.test.ts": "games/obstaculos/sim/world/tiles.test.ts",
+  "games/pizzas/sim/assist.test.ts": "games/pizzas/sim/rules/assist.test.ts",
+  "games/pizzas/sim/burn.assist.test.ts": "games/pizzas/sim/rules/burn.assist.test.ts",
+  "games/pizzas/sim/burn.mirror.slow.test.ts": "games/pizzas/sim/rules/burn.mirror.slow.test.ts",
+  "games/pizzas/sim/burn.test.ts": "games/pizzas/sim/rules/burn.test.ts",
+  "games/pizzas/sim/hints.test.ts": "games/pizzas/sim/phone/hints.test.ts",
+  "games/pizzas/sim/kudos.test.ts": "games/pizzas/sim/scoring/kudos.test.ts",
+  "games/pizzas/sim/midround.test.ts": "games/pizzas/sim/rules/midround.test.ts",
+  "games/pizzas/sim/puestos.test.ts": "games/pizzas/sim/phone/puestos.test.ts",
+  "games/pizzas/sim/sabotage.mirror.slow.test.ts": "games/pizzas/sim/rules/sabotage.mirror.slow.test.ts",
+  "games/pizzas/sim/sabotage.test.ts": "games/pizzas/sim/rules/sabotage.test.ts",
+  "games/pizzas/sim/score.test.ts": "games/pizzas/sim/scoring/score.test.ts"
+ },
  "patches": [
   {
    "file": "apps/server/src/server.ts",

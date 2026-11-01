@@ -3,12 +3,14 @@
 //   npm run baseline:check   run it again and compare against the baseline
 // check fails when: a baseline test name is missing, a test is skipped/todo that was not, a project runs 0 tests,
 // a test fails, or a capture/golden hash changed or its file disappeared. Extra tests only get a note.
-// Test identity is the full name (describe > test), never the path, so moving or renaming a file keeps the gate valid.
+// Test identity is the full name (describe > test), never the path, so moving or renaming a file keeps the gate valid; but a baseline test must sit at the
+// path scripts/moves.json gives it (files + testMoves), so a moved test file without its entry fails too (baseline-moves.ts).
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { cpus, loadavg } from 'node:os';
 import { join, relative, resolve } from 'node:path';
+import { loadMoveTable, movedWithoutEntry } from './baseline-moves';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const OUT = join(ROOT, 'docs/refactor/baseline');
@@ -238,6 +240,13 @@ async function check() {
       `${missing.length} baseline test name(s) missing:\n  - ` +
         missing.slice(0, 25).join('\n  - ') +
         (missing.length > 25 ? `\n  ... +${missing.length - 25}` : ''),
+    );
+  const moved = movedWithoutEntry(base, rep.rows, loadMoveTable(ROOT));
+  if (moved.length)
+    errors.push(
+      `${moved.length} baseline test file(s) moved without an entry in scripts/moves.json (testMoves):\n  - ` +
+        moved.slice(0, 25).join('\n  - ') +
+        (moved.length > 25 ? `\n  ... +${moved.length - 25}` : ''),
     );
   const extra = [...nowCount].reduce((a, [n, c]) => a + Math.max(0, c - (baseCount.get(n) ?? 0)), 0);
   if (extra) notes.push(`${extra} test(s) not in the baseline (new tests are allowed; run baseline:write to freeze them)`);
