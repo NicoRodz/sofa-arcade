@@ -31,10 +31,17 @@ describe('checkGame', () => {
   });
   it('the three halves must share one id', () => {
     expect(checkGame({ ...parts, controller: { id: 'other' } })).toEqual(['controller id "other" differs from manifest id "fake"']);
-    expect(checkGame({ ...parts, protocol: { ...protocol, game: 'other' } })).toEqual(['protocol game "other" differs from manifest id "fake"']);
-    expect(checkGame({ ...parts, manifest: { ...manifest, id: 'Fake_1' }, controller: { id: 'Fake_1' }, protocol: { ...protocol, game: 'Fake_1' } })).toEqual([
-      'manifest id "Fake_1" is not kebab-case',
+    expect(checkGame({ ...parts, protocol: { ...protocol, game: 'other' } })).toEqual([
+      'protocol game "other" differs from manifest id "fake"',
     ]);
+    expect(
+      checkGame({
+        ...parts,
+        manifest: { ...manifest, id: 'Fake_1' },
+        controller: { id: 'Fake_1' },
+        protocol: { ...protocol, game: 'Fake_1' },
+      }),
+    ).toEqual(['manifest id "Fake_1" is not kebab-case']);
   });
   it('howTo may not be empty and the player range must be ordered', () => {
     expect(checkGame({ ...parts, manifest: { ...manifest, howTo: { steps: [] } } })).toContain('howTo has no steps');
@@ -45,8 +52,12 @@ describe('checkGame', () => {
     expect(checkGame({ ...parts, manifest: { ...manifest, modes } }).some((p) => p.startsWith('mode coop: players'))).toBe(true);
   });
   it('the protocol slots must be coherent', () => {
-    expect(checkGame({ ...parts, protocol: { ...protocol, defaultMap: 'zz' } })).toEqual(['protocol defaultMap "zz" is not accepted by its own isMap']);
-    expect(checkGame({ ...parts, protocol: { ...protocol, signalKinds: ['go', 'go'] } })).toEqual(['protocol signalKinds has a duplicated kind']);
+    expect(checkGame({ ...parts, protocol: { ...protocol, defaultMap: 'zz' } })).toEqual([
+      'protocol defaultMap "zz" is not accepted by its own isMap',
+    ]);
+    expect(checkGame({ ...parts, protocol: { ...protocol, signalKinds: ['go', 'go'] } })).toEqual([
+      'protocol signalKinds has a duplicated kind',
+    ]);
     expect(checkGame({ ...parts, protocol: { ...protocol, puestoCount: -1 } })).toEqual(['protocol puestoCount -1 is not a count']);
   });
 });
