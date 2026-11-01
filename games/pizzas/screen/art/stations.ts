@@ -10,7 +10,7 @@ import { PANTRY_EVERY_MS, PANTRY_MAX } from '../../sim/versus/versus';
 import { canFold, isBaking } from '../../sim/recipes/sim';
 import { attachSaucepot, updateSaucepot } from './env/sauce-view';
 import { ovenKinds } from './food/recipes';
-import { windowArrow } from './window-arrow';
+import { windowArrow } from './env/window-arrow';
 
 export function place(scene: Phaser.Scene, key: string, x: number, y: number, k = 1): Phaser.GameObjects.Image {
   const t = texSize(key)!;
