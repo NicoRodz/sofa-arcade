@@ -10,6 +10,8 @@ import { resultNote } from '../../sim/versus/notes';
 import { versusMap } from '../../sim/versus/maps';
 import type { LobbyConfig } from '@pichi/core';
 import { startProblem, shuffleTeams } from '../lobby/sync';
+import { seriesView } from './model';
+import { renderSeries } from './view';
 import { resetFocus } from '../match/key-nav';
 import { isVersus, pz, stats } from '../state';
 
@@ -60,7 +62,7 @@ export function renderVersusResults() {
     .join('');
   resetFocus('results');
   const line = seriesLine(pz.series, names);
-  $('vsseries').innerHTML = line ? `<small>Serie</small>${esc(line)}` : '';
+  renderSeries(seriesView(line));
   // the flags wave (winner), hang (loser) or rest, redrawn every frame while the screen is up
   cancelAnimationFrame(flagLoop);
   const cards = Array.from($('vsres').querySelectorAll<HTMLElement>('.vteam'));

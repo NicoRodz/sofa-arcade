@@ -3,7 +3,7 @@
 // `screens/<name>/view.ts` is the template plus a `render<Name>(model)` that calls renderInto. Nothing here runs when the module loads.
 import { render, type TemplateResult } from 'lit-html';
 
-export { html } from 'lit-html';
+export { html, nothing } from 'lit-html';
 export { styleMap } from 'lit-html/directives/style-map.js';
 export { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 
