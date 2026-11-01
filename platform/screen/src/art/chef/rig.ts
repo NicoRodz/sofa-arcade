@@ -192,6 +192,10 @@ export class Chef {
       this.tag.setTexture(k);
     }
   }
+  /** Moves the name plate down by `dy` logical px (two chefs sharing one tile stack their plates instead of overlapping). */
+  setTagLift(dy: number) {
+    this.tag.y = ANCHORS.tagY + dy;
+  }
   celebrate() {
     this.happyT = 900;
     this.jumpT = 0;

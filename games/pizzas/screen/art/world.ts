@@ -278,6 +278,13 @@ export class World {
     const g = this.game;
     this.updateFinale(dtMs);
     const chop = new Map<number, 'chop' | 'stretch'>();
+    const sharing = new Map<number, number>(); // HAZARD_V3 raft: chefs share a tile, so their name plates stack (the second one lower)
+    for (const gp of [...g.players.values()].sort((a, b) => a.id - b.id)) {
+      const k = Math.floor(gp.y) * 16 + Math.floor(gp.x);
+      const n = g.flags?.mech.raft && !gp.ghost ? (sharing.get(k) ?? 0) : 0;
+      if (!gp.ghost) sharing.set(k, n + 1);
+      this.chefs.get(gp.id)?.setTagLift(n * 34);
+    }
     for (const gp of g.players.values()) {
       const info = this.players().get(gp.id);
       if (!info) continue;
