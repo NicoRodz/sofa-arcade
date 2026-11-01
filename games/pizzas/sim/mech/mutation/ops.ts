@@ -9,6 +9,12 @@ export interface MutationV2 {
   warn: number; // the banner, the ghosts and the alarm start this many ticks before
   revertAt: number | null; // tick where the inverse is applied, or null: it stays
   ops: readonly Op[];
+  then?: MutationWave; // HAZARD_V3: a second, real wave (not the inverse): needs `revertAt: null`
+}
+export interface MutationWave {
+  at: number;
+  warn: number; // the contour of the stations starts this many ticks before `at`
+  ops: readonly Op[]; // applied to the rows the first wave left
 }
 
 export const MOVABLE = new Set('CH12345KORPEXULMWQ'.split(''));
@@ -76,6 +82,12 @@ export function opsProblems(rows: readonly string[], m: MutationV2): string[] {
     }
     cur = applyRows(cur, [op]);
   });
+  if (m.then) {
+    if (m.revertAt !== null) out.push('mutation: a second wave and a revert cannot go together');
+    if (m.then.at - m.then.warn <= m.at) out.push('mutation: the second wave must warn after the first one is applied');
+    const second: MutationV2 = { at: m.then.at, warn: m.then.warn, revertAt: null, ops: m.then.ops };
+    out.push(...opsProblems(applyRows(rows, m.ops), second).filter((e) => !e.startsWith('mutation: at must')));
+  }
   const back = applyRows(applyRows(rows, m.ops), invertOps(rows, m.ops));
   if (back.join('|') !== rows.join('|')) out.push('mutation: the inverse does not give the original map back');
   return out;

@@ -8,5 +8,7 @@ export const MECH_ACTIONS: { [K in MechEvent]: (p: GameEvents[K]) => Action[] } 
   'mech:spray': () => [{ kind: 'play', id: 'plink' }],
   'mech:drip': () => [{ kind: 'play', id: 'plink' }],
   'mech:bridgeBreak': () => [{ kind: 'play', id: 'thud' }],
+  'mech:bridgeMend': () => [{ kind: 'play', id: 'ding' }],
+  'mech:trayLoss': () => [{ kind: 'play', id: 'thud' }],
   'mech:need': () => [{ kind: 'play', id: 'ding' }],
 };

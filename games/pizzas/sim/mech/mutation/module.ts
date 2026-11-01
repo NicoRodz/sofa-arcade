@@ -19,7 +19,7 @@ interface Live {
   inverse: readonly Op[];
   rows: string[]; // the letters of the map as they stand now (for the tiles of the event)
   tick: number;
-  phase: 0 | 1 | 2 | 3; // 0 waiting, 1 warned, 2 applied, 3 reverted
+  phase: 0 | 1 | 2 | 3 | 4 | 5; // 0 waiting, 1 warned, 2 applied, 3 reverted; HAZARD_V3 second wave: 4 warned, 5 applied
 }
 export const liveOf = (g: Game): Live | undefined => g.mech?.ext?.mutation as Live | undefined;
 
@@ -154,6 +154,20 @@ export const mutationModule: MechModule = {
         inMs: Math.round(m.warn * TICK_MS),
         dests,
       });
+    }
+    if (m.then && live.phase === 2 && live.tick >= m.then.at - m.then.warn) {
+      live.phase = 4;
+      emitMech(g, 'mutate:warn', {
+        id: 'mutation2',
+        title: '¡OTRA VEZ!',
+        blurb: 'Las estaciones vuelven a cambiar de lugar',
+        inMs: Math.round(m.then.warn * TICK_MS),
+        dests: m.then.ops.map((op) => op[2]),
+      });
+    }
+    if (m.then && live.phase === 4 && live.tick >= m.then.at) {
+      live.phase = 5;
+      run(g, live, m.then.ops, 'mutation2:wave2');
     }
     if (live.phase === 1 && live.tick >= m.at) {
       live.phase = 2;

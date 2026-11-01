@@ -39,6 +39,7 @@ export interface MapDef {
   spawns?: readonly Pos[]; // explicit spawn order when reading order is not the order the author wants
   puestos?: readonly (readonly PuestoId[])[]; // replaces the default puesto table (zone maps), indexed by spawn
   versusFit?: VersusFit; // coop maps only: what the versus work (F3) found out about this map
+  caves?: readonly (readonly [number, number])[]; // HAZARD_V3 patch: the two holes of the rat of the coop Rata event (it comes in by one, leaves by the other)
   mutation?: MutationV2; // the v2 mutation (stations that move, mech/mutation/ops.ts): the map needs `mutation` in its mechanics for the round to run it
   mechanics?: readonly MechId[]; // the map mechanics it uses: the lobby turns those flags on (mechFlagsOf), the parser reads their letters
 }

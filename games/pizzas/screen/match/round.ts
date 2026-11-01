@@ -100,6 +100,7 @@ function startCoop(): undefined {
     upgradeOrders: SERIES_MAPS.some((m) => m.id === map.id), // ... and brings the Pizza de la casa with its upgrades, the portions and the Bandeja familiar
     sliceAfterBake: SERIES_MAPS.some((m) => m.id === map.id),
     compoundOrders: SERIES_MAPS.some((m) => m.id === map.id),
+    caves: map.caves, // HAZARD_V3: the rat of map 15 has two caves
     mutation: map.mutation, // the v2 mutation (stations that move): runs only when the map also declares the 'mutation' mechanic
     mech: mechFlagsOf(map.mechanics), // the map declares its mechanics, the lobby turns their flags on (off by default; a map without any plays as before)
     surfaces: usesSurfaces(map.rows), // a map with ice or belts turns the surfaces on by itself; versus never draws those maps

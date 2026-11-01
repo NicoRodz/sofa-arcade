@@ -13,6 +13,7 @@ import { emitMech } from '../kneader/call';
 import { hz3Params } from '../../hazards/hazard-v3';
 import { book } from '../../hazards/score-ledger';
 import { addFloorItem } from '../../floor';
+import { carriesTray } from '../heavyTray/state';
 import type { Game, Player } from '../../round/state';
 import {
   ageTiles,
@@ -62,8 +63,14 @@ function dropOnOil(g: Game, e: OilExt) {
     if (e.on[p.id] === idx || at(g, idx) !== OIL || !p.item || p.item === 'trashBag') continue;
     if (g.time - (e.lastDropAt ?? -Infinity) < hz.lossGapMs) continue;
     e.lastDropAt = g.time;
-    addFloorItem(g, { tx: Math.floor(p.x), ty: Math.floor(p.y), item: p.item, kind: 'dropped', team: p.team });
-    book(g, 'hazard:oil-drop', 0);
+    if (hz.tray.loses && g.flags?.mech.heavyTray && carriesTray(g, p)) {
+      // the plate of a Bandeja on oil is lost for good (Hard, map 28): nothing falls to the floor to pick up
+      emitMech(g, 'mech:trayLoss', { tile: idx, player: p.id, item: p.item });
+      book(g, 'hazard:tray-loss', 0);
+    } else {
+      addFloorItem(g, { tx: Math.floor(p.x), ty: Math.floor(p.y), item: p.item, kind: 'dropped', team: p.team });
+      book(g, 'hazard:oil-drop', 0);
+    }
     p.item = null;
   }
   e.on = now;

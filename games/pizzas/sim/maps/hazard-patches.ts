@@ -3,7 +3,7 @@
 // untouched in `layouts/`, so a round without `hazardV3` plays them as before. `patchMap` returns the map itself when it has no patch.
 import type { Difficulty } from '@pichi/core/difficulty';
 import type { MechId } from '../mech/ids';
-import type { Op } from '../mech/mutation/ops';
+import type { MutationWave, Op } from '../mech/mutation/ops';
 import type { MapDef } from './types';
 
 interface Edit {
@@ -15,7 +15,8 @@ interface Patch {
   edits: readonly Edit[];
   mechanics: readonly MechId[];
   minDuro?: number; // the doors join rooms that stood alone: a lone chef can now cross
-  mutation?: { at: number; warn: number; ops: readonly Op[] }; // at 60 s, back at 120 s (two waves); Hard keeps one op more
+  mutation?: { at: number; warn: number; ops: readonly Op[]; then: MutationWave }; // two real waves, at 60 s and at 120 s (nothing reverts); Hard keeps one op more in each
+  caves?: readonly (readonly [number, number])[]; // the rat comes in by one cave and leaves by the other
 }
 
 const PATCHES: Readonly<Record<string, Patch>> = {
@@ -47,8 +48,14 @@ const PATCHES: Readonly<Record<string, Patch>> = {
       { at: [10, 5], to: 'g', was: '.' },
     ],
     mechanics: ['oil', 'sprinkler'],
+    caves: [
+      [1, 1],
+      [14, 5],
+    ],
   },
-  // Dos alas: the wings trade stations at 60 s and trade back at 120 s
+  // Cocina espejo: the Bandeja is carried by two (heavyTray) and a drip at the east hatch oils the way across: on Hard a carrier that slips loses the pizza
+  '28': { edits: [{ at: [8, 4], to: 'g', was: '.' }], mechanics: ['heavyTray', 'oil'] },
+  // Dos alas: the wings trade stations at 60 s, and at 120 s they trade again (two waves, 2 ops each, 3 on Hard)
   '22': {
     edits: [],
     mechanics: ['mutation'],
@@ -60,6 +67,15 @@ const PATCHES: Readonly<Record<string, Patch>> = {
         ['swap', [0, 5], [15, 4]],
         ['swap', [15, 2], [0, 7]],
       ],
+      then: {
+        at: 7200,
+        warn: 180,
+        ops: [
+          ['swap', [0, 3], [15, 6]],
+          ['swap', [15, 5], [0, 4]],
+          ['swap', [0, 6], [15, 1]],
+        ],
+      },
     },
   },
   // Isla de hornos: the heat of the ovens
@@ -70,7 +86,7 @@ export const PATCHED_MAP_IDS: readonly string[] = Object.keys(PATCHES);
 export const hasPatch = (id: string): boolean => Object.hasOwn(PATCHES, id);
 
 /** The map with its HAZARD_V3 dynamic; the same object when the map has none. `difficulty`: Hard keeps all the mutation ops of the patch, Normal the first two. */
-type Patchable = Pick<MapDef, 'id' | 'rows' | 'mechanics' | 'mutation'>; // what resolveMap hands the screen is a MapDef without the lobby fields
+type Patchable = Pick<MapDef, 'id' | 'rows' | 'mechanics' | 'mutation' | 'caves'>; // what resolveMap hands the screen is a MapDef without the lobby fields
 export function patchMap<M extends Patchable>(map: M, difficulty: Difficulty): M {
   if (!hasPatch(map.id) || map.mechanics?.length || map.mutation) return map; // a map that already carries mechanics is never patched
   const p = PATCHES[map.id]!;
@@ -79,12 +95,23 @@ export function patchMap<M extends Patchable>(map: M, difficulty: Difficulty): M
     if (rows[e.at[1]]?.[e.at[0]] !== e.was) throw new Error(`patch of map ${map.id}: tile (${e.at}) is not '${e.was}'`);
     rows[e.at[1]]![e.at[0]] = e.to;
   }
-  const ops = p.mutation ? p.mutation.ops.slice(0, difficulty === 'hard' ? 3 : 2) : undefined;
+  const k = difficulty === 'hard' ? 3 : 2;
   return {
     ...map,
     rows: rows.map((r) => r.join('')),
     mechanics: p.mechanics,
     ...(p.minDuro !== undefined ? { minDuro: p.minDuro } : {}),
-    ...(p.mutation ? { mutation: { at: p.mutation.at, warn: p.mutation.warn, revertAt: p.mutation.at * 2, ops: ops! } } : {}),
+    ...(p.caves ? { caves: p.caves } : {}),
+    ...(p.mutation
+      ? {
+          mutation: {
+            at: p.mutation.at,
+            warn: p.mutation.warn,
+            revertAt: null,
+            ops: p.mutation.ops.slice(0, k),
+            then: { ...p.mutation.then, ops: p.mutation.then.ops.slice(0, k) },
+          },
+        }
+      : {}),
   };
 }

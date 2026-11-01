@@ -13,11 +13,11 @@ const orig = (id: string) => COOP_MAPS.find((m) => m.id === id)!;
 const DIFFS: Difficulty[] = ['normal', 'hard'];
 
 describe('HAZARD_V3 map patches', () => {
-  it('cover maps 10, 12, 13, 14, 15, 22 and 27, all of 4+ chefs', () => {
-    expect([...PATCHED_MAP_IDS].sort()).toEqual(['10', '12', '13', '14', '15', '22', '27']);
+  it('cover maps 10, 12, 13, 14, 15, 22, 27 and 28, all of 4+ chefs', () => {
+    expect([...PATCHED_MAP_IDS].sort()).toEqual(['10', '12', '13', '14', '15', '22', '27', '28']);
     for (const id of PATCHED_MAP_IDS) expect(orig(id).mechanics).toBeUndefined();
   });
-  for (const id of ['10', '12', '13', '14', '15', '22', '27']) {
+  for (const id of ['10', '12', '13', '14', '15', '22', '27', '28']) {
     for (const d of DIFFS) {
       it(`${id} ${d}: validates and its mechanics validate for 2..${orig(id).nMax} chefs`, () => {
         const m = patchMap(orig(id), d);
@@ -47,11 +47,11 @@ describe('HAZARD_V3 map patches', () => {
     const m = orig('31');
     expect(patchMap(m, 'hard')).toBe(m);
   });
-  it('22 carries two waves (60 s and back at 120 s): 2 ops on Normal, 3 on Hard', () => {
+  it('22 carries two real waves (60 s and 120 s, nothing reverts): 2 ops each on Normal, 3 on Hard', () => {
     const n = patchMap(orig('22'), 'normal').mutation!,
       h = patchMap(orig('22'), 'hard').mutation!;
-    expect([n.at, n.revertAt, n.ops.length]).toEqual([3600, 7200, 2]);
-    expect([h.at, h.revertAt, h.ops.length]).toEqual([3600, 7200, 3]);
+    expect([n.at, n.revertAt, n.ops.length, n.then!.at, n.then!.ops.length]).toEqual([3600, null, 2, 7200, 2]);
+    expect([h.at, h.revertAt, h.ops.length, h.then!.at, h.then!.ops.length]).toEqual([3600, null, 3, 7200, 3]);
   });
   it('13: the two doors sit in the walls between rooms and each room still touches a door', () => {
     const m = patchMap(orig('13'), 'normal');
