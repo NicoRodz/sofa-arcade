@@ -5,7 +5,7 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '../..');
-const FOLDERS = ['platform/core/src', 'platform/screen/src'];
+const FOLDERS = ['platform/core/src', 'platform/screen/src', 'platform/controller/src'];
 const TEST_FILE = /(\.test\.ts|\.slow\.test\.ts)$|[\\/](test|harness)[\\/]/;
 // A game import, a path into games/, or a game id spelled as a string literal.
 const FORBIDDEN = [/@pichi\/game-/, /\bgames\//, /(['"`])(pizzas|obstaculos|arena)\1/];
@@ -41,7 +41,9 @@ describe('the platform is game-agnostic', () => {
   it('scans real files (a green from an empty list proves nothing)', () => {
     expect(sources(join(ROOT, 'platform/core/src')).length).toBeGreaterThan(20);
     expect(sources(join(ROOT, 'platform/screen/src')).length).toBeGreaterThan(20);
+    expect(sources(join(ROOT, 'platform/controller/src')).length).toBeGreaterThan(20);
   });
+  // The title stays as the baseline froze it (also covers platform/controller: FOLDERS); a rename needs scripts/moves.json.
   it('platform/core and platform/screen name no game', () => {
     expect(violations()).toEqual([]);
   });

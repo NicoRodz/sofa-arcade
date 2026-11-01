@@ -17,6 +17,7 @@
     "modules",
     "metric",
     "screen",
-    "test"
+    "test",
+    "controller"
   ]
 }
