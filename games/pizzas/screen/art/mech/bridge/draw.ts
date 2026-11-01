@@ -39,13 +39,13 @@ export const drawBridges: Draw = (scene, g, t) => {
         // HAZARD_V3: a chef can mend it holding B: a bar that fills while it does, and the label
         const need = hz3Params(g).bridge.repair,
           done = Math.min(1, mendProgress(g, i) / need),
-          bw = TILE * 1.05,
+          bw = TILE * 0.9, // under a tile, so the bars of two broken tiles side by side do not run into each other
           bx = x + (TILE - bw) / 2,
           by = y - TILE * 0.3;
         gfx.fillStyle(0x2b1b17, 0.85).fillRoundedRect(bx - 4, by - 4, bw + 8, 24, 10);
         gfx.fillStyle(0xfff1d6, 0.25).fillRoundedRect(bx, by, bw, 16, 7);
         if (done > 0) gfx.fillStyle(COL.bar, 1).fillRoundedRect(bx, by, Math.max(14, bw * done), 16, 7);
-        tileLabel(scene, `bridge:${i}`, 'Mantén B', x + TILE / 2, by - 22, 26, '#FFE45C');
+        if (!(tx > 0 && repairable(g, i - 1))) tileLabel(scene, `bridge:${i}`, 'Mantén B', x + TILE / 2, by - 22, 26, '#FFE45C'); // one label per run of broken tiles (two side by side would print over each other)
       }
       continue;
     }

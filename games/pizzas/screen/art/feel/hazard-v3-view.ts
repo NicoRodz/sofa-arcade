@@ -24,7 +24,7 @@ export class HazardV3View {
         if (p) fx.float(OX + p.x * TILE, OY + p.y * TILE - TILE * 1.1, '¡Se cayó la pizza!', '#FF6B4A', 52);
       }),
       bus.on('mech:bridgeMend', (e) =>
-        fx.float(OX + ((e.tile % 16) + 0.5) * TILE, OY + Math.floor(e.tile / 16) * TILE - TILE * 0.2, '¡Puente reparado!', '#8DF08D', 44),
+        fx.float(OX + ((e.tile % 16) + 0.5) * TILE, OY + Math.floor(e.tile / 16) * TILE - TILE * 0.75, '¡Puente reparado!', '#8DF08D', 44),
       ),
     );
     this.g.once('destroy', () => {

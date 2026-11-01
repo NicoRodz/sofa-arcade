@@ -45,18 +45,18 @@ export const drawRafts: Draw = (scene, g, t) => {
       gfx
         .lineBetween(x + TILE * 0.1, y + TILE * 0.3, x + TILE * 0.9, y + TILE * 0.3)
         .lineBetween(x + TILE * 0.1, y + TILE * 0.7, x + TILE * 0.9, y + TILE * 0.7);
-    // HAZARD_V3: the seats (the raft holds `raftCap` chefs): a mark per seat, filled while a chef sits on it
+    // HAZARD_V3: the seats (the raft holds `raftCap` chefs): a mark per seat on the raft's east edge (on the logs the chefs would hide them), filled while a chef sits on it
     const cap = raftCap(g);
     if (cap > 0) {
       const aboard = [...g.players.values()].filter((p) => !p.ghost && Math.floor(p.y) * 16 + Math.floor(p.x) === i).length;
       for (let k = 0; k < cap; k++) {
         const o = TILE * (0.3 + (0.4 * k) / Math.max(1, cap - 1)),
-          sx = x + (lane.dx ? o : TILE * 0.5),
-          sy = y + (lane.dx ? TILE * 0.5 : o),
+          sx = x + TILE * 1.2,
+          sy = y + o,
           taken = k < aboard;
-        gfx.fillStyle(0x2b1b17, 0.55).fillCircle(sx, sy, TILE * 0.19);
-        gfx.lineStyle(4, taken ? 0x6fd36f : 0xfff1d6, 0.95).strokeCircle(sx, sy, TILE * 0.19);
-        if (taken) gfx.fillStyle(0x6fd36f, 0.8).fillCircle(sx, sy, TILE * 0.1);
+        gfx.fillStyle(0x2b1b17, 0.55).fillCircle(sx, sy, TILE * 0.16);
+        gfx.lineStyle(4, taken ? 0x6fd36f : 0xfff1d6, 0.95).strokeCircle(sx, sy, TILE * 0.16);
+        if (taken) gfx.fillStyle(0x6fd36f, 0.8).fillCircle(sx, sy, TILE * 0.08);
       }
     }
     // heading arrow (hidden while it waits at the shore: then it blinks)

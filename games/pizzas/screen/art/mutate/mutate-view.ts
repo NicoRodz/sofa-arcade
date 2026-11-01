@@ -48,8 +48,11 @@ export class MutateView {
     g.fillStyle(ALARM.stripe, 1);
     for (let i = 0; i < 12; i++) g.fillRect(-BANNER.w / 2 + 30 + i * 70, BANNER.h / 2 - 22, 34, 8); // hazard dashes along the bottom
     g.lineStyle(7, hexNum(C.ink), 1).strokeRoundedRect(-BANNER.w / 2, -BANNER.h / 2, BANNER.w, BANNER.h, 30);
-    const text = makeText(this.scene, 0, -26, title, { size: 60, color: C.cream, stroke: 9, depth: 0 });
-    const sub = makeText(this.scene, 0, 24, blurb, { size: 30, color: '#FFF1D6', stroke: 5, depth: 0 });
+    // the texts sit left of the countdown digit (it is 84 px wide at the right edge): a long title ("¡SE REORDENA LA COCINA!") shrinks to fit instead of running under it
+    const room = BANNER.w - 190,
+      fit = (t: Phaser.GameObjects.Text) => t.setScale(Math.min(1, room / t.width));
+    const text = fit(makeText(this.scene, -50, -26, title, { size: 60, color: C.cream, stroke: 9, depth: 0 }));
+    const sub = fit(makeText(this.scene, -50, 24, blurb, { size: 30, color: '#FFF1D6', stroke: 5, depth: 0 }));
     this.count = makeText(this.scene, BANNER.w / 2 - 66, 0, String(Math.ceil(inMs / 1000)), {
       size: 84,
       color: C.cheese,
