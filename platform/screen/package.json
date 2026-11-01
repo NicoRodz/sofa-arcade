@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@pichi/core": "*",
+    "lit-html": "3.3.3",
     "phaser": "^4.2.1"
   }
 }
