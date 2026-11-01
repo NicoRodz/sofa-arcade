@@ -141,28 +141,24 @@ describe('HAZARD_V3 raft of map 31: a 1-tile lane, two chefs ride it and the thi
     for (let i = 1; i <= 3; i++) addPlayer(g, i, i - 1, i - 1);
     return g;
   };
+  const east = (id: number) => new Map<number, Controls>([[id, { x: 1, y: 0, a: 0, b: false }]]);
   for (const d of ['normal', 'hard'] as const) {
-    it(`${d}: with the raft docked at the west shore, a queue of three leaves two aboard`, () => {
+    it(`${d}: chefs 1 and 2 board the docked raft one behind the other, chef 3 is stopped at the shore`, () => {
       const g = make(d);
       for (let i = 0; i < 2000 && !(g.mech!.raft![0]!.pos === 0 && g.mech!.raft![0]!.wait >= 85); i++) run(g, 1);
       expect(g.mech!.raft![0]!.pos).toBe(0); // docked: its tile is (6, 4), next to the shore tile (5, 4)
+      g.mech!.raft![0]!.wait = 1e6; // keep it docked for the whole test
+      const aboard = () => [1, 2, 3].filter((id) => Math.floor(g.players.get(id)!.x) === 6 && Math.floor(g.players.get(id)!.y) === 4);
       put(g, 1, 5, 4);
       put(g, 2, 4, 4);
-      put(g, 3, 5, 5); // (3, 4) is a counter: the third chef queues from the south-west corner of the dock
-      const east = new Map<number, Controls>([
-        [1, { x: 1, y: 0, a: 0, b: false }],
-        [2, { x: 1, y: 0, a: 0, b: false }],
-        [3, { x: 1, y: -1, a: 0, b: false }],
-      ]);
-      const aboard = () => [...g.players.values()].filter((p) => Math.floor(p.x) === 6 && Math.floor(p.y) === 4).map((p) => p.id);
-      run(g, 40, east);
-      expect(aboard()).toHaveLength(2);
-      run(g, 40, east); // the raft is still docked (90 ticks of pause): the chef left ashore pushes in vain
-      expect(g.mech!.raft![0]!.pos).toBe(0);
-      expect(aboard()).toHaveLength(2);
-      const left = [...g.players.values()].find((p) => !aboard().includes(p.id))!;
-      expect(Math.floor(left.x)).toBe(5);
-      expect(left.y).toBeLessThan(5); // it did reach the dock tile in front of the raft, it was not just slow
+      put(g, 3, 9, 7); // out of the way
+      for (let i = 0; i < 80; i++) tick(g, new Map([...east(1), ...east(2)]));
+      expect(aboard()).toEqual([1, 2]); // two bodies of 0.7 on a tile of 1: they share it without shoving
+      put(g, 3, 4, 4);
+      run(g, 200, east(3));
+      expect(aboard()).toEqual([1, 2]);
+      expect(g.players.get(3)!.x).toBeGreaterThan(5.5); // it did get to the edge of the dock
+      expect(g.players.get(3)!.x).toBeLessThan(6);
     });
   }
 });
