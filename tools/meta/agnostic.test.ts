@@ -43,7 +43,8 @@ describe('the platform is game-agnostic', () => {
     expect(sources(join(ROOT, 'platform/screen/src')).length).toBeGreaterThan(20);
     expect(sources(join(ROOT, 'platform/controller/src')).length).toBeGreaterThan(20);
   });
-  it('platform/core, platform/screen and platform/controller name no game', () => {
+  // The title stays as the baseline froze it (also covers platform/controller: FOLDERS); a rename needs scripts/moves.json.
+  it('platform/core and platform/screen name no game', () => {
     expect(violations()).toEqual([]);
   });
   it('the scan does flag a game import and a game id literal', () => {
