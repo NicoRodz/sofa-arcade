@@ -1,5 +1,5 @@
 // Visual check: serves the app, drives the screen with simulated phones in headless Chrome and saves screenshots.
-// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn|events|events-vs|assist|magnet|frost|events-v2> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
+// usage: npx tsx tools/capture.ts <menu|lobby|game|results|all|phone|versus|versus-phone|sabotage|burn|events|events-vs|assist|magnet|frost|events-v2|hz3-31|hz3-15|hz3-22|hz3-28> [outDir]   (PG_PORT / PG_CDP move the server and Chrome ports)
 import { what } from './config';
 import { type Ctx, withSession } from './session';
 import { runPhone, runVersusPhone } from './scenarios/phone';
@@ -10,6 +10,7 @@ import { runVersusV3 } from './scenarios/versus-v3';
 import { runEventsV2 } from './scenarios/events-v2';
 import { runFrost } from './scenarios/frost';
 import { runHzFire, runHzIce, runHzRat } from './scenarios/hazards';
+import { runHz3Bridge, runHz3Caves, runHz3Tray, runHz3Waves } from './scenarios/hazards-v3c';
 import { runMutate } from './scenarios/mutate';
 import { runHowto, runHowtoTimeout, runMenu } from './scenarios/screens';
 import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './scenarios/maps';
@@ -45,6 +46,10 @@ const MODES: Record<string, Scenario[]> = {
   'hz-fire': [runHzFire],
   'hz-rat': [runHzRat],
   'hz-ice': [runHzIce],
+  'hz3-31': [runHz3Bridge],
+  'hz3-15': [runHz3Caves],
+  'hz3-22': [runHz3Waves],
+  'hz3-28': [runHz3Tray],
   howto: [runHowto],
   'howto-timeout': [runHowtoTimeout],
   menu: [runMenu],

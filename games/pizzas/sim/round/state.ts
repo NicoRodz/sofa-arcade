@@ -222,6 +222,7 @@ export interface Game {
   spoilRaw: boolean; // ... and a raw ingredient that falls becomes rubbish
   sab: Sabotage | null; // versus sabotage (sabotage.ts): the bags, the catapults, the throws
   hz: boolean; // HAZARD_V2 numbers under the flags (create option `hazards`, default on)
+  caves: { at: readonly (readonly [number, number])[]; seed: number } | null; // HAZARD_V3 map 15: the rat comes in by one cave and leaves by the other (feel/rat-caves.ts)
   hz3: boolean; // HAZARD_V3 (hazards/hazard-v3.ts): the harder numbers of the hazards and the penalties; off unless the round asks (create option `hazardsV3`)
   vz3: { sigma?: SigmaName; seed: number } | null; // VERSUS_V3 (feel/rat-versus.ts): the rat per kitchen and the Ola de frio in a versus round; null unless the round asks (`versusV3`, versus only)
   ratFrame?: RatFrame; // VERSUS_V3: set on the view of kitchen 0 (feel/rat-frame.ts), so its rat breaks ties as kitchen 1's does

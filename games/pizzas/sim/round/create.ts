@@ -55,6 +55,7 @@ export function createGame(
     magnet?: boolean | MagnetLevel;
     surfaces?: boolean;
     mutate?: boolean;
+    caves?: readonly (readonly [number, number])[]; // HAZARD_V3: the two holes of the coop rat (the map patch's); needs hazardsV3
     mutation?: MutationV2; // the map's v2 mutation (mech/mutation/ops.ts); it runs only with flags.mech.mutation
     mech?: MechOpts; // flags.mech.<id>: the map mechanics that are on (off by default; the lobby turns on the ones the map declares). Absent or all false = the round of before
     frost?: boolean; // the Ola de frio event may be drawn (coop only)
@@ -178,6 +179,7 @@ export function createGame(
     burn: null,
     hz: opts.hazardsV2 !== false,
     hz3: !!opts.hazardsV3,
+    caves: opts.hazardsV3 && opts.caves?.length === 2 ? { at: opts.caves, seed: opts.eventsSeed ?? seed } : null,
     vz3: versus && opts.versusV3 ? { sigma: opts.sigma, seed: opts.eventsSeed ?? seed } : null,
     ledger: opts.hazardsV3 || opts.ledger ? newLedger() : null,
     mid: null,

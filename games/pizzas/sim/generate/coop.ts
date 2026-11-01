@@ -130,6 +130,7 @@ export function resolveMap(
   puestos?: MapDef['puestos'];
   mechanics?: MapDef['mechanics'];
   mutation?: MapDef['mutation'];
+  caves?: MapDef['caves'];
 } {
   if (choice === 'random') {
     if (gen?.mechs) {
@@ -148,5 +149,14 @@ export function resolveMap(
     return { id: 'random', name: `Aleatorio ${seed}`, rows: g.rows, spawns: g.spawns, puestos: g.puestos };
   }
   const m = pickFixedMap(choice, diff, rand, n);
-  return { id: m.id, name: m.name, rows: m.rows, spawns: m.spawns, puestos: m.puestos, mechanics: m.mechanics, mutation: m.mutation };
+  return {
+    id: m.id,
+    name: m.name,
+    rows: m.rows,
+    spawns: m.spawns,
+    puestos: m.puestos,
+    mechanics: m.mechanics,
+    mutation: m.mutation,
+    caves: m.caves,
+  };
 }

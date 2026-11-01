@@ -24,6 +24,7 @@ export function lobbyExtra(id: string, d: Difficulty, series: boolean, eventsSee
       mech: mechFlagsOf(pm.mechanics),
       surfaces: usesSurfaces(pm.rows),
       mutation: pm.mutation,
+      caves: pm.caves,
     },
   };
 }

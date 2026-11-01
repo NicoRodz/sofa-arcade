@@ -19,5 +19,11 @@ export function multistateProblems(map: MapDef, n = 2): string[] {
         .map((e) => `${label}: ${e}`),
     ),
   ];
-  return [...side('before', map.rows), ...side('after', after), ...handleProblems(after)];
+  const after2 = m.then ? applyRows(after, m.then.ops) : null;
+  return [
+    ...side('before', map.rows),
+    ...side('after', after),
+    ...handleProblems(after),
+    ...(after2 ? [...side('after wave 2', after2), ...handleProblems(after2)] : []),
+  ];
 }

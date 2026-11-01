@@ -13,7 +13,15 @@ export type SurfaceEvent = 'surface:slide' | 'surface:belt';
 /** Events of the mutating kitchen (sim/mutate): sounded by the game's own audio director too. */
 export type MutateEvent = 'mutate:warn' | 'mutate:apply';
 /** Events of the map mechanics (games/pizzas/sim/mech): sounded by the game's own audio director (screen/audio/mech.ts). */
-export type MechEvent = 'mech:need' | 'mech:fire' | 'mech:wiped' | 'mech:spray' | 'mech:drip' | 'mech:bridgeBreak';
+export type MechEvent =
+  | 'mech:need'
+  | 'mech:fire'
+  | 'mech:wiped'
+  | 'mech:spray'
+  | 'mech:drip'
+  | 'mech:bridgeBreak'
+  | 'mech:bridgeMend'
+  | 'mech:trayLoss';
 
 export interface GameEvents extends SabotageEvents {
   itemPicked: { player: number; item: Item; from: StationKind };
@@ -65,6 +73,8 @@ export interface GameEvents extends SabotageEvents {
   'mech:spray': { tile: number }; // the sprinkler at this tile started a burst
   'mech:drip': { tile: number }; // HAZARD_V3: the sprinkler at this tile drips, the burst comes in 2 s
   'mech:bridgeBreak': { tile: number }; // a worn bridge broke
+  'mech:bridgeMend': { tile: number }; // HAZARD_V3: a chef mended a broken bridge holding B
+  'mech:trayLoss': { tile: number; player: number; item: string }; // HAZARD_V3 Hard: a chef carrying a tray plate slipped on oil and the pizza is gone
   'fire:start': { station: number; team?: number; big?: boolean }; // the oven caught fire
   'fire:spread': { station: number; team?: number }; // the fire jumped to this counter
   'fire:out': { player: number; station: number; team?: number }; // a chef put this station out

@@ -18,6 +18,7 @@ import { magnetFor } from './feel/magnet';
 import { newSurfaceState } from './surfaces/config';
 import { gentleRatStep, ratPrize } from './feel/rat';
 import { ratPull, stealOnEscape } from './feel/rat-loot';
+import { ratCaves } from './feel/rat-caves';
 import type { Game, Item, Station } from './round/state';
 import { spill } from './mech/oil/spill';
 import { hazardParams } from './hazards/hazard-v2';
@@ -216,6 +217,13 @@ function nextTile(g: Game, from: [number, number], goal: (x: number, y: number) 
 }
 
 function spawnRat(g: Game, m: Mid) {
+  const two = ratCaves(g, m.startAt); // HAZARD_V3 map 15: in by one cave, out by the other; the main stream is not touched
+  if (two) {
+    const [from, hole] = two;
+    m.rat = { x: from[0] + 0.5, y: from[1] + 0.5, state: 'seek', item: null, from: -1, hole: [hole[0], hole[1]], scared: false, idleMs: 0 };
+    g.bus.emit('rat:appear', { at: [from[0], from[1]] });
+    return;
+  }
   const holes: [number, number][] = [];
   g.grid.forEach((row, y) =>
     row.forEach((_t, x) => {

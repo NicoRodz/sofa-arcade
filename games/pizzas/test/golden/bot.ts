@@ -157,7 +157,7 @@ export function runGolden(sc: Scenario): GoldenRun {
   const base = fixedMap(sc.mapId)!;
   const map = sc.flags?.hazardsV3 ? patchMap(base, sc.difficulty) : base; // only a V3 scenario plays the patched map; the older ones never do
   const v3 = sc.flags?.hazardsV3 !== undefined ? { // (the control of a V3 scenario, `hazardsV3: false`, still lights the flags of the mechanics its map declares)
-     mech: mechFlagsOf(map.mechanics), mutation: map.mutation, mutate: sc.difficulty !== 'easy', surfaces: usesSurfaces(map.rows) } : {};
+     mech: mechFlagsOf(map.mechanics), mutation: map.mutation, caves: map.caves, mutate: sc.difficulty !== 'easy', surfaces: usesSurfaces(map.rows) } : {};
   const bus = new RecBus();
   const g = createGame({ mapId: map.id, difficulty: sc.difficulty, n: sc.n, rows: map.rows, spawns: map.spawns, seed: sc.seed, countdownMs: COUNTDOWN_MS, bus, teams: sc.teams, assist: sc.assist, ...v3, ...sc.flags });
   const ids = Array.from({ length: sc.n }, (_v, i) => i + 1);

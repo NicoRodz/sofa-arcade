@@ -9,6 +9,7 @@ import { raftStamp } from '../../gen/stamps/raft';
 
 export const RAFT_STEP_TICKS = 40;
 export const RAFT_PAUSE_TICKS = 60;
+export const raftCap = (g: Game): number => hz3Params(g).raft.cap;
 export const raftPause = (g: Game): number => hz3Params(g).raft.pause;
 
 interface Lane {
@@ -61,6 +62,21 @@ export const raftModule: MechModule = {
     g.mech!.raft = Object.fromEntries(
       lanes(g).map((l, i) => [i, { pos: start[i]!, dir: start[i] === l.tiles.length - 1 ? -1 : 1, wait: RAFT_STEP_TICKS }]),
     );
+  },
+  /** HAZARD_V3: the raft tile holds `cap` chefs; a third one cannot step on (it waits for the next crossing). */
+  canEnter(g, tx, ty, _dir, actor) {
+    const cap = hz3Params(g).raft.cap;
+    const t = g.grid[ty]?.[tx];
+    if (!cap || t?.kind !== 'floor' || t.mech !== '=') return true;
+    let on = 0;
+    for (const p of g.players.values()) if (p.id !== actor.id && !p.ghost && Math.floor(p.x) === tx && Math.floor(p.y) === ty) on++;
+    return on < cap;
+  },
+  /** HAZARD_V3: the raft tile is 1 x 1 and a chef is 0.7 wide, so two chefs on it share the tile (no push) or `cap: 2` could never be reached. */
+  noCollide(g, a, b) {
+    if (!hz3Params(g).raft.cap) return false;
+    const t = g.grid[Math.floor(a.y)]?.[Math.floor(a.x)];
+    return t?.kind === 'floor' && t.mech === '=' && Math.floor(a.x) === Math.floor(b.x) && Math.floor(a.y) === Math.floor(b.y);
   },
   beforeMove(g) {
     lanes(g).forEach((lane, i) => {
