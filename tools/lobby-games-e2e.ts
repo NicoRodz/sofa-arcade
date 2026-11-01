@@ -44,12 +44,42 @@ class Captain {
   otherMap(): string | undefined {
     const r = this.rows.find((x) => x.id === 'map');
     const all = [...(r?.options ?? []), ...(r?.groups ?? []).flatMap((g: any) => g.items)];
-    return all.find((o: any) => o.enabled && o.id !== r.value && !['auto', 'random', 'V-auto', 'V-random'].includes(o.id) && /^[A-Za-z0-9]+$/.test(o.id))?.id;
+    return all.find(
+      (o: any) => o.enabled && o.id !== r.value && !['auto', 'random', 'V-auto', 'V-random'].includes(o.id) && /^[A-Za-z0-9]+$/.test(o.id),
+    )?.id;
   }
 }
 
 const NORM = `(el) => el.outerHTML.replace(/<!--[\\s\\S]*?-->/g, '')`;
-const STYLE_PROPS = ['display', 'position', 'width', 'height', 'color', 'backgroundColor', 'backgroundImage', 'fontSize', 'fontWeight', 'fontFamily', 'letterSpacing', 'textTransform', 'borderTopWidth', 'borderTopColor', 'borderRadius', 'marginTop', 'marginLeft', 'paddingTop', 'paddingLeft', 'gridColumnStart', 'gridColumnEnd', 'opacity', 'whiteSpace', 'overflow', 'textAlign', 'zIndex', 'transform'];
+const STYLE_PROPS = [
+  'display',
+  'position',
+  'width',
+  'height',
+  'color',
+  'backgroundColor',
+  'backgroundImage',
+  'fontSize',
+  'fontWeight',
+  'fontFamily',
+  'letterSpacing',
+  'textTransform',
+  'borderTopWidth',
+  'borderTopColor',
+  'borderRadius',
+  'marginTop',
+  'marginLeft',
+  'paddingTop',
+  'paddingLeft',
+  'gridColumnStart',
+  'gridColumnEnd',
+  'opacity',
+  'whiteSpace',
+  'overflow',
+  'textAlign',
+  'zIndex',
+  'transform',
+];
 
 async function dump(c: Ctx, name: string, ids: string[]) {
   if (!DUMP) return;
@@ -85,20 +115,23 @@ async function pizzas({ cdp, bots, open, join, click }: Ctx) {
     return false;
   };
   const others = `[data-to="others"]`;
-  for (const [mode, tag] of [['coop', 'coop8'], ['versus', 'versus8']] as const) {
+  for (const [mode, tag] of [
+    ['coop', 'coop8'],
+    ['versus', 'versus8'],
+  ] as const) {
     if (mode === 'versus') {
       cap.act('mode', 'versus');
       check(await waitFor(`!document.getElementById('teams').classList.contains('off')`), 'versus: the team columns show');
     }
     await sleep(500);
-    await dump(
-      { cdp } as Ctx,
-      `${tag}-default`,
-      PIZZAS_IDS,
-    );
+    await dump({ cdp } as Ctx, `${tag}-default`, PIZZAS_IDS);
     await shot(`${tag}-default`);
     if (mode === 'coop') {
-      check(await mapsHas('.band .grp'), 'coop 8: the "Recomendados para N" band is there', await ev<string>(`document.querySelector('#maps .grp')?.textContent ?? ''`));
+      check(
+        await mapsHas('.band .grp'),
+        'coop 8: the "Recomendados para N" band is there',
+        await ev<string>(`document.querySelector('#maps .grp')?.textContent ?? ''`),
+      );
       check(await mapsHas('.mc.sel'), 'coop 8: a map is selected');
       const before = await ev<number>(`document.querySelectorAll('#maps .mc').length`);
       if (await mapsHas(others)) {
@@ -106,7 +139,10 @@ async function pizzas({ cdp, bots, open, join, click }: Ctx) {
         await sleep(300);
         const after = await ev<number>(`document.querySelectorAll('#maps .mc').length`);
         check(after > before, '"Otros mapas" unfolds', `${before} -> ${after} cards`);
-        check((await ev<string>(`document.querySelector('#maps ${others}').textContent`)).includes('Ocultar'), 'the fold button now says "Ocultar otros"');
+        check(
+          (await ev<string>(`document.querySelector('#maps ${others}').textContent`)).includes('Ocultar'),
+          'the fold button now says "Ocultar otros"',
+        );
         await shot(`${tag}-others`);
         await dump({ cdp } as Ctx, `${tag}-others`, ['maps']);
       } else check(true, 'coop 8: no folded maps with 8 players (nothing to unfold)');
@@ -115,53 +151,104 @@ async function pizzas({ cdp, bots, open, join, click }: Ctx) {
     check(!!pick, `${mode}: the Captain has a map to pick`, String(pick));
     if (pick) {
       cap.act('map', pick);
-      check(await waitFor(`!!document.querySelector('#maps .mc.sel[data-map="${pick}"]')`), `${mode}: the Captain's pick is the selected card`, pick);
+      check(
+        await waitFor(`!!document.querySelector('#maps .mc.sel[data-map="${pick}"]')`),
+        `${mode}: the Captain's pick is the selected card`,
+        pick,
+      );
       check((await ev<number>(`document.querySelectorAll('#maps .mc.sel').length`)) === 1, `${mode}: exactly one selected card`);
     }
     if (mode === 'coop' && (await mapsHas(others))) {
-      check((await ev<string>(`document.querySelector('#maps ${others}').textContent`)).includes('Ocultar'), 'coop: "Otros mapas" stays unfolded after the pick');
+      check(
+        (await ev<string>(`document.querySelector('#maps ${others}').textContent`)).includes('Ocultar'),
+        'coop: "Otros mapas" stays unfolded after the pick',
+      );
     }
     await shot(`${tag}-picked`);
     await dump({ cdp } as Ctx, `${tag}-picked`, PIZZAS_IDS);
     cap.act('difficulty', 'hard');
     check(await waitFor(`!!document.querySelector('#diffs [data-diff="hard"].sel')`), `${mode}: difficulty changes to Difícil`);
-    check((await ev<number>(`document.querySelectorAll('#maps .mc.sel').length`)) <= 1, `${mode}: at most one selected card after the difficulty change`);
+    check(
+      (await ev<number>(`document.querySelectorAll('#maps .mc.sel').length`)) <= 1,
+      `${mode}: at most one selected card after the difficulty change`,
+    );
     if (mode === 'coop' && (await mapsHas(others)))
-      check((await ev<string>(`document.querySelector('#maps ${others}').textContent`)).includes('Ocultar'), 'coop: "Otros mapas" stays unfolded after the difficulty change');
+      check(
+        (await ev<string>(`document.querySelector('#maps ${others}').textContent`)).includes('Ocultar'),
+        'coop: "Otros mapas" stays unfolded after the difficulty change',
+      );
     await shot(`${tag}-hard`);
     await click(`#evs [data-ev="false"]`);
-    check(await waitFor(`!!document.querySelector('#evs [data-ev="false"].sel') && !document.querySelector('#evs [data-ev="true"].sel')`), `${mode}: Eventos No is the only selected pill`);
+    check(
+      await waitFor(`!!document.querySelector('#evs [data-ev="false"].sel') && !document.querySelector('#evs [data-ev="true"].sel')`),
+      `${mode}: Eventos No is the only selected pill`,
+    );
     await click(`#evs [data-ev="true"]`);
-    check(await waitFor(`!!document.querySelector('#evs [data-ev="true"].sel') && !document.querySelector('#evs [data-ev="false"].sel')`), `${mode}: Eventos Sí back`);
+    check(
+      await waitFor(`!!document.querySelector('#evs [data-ev="true"].sel') && !document.querySelector('#evs [data-ev="false"].sel')`),
+      `${mode}: Eventos Sí back`,
+    );
     if (mode === 'versus') {
       await click(`#sabs [data-sab="soft"]`);
-      check(await waitFor(`!!document.querySelector('#sabs [data-sab="soft"].sel') && document.querySelectorAll('#sabs .sel').length === 1`), 'versus: Sabotaje Suave is the only selected pill');
+      check(
+        await waitFor(`!!document.querySelector('#sabs [data-sab="soft"].sel') && document.querySelectorAll('#sabs .sel').length === 1`),
+        'versus: Sabotaje Suave is the only selected pill',
+      );
       await click(`#sabs [data-sab="off"]`);
-      check(await waitFor(`!!document.querySelector('#sabs [data-sab="off"].sel') && document.querySelectorAll('#sabs .sel').length === 1`), 'versus: Sabotaje Apagado');
+      check(
+        await waitFor(`!!document.querySelector('#sabs [data-sab="off"].sel') && document.querySelectorAll('#sabs .sel').length === 1`),
+        'versus: Sabotaje Apagado',
+      );
       const lockText = () => ev<string>(`document.getElementById('lock').textContent`);
       await click('#lock');
-      check(await waitFor(`document.getElementById('lock').textContent === 'Desbloquear equipos' && document.getElementById('lock').classList.contains('sel')`), 'versus: Bloquear equipos -> "Desbloquear equipos", selected', await lockText());
+      check(
+        await waitFor(
+          `document.getElementById('lock').textContent === 'Desbloquear equipos' && document.getElementById('lock').classList.contains('sel')`,
+        ),
+        'versus: Bloquear equipos -> "Desbloquear equipos", selected',
+        await lockText(),
+      );
       check(await waitFor(`document.getElementById('teams').classList.contains('teams-locked')`), 'versus: the columns are locked');
       await click('#lock');
-      check(await waitFor(`document.getElementById('lock').textContent === 'Bloquear equipos' && !document.getElementById('lock').classList.contains('sel')`), 'versus: unlocked again');
+      check(
+        await waitFor(
+          `document.getElementById('lock').textContent === 'Bloquear equipos' && !document.getElementById('lock').classList.contains('sel')`,
+        ),
+        'versus: unlocked again',
+      );
       const on0 = await ev<boolean>(`document.getElementById('opt-hiddenScore').classList.contains('on')`);
       await click('#opt-hiddenScore');
-      check(await waitFor(`document.getElementById('opt-hiddenScore').classList.contains('on') === ${!on0} && document.getElementById('opt-hiddenScore').classList.contains('sel') === ${!on0}`), `versus: the Marcador oculto pill flips (was ${on0 ? 'on' : 'off'})`);
+      check(
+        await waitFor(
+          `document.getElementById('opt-hiddenScore').classList.contains('on') === ${!on0} && document.getElementById('opt-hiddenScore').classList.contains('sel') === ${!on0}`,
+        ),
+        `versus: the Marcador oculto pill flips (was ${on0 ? 'on' : 'off'})`,
+      );
       await click('#opt-hiddenScore');
       check(await waitFor(`document.getElementById('opt-hiddenScore').classList.contains('on') === ${on0}`), 'versus: and flips back');
       // the shell of every card travels to a team column: what lit rendered inside it has to keep updating there
       const inLists = `document.querySelectorAll('#teams .tlist .chip').length`;
       check((await ev<number>(inLists)) === 8, 'versus: all 8 cards are inside the team columns', String(await ev<number>(inLists)));
       const names = await ev<string[]>(`[...document.querySelectorAll('#teams .tlist .chip .nm')].map((e) => e.textContent)`);
-      check(names.length === 8 && names.every((n) => n && n !== 'Esperando…'), 'versus: each card in a column shows its player', names.join(','));
-      const crowned = await ev<number>(`[...document.querySelectorAll('#teams .tlist .chip .nm')].filter((e) => e.textContent.startsWith('👑')).length`);
+      check(
+        names.length === 8 && names.every((n) => n && n !== 'Esperando…'),
+        'versus: each card in a column shows its player',
+        names.join(','),
+      );
+      const crowned = await ev<number>(
+        `[...document.querySelectorAll('#teams .tlist .chip .nm')].filter((e) => e.textContent.startsWith('👑')).length`,
+      );
       check(crowned === 1, 'versus: the Captain wears the crown inside the column', String(crowned));
       await shot(`${tag}-pills`);
       await click('#tc0 .tlist .chip');
       await sleep(500);
       check((await ev<number>(inLists)) === 8, 'versus: a click on a card moves it and none is lost');
       bots[bots.length - 1]!.ws.close(); // a phone that leaves: its card goes back to "Esperando…" and the other cards keep their place
-      check(await waitFor(`document.querySelectorAll('#teams .tlist .chip:not(.empty)').length === 7`, 6000), 'versus: a phone that leaves empties its card inside the column', String(await ev<number>(`document.querySelectorAll('#teams .tlist .chip:not(.empty)').length`)));
+      check(
+        await waitFor(`document.querySelectorAll('#teams .tlist .chip:not(.empty)').length === 7`, 6000),
+        'versus: a phone that leaves empties its card inside the column',
+        String(await ev<number>(`document.querySelectorAll('#teams .tlist .chip:not(.empty)').length`)),
+      );
       await shot(`${tag}-gone`);
     }
     if (mode === 'coop') {
@@ -210,19 +297,29 @@ async function main() {
     await dump(c, 'obst-default', ids);
     const sel = () => o.cdp.eval<string>(`document.querySelector('#obstlevels .mc.sel')?.dataset.level ?? ''`);
     check((await sel()) !== '', 'obstaculos: a level is selected');
-    const target = await o.cdp.eval<string>(`[...document.querySelectorAll('#obstlevels .mc:not(.blk)')].map((e) => e.dataset.level).find((l) => l !== document.querySelector('#obstlevels .mc.sel')?.dataset.level) ?? ''`);
+    const target = await o.cdp.eval<string>(
+      `[...document.querySelectorAll('#obstlevels .mc:not(.blk)')].map((e) => e.dataset.level).find((l) => l !== document.querySelector('#obstlevels .mc.sel')?.dataset.level) ?? ''`,
+    );
     await o.click(`#obstlevels [data-level="${target}"]`);
     await sleep(400);
     check((await sel()) === target, 'obstaculos: clicking a level selects it', target);
     await o.click(`#obstmodes [data-tether="free"]`);
     await sleep(400);
-    check(await o.cdp.eval<boolean>(`!!document.querySelector('#obstmodes [data-tether="free"].sel') && !document.querySelector('#obstmodes [data-tether="chain"].sel')`), 'obstaculos: mode Libres is the only selected pill');
+    check(
+      await o.cdp.eval<boolean>(
+        `!!document.querySelector('#obstmodes [data-tether="free"].sel') && !document.querySelector('#obstmodes [data-tether="chain"].sel')`,
+      ),
+      'obstaculos: mode Libres is the only selected pill',
+    );
     await o.click(`#diffs [data-diff="hard"]`);
     await sleep(400);
     check((await sel()) === target, 'obstaculos: the level stays selected after the difficulty change');
     await o.click(`#obstlevels [data-level="0"]`);
     await sleep(400);
-    check(await o.cdp.eval<boolean>(`!document.getElementById('oseedrow').classList.contains('off')`), 'obstaculos: Aleatorio shows the seed row');
+    check(
+      await o.cdp.eval<boolean>(`!document.getElementById('oseedrow').classList.contains('off')`),
+      'obstaculos: Aleatorio shows the seed row',
+    );
     await o.cdp.shot(`lobby2-${LABEL}-obst-random`);
     await dump(c, 'obst-random', ids);
     c.bots.splice(0).forEach((b) => b.close());
