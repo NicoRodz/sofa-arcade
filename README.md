@@ -43,7 +43,7 @@ npm run dev
   - Celulares: `http://<IP-de-la-LAN>:3000/c`. La IP la detecta `platform/server/src/lan.ts` (primera IPv4 privada no interna).
 - El lobby de la pantalla también muestra el QR y un código de sala de 4 letras (URL `/c?room=XXXX`): los celulares escanean y entran.
 - `npm run build` + `npm start` sirven las apps ya compiladas (`dist/`) en el mismo puerto.
-- Los puertos 3000 y 3100 suelen estar ocupados por quien desarrolla; para pruebas con Chrome usa `PG_PORT` y `PG_CDP_PORT` (por defecto 3600/9366).
+- Los puertos 3000 y 3100 suelen estar ocupados por quien desarrolla; para pruebas con Chrome usa tus propios `PG_PORT` y `PG_CDP` (o `PG_CDP_PORT` en los tests del celular y `tools/obst-e2e`).
 
 ### Tests y chequeos
 
@@ -54,21 +54,23 @@ npm run dev
 | Un solo paquete | `npm run test:agent -- --project game-pizzas` |
 | Puerta de equivalencia (suite completa, ~4 min; solo al integrar) | `npm run baseline:check` |
 | Lint | `npm run lint` |
-| Reglas de dependencias (avisos) | `npm run deps` |
+| Reglas de dependencias (8 reglas en error) | `npm run deps` |
+| Archivos nuevos >300 líneas | `npm run check:new-files` |
+| Arranque del bundle compilado | `npm run build && npm run smoke` |
 | Tipos | `npm run typecheck` |
 
 ## Estructura
 
 ```
 platform/  genérica: core (protocolo, contrato, registro), screen, controller, server
-games/     un paquete por juego: pizzas, obstaculos (sim, screen, controller, tests)
-apps/      raíces que ensamblan todo: screen (Phaser + DOM), controller (celular), server (express + ws)
+games/     un paquete por juego: pizzas, obstaculos, arena (sim, screen, controller, tests)
+apps/      raíces que ensamblan todo: screen (Phaser + DOM), controller (celular), server (express + ws) y catalog (la lista de juegos)
 tools/     capturas, e2e con Chrome, latencia y chequeos del repo (baseline, topes de tamaño)
 ```
 
 - El sim de cada juego es código puro y determinista (sin DOM, Node ni Phaser).
-- Cada juego tiene su `README.md` con módulos, invariantes y red de tests: `games/pizzas/README.md`, `games/obstaculos/README.md`.
-- Mapa completo y objetivo de la reestructura: [ARCHITECTURE.md](ARCHITECTURE.md) (provisional, se reemplaza al cerrar la reestructura).
+- Cada paquete tiene su `README.md` (`platform/*`, `games/*`, `apps/*`) con módulos y reglas; los juegos añaden invariantes y red de tests.
+- Capas, contrato de juego, protocolo y gates: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Cómo contribuir
 
@@ -77,9 +79,9 @@ Reglas duras (detalle en [CLAUDE.md](CLAUDE.md)):
 - **Goldens y capturas se regraban solo por PR.** `games/pizzas/test/golden/fixtures/*.json`, los hashes de regresión, `docs/screens/**` y `docs/refactor/baseline/` pueden cambiar en un PR que explique por qué y adjunte evidencia: capturas antes/después; para goldens, qué regla cambió y que los goldens sin flags no se movieron. Otra persona distinta del autor aprueba el PR. Un test rojo que pide regrabar no se regraba en silencio: va al PR con su explicación.
 - **No borres, saltes ni renombres tests** sin justificarlo en el PR, y nunca para ponerlos en verde. Los tests nuevos se sabotean a mano para verlos en rojo. `npm run baseline:check` debe quedar verde (o el PR explica por qué no). Un proyecto de Vitest con 0 tests cuenta como rojo.
 - **Tamaño de archivos:** `.ts` 300 líneas aviso y 500 falla; tests 500/800; `.css` y `.html` 150/250; `index.ts` máximo 40 líneas y solo re-exports; carpeta 12/20 archivos. Límites en `size-budget.json`. Nada de `utils.ts`, `helpers.ts` ni `misc`.
-- **La plataforma no importa juegos** (ni apps); los juegos no se importan entre sí. Solo las apps ensamblan juegos y plataforma. Se revisa con `npm run deps`.
+- **La plataforma no importa juegos** (ni apps); los juegos no se importan entre sí. Solo las apps ensamblan juegos y plataforma. Se revisa con `npm run deps` (8 reglas en error).
 - **`git add` con rutas explícitas de archivo**, nunca de directorio.
-- **Ramas y PR:** una rama por cambio (idealmente en su propio `git worktree`) y PR contra `master`, con la plantilla de `.github/pull_request_template.md`. Todo cambio entra por PR, aprobado por alguien distinto del autor y con evidencia. El CI corre lint, typecheck, test:fast y deps.
+- **Ramas y PR:** una rama por cambio (idealmente en su propio `git worktree`) y PR contra `master`, con la plantilla de `.github/pull_request_template.md`. Todo cambio entra por PR, aprobado por alguien distinto del autor y con evidencia. El CI corre lint, typecheck, test:fast, deps, check-new-files (contra la base del PR) y un job `smoke` con el bundle compilado.
 - Código en inglés, nombres de archivo en kebab-case. Antes de dar algo por listo: `npm run typecheck`, `npm run lint` y los tests del paquete que tocaste.
 
-Si programas con Claude Code, usa la skill del repo `/sofa-arcade-dev` (en `.claude/skills/`, se agrega al cerrar la reestructura en curso).
+Si programas con Claude Code, usa la skill del repo `/sofa-arcade-dev` ([`.claude/skills/sofa-arcade-dev/SKILL.md`](.claude/skills/sofa-arcade-dev/SKILL.md)): resume el flujo por PR, las reglas duras y qué correr antes de abrirlo.
