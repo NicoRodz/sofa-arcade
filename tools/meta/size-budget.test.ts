@@ -24,7 +24,7 @@ const B: Budget = {
     shrinkSlack: 25,
     folderShrinkSlack: 3,
   },
-  exemptDirs: ['data', 'fixtures', 'levels', 'golden'],
+  exemptPaths: ['g/levels/', 'g/golden/fixtures/'],
   files: { 'a/big.ts': { max: 600, until: '2027-01-01' } },
   folders: {},
 };
@@ -67,10 +67,16 @@ describe('size budget rules (synthetic)', () => {
     expect(run([...mk(15), ...Array.from({ length: 30 }, (_, i) => ({ path: `f/t${i}.test.ts`, lines: 10 })), big]).errors).toEqual([]);
   });
   it('data/, fixtures/ and levels/ are exempt', () => {
-    expect(
-      run([{ path: 'a/levels/l1.ts', lines: 5000 }, { path: 'a/fixtures/x.ts', lines: 5000 }, { path: 'a/data/x.ts', lines: 5000 }, big])
-        .errors,
-    ).toEqual([]);
+    expect(run([{ path: 'g/levels/l1.ts', lines: 5000 }, { path: 'g/golden/fixtures/x.ts', lines: 5000 }, big]).errors).toEqual([]);
+  });
+  it('a folder merely named levels/data/golden elsewhere is not exempt', () => {
+    const errs = run([
+      { path: 'a/levels/l1.ts', lines: 5000 },
+      { path: 'a/data/x.ts', lines: 5000 },
+      { path: 'g/golden/bot.ts', lines: 5000 },
+      big,
+    ]).errors;
+    expect(errs).toHaveLength(3);
   });
   it('onlyReexports reads comments and multi-line exports', () => {
     expect(onlyReexports("// api\nexport * from './a';\nexport type { X,\n Y } from './b';\n")).toBe(true);

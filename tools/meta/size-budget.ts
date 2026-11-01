@@ -19,7 +19,7 @@ export type Budget = {
     shrinkSlack: number;
     folderShrinkSlack: number;
   };
-  exemptDirs: string[];
+  exemptPaths: string[]; // repo-root-relative folder prefixes (trailing slash); a folder that merely has the same name elsewhere is NOT exempt
   files: Record<string, Entry>;
   folders: Record<string, Entry>;
 };
@@ -34,8 +34,7 @@ export const isTest = (p: string) => /\.test\.(ts|tsx)$/.test(p);
 export const isIndex = (p: string) => /(^|\/)index\.ts$/.test(p);
 
 export function isExempt(path: string, b: Budget): boolean {
-  const segs = path.split('/').slice(0, -1);
-  return segs.some((s) => b.exemptDirs.includes(s));
+  return b.exemptPaths.some((prefix) => path.startsWith(prefix));
 }
 
 export function kindOf(path: string): 'index' | 'test' | 'code' | 'markup' | null {
@@ -209,7 +208,7 @@ function cli(mode: string) {
     '\n }';
   writeFileSync(
     BUDGET_PATH,
-    `{\n "limits": ${JSON.stringify(b.limits)},\n "exemptDirs": ${JSON.stringify(b.exemptDirs)},\n "files": ${block(b.files)},\n "folders": ${block(b.folders)}\n}\n`,
+    `{\n "limits": ${JSON.stringify(b.limits)},\n "exemptPaths": ${JSON.stringify(b.exemptPaths)},\n "files": ${block(b.files)},\n "folders": ${block(b.folders)}\n}\n`,
   );
   console.log(`size-budget.json: ${Object.keys(b.files).length} file exceptions, ${Object.keys(b.folders).length} folder exceptions`);
 }

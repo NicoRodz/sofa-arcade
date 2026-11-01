@@ -1,22 +1,23 @@
-# Pichiclub (party-game)
+# Sofa Arcade (party-game)
 
-Juegos de fiesta en red local: la pantalla grande (Phaser + DOM) corre la simulación, los celulares son mandos, el server es un relay (ws). Juegos: Pizzas (cocina coop y versus) y Obstáculos (campaña). TypeScript, npm workspaces, Vitest, Vite. Estructura y objetivo: `ARCHITECTURE.md`. Plan de la reestructura: `~/.claude/plans/reestructura-repo.md`.
+Juegos de fiesta en red local: la pantalla grande (Phaser + DOM) corre la simulación, los celulares son mandos, el server es un relay (ws). Juegos: Pizzas (cocina coop y versus), Obstáculos (campaña) y Arena (en desarrollo, `?soon=1`). Antes se llamaba Pichiclub: los paquetes internos siguen como `@pichi/*`. TypeScript, npm workspaces, Vitest, Vite. Capas, contrato de juego y gates: `ARCHITECTURE.md`. Skill para programar con IA: `.claude/skills/sofa-arcade-dev/SKILL.md` (`/sofa-arcade-dev`).
 
 ## Comandos
 
 | Qué | Comando |
 |---|---|
-| Probar un paquete (lo normal) | `npm run test:agent -- --project game-pizzas` (también core, screen-kit, controller-kit, game-obstaculos, app-server, tools) |
+| Probar un paquete (lo normal) | `npm run test:agent -- --project game-pizzas` (también core, screen-kit, controller-kit, game-obstaculos, game-arena, app-server, catalog, tools) |
 | Rápidos / lentos / todo | `npm run test:fast` / `npm run test:slow` / `npm test` |
 | Tipos, build, lint | `npm run typecheck` · `npm run build` · `npm run lint` |
 | Topes de tamaño | `npx vitest run --project tools` (corre `tools/meta/size-budget.test.ts`) |
-| Dependencias (avisos) | `npm run deps` · reporte: `npm run deps:report` |
+| Dependencias (8 reglas en error) | `npm run deps` · reporte: `npm run deps:report` |
+| Archivos nuevos y arranque del bundle | `npm run check:new-files` · `npm run build && npm run smoke` |
 | Puerta de equivalencia | `npm run baseline:check` (suite completa, ~4 min; solo al integrar) |
 | Dev | `npm run dev` (server + Vite) |
 | Mover archivos / reaplicar sobre una rama | `npm run move` (`scripts/move.ts` + `scripts/moves.json`; `-- --dry-run` para ver) |
 
 - `slow` (`*.slow.test.ts`): corre solo si tocaste `step`/el sim, el validador, el generador o el protocolo; la suite completa la corre quien integra.
-- Tests con Chrome (`apps/controller/test/layout.slow.test.ts`, `tools/*e2e.ts`, capturas): usa tus puertos propios, `PG_PORT` y `PG_CDP_PORT` (por defecto 3600/9366). 3000 y 3100 son del usuario. Al terminar, mata Chrome por árbol de PIDs (SIGTERM, luego SIGKILL).
+- Tests con Chrome (`apps/controller/test/layout.slow.test.ts`, `tools/*e2e.ts`, capturas): usa tus puertos propios: `PG_PORT` y `PG_CDP` (`tools/capture`, `smoke`) o `PG_CDP_PORT` (`apps/controller/test`, `tools/obst-e2e`); los tests del celular toman puertos libres si no los fijas. 3000 y 3100 son del usuario. Al terminar, mata Chrome solo por el árbol de PIDs que lanzaste (`tools/proc/kill-tree.ts`: SIGTERM, luego SIGKILL).
 - `vitest` con `--silent`/`dot` para no llenar el contexto; los logs de Puppeteer no se pegan en la salida.
 
 ## Qué leer y qué no
@@ -26,7 +27,7 @@ Juegos de fiesta en red local: la pantalla grande (Phaser + DOM) corre la simula
 
 ## Topes de tamaño (trinquete en `size-budget.json`)
 
-- Código `.ts`: 300 aviso, 500 falla. Tests: 500 / 800. `.css` y `.html`: 150 / 250. `index.ts`: 40 y solo re-exports. Carpeta: 12 / 20 archivos de código.
+- Un archivo nuevo de más de 300 líneas falla `check:new-files` (también un renombrado que crece sobre 300). Código `.ts`: 300 aviso, 500 falla. Tests: 500 / 800. `.css` y `.html`: 150 / 250. `index.ts`: 40 y solo re-exports. Carpeta: 12 / 20 archivos de código.
 - Un archivo de la lista no crece sobre su `max`; si baja más de 25 líneas, baja su `max` (`npm run size:ratchet`). Venció el `until` o cambió la ruta: el test falla.
 - Si un archivo que editas pasa de 300 líneas, pártelo en la misma tarea o repórtalo. No partas por debajo de ~60 líneas. No crees `utils.ts`, `helpers.ts` ni `misc`.
 
