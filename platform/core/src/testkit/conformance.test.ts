@@ -48,7 +48,7 @@ describe('checkGame', () => {
     expect(checkGame({ ...parts, manifest: { ...manifest, minPlayers: 5 } })).toContain('minPlayers 5 is over maxPlayers 4');
   });
   it('modes are validated like the authoring check does', () => {
-    const modes = [{ id: 'coop', label: 'Cooperativo', players: [2, 9] as [number, number] }];
+    const modes = [{ id: 'coop' as const, label: 'Cooperativo', players: [2, 9] as [number, number] }];
     expect(checkGame({ ...parts, manifest: { ...manifest, modes } }).some((p) => p.startsWith('mode coop: players'))).toBe(true);
   });
   it('the protocol slots must be coherent', () => {
