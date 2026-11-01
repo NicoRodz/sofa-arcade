@@ -42,7 +42,7 @@ jobs:
       - run: npm run smoke
         env:
           CHROME_BIN: /usr/bin/google-chrome
-          CHROME_NO_SANDBOX: '1'
-          SOFTGL: '1'
-          PG_PORT: '4800'
-          PG_CDP: '4802'
+          CHROME_NO_SANDBOX: "1"
+          SOFTGL: "1"
+          PG_PORT: "4800"
+          PG_CDP: "4802"
