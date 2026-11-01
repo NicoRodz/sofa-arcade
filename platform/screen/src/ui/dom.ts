@@ -1,4 +1,4 @@
-// DOM helpers shared by every screen of the shell. EXPERIMENTAL (F4b): the markup still lives in apps/screen/index.html (F4d moves it).
+// DOM helpers shared by every screen of the shell. EXPERIMENTAL (F4b). The markup is mounted by apps/screen/src/mount.ts before any module runs.
 export const $ = (id: string) => document.getElementById(id)!;
 export const esc = (t: string) => t.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;

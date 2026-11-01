@@ -17,7 +17,17 @@ const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const outDir = path.resolve(process.argv[2] ?? 'docs/screens/camp');
 mkdirSync(outDir, { recursive: true });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const css = readFileSync(path.resolve('apps/screen/index.html'), 'utf8').match(/<style>([\s\S]*?)<\/style>/)![1]!;
+// The page's own CSS: every stylesheet apps/screen/src/mount.ts imports, in its order.
+const cssFiles = [...readFileSync(path.resolve('apps/screen/src/mount.ts'), 'utf8').matchAll(/^import '@pichi\/([^']+\.css)';$/gm)].map(
+  (m) => m[1]!,
+);
+const css = cssFiles
+  .map((f) => {
+    const [pkg, ...rest] = f.split('/');
+    const root = pkg === 'screen-kit' ? 'platform/screen/src' : `games/${pkg!.replace('game-', '')}`;
+    return readFileSync(path.resolve(root, rest.join('/')), 'utf8');
+  })
+  .join('\n');
 
 const plan = planCatalog();
 let t = 1000;

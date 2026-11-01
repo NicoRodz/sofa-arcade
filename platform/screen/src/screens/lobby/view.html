@@ -1,0 +1,34 @@
+<div id="stage" class="stage">
+  <section id="lobby">
+    <div id="logo"></div>
+    <h1 class="title" id="title">Sofa Arcade</h1>
+    <div class="platform" id="platform">Elige un juego</div>
+    <div id="joincard" class="panel">
+      <div class="lbl">Escanea y únete</div>
+      <div id="qr"></div>
+      <div id="code"></div>
+      <div id="joinurl"></div>
+    </div>
+    <h2 id="playersh">Jugadores <small id="playersn"></small></h2>
+    <div id="chips"></div>
+    <div id="teams" class="off">
+      <div class="tcol" id="tc0"><div class="thead" id="th0"></div><div class="tlist"></div></div>
+      <div class="tcol" id="tc1"><div class="thead" id="th1"></div><div class="tlist"></div></div>
+    </div>
+    <div id="teambar" class="off"><button id="shuffle" class="pill">Mezclar</button><button id="lock" class="pill">Bloquear equipos</button><button id="opt-hiddenScore" class="pill" data-opt="hiddenScore">Marcador oculto</button><button id="opt-handicap" class="pill" data-opt="handicap">Ventaja equipo chico</button><span id="teamhint"></span></div>
+<!--slot:menu-->
+    <div id="lobbyui">
+      <button id="back" class="pill">‹ Elegir otro juego · Esc</button>
+      <div id="setup" class="panel">
+        <div class="row">
+          <div><h3>Dificultad</h3><div id="diffs" class="seg"></div></div>
+<!--slot:lobby-row-->
+        </div>
+<!--slot:lobby-setup-->
+      </div>
+<!--slot:lobby-extra-->
+      <button id="start" class="btn" disabled>¡A cocinar!</button>
+      <div id="starthint">Enter para empezar<br><button id="howtobtn" class="pill">H · Cómo se juega</button><!--slot:lobby-hint--><br><small>M sonido · S sacudida de pantalla</small></div>
+    </div>
+  </section>
+</div>
