@@ -3,6 +3,7 @@
 import { MAP_H, MAP_W, type SigmaName } from '../maps';
 import { ICE_CHAR } from '../surfaces/legend';
 import { SIGMAS } from '../symmetry';
+import { usesSurfaces } from '../surfaces/legend';
 
 const BLOCK = [
   [0, 0],
@@ -49,4 +50,13 @@ export function iceRows(rows: readonly string[], sigma: SigmaName): string[] {
     out[ty]![tx] = ICE_CHAR;
   }
   return out.map((r) => r.join(''));
+}
+
+/** What the lobby gives createGame for the rows of a versus round: the map's own rows, or with the patch of ice (and the surfaces on) when the round has `versusV3`. */
+export function iceRound(
+  map: { rows: readonly string[]; sigma: SigmaName },
+  versusV3: boolean,
+): { rows: readonly string[]; surfaces: boolean } {
+  const rows = versusV3 ? iceRows(map.rows, map.sigma) : map.rows;
+  return { rows, surfaces: usesSurfaces(rows) };
 }

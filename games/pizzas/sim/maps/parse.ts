@@ -51,22 +51,23 @@ export const STATION_CHAR: Record<string, string> = {
 };
 
 /** `versus`: the tile letters that only exist in versus maps (Y, the catapult) are accepted. A coop map refuses them. */
-export function parseTile(c: string, versus = false, mech?: MechOpts): Tile | null {
+export function parseTile(c: string, versus = false, mech?: MechOpts, ice = false): Tile | null {
   if (c === '#') return { kind: 'wall' };
   if (c === '.') return { kind: 'floor', spawn: false };
   if (c === 'S') return { kind: 'floor', spawn: true };
   if (c === '~') return { kind: 'water' };
   const s = STATIONS[c] ?? (versus ? VERSUS_ONLY[c] : undefined);
-  return s ? { kind: 'station', ...s } : (surfaceTile(c, versus) ?? mechTile(c, versus, mech));
+  return s ? { kind: 'station', ...s } : (surfaceTile(c, versus, ice) ?? mechTile(c, versus, mech));
 }
 
 /** `mech`: the mechanics that are on; the letter of one that is off is a load error (never a floor tile). */
-export function parseMap(rows: readonly string[], versus = false, mech?: MechOpts): Grid {
+/** `ice`: a versus map may carry the ice tile (VERSUS_V3, versus/ice-patch.ts); without it the ice letter is a load error there. */
+export function parseMap(rows: readonly string[], versus = false, mech?: MechOpts, ice = false): Grid {
   if (rows.length !== MAP_H) throw new Error(`map needs ${MAP_H} rows, got ${rows.length}`);
   return rows.map((row, y) => {
     if (row.length !== MAP_W) throw new Error(`row ${y} needs ${MAP_W} columns, got ${row.length}`);
     return [...row].map((c, x) => {
-      const t = parseTile(c, versus, mech);
+      const t = parseTile(c, versus, mech, ice);
       if (!t) {
         const need = mechLetterId(c);
         throw new Error(

@@ -68,7 +68,7 @@ export function createGame(
 ): Game {
   const mechOn = anyMech(opts.mech);
   const rows = opts.menuV2 ? menuPatchRows(opts.mapId, opts.rows ?? FIXED_MAPS[0]!.rows) : (opts.rows ?? FIXED_MAPS[0]!.rows); // menuV2: the crate a third plate needs
-  const grid = parseMap(rows, (opts.teams?.length ?? 1) > 1, opts.mech); // the catapult letter belongs to versus maps; a mechanic's letter needs its flag
+  const grid = parseMap(rows, (opts.teams?.length ?? 1) > 1, opts.mech, !!opts.versusV3); // the catapult letter belongs to versus maps; a mechanic's letter needs its flag
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
   if (seats && !seats.length) throw new RangeError('a round needs at least one team');
