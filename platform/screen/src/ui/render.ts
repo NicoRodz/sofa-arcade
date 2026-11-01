@@ -13,3 +13,8 @@ export { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 export const renderInto = (id: string, view: TemplateResult): void => {
   render(view, document.getElementById(id)!);
 };
+
+// Same, for an element that has no id (the lobby chips: one persistent shell per slot, created by initChips).
+export const renderTo = (el: HTMLElement, view: TemplateResult): void => {
+  render(view, el);
+};

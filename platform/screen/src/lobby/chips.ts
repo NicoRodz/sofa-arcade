@@ -5,42 +5,31 @@ import { assistBadgeCanvas, chefCanvas } from '../art/chef';
 import { $ } from '../ui/dom';
 import { app, services } from '../shell/app-state';
 import { avatarCanvas, avatarKey, replay } from './chip-avatar';
+import { chipView } from '../screens/lobby/model';
+import { renderChip } from '../screens/lobby/view';
 
 export interface Chip {
-  el: HTMLDivElement;
-  av: Element;
-  nm: Element;
-  sub: Element;
-  num: Element;
+  el: HTMLDivElement; // the shell: games move it into their team columns; its content is rendered by lit (screens/lobby/view.ts) and nothing else writes there
   who: number;
   look: string; // avatarKey of what the .av shows ('' none / the old chef)
   making: boolean;
+  avatar: Node | null; // bound into .av: the same node between renders, so the idle animation never restarts
+  badge: Node | null; // the Ayudante sticker, beside the avatar
 }
 export const chips: Chip[] = [];
 let inTeams = false;
+
+const part = (c: Chip, sel: string) => c.el.querySelector(sel)!;
 
 export function initChips() {
   Array.from({ length: 8 }, (_v, i) => {
     const el = document.createElement('div');
     el.className = 'chip empty';
     el.style.setProperty('--c', chefOf(i).color);
-    el.innerHTML =
-      '<div class="av"></div><div><div class="nm"></div><div class="sub"></div></div><div class="num"></div><div class="mv" title="Pasar al otro equipo">⇄</div>';
     $('chips').appendChild(el);
-    chips.push({
-      el,
-      av: el.querySelector('.av')!,
-      nm: el.querySelector('.nm')!,
-      sub: el.querySelector('.sub')!,
-      num: el.querySelector('.num')!,
-      who: -1,
-      look: '',
-      making: false,
-    });
-  });
-  chips.forEach((c, i) => {
-    c.num.textContent = String(i + 1);
-    c.nm.textContent = 'Esperando…';
+    const c: Chip = { el, who: -1, look: '', making: false, avatar: null, badge: null };
+    chips.push(c);
+    renderChip(el, chipView(i, undefined, null), null, null);
   });
 }
 
@@ -48,51 +37,43 @@ export function renderChips() {
   const bySlot = new Map([...app.players.values()].map((p) => [p.info.slot % 8, p.info]));
   chips.forEach((c, i) => {
     const info = bySlot.get(i);
-    c.el.classList.toggle('empty', !info);
-    c.el.classList.toggle('gone', !!info && !info.connected);
+    const view = chipView(i, info, app.captainId);
     if (!info) {
       c.who = -1;
       c.look = '';
       c.making = false;
-      c.el.classList.remove('making', 'chef');
-      c.av.replaceChildren();
-      c.nm.textContent = 'Esperando…';
-      c.sub.textContent = '';
+      c.avatar = null;
+      c.badge = null;
+      renderChip(c.el, view, null, null);
       return;
     }
     const slotColor = chefOf(i).color,
       look = info.ap ? avatarKey(info.ap, slotColor) : '',
       making = !!info.customizing;
     const joined = c.who !== info.id;
-    if (joined || look !== c.look) {
+    const looked = joined || look !== c.look;
+    if (looked) {
       // a look that changes under a seated player (live creator updates) puffs; a new player pops the whole chip
-      c.el.classList.toggle('chef', !info.ap); // no look of its own: the menu shows a neutral face instead of Pizzas' chef
-      c.av.replaceChildren(info.ap ? avatarCanvas(info.ap, slotColor) : chefCanvas(i, 'idle', true));
-      if (!joined) replay(c.av, 'puff');
+      c.avatar = info.ap ? avatarCanvas(info.ap, slotColor) : chefCanvas(i, 'idle', true); // no look of its own: the menu shows a neutral face instead of Pizzas' chef
       c.look = look;
     }
+    const helper = view.classes.helper;
+    if (helper && !c.badge) {
+      const b = assistBadgeCanvas();
+      b.className = 'hbadge';
+      c.badge = b;
+    } else if (!helper) c.badge = null;
+    const hop = !joined && c.making && !making;
+    renderChip(c.el, view, c.avatar, c.badge);
+    if (looked && !joined) replay(part(c, '.av'), 'puff');
     if (joined) {
       c.who = info.id;
-      c.making = making;
       replay(c.el, 'pop');
-    } else if (c.making && !making) {
-      replay(c.av, 'hop'); // "Listo": a little jump and a short tone (the screen's own audio)
+    } else if (hop) {
+      replay(part(c, '.av'), 'hop'); // "Listo": a little jump and a short tone (the screen's own audio)
       services.ui('plink');
     }
     c.making = making;
-    const helper = !!info.assist,
-      badge = c.av.querySelector('.hbadge');
-    if (helper && !badge) {
-      const b = assistBadgeCanvas();
-      b.className = 'hbadge';
-      c.av.appendChild(b);
-    } else if (!helper && badge) badge.remove();
-    c.el.classList.toggle('helper', helper);
-    c.nm.textContent = (info.id === app.captainId ? '👑 ' : '') + info.name;
-    c.el.classList.toggle('making', making && info.connected);
-    if (!info.connected) c.sub.textContent = 'Desconectado';
-    else if (making) c.sub.innerHTML = '<span class="pen">✏️</span>armando su personaje…';
-    else c.sub.textContent = `${chefOf(i).name} · ${helper ? 'Ayudante' : 'listo'}`;
   });
 }
 
