@@ -6,7 +6,7 @@ import { paintLogo, paintTitle } from '../art/sofa-brand';
 import { catalog } from '../shell/catalog';
 import { renderMenu } from '../menu/view';
 import { $ } from '../ui/dom';
-import { diffPills, playersCount } from '../screens/lobby/model';
+import { diffPills, playersCount, setupVisible } from '../screens/lobby/model';
 import { renderDifficulty, renderPlayersHeading } from '../screens/lobby/view';
 import { app, connectedCount, pickedGame, setConfig } from '../shell/app-state';
 import { renderChips, showTeams } from './chips';
@@ -37,7 +37,7 @@ export function paintUi() {
     return;
   }
   // a game with nothing to configure (Arena) has no setup panel at all: the "Dificultad" box would be the only thing in it
-  $('setup').classList.toggle('off', !!pickedGame().lobby.noOptions);
+  $('setup').classList.toggle('off', !setupVisible(pickedGame().lobby));
   renderDifficulty(diffPills(app.config.difficulty));
   pickedGame().lobby.render();
   paintFocus();

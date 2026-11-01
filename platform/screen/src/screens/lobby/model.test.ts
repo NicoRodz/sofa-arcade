@@ -1,6 +1,6 @@
 import type { PublicPlayer } from '@pichi/core';
 import { describe, expect, it } from 'vitest';
-import { CAPTAIN_NOTICE, chipView, diffPills, joinUrl, playersCount, WAITING } from './model';
+import { CAPTAIN_NOTICE, chipView, diffPills, joinUrl, playersCount, setupVisible, WAITING } from './model';
 
 const p = (over: Partial<PublicPlayer> = {}): PublicPlayer => ({
   id: 7,
@@ -60,5 +60,12 @@ describe('lobby pills and join card data', () => {
     expect(joinUrl('https://x.cl/c')).toBe('https://x.cl/c');
     expect(playersCount(3)).toBe('3/8');
     expect(CAPTAIN_NOTICE).toBe('Capitán: elige desde tu teléfono');
+  });
+});
+
+describe('setupVisible', () => {
+  it('shows unless the game declares noOptions (Arena); a game that says nothing keeps its panel', () => {
+    expect(setupVisible({})).toBe(true);
+    expect(setupVisible({ noOptions: true })).toBe(false);
   });
 });

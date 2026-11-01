@@ -58,3 +58,6 @@ export const joinUrl = (url: string) => url.replace(/^http:\/\//, '');
 export const NO_URL = 'no se pudo obtener la URL';
 
 export const playersCount = (connected: number) => `${connected}/8`;
+
+/** The setup panel (difficulty + the game's rows) shows unless the game says it has nothing to configure (Arena). */
+export const setupVisible = (lobby: { noOptions?: true }) => !lobby.noOptions;
