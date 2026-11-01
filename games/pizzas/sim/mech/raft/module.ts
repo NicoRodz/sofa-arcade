@@ -72,6 +72,12 @@ export const raftModule: MechModule = {
     for (const p of g.players.values()) if (p.id !== actor.id && !p.ghost && Math.floor(p.x) === tx && Math.floor(p.y) === ty) on++;
     return on < cap;
   },
+  /** HAZARD_V3: the raft tile is 1 x 1 and a chef is 0.7 wide, so two chefs on it share the tile (no push) or `cap: 2` could never be reached. */
+  noCollide(g, a, b) {
+    if (!hz3Params(g).raft.cap) return false;
+    const t = g.grid[Math.floor(a.y)]?.[Math.floor(a.x)];
+    return t?.kind === 'floor' && t.mech === '=' && Math.floor(a.x) === Math.floor(b.x) && Math.floor(a.y) === Math.floor(b.y);
+  },
   beforeMove(g) {
     lanes(g).forEach((lane, i) => {
       const r = g.mech!.raft![i]!;

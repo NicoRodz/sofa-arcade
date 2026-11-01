@@ -117,7 +117,7 @@ describe('HAZARD_V3 raft: two chefs fit, the third waits', () => {
       ]);
       run(g, 12, up);
       expect(onRaft(g)).toBe(2);
-      run(g, 12, new Map([...up, [3, { x: 1, y: 0, a: 0, b: false }]]));
+      run(g, 12, new Map([[3, { x: 1, y: 0, a: 0, b: false }]]));
       expect(onRaft(g)).toBe(2);
       expect(Math.floor(g.players.get(3)!.x)).toBe(5);
     });
@@ -132,6 +132,39 @@ describe('HAZARD_V3 raft: two chefs fit, the third waits', () => {
     };
     expect([canEnter('easy'), canEnter('normal'), canEnter('hard')]).toEqual([true, false, false]);
   });
+});
+
+describe('HAZARD_V3 raft of map 31: a 1-tile lane, two chefs ride it and the third stays ashore', () => {
+  const make = (d: Difficulty): Game => {
+    const m = patchMap(fixedMap('31')!, d);
+    const g = createGame({ rows: m.rows, mapId: '31', mech: mechFlagsOf(m.mechanics), hazardsV3: true, difficulty: d, n: 3, countdownMs: 0 });
+    for (let i = 1; i <= 3; i++) addPlayer(g, i, i - 1, i - 1);
+    return g;
+  };
+  for (const d of ['normal', 'hard'] as const) {
+    it(`${d}: with the raft docked at the west shore, a queue of three leaves two aboard`, () => {
+      const g = make(d);
+      for (let i = 0; i < 2000 && !(g.mech!.raft![0]!.pos === 0 && g.mech!.raft![0]!.wait >= 85); i++) run(g, 1);
+      expect(g.mech!.raft![0]!.pos).toBe(0); // docked: its tile is (6, 4), next to the shore tile (5, 4)
+      put(g, 1, 5, 4);
+      put(g, 2, 4, 4);
+      put(g, 3, 5, 5); // (3, 4) is a counter: the third chef queues from the south-west corner of the dock
+      const east = new Map<number, Controls>([
+        [1, { x: 1, y: 0, a: 0, b: false }],
+        [2, { x: 1, y: 0, a: 0, b: false }],
+        [3, { x: 1, y: -1, a: 0, b: false }],
+      ]);
+      const aboard = () => [...g.players.values()].filter((p) => Math.floor(p.x) === 6 && Math.floor(p.y) === 4).map((p) => p.id);
+      run(g, 40, east);
+      expect(aboard()).toHaveLength(2);
+      run(g, 40, east); // the raft is still docked (90 ticks of pause): the chef left ashore pushes in vain
+      expect(g.mech!.raft![0]!.pos).toBe(0);
+      expect(aboard()).toHaveLength(2);
+      const left = [...g.players.values()].find((p) => !aboard().includes(p.id))!;
+      expect(Math.floor(left.x)).toBe(5);
+      expect(left.y).toBeLessThan(5); // it did reach the dock tile in front of the raft, it was not just slow
+    });
+  }
 });
 
 describe('HAZARD_V3 Bandeja on oil (map 28): the plate is lost on Hard only, and the ledger says so', () => {
