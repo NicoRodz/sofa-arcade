@@ -5,24 +5,12 @@
 // Decision (the brief says "new ingredients in the existing crates when possible"): the cheese crate ('3' on the maps) is the TOPPING crate. In a round
 // with a card it gives the topping of the card's recipe: cheese for a Margarita, pepperoni for a Pepperoni, mushroom for a Champiñón. A card has at most
 // ONE topping recipe, so no map needs a new tile. Maps without the '3' crate get cards with no topping (Marinara and Calzone).
+import type { Recipe } from './types';
+export type { Recipe } from './types';
 import type { Item } from '../round/state';
 import type { Tuning } from '@pichi/core';
 import { CASA_HAM, casaDish, casaMask } from './casa';
 
-export type Recipe =
-  | 'marinara'
-  | 'margarita'
-  | 'pepperoni'
-  | 'champinon'
-  | 'calzone'
-  | 'pepqueso'
-  | 'jamchamp'
-  | 'margfresca'
-  | 'calzonerel'
-  | 'nonna'
-  | 'blanca'
-  | 'casa'
-  | 'bandeja';
 export const RECIPES: readonly Recipe[] = [
   'marinara',
   'margarita',

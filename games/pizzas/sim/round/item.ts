@@ -1,0 +1,36 @@
+// Every thing a chef can hold or a counter can carry. A leaf: it imports nothing, so the types that mention items (sabotage, events, recipes) never loop back through state.ts.
+// raw2/cut2 = cheese (Margarita), raw3/cut3 = pepperoni, raw4/cut4 = mushroom (a round with a Carta del día: the cheese crate gives the card's topping). dishQ / dishP / dishM = a pizza that baked with cheese / pepperoni / mushroom, dishC = a folded calzone, dishPQ = pepperoni and cheese together (two topping crates), dishJM = ham and mushroom, dishQB = a baked Margarita garnished with basil (Margarita fresca), dishCR = a stuffed calzone (cheese and ham inside); raw5/cut5 = ham.
+// trash / trashBag exist only in a round with hazards on (sabotage): rubbish picked off the floor, and the bag a team throws.
+// burnt: a pizza that burnt in the oven (a round with `burn` on), taken on a plate: it cannot be delivered, it goes to the bin.
+export type Item =
+  | 'raw0'
+  | 'raw1'
+  | 'raw2'
+  | 'raw3'
+  | 'raw4'
+  | 'raw5'
+  | 'cut0'
+  | 'cut1'
+  | 'cut2'
+  | 'cut3'
+  | 'cut4'
+  | 'cut5'
+  | 'plate'
+  | 'dish'
+  | 'dishQ'
+  | 'dishP'
+  | 'dishM'
+  | 'dishPQ'
+  | 'dishJM'
+  | 'dishQB'
+  | 'dishCR'
+  | 'dishC'
+  | 'dirty'
+  | 'trash'
+  | 'trashBag'
+  | 'burnt'
+  | 'sauce'
+  | 'dishN'
+  | 'dishNB'
+  | 'dishB'
+  | `dishH${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7}`; // the Pizza de la casa with the upgrades of its mask (recipes/casa.ts)

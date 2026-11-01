@@ -10,12 +10,14 @@
 // Decision (the council gave two ways): no extinguisher item. A wall extinguisher would need a new station on all 20 maps and the validator; holding Picar is the
 // same verb the brief proposes as the fallback, and the art draws the extinguisher (a red cylinder in the chef's hands and a cloud of foam) while it happens.
 // Mirror: a spread ignites EVERY counter next to the fire (no tie-break between neighbours), so a reflected kitchen burns as the reflected kitchen.
+import type { Burn, Fire } from './types';
+export type { Burn, Fire } from './types';
 import type { Difficulty } from '@pichi/core';
 import type { Game, Station } from '../round/state';
 import type { SabotageMode } from '../sabotage-config';
 import { mechOnFire, mechOvenRate } from '../mech/loop';
-import { hazardParams, fireIsBig, type FireParams } from '../hazards/hazard-v2';
-import { fireDouseTick, newFireV2, registerDouse, type FireV2 } from '../hazards/fire-v2';
+import { hazardParams, fireIsBig } from '../hazards/hazard-v2';
+import { fireDouseTick, newFireV2, registerDouse } from '../hazards/fire-v2';
 
 export const GRACE_MS: Record<Difficulty, number> = { easy: 15_000, normal: 8_000, hard: 8_000 }; // from "ready" to "burnt"
 export const WARN_BEFORE_MS = 3000; // the warning beep comes this long before the pizza burns
@@ -23,20 +25,6 @@ export const FIRE_DELAY_MS = 5000; // from "burnt" to the fire
 export const FIRE_SPREAD_MS = 3000; // the fire jumps to the neighbours this often
 export const FIRE_RINGS = 2; // ... and stops after this many jumps
 export const DOUSE_MS = 3000; // of Picar to put one station out
-
-export interface Fire {
-  spreadAt: number;
-  rings: number;
-  big?: boolean; // v2: needs two chefs at once (fire-v2.ts)
-  spreadMs?: number; // v2: this fire's own jump interval and ring limit
-  maxRings?: number;
-}
-export interface Burn {
-  graceMs: number;
-  fire: boolean; // false: the pizza burns but the oven never catches fire
-  fires: (Fire | null)[]; // the active fire of each kitchen (index = team; coop has one), null when none: at most one per kitchen
-  v2?: FireV2 & { params(k: number): FireParams; chefs(k: number): number }; // HAZARD_V2 (createGame passes it; a bare createBurn is the old fire)
-}
 
 /** Fire exists from Normal up, and not under the Suave sabotage (the chaos cap: bags and banana-skins already fill that kitchen). */
 export const fireAllowed = (d: Difficulty, sabotage: SabotageMode | undefined, v2 = false): boolean =>

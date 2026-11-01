@@ -3,8 +3,10 @@
 // no-three-in-a-row rule. Everything comes from ONE stream sub-seeded by the round (`menu:<seed>`), never from the main RNG, and the sequence is a
 // function of the order's index alone: two kitchens of a versus round read the same list at their own pace, so their queues stay twins, and an order
 // that does not consume it (the birthday cake, the golden order) cannot shift the others.
+import type { Menu } from './types';
+export type { Menu } from './types';
 import type { Difficulty } from '@pichi/core';
-import { mulberry32, type Rng } from '@pichi/core';
+import { mulberry32 } from '@pichi/core';
 import { RECIPE_DEFS, type Recipe } from './defs';
 
 /** How many plates a round serves per difficulty (the card may hold fewer). */
@@ -37,14 +39,6 @@ export function menuRecipes(card: readonly Recipe[], d: Difficulty): Recipe[] {
   if (sig === undefined || cut.includes(sig) || (sig === 'bandeja' && size < 3)) return cut;
   cut[size - 1] = sig; // the last slot is the costliest kept plate
   return all.filter((r) => cut.includes(r));
-}
-
-export interface Menu {
-  recipes: readonly Recipe[];
-  marinaraPct: number;
-  rng: Rng; // the `menu` stream, advanced only while the sequence grows
-  seq: Recipe[]; // the plates drawn so far, by order index (shared by every kitchen)
-  taken: number[]; // per team id: orders served from the sequence
 }
 
 export function createMenu(recipes: readonly Recipe[], d: Difficulty, seed: number): Menu {
