@@ -1,17 +1,20 @@
 // The gentle rat announces itself (feel/rat.ts): a bouncing arrow over the rat, a dashed line to the counter it goes for (an arrow and a pulsing ring over that counter), an alarm
-// flash when it is about to arrive, and the prize when it is scared off. Exists only in a round with the magnet and the events on.
+// flash when it is about to arrive, and the prize when it is scared off. Exists only in a round with the magnet and the events on. A versus round has one rat per kitchen
+// (feel/rats.ts) and each one gets its own arrow, line and alarm.
 import type Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
 import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../env/grid';
 import type { Fx } from '@pichi/screen-kit/art/fx';
+import type { Rat } from '../../../sim/midround';
+import { ratOfTeam, ratsOf } from './rats';
 
 export class RatSignal {
   private g: Phaser.GameObjects.Graphics;
   private off: (() => void)[] = [];
-  private target = -1;
-  private alarm = 0; // ms left of the "about to arrive" flash
+  private target = new Map<number, number>(); // team -> the counter its rat is going for
+  private alarm = new Map<number, number>(); // team -> ms left of the "about to arrive" flash
   private t = 0;
   constructor(
     scene: Phaser.Scene,
@@ -26,28 +29,28 @@ export class RatSignal {
     };
     this.off.push(
       bus.on('rat:target', (e) => {
-        this.target = e.station;
-        this.alarm = 0;
+        this.target.set(e.team ?? 0, e.station);
+        this.alarm.set(e.team ?? 0, 0);
       }),
     );
     this.off.push(
       bus.on('rat:near', (e) => {
-        this.alarm = 900;
+        this.alarm.set(e.team ?? 0, 900);
         const p = stationPx(e.station);
         if (p) fx.ring(p.x, p.y, 0xd7263d, 0.35, 1.6);
       }),
     );
     for (const k of ['rat:steal', 'rat:scared', 'rat:gone'] as const)
       this.off.push(
-        bus.on(k, () => {
-          this.target = -1;
-          this.alarm = 0;
+        bus.on(k, (e) => {
+          this.target.set((e as { team?: number }).team ?? 0, -1);
+          this.alarm.set((e as { team?: number }).team ?? 0, 0);
         }),
       );
     this.off.push(
       bus.on('rat:scared', (e) => {
         if (!e.bonus) return;
-        const r = game.mid?.rat;
+        const r = ratOfTeam(game, e.team ?? 0);
         if (r) fx.float(OX + r.x * TILE, OY + r.y * TILE - TILE * 1.4, `+${e.bonus}`, C.cheese, 46);
       }),
     );
@@ -68,11 +71,15 @@ export class RatSignal {
   update(dtMs: number) {
     const { g, game } = this;
     this.t += dtMs;
-    this.alarm = Math.max(0, this.alarm - dtMs);
+    for (const [team, ms] of this.alarm) this.alarm.set(team, Math.max(0, ms - dtMs));
     g.clear();
-    const r = game.mid?.rat;
-    if (!game.magnet || !r || r.scared || game.over) return;
+    if (!game.magnet || game.over) return;
     const bounce = Math.abs(Math.sin(this.t / 220)) * 10;
+    for (const [team, r] of ratsOf(game)) if (!r.scared) this.draw(team, r, bounce);
+  }
+
+  private draw(team: number, r: Rat, bounce: number) {
+    const { g, game } = this;
     const rx = OX + r.x * TILE,
       ry = OY + r.y * TILE;
     // over the rat; when a chef stands right above it the arrow would cover that chef's name tag, so it points up from below instead
@@ -81,7 +88,8 @@ export class RatSignal {
     );
     if (covers) this.arrow(rx, ry + TILE * 0.5 + bounce, 15, 0.95, true);
     else this.arrow(rx, ry - TILE * 0.62 - bounce, 15, 0.95);
-    const s = this.target >= 0 && r.state === 'seek' ? game.stations[this.target] : null;
+    const target = this.target.get(team) ?? -1;
+    const s = target >= 0 && r.state === 'seek' ? game.stations[target] : null;
     if (!s || !s.item) return;
     const tx = OX + (s.tx + 0.5) * TILE,
       ty = OY + (s.ty + 0.5) * TILE;
@@ -97,7 +105,7 @@ export class RatSignal {
         .lineTo(rx + (tx - rx) * b, ry + (ty - ry) * b)
         .strokePath();
     }
-    const flash = this.alarm > 0 ? 0.5 + 0.5 * Math.sin(this.t / 55) : 0.55 + 0.25 * Math.sin(this.t / 160);
+    const flash = (this.alarm.get(team) ?? 0) > 0 ? 0.5 + 0.5 * Math.sin(this.t / 55) : 0.55 + 0.25 * Math.sin(this.t / 160);
     g.lineStyle(8, hexNum(C.danger), flash).strokeRoundedRect(OX + s.tx * TILE + 3, OY + s.ty * TILE + 3, TILE - 6, TILE - 6, 14);
     this.arrow(tx, ty - TILE * 0.5 - bounce, 13, 0.9); // over the counter it wants
   }

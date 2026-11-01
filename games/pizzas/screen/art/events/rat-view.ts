@@ -8,11 +8,8 @@ import { foodKey, ITEM_KIND } from '../food';
 import type { Fx } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';
 import { ratLift } from '../feel/rat-dodge';
+import { ratOfTeam, ratsOf } from '../feel/rats';
 import type { Rat } from '../../../sim/midround';
-
-/** The rats on the floor by team: coop has the one (team 0), a versus round with VERSUS_V3 one per kitchen. */
-const ratsOf = (g: Game): [number, Rat][] =>
-  g.versus ? (g.mid?.rats ?? []).flatMap((m, team): [number, Rat][] => (m.rat ? [[team, m.rat]] : [])) : g.mid?.rat ? [[0, g.mid.rat]] : [];
 
 export class RatView {
   private off: (() => void)[] = [];
@@ -43,7 +40,7 @@ export class RatView {
       this.fx.float(p.x, p.y - TILE * 0.7, '¡Se lo llevó!', C.danger, 38);
     });
     on('rat:scared', (e) => {
-      const r = ratsOf(this.game).find(([t]) => t === (e.team ?? 0))?.[1];
+      const r = ratOfTeam(this.game, e.team ?? 0);
       if (!r) return;
       const p = { x: OX + r.x * TILE, y: OY + r.y * TILE };
       this.fx.starBurst(p.x, p.y - TILE * 0.3, 7);
@@ -75,7 +72,7 @@ export class RatView {
     v.lastX = x;
     v.bob += dtMs * (r.scared ? 0.05 : 0.026);
     v.img
-      .setPosition(x, y - Math.abs(Math.sin(v.bob)) * 5 - ratLift(this.game))
+      .setPosition(x, y - Math.abs(Math.sin(v.bob)) * 5 - ratLift(this.game, team))
       .setFlipX(v.face < 0)
       .setDepth(100 + y)
       .setAngle(Math.sin(v.bob) * 3 + (r.scared ? 8 * v.face : 0));
