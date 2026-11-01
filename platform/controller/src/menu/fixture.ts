@@ -43,7 +43,7 @@ export const snapshot = (over: Partial<MenuSnapshot> = {}): MenuSnapshot => ({
       groups: [
         {
           id: 'rec',
-          label: 'Recomendados para 3',
+          label: 'Para 3',
           items: [
             { id: '3', label: 'Sótano', players: '2-4', stars: 1, enabled: true },
             { id: '20', label: 'El río', players: '2-4', stars: 2, enabled: true },
@@ -62,7 +62,12 @@ export const snapshot = (over: Partial<MenuSnapshot> = {}): MenuSnapshot => ({
         },
         { id: 'series', label: 'Carta larga', items: [{ id: '20', label: 'El río', players: '2-4', stars: 2, enabled: true }] },
         { id: 'taller', label: 'Taller', items: [{ id: '29', label: 'Amasadora', players: '2-4', stars: 2, enabled: true }] },
-        { id: 'plain', label: 'Sin dinámica', items: [{ id: '1', label: 'Cocina Grande', players: '2-4', stars: 2, enabled: true }] },
+        { id: 'plain', label: 'Simples', items: [{ id: '1', label: 'Cocina Grande', players: '2-4', stars: 2, enabled: true }] },
+        {
+          id: 'others',
+          label: 'Otros (1)',
+          items: [{ id: '4', label: 'Banquete', players: '6-8', stars: 3, enabled: false, reason: 'hasta 8 jugadores' }],
+        },
       ],
     },
   ],

@@ -9,5 +9,8 @@
 #cmenu .cm-card.sel em { color: var(--tomato2); }
 #cmenu .cm-card.sel .cm-st { color: var(--tomato2); }
 .cm-extras { margin-top: 2px; }
-.cm-tabs { flex-wrap: wrap; } /* five tabs (Recomendados, Clásicos, Carta larga, Taller, Sin dinámica) do not fit one line at 320px */
+/* Map groups as one-line chips: a label never breaks (nowrap) and never shrinks below its text (auto min-width); chips that do not fit one row go to the next. */
+.cm-tabs { flex-wrap: wrap; gap: 6px; }
+#cmenu .cm-tabs .cm-opt { flex: 1 1 auto; min-width: auto; min-height: 44px; padding: 6px 9px; font-size: 15px; white-space: nowrap; overflow-wrap: normal; }
+.cm-fitnote { font-size: 14px; font-weight: 700; line-height: 1.2; padding: 4px 2px; color: rgba(255,244,224,.8); }
 .cm-body[data-view=confirm] { justify-content: center; align-items: stretch; gap: 14px; }

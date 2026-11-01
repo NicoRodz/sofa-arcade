@@ -52,19 +52,27 @@ describe('the list (S1)', () => {
 describe('the map picker (S2)', () => {
   it('tabs for the groups, the cards of the open one, locked ones with their reason, extras below', () => {
     const html = menuHtml(openMaps(ui()), 0);
-    expect(count(html, /data-cm="tab"/g)).toBe(5);
-    expect(html).toContain('>Recomendados para 3<');
-    expect(html).toContain('>Sin dinámica<');
+    expect(count(html, /data-cm="tab"/g)).toBe(6);
+    expect(html).toContain('>Otros (1)<');
+    expect(html).toContain('>Para 3<');
+    expect(html).toContain('>Simples<');
     expect(count(html, /class="cm-card/g)).toBe(4);
     expect(html).toMatch(/cm-card off[^>]*data-val="4" data-en="0" data-why="necesita 6\+ jugadores"/);
     expect(html).toMatch(/data-row="map" data-val="auto"/);
     expect(html).toContain('>Listo<');
   });
-  it('the Sin dinámica tab lists the plain maps and nothing else', () => {
+  it('the Simples tab lists the plain maps and nothing else', () => {
     const html = menuHtml(setTab(openMaps(ui()), 'plain'), 0);
     expect(count(html, /class="cm-card/g)).toBe(1);
     expect(html).toContain('Cocina Grande');
     expect(html).toMatch(/data-cm="tab" data-val="plain"[^>]*aria-selected="true"/);
+  });
+  it('a page of only locked cards says so instead of offering "Aptos para N" (the filter would empty it); the other pages keep the filter', () => {
+    const others = menuHtml(setTab(openMaps(ui()), 'others'), 0);
+    expect(others).toContain('No sirven para 3 jugadores · toca uno para ver por qué');
+    expect(others).not.toContain('Aptos para');
+    expect(others).not.toContain('data-cm="fit"');
+    expect(menuHtml(openMaps(ui()), 0)).toContain('Aptos para 3 jugadores');
   });
   it('the other tab shows the other cards', () => {
     const html = menuHtml(setTab(openMaps(ui()), 'series'), 0);

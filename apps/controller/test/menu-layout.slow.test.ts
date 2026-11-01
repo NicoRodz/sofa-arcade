@@ -149,6 +149,52 @@ describe('Captain menu layout', () => {
   }, 120_000);
 });
 
+// The map groups are one-line chips: no label breaks into several lines (the old tabs split words syllable by syllable) or spills out of its chip or the screen,
+// and the whole strip stays within two rows. Real labels of a 10-player lobby, the widest ones.
+const TABS_MEASURE = `(() => {
+  const bad = [], R = (e) => e.getBoundingClientRect(), strip = document.querySelector('.cm-tabs');
+  if (!strip) return { bad: ['no tab strip'], n: 0 };
+  const chips = [...strip.querySelectorAll('[data-cm=tab]')], sr = R(strip), tops = new Set();
+  for (const c of chips) {
+    const label = c.textContent.trim(), r = R(c), range = document.createRange();
+    range.selectNodeContents(c);
+    const lines = new Set([...range.getClientRects()].map((q) => Math.round(q.top))).size;
+    if (lines !== 1) bad.push('"' + label + '" breaks into ' + lines + ' lines');
+    if (c.scrollWidth > c.clientWidth + 1) bad.push('"' + label + '" overflows its chip');
+    if (r.left < sr.left - 0.5 || r.right > sr.right + 0.5 || r.right > innerWidth + 0.5) bad.push('"' + label + '" leaves the strip/screen');
+    tops.add(Math.round(r.top));
+  }
+  if (tops.size > 2) bad.push('tabs take ' + tops.size + ' rows');
+  if (strip.scrollWidth > strip.clientWidth + 1) bad.push('strip scrolls sideways');
+  return { bad, n: chips.length };
+})()`;
+const TAB_LABELS: Record<string, string> = { rec: 'Para 10', plain: 'Simples', others: 'Otros (23)' };
+const TAB_VIEWPORTS = [320, 360, 390].map((w) => ({ name: `${w}x740`, w, h: 740, insets: [{ top: 0, right: 0, bottom: 0, left: 0 }] }));
+
+describe('Captain menu map tabs', () => {
+  for (const wide of [false, true])
+    it(`${wide ? 'wide font: ' : ''}every tab label stays on one line inside its chip, at ${wide ? '360 and 390' : '320, 360 and 390'} px portrait`, async () => {
+      const snap = snapshot();
+      snap.rows = snap.rows.map((r) =>
+        r.groups ? { ...r, groups: r.groups.map((g) => ({ ...g, label: TAB_LABELS[g.id] ?? g.label })) } : r,
+      );
+      const bad: string[] = [];
+      await s.eval(INTRO_SEEN);
+      await s.load(open('tabs', '', snap).sc);
+      if (wide) await s.eval(WIDE);
+      await s.eval(tapEl('[data-cm=maps]'));
+      for (const v of wide ? TAB_VIEWPORTS.slice(1) : TAB_VIEWPORTS) {
+        // Verdana at 320 px needs a third row: legible, but out of the two-row promise
+        await s.setViewport(v, v.insets[0]!);
+        await sleep(40);
+        const m = await s.eval<{ bad: string[]; n: number }>(TABS_MEASURE);
+        expect(m.n, v.name).toBe(6);
+        for (const b of m.bad) bad.push(`${v.name}: ${b}`);
+      }
+      expect(bad).toEqual([]);
+    }, 60_000);
+});
+
 describe('Captain menu behaviour', () => {
   const sent = () => s.eval<{ t: string; [k: string]: unknown }[]>(`(window.__sent || []).filter((m) => m.t !== 'ping')`);
   const fresh = async (over = {}) => {
