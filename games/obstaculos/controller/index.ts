@@ -1,0 +1,1 @@
+export { obstaculosController } from './game';

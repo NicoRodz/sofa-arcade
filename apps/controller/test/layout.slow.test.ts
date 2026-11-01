@@ -2,7 +2,7 @@
 // (touch emulation) with getBoundingClientRect. Fails when a label lands on a control, text is cut or leaves the screen,
 // something is pressable below 44x44 CSS px, or a control ends up under the notch / home indicator.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ASSIST_CARD_LINES, ASSIST_FOR, ASSIST_GIVES, assistLabel, assistToast } from '../src/assist-help';
+import { ASSIST_CARD_LINES, ASSIST_FOR, ASSIST_GIVES, assistLabel, assistToast } from '../../../games/pizzas/controller/assist';
 import { violations } from './checks';
 import { ORIENTATIONS, SCENARIOS, VIEWPORTS, insetsName, openSession, type Box, type Session } from './harness';
 

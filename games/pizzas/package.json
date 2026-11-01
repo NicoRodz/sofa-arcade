@@ -11,12 +11,14 @@
     "./sim/generate": "./sim/generate/index.ts",
     "./sim/validate": "./sim/validate/index.ts",
     "./screen/art/food": "./screen/art/food/index.ts",
+    "./controller": "./controller/index.ts",
     "./*": "./*.ts"
   },
   "scripts": {
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@pichi/controller-kit": "*",
     "@pichi/core": "*",
     "@pichi/screen-kit": "*",
     "phaser": "^4.2.1"

@@ -1,5 +1,6 @@
 // Modo Ayudante, explained on the phone: the switch says what it gives and when it helps, turning it on confirms with a short notice, and
-// "¿Qué es?" opens a three-line card (also for the Captain, whose D-pad the overlay keeps clear of). Pure texts here; the DOM is built once at load.
+// "¿Qué es?" opens a three-line card (also for the Captain, whose D-pad the overlay keeps clear of). The texts are pure (the tests import them in node); the DOM is built by createAssist.
+import type { ControllerHost } from '@pichi/controller-kit/contract';
 export const ASSIST_TITLE = 'Modo Ayudante';
 export const ASSIST_GIVES = 'Más alcance, no resbalas, picas con un toque';
 export const ASSIST_FOR = 'Para niños o quien recién empieza';
@@ -57,7 +58,7 @@ export function mountAssistHelp() {
   toast.id = 'assisttoast';
   toast.setAttribute('role', 'status');
   document.body.append(card, toast);
-  // pointerup, not click (see the how-to card in main.ts)
+  // pointerup, not click (see the how-to card of the platform)
   q.addEventListener('pointerup', (e) => {
     e.preventDefault();
     setAssistHelp(true);
@@ -65,4 +66,25 @@ export function mountAssistHelp() {
   card.addEventListener('pointerup', () => setAssistHelp(false));
 }
 
-if (typeof document !== 'undefined') mountAssistHelp(); // on import: main.ts runs after the page markup exists, and the tests import the texts in node
+/**
+ * Ayudante (sim/assist.ts): one switch for this player, in the lobby. The phone shows what it asked for at once and the relay's echo ('assist' with this id) confirms it,
+ * also after a reconnect (the relay keeps the choice with the slot).
+ */
+export function createAssist(host: ControllerHost) {
+  let on = false;
+  mountAssistHelp();
+  const show = (v: boolean) => {
+    on = v;
+    byId('assist').classList.toggle('on', v);
+    byId('assist').setAttribute('aria-pressed', String(v));
+    byId('assistlbl').textContent = assistLabel(v);
+  };
+  byId('assist').addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    if (host.phase() !== 'lobby') return;
+    show(!on);
+    host.send({ t: 'assist', on });
+    announceAssist(on);
+  });
+  return { show };
+}
