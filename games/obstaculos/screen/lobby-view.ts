@@ -3,7 +3,7 @@
 import { sendMsg } from '@pichi/screen-kit/net';
 import { app, connectedCount, setConfig } from '@pichi/screen-kit/shell';
 import { showTeams } from '@pichi/screen-kit/lobby';
-import { $, esc, plural, setHtml } from '@pichi/screen-kit/ui';
+import { $, plural } from '@pichi/screen-kit/ui';
 import {
   DIFFICULTY_PARAMS,
   LEVELS,
@@ -14,10 +14,11 @@ import {
   levelCompat,
   resolveLevel,
   toModeOptions,
-  type GameMode,
   type ObstOptions,
 } from '../index';
 import { camp } from './campaign-link';
+import { levelCards, modePills } from './lobby/rows-model';
+import { renderLevels, renderModes } from './lobby/rows-view';
 import { biomeColor, obstOpts, run } from './run-state';
 
 function renderObstLobby() {
@@ -31,28 +32,8 @@ function renderObstLobby() {
     sendMsg({ t: 'config', ...app.config });
   }
   const o = obstOpts();
-  setHtml(
-    'obstmodes',
-    (['chain', 'free'] as GameMode[])
-      .map(
-        (m) => `<button class="pill ${m === o.tether ? 'sel' : ''}" data-tether="${m}" title="${MODE_BLURB[m]}">${MODE_LABEL[m]}</button>`,
-      )
-      .join(''),
-  );
-  const cells = LEVELS.map((l, i) => {
-    const c = levelCompat(l, n, o.tether);
-    return (
-      `<button class="mc ${c.ok ? 'rec' : 'blk'} ${o.level === i + 1 ? 'sel' : ''}" data-level="${i + 1}"><span class="t"><b>${i + 1}</b>${esc(l.name)}</span>` +
-      (c.ok
-        ? `<span class="m"><i class="bio" style="background:${biomeColor[l.biome]}"></i>${l.players.min}-${l.players.max}<span class="st">${'★'.repeat(l.stars)}</span></span>`
-        : `<span class="why">${c.reason}</span>`) +
-      '</button>'
-    );
-  });
-  cells.push(
-    `<button class="mc rnd ${o.level === RANDOM_LEVEL ? 'sel' : ''}" data-level="0"><span class="t">Aleatorio</span><span class="m">con semilla</span></button>`,
-  );
-  setHtml('obstlevels', cells.join(''));
+  renderModes(modePills(o.tether));
+  renderLevels(levelCards(n, o.tether, o.level, (b) => biomeColor[b]));
   $('obstfor').textContent = `· para ${plural(n, 'jugador', 'jugadores')}`;
   $('oseedrow').classList.toggle('off', o.level !== RANDOM_LEVEL);
   $('oseed').textContent = String(app.config.seed);

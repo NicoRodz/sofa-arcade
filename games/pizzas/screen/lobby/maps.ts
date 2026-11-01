@@ -1,18 +1,18 @@
 // The Pizzas lobby's map panel: the cards, the preview, the seed, what the choice means for this group and the "can we start" state of the button.
 import { params } from '@pichi/core';
 import { app } from '@pichi/screen-kit/shell';
-import { $, esc, setHtml } from '@pichi/screen-kit/ui';
+import { $ } from '@pichi/screen-kit/ui';
 import { generate } from '../../sim/generate';
-import type { MapDef } from '../../sim/maps/types';
-import { coopLobbyView, fixedMap, lobbyGroupOfMap, mapFeatures, mapStatus, type MapStatus, recommendedForN } from '../../sim/maps';
+import { coopLobbyView, fixedMap, lobbyGroupOfMap, mapStatus, recommendedForN } from '../../sim/maps';
 import { VERSUS_AUTO, VERSUS_RANDOM, teamSizes, versusLobbyMaps } from '../../sim/versus/lobby';
 import { versusMap } from '../../sim/versus/maps';
 import { drawMiniMap } from '../art/dom/ui';
+import { mapItems, type CardRow } from './maps-model';
+import { renderMapItems } from './maps-view';
 import { startProblem, versusGenerated } from './sync';
 import { pz } from '../state';
 
 let lastMapKey = '';
-type CardRow = { map: Pick<MapDef, 'id' | 'name' | 'nMin' | 'nMax' | 'stars' | 'rows'>; status: MapStatus };
 
 export function renderMapPanel(vs: boolean, n: number) {
   // "Recomendados para N" tops the home page: a recommended map picked from it keeps the page; any other map off the classics shows its own set
@@ -22,46 +22,9 @@ export function renderMapPanel(vs: boolean, n: number) {
   const sizes = teamSizes(app.config.teams);
   const rows: CardRow[] = vs ? versusLobbyMaps(sizes) : [];
   const view = vs ? null : coopLobbyView(n, pz.mapGroup, rec, app.config.map, pz.showOthers); // a recommended map shows once, under its label, never again in the list
-  const card = ({ map, status }: CardRow, star = false) => {
-    const f = mapFeatures(map.rows);
-    const cls = `mc${star ? ' top' : ''} ${status.state === 'recommended' ? 'rec' : status.state === 'warn' ? 'warn' : 'blk'} ${map.id === app.config.map ? 'sel' : ''}`;
-    const tags = `${f.cheese ? '<i class="tag" title="Queso: Margarita">Q</i>' : ''}${f.sink ? '<i class="tag l" title="Lavado de platos">L</i>' : ''}`;
-    return `<button class="${cls}" data-map="${map.id}"><span class="t"><b>${map.id}</b>${esc(map.name)}</span><span class="m">${map.nMin}-${map.nMax}<span class="st">${'★'.repeat(map.stars)}</span>${tags}</span>${status.state === 'recommended' ? '' : `<span class="why">${status.reason}</span>`}</button>`;
-  };
   // Coop: the maps that cannot be picked for this group fold into "Otros mapas (N)" at the end (a click unfolds them; the selected one never hides)
   const { top, shown: listed, folded, unfolded } = view ?? { top: [], shown: rows, folded: [], unfolded: false };
-  // "Recomendados para N" is one band of up to three cards under its label; the rest of the page flows next to it
-  const cards = [
-    ...(top.length
-      ? [`<div class="band"><div class="grp">Recomendados para ${n}</div>${top.map((r) => card(r, true)).join('')}</div>`]
-      : []),
-    ...listed.map((r) => card(r)),
-  ];
-  const others = folded.length
-    ? [
-        `<button class="mc special" data-map="group" data-to="others"><span class="t">${unfolded ? '◂ Ocultar otros' : `Otros mapas (${folded.length}) ▸`}</span><span class="m">no sirven con ${n}</span></button>`,
-      ]
-    : [];
-  const special = (
-    vs
-      ? [
-          [VERSUS_AUTO, 'Aleatorio', 'de los que caben'],
-          [VERSUS_RANDOM, 'Mapa generado', 'semilla nueva'],
-        ]
-      : pz.mapGroup !== 'classic'
-        ? [['group', '◂ Inicio', 'recomendados y clásicos', 'classic']]
-        : [
-            ['auto', 'Aleatorio', 'de los ideales'],
-            ['random', 'Mapa generado', 'semilla nueva'],
-            ['group', 'Carta larga ▸', 'platos nuevos', 'series'],
-            ['group', 'Taller ▸', 'mecánicas nuevas', 'taller'],
-            ['group', 'Sin dinámica ▸', 'los 6 simples', 'plain'],
-          ]
-  ).map(
-    ([id, label, sub, to]) =>
-      `<button class="mc special ${id === app.config.map ? 'sel' : ''}" data-map="${id}"${to ? ` data-to="${to}"` : ''}><span class="t">${label}</span><span class="m">${sub}</span></button>`,
-  );
-  setHtml('maps', [...cards, ...special, ...others].join(''));
+  renderMapItems(mapItems({ vs, n, selected: app.config.map, page: pz.mapGroup, top, shown: listed, folded, unfolded }));
   $('mapfor').textContent = vs && sizes.length ? `· para ${sizes.join(' contra ')}` : `· para ${n} ${n === 1 ? 'jugador' : 'jugadores'}`;
   const rand = app.config.map === 'random' || app.config.map === VERSUS_RANDOM;
   $('seedrow').classList.toggle('off', !rand);

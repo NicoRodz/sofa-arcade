@@ -10,10 +10,11 @@ import { versusMap } from '../../sim/versus/maps';
 import { isVersusChoice, stepChoice, teamSizes, versusAvailability, versusMapStatus } from '../../sim/versus/lobby';
 import { chips, showTeams } from '@pichi/screen-kit/lobby';
 import { app, connectedCount, setConfig } from '@pichi/screen-kit/shell';
-import { $, esc, setHtml } from '@pichi/screen-kit/ui';
+import { $ } from '@pichi/screen-kit/ui';
 import { renderMapPanel } from './maps';
 import { moveToTeam, setEvents, setMutate, setMode, setSabotage, shuffleTeams, syncLobby } from './sync';
 import { renderEvents, renderMutate, renderSabotage, renderTeams } from './teams';
+import { renderModePills } from './teams-view';
 import { connectedN, gameDef, isVersus, modeNow, pz } from '../state';
 
 const MODE_PILL: Partial<Record<ModeId, string>> = { coop: 'Cooperativo', versus: 'Versus' };
@@ -30,14 +31,17 @@ export function renderLobby() {
   const vs = syncLobby(n);
   const def = gameDef();
   $('modebox').classList.toggle('off', !hasModeChoice(def));
-  setHtml(
-    'modes',
-    selectableModes(def)
-      .map((m) => {
-        const av = m.id === 'versus' ? versusAvailability(m, connectedCount()) : { ok: true, reason: '' };
-        return `<button class="pill ${m.id === app.config.modeId ? 'sel' : ''} ${av.ok ? '' : 'dis'}" data-mode="${m.id}" title="${esc(av.ok ? m.label : av.reason)}">${esc(MODE_PILL[m.id] ?? m.label)}</button>`;
-      })
-      .join(''),
+  renderModePills(
+    selectableModes(def).map((m) => {
+      const av = m.id === 'versus' ? versusAvailability(m, connectedCount()) : { ok: true, reason: '' };
+      return {
+        id: m.id,
+        label: MODE_PILL[m.id] ?? m.label,
+        title: av.ok ? m.label : av.reason,
+        selected: m.id === app.config.modeId,
+        disabled: !av.ok,
+      };
+    }),
   );
   showTeams(vs);
   if (vs) renderTeams();
@@ -114,13 +118,15 @@ export function initLobbyView() {
     const mode = selectableModes(gameDef()).find((m) => m.id === id);
     if (mode) setMode(mode.id);
   });
-  $('shuffle').addEventListener('click', shuffleTeams);
-  $('lock').addEventListener('click', () => {
-    pz.teamNotice = '';
-    setConfig({ teamsLocked: !app.config.teamsLocked });
-  });
+  // the team bar's buttons are drawn by lit (renderTeambar replaces the platform's static ones on its first render): one delegated handler survives that
   $('teambar').addEventListener('click', (e) => {
-    const opt = (e.target as HTMLElement).closest<HTMLElement>('[data-opt]')?.dataset.opt;
+    const t = e.target as HTMLElement;
+    if (t.closest('#shuffle')) return shuffleTeams();
+    if (t.closest('#lock')) {
+      pz.teamNotice = '';
+      return setConfig({ teamsLocked: !app.config.teamsLocked });
+    }
+    const opt = t.closest<HTMLElement>('[data-opt]')?.dataset.opt;
     if (opt) setConfig({ modeOptions: { ...app.config.modeOptions, [opt]: app.config.modeOptions[opt] !== true } });
   });
   $('teams').addEventListener('click', (e) => {
