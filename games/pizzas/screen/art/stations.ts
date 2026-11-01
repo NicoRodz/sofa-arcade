@@ -10,6 +10,7 @@ import { PANTRY_EVERY_MS, PANTRY_MAX } from '../../sim/versus/versus';
 import { canFold, isBaking } from '../../sim/recipes/sim';
 import { attachSaucepot, updateSaucepot } from './env/sauce-view';
 import { ovenKinds } from './food/recipes';
+import { windowArrow } from './window-arrow';
 
 export function place(scene: Phaser.Scene, key: string, x: number, y: number, k = 1): Phaser.GameObjects.Image {
   const t = texSize(key)!;
@@ -100,23 +101,7 @@ export class StationViews {
     } else if (st.kind === 'saucepot') attachSaucepot(s, v, Bar, place);
     else if (st.kind === 'window') {
       v.bell = place(s, 'bell', cx, cy + TILE * 0.26, 0.9).setDepth(d - 2);
-      const dir = this.openSide(st);
-      if (dir) {
-        const arrow = place(s, 'arrow', cx + dir[0] * TILE, cy + dir[1] * TILE, 0.8)
-          .setRotation(Math.atan2(-dir[1], -dir[0]))
-          .setAlpha(0.85)
-          .setDepth(2);
-        v.arrow = arrow;
-        s.tweens.add({
-          targets: arrow,
-          x: arrow.x - dir[0] * TILE * 0.22,
-          y: arrow.y - dir[1] * TILE * 0.22,
-          duration: 520,
-          yoyo: true,
-          repeat: -1,
-          ease: 'sine.inOut',
-        });
-      }
+      v.arrow = windowArrow(s, this.game, st, cx, cy, place);
     } else if (st.kind === 'dirty') {
       v.dirtyStack = this.stack(foodKey('tray_dirty'), cx, cy + TILE * 0.12, d);
       v.badge = makeText(s, cx + TILE * 0.3, cy - TILE * 0.3, '', { size: 30, color: C.cream, depth: 3000 });
@@ -168,26 +153,6 @@ export class StationViews {
         .setDepth(depth - 2 + i * 0.01)
         .setVisible(false),
     );
-  }
-
-  private isCave(x: number, y: number): boolean {
-    return !!this.game.caves?.at.some((c) => c[0] === x && c[1] === y);
-  }
-
-  /** The side of a window that is open floor (where the arrow points from); null when the only floor beside it is a rat cave (HAZARD_V3 map 15): the arrow would cover the hole. */
-  private openSide(st: Station): [number, number] | null {
-    let cave = false;
-    for (const [dx, dy] of [
-      [-1, 0],
-      [1, 0],
-      [0, -1],
-      [0, 1],
-    ] as const)
-      if (this.game.grid[st.ty + dy]?.[st.tx + dx]?.kind === 'floor') {
-        if (!this.isCave(st.tx + dx, st.ty + dy)) return [dx, dy];
-        cave = true;
-      }
-    return cave ? null : [0, 1];
   }
 
   stationAt(idx: number) {

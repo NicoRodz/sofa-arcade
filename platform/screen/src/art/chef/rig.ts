@@ -28,6 +28,7 @@ export interface ChefState {
   immune?: boolean; // sabotage: rubbish cannot make it slip now (it blinks)
   assist?: boolean; // Ayudante: wears the propeller
   skate?: boolean; // on ice: no steps, arms out, leaning into the slide
+  tagLift?: number; // logical px the name plate sits lower (two chefs on one tile stack their plates)
 }
 
 type Face = 'down' | 'side' | 'up';
@@ -192,10 +193,6 @@ export class Chef {
       this.tag.setTexture(k);
     }
   }
-  /** Moves the name plate down by `dy` logical px (two chefs sharing one tile stack their plates instead of overlapping). */
-  setTagLift(dy: number) {
-    this.tag.y = ANCHORS.tagY + dy;
-  }
   celebrate() {
     this.happyT = 900;
     this.jumpT = 0;
@@ -225,6 +222,7 @@ export class Chef {
       dyp = Number.isNaN(this.ly) ? 0 : s.y - this.ly;
     this.lx = s.x;
     this.ly = s.y;
+    this.tag.y = ANCHORS.tagY + (s.tagLift ?? 0);
     const speed = dt > 0 ? Math.hypot(dxp, dyp) / dt / TILE : 0;
     const moving = speed > 0.7 && s.action === 'none';
     const skating = moving && !!s.skate; // the feet do not walk on ice: they glide

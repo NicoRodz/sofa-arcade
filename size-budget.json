@@ -23,7 +23,7 @@
   "games/obstaculos/validator/validate.ts": { "max": 467, "until": "2027-03-31" },
   "games/pizzas/screen/art/hud.ts": { "max": 352, "until": "2027-03-31" },
   "games/pizzas/screen/art/sabotage.ts": { "max": 390, "until": "2027-03-31" },
-  "games/pizzas/screen/art/stations.ts": { "max": 421, "until": "2027-03-31" },
+  "games/pizzas/screen/art/stations.ts": { "max": 398, "until": "2027-03-31" },
   "games/pizzas/screen/art/versus-hud.ts": { "max": 451, "until": "2027-03-31" },
   "games/pizzas/screen/art/world.ts": { "max": 361, "until": "2027-03-31" },
   "games/pizzas/sim/assist.test.ts": { "max": 556, "until": "2027-03-31" },
