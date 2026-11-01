@@ -1,11 +1,13 @@
 // The part of the screen the menu and every lobby share: the logo, the QR + room code, the connected players and the difficulty pills.
 // The rest of a lobby is the game's (ScreenGame.lobby.render). Moved out of apps/screen/src/main.ts (F4b).
-import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core';
+import { DIFFICULTIES } from '@pichi/core';
 import { PLATFORM } from '@pichi/core/contract';
 import { paintLogo, paintTitle } from '../art/sofa-brand';
 import { catalog } from '../shell/catalog';
 import { renderMenu } from '../menu/view';
-import { $, setHtml } from '../ui/dom';
+import { $ } from '../ui/dom';
+import { diffPills, playersCount } from '../screens/lobby/model';
+import { renderDifficulty, renderPlayersHeading } from '../screens/lobby/view';
 import { app, connectedCount, pickedGame, setConfig } from '../shell/app-state';
 import { renderChips, showTeams } from './chips';
 import { paintFocus } from './focus-nav-dom';
@@ -27,19 +29,16 @@ export function paintUi() {
   paintLogo($('logo'), app.config.game, inMenu ? undefined : pickedGame().lobby.logo); // the menu wears the sofa; a lobby, its game's mark
   paintTitle($('title'), inMenu ? PLATFORM : catalog().name(app.config.game), inMenu);
   $('platform').textContent = inMenu ? 'Juegos de sillón · tu celular es el control' : PLATFORM;
-  $('playersn').textContent = `${connectedCount()}/8`;
+  renderPlayersHeading(playersCount(connectedCount()));
   renderChips();
   if (inMenu) {
     showTeams(false);
     renderMenu();
     return;
   }
-  setHtml(
-    'diffs',
-    DIFFICULTIES.map(
-      (d) => `<button class="pill ${d === app.config.difficulty ? 'sel' : ''}" data-diff="${d}">${DIFFICULTY_LABEL[d]}</button>`,
-    ).join(''),
-  );
+  // a game with nothing to configure (Arena) has no setup panel at all: the "Dificultad" box would be the only thing in it
+  $('setup').classList.toggle('off', !!pickedGame().lobby.noOptions);
+  renderDifficulty(diffPills(app.config.difficulty));
   pickedGame().lobby.render();
   paintFocus();
 }

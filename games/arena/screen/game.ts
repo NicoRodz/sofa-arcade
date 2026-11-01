@@ -29,6 +29,7 @@ export const arenaScreen: ScreenGame = {
   lobby: {
     // a game with no options must not inherit the mode, teams or options of the one before (the relay would refuse the config)
     pickReset: () => ({ modeId: 'coop', teams: null, teamsLocked: false, modeOptions: {} }),
+    noOptions: true,
     render: renderLobby,
   },
   startMatch() {
