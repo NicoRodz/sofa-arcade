@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@pichi/core": "*",
+    "@pichi/game-arena": "*",
     "@pichi/game-obstaculos": "*",
     "@pichi/game-pizzas": "*"
   }

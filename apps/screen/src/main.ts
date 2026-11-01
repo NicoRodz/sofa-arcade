@@ -12,7 +12,7 @@ import { $ } from '@pichi/screen-kit/ui';
 import { initKeys } from '@pichi/screen-kit/vote';
 import { screenGames } from './games';
 
-registerGames(screenGames);
+registerGames(screenGames());
 bindServices({ iris, cardArt: drawCardArt, starCanvas, render: paintUi });
 for (const g of games().list()) g.init?.();
 initChips();

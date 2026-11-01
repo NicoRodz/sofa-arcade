@@ -8,6 +8,7 @@ const packages: Record<string, string[]> = {
   'controller-kit': ['platform/controller'],
   'game-pizzas': ['games/pizzas'],
   'game-obstaculos': ['games/obstaculos'],
+  'game-arena': ['games/arena'],
   'app-server': ['apps/server/test'],
   catalog: ['apps/catalog/test'],
   tools: ['tools'],

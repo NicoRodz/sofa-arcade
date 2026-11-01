@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { PROTOCOL_VERSION } from '@pichi/core';
-import { CATALOG, DEFAULT_CONFIG, GAMES, PROTOCOL, parseClientMessage } from '@pichi/catalog';
+import {
+  CATALOG,
+  DEFAULT_CONFIG,
+  DEV_CATALOG,
+  GAMES,
+  IN_DEVELOPMENT,
+  PROTOCOL,
+  parseClientMessage,
+  parseDevClientMessage,
+} from '@pichi/catalog';
 
 // Copied by hand from master (platform/core/src/protocol.ts DEFAULT_CONFIG before D1): the cable's starting lobby must not drift.
 const MASTER_DEFAULT_CONFIG = {
@@ -57,5 +66,14 @@ describe('apps/catalog', () => {
     expect(parseClientMessage(cfg({ game: 'pizzas', modeId: 'versus' }))).not.toBeNull();
     expect(parseClientMessage(cfg({ game: 'arena' }))).toBeNull(); // announced only
     expect(CATALOG.comingSoon.map((s) => s.id)).toEqual(['arena']);
+  });
+  it('games in development: only the dev catalog and parser (the relay) know them; the published ones do not change', () => {
+    expect(IN_DEVELOPMENT.map((g) => g.id)).toEqual(['arena']);
+    expect(DEV_CATALOG.ids).toEqual(['pizzas', 'obstaculos', 'arena']);
+    expect(DEV_CATALOG.problems()).toEqual([]);
+    expect(DEV_CATALOG.comingSoon).toEqual(CATALOG.comingSoon); // the card is the same, and the dev catalog hides it once the game is listed
+    expect(parseDevClientMessage(cfg({ game: 'arena' }))).toMatchObject({ t: 'config', game: 'arena' });
+    expect(parseDevClientMessage(cfg({ game: 'arena', modeId: 'versus' }))).toBeNull(); // arena declares no versus
+    expect(parseDevClientMessage(cfg({ game: 'pizzas', map: 'V1' }))).toMatchObject({ map: 'V1' }); // the rest of the cable is the same
   });
 });
