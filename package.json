@@ -25,6 +25,8 @@
     "baseline:write": "tsx tools/meta/baseline.ts write",
     "baseline:check": "tsx tools/meta/baseline.ts check",
     "lint": "biome check",
+    "check:new-files": "node scripts/check-new-files.mjs",
+    "smoke": "tsx tools/capture/smoke.ts",
     "deps": "depcruise --config .dependency-cruiser.cjs platform games apps tools",
     "deps:report": "tsx tools/meta/deps-report.ts",
     "report": "tsx tools/latency-report/src/index.ts"

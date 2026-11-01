@@ -6,6 +6,8 @@ import { WebSocket } from 'ws';
 import { CDP, CHROME, outDir, sleep } from './config';
 
 export class Cdp {
+  /** Uncaught page exceptions and unhandled rejections seen so far (the boot smoke fails on any). */
+  readonly pageErrors: string[] = [];
   private id = 0;
   private pending = new Map<number, (v: any) => void>();
   constructor(private ws: WebSocket) {
@@ -14,12 +16,11 @@ export class Cdp {
       if (m.id && this.pending.has(m.id)) {
         this.pending.get(m.id)!(m);
         this.pending.delete(m.id);
-      } else if (m.method === 'Runtime.exceptionThrown')
-        console.error(
-          'PAGE ERROR',
-          JSON.stringify(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text).slice(0, 600),
-        );
-      else if (m.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(m.params.type))
+      } else if (m.method === 'Runtime.exceptionThrown') {
+        const text = JSON.stringify(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text).slice(0, 600);
+        this.pageErrors.push(text);
+        console.error('PAGE ERROR', text);
+      } else if (m.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(m.params.type))
         console.error(
           'PAGE',
           m.params.type,
@@ -67,6 +68,7 @@ export function launchChrome(): ChildProcess {
       '--no-first-run',
       '--no-default-browser-check',
       ...(process.env.SOFTGL ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : []),
+      ...(process.env.CHROME_NO_SANDBOX ? ['--no-sandbox'] : []), // CI runners (Ubuntu 24.04) refuse the user-namespace sandbox
       '--ignore-gpu-blocklist',
       '--force-color-profile=srgb',
       'about:blank',

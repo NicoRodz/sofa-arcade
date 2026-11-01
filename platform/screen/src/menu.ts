@@ -2,6 +2,7 @@
 // and what a key or a click does. Free of the DOM so it can be tested.
 import { playersLabel, type ComingSoon, type GameDef } from '@pichi/core/contract';
 import type { SfxId } from './audio/recipes';
+import { soonEnabled } from './dev-flags';
 import { catalog } from './shell/catalog';
 
 export const GRID_COLS = 3;
@@ -28,11 +29,13 @@ export function availability(
   return { state: 'ready', notice: '' };
 }
 
-// Registry games first (in registry order), then the announced ones that are not in the registry yet.
+// Registry games first (in registry order), then the announced ones that are not in the registry yet. With `?soon=1` (dev-flags.ts) the announced ones are
+// pickable cards too (their player range is unknown, so they never wait for players); without it they are a "Próximamente" card that does nothing.
 export function menuCards(
   connected: number,
   games: readonly GameDef[] = catalog().games,
   soon: readonly ComingSoon[] = catalog().comingSoon,
+  showSoon: boolean = soonEnabled(),
 ): MenuCard[] {
   const live: MenuCard[] = games.map((g) => ({
     id: g.id,
@@ -44,7 +47,15 @@ export function menuCards(
   const have = new Set(games.map((g) => g.id));
   const next: MenuCard[] = soon
     .filter((s) => !have.has(s.id))
-    .map((s) => ({ id: s.id, name: s.name, blurb: s.blurb, range: '', state: 'soon', notice: 'Próximamente' }));
+    .map(
+      (s): MenuCard => ({
+        id: s.id,
+        name: s.name,
+        blurb: s.blurb,
+        range: '',
+        ...(showSoon ? { state: 'ready', notice: 'En desarrollo' } : { state: 'soon', notice: 'Próximamente' }),
+      }),
+    );
   return [...live, ...next];
 }
 

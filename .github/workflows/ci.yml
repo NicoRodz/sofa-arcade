@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version-file: package.json
@@ -22,3 +24,25 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:fast
       - run: npm run deps
+      - if: github.event_name == 'pull_request'
+        run: node scripts/check-new-files.mjs origin/${{ github.base_ref }}
+
+  smoke:
+    # Boots the BUILT screen (/screen) and phone (/c) in headless Chrome: fails on any page error or if window.__pg / window.__pad never appear.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run smoke
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+          CHROME_NO_SANDBOX: "1"
+          SOFTGL: "1"
+          PG_PORT: "4800"
+          PG_CDP: "4802"
