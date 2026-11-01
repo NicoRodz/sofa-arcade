@@ -195,16 +195,16 @@ describe('R17 stars by map x difficulty x team size', () => {
   });
   it('E(N) = E(2) x (1 + 0.4 (min(N,4) - 2) + 0.15 max(N-4, 0)): 1, 1.4, 1.8, 1.95, 2.1, 2.25, 2.4', () => {
     expect([2, 3, 4, 5, 6, 7, 8].map(teamFactor).map((v) => Math.round(v * 100) / 100)).toEqual([1, 1.4, 1.8, 1.95, 2.1, 2.25, 2.4]);
-    expect(expectedScore('2', 'normal', 6)).toBeCloseTo(350 * 2.1, 6);
+    expect(expectedScore('2', 'normal', 6)).toBeCloseTo(380 * 2.1, 6);
   });
   it('1, 2 and 3 stars are 35%, 60% and 85% of E(N); the boundaries are inclusive', () => {
-    const [a, b, c] = starThresholds('2', 'normal', 2); // E = 350
-    expect([a, b, c]).toEqual([122, 210, 298]);
+    const [a, b, c] = starThresholds('2', 'normal', 2); // E = 380
+    expect([a, b, c]).toEqual([133, 228, 323]);
     expect([a - 1, a, b - 1, b, c - 1, c].map((s) => stars('2', 'normal', 2, s))).toEqual([0, 1, 1, 2, 2, 3]);
   });
   it('the same score is worth fewer stars with more players, and map and difficulty change the bar', () => {
-    expect(stars('2', 'normal', 2, 220)).toBe(2);
-    expect(stars('2', 'normal', 6, 220)).toBe(0);
+    expect(stars('2', 'normal', 2, 230)).toBe(2);
+    expect(stars('2', 'normal', 6, 230)).toBe(0);
     expect(starThresholds('3', 'normal', 2)[2]).toBeLessThan(starThresholds('1', 'normal', 2)[2]); // a 2-star map has a lower bar
     expect(starThresholds('1', 'easy', 2)).not.toEqual(starThresholds('1', 'normal', 2));
   });
@@ -238,8 +238,8 @@ describe('R17 stars by map x difficulty x team size', () => {
     expect(summarize(g)).toEqual({
       score: 150,
       stars: 1,
-      thresholds: [122, 210, 298],
-      next: 60,
+      thresholds: [133, 228, 323],
+      next: 78,
       delivered: 3,
       expired: 1,
       rejected: 1,
@@ -247,7 +247,7 @@ describe('R17 stars by map x difficulty x team size', () => {
       bestStreak: 3,
       table: 1,
     });
-    g.score = 300;
+    g.score = 330;
     expect(summarize(g)).toMatchObject({ stars: 3, next: null });
   });
 });

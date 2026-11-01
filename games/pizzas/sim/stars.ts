@@ -5,43 +5,51 @@
 // a pizza served at half patience in a normal streak (base x 1.55; the base is 70 for a Marinara and 79 with 30% Margarita) x
 // share a decent pair serves (easy .75, normal .65, hard .50) x map factor (1 star 1, 2 stars .9, 3 stars .8), rounded to 10.
 //
-// Rebased for HAZARD_V2 (events 2 on Normal / 3 on Hard, harder fire, rat and ice) under the rules a lobby round plays by default (roundRules): Normal and Hard rows = old row x (median score with HAZARD_V2 / without) of the
-// scripted chefs, N = 2, same seeds; Easy keeps its rows (no events by default). Classics 1-15: tools/hazards/measure.ts score (golden chefs + firefighting, 120-400 seeds), measurable on maps 1, 2, 4, 7, 9, 11, 15
-// (Normal x1.04-1.12, Hard x0.77-1.12); the other classics and E2_DEFAULT use the median ratio of those seven (Normal x1.078, Hard x0.933). Carta larga 20-28: tools/hazards/stars-calibrate.ts (carta-larga chefs, 30 seeds x nMin/mid/nMax,
-// median of score / teamFactor). A row only moves when the ratio is off by 5% or more (the noise of the measure).
+// Rebased for HAZARD_V2 (PR #5), then again for the lobby's final configuration (patchMap, hazardsV3, eventsV2, menuV2; the `stars-final` PR) with tools/hazards/stars-calibrate.ts: the chefs of
+// tools/carta-larga/bot.ts, 24 seeds x nMin/mid/nMax per map and difficulty, metric score / (teamFactor x card factor), the options of screen/match/round.ts startCoop.
+//  - Carta larga 20-28: E2 = 0.6 x median(real), as before. Maps 26 (the bot does not reliably make the Pizza blanca: p25-p75 337-808 in Normal, not monotone across difficulties) and the 5% rule below keep the row.
+//  - Classics 1-15 (E2 came from a formula, not from a bot): E2 = old x median(real) / median(base), base = the configuration of PR #5. Maps 1, 2, 4, 7, 8, 9, 11 are measurable; their per-map ratio is used
+//    unless it is within the noise (90% bootstrap interval of the median) of the pooled median ratio (Easy x1.108, Normal x1.083, Hard x1.110), which 3, 5, 6 and E2_DEFAULT take (the bot never plays them).
+//  - Classics are also capped by the test "3 stars are within reach" (70% of the orders at half patience): Easy 340, Normal 390 on maps 1-8 (no cheese); and Hard <= Normal.
+//  - Maps 10, 12, 13, 14, 15 keep their rows: the bot does not knead (12: 0), does not avoid oil (with a janitor that wipes one tile every 1.5 s: 10/14/15 Hard score 60% of the base, 15 Normal is bimodal
+//    by N, p25-p75 221-801) and has no gate job (13). Those 0.6 are the bot's limit, not the maps': lower them only with a playtest.
+//  - Hard never asks for more than Normal on any map (26: 420 -> 370, 27: 660 -> 600; the bot's Hard is not below its Normal there, but a human's is: more hazards and a faster pace).
+//  - teamFactor at N = 6-8 was checked with tools/hazards/stars-byn.ts (16-24 seeds, Normal): score / teamFactor stays within ~15% of the N = 2-4 values on maps 11, 14, 22, 24, 27, and the bot reaches
+//    1 and 2 stars in 100% of the runs at N = 6 and 8 (3 stars: 100% on 11, 14, 22, 24, 27; map 13 gives 88% at N = 6 and 58% at N = 8, the map whose gate job the bot does not do). No change.
+// A row only moves when the ratio is off by 5% or more (the noise of the measure).
 import type { Difficulty } from '@pichi/core/difficulty';
 import { params, teamSize } from '@pichi/core/difficulty';
 
 export const E2: Record<string, Record<Difficulty, number>> = {
-  '1': { easy: 330, normal: 370, hard: 290 },
-  '2': { easy: 330, normal: 350, hard: 280 },
-  '3': { easy: 290, normal: 340, hard: 270 },
-  '4': { easy: 290, normal: 340, hard: 220 },
-  '5': { easy: 290, normal: 340, hard: 270 },
-  '6': { easy: 330, normal: 380, hard: 310 },
-  '7': { easy: 290, normal: 350, hard: 290 },
-  '8': { easy: 330, normal: 380, hard: 310 },
-  '9': { easy: 330, normal: 390, hard: 360 },
+  '1': { easy: 340, normal: 390, hard: 320 },
+  '2': { easy: 340, normal: 380, hard: 310 },
+  '3': { easy: 320, normal: 370, hard: 300 },
+  '4': { easy: 320, normal: 370, hard: 240 },
+  '5': { easy: 320, normal: 370, hard: 300 },
+  '6': { easy: 340, normal: 390, hard: 340 },
+  '7': { easy: 320, normal: 380, hard: 370 },
+  '8': { easy: 340, normal: 390, hard: 390 },
+  '9': { easy: 330, normal: 420, hard: 400 },
   '10': { easy: 330, normal: 390, hard: 310 },
-  '11': { easy: 330, normal: 390, hard: 370 },
+  '11': { easy: 330, normal: 390, hard: 390 },
   '12': { easy: 330, normal: 390, hard: 310 },
   '13': { easy: 290, normal: 340, hard: 270 },
   '14': { easy: 290, normal: 340, hard: 270 },
   '15': { easy: 290, normal: 360, hard: 270 },
   // Carta larga (adaptive pacing, richer plates, ~200 points a pizza): normal = 0.6 x what the scripted chefs of tools/carta-larga/measure.ts make per teamFactor on 6 seeds (the
   // classics' 3 stars sit at 50-60% of that bot); easy / hard = 0.94 x normal as in the rows above, NOT measured. Maps 25-28 (bot with oven claims, hatch relay, sauce pot, casa upgrades and Bandeja; 3 seeds x nMin/mid/nMax) are each difficulty's own 0.6 x median of the bot. 26 is a floor: the bot does not make the Pizza blanca.
-  '20': { easy: 1070, normal: 1020, hard: 910 },
-  '21': { easy: 990, normal: 1050, hard: 820 },
-  '22': { easy: 880, normal: 940, hard: 710 },
-  '23': { easy: 730, normal: 670, hard: 630 },
-  '24': { easy: 1020, normal: 1090, hard: 860 },
-  '25': { easy: 730, normal: 1060, hard: 590 },
-  '26': { easy: 280, normal: 370, hard: 420 },
-  '27': { easy: 650, normal: 600, hard: 660 },
-  '28': { easy: 660, normal: 690, hard: 440 },
+  '20': { easy: 1070, normal: 1310, hard: 910 },
+  '21': { easy: 690, normal: 1120, hard: 680 },
+  '22': { easy: 720, normal: 1290, hard: 1070 },
+  '23': { easy: 730, normal: 560, hard: 330 },
+  '24': { easy: 840, normal: 1300, hard: 1080 },
+  '25': { easy: 1080, normal: 1060, hard: 500 },
+  '26': { easy: 280, normal: 370, hard: 370 },
+  '27': { easy: 590, normal: 600, hard: 600 },
+  '28': { easy: 660, normal: 620, hard: 520 },
 };
 // Generated maps ("random") and anything not in the table: a middle row (2 stars, a bit of Margarita).
-export const E2_DEFAULT: Record<Difficulty, number> = { easy: 310, normal: 370, hard: 290 };
+export const E2_DEFAULT: Record<Difficulty, number> = { easy: 340, normal: 400, hard: 320 };
 
 export const e2 = (mapId: string | undefined, d: Difficulty): number => (mapId !== undefined ? E2[mapId]?.[d] : undefined) ?? E2_DEFAULT[d];
 
