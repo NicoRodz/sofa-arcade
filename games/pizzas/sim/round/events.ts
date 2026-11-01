@@ -84,12 +84,12 @@ export interface GameEvents extends SabotageEvents {
   'ev2:mood': { kind: EventKind; on: boolean };
   'ev2:close': { kind: EventKind; points: number; ok: boolean; title: string; detail: string; by?: number };
   'ev2:cake': { step: 'candle' | 'served' | 'expired'; player?: number };
-  'rat:appear': { at: [number, number] }; // coop only
-  'rat:steal': { station: number; item: Item };
-  'rat:scared': { player: number; returned: boolean; bonus?: number }; // a dash scared it; returned: it dropped the item back on its counter; bonus: points the gentle rat pays
+  'rat:appear': { at: [number, number]; team?: number }; // team: only in a versus round (VERSUS_V3: one rat per kitchen)
+  'rat:steal': { station: number; item: Item; team?: number };
+  'rat:scared': { player: number; returned: boolean; bonus?: number; team?: number }; // a dash scared it; returned: it dropped the item back on its counter; bonus: points the gentle rat pays
   'rat:dodge': { player: number }; // HAZARD_V2: the rat jumped aside from this chef's dash and now pants (feel/rat-v2.ts)
   'rat:target': { station: number }; // the gentle rat picked this counter (the screen draws an arrow to it)
   'rat:near': { station: number }; // ...and is about to get there
-  'rat:gone': { stolen: boolean }; // it left (stolen: with an item)
+  'rat:gone': { stolen: boolean; team?: number }; // it left (stolen: with an item)
 }
 export { Emitter } from '@pichi/core/emitter'; // a Pizzas bus is an Emitter<GameEvents>: one import serves both

@@ -28,7 +28,7 @@ export function escapeLoot(g: Game, r: Rat): number {
 /** Called when the rat leaves. Returns true when it took something with it (the caller reports `stolen`). */
 export function stealOnEscape(g: Game, m: Mid, r: Rat): boolean {
   const hz = hz3Params(g);
-  if (!hz.rat.stealOnEscape || r.scared || r.item || g.versus) return false;
+  if (!hz.rat.stealOnEscape || r.scared || r.item || (g.versus && !g.vz3)) return false;
   if (g.time - (m.lossAt ?? -Infinity) < hz.lossGapMs) return false;
   const i = escapeLoot(g, r);
   if (i < 0) return false;

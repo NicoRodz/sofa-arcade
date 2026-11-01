@@ -24,6 +24,7 @@ import { hazardParams } from './hazards/hazard-v2';
 import { hz3Params } from './hazards/hazard-v3';
 import { book } from './hazards/score-ledger';
 import { planEvents, type Planned } from './hazards/events-v2';
+import { endVersusRats, spawnVersusRats, stepVersusRats, versusRats } from './feel/rat-versus';
 import { ev2End, ev2SpillWatch, ev2Spilt, ev2Start, ev2Tick } from './ev2/events';
 
 export type EventKind = 'rush' | 'inspector' | 'blackout' | 'birthday' | 'rat' | 'frost' | 'spill';
@@ -88,6 +89,7 @@ export const roundRules = (modeOptions: Readonly<Record<string, boolean | number
   magnet: magnetFor(modeOptions, d),
   pace: PACE[d],
   frost: true,
+  versusV3: true, // VERSUS_V3: a rat per kitchen and the Ola de frio in versus (ignored by a coop round)
 }); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
 
 export interface Rat {
@@ -127,6 +129,7 @@ export interface Mid {
   dark: boolean; // blackout in progress
   frost: boolean; // frost in progress: surfaces/physics reads it (every floor tile is ice)
   rat: Rat | null;
+  rats?: Mid[]; // VERSUS_V3 (feel/rat-versus.ts): one sub-Mid per kitchen, each with its own `rat`; `rat` stays null
   rng: Rng; // the stream of the events (the instant, the kind, the hole of the rat)
   lossAt?: number; // HAZARD_V3: match time of the last item a hazard took (feel/rat-loot.ts)
   queue?: Planned[]; // HAZARD_V2: the events still to come after this one (events-v2.ts); absent = the old single event
@@ -141,14 +144,14 @@ export interface MidFx {
 const tag = (g: Game, team: number): { team?: number } => (g.versus ? { team } : {});
 
 /** The kinds this round can have: no rat in versus, no inspector without plates to wash, no rat without counters. */
-export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations' | 'frostEvent' | 'flags'>): EventKind[] =>
+export const eventPool = (g: Pick<Game, 'versus' | 'finitePlates' | 'stations' | 'frostEvent' | 'flags' | 'vz3'>): EventKind[] =>
   EVENT_KINDS.filter((k) =>
     k === 'rat'
-      ? !g.versus && g.stations.some((s) => s.kind === 'counter')
+      ? (!g.versus || !!g.vz3) && g.stations.some((s) => s.kind === 'counter')
       : k === 'inspector'
         ? g.finitePlates
         : k === 'frost'
-          ? g.frostEvent && !g.versus
+          ? g.frostEvent && (!g.versus || !!g.vz3)
           : k === 'spill'
             ? !!g.flags?.mech.oil && !g.versus
             : true,
@@ -194,7 +197,7 @@ function nextTile(g: Game, from: [number, number], goal: (x: number, y: number) 
   const queue: [number, number][] = [from];
   for (let i = 0; i < queue.length; i++) {
     const [x, y] = queue[i]!;
-    for (const [dx, dy] of DIRS) {
+    for (const [dx, dy] of g.vz3?.dirs ?? DIRS) {
       const nx = x + dx,
         ny = y + dy,
         k = `${nx},${ny}`;
@@ -310,6 +313,8 @@ function ratStep(g: Game, m: Mid, dtMs: number) {
   r.y += (dy / d) * move;
 }
 
+const COOP_RAT = { step: ratStep, gone: ratGone }; // what the versus rats (feel/rat-versus.ts) run on a view of the round
+
 // --- The inspector ----------------------------------------------------------------------------------------------------------------------------------
 /** Dirty plates that physically lie in a team's kitchen: at the return window, in the sink, on a counter or in a chef's hands. */
 export function dirtyPlates(g: Game, team: number): number {
@@ -361,18 +366,25 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
     } else if (m.kind === 'spill') {
       const tiles = spill(g, m.rng);
       if (g.ev2) ev2Spilt(g, tiles, hz3Params(g).oil.spillDry);
-    } else if (m.kind === 'rat') spawnRat(g, m);
+    } else if (m.kind === 'rat') {
+      if (g.versus) spawnVersusRats(g, m);
+      else spawnRat(g, m);
+    }
     return;
   }
   if (m.phase !== 'active') return;
-  if (m.kind === 'rat' && m.rat) ratStep(g, m, dtMs);
+  if (m.kind === 'rat' && g.versus) stepVersusRats(g, m, dtMs, COOP_RAT);
+  else if (m.kind === 'rat' && m.rat) ratStep(g, m, dtMs);
   if (g.ev2) ev2Tick(g, m, dtMs); // EVENTS_V2: the board of the blackout may end the event now
-  if (g.time < m.endAt && !(m.kind === 'rat' && !m.rat)) return;
+  if (g.time < m.endAt && !(m.kind === 'rat' && !m.rat && !(g.versus && versusRats(m).length))) return;
   m.phase = 'done';
   if (m.kind === 'blackout') m.dark = false;
   else if (m.kind === 'frost') m.frost = false;
   else if (m.kind === 'inspector') inspect(g);
-  else if (m.kind === 'rat') ratGone(g, m);
+  else if (m.kind === 'rat') {
+    if (g.versus) endVersusRats(g, m, COOP_RAT);
+    else ratGone(g, m);
+  }
   if (g.ev2) ev2End(g, m); // EVENTS_V2: the closing card and the prize
   g.bus.emit('event:end', { kind: m.kind });
   const next = m.queue?.shift();
@@ -386,5 +398,6 @@ export function midTick(g: Game, dtMs: number, fx: MidFx) {
       dark: false,
       frost: false,
       rat: null,
+      rats: undefined,
     }); // the next one of the calendar
 }
