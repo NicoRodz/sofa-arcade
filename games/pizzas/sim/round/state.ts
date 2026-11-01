@@ -11,6 +11,7 @@ import type { Rng } from '@pichi/core/rng';
 import type { Kitchens } from '../versus/versus';
 import type { Burn } from '../burn';
 import type { Mid } from '../midround';
+import type { RatFrame } from '../feel/rat-frame';
 import type { Ledger } from '../hazards/score-ledger';
 import type { Rec } from '../recipes/sim';
 import type { MagnetCfg } from '../feel/magnet';
@@ -223,6 +224,7 @@ export interface Game {
   hz: boolean; // HAZARD_V2 numbers under the flags (create option `hazards`, default on)
   hz3: boolean; // HAZARD_V3 (hazards/hazard-v3.ts): the harder numbers of the hazards and the penalties; off unless the round asks (create option `hazardsV3`)
   vz3: { sigma?: SigmaName; seed: number } | null; // VERSUS_V3 (feel/rat-versus.ts): the rat per kitchen and the Ola de frio in a versus round; null unless the round asks (`versusV3`, versus only)
+  ratFrame?: RatFrame; // VERSUS_V3: set on the view of kitchen 0 (feel/rat-frame.ts), so its rat breaks ties as kitchen 1's does
   ledger: Ledger | null; // the score book by source (hazards/score-ledger.ts): only a round with hazardsV3 or `ledger: true` keeps one
   burn: Burn | null; // the oven that burns and the fire (burn.ts): null (the default, and every golden round) = the oven never burns
   mid: Mid | null; // the event in the middle of the round (midround.ts): null (the default) = none

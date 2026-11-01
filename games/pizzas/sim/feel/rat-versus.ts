@@ -5,6 +5,7 @@
 // per-team Mid (`Object.create(mid)` with its own `rat` and `lossAt`). Stations keep their global index (a sparse array: `forEach` skips the other kitchen).
 import { DIRS, isFloor, MAP_H, MAP_W } from '../maps';
 import { SIGMAS } from '../symmetry';
+import { ratFrame } from './rat-frame';
 import { mulberry32 } from '@pichi/core/rng';
 import { subSeed } from '../recipes/menu';
 import type { Game, Station } from '../round/state';
@@ -81,6 +82,7 @@ function view(g: Game, team: number): Game {
     stations,
     players: new Map([...g.players].filter(([, p]) => p.team === team)),
     teams: [g.teams[team]!],
+    ratFrame: ratFrame(g.vz3?.sigma, team),
     bus: { emit: (k: string, p: object) => bus.emit(k as never, { ...p, team } as never), on: bus.on.bind(bus) },
   });
 }

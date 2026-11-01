@@ -66,7 +66,7 @@ export function evadeStep(g: Game, r: Rat, dtMs: number, floor: Floor): boolean 
     let best: [number, number] | null = null,
       bestRoom = MIN_ROOM; // less room than this and it is cornered: no burst
     for (const a of ANGLES) {
-      const [ux, uy] = rotate(ax / al, ay / al, a);
+      const [ux, uy] = rotate(ax / al, ay / al, g.ratFrame?.flip ? -a : a); // VERSUS_V3: the canonical clockwise side is counter-clockwise under a reflection
       const rm = runLength(g, floor, r.x, r.y, ux, uy, rp.evadeLen, threats);
       if (rm > bestRoom) {
         best = [ux, uy];

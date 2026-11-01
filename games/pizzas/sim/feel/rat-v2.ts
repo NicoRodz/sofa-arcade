@@ -67,6 +67,7 @@ export function dodgeStep(g: Game, r: Rat, dtMs: number, floor: (g: Game, x: num
       [hy, -hx],
       [-hy, hx],
     ];
+    if (g.ratFrame?.flip) sides.reverse(); // VERSUS_V3: under a reflection the canonical "left" is this frame's right
     let best: [number, number] | null = null,
       bestRoom = -1;
     for (const [ux, uy] of sides) {
