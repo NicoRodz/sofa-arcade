@@ -4,12 +4,7 @@
 // ¡A cocinar! of the list does. Then the taps: what each one sends, and the D-pad behind "Mando".
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { snapshot } from '../../../platform/controller/src/menu/fixture';
-import type { Scenario, Session } from './harness';
-
-// layout.slow.test.ts runs in parallel with this file and holds PG_PORT / PG_CDP_PORT: this one takes the next pair (the harness reads them when it loads).
-process.env.PG_PORT = String(Number(process.env.PG_PORT ?? 3600) + 1);
-process.env.PG_CDP_PORT = String(Number(process.env.PG_CDP_PORT ?? 9366) + 1);
-const { ORIENTATIONS, insetsName, openSession } = await import('./harness');
+import { ORIENTATIONS, insetsName, openSession, type Scenario, type Session } from './harness';
 
 const INTRO_SEEN = `localStorage.setItem('pichiclub.captainIntro.v1', '1')`;
 let s: Session;
