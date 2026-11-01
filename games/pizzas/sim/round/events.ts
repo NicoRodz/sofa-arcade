@@ -13,7 +13,15 @@ export type SurfaceEvent = 'surface:slide' | 'surface:belt';
 /** Events of the mutating kitchen (sim/mutate): sounded by the game's own audio director too. */
 export type MutateEvent = 'mutate:warn' | 'mutate:apply';
 /** Events of the map mechanics (games/pizzas/sim/mech): sounded by the game's own audio director (screen/audio/mech.ts). */
-export type MechEvent = 'mech:need' | 'mech:fire' | 'mech:wiped' | 'mech:spray' | 'mech:drip' | 'mech:bridgeBreak' | 'mech:bridgeMend' | 'mech:trayLoss';
+export type MechEvent =
+  | 'mech:need'
+  | 'mech:fire'
+  | 'mech:wiped'
+  | 'mech:spray'
+  | 'mech:drip'
+  | 'mech:bridgeBreak'
+  | 'mech:bridgeMend'
+  | 'mech:trayLoss';
 
 export interface GameEvents extends SabotageEvents {
   itemPicked: { player: number; item: Item; from: StationKind };

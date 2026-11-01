@@ -52,10 +52,10 @@ interface Walk {
 }
 const walks = new WeakMap<Game, Map<number, Walk>>();
 function walkOf(g: Game, id: number): Walk {
-  let m = walks.get(g);
-  if (!m) walks.set(g, (m = new Map()));
-  let w = m.get(id);
-  if (!w) m.set(id, (w = { px: -9, py: -9, still: 0, aside: 0, sign: 1 }));
+  const m = walks.get(g) ?? new Map<number, Walk>();
+  walks.set(g, m);
+  const w = m.get(id) ?? { px: -9, py: -9, still: 0, aside: 0, sign: 1 };
+  m.set(id, w);
   return w;
 }
 

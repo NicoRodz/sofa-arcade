@@ -67,6 +67,7 @@ const PATCHES: Readonly<Record<string, Patch>> = {
         ['swap', [0, 5], [15, 4]],
         ['swap', [15, 2], [0, 7]],
       ],
+      // biome-ignore lint/suspicious/noThenProperty: `then` is the name of the second wave in MutationV2 (mech/mutation/ops.ts); a map patch is data, never awaited
       then: {
         at: 7200,
         warn: 180,
@@ -109,6 +110,7 @@ export function patchMap<M extends Patchable>(map: M, difficulty: Difficulty): M
             warn: p.mutation.warn,
             revertAt: null,
             ops: p.mutation.ops.slice(0, k),
+            // biome-ignore lint/suspicious/noThenProperty: `then` is the name of the second wave in MutationV2 (mech/mutation/ops.ts); a map patch is data, never awaited
             then: { ...p.mutation.then, ops: p.mutation.then.ops.slice(0, k) },
           },
         }

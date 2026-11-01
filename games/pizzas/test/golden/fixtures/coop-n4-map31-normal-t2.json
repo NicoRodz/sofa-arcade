@@ -227,7 +227,6 @@
   "2643|itemPicked|{\"player\":4,\"item\":\"raw0\",\"from\":\"crate\"}",
   "2676|itemDropped|{\"player\":4,\"item\":\"raw0\",\"at\":\"board\"}",
   "2678|chopStart|{\"player\":4,\"station\":7}",
-  "2707|dash|{\"player\":2,\"dx\":-1,\"dy\":-7.507556034146967e-14}",
   "2798|chopDone|{\"player\":4,\"station\":7}",
   "2799|chopStop|{\"player\":4,\"station\":7}",
   "2800|itemPicked|{\"player\":4,\"item\":\"cut0\",\"from\":\"board\"}",

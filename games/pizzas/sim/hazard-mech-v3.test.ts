@@ -169,7 +169,7 @@ describe('HAZARD_V3 Bandeja on oil (map 28): the plate is lost on Hard only, and
     expect(ev.filter((e) => e.type === 'mech:trayLoss')).toHaveLength(1);
     expect(g.ledger!.count['hazard:tray-loss']).toBe(1);
     expect(g.ledger!.count['hazard:oil-drop']).toBeUndefined();
-    expect(g.floorItems ?? []).toHaveLength(0);
+    expect(g.floor.filter((f) => f.kind === 'dropped')).toHaveLength(0);
   });
   it('Normal: the chef keeps the plate and nothing is booked as a tray loss', () => {
     const { g, ev } = slip('normal');

@@ -27,7 +27,8 @@ export const isBroken = (g: Game, tx: number, ty: number): boolean => {
   return !!b && b.brokenUntil > ext(g).tick;
 };
 /** HAZARD_V3: is this tile a broken bridge a chef may mend by hand (the round has the flag and its row has a repair time)? */
-export const repairable = (g: Game, idx: number): boolean => idx >= 0 && hz3Params(g).bridge.repair > 0 && isBroken(g, idx % 16, Math.floor(idx / 16));
+export const repairable = (g: Game, idx: number): boolean =>
+  idx >= 0 && hz3Params(g).bridge.repair > 0 && isBroken(g, idx % 16, Math.floor(idx / 16));
 /** Ticks of mending done on a broken bridge tile (0 when nobody is at it). */
 export const mendProgress = (g: Game, idx: number): number => ext(g).work[idx] ?? 0;
 /** A step onto a bridge counts `by` wear (1; 3 with the heavy tray). */
@@ -99,5 +100,9 @@ export const bridgeModule: MechModule = {
       }
     }
   },
-  hashExtra: (g) => [ext(g).tick, ...Object.entries(ext(g).work).flat().map(Number), ...Object.entries(g.mech!.bridge!).flatMap(([i, b]) => [Number(i), b.uses, b.brokenUntil])],
+  hashExtra: (g) => [
+    ext(g).tick,
+    ...Object.entries(ext(g).work).flat().map(Number),
+    ...Object.entries(g.mech!.bridge!).flatMap(([i, b]) => [Number(i), b.uses, b.brokenUntil]),
+  ],
 };
