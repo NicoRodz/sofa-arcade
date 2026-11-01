@@ -49,7 +49,7 @@ const roomCode = (() => {
 
 export const sync = new ClockSync();
 // The lobby config starts from the bound catalog's defaults, read on first use: never at module load, or importing the shell barrel before bindCatalog() would throw.
-let config: LobbyConfig | undefined = { ...defaultConfig(), seed: 1 } as LobbyConfig; // SABOTAGE P1 (temporary, CI check)
+let config: LobbyConfig | undefined;
 export const app = {
   players: new Map<number, PlayerRec>(),
   room: roomCode,
