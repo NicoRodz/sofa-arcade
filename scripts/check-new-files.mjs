@@ -8,14 +8,18 @@ const MAX = 300;
 const CHECKED = /\.(ts|tsx|mts|cts|js|mjs|cjs|css|html)$/;
 // Concrete paths only, anchored at the repo root. A folder that merely CALLS itself `data/`, `docs/`, `levels/` or `fixtures/` is not exempt: code put
 // there is still checked. Level data, golden fixtures and the docs tree are data, not code; build output and node_modules are not tracked.
-const EXEMPT = /^(docs\/|games\/obstaculos\/levels\/|games\/pizzas\/test\/golden\/fixtures\/|(apps|platform|games)\/[^/]+\/dist\/|node_modules\/)/;
+const EXEMPT =
+  /^(docs\/|games\/obstaculos\/levels\/|games\/pizzas\/test\/golden\/fixtures\/|(apps|platform|games)\/[^/]+\/dist\/|node_modules\/)/;
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 1 << 26 });
 const countLines = (text) => text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
 
 const base = process.argv[2] ?? 'origin/master';
 const mergeBase = git('merge-base', base, 'HEAD').trim();
 // -M: a high-similarity rename shows as `R<score>\told\tnew`; an added file as `A\tpath`.
-const rows = git('diff', '--name-status', '-M', '--diff-filter=AR', mergeBase).split('\n').filter(Boolean).map((r) => r.split('\t'));
+const rows = git('diff', '--name-status', '-M', '--diff-filter=AR', mergeBase)
+  .split('\n')
+  .filter(Boolean)
+  .map((r) => r.split('\t'));
 const checked = (f) => CHECKED.test(f) && !EXEMPT.test(f);
 
 const added = rows.filter(([s, f]) => s === 'A' && checked(f)).map(([, f]) => f);
