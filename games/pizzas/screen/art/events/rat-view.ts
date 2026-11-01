@@ -8,17 +8,15 @@ import { foodKey, ITEM_KIND } from '../food';
 import type { Fx } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';
 import { ratLift } from '../feel/rat-dodge';
+import { ratOfTeam, ratsOf } from '../feel/rats';
+import type { Rat } from '../../../sim/midround';
 
 export class RatView {
   private off: (() => void)[] = [];
-  private v: {
-    img: Phaser.GameObjects.Image;
-    item: Phaser.GameObjects.Image | null;
-    itemKey: string;
-    lastX: number;
-    face: 1 | -1;
-    bob: number;
-  } | null = null;
+  private vs = new Map<
+    number,
+    { img: Phaser.GameObjects.Image; item: Phaser.GameObjects.Image | null; itemKey: string; lastX: number; face: 1 | -1; bob: number }
+  >();
 
   constructor(
     private scene: Phaser.Scene,
@@ -42,7 +40,7 @@ export class RatView {
       this.fx.float(p.x, p.y - TILE * 0.7, '¡Se lo llevó!', C.danger, 38);
     });
     on('rat:scared', (e) => {
-      const r = this.game.mid?.rat;
+      const r = ratOfTeam(this.game, e.team ?? 0);
       if (!r) return;
       const p = { x: OX + r.x * TILE, y: OY + r.y * TILE };
       this.fx.starBurst(p.x, p.y - TILE * 0.3, 7);
@@ -52,25 +50,29 @@ export class RatView {
   }
 
   update(dtMs: number) {
-    const r = this.game.mid?.rat;
-    if (!r) {
-      if (this.v) {
-        this.v.img.destroy();
-        this.v.item?.destroy();
-        this.v = null;
+    const live = ratsOf(this.game);
+    for (const [team, v] of this.vs)
+      if (!live.some(([t]) => t === team)) {
+        v.img.destroy();
+        v.item?.destroy();
+        this.vs.delete(team);
       }
-      return;
-    }
+    for (const [team, r] of live) this.draw(team, r, dtMs);
+  }
+
+  private draw(team: number, r: Rat, dtMs: number) {
     const x = OX + r.x * TILE,
       y = OY + r.y * TILE + TILE * 0.34;
-    if (!this.v)
-      this.v = { img: place(this.scene, 'rat', x, y, 0.92).setDepth(100 + y), item: null, itemKey: '', lastX: x, face: 1, bob: 0 };
-    const v = this.v;
+    let v = this.vs.get(team);
+    if (!v) {
+      v = { img: place(this.scene, 'rat', x, y, 0.92).setDepth(100 + y), item: null, itemKey: '', lastX: x, face: 1, bob: 0 };
+      this.vs.set(team, v);
+    }
     if (Math.abs(x - v.lastX) > 0.1) v.face = x > v.lastX ? 1 : -1;
     v.lastX = x;
     v.bob += dtMs * (r.scared ? 0.05 : 0.026);
     v.img
-      .setPosition(x, y - Math.abs(Math.sin(v.bob)) * 5 - ratLift(this.game))
+      .setPosition(x, y - Math.abs(Math.sin(v.bob)) * 5 - ratLift(this.game, team))
       .setFlipX(v.face < 0)
       .setDepth(100 + y)
       .setAngle(Math.sin(v.bob) * 3 + (r.scared ? 8 * v.face : 0));
@@ -87,8 +89,10 @@ export class RatView {
   destroy() {
     for (const f of this.off) f();
     this.off = [];
-    this.v?.img.destroy();
-    this.v?.item?.destroy();
-    this.v = null;
+    for (const v of this.vs.values()) {
+      v.img.destroy();
+      v.item?.destroy();
+    }
+    this.vs.clear();
   }
 }

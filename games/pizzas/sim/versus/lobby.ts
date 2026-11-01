@@ -20,7 +20,7 @@ import {
   type TeamSetup,
 } from '@pichi/core/lobby/teams';
 import { validateTeamSetup } from '../assist';
-import { kitchenRegions } from './versus';
+import { iceRound, kitchenRegions } from './versus';
 import { roundRules } from '../midround';
 import { CATAPULT_CHAR, SABOTAGE_OPTION, defaultSabotage, isSabotageMode, sabotageOf } from '../sabotage-config';
 import { VERSUS_AUTO, VERSUS_MAPS, VERSUS_RANDOM, versusMap, type VersusChoice } from './maps';
@@ -265,7 +265,7 @@ export function createVersusGame(o: VersusStart): Game {
   const game = createGame({
     mapId: o.map.id,
     difficulty: o.difficulty,
-    rows: o.map.rows,
+    ...iceRound(o.map, roundRules(o.modeOptions, o.difficulty).versusV3), // VERSUS_V3: the same patch of ice in both kitchens
     spawns: o.map.spawns,
     seed: o.seed,
     eventsSeed: o.eventsSeed,

@@ -58,3 +58,4 @@ export function teamStarts(grid: Grid, k: Kitchens, team: TeamId, explicit?: rea
   );
   return out;
 }
+export { iceRound } from './ice-patch'; // VERSUS_V3: the lobby's rows with the patch of ice

@@ -5,7 +5,7 @@
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Player, type Station } from '../../sim/overcooked';
 import { SIGMAS, type Sigma } from '../../sim/symmetry';
 import type { Difficulty } from '@pichi/core/difficulty';
-import { MAP_H, MAP_W } from '../../sim/maps';
+import { MAP_H, MAP_W, type SigmaName } from '../../sim/maps';
 import { RecBus, decide, type Mem } from './bot';
 import { decideR, newMem } from './recipe-bot';
 
@@ -56,7 +56,7 @@ export function twinSpawns(rows: readonly string[], sigma: Sigma, half: (x: numb
 export interface VersusRun {
   rows: readonly string[]; sigma: Sigma; half: (x: number, y: number) => boolean;
   difficulty: Difficulty; seed: number; teams: number[][]; handicap?: boolean;
-  flags?: { burn?: boolean; fire?: boolean; events?: boolean; recipes?: boolean; magnet?: boolean | 'strong' }; // the new rules (off by default: the original proofs stay exact). recipes: the Carta del día of `mapId`, cooked by recipe-bot.ts
+  flags?: { burn?: boolean; fire?: boolean; events?: boolean; recipes?: boolean; magnet?: boolean | 'strong'; versusV3?: boolean; frost?: boolean; surfaces?: boolean; sigma?: SigmaName }; // the new rules (off by default: the original proofs stay exact). recipes: the Carta del día of `mapId`, cooked by recipe-bot.ts
   mapId?: string; // default 'versus-test' (no card); 'V1' / 'V3' for the maps the mirror designs are
   drive?: typeof decide; // the scripted chef (default: the Marinara script; the recipes flag picks the recipe bot)
 }

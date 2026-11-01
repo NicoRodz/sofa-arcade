@@ -45,6 +45,7 @@ export function createGame(
     burn?: boolean;
     hazardsV3?: boolean; // HAZARD_V3 (hazards/hazard-v3.ts): the harder numbers and the expired-order penalties; off unless the lobby asks (the rounds without it are bit for bit as before)
     eventsV2?: boolean; // EVENTS_V2 (ev2/): hora punta, cumpleaños, corte de luz with presence; coop with `events` only; off = the events of before
+    versusV3?: boolean; // VERSUS_V3: a rat per kitchen (feel/rat-versus.ts) and the Ola de frio, both in the versus event pool; ignored in coop; off unless the lobby asks
     ledger?: boolean; // keep the score book by source (hazards/score-ledger.ts) without hazardsV3 (measurement)
     hazardsV2?: boolean; // HAZARD_V2 under the flags burn / magnet / events / surf (hazard-v2.ts): on unless false (false = the first numbers, for the tests that pin them and for before/after runs)
     fire?: boolean;
@@ -67,7 +68,7 @@ export function createGame(
 ): Game {
   const mechOn = anyMech(opts.mech);
   const rows = opts.menuV2 ? menuPatchRows(opts.mapId, opts.rows ?? FIXED_MAPS[0]!.rows) : (opts.rows ?? FIXED_MAPS[0]!.rows); // menuV2: the crate a third plate needs
-  const grid = parseMap(rows, (opts.teams?.length ?? 1) > 1, opts.mech); // the catapult letter belongs to versus maps; a mechanic's letter needs its flag
+  const grid = parseMap(rows, (opts.teams?.length ?? 1) > 1, opts.mech, !!opts.versusV3); // the catapult letter belongs to versus maps; a mechanic's letter needs its flag
   const difficulty = opts.difficulty ?? DEFAULT_DIFFICULTY;
   const seats = opts.teams;
   if (seats && !seats.length) throw new RangeError('a round needs at least one team');
@@ -177,6 +178,7 @@ export function createGame(
     burn: null,
     hz: opts.hazardsV2 !== false,
     hz3: !!opts.hazardsV3,
+    vz3: versus && opts.versusV3 ? { sigma: opts.sigma, seed: opts.eventsSeed ?? seed } : null,
     ledger: opts.hazardsV3 || opts.ledger ? newLedger() : null,
     mid: null,
     rec: opts.recipes

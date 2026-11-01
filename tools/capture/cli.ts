@@ -6,6 +6,7 @@ import { runPhone, runVersusPhone } from './scenarios/phone';
 import { runEventsVs, runVersus, runVsDrop, runVsHud, runVsLobby, runVsPantry, runVsResults } from './scenarios/versus';
 import { runAssist, runBurn, runSabotage } from './scenarios/coop-a';
 import { runEvents, runMagnet } from './scenarios/coop-b';
+import { runVersusV3 } from './scenarios/versus-v3';
 import { runEventsV2 } from './scenarios/events-v2';
 import { runFrost } from './scenarios/frost';
 import { runHzFire, runHzIce, runHzRat } from './scenarios/hazards';
@@ -25,6 +26,8 @@ const MODES: Record<string, Scenario[]> = {
   'vs-lobby': [runVsLobby],
   'vs-drop': [runVsDrop],
   'events-vs': [runEventsVs],
+  'vs-v3-v3': [runVersusV3('V3')],
+  'vs-v3-v1': [runVersusV3('V1')],
   'vs-pantry': [runVsPantry],
   'vs-results': [runVsResults],
   assist: [runAssist],
