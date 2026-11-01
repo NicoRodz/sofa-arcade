@@ -1,5 +1,4 @@
-import { C } from '@pichi/screen-kit/art/tokens';
-import { blob, drawOutlined, ellipse, mix, rng, shine, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, blob, drawOutlined, ellipse, mix, rng, shine, type Ctx } from '@pichi/screen-kit/art';
 import { radial, doughStr } from './ingredients';
 
 // Marinara: dough and tomato sauce. With cheese (Margarita) it also gets the cream mozzarella blobs.

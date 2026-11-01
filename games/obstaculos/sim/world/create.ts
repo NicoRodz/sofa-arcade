@@ -1,6 +1,6 @@
 // Building a world and changing who is connected: createWorld, previewB, setConnected.
 import { DIFFICULTY_PARAMS, ROPE_LEN } from '../../constants';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { parseLevel } from '../../parse';
 import type { GameMode, LevelDef } from '../../types';
 import { dropAll, previewB as previewBPlayer, type BPreview } from '../actions';

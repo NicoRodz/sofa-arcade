@@ -1,6 +1,6 @@
 // Typed events emitted by the pure game logic. The sound layer (and anything else) subscribes to these;
 // the logic knows nothing about who listens.
-import type { TeamResult } from '@pichi/core/lobby/teams';
+import type { TeamResult } from '@pichi/core/lobby';
 import type { Item, Recipe, StationKind } from '../index';
 import type { SabotageEvents } from '../sabotage-config';
 import type { EventKind } from '../midround';
@@ -102,4 +102,4 @@ export interface GameEvents extends SabotageEvents {
   'rat:near': { station: number; team?: number }; // ...and is about to get there
   'rat:gone': { stolen: boolean; team?: number }; // it left (stolen: with an item)
 }
-export { Emitter } from '@pichi/core/emitter'; // a Pizzas bus is an Emitter<GameEvents>: one import serves both
+export { Emitter } from '@pichi/core'; // a Pizzas bus is an Emitter<GameEvents>: one import serves both

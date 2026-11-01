@@ -1,6 +1,6 @@
 // The clock of the mutation: `wait` until MUTATE_AT_MS - MUTATE_WARN_MS (alarm + banner), then `warned` until MUTATE_AT_MS (the tiles change, one tick), then `done`.
 // The mutation's own stream (seed XOR MUTATE_SEED_TAG) is touched only when something has to be relocated; no other stream is read here.
-import { mulberry32, type Rng } from '@pichi/core/rng';
+import { mulberry32, type Rng } from '@pichi/core';
 import type { Game } from '../round/state';
 import { applyMutation } from './apply';
 import { MUTATE_AT_MS, MUTATE_SEED_TAG, MUTATE_WARN_MS, mutationFor, type Mutation } from './plan';

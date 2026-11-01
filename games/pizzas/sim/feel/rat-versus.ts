@@ -6,7 +6,7 @@
 import { DIRS, isFloor, MAP_H, MAP_W } from '../maps';
 import { SIGMAS } from '../symmetry';
 import { ratFrame } from './rat-frame';
-import { mulberry32 } from '@pichi/core/rng';
+import { mulberry32 } from '@pichi/core';
 import { subSeed } from '../recipes/menu';
 import type { Game, Station } from '../round/state';
 import type { Mid, Rat } from '../midround';

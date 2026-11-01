@@ -1,6 +1,6 @@
 // Pizzas on the phone (ControllerGame): the setup line, the station card, the versus verdict, the Ayudante switch and the Cocina escuela card.
-import type { ControllerGame } from '@pichi/controller-kit/contract';
-import { DIFFICULTY_LABEL } from '@pichi/core/difficulty';
+import type { ControllerGame } from '@pichi/controller-kit';
+import { DIFFICULTY_LABEL } from '@pichi/core';
 import type { LobbyConfig } from '@pichi/core';
 import { fixedMap } from '../sim/maps';
 import type { PuestoMsgPz } from '../sim/puestos';

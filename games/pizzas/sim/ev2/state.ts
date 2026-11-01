@@ -1,6 +1,6 @@
 // EVENTS_V2 (design pizzas-tanda2 section 4): the state of the events with presence. Exists only in a cooperative round whose config asked for `eventsV2` and has events on:
 // without it `game.ev2` is absent, no hook below runs and the round is bit for bit the round of before. Everything here is integers and tick time: no stream, no wall clock.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { isFloor } from '../maps';
 import type { Game, Station } from '../round/state';
 

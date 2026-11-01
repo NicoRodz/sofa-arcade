@@ -1,7 +1,6 @@
 import type { Layout, Mech, Zone } from './layout';
-import { pick, type Rng } from '@pichi/core/rng';
+import { pick, type Rng, teamSize } from '@pichi/core';
 import { parseMap, posKey, type Pos } from '../maps';
-import { teamSize } from '@pichi/core/difficulty';
 import { PUESTOS, puestosFor, type PuestoId } from '../puestos';
 
 // Spawns: floor tiles that are nobody's access tile, 2+ apart, alternating zones when the map has them. One per chef of nMax.

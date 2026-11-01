@@ -10,11 +10,10 @@
 //  - There is no options schema driving the lobby: the Obstaculos lobby is a level grid with per-level compatibility, the Pizzas
 //    lobby is map cards + teams + sabotage. Each game paints its own lobby half (`lobby.render`) into the page's existing markup.
 import type Phaser from 'phaser';
-import type { Difficulty } from '@pichi/core/difficulty';
-import { createRegistry, type Registry } from '@pichi/core/registry';
+import type { Difficulty, LobbyConfig, MatchStart, MenuActBody, MenuBody, PhaseInfo, Phase, ServerMsg } from '@pichi/core';
+import { createRegistry, type Registry } from '@pichi/core';
 import type { GameManifest } from '@pichi/core/contract';
 import { catalog } from './catalog';
-import type { LobbyConfig, MatchStart, MenuActBody, MenuBody, PhaseInfo, Phase, ServerMsg } from '@pichi/core';
 import type { PlayerRec } from './player';
 
 export interface SceneSpec {

@@ -1,7 +1,7 @@
 // "Cómo se juega": one-view summary, closed with a tap. Opens on join and when the lobby picks a game not shown yet.
 import type { HowTo } from '@pichi/core/contract';
 import type { Phase } from '@pichi/core';
-import { howToHtml } from '@pichi/core/render';
+import { howToHtml } from '@pichi/core';
 import { seenAfterPhase, shouldShowHowTo } from '../howto';
 import type { Session } from './store';
 

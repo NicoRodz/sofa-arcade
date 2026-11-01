@@ -15,7 +15,7 @@ import {
   type KeyCtx,
   type MapNode,
 } from './model';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 
 export const BIOME_COLOR: Record<Biome, string> = {
   beach: '#F2D49B',

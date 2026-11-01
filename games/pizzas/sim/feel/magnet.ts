@@ -12,7 +12,7 @@
 //  5. Feel: inertia and the dash/buffer knobs from MAGNET_TUNING replace the difficulty's (`tuneFor`): a quicker stick, a shorter dash cooldown.
 // The Ayudante keeps its own rules (assist.ts) and reach x1.5, plus `assistExtra` of reach more when the magnet is on.
 import { isFloor } from '../maps';
-import type { Difficulty, Tuning } from '@pichi/core/difficulty';
+import type { Difficulty, Tuning } from '@pichi/core';
 import type { Game, Player, Station } from '../round/state';
 
 export type MagnetLevel = 'normal' | 'strong';

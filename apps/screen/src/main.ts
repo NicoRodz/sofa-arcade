@@ -1,24 +1,15 @@
 // Pichiclub's screen: the composition root. The shell (platform/screen) owns the flow; each game plugs in through its ScreenGame (games.ts).
 import './mount';
 import './catalog';
-import { drawCardArt } from '@pichi/game-pizzas/screen/art/cards';
-import { iris } from '@pichi/game-pizzas/screen/art/iris';
-import { starCanvas } from '@pichi/game-pizzas/screen/art/ui';
-import { paintLogo } from '@pichi/screen-kit/art/sofa-brand';
-import { initChips } from '@pichi/screen-kit/lobby/chips';
-import { initLobby, paintUi } from '@pichi/screen-kit/lobby/view';
-import { initMenu } from '@pichi/screen-kit/menu/view';
-import { startConnection } from '@pichi/screen-kit/net/connection';
-import { initDebugPanel } from '@pichi/screen-kit/net/latency';
-import { initResults } from '@pichi/screen-kit/results/view';
-import { bindServices, renderUi } from '@pichi/screen-kit/shell/app-state';
-import { initPage } from '@pichi/screen-kit/shell/boot';
-import { exposeDebug } from '@pichi/screen-kit/shell/debug';
-import { games, registerGames } from '@pichi/screen-kit/shell/game';
-import { createPhaser } from '@pichi/screen-kit/shell/game-host';
-import { initRoundFlow } from '@pichi/screen-kit/shell/round-flow';
-import { $ } from '@pichi/screen-kit/ui/dom';
-import { initKeys } from '@pichi/screen-kit/vote/dpad-vote';
+import { drawCardArt, iris, starCanvas } from '@pichi/game-pizzas/screen/art';
+import { paintLogo } from '@pichi/screen-kit/art';
+import { initChips, initLobby, paintUi } from '@pichi/screen-kit/lobby';
+import { initMenu } from '@pichi/screen-kit/menu/index';
+import { startConnection, initDebugPanel } from '@pichi/screen-kit/net';
+import { initResults } from '@pichi/screen-kit/results';
+import { bindServices, renderUi, initPage, exposeDebug, games, registerGames, createPhaser, initRoundFlow } from '@pichi/screen-kit/shell';
+import { $ } from '@pichi/screen-kit/ui';
+import { initKeys } from '@pichi/screen-kit/vote';
 import { screenGames } from './games';
 
 registerGames(screenGames);

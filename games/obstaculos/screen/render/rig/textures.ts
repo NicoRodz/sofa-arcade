@@ -1,11 +1,9 @@
 // Baked textures of the explorer (harness, helmet, speech bubble, badge, hint icons).
 import type Phaser from 'phaser';
-import { C, CHEFS, SKINS, chefOf } from '@pichi/screen-kit/art/tokens';
+import { C, CHEFS, SKINS, chefOf, makeTex, type Ctx, circle, drawOutlined, mix, rr, shade, vgrad } from '@pichi/screen-kit/art';
 import { HEAD_Y, drawBody, drawBodyBack } from '@pichi/screen-kit/art/chefdraw';
-import { Canvas2DPainter } from '@pichi/core/avatar/canvas2d-painter';
+import { Canvas2DPainter } from '@pichi/core/avatar';
 import { buildChefTextures } from '@pichi/screen-kit/art/chef';
-import { makeTex, type Ctx } from '@pichi/screen-kit/art/gfx';
-import { circle, drawOutlined, mix, rr, shade, vgrad } from '@pichi/screen-kit/art/gfx';
 import { INK } from '../biome';
 import type { HandAction } from '../view';
 

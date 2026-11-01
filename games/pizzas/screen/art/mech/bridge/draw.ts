@@ -3,7 +3,7 @@
 import type { MechArt } from '../../../../sim/mech/types';
 import { bridgeBreaks, BRIDGE_CRACKS, BRIDGE_MEND_TICKS, isBroken, mendProgress, repairable } from '../../../../sim/mech/bridge/module';
 import { hz3Params } from '../../../../sim/hazards/hazard-v3';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
 import { hideLabels, tileLabel } from '../tile-label';

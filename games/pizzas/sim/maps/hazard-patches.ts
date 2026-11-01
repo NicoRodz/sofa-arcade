@@ -1,7 +1,7 @@
 // The map patches of HAZARD_V3 (design 1.1, tanda 2a): one dynamic per map, as tile edits plus the mechanics (and, for map 22, a v2 mutation), applied to the fixed coop maps the 6-8 chef groups get
 // (10, 12, 13, 14, 15, 22, 27). Pure data and one pure function: the same (map, difficulty) always gives the same rows, no stream. A patch is coop only (versus keeps its maps) and the original maps stay
 // untouched in `layouts/`, so a round without `hazardV3` plays them as before. `patchMap` returns the map itself when it has no patch.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { MechId } from '../mech/ids';
 import type { MutationWave, Op } from '../mech/mutation/ops';
 import type { MapDef } from './types';

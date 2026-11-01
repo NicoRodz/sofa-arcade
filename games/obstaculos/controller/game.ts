@@ -1,6 +1,6 @@
 // Obstáculos on the phone: only the setup line. Its pad (stick, A/B, campaign signals) and how-to come with the manifest through the config message.
-import type { ControllerGame } from '@pichi/controller-kit/contract';
-import { DIFFICULTY_LABEL } from '@pichi/core/difficulty';
+import type { ControllerGame } from '@pichi/controller-kit';
+import { DIFFICULTY_LABEL } from '@pichi/core';
 import { parseObstOptions, setupLabel } from '../lobby';
 
 export const obstaculosController: ControllerGame = {

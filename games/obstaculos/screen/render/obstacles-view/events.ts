@@ -2,8 +2,8 @@
 import { ObstaclesViewBase } from './base';
 import { PLAYER_H, TILE } from '../../../index';
 import type { AllObstEvents } from '../../../index';
-import type { Emitter } from '@pichi/core/emitter';
-import { C, CHEFS, hexNum } from '@pichi/screen-kit/art/tokens';
+import type { Emitter } from '@pichi/core';
+import { C, CHEFS, hexNum } from '@pichi/screen-kit/art';
 import { clockText } from '../hud';
 import type { EntityView } from '../view';
 

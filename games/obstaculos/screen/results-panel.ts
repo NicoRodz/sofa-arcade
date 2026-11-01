@@ -1,9 +1,9 @@
 // Obstaculos' results: the expedition summary (stars, score, one card per level, awards) or, after a campaign level, the campaign's panel.
 // Moved out of apps/screen/src/main.ts (F4b): renderObstResults and the Obstaculos branches of renderResults.
 import { chefCanvas } from '@pichi/screen-kit/art/chef';
-import { app, services } from '@pichi/screen-kit/shell/app-state';
-import { laterInResults } from '@pichi/screen-kit/results/timers';
-import { $, esc } from '@pichi/screen-kit/ui/dom';
+import { app, services } from '@pichi/screen-kit/shell';
+import { laterInResults } from '@pichi/screen-kit/results';
+import { $, esc } from '@pichi/screen-kit/ui';
 import { camp } from './campaign-link';
 import { biomeColor, run, slotName } from './run-state';
 

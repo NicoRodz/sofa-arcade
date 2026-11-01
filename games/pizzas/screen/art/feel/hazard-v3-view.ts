@@ -4,7 +4,7 @@ import type Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
 import type { Fx } from '@pichi/screen-kit/art/fx';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 
 export class HazardV3View {

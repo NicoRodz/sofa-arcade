@@ -24,7 +24,7 @@ import {
   adaptiveCoyote,
 } from '../constants';
 import { T, isOneWayKind, isSolidKind } from '../legend';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { boxHitsSolid, onIce, tileAt, tileOf, type TileGrid } from './tiles';
 
 const EPS = 1e-6;

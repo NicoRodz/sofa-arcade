@@ -1,7 +1,7 @@
 // The first import of main.ts. ES modules evaluate in import order, so the markup is in the page before any other module asks the DOM for an element.
 // The platform owns the screens (menu, lobby, results, how-to); each game adds its own markup through the slots of those fragments.
 // The CSS imports keep one order: platform base and lobby, the lobby extras of Pizzas, the menu, results, how-to, then the games' results and campaign.
-import { compose, mountScreens } from '@pichi/screen-kit/screens/compose';
+import { compose, mountScreens } from '@pichi/screen-kit/screens';
 import '@pichi/screen-kit/screens/page/style.css';
 import '@pichi/screen-kit/screens/lobby/style.css';
 import '@pichi/game-pizzas/screen/markup/lobby-setup.css';

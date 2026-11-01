@@ -1,7 +1,6 @@
 // The generator rolls the v2 mutation (design section 6): the ops are DATA of the map, drawn here with the generator's stream. Easy changes only floor (ice), Normal adds one station that moves,
 // Hard moves two things and sometimes puts them back after 30 s.
-import type { Rng } from '@pichi/core/rng';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Rng, Difficulty } from '@pichi/core';
 import { MOVABLE, opsProblems, type MutationV2, type Op } from '../mech/mutation/ops';
 
 export const ROUND_AT = 5400; // 1:30

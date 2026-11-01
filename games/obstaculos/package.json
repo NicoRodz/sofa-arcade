@@ -13,6 +13,7 @@
     "./screen/audio": "./screen/audio/index.ts",
     "./validator": "./validator/index.ts",
     "./controller": "./controller/index.ts",
+    "./server": "./server/index.ts",
     "./screen/markup/*.html": "./screen/markup/*.html",
     "./screen/markup/*.css": "./screen/markup/*.css",
     "./*": "./*.ts"

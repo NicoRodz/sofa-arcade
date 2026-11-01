@@ -11,7 +11,7 @@ import {
   SILVER_PAR_MULT,
   TILE,
 } from '../../constants';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { ParsedLevel } from '../../parse';
 import { dropAll } from '../actions';
 import { bodyRect, cellRect, overlaps } from '../collide';

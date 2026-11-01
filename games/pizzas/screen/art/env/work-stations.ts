@@ -1,5 +1,4 @@
-import { C } from '@pichi/screen-kit/art/tokens';
-import { circle, drawOutlined, rng, rr, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, circle, drawOutlined, rng, rr, vgrad, type Ctx } from '@pichi/screen-kit/art';
 import { RAW_KIND, drawFood, ingredientColor } from '../food';
 import { seed } from './tiles';
 

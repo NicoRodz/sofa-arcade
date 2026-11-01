@@ -26,3 +26,5 @@ export { cameraHints, throwArc, type CameraHints } from './sim/campaignrules';
 export { darkView } from './sim/lantern';
 export * from './mechanics';
 export * from './campaign';
+export { obstaculosManifest } from './manifest';
+export { obstaculosProtocol, type ObstSlots } from './protocol';

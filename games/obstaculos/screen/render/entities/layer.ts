@@ -4,8 +4,7 @@ import { drawEnemy, drawGeyser, drawLantern, drawPickaxe, drawSinker } from './d
 import { at, type Sprite } from './sprite';
 import type Phaser from 'phaser';
 import type { Biome } from '../../../index';
-import { C, FONT } from '@pichi/screen-kit/art/tokens';
-import { R } from '@pichi/screen-kit/art/gfx';
+import { C, FONT, R } from '@pichi/screen-kit/art';
 import { INK, PALETTES } from '../biome';
 import type { EntityView, PlayerView } from '../view';
 

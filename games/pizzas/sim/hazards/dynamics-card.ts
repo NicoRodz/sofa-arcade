@@ -1,6 +1,6 @@
 // The card before the round (HAZARD_V3, design 1.2): one icon and one line per dynamic of the map, shown 4 s the first time the dynamic appears in the session. This file is the catalogue of texts and the pure rule
 // of what to show; the screen draws it (2a: on the big screen only). A dynamic that was already shown in this session is not shown again.
-import type { IconId } from '@pichi/core/icons';
+import type { IconId } from '@pichi/core';
 import type { MechId } from '../mech/ids';
 
 export interface DynamicLine {

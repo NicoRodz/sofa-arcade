@@ -12,8 +12,8 @@
 //   rat        Rata               a rat steals the item of a counter; a dash scares it (and the item goes back). Cooperative only
 // Versus: the same event, at the same instant, to both teams (one global state). The rat is never in the pool there (it would double the sabotage).
 import { DIRS, isFloor } from './maps';
-import { mulberry32, type Rng } from '@pichi/core/rng';
-import type { Difficulty } from '@pichi/core/difficulty';
+import { mulberry32, type Rng } from '@pichi/core';
+import type { Difficulty } from '@pichi/core';
 import { magnetFor } from './feel/magnet';
 import { newSurfaceState } from './surfaces/config';
 import { gentleRatStep, ratPrize } from './feel/rat';

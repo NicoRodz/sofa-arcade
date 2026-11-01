@@ -5,7 +5,7 @@ import type Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
 import { ratParams } from '../../../sim/feel/rat-v2';
-import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, hexNum } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';

@@ -1,5 +1,5 @@
 // Which Pizzas event triggers which sound: one entry per event of the kitchen sim (the mix itself lives in the platform's audio/recipes).
-import type { Action, SfxId } from '@pichi/screen-kit/audio/recipes';
+import type { Action, SfxId } from '@pichi/screen-kit/audio';
 import type { GameEvents, MechEvent, MutateEvent, SurfaceEvent } from '../../sim/round/events';
 
 const play = (id: SfxId): Action => ({ kind: 'play', id });

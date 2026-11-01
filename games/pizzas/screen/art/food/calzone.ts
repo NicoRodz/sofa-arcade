@@ -1,7 +1,5 @@
 // The Calzone, drawn by code: a folded half-moon of dough with a crimped edge, raw (pale, a streak of sauce) and baked (golden, slits, flour), and the fold glyph of the ticket.
-import { C } from '@pichi/screen-kit/art/tokens';
-import { circle, contactShadow, drawOutlined, rng, shine, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
-
+import { C, circle, contactShadow, drawOutlined, rng, shine, vgrad, type Ctx } from '@pichi/screen-kit/art';
 // The half-moon: flat edge down, dome up. Spans x -30..30 and y -22..14.
 const moon = (c: Ctx) => () => {
   c.beginPath();

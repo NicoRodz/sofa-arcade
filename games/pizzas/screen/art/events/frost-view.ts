@@ -1,7 +1,7 @@
 // The frost event, drawn: a pale-blue sheet over the whole kitchen that eases in and out, with a few flakes drifting down (the rules are in sim/midround.ts and
 // surfaces/physics.ts: every floor tile is ice while `mid.frost` is on).
 import type Phaser from 'phaser';
-import { H, W } from '@pichi/screen-kit/art/tokens';
+import { H, W } from '@pichi/screen-kit/art';
 
 const FLAKES = 26;
 export class FrostView {

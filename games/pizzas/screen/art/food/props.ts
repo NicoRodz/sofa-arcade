@@ -1,5 +1,4 @@
-import { C } from '@pichi/screen-kit/art/tokens';
-import { circle, contactShadow, drawOutlined, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, circle, contactShadow, drawOutlined, vgrad, type Ctx } from '@pichi/screen-kit/art';
 
 export function box(c: Ctx) {
   contactShadow(c, 2, 28, 30, 6);

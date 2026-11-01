@@ -1,9 +1,8 @@
 // Dynamic layer of the stations: items on boards and counters, progress bars, the oven (fire, pizza, ring), the bell.
 import Phaser from 'phaser';
 import type { Game, Item, Station } from '../../sim/overcooked';
-import { C, TILE, U, hexNum, progressColor } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, U, hexNum, progressColor, R, texSize } from '@pichi/screen-kit/art';
 import { OX, OY } from './env/grid';
-import { R, texSize } from '@pichi/screen-kit/art/gfx';
 import { CUT_KIND, foodKey, ITEM_KIND, type FoodKind } from './food';
 import { makeText, type Fx } from '@pichi/screen-kit/art/fx';
 import { PANTRY_EVERY_MS, PANTRY_MAX } from '../../sim/versus/versus';

@@ -1,6 +1,6 @@
 // Tramos: the generated stretches between modules. Jumps are sampled inside the validated envelope: a fraction (70, 85 or 100 %)
 // of the largest gap / step the validator accepts (4 tiles tied, 5 free; steps of 3).
-import { pick, randInt, type Rng } from '@pichi/core/rng';
+import { pick, randInt, type Rng } from '@pichi/core';
 import { Canvas } from './dsl';
 import { GROUND_ROW } from './types';
 import type { Piece } from '../generate/assemble';

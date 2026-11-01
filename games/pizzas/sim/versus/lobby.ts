@@ -1,24 +1,14 @@
 // Versus in the lobby (design pizzas-modalidades-coop-versus §3), as pure functions the screen and the tests share: can the mode be
 // picked, how the connected players are split into teams, which versus maps fit the teams, and how the lobby turns into a round.
 // No DOM, no clock, no I/O: the host (the screen) owns the state, this only computes the next one.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty, Rng, MatchStart } from '@pichi/core';
 import type { ChoiceSpec, ModeSpec } from '@pichi/core/contract';
 import { generateVersus } from '../generate';
 import { parseMap, type Pos, type SigmaName } from '../maps';
 import { addPlayer, createGame } from '../round/create';
 import type { Game } from '../round/state';
 import type { GameEvents, Emitter } from '../round/events';
-import type { Rng } from '@pichi/core/rng';
-import type { MatchStart } from '@pichi/core';
-import {
-  balanceTeams,
-  joinSmallestTeam,
-  leaveTeams,
-  makeTeams,
-  modeAvailability,
-  type TeamInfo,
-  type TeamSetup,
-} from '@pichi/core/lobby/teams';
+import { balanceTeams, joinSmallestTeam, leaveTeams, makeTeams, modeAvailability, type TeamInfo, type TeamSetup } from '@pichi/core/lobby';
 import { validateTeamSetup } from '../assist';
 import { iceRound, kitchenRegions } from './versus';
 import { roundRules } from '../midround';

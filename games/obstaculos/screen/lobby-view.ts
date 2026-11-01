@@ -1,9 +1,9 @@
 // Obstaculos' half of the lobby: mode (Encadenados / Libres), level or "Aleatorio" with its seed, and what the choice means for this group.
 // Moved out of apps/screen/src/main.ts (F4b): renderObstLobby, the branch of renderUi and the click handlers of its panel.
-import { sendMsg } from '@pichi/screen-kit/net/socket';
-import { app, connectedCount, setConfig } from '@pichi/screen-kit/shell/app-state';
-import { showTeams } from '@pichi/screen-kit/lobby/chips';
-import { $, esc, plural, setHtml } from '@pichi/screen-kit/ui/dom';
+import { sendMsg } from '@pichi/screen-kit/net';
+import { app, connectedCount, setConfig } from '@pichi/screen-kit/shell';
+import { showTeams } from '@pichi/screen-kit/lobby';
+import { $, esc, plural, setHtml } from '@pichi/screen-kit/ui';
 import {
   DIFFICULTY_PARAMS,
   LEVELS,

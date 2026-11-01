@@ -19,8 +19,7 @@ import {
 } from './layout';
 import { MAPS_BY_DIFFICULTY, fixedMap, parseMap, pickFixedMap, recommendedMaps, type MapChoice, type MapDef, type Pos } from '../maps';
 import type { PuestoId } from '../puestos';
-import { mulberry32, pickWeighted, type Rng } from '@pichi/core/rng';
-import { teamSize, type Difficulty } from '@pichi/core/difficulty';
+import { mulberry32, pickWeighted, type Rng, teamSize, type Difficulty } from '@pichi/core';
 import { orderSpawns, placeSpawns, zonePuestos } from './spawns';
 import { FLOOR_PER_PLAYER, floorTiles, minPlayers, spawnTiles, validateMap, zoneShareProblems } from '../validate';
 import { metric } from '../score';

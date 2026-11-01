@@ -2,8 +2,8 @@
 // ("Revancha" / "Cambiar equipos" / "Volver al lobby"). The Mac keyboard and the Captain's D-pad arrive here as the same key (platform/screen keys.ts).
 // Left/Right (and Up/Down) move the highlighted button, Enter presses it, Esc in the results is "Volver al lobby". The first button is
 // highlighted when the screen appears: Enter on the results is still Revancha, and on the pause it is Seguir sin ganador.
-import { app } from '@pichi/screen-kit/shell/app-state';
-import { $ } from '@pichi/screen-kit/ui/dom';
+import { app } from '@pichi/screen-kit/shell';
+import { $ } from '@pichi/screen-kit/ui';
 import { VERSUS_NAV, versusNavStep, type VersusNavCtx as Ctx } from '../versus-nav';
 import { PIZZAS, pz } from '../state';
 let sel = 0;

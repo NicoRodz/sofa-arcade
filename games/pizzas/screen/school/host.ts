@@ -19,8 +19,8 @@ import {
   type SchoolMember,
 } from '../../sim/school/index';
 import type { RoundView } from '../art/hud';
-import { chefOf } from '@pichi/screen-kit/art/tokens';
-import type { SfxId } from '@pichi/screen-kit/audio/recipes';
+import { chefOf } from '@pichi/screen-kit/art';
+import type { SfxId } from '@pichi/screen-kit/audio';
 import { createSchoolView, type SchoolView } from './view';
 
 export const ALL_DONE_HOLD_MS = 2400; // "todos listos" stays this long, then the school ends by itself

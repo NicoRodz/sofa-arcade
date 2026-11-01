@@ -1,5 +1,5 @@
 // Lobby rules for the fixed maps: which are recommended, warned or blocked for N players, and which one to pick.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { COOP_MAPS, FIXED_MAPS, MAPS_BY_DIFFICULTY, fixedMap, groupOfMap, type MapChoice } from './catalog';
 import type { MapDef } from './types';
 

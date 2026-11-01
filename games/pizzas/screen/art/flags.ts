@@ -1,8 +1,6 @@
 // Team flags (Versus F4): a pennant on a pole, drawn procedurally in the game's outlined style. One drawing function for the in-game flag
 // (a canvas texture refreshed every frame by the HUD) and for the results screen (a DOM canvas), so both show the same flag.
-import { shade, type Ctx } from '@pichi/screen-kit/art/gfx';
-import { C } from '@pichi/screen-kit/art/tokens';
-
+import { shade, type Ctx, C } from '@pichi/screen-kit/art';
 /** wave: victory (full height, big ripple). droop: defeat (half mast, it hangs and barely moves). idle: a calm flag. */
 export type FlagMood = 'wave' | 'droop' | 'idle';
 export interface FlagSpec {

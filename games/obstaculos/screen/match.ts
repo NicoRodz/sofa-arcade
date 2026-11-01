@@ -1,10 +1,8 @@
 // An Obstaculos round on the TV: the expedition runs in its own Phaser scene (the real world at 60 Hz, see host.ts), fed by the phones' last
 // packet. Moved out of apps/screen/src/main.ts (F4b): startObst / endObst, the scene's host and the perf counters.
 import type { MatchStart } from '@pichi/core';
-import { catalog } from '@pichi/screen-kit/shell/catalog';
+import { catalog, app, dispatch, showScene } from '@pichi/screen-kit/shell';
 import { obstBus } from './bus';
-import { app, dispatch } from '@pichi/screen-kit/shell/app-state';
-import { showScene } from '@pichi/screen-kit/shell/game-host';
 import { resolveLevel, GAME_ID } from '../index';
 import { ObstaclesScene } from './render/scene';
 import { ObstRun } from './host';

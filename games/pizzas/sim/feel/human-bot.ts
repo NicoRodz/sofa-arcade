@@ -7,7 +7,7 @@
 //  - it lets go of the stick before or after the target: it stops when it is within a random radius of the spot (a part of the drift is anticipated)
 //  - it faces the station within +-40 degrees of the true direction, holds the stick that way for a flick (or keeps pushing into it), then presses
 //  - it presses again after 350 ms of nothing (up to 3 presses): "first press" is the strict score, "hit" the forgiving one
-import { mulberry32, type Rng } from '@pichi/core/rng';
+import { mulberry32, type Rng } from '@pichi/core';
 
 export interface Ctl {
   x: number;

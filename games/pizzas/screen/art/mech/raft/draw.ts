@@ -2,7 +2,7 @@
 // an arrow on the raft says which way it is heading. The background paints the whole lane as water (world.ts).
 import type { MechArt } from '../../../../sim/mech/types';
 import { raftCap, raftPause } from '../../../../sim/mech/raft/module';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
 

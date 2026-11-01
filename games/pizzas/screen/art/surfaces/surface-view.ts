@@ -4,7 +4,7 @@
 import type Phaser from 'phaser';
 import type { Grid } from '../../../sim/maps';
 import { BELT_SPEED } from '../../../sim/surfaces/config';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 
 const ICE = { base: 0xbfe6f5, edge: 0xe9f8ff, deep: 0x8cc7e0, glint: 0xffffff };

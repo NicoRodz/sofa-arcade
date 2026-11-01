@@ -5,7 +5,7 @@ import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
 import { BELT_SPEED } from '../../../../sim/surfaces/config';
 import { beltWarn } from '../../../../sim/mech/beltReverse/module';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../../env/grid';
 
 const C = { base: 0x3a3f47, rail: 0xf2b632, chevron: 0xffd966, dark: 0x262a30, warn: 0xb18cff };

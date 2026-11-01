@@ -3,7 +3,7 @@
 import type Phaser from 'phaser';
 import type { Game } from '../../../sim/overcooked';
 import { surfaceAt } from '../../../sim/surfaces/physics';
-import { TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { TILE, hexNum } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 
 const MIN_SPEED = 0.45; // tiles/s: below it there is no drift worth drawing

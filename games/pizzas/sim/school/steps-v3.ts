@@ -1,7 +1,7 @@
 // Cocina escuela, HAZARD_V3: four more steps after the first four, taught one at a time with no clock (design 1.2, steps 5-8): the second dish, the big fire, oil, the rat.
 // Pure data and rules, like steps.ts. NOT wired into the session yet (school.ts still runs the first four steps): the session needs a cheese crate, a scripted big fire, a drip and a scripted rat in the
 // school kitchen. `SCHOOL_ROWS_V3` is the hall for it. The text of each step is at most 8 words (a test pins it); the TV and the phone show the same line.
-import type { IconId } from '@pichi/core/icons';
+import type { IconId } from '@pichi/core';
 import { SCHOOL_STEPS, completes, type SchoolEvent, type SchoolStep } from './steps';
 
 export interface SchoolStepV3 extends Omit<SchoolStep, 'id'> {

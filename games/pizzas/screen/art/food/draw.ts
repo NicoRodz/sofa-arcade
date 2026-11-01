@@ -1,6 +1,6 @@
 // Food and items, drawn procedurally at the current ctx origin. One box of 72x72 design units per item.
 import type Phaser from 'phaser';
-import { makeTex, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { makeTex, type Ctx } from '@pichi/screen-kit/art';
 import { extraDraw, type RecipeFoodKind } from './recipes'; // the Carta del día: pepperoni, mushroom, calzone
 import { type FoodKind, foodKey } from './kinds';
 import { doughRaw, doughStr, tomato, tomatoCut, cheeseRaw, cheeseCut } from './ingredients';

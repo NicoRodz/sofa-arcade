@@ -1,6 +1,6 @@
 // What the lobby and the banner say about the events, matching what the sim does today: with eventsV2 (coop) the four events with presence have their own lines
 // (the cake pays CAKE_PRIZE with a candle, not the flat 150 of EVENT_INFO), and the number of events per round is the calendar of the difficulty (hazards/events-v2.ts).
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { hazardParams } from '../hazards/hazard-v2';
 import { EVENT_INFO, type EventKind } from '../midround';
 import { RED_PRIZE, SPILL_PRIZE, cakeLine } from './state';

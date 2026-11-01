@@ -1,5 +1,5 @@
 // Helpers for the F2a tests: tiny levels from ASCII, scripted inputs, run loops.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { EntityParam, GameMode, LevelDef } from '../types';
 import { TILE } from '../constants';
 import type { PlayerStep } from './input';

@@ -1,5 +1,5 @@
 import { MAP_H, MAP_W, parseMap, type SigmaName, type VersusMapDef } from '../maps';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import {
   MAX_ATTEMPTS,
   OBSTACLES,
@@ -11,7 +11,7 @@ import {
   type Layout,
   type Mech,
 } from './layout';
-import { mulberry32, pickWeighted, randInt, type Rng } from '@pichi/core/rng';
+import { mulberry32, pickWeighted, randInt, type Rng } from '@pichi/core';
 import { SIGMAS } from '../symmetry';
 import { spawnTiles, teamRange, validateVersus } from '../validate';
 import { pickMech } from './coop';

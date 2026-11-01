@@ -1,6 +1,6 @@
 // The Obstaculos quick-game lobby as the Captain's touch form (mode, difficulty, level grid) and the judge of each touch against it. Same contract as
 // games/pizzas/screen/lobby-menu.ts: pure, no DOM, the screen validates against its own state. Level ids are `lv<N>`; "Aleatorio" is the grid's extra, `lvr`.
-import { DIFFICULTIES, DIFFICULTY_LABEL, type Difficulty } from '@pichi/core/difficulty';
+import { DIFFICULTIES, DIFFICULTY_LABEL, type Difficulty } from '@pichi/core';
 import type { MenuActBody, MenuBody, MenuErrCode, MenuItem, MenuRow } from '@pichi/core';
 import { LEVELS } from '../levels';
 import { MODE_BLURB, MODE_LABEL, RANDOM_LEVEL, levelCompat, type ObstOptions } from '../lobby';

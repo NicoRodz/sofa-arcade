@@ -1,7 +1,7 @@
 // The Pizzas lobby's map panel: the cards, the preview, the seed, what the choice means for this group and the "can we start" state of the button.
-import { params } from '@pichi/core/difficulty';
-import { app } from '@pichi/screen-kit/shell/app-state';
-import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
+import { params } from '@pichi/core';
+import { app } from '@pichi/screen-kit/shell';
+import { $, esc, setHtml } from '@pichi/screen-kit/ui';
 import { generate } from '../../sim/generate';
 import type { MapDef } from '../../sim/maps/types';
 import { coopLobbyView, fixedMap, lobbyGroupOfMap, mapFeatures, mapStatus, type MapStatus, recommendedForN } from '../../sim/maps';

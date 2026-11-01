@@ -1,8 +1,7 @@
 // The generator of maps with mechanics (design section 6): `generateMech({ seed, n, difficulty, mechanics? })`. It takes the classic generator's map of seed+k (already valid), pastes the mechanics with
 // its own stream (seed ^ MECH_TAG), rolls the v2 mutation, and keeps the first attempt whose validators all pass (the base validator, every mechanic's, and the multi-state one, for the team sizes 2..n).
 // Up to 64 seeds; then it falls back to the plain classic map with no mechanics (`fallback: true`). Same inputs, same map. The sim never draws from this stream.
-import { mulberry32, type Rng } from '@pichi/core/rng';
-import { teamSize, type Difficulty } from '@pichi/core/difficulty';
+import { mulberry32, type Rng, teamSize, type Difficulty } from '@pichi/core';
 import { generate } from '../generate/coop';
 import { floorTiles, minPlayers, validateMap, FLOOR_PER_PLAYER } from '../validate';
 import { multistateProblems } from '../validate/multistate';

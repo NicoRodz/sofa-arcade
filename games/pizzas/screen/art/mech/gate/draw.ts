@@ -5,7 +5,7 @@ import type Phaser from 'phaser';
 import type { Game } from '../../../../sim/overcooked';
 import type { MechArt } from '../../../../sim/mech/types';
 import { doorOpenAt, gateBlinkTicks, gateOpenTicks, gateMap, standingOn } from '../../../../sim/mech/gate/state';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../../env/grid';
 
 const C = {

@@ -1,5 +1,5 @@
 // The order queues: new orders, the golden (VIP) order, deliveries at the window, the tip streak, and the end-of-tick pass over every queue.
-import { DIRTY_MS, type Tuning } from '@pichi/core/difficulty';
+import { DIRTY_MS, type Tuning } from '@pichi/core';
 import { WARNING_MS, tag, type Game, type Order, type Player, type TeamState } from './state';
 import { BIRTHDAY_POINTS, EVENT_MAX_QUEUE, RUSH_ORDERS, type MidFx } from '../midround';
 import { rushOrdersV2 } from '../hazards/events-v2';

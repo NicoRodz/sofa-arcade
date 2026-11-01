@@ -1,7 +1,7 @@
 // Art of 'sprinkler' (drawn by code): a ceiling-style head on its tile (a grey cap and a nozzle), a faint ring showing its 3x3 reach, and while it sprays: droplets falling over the 3x3 and a blue wash. Implemented by T1d.
 import type { MechArt } from '../../../../sim/mech/types';
 import { heads } from '../../../../sim/mech/sprinkler/module';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
 

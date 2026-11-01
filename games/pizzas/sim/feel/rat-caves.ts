@@ -1,7 +1,7 @@
 // HAZARD_V3, map 15 (design 1.1): the rat has two caves. It comes in by one and leaves by the other, so a chef cannot wait at the hole it came from. Which one it comes in by is one draw of a sub-stream tagged
 // `rat:caves:<start tick>` of the events seed, never the main stream; the caves are listed by (y, x) so the draw is the same on every machine. Pure given (g, startAt).
 import type { Game } from '../round/state';
-import { mulberry32 } from '@pichi/core/rng';
+import { mulberry32 } from '@pichi/core';
 import { subSeed } from '../recipes/menu';
 
 export type Cave = readonly [number, number];

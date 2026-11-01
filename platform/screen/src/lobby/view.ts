@@ -1,6 +1,6 @@
 // The part of the screen the menu and every lobby share: the logo, the QR + room code, the connected players and the difficulty pills.
 // The rest of a lobby is the game's (ScreenGame.lobby.render). Moved out of apps/screen/src/main.ts (F4b).
-import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core/difficulty';
+import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core';
 import { PLATFORM } from '@pichi/core/contract';
 import { paintLogo, paintTitle } from '../art/sofa-brand';
 import { catalog } from '../shell/catalog';

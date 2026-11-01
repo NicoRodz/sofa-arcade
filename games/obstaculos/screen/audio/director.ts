@@ -1,6 +1,6 @@
 // Glue: subscribes to the obst.* events on the session bus, owns the AudioContext, runs the music scheduler.
 // The game never depends on audio: every path is a no-op until the context runs.
-import { BUS_GAIN, DUCK_GAIN, DUCK_S, masterGain } from '@pichi/screen-kit/audio/mixer';
+import { BUS_GAIN, DUCK_GAIN, DUCK_S, masterGain } from '@pichi/screen-kit/audio';
 import type { Biome } from '../../index';
 import { VoiceLimiter } from './mixer';
 import { LOOKAHEAD_S, TICK_MS, advance, newSched, type MusicState } from './music';

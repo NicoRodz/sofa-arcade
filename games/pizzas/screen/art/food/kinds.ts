@@ -1,5 +1,5 @@
 import type { Item } from '../../../sim/overcooked';
-import { C } from '@pichi/screen-kit/art/tokens';
+import { C } from '@pichi/screen-kit/art';
 import type { HeldSkin } from '@pichi/screen-kit/art/chef';
 import { EXTRA_COLOR, EXTRA_ITEM_KIND, type RecipeFoodKind } from './recipes'; // the Carta del día: pepperoni, mushroom, calzone
 

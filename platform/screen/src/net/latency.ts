@@ -1,6 +1,6 @@
 // Latency instrumentation and the debug panel (D key): RTT per phone, phone -> screen lag, packets per second, CSV export.
 // Moved out of apps/screen/src/main.ts (F4b) unchanged.
-import { percentile } from '@pichi/core/stats';
+import { percentile } from '@pichi/core';
 import { $, num0 } from '../ui/dom';
 import { app, sync, type PlayerRec } from '../shell/app-state';
 

@@ -1,7 +1,7 @@
 // HAZARD_V2 (design "¡Que salgan las pizzas!", tanda 1): the numbers of the harder hazards, one row per difficulty. Pure data and pure reads; nothing here draws from a stream.
 // Each system reads its block only when its own flag is on (g.burn, g.magnet, g.surf, g.mid); the rounds without those flags keep the old constants to the bit.
 // Fire sizes are a pure function of (seed, FIRE_SEED_TAG, local fire index k): the k-th fire of a kitchen has the same size in both kitchens of a versus match (mirror-safe).
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 
 export const FIRE_SEED_TAG = 0xf17e5eed;
 export const EVENT_SCHEDULE_TAG = 0x5c4ed01e;

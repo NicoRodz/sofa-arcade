@@ -1,6 +1,6 @@
 // The suggested station card of a Pizzas round: informs, never blocks. "Cambiar" cycles to another puesto and tells the screen.
-import type { ControllerHost } from '@pichi/controller-kit/contract';
-import { iconSvg } from '@pichi/core/render';
+import type { ControllerHost } from '@pichi/controller-kit';
+import { iconSvg } from '@pichi/core';
 import { PUESTOS, type PuestoId, type PuestoMsgPz } from '../sim/puestos';
 
 export function createPuestos(host: ControllerHost) {

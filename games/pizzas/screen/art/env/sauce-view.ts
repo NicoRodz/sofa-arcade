@@ -2,7 +2,7 @@
 // fields of the station view (bar, minis, donePizza) so stations.ts does not grow; `place` and `Bar` come in as arguments (this file never imports stations.ts: no cycle).
 import type Phaser from 'phaser';
 import type { Station } from '../../../sim/overcooked';
-import { C, TILE } from '@pichi/screen-kit/art/tokens';
+import { C, TILE } from '@pichi/screen-kit/art';
 import { foodKey } from '../food';
 
 type Img = Phaser.GameObjects.Image;

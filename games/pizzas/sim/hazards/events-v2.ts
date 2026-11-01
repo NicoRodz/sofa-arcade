@@ -1,10 +1,10 @@
 // The calendar of HAZARD_V2: several events per round instead of one. Normal 2, Hard 3 (Easy, when switched on by hand: one). Each event starts inside a window given as a fraction of the round,
 // no kind repeats, and at least `gapMs` pass between the end of one and the announce of the next. The kinds and instants come from a stream of their own (seed ^ EVENT_SCHEDULE_TAG):
 // versus has ONE global Mid, so both kitchens get the same event on the same tick. The sim keeps the rest of the list in `Mid.queue` and loads the next one when an event ends.
-import { mulberry32 } from '@pichi/core/rng';
+import { mulberry32 } from '@pichi/core';
 import { ANNOUNCE_MS, type EventKind } from '../midround';
 import { EVENT_SCHEDULE_TAG, hazardParams } from './hazard-v2';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 
 export interface Planned {
   kind: EventKind;

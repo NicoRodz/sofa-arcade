@@ -2,13 +2,9 @@
 // rig's own sprite slots (same 120x170 box, feet at (60,150)); the rig keeps animating them (squash, walk, chop) and its own eyes, mouth,
 // ring and name plate. A player without `ap` never gets here: the rig keeps the slot textures it was built with.
 import type Phaser from 'phaser';
-import type { Appearance } from '@pichi/core/avatar/appearance';
-import { Canvas2DPainter } from '@pichi/core/avatar/canvas2d-painter';
-import { encodeAppearance } from '@pichi/core/avatar/codec';
-import { SKIN_TONES } from '@pichi/core/avatar/catalog';
-import { clothesSpec } from '@pichi/core/avatar/parts/data';
-import { avatarParts } from '@pichi/core/avatar/draw';
-import { makeCtx } from '@pichi/core/avatar/parts/ctx';
+import type { Appearance } from '@pichi/core/avatar';
+import { Canvas2DPainter, encodeAppearance, SKIN_TONES, avatarParts } from '@pichi/core/avatar';
+import { clothesSpec, makeCtx } from '@pichi/core/avatar/parts';
 import { drawArm } from '../chefdraw';
 import { makeTex, type Ctx } from '../gfx';
 

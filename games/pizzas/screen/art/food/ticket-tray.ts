@@ -3,8 +3,7 @@
 import type Phaser from 'phaser';
 import type { Recipe } from '../../../sim/recipes/defs';
 import { BANDEJA_BONUS } from '../../../sim/recipes/bandeja';
-import { C } from '@pichi/screen-kit/art/tokens';
-import { R } from '@pichi/screen-kit/art/gfx';
+import { C, R } from '@pichi/screen-kit/art';
 import { makeText } from '@pichi/screen-kit/art/fx';
 import { foodKey, type FoodKind } from './kinds';
 import { RECIPE_PIZZA } from './recipes';

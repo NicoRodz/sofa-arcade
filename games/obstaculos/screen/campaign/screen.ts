@@ -2,7 +2,7 @@
 // which main.ts already unifies) into the model's effects and runs them against the flow. main.ts only lends it the things it owns
 // (the phase, the players, the iris, the sounds) through ScreenDeps and asks it to draw.
 import { nextLevel, type Catalog, type CatalogLevel } from '../../campaign/index';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { campKey, hubItems, initialState, startNode, worldNodes, type CampState, type Effect, type KeyCtx } from './model';
 import { renderHub, renderMap, renderPick, renderPractice, renderResult, type ViewCtx } from './view';
 import { CampaignFlow, type FlowDeps, type Hub, type LevelEnd } from './flow';

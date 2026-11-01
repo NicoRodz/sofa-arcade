@@ -2,10 +2,9 @@
 // reaches the window takes a slot of the ticket; the third pays the whole tray: the sum of the three plates times 1.3, or only the plain sum when the first and the last
 // were more than the margin apart (Easy 35 s, Normal 25 s, Difficult 18 s). At most one is open per team; in the adaptive load it counts as 3; its patience is twice a plate's.
 // The parts are drawn from the team's own stream ONLY when a Bandeja comes up, so with the flag off nothing is ever drawn.
-import type { Tuning, Difficulty } from '@pichi/core/difficulty';
-import type { Rng } from '@pichi/core/rng';
+import type { Tuning, Difficulty, Rng } from '@pichi/core';
 import type { Game, Item, Order, Player, TeamState } from '../round/state';
-import { DIRTY_MS } from '@pichi/core/difficulty';
+import { DIRTY_MS } from '@pichi/core';
 import { RECIPE_DEFS, dishRecipe, recipeBase, servesRecipe, type Recipe } from './defs';
 
 export const BANDEJA_BONUS = 1.3;

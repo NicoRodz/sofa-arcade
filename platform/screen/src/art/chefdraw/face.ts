@@ -1,6 +1,6 @@
 // Chef parts drawn on a canvas. Origin is the chef's feet; the head centre is (0, -68). Used for textures and DOM portraits.
 import { C } from '../tokens';
-import type { Painter } from '@pichi/core/avatar/painter';
+import type { Painter } from '@pichi/core/avatar';
 
 export function drawEye(c: Painter, kind: 'open' | 'happy' | 'x') {
   if (kind === 'open') {

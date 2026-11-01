@@ -1,9 +1,8 @@
 // What the Pizzas screens share while the game is on the TV: the round, the lobby's team / map / sabotage bookkeeping, the versus verdict.
 // The module-level `let`s of the old main.ts that belong to Pizzas, as fields of `pz`: private to this package (the shell never reads it).
 import { modeOf, type GameDef } from '@pichi/core/contract';
-import { catalog } from '@pichi/screen-kit/shell/catalog';
+import { catalog, app, connectedCount } from '@pichi/screen-kit/shell';
 import { pizzasBus } from './bus';
-import { app, connectedCount } from '@pichi/screen-kit/shell/app-state';
 import type { PuestoMsgPz } from '../sim/puestos';
 import { createGame } from '../sim';
 import { lobbyN, type MapFamily } from '../sim/maps';

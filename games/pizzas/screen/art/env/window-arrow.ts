@@ -1,7 +1,7 @@
 // The bobbing arrow of the pass window, pointing at it from the open floor beside it. With a rat cave beside the window (HAZARD_V3, map 15) the arrow never sits over the hole.
 import type Phaser from 'phaser';
 import type { Game, Station } from '../../../sim/overcooked';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 
 type Place = (scene: Phaser.Scene, key: string, x: number, y: number, k?: number) => Phaser.GameObjects.Image;
 

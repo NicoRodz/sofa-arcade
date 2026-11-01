@@ -1,5 +1,4 @@
-import { C } from '@pichi/screen-kit/art/tokens';
-import { circle, drawOutlined, rr, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, circle, drawOutlined, rr, vgrad, type Ctx } from '@pichi/screen-kit/art';
 
 export function trashCan(c: Ctx, x0: number, y0: number) {
   c.save();

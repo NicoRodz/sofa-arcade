@@ -3,8 +3,7 @@
 // The pictures differ by SHAPE, not only by colour: the calzone is a half-moon, the pepperoni a row of coins, the mushroom a T, the cheese a heap of shreds.
 import type Phaser from 'phaser';
 import { RECIPE_DEFS, type Recipe } from '../../../sim/recipes/defs';
-import { C } from '@pichi/screen-kit/art/tokens';
-import { R } from '@pichi/screen-kit/art/gfx';
+import { C, R } from '@pichi/screen-kit/art';
 import { foodKey, type FoodKind } from './kinds';
 import { place } from '../stations';
 import { makeText } from '@pichi/screen-kit/art/fx';

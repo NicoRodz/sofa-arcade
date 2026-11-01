@@ -5,13 +5,13 @@
 import type Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
-import type { TeamInfo } from '@pichi/core/lobby/teams';
+import type { TeamInfo } from '@pichi/core/lobby';
 import { ANNOUNCE_MS, EVENT_INFO, dirtyPlates, type EventKind } from '../../../sim/midround';
 import { eventBlurb } from '../../../sim/ev2/lines';
 import { cakeLine } from '../../../sim/ev2/state';
 import { FrostView } from './frost-view';
 import { Ev2View } from './ev2-view';
-import { C, H, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, H, TILE, W, hexNum } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { place } from '../stations';

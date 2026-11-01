@@ -1,10 +1,9 @@
 // Suggested stations ("puestos"): who starts where. Nothing here is enforced: any chef can use any station.
 // Spawn i gets puesto i (design 15-mapas §1.2): the map author orders the S tiles so spawn i sits next to the stations of puesto i.
 import { mechFlagsOf } from './mech/ids';
-import type { IconId } from '@pichi/core/icons';
-import type { PuestoMsg } from '@pichi/core';
+import type { IconId, PuestoMsg } from '@pichi/core';
 import type { Slots } from '@pichi/core/contract';
-import { teamSize } from '@pichi/core/difficulty';
+import { teamSize } from '@pichi/core';
 import { DIRS, floorComponents, isFloor, parseMap, spawnPoints, type Grid, type MapDef, type Pos } from './maps';
 
 const accessTiles = (g: Grid, x: number, y: number): Pos[] =>

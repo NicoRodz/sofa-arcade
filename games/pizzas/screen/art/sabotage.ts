@@ -4,12 +4,11 @@
 import type Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../sim/round/events';
 import type { Game } from '../../sim/overcooked';
-import type { TeamInfo } from '@pichi/core/lobby/teams';
+import type { TeamInfo } from '@pichi/core/lobby';
 import { WINDUP_MS, FLIGHT_MS, LAND_AFTER_MS, type Flight } from '../../sim/sabotage-config';
 import { reticleAt, catapultState, type CatapultState } from '../../sim/sabotage';
-import { C, TILE, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, TILE, hexNum, R } from '@pichi/screen-kit/art';
 import { OX, OY } from './env/grid';
-import { R } from '@pichi/screen-kit/art/gfx';
 import { foodKey, ITEM_KIND } from './food';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { place } from './stations';

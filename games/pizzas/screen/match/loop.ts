@@ -2,11 +2,9 @@
 // Cocina escuela glue.
 import type { BuzzKind } from '@pichi/core';
 import { pizzasBus } from '../bus';
-import { sendMsg } from '@pichi/screen-kit/net/socket';
-import { app, dispatch, services, transition } from '@pichi/screen-kit/shell/app-state';
-import { showScene } from '@pichi/screen-kit/shell/game-host';
-import { openHowTo } from '@pichi/screen-kit/shell/round-flow';
-import { $ } from '@pichi/screen-kit/ui/dom';
+import { sendMsg } from '@pichi/screen-kit/net';
+import { app, dispatch, services, transition, showScene, openHowTo } from '@pichi/screen-kit/shell';
+import { $ } from '@pichi/screen-kit/ui';
 import { TICK_MS, resolvePause, tick, type Controls } from '../../sim';
 import { staleControls } from '../../sim/feel/stale';
 import { createHintSync } from '../../sim/hints';

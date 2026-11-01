@@ -1,5 +1,5 @@
 // Phone labels (14 characters at most) of M: what A and B do for the chef in front of it. Pure, like hints.ts.
-import type { IconId } from '@pichi/core/icons';
+import type { IconId } from '@pichi/core';
 import type { Game, Player, Station } from '../../round/state';
 import { handleOf, kneading, slot } from './state';
 

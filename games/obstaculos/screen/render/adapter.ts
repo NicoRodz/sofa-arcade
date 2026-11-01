@@ -14,7 +14,7 @@ import {
   type PlayerState,
   type World,
 } from '../../index';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { GameMode, ParsedLevel, TileGrid } from '../../index';
 import { entitiesFromLevel } from './stub';
 import type { EntityView, HandAction, HazardView, HudView, PlayerView, RopeView, WorldView } from './view';

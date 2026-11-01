@@ -1,5 +1,5 @@
 // EVENTS_V2: the labels of A and B near the things the events add: the light board (hold B), the candle drawer (A), the window with a cake that has no candle yet.
-import type { IconId } from '@pichi/core/icons';
+import type { IconId } from '@pichi/core';
 import { isDish } from '../recipes/defs';
 import type { Game, Player } from '../round/state';
 import { BOARD_RADIUS, near } from './state';

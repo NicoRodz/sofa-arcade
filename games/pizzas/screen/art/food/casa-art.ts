@@ -1,6 +1,6 @@
 // The art of the Pizza de la casa (tanda 3): a cheese pizza on the red base, plus what the chef added. Ham in the oven (a pepperoni-pink square layer), basil on the plate after it,
 // and radial cuts for the portions. One picture per upgrade mask (dish_h0 .. dish_h7); the oven shows the pizza with or without the ham.
-import type { Ctx } from '@pichi/screen-kit/art/gfx';
+import type { Ctx } from '@pichi/screen-kit/art';
 import { basilOverlay } from './basil';
 import { hamOverlay } from './ham';
 

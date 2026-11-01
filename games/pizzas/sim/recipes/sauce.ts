@@ -3,7 +3,7 @@
 //   Pot: A with a chopped tomato loads it; B held STIR_MS stirs it into sauce; A with empty hands takes the sauce. Left too long it sticks (Normal 20 s, Hard 12 s,
 //   Easy never): A with empty hands scrapes it off and the sauce is lost.
 //   Oven: dough alone bakes the base at BASE_COOK_MULT; the bell rings; cheese and mushroom must go in within BELL_MS[difficulty] or the base burns; then the second bake.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { Game, Item, Station } from '../round/state';
 import { cutType } from './defs';
 import { potCapacity } from './sim';

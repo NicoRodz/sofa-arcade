@@ -1,6 +1,6 @@
 // The games this build publishes: the one list the relay, the screen and the controller compose. A new game is one line here (and its protocol in protocol.ts).
-import { obstaculosManifest } from '@pichi/game-obstaculos/manifest';
-import { pizzasManifest } from '@pichi/game-pizzas/manifest';
+import { obstaculosManifest } from '@pichi/game-obstaculos';
+import { pizzasManifest } from '@pichi/game-pizzas';
 import { createCatalog, type ComingSoon } from '@pichi/core/contract';
 
 export const GAMES = [pizzasManifest, obstaculosManifest] as const;

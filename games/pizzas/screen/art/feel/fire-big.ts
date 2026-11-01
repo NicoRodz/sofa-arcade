@@ -2,7 +2,7 @@
 // light up with each chef holding Picar, the douse bar, and a padlock over the bar when ONE chef is only containing it (the bar does not move) and a big label that says what is missing.
 // Pure view: `update` reads what burn.ts already counts (the chefs in front of the station and the bar fraction); nothing here knows the rules but the number 2.
 import type Phaser from 'phaser';
-import { C, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, hexNum } from '@pichi/screen-kit/art';
 import { makeText } from '@pichi/screen-kit/art/fx';
 
 export const BIG_K = 1.5; // size of the flames of a big fire, relative to a small one

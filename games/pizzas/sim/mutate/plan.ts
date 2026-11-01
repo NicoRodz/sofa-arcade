@@ -1,7 +1,7 @@
 // Kitchens that mutate (council pizzas A-2 / B-9): ONE change of the map per round, at 1:30, announced MUTATE_WARN_MS before with an alarm and a banner.
 // A mutation is DATA: a diff of tiles (position + the map letter it becomes). Only coop maps that have one are eligible; with the flag off nothing here runs.
 // Versus excludes it for now (two kitchens must stay equal halves; a mutation would have to be mirrored through sigma).
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 
 export interface TileDiff {
   x: number;

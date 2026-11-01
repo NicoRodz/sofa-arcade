@@ -7,10 +7,10 @@ import { difficultyOf } from '../metric/metric';
 import { MODULES } from '../modules/defs';
 import { tramo, flat, FRACTIONS, type TramoKind } from '../modules/tramos';
 import type { LevelModule } from '../modules/types';
-import { mulberry32, pick, randInt, type Rng } from '@pichi/core/rng';
+import { mulberry32, pick, randInt, type Rng } from '@pichi/core';
 import { BIOMES, type Biome, type GameMode, type LevelDef, type Tether } from '../types';
 import { modesOf, validateState } from '../validator/validate';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { LetterPool, flatCap, rename, toLevel, type Piece } from './assemble';
 
 export const MAX_ATTEMPTS = 40;

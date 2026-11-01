@@ -3,9 +3,9 @@ import type Phaser from 'phaser';
 import { TILE, U, chefOf, hexNum } from '../tokens';
 import { R, texSize } from '../gfx';
 import { PROP_Y, hatTop } from '../chefdraw';
-import { ANCHORS, CHOP_MS, HEAD_Y, MOUTH_DY, STRETCH_MS, armPose, eyeLook, facing, gait, itemAnchor } from '@pichi/core/avatar/rig-math';
+import { ANCHORS, CHOP_MS, HEAD_Y, MOUTH_DY, STRETCH_MS, armPose, eyeLook, facing, gait, itemAnchor } from '@pichi/core/avatar';
 import { CHEF_SCALE, ITEM_SCALE, plateKey } from './textures';
-import type { Appearance } from '@pichi/core/avatar/appearance';
+import type { Appearance } from '@pichi/core/avatar';
 import { lookTextures, type LookKeys } from './look';
 
 /** What a chef carries is the game's business: `idle` is the texture the carried-item image is created with, `keyOf` the texture of an item. */

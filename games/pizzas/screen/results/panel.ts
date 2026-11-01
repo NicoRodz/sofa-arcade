@@ -1,8 +1,8 @@
 // Pizzas' results: the round summary (stars, score, stats, podium, kudos) or, in versus, the verdict (versus-view.ts).
 import { chefCanvas } from '@pichi/screen-kit/art/chef';
-import { laterInResults } from '@pichi/screen-kit/results/timers';
-import { app, services } from '@pichi/screen-kit/shell/app-state';
-import { $, esc, setHtml } from '@pichi/screen-kit/ui/dom';
+import { laterInResults } from '@pichi/screen-kit/results';
+import { app, services } from '@pichi/screen-kit/shell';
+import { $, esc, setHtml } from '@pichi/screen-kit/ui';
 import { kudosLines } from '../../sim/kudos';
 import { summarize } from '../../sim/results';
 import { cancelFlagLoop, renderVersusResults } from './versus-view';

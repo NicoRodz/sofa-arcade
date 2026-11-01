@@ -2,7 +2,7 @@
 import { ObstaclesEvents } from './events';
 import type Phaser from 'phaser';
 import { PLAYER_H, PLAYER_W, ROPE_LEN, TILE, DIFFICULTY_PARAMS, BUBBLE_POP_SEC, isSolidKind, tileAt } from '../../../index';
-import { H, W } from '@pichi/screen-kit/art/tokens';
+import { H, W } from '@pichi/screen-kit/art';
 import { buildFxTextures } from '@pichi/screen-kit/art/fx';
 import type { Anchor } from '../rope';
 import { buildEntityTextures } from '../entities';

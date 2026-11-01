@@ -5,12 +5,10 @@ import { eventsOf } from '../../sim/midround';
 import { mutateOf } from '../../sim/mutate/plan';
 import { VERSUS_RANDOM, lobbySetup, sabotageNotice, teamSizes } from '../../sim/versus/lobby';
 import { versusMap } from '../../sim/versus/maps';
-import { app } from '@pichi/screen-kit/shell/app-state';
-import { chips, chipsMovedToTeams } from '@pichi/screen-kit/lobby/chips';
-import { isVersus } from '../state';
-import { $, esc, plural, setHtml } from '@pichi/screen-kit/ui/dom';
-import { assistIds, modeNow, pz } from '../state';
-
+import { app } from '@pichi/screen-kit/shell';
+import { chips, chipsMovedToTeams } from '@pichi/screen-kit/lobby';
+import { isVersus, assistIds, modeNow, pz } from '../state';
+import { $, esc, plural, setHtml } from '@pichi/screen-kit/ui';
 export const OPTION_PILL: Record<string, string> = { hiddenScore: 'Marcador oculto', handicap: 'Ventaja equipo chico' }; // the registry labels are sentences; the pills need short ones
 
 export function renderTeams() {

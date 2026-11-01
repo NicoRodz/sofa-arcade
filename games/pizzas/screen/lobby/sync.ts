@@ -1,10 +1,10 @@
 // The Pizzas lobby's state and what keeps it coherent: modes and teams (Versus F1: the screen is the host, it owns the teams, the phones only ask),
 // the map and sabotage proposals that follow who is connected.
 import { canStart, type LobbyConfig } from '@pichi/core';
-import { movePlayer, reshuffleTeams } from '@pichi/core/lobby/teams';
-import { NAV_SFX } from '@pichi/screen-kit/menu';
-import { sendMsg } from '@pichi/screen-kit/net/socket';
-import { app, connectedCount, connectedIds, renderUi, services, setConfig } from '@pichi/screen-kit/shell/app-state';
+import { movePlayer, reshuffleTeams } from '@pichi/core/lobby';
+import { NAV_SFX } from '@pichi/screen-kit';
+import { sendMsg } from '@pichi/screen-kit/net';
+import { app, connectedCount, connectedIds, renderUi, services, setConfig } from '@pichi/screen-kit/shell';
 import { modeOf, type ModeId } from '@pichi/core/contract';
 import { SABOTAGE_OPTION } from '../../sim/sabotage-config';
 import { EVENTS_OPTION } from '../../sim/midround';

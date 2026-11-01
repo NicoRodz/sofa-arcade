@@ -4,8 +4,7 @@
 // grey rat that runs across the floor, grabs an item and is scared off by a dash). Everything is drawn by code. Only exists when `game.mid` does.
 import type Phaser from 'phaser';
 import type { EventKind } from '../../../sim/midround';
-import { C } from '@pichi/screen-kit/art/tokens';
-import { circle, drawOutlined, makeTex, vgrad } from '@pichi/screen-kit/art/gfx';
+import { C, circle, drawOutlined, makeTex, vgrad } from '@pichi/screen-kit/art';
 import { badge, GLYPH } from './glyphs';
 
 export function buildEventTextures(scene: Phaser.Scene) {

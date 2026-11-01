@@ -17,7 +17,7 @@ import {
   type LevelProgress,
 } from '../../campaign/index';
 import { worldForDifficulty, type GameMode, type LevelDef, type WorldId } from '../../index';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { lastExpedition, type CampaignApi, type ExpeditionSummary, type KV } from './api';
 
 export type ApiLike = Pick<CampaignApi, 'list' | 'get' | 'create' | 'merge' | 'claim' | 'release' | 'reset'>;

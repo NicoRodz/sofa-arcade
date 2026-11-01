@@ -2,12 +2,11 @@
 // The state of a round: constants, items, stations, chefs, orders, teams, and the Game that holds them.
 import type { Ev2 } from '../ev2/state';
 import { MAP_H, MAP_W, isFloor, type Grid, type SigmaName, type StationKind } from '../maps';
-import type { RosterEntry, TeamId, TeamResult } from '@pichi/core/lobby/teams';
+import type { RosterEntry, TeamId, TeamResult } from '@pichi/core/lobby';
 import type { FloorItem, Sabotage, Slip } from '../sabotage-config';
 import type { Recipe } from '../recipes/defs';
 import type { GameEvents, Emitter } from './events';
-import type { Difficulty, Params } from '@pichi/core/difficulty';
-import type { Rng } from '@pichi/core/rng';
+import type { Difficulty, Params, Rng } from '@pichi/core';
 import type { Kitchens } from '../versus/versus';
 import type { Burn } from '../burn';
 import type { Mid } from '../midround';

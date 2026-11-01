@@ -1,5 +1,5 @@
 // Shared shapes of the world of F2a. Plain data only (no classes, no closures): a world can be hashed, snapshotted and compared.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { DifficultyParams } from '../constants';
 import type { AllObstEvents, ObstEventName } from '../events';
 import type { ParsedLevel } from '../parse';
