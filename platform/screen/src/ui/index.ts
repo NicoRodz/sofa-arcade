@@ -1,2 +1,2 @@
 export { setHtml, $, esc, plural } from './dom';
-export { html, nothing, renderInto, styleMap, unsafeHTML } from './render';
+export { classMap, html, nothing, renderInto, repeat, styleMap, unsafeHTML } from './render';

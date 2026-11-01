@@ -4,6 +4,8 @@
 import { render, type TemplateResult } from 'lit-html';
 
 export { html, nothing } from 'lit-html';
+export { classMap } from 'lit-html/directives/class-map.js';
+export { repeat } from 'lit-html/directives/repeat.js';
 export { styleMap } from 'lit-html/directives/style-map.js';
 export { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 
