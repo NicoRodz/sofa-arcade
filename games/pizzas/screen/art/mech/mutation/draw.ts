@@ -24,10 +24,11 @@ export const drawMutation: Draw = (scene, g, t) => {
   const gfx = layer(scene, 'mutation', 2400);
   gfx.clear();
   const live = liveOf(g);
-  if (!live || live.phase !== 1) return;
+  const ops = live?.phase === 1 ? live.m.ops : live?.phase === 4 ? live.m.then?.ops : undefined; // HAZARD_V3: each wave shows its own ghosts while it is warned
+  if (!live || !ops) return;
   const pulse = 0.5 + 0.5 * Math.sin(t / 110);
   gfx.lineStyle(5, WARN, 0.55 + 0.4 * pulse);
-  for (const [kind, a, b] of live.m.ops) {
+  for (const [kind, a, b] of ops) {
     const ax = OX + (a[0] + 0.5) * TILE,
       ay = OY + (a[1] + 0.5) * TILE;
     gfx.strokeRoundedRect(OX + a[0] * TILE + 3, OY + a[1] * TILE + 3, TILE - 6, TILE - 6, TILE * 0.12);

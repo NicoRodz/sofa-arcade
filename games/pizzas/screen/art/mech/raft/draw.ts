@@ -1,7 +1,7 @@
 // Art of 'raft' (drawn by code): the raft is a set of logs tied with rope sliding along its lane, a little bobbing; the lane shows as a dotted line of ripples on the water so people can read where it goes, and Implemented by T1c.
 // an arrow on the raft says which way it is heading. The background paints the whole lane as water (world.ts).
 import type { MechArt } from '../../../../sim/mech/types';
-import { raftPause } from '../../../../sim/mech/raft/module';
+import { raftCap, raftPause } from '../../../../sim/mech/raft/module';
 import { TILE } from '@pichi/screen-kit/art/tokens';
 import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
@@ -45,6 +45,20 @@ export const drawRafts: Draw = (scene, g, t) => {
       gfx
         .lineBetween(x + TILE * 0.1, y + TILE * 0.3, x + TILE * 0.9, y + TILE * 0.3)
         .lineBetween(x + TILE * 0.1, y + TILE * 0.7, x + TILE * 0.9, y + TILE * 0.7);
+    // HAZARD_V3: the seats (the raft holds `raftCap` chefs): a mark per seat, filled while a chef sits on it
+    const cap = raftCap(g);
+    if (cap > 0) {
+      const aboard = [...g.players.values()].filter((p) => !p.ghost && Math.floor(p.y) * 16 + Math.floor(p.x) === i).length;
+      for (let k = 0; k < cap; k++) {
+        const o = TILE * (0.3 + (0.4 * k) / Math.max(1, cap - 1)),
+          sx = x + (lane.dx ? o : TILE * 0.5),
+          sy = y + (lane.dx ? TILE * 0.5 : o),
+          taken = k < aboard;
+        gfx.fillStyle(0x2b1b17, 0.55).fillCircle(sx, sy, TILE * 0.19);
+        gfx.lineStyle(4, taken ? 0x6fd36f : 0xfff1d6, 0.95).strokeCircle(sx, sy, TILE * 0.19);
+        if (taken) gfx.fillStyle(0x6fd36f, 0.8).fillCircle(sx, sy, TILE * 0.1);
+      }
+    }
     // heading arrow (hidden while it waits at the shore: then it blinks)
     const wait = r.wait > 0 && (r.pos === 0 || r.pos === lane.tiles.length - 1) && r.wait <= raftPause(g);
     if (!wait || Math.floor(t / 200) % 2 === 0) {

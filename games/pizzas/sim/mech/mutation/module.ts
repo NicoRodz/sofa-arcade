@@ -150,7 +150,7 @@ export const mutationModule: MechModule = {
       emitMech(g, 'mutate:warn', {
         id: 'mutation2',
         title: '¡SE REORDENA LA COCINA!',
-        blurb: 'Las estaciones cambian de lugar',
+        blurb: m.then ? 'Ola 1 de 2: las estaciones cambian de lugar' : 'Las estaciones cambian de lugar',
         inMs: Math.round(m.warn * TICK_MS),
         dests,
       });
@@ -160,7 +160,7 @@ export const mutationModule: MechModule = {
       emitMech(g, 'mutate:warn', {
         id: 'mutation2',
         title: '¡OTRA VEZ!',
-        blurb: 'Las estaciones vuelven a cambiar de lugar',
+        blurb: 'Ola 2 de 2: las estaciones cambian otra vez',
         inMs: Math.round(m.then.warn * TICK_MS),
         dests: m.then.ops.map((op) => op[2]),
       });

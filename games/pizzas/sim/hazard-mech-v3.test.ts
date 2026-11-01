@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { addPlayer, createGame, tick, TICK_MS, type Controls, type Game } from './overcooked';
 import { fixedMap } from './maps';
+import { chefHint } from './hints';
 import { patchMap } from './maps/hazard-patches';
 import { mechFlagsOf } from './mech/ids';
 import { wear, isBroken, mendProgress } from './mech/bridge/module';
@@ -64,6 +65,16 @@ describe('HAZARD_V3 bridge: B mends it', () => {
     expect(mendProgress(g, B)).toBe(0);
     run(g, 119, hold(1));
     expect(isBroken(g, 7, 2)).toBe(true);
+  });
+  it('the phone of the chef in front of it reads "Reparar" on B (and only there, and not on Easy)', () => {
+    const g = make('normal');
+    put(g, 1, 6, 2);
+    expect(chefHint(g, g.players.get(1)!).b).toBe('Reparar');
+    put(g, 1, 3, 3);
+    expect(chefHint(g, g.players.get(1)!).b).not.toBe('Reparar');
+    const easy = make('easy');
+    put(easy, 1, 6, 2);
+    expect(chefHint(easy, easy.players.get(1)!).b).not.toBe('Reparar');
   });
   it('two chefs holding B mend it in half the time', () => {
     const g = make('normal', 2);
@@ -137,7 +148,15 @@ describe('HAZARD_V3 raft: two chefs fit, the third waits', () => {
 describe('HAZARD_V3 raft of map 31: a 1-tile lane, two chefs ride it and the third stays ashore', () => {
   const make = (d: Difficulty): Game => {
     const m = patchMap(fixedMap('31')!, d);
-    const g = createGame({ rows: m.rows, mapId: '31', mech: mechFlagsOf(m.mechanics), hazardsV3: true, difficulty: d, n: 3, countdownMs: 0 });
+    const g = createGame({
+      rows: m.rows,
+      mapId: '31',
+      mech: mechFlagsOf(m.mechanics),
+      hazardsV3: true,
+      difficulty: d,
+      n: 3,
+      countdownMs: 0,
+    });
     for (let i = 1; i <= 3; i++) addPlayer(g, i, i - 1, i - 1);
     return g;
   };
