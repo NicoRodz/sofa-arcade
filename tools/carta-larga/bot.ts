@@ -234,6 +234,7 @@ export function seriesRound(o: {
   force?: Recipe;
   extra?: Record<string, unknown>; // more createGame options: tools/hazards/stars-calibrate.ts passes the lobby's roundRules and `hazardsV2`; `adaptive: false` etc. for the classics
   before?: (g: Game) => void;
+  drive?: (g: Game, id: number, t: number) => Controls | null; // a chef whose job is a mechanic (mending a bridge...) takes its sticks here; null: the crew's own decision
   trace?: (g: Game, mem: Map<number, CMem>, t: number) => void;
 }): Game {
   const map = fixedMap(o.mapId)!;
@@ -271,7 +272,7 @@ export function seriesRound(o: {
     o.before?.(g);
     o.trace?.(g, mem, t);
     const controls = new Map<number, Controls>();
-    ids.forEach((id, rank) => controls.set(id, decide(crew, g.players.get(id)!, rank, mem.get(id)!, t)));
+    ids.forEach((id, rank) => controls.set(id, o.drive?.(g, id, t) ?? decide(crew, g.players.get(id)!, rank, mem.get(id)!, t)));
     tick(g, controls);
   }
   return g;
