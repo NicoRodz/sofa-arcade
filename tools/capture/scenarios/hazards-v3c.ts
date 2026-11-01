@@ -43,7 +43,9 @@ export async function runHz3Bridge(ctx: Ctx) {
   const bots = await start(ctx, '31', 3);
   await cdp.shot('hz3-31-0-before');
   // two bridge tiles at the west end of the row-1 bridge break (worn out, broken for a long while); chef 1 stands at (5, 1) facing it and holds B
-  await cdp.eval(G(`const e = g.mech.ext.bridge; for (const x of [6, 7]) g.mech.bridge[16 + x] = { uses: 6, brokenUntil: e.tick + 100000 };`));
+  await cdp.eval(
+    G(`const e = g.mech.ext.bridge; for (const x of [6, 7]) g.mech.bridge[16 + x] = { uses: 6, brokenUntil: e.tick + 100000 };`),
+  );
   place(cdp, bots[0]!.id, 5.5, 1.5, 1, 0);
   place(cdp, bots[1]!.id, 4.5, 2.5, 1, 0);
   place(cdp, bots[2]!.id, 9.5, 7.5, 0, -1);
@@ -59,7 +61,9 @@ export async function runHz3Bridge(ctx: Ctx) {
   bots[0]!.btn = 0;
   // the raft: hold it docked at the west shore, chefs 2 and 3 on it (it is a 1-tile lane), chef 1 stays ashore
   await cdp.eval(
-    G(`for (let i = 0; i < 400 && !(g.mech.raft[0].pos === 0 && g.mech.raft[0].wait >= 30); i++) await new Promise((r) => setTimeout(r, 50)); g.mech.raft[0].wait = 1e6;`),
+    G(
+      `for (let i = 0; i < 400 && !(g.mech.raft[0].pos === 0 && g.mech.raft[0].wait >= 30); i++) await new Promise((r) => setTimeout(r, 50)); g.mech.raft[0].wait = 1e6;`,
+    ),
   );
   await sleep(300);
   await cdp.shot('hz3-31-3a-raft-docked');
@@ -68,7 +72,14 @@ export async function runHz3Bridge(ctx: Ctx) {
   place(cdp, bots[2]!.id, 6.7, 4.5, 1, 0);
   await sleep(500);
   await cdp.shot('hz3-31-3-raft-two-aboard');
-  console.log('raft', JSON.stringify(await cdp.eval(G(`return [g.mech.raft, g.mech.ext.rafts, g.grid[4][6], g.grid[4][7], [...g.players.values()].map((p) => [p.x, p.y, p.ghost])];`))));
+  console.log(
+    'raft',
+    JSON.stringify(
+      await cdp.eval(
+        G(`return [g.mech.raft, g.mech.ext.rafts, g.grid[4][6], g.grid[4][7], [...g.players.values()].map((p) => [p.x, p.y, p.ghost])];`),
+      ),
+    ),
+  );
   bots.splice(0).forEach((b) => b.close());
 }
 
