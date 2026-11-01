@@ -27,6 +27,6 @@ describe('Pizzas results templates (no DOM: static parts and bound values)', () 
     expect(many.values.at(-1)).toBe('pizzas');
   });
   it('podium: the hint when nobody delivered', () => {
-    expect(podiumTemplate([]).strings.join('')).toContain('Nadie alcanzó a entregar una pizza');
+    expect(podiumTemplate([]).strings.join('')).toBe('<div class="hint">Nadie alcanzó a entregar una pizza</div>');
   });
 });

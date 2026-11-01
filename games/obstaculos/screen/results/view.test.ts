@@ -23,8 +23,20 @@ describe('Obstaculos results templates (no DOM: static parts and bound values)',
     const s = t.strings.join('|');
     for (const cls of ['olv', 'h', 'medal', 'sub', 'bio', 'row', 'pts']) expect(s).toContain(`class="${cls}`);
     for (const label of ['Tiempo', 'Estrellas', 'Vidas', 'Checkpoints']) expect(s).toContain(`<span>${label}</span>`);
-    expect(t.values).toContain('<Nivel>');
-    expect(t.values).toContain('+2910');
+    // in template order: lost class, medal class and glyph, name, biome style, sub, time, stars, lives, checkpoints, points
+    expect(t.values.map((v) => (typeof v === 'object' ? 'style' : v))).toEqual([
+      '',
+      'gold',
+      'O',
+      '<Nivel>',
+      'style',
+      'Nivel 1',
+      '0:03 / par 1:15',
+      '1/3 ★',
+      '12 · caídas 0',
+      '0/1',
+      '+2910',
+    ]);
     expect(JSON.stringify(t.values)).toContain('#fc0');
   });
   it('a lost level adds the "lost" class', () => {
