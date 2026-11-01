@@ -1,7 +1,6 @@
 // Obstaculos' part of window.__pg: state for the bots (a phone cannot see the world) and hooks for the capture tool. Never used by the game itself.
 // Moved out of apps/screen/src/main.ts (F4b) unchanged.
-import { app } from '@pichi/screen-kit/shell/app-state';
-import { phaserGame } from '@pichi/screen-kit/shell/game-host';
+import { app, phaserGame } from '@pichi/screen-kit/shell';
 import { snapshot as snapshotObst } from '../index';
 import { camp } from './campaign-link';
 import { perf, run } from './run-state';

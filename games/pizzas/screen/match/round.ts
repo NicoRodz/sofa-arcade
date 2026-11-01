@@ -1,14 +1,13 @@
 // Starting a Pizzas round: the coop round (map, orders, puestos) and the versus one (frozen teams and map, a puesto deal inside each kitchen).
 import type { MatchStart } from '@pichi/core';
 import { pizzasBus } from '../bus';
-import { sendMsg } from '@pichi/screen-kit/net/socket';
-import { app } from '@pichi/screen-kit/shell/app-state';
-import { showScene } from '@pichi/screen-kit/shell/game-host';
+import { sendMsg } from '@pichi/screen-kit/net';
+import { app, showScene } from '@pichi/screen-kit/shell';
 import { COUNTDOWN_MS, addPlayer, createGame } from '../../sim';
 import { resolveMap } from '../../sim/generate';
 import { SERIES_MAPS, familyOfMap, pickAutoMap, type MapChoice } from '../../sim/maps';
 import { patchMap } from '../../sim/maps/hazard-patches';
-import { mulberry32 } from '@pichi/core/rng';
+import { mulberry32 } from '@pichi/core';
 import { subSeed } from '../../sim/recipes/menu';
 import { usesSurfaces } from '../../sim/surfaces/legend';
 import { mechFlagsOf } from '../../sim/mech/ids';

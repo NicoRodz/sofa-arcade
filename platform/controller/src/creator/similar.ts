@@ -1,6 +1,5 @@
 // Uniqueness is soft (plan §5): nobody is blocked. Aleatorio prefers looks that differ from everybody in >= 3 fields, and a duplicate gets a gentle notice.
-import { CLOTHES_BY_GENDER, FIELDS, randomAppearance, sameAppearance, type Appearance } from '@pichi/core';
-import { pick, type Rng } from '@pichi/core/rng';
+import { CLOTHES_BY_GENDER, FIELDS, randomAppearance, sameAppearance, type Appearance, pick, type Rng } from '@pichi/core';
 
 export interface RosterEntry {
   id: number;

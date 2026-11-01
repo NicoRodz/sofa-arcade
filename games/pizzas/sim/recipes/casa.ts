@@ -2,7 +2,7 @@
 // adds is paid on top and raises the tip by 10 %: the ham from the second topping crate BEFORE the oven (+35, the oven takes 1.15x), the basil after it (+25) and the slices
 // (B held 1 s on a board with the plate on it, +25). The plate carries its upgrades in the item itself: dishH<mask>, mask = HAM 1 + BASIL 2 + SLICED 4.
 // Pure and inert unless the round's card has the recipe: no draw from any RNG, so every golden round stays as it was. Imports nothing but types (recipes/defs.ts imports this file).
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { Game, Item, Station } from '../round/state';
 
 export const CASA_HAM = 1;

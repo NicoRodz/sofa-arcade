@@ -5,8 +5,7 @@
 //   - slicing pepperoni takes longer; a pot with dough and tomato can be FOLDED (hold Picar at the oven) into a calzone, which bakes longer;
 //   - the window matches a plate to an order by recipe.
 import type { Game, Item, Order, Station, TeamState } from '../round/state';
-import type { Rng } from '@pichi/core/rng';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Rng, Difficulty } from '@pichi/core';
 import { cardFor, cardForV2, type Card } from './cards';
 import { createMenu, menuNext, menuRecipes, type Menu } from './menu';
 import { stageCookMs } from './sauce';

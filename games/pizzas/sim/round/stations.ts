@@ -6,7 +6,7 @@ import { bellTick, canLoad, hasNonna, interactSaucepot, isBaking, potTypeOf, rin
 import { cutOf, dishFor, isDish } from '../recipes/defs';
 import { basilOn, canSlice, hasCasa } from '../recipes/casa';
 import { sabotageBinned, sabotageLoad, sabotageTakeBag } from '../sabotage';
-import { DIRTY_MS } from '@pichi/core/difficulty';
+import { DIRTY_MS } from '@pichi/core';
 import { deliver } from './orders';
 import { clearPot, isDark } from '../burn';
 import { mechOvenRate } from '../mech/loop';

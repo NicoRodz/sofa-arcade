@@ -2,7 +2,7 @@
 // slack for a good team and too heavy for a slow one. Here an order comes when the LOAD of the queue (the sum of the effort of the open orders) is under a target
 // that grows with the team, and at least a minimum gap after the last one. A fast team empties the queue and gets orders sooner; a slow team is never buried.
 // Pure: it reads the state of the round only and draws nothing from any stream, so the order of the recipes (one draw per admitted order) is the same as ever.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { Game, TeamState } from '../round/state';
 import { RECIPE_DEFS, type Recipe } from './defs';
 

@@ -10,7 +10,7 @@
 // Decision (the council gave two ways): no extinguisher item. A wall extinguisher would need a new station on all 20 maps and the validator; holding Picar is the
 // same verb the brief proposes as the fallback, and the art draws the extinguisher (a red cylinder in the chef's hands and a cloud of foam) while it happens.
 // Mirror: a spread ignites EVERY counter next to the fire (no tie-break between neighbours), so a reflected kitchen burns as the reflected kitchen.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { Game, Station } from './round/state';
 import type { SabotageMode } from './sabotage-config';
 import { mechOnFire, mechOvenRate } from './mech/loop';

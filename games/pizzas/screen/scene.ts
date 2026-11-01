@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Game } from '../sim/overcooked';
 import type { PublicPlayer } from '@pichi/core';
 import { pizzasBus } from './bus';
-import { C } from '@pichi/screen-kit/art/tokens';
+import { C } from '@pichi/screen-kit/art';
 import { buildChefTextures } from '@pichi/screen-kit/art/chef';
 import { buildFoodTextures } from './art/food';
 import { Fx, buildFxTextures } from '@pichi/screen-kit/art/fx';

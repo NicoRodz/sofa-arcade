@@ -7,7 +7,7 @@
 //   events = s.advance(dtMs)                    once per render frame: steps the world 0..4 times, returns the obst.* events to publish
 //   s.setConnected(slot, on) / s.setOffCamera(flags)
 //   s.status: 'countdown' | 'playing' | 'between' | 'over'    s.summary() when 'over'
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { DT, EXPEDITION_LEVELS, MAX_STEPS_PER_FRAME, STEP_MS } from './constants';
 import { generateLevel } from './generate';
 import { fixedExpedition, RANDOM_LEVEL } from './lobby';

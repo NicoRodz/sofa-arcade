@@ -58,10 +58,10 @@ module.exports = {
     {
       name: 'public-api',
       comment:
-        'Between packages, import only a package entry point (index.ts). The F3 move keeps the per-file subpaths of the old @party/shared (file-level evaluation order), so every cross-package import of a file counts until F4/F5.',
-      severity: 'warn',
+        'Between packages, import only a package entry point (an index.ts, published in the package.json exports). Static assets (.html/.css, imported as raw text or side-effect CSS) are not modules and have no index.',
+      severity: 'error',
       from: { path: `^${PACKAGES}/`, pathNot: [TESTS] },
-      to: { path: `^(?!$1/)${PACKAGES}/`, pathNot: '(^|/)index\\.ts$' },
+      to: { path: `^(?!$1/)${PACKAGES}/`, pathNot: ['(^|/)index\\.ts$', '\\.(html|css)$'] },
     },
     {
       name: 'no-circular',

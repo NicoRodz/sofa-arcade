@@ -8,7 +8,7 @@
 import { MAX_PLAYERS_OBST, MIN_PLAYERS, RUN_SPEED, TILE } from '../constants';
 import { MARKER_CHARS, T, isActivator } from '../legend';
 import { parseLevel, type ParsedLevel } from '../parse';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { Cell, GameMode, LevelDef, Weight } from '../types';
 import type { ModeledMechanic } from '../mechanics';
 import { campaignParams } from '../sim/campaign';

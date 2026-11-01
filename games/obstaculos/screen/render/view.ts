@@ -26,8 +26,8 @@
 //
 // Units: pixels of the simulation (TILE = 48), y grows downward. Nothing here imports Phaser: it can be used from Node tests and from the sim adapter.
 import type { GameMode, ParsedLevel, SignalKind, TileGrid } from '../../index';
-import type { Difficulty } from '@pichi/core/difficulty';
-import type { Appearance } from '@pichi/core/avatar/appearance';
+import type { Difficulty } from '@pichi/core';
+import type { Appearance } from '@pichi/core/avatar';
 
 export type HandAction = 'none' | 'anchor' | 'lift' | 'grab' | 'plant' | 'throw' | 'release'; // what B would do now (icon above the head); the campaign's 'pass' (pickaxe) reuses 'grab'
 

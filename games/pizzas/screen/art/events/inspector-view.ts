@@ -1,7 +1,7 @@
 // The inspector's verdict, drawn: the stamp at the window (APROBADO / RECHAZADO) with the points or the dirty-plates note. Its pill (the dirty plates count) is in view.ts.
 import type Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../../sim/round/events';
-import { C, H, TILE, W } from '@pichi/screen-kit/art/tokens';
+import { C, H, TILE, W } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 import type { Fx } from '@pichi/screen-kit/art/fx';
 import { makeText } from '@pichi/screen-kit/art/fx';

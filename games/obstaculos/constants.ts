@@ -1,5 +1,5 @@
 // "Obstaculos en cadena": every number of the design (plan §2, §4, §6, §8, §15) lives here. Physics tuning (F1) happens in this file only.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 
 // --- grid and body (plan §2)
 export const TILE = 48; // px

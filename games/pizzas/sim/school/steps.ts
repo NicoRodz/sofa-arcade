@@ -1,7 +1,7 @@
 // Cocina escuela (council M2): the guided practice round before the first match. Four steps, no timer, no score, every chef at its own pace.
 // This file is the data and the pure rules of one chef's progress: which events finish a step, which item belongs in the hands at each step,
 // which phone button to light. The session that runs them over the real sim is school.ts.
-import type { IconId } from '@pichi/core/icons';
+import type { IconId } from '@pichi/core';
 import type { Item } from '../round/state';
 import type { StationKind } from '../maps';
 

@@ -3,8 +3,8 @@
 // no-three-in-a-row rule. Everything comes from ONE stream sub-seeded by the round (`menu:<seed>`), never from the main RNG, and the sequence is a
 // function of the order's index alone: two kitchens of a versus round read the same list at their own pace, so their queues stay twins, and an order
 // that does not consume it (the birthday cake, the golden order) cannot shift the others.
-import type { Difficulty } from '@pichi/core/difficulty';
-import { mulberry32, type Rng } from '@pichi/core/rng';
+import type { Difficulty } from '@pichi/core';
+import { mulberry32, type Rng } from '@pichi/core';
 import { RECIPE_DEFS, type Recipe } from './defs';
 
 /** How many plates a round serves per difficulty (the card may hold fewer). */

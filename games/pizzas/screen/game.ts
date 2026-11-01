@@ -1,9 +1,9 @@
 // Pizzas on the screen as a ScreenGame (index.ts re-exports it), assembled from this folder: match/ (the round and its tick loop), lobby/, results/, debug.
 import type { PuestoId } from '../sim/puestos';
-import { teamOf } from '@pichi/core/lobby/teams';
+import { teamOf } from '@pichi/core/lobby';
 import { pizzasBus } from './bus';
-import { app, bindServices, dispatch, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
-import type { ScreenGame } from '@pichi/screen-kit/shell/game';
+import { app, bindServices, dispatch, renderUi, setConfig } from '@pichi/screen-kit/shell';
+import type { ScreenGame } from '@pichi/screen-kit/shell';
 import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '../sim';
 import { pizzasManifest } from '../manifest';
 import { drawLogo } from './art/ui';

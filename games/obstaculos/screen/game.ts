@@ -1,8 +1,8 @@
 // Obstaculos on the screen, through the shell's contract (ScreenGame, EXPERIMENTAL): everything apps/screen/src/main.ts used to do for this game
 // behind `config.game === OBST_ID` is a hook here, so the shell names no game (F4b).
 import { obstBus } from './bus';
-import { app, renderUi } from '@pichi/screen-kit/shell/app-state';
-import type { ScreenGame } from '@pichi/screen-kit/shell/game';
+import { app, renderUi } from '@pichi/screen-kit/shell';
+import type { ScreenGame } from '@pichi/screen-kit/shell';
 import type { Packet } from '../sim/input';
 import { DEFAULT_OBST_OPTIONS, GAME_ID, toModeOptions } from '../index';
 import { obstaculosManifest } from '../manifest';

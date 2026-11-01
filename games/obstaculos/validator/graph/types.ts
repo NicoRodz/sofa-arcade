@@ -1,6 +1,6 @@
 // Shapes of the reachability graph: the environment a validation runs in, the open state, segments, edges, the graph itself.
 import type { DifficultyParams } from '../../constants';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { Cell, GameMode } from '../../types';
 import type { Mechanic } from '../../mechanics';
 import type { WorldId } from '../../sim/campaign';

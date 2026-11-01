@@ -1,7 +1,5 @@
 import type { Grid, Tile } from '../../../sim/maps';
-import { C } from '@pichi/screen-kit/art/tokens';
-import { rng, shade, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
-
+import { C, rng, shade, vgrad, type Ctx } from '@pichi/screen-kit/art';
 export type Kind = 'wall' | 'floor' | 'water' | 'bench' | 'oven' | 'out';
 
 export const kindOf = (g: Grid, x: number, y: number): Kind => {

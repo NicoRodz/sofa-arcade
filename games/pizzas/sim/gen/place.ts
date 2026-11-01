@@ -1,6 +1,6 @@
 // What the generator can paste on a classic map, one decorator per mechanic (design section 6). Each takes the rows as a mutable grid and the generator's own stream and returns false when the map has no
 // room for it (the attempt is then dropped and the next seed tried). Nothing here validates: `generateMech` runs every validator after the paste, on the map before and after the mutation.
-import type { Rng } from '@pichi/core/rng';
+import type { Rng } from '@pichi/core';
 import type { MechId } from '../mech/ids';
 
 export type Cells = string[][];

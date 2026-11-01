@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
+    ".": "./src/index.ts",
+    "./app": "./src/app/index.ts",
+    "./page": "./src/page/index.ts",
     "./*": "./src/*.ts"
   },
   "scripts": {

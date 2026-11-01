@@ -1,5 +1,5 @@
 // The basil of the Margarita fresca, drawn by code: a bunch of leaves in the crate, and three leaves laid on a pizza. Green, pointed, with a pale vein.
-import { contactShadow, drawOutlined, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { contactShadow, drawOutlined, vgrad, type Ctx } from '@pichi/screen-kit/art';
 
 export const BASIL = '#4FA84A',
   BASIL_DARK = '#2D6B2E',

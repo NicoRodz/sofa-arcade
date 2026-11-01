@@ -1,7 +1,7 @@
 // Canvas 2D drawing helpers. Textures are drawn once into canvas textures (Graphics.generateTexture goes
 // through the same canvas path but ignores gradients), then used as plain images.
 import type Phaser from 'phaser';
-import type { PaintGradient, PaintStyle, Painter } from '@pichi/core/avatar/painter';
+import type { PaintGradient, PaintStyle, Painter } from '@pichi/core/avatar';
 import { C, U } from './tokens';
 
 export type Ctx = CanvasRenderingContext2D;

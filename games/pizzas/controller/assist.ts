@@ -1,6 +1,6 @@
 // Modo Ayudante, explained on the phone: the switch says what it gives and when it helps, turning it on confirms with a short notice, and
 // "¿Qué es?" opens a three-line card (also for the Captain, whose D-pad the overlay keeps clear of). The texts are pure (the tests import them in node); the DOM is built by createAssist.
-import type { ControllerHost } from '@pichi/controller-kit/contract';
+import type { ControllerHost } from '@pichi/controller-kit';
 export const ASSIST_TITLE = 'Modo Ayudante';
 export const ASSIST_GIVES = 'Más alcance, no resbalas, picas con un toque';
 export const ASSIST_FOR = 'Para niños o quien recién empieza';

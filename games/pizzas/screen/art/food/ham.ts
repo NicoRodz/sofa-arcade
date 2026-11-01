@@ -1,5 +1,5 @@
 // The ham of the Carta larga, drawn by code: a pink slab raw, a little stack of squares cut, and the squares on a pizza. Square and pink on purpose (the pepperoni is a red disc).
-import { contactShadow, drawOutlined, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { contactShadow, drawOutlined, vgrad, type Ctx } from '@pichi/screen-kit/art';
 
 export const HAM = '#F0A0A8',
   HAM_DARK = '#B8626C',

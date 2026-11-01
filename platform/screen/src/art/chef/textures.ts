@@ -1,8 +1,8 @@
 // The eight pizzaiolos: part textures plus a procedural rig (squash & stretch, walk bounce, chop, carry, expressions).
 import type Phaser from 'phaser';
-import type { Painter } from '@pichi/core/avatar/painter';
+import type { Painter } from '@pichi/core/avatar';
 import { C, chefOf, SKINS } from '../tokens';
-import { Canvas2DPainter } from '@pichi/core/avatar/canvas2d-painter';
+import { Canvas2DPainter } from '@pichi/core/avatar';
 import { domCanvas, makeTex, rr, type Ctx } from '../gfx';
 import {
   drawAssistBadge,

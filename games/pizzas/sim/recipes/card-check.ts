@@ -3,7 +3,7 @@
 // validate.ts calls it from validateMap and validateVersus (per kitchen, with the other kitchen walled off); a map with no card is not checked.
 import type { Grid } from '../maps';
 import { accessTiles, analyze, stationsOf, type StationKey } from '../validate';
-import { DIFFICULTIES } from '@pichi/core/difficulty';
+import { DIFFICULTIES } from '@pichi/core';
 import { cardForV2, cardShapeProblems, type Card } from './cards';
 import { menuRecipes } from './menu';
 import { RECIPE_DEFS } from './defs';

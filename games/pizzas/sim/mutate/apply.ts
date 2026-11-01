@@ -1,6 +1,6 @@
 // Applies a mutation to a live round in ONE tick: the grid gets the new tiles, a counter that appears becomes a station, and whatever stood on a tile that
 // stopped being floor (chefs, loose items) is moved to the nearest floor tile; ties are broken with the mutation's own stream, so the same round always ends up the same.
-import type { Rng } from '@pichi/core/rng';
+import type { Rng } from '@pichi/core';
 import { isFloor, parseTile } from '../maps';
 import type { Game } from '../round/state';
 import { newSurfaceState } from '../surfaces/config';

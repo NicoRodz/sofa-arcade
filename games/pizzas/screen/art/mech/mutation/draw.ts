@@ -2,7 +2,7 @@
 // makes the tiles that will change impossible to miss. The banner and the flash are the MutateView's (the same event names as the v1 mutation).
 import type { MechArt } from '../../../../sim/mech/types';
 import { liveOf } from '../../../../sim/mech/mutation/module';
-import { TILE } from '@pichi/screen-kit/art/tokens';
+import { TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../../env/grid';
 import { layer, type Draw } from '../layer';
 

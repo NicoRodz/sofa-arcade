@@ -1,6 +1,6 @@
 // The art of tanda 2 of the Carta larga, drawn by code: the sauce (a bright red blob in a small bowl), the Marinara de la nonna (sauce pizza with basil), and the
 // Pizza blanca (no tomato: a golden base with cheese and mushroom). The base pizza and tray are handed in (`BaseArt`) like in recipes.ts.
-import { contactShadow, drawOutlined, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { contactShadow, drawOutlined, vgrad, type Ctx } from '@pichi/screen-kit/art';
 import { basilOverlay } from './basil';
 import { toppingOverlay } from './toppings';
 

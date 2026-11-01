@@ -1,6 +1,6 @@
 // What the entity layer keeps per entity, and the helpers every drawer shares.
 import type Phaser from 'phaser';
-import { R, texSize } from '@pichi/screen-kit/art/gfx';
+import { R, texSize } from '@pichi/screen-kit/art';
 
 export const at = (scene: Phaser.Scene, key: string) => {
   const t = texSize(key)!;

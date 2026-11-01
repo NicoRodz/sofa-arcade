@@ -21,7 +21,7 @@ import {
   type RosterEntry,
   type TeamId,
   type TeamSetup,
-} from '@pichi/core/lobby/teams';
+} from '@pichi/core/lobby';
 export const ASSIST_REACH_MULT = 1.5; // interaction radius, times the normal one (REACH + REACH_SLACK)
 export const ASSIST_FACING_BONUS = 0.4; // tiles: the station the chef faces counts this much nearer (and the one behind it this much farther): what the player steers towards is not overridden by a neighbour that is merely a bit closer
 export const ASSIST_STICK_CANCEL = 0.3; // stick deflection from which a one-tap chop gives way to walking (unless the stick pushes INTO the station: that is not walking away)

@@ -17,8 +17,8 @@
 //  - teamFactor at N = 6-8 was checked with tools/hazards/stars-byn.ts (16-24 seeds, Normal): score / teamFactor stays within ~15% of the N = 2-4 values on maps 11, 14, 22, 24, 27, and the bot reaches
 //    1 and 2 stars in 100% of the runs at N = 6 and 8 (3 stars: 100% on 11, 14, 22, 24, 27; map 13 gives 88% at N = 6 and 58% at N = 8, the map whose gate job the bot does not do). No change.
 // A row only moves when the ratio is off by 5% or more (the noise of the measure).
-import type { Difficulty } from '@pichi/core/difficulty';
-import { params, teamSize } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
+import { params, teamSize } from '@pichi/core';
 
 export const E2: Record<string, Record<Difficulty, number>> = {
   '1': { easy: 340, normal: 390, hard: 320 },

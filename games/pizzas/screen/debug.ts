@@ -1,7 +1,6 @@
 // Pizzas' part of window.__pg: hooks for the capture tool and the end-to-end checks (a score, a team, a pantry, a sabotage shot, an oven at a stage of its life).
 // Never used by the game itself.
-import { app } from '@pichi/screen-kit/shell/app-state';
-import { phaserGame } from '@pichi/screen-kit/shell/game-host';
+import { app, phaserGame } from '@pichi/screen-kit/shell';
 import { dropPlayer } from '../sim';
 import { ev2CakeServed, ev2RedServed } from '../sim/ev2/events';
 import { addFloorItem } from '../sim/floor';

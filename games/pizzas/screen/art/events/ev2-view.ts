@@ -4,7 +4,7 @@ import type Phaser from 'phaser';
 import type { Game } from '../../../sim/overcooked';
 import type { Emitter, GameEvents } from '../../../sim/round/events';
 import { HOLD_MS } from '../../../sim/ev2/state';
-import { C, H, TILE, W, hexNum } from '@pichi/screen-kit/art/tokens';
+import { C, H, TILE, W, hexNum } from '@pichi/screen-kit/art';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
 import { OX, OY } from '../env/grid';
 

@@ -1,6 +1,5 @@
 // DOM-side art: lobby logo, map preview, stars. Same procedural drawing as the in-game textures.
-import { C } from '@pichi/screen-kit/art/tokens';
-import { domCanvas, drawOutlined, star, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, domCanvas, drawOutlined, star, vgrad, type Ctx } from '@pichi/screen-kit/art';
 import { drawFood } from './food';
 import { STATION_CHAR } from '../../sim/maps';
 

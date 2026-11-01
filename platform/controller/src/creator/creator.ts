@@ -1,12 +1,19 @@
 // The creator on the phone (plan creador-personajes §4): glues the pure flow (flow.ts) to the socket, localStorage, the preview and the DOM (view.ts).
 // main.ts only forwards: begin() on the name form, joinExtra() into the join, onMessage() for every relay message.
-import { APPEARANCE_PHASES, sanitizeAppearance, type Appearance, type ClientMsg, type ServerMsg } from '@pichi/core';
-import { mulberry32, type Rng } from '@pichi/core/rng';
+import {
+  APPEARANCE_PHASES,
+  sanitizeAppearance,
+  type Appearance,
+  type ClientMsg,
+  type ServerMsg,
+  mulberry32,
+  type Rng,
+  drawAvatar,
+} from '@pichi/core';
 import { fireCue, type Cue } from '../attention';
 import './creator.css';
 import { initialFlow, reduce, type Event, type Flow, type Fx } from './flow';
 import type { DrawAvatar } from './preview';
-import { drawAvatar } from '@pichi/core';
 import { duplicateOf, randomAvoiding, type RosterEntry } from './similar';
 import { LIVE_MS, createThrottle, type Clock } from './throttle';
 import { createUi, type Ui } from './ui';

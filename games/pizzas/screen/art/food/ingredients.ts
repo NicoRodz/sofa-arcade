@@ -1,5 +1,4 @@
-import { C } from '@pichi/screen-kit/art/tokens';
-import { blob, circle, contactShadow, drawOutlined, rng, shine, star, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, blob, circle, contactShadow, drawOutlined, rng, shine, star, vgrad, type Ctx } from '@pichi/screen-kit/art';
 
 export function radial(c: Ctx, x: number, y: number, r: number, inner: string, outer: string) {
   const g = c.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r * 1.05);

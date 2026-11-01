@@ -1,5 +1,5 @@
 import qrcode from 'qrcode-terminal';
-import { lanIp } from '@pichi/server-kit/lan';
+import { lanIp } from '@pichi/server-kit';
 import { startServer, type Mode } from './server.js';
 
 const mode = (process.argv[2] ?? 'dev') as Mode;

@@ -1,9 +1,7 @@
 // Lobby chip portraits drawn from the player's Appearance (creator F4). One bitmap per (look, slot colour), cached by the base36 code, so
 // the 5/s live updates from a phone in the creator cost one draw per new look and the chips never redraw an unchanged one.
-import { Canvas2DPainter } from '@pichi/core/avatar/canvas2d-painter';
-import { drawAvatar } from '@pichi/core/avatar/draw';
-import { encodeAppearance } from '@pichi/core/avatar/codec';
-import type { Appearance } from '@pichi/core/avatar/appearance';
+import { Canvas2DPainter, drawAvatar, encodeAppearance } from '@pichi/core/avatar';
+import type { Appearance } from '@pichi/core/avatar';
 import { domCanvas } from '../art/gfx';
 import './chip-avatar.css';
 

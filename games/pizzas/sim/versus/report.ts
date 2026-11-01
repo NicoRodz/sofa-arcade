@@ -4,7 +4,7 @@ import type { GameEvents, Emitter } from '../round/events';
 import type { Game } from '../round/state';
 import type { Recipe } from '../recipes/defs';
 import { summarizeTeam, type TeamSummary } from '../results';
-import { compareTeams, type TeamId, type TeamInfo, type TeamResult } from '@pichi/core/lobby/teams';
+import { compareTeams, type TeamId, type TeamInfo, type TeamResult } from '@pichi/core/lobby';
 
 // --- Who won, and why ------------------------------------------------------------------------------------------------------------------
 

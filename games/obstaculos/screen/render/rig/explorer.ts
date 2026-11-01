@@ -1,10 +1,10 @@
 // The Explorer rig: a chef-based puppet animated from a PlayerView every frame.
 import { RIG_SCALE } from './textures';
 import type Phaser from 'phaser';
-import type { Appearance } from '@pichi/core/avatar/appearance';
+import type { Appearance } from '@pichi/core/avatar';
 import { lookTextures } from '@pichi/screen-kit/art/chef';
 import { HEAD_Y, MOUTH_DY } from '@pichi/screen-kit/art/chefdraw';
-import { R, texSize } from '@pichi/screen-kit/art/gfx';
+import { R, texSize } from '@pichi/screen-kit/art';
 import type { HandAction, PlayerView } from '../view';
 
 const PI = Math.PI;

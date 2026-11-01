@@ -2,7 +2,7 @@
 import type Phaser from 'phaser';
 import type { GameEvents, Emitter } from '../../../sim/round/events';
 import type { Game } from '../../../sim/overcooked';
-import { C, TILE } from '@pichi/screen-kit/art/tokens';
+import { C, TILE } from '@pichi/screen-kit/art';
 import { OX, OY } from '../env/grid';
 import { foodKey, ITEM_KIND } from '../food';
 import type { Fx } from '@pichi/screen-kit/art/fx';

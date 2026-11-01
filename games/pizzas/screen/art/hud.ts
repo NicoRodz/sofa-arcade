@@ -2,9 +2,8 @@
 import type Phaser from 'phaser';
 import type { Game } from '../../sim/overcooked';
 import type { Recipe } from '../../sim/recipes/defs';
-import type { TeamInfo } from '@pichi/core/lobby/teams';
-import { C, H, W, hexNum, timerColor } from '@pichi/screen-kit/art/tokens';
-import { R } from '@pichi/screen-kit/art/gfx';
+import type { TeamInfo } from '@pichi/core/lobby';
+import { C, H, W, hexNum, timerColor, R } from '@pichi/screen-kit/art';
 import { Bar } from './stations';
 import { recipeParts } from './food/ticket';
 import { birthdayParts, ticketMark, trayParts, type Tray, type TicketMark } from './food/ticket-tray';

@@ -2,8 +2,8 @@
 // (PzSlots, ObstSlots) stay in the game; this is only their union for the code that composes them.
 import type { ClientMsg as WireClientMsg, ServerMsg as WireServerMsg } from '@pichi/core';
 import type { Slots } from '@pichi/core/contract';
-import type { ObstSlots } from '@pichi/game-obstaculos/protocol';
-import type { PzSlots } from '@pichi/game-pizzas/protocol';
+import type { ObstSlots } from '@pichi/game-obstaculos';
+import type { PzSlots } from '@pichi/game-pizzas';
 
 export interface AllSlots extends Slots {
   map: PzSlots['map'];

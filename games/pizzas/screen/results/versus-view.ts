@@ -1,9 +1,9 @@
 // Versus results (F4): the verdict, one card per team, the series of the session. The numbers come from versusReport (shared, tested);
 // this only lays them out. A short reveal: the scores count up from 0, then the winner's card lights up and the loser's slumps.
 import { chefCanvas } from '@pichi/screen-kit/art/chef';
-import { laterInResults } from '@pichi/screen-kit/results/timers';
-import { app, dispatch, services } from '@pichi/screen-kit/shell/app-state';
-import { $, esc } from '@pichi/screen-kit/ui/dom';
+import { laterInResults } from '@pichi/screen-kit/results';
+import { app, dispatch, services } from '@pichi/screen-kit/shell';
+import { $, esc } from '@pichi/screen-kit/ui';
 import { FLAG_H, FLAG_W, drawFlag, type FlagMood } from '../art/flags';
 import { recordRound, seriesLine, versusReport } from '../../sim/versus/report';
 import { resultNote } from '../../sim/versus/notes';

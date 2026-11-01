@@ -3,10 +3,9 @@
 import type Phaser from 'phaser';
 import type { Rec } from '../../../sim/recipes/sim';
 import { RECIPE_DEFS, recipeBase } from '../../../sim/recipes/defs';
-import { TUNING } from '@pichi/core/difficulty';
-import type { Difficulty } from '@pichi/core/difficulty';
-import { C, H, W, hexNum } from '@pichi/screen-kit/art/tokens';
-import { R } from '@pichi/screen-kit/art/gfx';
+import { TUNING } from '@pichi/core';
+import type { Difficulty } from '@pichi/core';
+import { C, H, W, hexNum, R } from '@pichi/screen-kit/art';
 import { foodKey, type FoodKind } from './kinds';
 import { place } from '../stations';
 import { makeText } from '@pichi/screen-kit/art/fx';

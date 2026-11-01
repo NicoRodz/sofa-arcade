@@ -1,8 +1,8 @@
 // Chef parts drawn on a canvas. Origin is the chef's feet; the head centre is (0, -68). Used for textures and DOM portraits.
-import { HEAD_Y, MOUTH_DY } from '@pichi/core/avatar/rig-math';
+import { HEAD_Y, MOUTH_DY } from '@pichi/core/avatar';
 import { C, chefOf } from '../tokens';
 import { circle, drawOutlined, ellipse, mix, rr, shade, vgrad } from '../gfx';
-import type { Painter } from '@pichi/core/avatar/painter';
+import type { Painter } from '@pichi/core/avatar';
 
 export { HEAD_Y, MOUTH_DY };
 

@@ -1,9 +1,9 @@
 // Obstaculos' campaign as the shell sees it (the hub, the trail map and the results after each level; the progress lives on the server):
 // the CampaignScreen wired to the shell's state, and the start of one level. Moved out of apps/screen/src/main.ts (F4b).
-import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core/difficulty';
-import { NAV_SFX } from '@pichi/screen-kit/menu';
-import { app, connectedCount, dispatch, renderUi, services, setConfig, transition } from '@pichi/screen-kit/shell/app-state';
-import { setHtml } from '@pichi/screen-kit/ui/dom';
+import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core';
+import { NAV_SFX } from '@pichi/screen-kit';
+import { app, connectedCount, dispatch, renderUi, services, setConfig, transition } from '@pichi/screen-kit/shell';
+import { setHtml } from '@pichi/screen-kit/ui';
 import { CAMPAIGN_CATALOG } from '../campaign/index';
 import { CampaignApi } from './campaign/api';
 import { CampaignScreen } from './campaign/screen';

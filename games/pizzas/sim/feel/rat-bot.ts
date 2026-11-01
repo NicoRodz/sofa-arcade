@@ -1,7 +1,7 @@
 // A human with a phone chases the rat of the mid-round event (feel pass: "the rat never gives you a chance to reach it"). Same imperfections as feel/human-bot.ts
 // (noisy stick, 60-150 ms of latency, a dash aimed within +-40 degrees) on the sim's public controls. Test and tooling support: nothing in the game imports this.
 // One event per game: the rat is forced to appear at 3 s with two counters holding something for it to go for. `window` = from its first step to the moment it is gone.
-import { mulberry32, type Rng } from '@pichi/core/rng';
+import { mulberry32, type Rng } from '@pichi/core';
 import { HUMAN, type Ctl, type Sim } from './human-bot';
 import { hazardParams } from '../hazards/hazard-v2';
 

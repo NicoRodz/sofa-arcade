@@ -1,6 +1,6 @@
 // The Derrame event ("¡DERRAME!", design section 3): six patches of oil appear on free floor tiles, chosen with the events' own stream (`m.rng`), the only draw the mechanics make.
 // It joins the pool only when `flags.mech.oil` is on (midround.ts eventPool).
-import type { Rng } from '@pichi/core/rng';
+import type { Rng } from '@pichi/core';
 import type { Game } from '../../round/state';
 import { TILES, at, freeFloor } from './state';
 import { hz3Params } from '../../hazards/hazard-v3';

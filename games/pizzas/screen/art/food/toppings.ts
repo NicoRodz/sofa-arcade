@@ -1,8 +1,6 @@
 // The two new toppings of the Carta del día, drawn by code: pepperoni (a sausage stick raw, a leaning stack of slices cut) and mushroom (a whole mushroom raw, cap-and-stem
 // slices cut), and how they sit on a pizza. The forms differ on purpose, not only the colours: a stick, a row of coins, a T-shaped mushroom, against the round tomato slices.
-import { C } from '@pichi/screen-kit/art/tokens';
-import { circle, contactShadow, drawOutlined, ellipse, rng, shade, shine, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
-
+import { C, circle, contactShadow, drawOutlined, ellipse, rng, shade, shine, vgrad, type Ctx } from '@pichi/screen-kit/art';
 export const PEPPERONI = '#B8322A',
   PEPPERONI_DARK = '#7E1D17',
   PEPPERONI_LIGHT = '#DE5642';

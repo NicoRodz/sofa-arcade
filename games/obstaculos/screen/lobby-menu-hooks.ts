@@ -1,8 +1,7 @@
 // Obstaculos' half of the Captain's touch form on the TV: feeds the pure builder with the live lobby and carries out a touch with the lobby's own setters.
-import { focusRow } from '@pichi/screen-kit/lobby/focus-nav-dom';
-import { app, connectedCount, setConfig } from '@pichi/screen-kit/shell/app-state';
-import { startRound } from '@pichi/screen-kit/shell/round-flow';
-import type { MenuActResult } from '@pichi/screen-kit/shell/game';
+import { focusRow } from '@pichi/screen-kit/lobby';
+import { app, connectedCount, setConfig, startRound } from '@pichi/screen-kit/shell';
+import type { MenuActResult } from '@pichi/screen-kit/shell';
 import type { MenuActBody, MenuBody } from '@pichi/core';
 import { toModeOptions } from '../lobby';
 import { camp } from './campaign-link';

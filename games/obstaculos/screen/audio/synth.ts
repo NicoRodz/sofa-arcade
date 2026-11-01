@@ -1,6 +1,6 @@
 // Web Audio rendering of the pure recipes and music notes. Works on a live or an offline context.
 // The chain (buses -> master -> compressor -18 dB 4:1 -> soft-clip -> destination) is the one of screen/src/audio.
-import { createChain, type Chain } from '@pichi/screen-kit/audio/synth';
+import { createChain, type Chain } from '@pichi/screen-kit/audio';
 import { karplusStrong } from './ks';
 import { noteVoices, type Scheduled } from './music';
 import { voicesFor, type Cue, type Voice } from './recipes';

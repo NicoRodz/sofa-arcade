@@ -1,6 +1,6 @@
 // What the Obstaculos screens share while the game is on the TV: the expedition that runs, the campaign level it belongs to, the notice
 // of the lobby and the summary the results read. Plain module state, like the `let`s of apps/screen/src/main.ts it came from (F4b).
-import { app } from '@pichi/screen-kit/shell/app-state';
+import { app } from '@pichi/screen-kit/shell';
 import { parseObstOptions, type Biome, type ObstOptions, type RunSummary } from '../index';
 import type { ObstRun } from './host';
 

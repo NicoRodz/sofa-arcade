@@ -2,7 +2,7 @@
 // confirmation) and knows no game: labels, options, reasons and the summary all come from the snapshot. Every touchable carries data-cm (what it does) and,
 // where it picks something, data-row / data-val; whether it is enabled and why travel with it so a tap on a disabled one needs no round trip.
 import type { MenuOption, MenuRow } from '@pichi/core';
-import { esc } from '@pichi/core/render';
+import { esc } from '@pichi/core';
 import { confirmReady, currentTab, flashing, gridRow, noticeOf, pickedOf, visibleItems, type MenuUi } from './state';
 
 const CROWN =

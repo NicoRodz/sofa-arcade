@@ -1,7 +1,5 @@
 import type { EventKind } from '../../../sim/midround';
-import { C } from '@pichi/screen-kit/art/tokens';
-import { circle, drawOutlined, rr, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
-
+import { C, circle, drawOutlined, rr, vgrad, type Ctx } from '@pichi/screen-kit/art';
 /** Colour of each event: the banner, its pill and its badge. */
 export const EVENT_COLOR: Record<EventKind, { main: string; dark: string }> = {
   rush: { main: '#E63B2E', dark: '#9E2118' },

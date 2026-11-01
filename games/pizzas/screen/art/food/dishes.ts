@@ -1,5 +1,4 @@
-import { C } from '@pichi/screen-kit/art/tokens';
-import { blob, contactShadow, drawOutlined, rng, shade, shine, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, blob, contactShadow, drawOutlined, rng, shade, shine, type Ctx } from '@pichi/screen-kit/art';
 import { pizzaDone, pizzaBurnt } from './pizza';
 
 export function tray(c: Ctx) {

@@ -3,8 +3,7 @@
 // sends it as the state of that tick (the `hint` message), so a late packet is just replaced by the next one. The phone has two buttons and
 // keeps two: only their names, glyphs and greying change.
 // It mirrors interact() / the B rules of overcooked.ts; hints.test.ts pins each case against what the sim really does.
-import type { IconId } from '@pichi/core/icons';
-import type { ClientMsg, HintLabels } from '@pichi/core';
+import type { IconId, ClientMsg, HintLabels } from '@pichi/core';
 import { aStation, targetStation } from './round/targeting';
 import { floorItemNear } from './round/hazards';
 import type { Game, Item, Player, Station } from './round/state';

@@ -1,8 +1,7 @@
 // What the lobby of "Obstaculos en cadena" chooses and how it turns into an expedition (plan §1, §10, §15).
 // The lobby's choices travel in the generic config as modeOptions ({ tether: 'chain' | 'free', level: 0..15 }); difficulty and seed use
 // the config's own fields. Pure: the screen, the phone's label and the tests all read it.
-import type { Difficulty } from '@pichi/core/difficulty';
-import type { ModeOptions } from '@pichi/core';
+import type { Difficulty, ModeOptions } from '@pichi/core';
 import { EXPEDITION_LEVELS } from './constants';
 import { LEVELS } from './levels';
 import type { GameMode, LevelDef } from './types';

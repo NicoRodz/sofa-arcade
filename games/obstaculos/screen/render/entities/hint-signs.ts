@@ -1,7 +1,7 @@
 // World-space hint signs.
 import type Phaser from 'phaser';
 import { TILE } from '../../../index';
-import { C, FONT } from '@pichi/screen-kit/art/tokens';
+import { C, FONT } from '@pichi/screen-kit/art';
 
 export class HintSigns {
   private items: { x: number; y: number; box: Phaser.GameObjects.Graphics; txt: Phaser.GameObjects.Text; a: number }[] = [];

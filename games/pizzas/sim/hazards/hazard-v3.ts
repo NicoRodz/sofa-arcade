@@ -1,7 +1,7 @@
 // HAZARD_V3 (design "¡Que salgan las pizzas!", tanda 2, PR-B): the numbers of the hazards that have to cost points, one row per difficulty. Pure data and pure reads, no stream.
 // A round reads its row through `hz3Params(g)`: with the flag off (`g.hz3` false) that is LEGACY, the constants the modules had before, so the rounds without the flag are bit for bit what they were.
 // Easy keeps LEGACY on purpose (the design: no punishments in Easy), except where the table below says otherwise. Ticks are 60 per second.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { Game } from '../round/state';
 
 export interface Hz3Params {

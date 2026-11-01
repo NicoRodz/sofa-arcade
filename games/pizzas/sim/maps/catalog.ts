@@ -1,5 +1,5 @@
 // The fixed (coop) maps and what the lobby and the settings know about them.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { MAP_1 } from './layouts/cocina-abierta';
 import { MAP_2 } from './layouts/isla-central';
 import { MAP_3 } from './layouts/el-rio';

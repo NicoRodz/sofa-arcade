@@ -68,7 +68,7 @@
 //   TO MODEL LATER (if the playtest asks): wind as a pessimistic push in simPlan; a time budget (steps) per target-gate pair; the balance counts for a heavy box.
 // A level in the campaign is a plain LevelDef (rows, params, hazard...). Nothing in LevelDef changed.
 import { DIFFICULTY_PARAMS, JUMP_V0, LATENCY_FRAME_MS, ROPE_LEN } from '../constants';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import type { DifficultyParams } from '../constants';
 import type { PhysicsParams } from './player';
 

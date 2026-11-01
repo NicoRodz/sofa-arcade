@@ -1,9 +1,9 @@
 // The TV overlay of the Cocina escuela: a strip over the (hidden) clock and score of the round with the title, the four steps and ONE chip per chef (avatar, name, four pips,
 // a check when it is done), plus a big "todos listos" when the table finished. DOM, scaled like the rest of the stage (1920x1080). No logic: it draws the model it is given.
-import { ICONS } from '@pichi/core/icons';
+import { ICONS } from '@pichi/core';
 import { SCHOOL_STEPS, SCHOOL_TITLE, SCHOOL_TOTAL } from '../../sim/school/index';
 import { chefCanvas } from '@pichi/screen-kit/art/chef';
-import { chefOf } from '@pichi/screen-kit/art/tokens';
+import { chefOf } from '@pichi/screen-kit/art';
 
 export interface ChipModel {
   slot: number;

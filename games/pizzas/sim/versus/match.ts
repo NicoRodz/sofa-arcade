@@ -1,6 +1,6 @@
 // How a round ends and how a match survives chefs that drop: ranking, the roster, ghosts, the pause when a team empties.
 import type { Game, TeamState } from '../round/state';
-import { holdsPlace, rankTeams, type PauseChoice, type TeamResult } from '@pichi/core/lobby/teams';
+import { holdsPlace, rankTeams, type PauseChoice, type TeamResult } from '@pichi/core/lobby';
 import { matchStatus } from '../assist';
 import { stopKind } from '../round/chop';
 import { addPlayer } from '../round/create';

@@ -2,10 +2,9 @@
 // touch decided with the lobby's own functions (the same ones the clicks and the keys call), so every guard they have still applies.
 import { lobbyGroupOfMap } from '../../sim/maps';
 import { FOCUS_ROW, buildLobbyMenu, decideMenuAct, type MenuEffect, type PizzasLobbyState } from '../lobby-menu';
-import { focusRow } from '@pichi/screen-kit/lobby/focus-nav-dom';
-import { startRound } from '@pichi/screen-kit/shell/round-flow';
-import { app, connectedCount, renderUi, setConfig } from '@pichi/screen-kit/shell/app-state';
-import type { MenuActResult } from '@pichi/screen-kit/shell/game';
+import { focusRow } from '@pichi/screen-kit/lobby';
+import { startRound, app, connectedCount, renderUi, setConfig } from '@pichi/screen-kit/shell';
+import type { MenuActResult } from '@pichi/screen-kit/shell';
 import type { MenuActBody, MenuBody } from '@pichi/core';
 import { MECHS_OPTION, MECH_PICK_OPTION, withMech } from '../../sim/gen/lobby-opts';
 import { difficultyPatch } from './lobby';

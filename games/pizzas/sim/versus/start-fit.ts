@@ -1,7 +1,7 @@
 // Can the lobby's split start at all? The lobby greys every map a team does not fit (versusMapStatus); when that leaves no map,
 // the round must not start on a fallback map the screen just said does not work: it says why and what to do (5 contra 3 in a lobby of 8).
 import type { ModeSpec } from '@pichi/core/contract';
-import { balanceTeams, type TeamInfo } from '@pichi/core/lobby/teams';
+import { balanceTeams, type TeamInfo } from '@pichi/core/lobby';
 import { lobbySetup, teamSizes, versusLobbyMaps } from './lobby';
 
 /** '' when some versus map fits these team sizes; else the lobby text that names the problem and the split that works. */

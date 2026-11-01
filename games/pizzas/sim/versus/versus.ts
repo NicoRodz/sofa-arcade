@@ -2,9 +2,9 @@
 // A versus map is two kitchens that share no floor. Each team's side is the floor region its chefs start in, regions are taken in
 // reading order (team 0 = the region met first), and a station belongs to the team whose region it touches. A station that touches
 // no team region, or regions of two teams (the future shared pantry), has no owner (null): everybody can use it.
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 import { DIRS, floorComponents, isFloor, type Grid, type Pos } from '../maps';
-import type { TeamId } from '@pichi/core/lobby/teams';
+import type { TeamId } from '@pichi/core/lobby';
 
 export const VIP_EVERY_MS: Record<Difficulty, number> = { easy: 75_000, normal: 60_000, hard: 45_000 }; // a VIP order shows up in both queues this often
 export const VIP_TTL_MS = 30_000; // patience of a VIP order

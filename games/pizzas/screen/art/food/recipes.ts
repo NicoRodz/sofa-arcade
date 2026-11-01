@@ -2,8 +2,8 @@
 // original kinds and merges these in; the base pizza and tray are handed in (`BaseArt`) so this file never imports food.ts (no cycle).
 import type { Item } from '../../../sim/overcooked';
 import type { Recipe } from '../../../sim/recipes/defs';
-import { C } from '@pichi/screen-kit/art/tokens';
-import type { Ctx } from '@pichi/screen-kit/art/gfx';
+import { C } from '@pichi/screen-kit/art';
+import type { Ctx } from '@pichi/screen-kit/art';
 import { calzoneDone, calzoneRaw, foldGlyph } from './calzone';
 import { BASIL, basilOverlay, basilRaw } from './basil';
 import { HAM, hamCut, hamOverlay, hamRaw, hamSquare } from './ham';

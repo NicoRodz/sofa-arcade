@@ -1,6 +1,6 @@
 // Baked textures of the level's entities (stars, flags, rings, boxes, keys, rocks, saws).
 import type Phaser from 'phaser';
-import { circle, drawOutlined, makeTex, rr, star as starPath, vgrad } from '@pichi/screen-kit/art/gfx';
+import { circle, drawOutlined, makeTex, rr, star as starPath, vgrad } from '@pichi/screen-kit/art';
 import { INK } from '../biome';
 
 export function buildEntityTextures(scene: Phaser.Scene) {

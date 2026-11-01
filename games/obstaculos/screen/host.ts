@@ -12,13 +12,13 @@ import {
   type Packet,
   type SessionOpts,
 } from '../index';
-import type { Emitter } from '@pichi/core/emitter';
+import type { Emitter } from '@pichi/core';
 import type { MusicState } from './audio';
 import { SimWorldView } from './render/adapter';
 import type { ObstaclesView } from './render/obstacles-view';
 import type { WorldView } from './render/view';
 import type { LevelEnd } from './campaign/flow';
-import type { Appearance } from '@pichi/core/avatar/appearance';
+import type { Appearance } from '@pichi/core/avatar';
 
 type ObstBus = Pick<Emitter<ObstEvents>, 'emit'>;
 

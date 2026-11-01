@@ -6,7 +6,7 @@
 // with a card it gives the topping of the card's recipe: cheese for a Margarita, pepperoni for a Pepperoni, mushroom for a Champiñón. A card has at most
 // ONE topping recipe, so no map needs a new tile. Maps without the '3' crate get cards with no topping (Marinara and Calzone).
 import type { Item } from '../round/state';
-import type { Tuning } from '@pichi/core/difficulty';
+import type { Tuning } from '@pichi/core';
 import { CASA_HAM, casaDish, casaMask } from './casa';
 
 export type Recipe =

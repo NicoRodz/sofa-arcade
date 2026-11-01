@@ -1,10 +1,9 @@
 // The stick and the two buttons: labels and icons come from the game registry via the config message (nothing here knows a specific game).
 // The circle (the touch area) carries the icon only; the label goes in a plate underneath, outside the touch area.
 // The screen may rename A and B for a moment (sabotage: "Tomar bolsa", "Cargar", "¡Lanzar!"): `hint` overrides the registry label, null brings it back.
-import type { HintLabels } from '@pichi/core';
+import type { HintLabels, IconId } from '@pichi/core';
 import type { GameControls } from '@pichi/core/contract';
-import { esc, iconSvg } from '@pichi/core/render';
-import type { IconId } from '@pichi/core/icons';
+import { esc, iconSvg } from '@pichi/core';
 import type { Session } from './store';
 
 function setControl(circle: HTMLElement, plate: HTMLElement, c: GameControls['stick']) {

@@ -1,6 +1,5 @@
 // The static body of the two stations of tanda 2: the sauce pot on its burner, and the pass-through hatch (a counter with a frame and a sliding shutter).
-import { C } from '@pichi/screen-kit/art/tokens';
-import { drawOutlined, rr, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, drawOutlined, rr, vgrad, type Ctx } from '@pichi/screen-kit/art';
 
 /** The sauce pot: a steel pot with two handles on a little stove, red rim. */
 export function saucePot(c: Ctx, x0: number, y0: number) {

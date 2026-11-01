@@ -1,6 +1,5 @@
 import type { Grid } from '../../../sim/maps';
-import { C, H, HUD_H, W } from '@pichi/screen-kit/art/tokens';
-import { rng, vgrad, type Ctx } from '@pichi/screen-kit/art/gfx';
+import { C, H, HUD_H, W, rng, vgrad, type Ctx } from '@pichi/screen-kit/art';
 import { type Kind, kindOf, rrc, benchTop, wallTop } from './tiles';
 
 export function outerWall(c: Ctx) {
