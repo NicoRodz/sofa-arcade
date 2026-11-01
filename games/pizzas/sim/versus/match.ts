@@ -2,7 +2,7 @@
 import type { Game, TeamState } from '../round/state';
 import { holdsPlace, rankTeams, type PauseChoice, type TeamResult } from '@pichi/core/lobby';
 import { matchStatus } from '../rules/assist';
-import { stopKind } from '../round/chop';
+import { stopKind } from '../round/stop-kind';
 import { addPlayer } from '../round/create';
 import { sabotageCancelAim } from '../rules/sabotage';
 

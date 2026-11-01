@@ -3,7 +3,7 @@
 // window any touch or dash catches it, hands full or not. A burst has a cooldown. It is not unbeatable: with no room to run (wall, corner) or with chefs closing from opposite sides it
 // does not bolt and the touch lands. Deterministic: the direction is the best clearance among a fixed list of angles (the left one first on a tie); no RNG.
 import type { Game } from '../round/state';
-import type { Rat } from '../rules/midround';
+import type { Rat } from '../rules/types';
 import { ratParams } from './rat-v2';
 
 const MIN_ROOM = 1; // tiles of free run below which it is cornered

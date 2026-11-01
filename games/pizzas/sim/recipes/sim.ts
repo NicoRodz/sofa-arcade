@@ -13,7 +13,7 @@ import { createMenu, menuNext, menuRecipes } from './menu';
 import { stageCookMs } from './sauce';
 import { SLICE_MS, casaAccepts, casaCookMult, casaMask } from './casa';
 import { bandejaAllowed, partSlot } from './bandeja';
-export { isBaking } from './sauce';
+export { isBaking, potCapacity } from './sauce';
 import {
   CALZONE_COOK_MULT,
   FOLD_MS,
@@ -133,9 +133,6 @@ export const canFold = (g: Game, s: Station): boolean =>
 /** Dough, tomato, cheese and ham in the oven of a card with the stuffed calzone. */
 export const isStuffed = (g: Game, s: Station): boolean =>
   !!g.rec?.recipes.includes('calzonerel') && s.inputs.length === 4 && [0, 1, 2, 5].every((t) => s.inputs.includes(t));
-
-/** How many ingredients an oven takes: dough, tomato and a topping; four on a map with a second topping crate. */
-export const potCapacity = (g: Pick<Game, 'rec'>): number => (g.rec?.topping2 == null ? 3 : 4);
 
 /** `dtMs` more of Picar folding the pot; at FOLD_MS the calzone is folded (it keeps cooking, longer). */
 export function foldStep(g: Game, playerId: number, s: Station, dtMs: number) {

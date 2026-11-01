@@ -9,16 +9,6 @@ import { pushesInto } from './targeting';
 import { WASH_MS } from '@pichi/core';
 import { douse } from '../rules/burn';
 
-// The event that ends what a chef's Picar was doing: putting a fire out, scrubbing plates at a sink, or chopping.
-export const stopKind = (g: Game, p: Player) =>
-  p.dousing
-    ? 'douseStop'
-    : g.stations[p.chopAt]?.kind === 'sink' || g.stations[p.chopAt]?.kind === 'saucepot'
-      ? 'washStop'
-      : g.stations[p.chopAt]?.kind === 'pot'
-        ? 'foldStop'
-        : 'chopStop';
-
 // Can B do something at this station? Cut / grate / stretch on a board with a raw item, scrub plates at a sink with dirty ones, fold at an oven, put a fire out (burn only).
 export function cuttableAt(g: Game, target: Station | null) {
   const burning = !!(g.burn && target && target.fire !== undefined);

@@ -4,7 +4,7 @@
 import type { FireV2 } from '../rules/types';
 export type { FireV2 } from '../rules/types';
 import type { Game, Station } from '../round/state';
-import type { Burn } from '../rules/burn';
+import type { Burn } from '../rules/types';
 
 export const newFireV2 = (seed: number, bigOk: boolean, teams: number): FireV2 => ({
   seed,

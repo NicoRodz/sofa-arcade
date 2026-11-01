@@ -4,7 +4,8 @@
 import type { Planned } from '../rules/types';
 export type { Planned } from '../rules/types';
 import { mulberry32 } from '@pichi/core';
-import { ANNOUNCE_MS, type EventKind } from '../rules/midround';
+import { ANNOUNCE_MS } from '../rules/announce';
+import type { EventKind } from '../rules/types';
 import { EVENT_SCHEDULE_TAG, hazardParams } from './hazard-v2';
 import type { Difficulty } from '@pichi/core';
 

@@ -11,6 +11,7 @@
 //   spill      Derrame            six patches of oil on the floor (mech/oil, only in a round with the oil mechanic)
 //   rat        Rata               a rat steals the item of a counter; a dash scares it (and the item goes back). Cooperative only
 // Versus: the same event, at the same instant, to both teams (one global state). The rat is never in the pool there (it would double the sabotage).
+import { ANNOUNCE_MS } from './announce';
 import type { EventKind, Mid, Rat } from './types';
 export type { EventKind, Mid, Rat } from './types';
 import { DIRS, isFloor } from '../maps';
@@ -34,7 +35,7 @@ export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout
 export const EVENTS_SEED_TAG = 0xe7e47e55;
 export const EVENT_FROM_MS = 60_000; // the event starts between these two instants of the match
 export const EVENT_TO_MS = 120_000;
-export const ANNOUNCE_MS = 3000; // the banner is up this long before it starts
+export { ANNOUNCE_MS } from './announce';
 export const ACTIVE_MS: Record<EventKind, number> = {
   rush: 3000,
   inspector: 20_000,
