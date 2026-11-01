@@ -6,8 +6,8 @@ import { LEVEL_14 } from '../levels';
 import type { Mechanic } from '../mechanics';
 import { ROPE_LEN } from '../constants';
 import { parseLevel } from '../parse';
-import { campaignParams, dparamsForCampaign, physicsForCampaign } from '../sim/campaign';
-import { physicsFor } from '../sim/player';
+import { campaignParams, dparamsForCampaign, physicsForCampaign } from '../sim/rules/campaign';
+import { physicsFor } from '../sim/player/player';
 import { buildGraph } from './graph';
 import { validateLevel, validateState } from './validate';
 

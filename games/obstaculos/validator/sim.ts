@@ -2,8 +2,8 @@
 // so the envelope is the game's physics, not a formula. A plan = where the body starts, what it holds, when it presses A.
 import { JUMP_V0, PLAYER_H, PLAYER_W, ROPE_JUMP_MULT, TILE } from '../constants';
 import { T } from '../legend';
-import { boxHitsHazard, tileAt, tileOf, type TileGrid } from '../sim/tiles';
-import { newBody, stepPlayer, type Body, type PhysicsParams } from '../sim/player';
+import { boxHitsHazard, tileAt, tileOf, type TileGrid } from '../sim/world/tiles';
+import { newBody, stepPlayer, type Body, type PhysicsParams } from '../sim/player/player';
 
 export const EDGE_MOVE_SCALE = 0.92; // "an edge is valid only if it uses <= 92 % of the envelope" (plan §12): the stick is scaled down to this
 export const MAX_SIM_STEPS = 260;

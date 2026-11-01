@@ -3,13 +3,13 @@ import { TILE } from '../../constants';
 import { T } from '../../legend';
 import type { ParsedLevel } from '../../parse';
 import type { Cell } from '../../types';
-import type { PxRect } from '../collide';
-import type { Platform } from '../player';
-import type { BoxE, Entities, HazardE, KeyE, Objective, PickE, World } from '../state';
-import type { CampaignParams } from '../campaign';
-import { createEnemies } from '../enemies';
-import { AVALANCHE_START_TILES, BOX_ID0, BOX_SIZE, BALANCE_ID0, MOVER_ID0, SINKER_ID0 } from '../tuning';
-import { setTile, type TileGrid } from '../tiles';
+import type { PxRect } from '../world/collide';
+import type { Platform } from '../player/player';
+import type { BoxE, Entities, HazardE, KeyE, Objective, PickE, World } from '../world/state';
+import type { CampaignParams } from '../rules/campaign';
+import { createEnemies } from './enemies';
+import { AVALANCHE_START_TILES, BOX_ID0, BOX_SIZE, BALANCE_ID0, MOVER_ID0, SINKER_ID0 } from '../world/tuning';
+import { setTile, type TileGrid } from '../world/tiles';
 
 export const idx = (x: number, y: number, w: number) => y * w + x;
 

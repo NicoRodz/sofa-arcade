@@ -5,7 +5,7 @@
 //     nobody throws. A run that throws changed ON PURPOSE (the throw niche: faster launch and a rope that stretches), so those runs are not frozen here; the niche has its own tests.
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../levels';
-import { hashBodies } from './player';
+import { hashBodies } from './player/player';
 import { createWorld, hashState, step } from './world';
 
 const noise = (seed = 7) => {

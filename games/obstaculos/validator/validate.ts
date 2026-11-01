@@ -11,7 +11,7 @@ import { parseLevel, type ParsedLevel } from '../parse';
 import type { Difficulty } from '@pichi/core';
 import type { Cell, GameMode, LevelDef, Weight } from '../types';
 import type { ModeledMechanic } from '../mechanics';
-import { campaignParams } from '../sim/campaign';
+import { campaignParams } from '../sim/rules/campaign';
 import {
   buildGraph,
   can,

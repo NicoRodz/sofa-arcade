@@ -1,7 +1,7 @@
 // Cache of simulated plans shared by the graphs of one validation, keyed by the terrain around the segment.
 import { TILE } from '../../constants';
-import type { PhysicsParams } from '../../sim/player';
-import type { TileGrid } from '../../sim/tiles';
+import type { PhysicsParams } from '../../sim/player/player';
+import type { TileGrid } from '../../sim/world/tiles';
 import { simPlan, type Landing, type Plan } from '../sim';
 import type { Seg, SimCache } from './types';
 

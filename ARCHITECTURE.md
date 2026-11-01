@@ -24,7 +24,7 @@ Estado del repo tras F3 (los archivos se movieron, la lógica no) y, al final, e
 
 - Imports entre paquetes: `@pichi/core` (índice), `@pichi/core/<archivo>` (patrón `exports`), `@pichi/game-pizzas/sim` (índice), `@pichi/game-pizzas/sim/maps`. Las apps no se importan: se llega por ruta relativa.
 - Violaciones conocidas que F4/F5 deben cortar (las reglas siguen en aviso): `core` importa tipos y funciones de Pizzas (`protocol` -> `maps`, `puestos`, `versus*`; `teams` -> `assist`; `events`; `games` -> `sabotage-config`) y de Obstáculos (`protocol` -> `sim/campaign`); `screen-kit/art/chef` importa `food` de Pizzas. Ver `docs/refactor/depcruise-report.md`.
-- Posible código muerto (solo tests, tools o scripts los usan; ver `deadCode` en `moves.json`): `feel/human-bot`, `feel/rat-bot`, `school/school-bot`, `obstaculos/sim/feelkit`, `audio/measure/measure`, `server/crash-writer`.
+- Posible código muerto (solo tests, tools o scripts los usan; ver `deadCode` en `moves.json`): `feel/human-bot`, `feel/rat-bot`, `school/school-bot`, `obstaculos/sim/testkit/feelkit`, `audio/measure/measure`, `server/crash-writer`.
 
 ## Herramientas
 

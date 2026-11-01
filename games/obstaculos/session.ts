@@ -11,12 +11,12 @@ import type { Difficulty } from '@pichi/core';
 import { DT, EXPEDITION_LEVELS, MAX_STEPS_PER_FRAME, STEP_MS } from './constants';
 import { generateLevel } from './generate';
 import { fixedExpedition, RANDOM_LEVEL } from './lobby';
-import { InputTracker, type Packet, type PlayerStep } from './sim/input';
+import { InputTracker, type Packet, type PlayerStep } from './sim/world/input';
 import { advanceRun, awardsOf, newRun, type Awards, type RunState } from './sim/rules';
-import { SLOT_COUNT } from './sim/tuning';
-import type { ObstEvent, PlayerStats, World } from './sim/state';
+import { SLOT_COUNT } from './sim/world/tuning';
+import type { ObstEvent, PlayerStats, World } from './sim/world/state';
 import { createWorld, setConnected, step } from './sim/world';
-import type { WorldId } from './sim/campaign';
+import type { WorldId } from './sim/rules/campaign';
 import type { GameMode, LevelDef } from './types';
 
 export const COUNTDOWN_MS = 3000; // 3-2-1 before the first level

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { COUNTDOWN_MS } from '../../index';
 import { CAMPAIGN_CATALOG } from '../../campaign/index';
-import { teleport } from '../../sim/testkit';
+import { teleport } from '../../sim/testkit/testkit';
 import { ObstRun } from '../host';
 import type { LevelEnd } from './flow';
 

@@ -3,11 +3,11 @@
 // and ObstBot (which runs, jumps, climbs walls with the tower and hand, crosses boyas) for the dynamics that are only an obstacle (ice, wind, soft enemies).
 import { describe, expect, it } from 'vitest';
 import { PLAYER_H, TILE } from '../constants';
-import { inp, of, pl, run, teleport, world } from '../sim/testkit';
-import { playWithBots } from './botplay';
-import { CAMPAIGN } from './catalog';
-import type { ObstEvent } from '../sim/state';
-import type { WorldId } from '../sim/campaign';
+import { inp, of, pl, run, teleport, world } from '../sim/testkit/testkit';
+import { playWithBots } from './tools/botplay';
+import { CAMPAIGN } from './catalog/catalog';
+import type { ObstEvent } from '../sim/world/state';
+import type { WorldId } from '../sim/rules/campaign';
 
 const def = (id: string) => CAMPAIGN.find((l) => l.id === id)!.def!;
 const worldOf = (id: string): WorldId => CAMPAIGN.find((l) => l.id === id)!.world;

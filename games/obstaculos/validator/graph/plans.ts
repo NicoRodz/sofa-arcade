@@ -1,7 +1,7 @@
 // Plans that leave a segment (on foot, tower, hand catch zones): the starting points the explorer simulates.
 import { JUMP_V0, PLAYER_H, PLAYER_W, TILE, TRAMPOLINE_MULT } from '../../constants';
 import { T } from '../../legend';
-import { boxHitsSolid, tileAt, tileOf, type TileGrid } from '../../sim/tiles';
+import { boxHitsSolid, tileAt, tileOf, type TileGrid } from '../../sim/world/tiles';
 import { feetOfRow, type CatchZone, type Plan } from '../sim';
 import type { Seg } from './types';
 

@@ -3,7 +3,7 @@ import { DIFFICULTY_PARAMS, TILE } from '../constants';
 import { LEVEL_01 } from '../levels';
 import { parseLevelStrict } from '../parse';
 import { advanceRun, awards, levelScore, medalFor, newRun, progressField } from './rules';
-import { clearLevel, draw, hall, inp, level, of, pl, run, teleport, world } from './testkit';
+import { clearLevel, draw, hall, inp, level, of, pl, run, teleport, world } from './testkit/testkit';
 import { setConnected, step } from './world';
 
 const GROUND = 11;

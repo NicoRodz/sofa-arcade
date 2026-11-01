@@ -3,9 +3,9 @@ import type { DifficultyParams } from '../../constants';
 import type { Difficulty } from '@pichi/core';
 import type { Cell, GameMode } from '../../types';
 import type { Mechanic } from '../../mechanics';
-import type { WorldId } from '../../sim/campaign';
-import type { PhysicsParams } from '../../sim/player';
-import type { TileGrid } from '../../sim/tiles';
+import type { WorldId } from '../../sim/rules/campaign';
+import type { PhysicsParams } from '../../sim/player/player';
+import type { TileGrid } from '../../sim/world/tiles';
 import type { Landing, Plan } from '../sim';
 
 // allow: the mechanics the explorer knows (the learning test's bot); undefined = all of them.

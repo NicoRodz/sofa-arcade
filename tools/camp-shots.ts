@@ -8,7 +8,7 @@ import path from 'node:path';
 import { WebSocket } from 'ws';
 import { DIFFICULTIES, DIFFICULTY_LABEL } from '@pichi/core/difficulty';
 import { applyResult, fullMask, newExpedition, openWorld, type Expedition } from '@pichi/game-obstaculos/campaign';
-import { planCatalog } from '@pichi/game-obstaculos/campaign/testkit';
+import { planCatalog } from '@pichi/game-obstaculos/campaign/tools/testkit';
 import { initialState, type CampState } from '@pichi/game-obstaculos/screen/campaign/model';
 import { renderHub, renderMap, renderPick, renderResult, type ViewCtx } from '@pichi/game-obstaculos/screen/campaign/view';
 

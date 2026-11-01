@@ -4,8 +4,8 @@
 // edge, the rest are caught by the hand). Press requests are edges: the caller turns each `true` into one tap.
 import { JUMP_PEAK_PX, PLAYER_H, PLAYER_W, TILE } from './constants';
 import { T } from './legend';
-import { newBody, physicsFor, stepPlayer } from './sim/player';
-import { tileAt, type TileGrid } from './sim/tiles';
+import { newBody, physicsFor, stepPlayer } from './sim/player/player';
+import { tileAt, type TileGrid } from './sim/world/tiles';
 import type { PlayerSnap } from './sim/world';
 
 export interface BotView {

@@ -2,11 +2,11 @@
 import { medianPlayer, progressOf, respawnCell, revive, steps } from './placement';
 import { BUBBLE_POP_SEC, BUBBLE_SPEED_TILES, CRUMB_EVERY_SEC, CRUMB_MIN_AGE_SEC, DT, PLAYER_H, PLAYER_W, TILE } from '../../constants';
 import { T, isHazardKind, isSolidKind } from '../../legend';
-import { dropAll } from '../actions';
+import { dropAll } from '../player/actions';
 import { hazardKills } from '../entities';
-import { emit, isActive, type PlayerState, type World } from '../state';
-import { boxTouches, tileAt } from '../tiles';
-import { AVALANCHE_START_TILES, CRUMB_KEEP, CRUSH_STEPS, RESPAWN_DELAY_SEC, VOID_MARGIN } from '../tuning';
+import { emit, isActive, type PlayerState, type World } from '../world/state';
+import { boxTouches, tileAt } from '../world/tiles';
+import { AVALANCHE_START_TILES, CRUMB_KEEP, CRUSH_STEPS, RESPAWN_DELAY_SEC, VOID_MARGIN } from '../world/tuning';
 
 // --- death and lives
 export function killPlayer(w: World, p: PlayerState, cause: 'spikes' | 'liquid' | 'crush' | 'fall' | 'hazard'): void {

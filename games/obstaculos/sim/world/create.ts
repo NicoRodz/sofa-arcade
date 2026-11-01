@@ -3,15 +3,15 @@ import { DIFFICULTY_PARAMS, ROPE_LEN } from '../../constants';
 import type { Difficulty } from '@pichi/core';
 import { parseLevel } from '../../parse';
 import type { GameMode, LevelDef } from '../../types';
-import { dropAll, previewB as previewBPlayer, type BPreview } from '../actions';
+import { dropAll, previewB as previewBPlayer, type BPreview } from '../player/actions';
 import { createEntities } from '../entities';
-import { buildRopes } from '../rope';
-import { campaignParams, dparamsForCampaign, physicsOfWorld, type WorldId } from '../campaign';
+import { buildRopes } from '../player/rope';
+import { campaignParams, dparamsForCampaign, physicsOfWorld, type WorldId } from '../rules/campaign';
 import { placeAtCell, progressField, revive } from '../rules';
-import { playerOf, type PlayerState, type World } from '../state';
-import { newBody, physicsFor } from '../player';
-import { buildGrid } from '../tiles';
-import { SLOT_COUNT } from '../tuning';
+import { playerOf, type PlayerState, type World } from './state';
+import { newBody, physicsFor } from '../player/player';
+import { buildGrid } from './tiles';
+import { SLOT_COUNT } from './tuning';
 
 export interface WorldOptions {
   level: LevelDef;

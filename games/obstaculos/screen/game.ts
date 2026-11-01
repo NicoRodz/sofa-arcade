@@ -3,7 +3,7 @@
 import { obstBus } from './bus';
 import { app, renderUi } from '@pichi/screen-kit/shell';
 import type { ScreenGame } from '@pichi/screen-kit/shell';
-import type { Packet } from '../sim/input';
+import type { Packet } from '../sim/world/input';
 import { DEFAULT_OBST_OPTIONS, GAME_ID, toModeOptions } from '../index';
 import { obstaculosManifest } from '../manifest';
 import { initObstAudio, type MusicState } from './audio';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CAMPAIGN_CATALOG, applyResult, fullMask, newExpedition, openWorld, type Catalog, type Expedition } from '../../campaign/index';
-import { planCatalog } from '../../campaign/testkit';
+import { planCatalog } from '../../campaign/tools/testkit';
 import type { Hub, Outcome } from './flow';
 import {
   RESET_HOLD_MS,

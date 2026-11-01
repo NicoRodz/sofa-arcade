@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { planCatalog } from '../../campaign/testkit';
+import { planCatalog } from '../../campaign/tools/testkit';
 import { CAMPAIGN_CATALOG, applyResult, fullMask, levelById, progressOf, type Catalog } from '../../campaign/index';
 import { LAST_KEY } from './api';
 import { CampaignFlow, joinNames } from './flow';

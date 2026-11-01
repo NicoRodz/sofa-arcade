@@ -2,7 +2,7 @@
 // (two seeds, two players) is FROZEN here: A6 added lantern, elastic ring, sinkers and geyser, and none of it may leak into a world that does not use them (hashState mixes the A6 state only
 // when it is not at rest). The quick-match hashes of the 15 levels are frozen in regression.test.ts and did not move either.
 import { describe, expect, it } from 'vitest';
-import { WORLD1 as WORLD1_LEVELS } from '../campaign/world1';
+import { WORLD1 as WORLD1_LEVELS } from '../campaign/worlds/world1';
 import { createWorld, hashState, step } from './world';
 
 const noise = (seed: number) => {
