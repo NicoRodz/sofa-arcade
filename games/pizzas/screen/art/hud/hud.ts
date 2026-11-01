@@ -1,14 +1,14 @@
 // Top strip: order tickets, round clock, team score; plus the big centre banners (countdown, time up).
 import type Phaser from 'phaser';
-import type { Game } from '../../sim/overcooked';
-import type { Recipe } from '../../sim/recipes/defs';
+import type { Game } from '../../../sim/overcooked';
+import type { Recipe } from '../../../sim/recipes/defs';
 import type { TeamInfo } from '@pichi/core/lobby';
 import { C, H, W, hexNum, timerColor, R } from '@pichi/screen-kit/art';
-import { Bar } from './stations';
-import { recipeParts } from './food/ticket';
-import { birthdayParts, ticketMark, trayParts, type Tray, type TicketMark } from './food/ticket-tray';
-import { MARGIN_MS } from '../../sim/recipes/bandeja';
-import { cardIntro } from './food/card-intro';
+import { Bar } from '../stations';
+import { recipeParts } from '../food/ticket';
+import { birthdayParts, ticketMark, trayParts, type Tray, type TicketMark } from '../food/ticket-tray';
+import { MARGIN_MS } from '../../../sim/recipes/bandeja';
+import { cardIntro } from '../food/card-intro';
 import { makeText } from '@pichi/screen-kit/art/fx';
 import { MAX_TICKETS, TICKET_SHAKE_AT, TICKET_WIDTH, VS_TICKET_MAX_X, clockText, ticketXs } from './layout';
 import { VersusHud } from './versus-hud';

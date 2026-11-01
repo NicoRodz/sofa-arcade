@@ -8,9 +8,9 @@ import { createGame } from '../sim';
 import { lobbyN, type MapFamily } from '../sim/maps';
 import { tallyKitchen } from '../sim/scoring/kudos';
 import { NO_LEAD, tallyDeliveries, type LeadState, type Series, type VersusReport } from '../sim/versus/report';
-import type { RoundView } from './art/hud';
+import type { RoundView } from './art/hud/hud';
 import type { MapGroup } from './lobby-menu';
-import type { PuestoView } from './art/puestos';
+import type { PuestoView } from './art/hud/puestos';
 
 export const PIZZAS = 'pizzas';
 export const pz = {

@@ -6,7 +6,7 @@ import { app, bindServices, dispatch, renderUi, setConfig } from '@pichi/screen-
 import type { ScreenGame } from '@pichi/screen-kit/shell';
 import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '../sim';
 import { pizzasManifest } from '../manifest';
-import { drawLogo } from './art/ui';
+import { drawLogo } from './art/dom/ui';
 import { initAudio } from './audio';
 import { phoneResult } from '../sim/versus/report';
 import { pizzasDebug } from './debug';

@@ -2,7 +2,7 @@
 // that tints itself from the id so a game added to the registry gets a card with art before anyone draws it.
 import { C, chefOf, circle, drawOutlined, ellipse, rng, shade, star, vgrad, type Ctx } from '@pichi/screen-kit/art';
 import { chefCanvas } from '@pichi/screen-kit/art/chef';
-import { drawFood, type FoodKind } from './food';
+import { drawFood, type FoodKind } from '../food';
 export const ART_W = 380,
   ART_H = 300; // design units; the canvas is drawn at 2x and the card crops it to fit (object-fit: cover)
 type Painter = (c: Ctx) => void;

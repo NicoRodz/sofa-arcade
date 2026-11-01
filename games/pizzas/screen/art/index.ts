@@ -1,3 +1,3 @@
-export { drawCardArt } from './cards';
-export { iris } from './iris';
-export { starCanvas } from './ui';
+export { drawCardArt } from './dom/cards';
+export { iris } from './dom/iris';
+export { starCanvas } from './dom/ui';

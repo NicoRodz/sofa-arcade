@@ -1,6 +1,6 @@
 // Static pictures of the campaign's screens with a catalog of the plan's size (5 worlds x 7 + a summit each), rendered from the same view functions as
 // the screen, with the page's own CSS. No server, no game: it shows what the map looks like at the size S2's catalog will have.
-// usage: npx tsx tools/camp-shots.ts [outDir]    env: CDP (9730)
+// usage: npx tsx tools/camp/camp-shots.ts [outDir]    env: CDP (9730)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';

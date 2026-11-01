@@ -2,15 +2,15 @@
 // the red extinguisher in the hands of a chef that is putting it out with a stream of foam, and the reactions to the burn events (smoke, flames, steam).
 // Everything is drawn by code. Reads `game.stations` (fire / warned / burnt) and `game.players` (dousing); only exists when `game.burn` does.
 import Phaser from 'phaser';
-import type { GameEvents, Emitter } from '../../sim/round/events';
-import type { Game } from '../../sim/overcooked';
-import { DOUSE_MS } from '../../sim/rules/burn';
-import { fireNeedMs } from '../../sim/hazards/fire-v2';
+import type { GameEvents, Emitter } from '../../../sim/round/events';
+import type { Game } from '../../../sim/overcooked';
+import { DOUSE_MS } from '../../../sim/rules/burn';
+import { fireNeedMs } from '../../../sim/hazards/fire-v2';
 import { C, TILE, U, hexNum, R } from '@pichi/screen-kit/art';
-import { OX, OY } from './env/grid';
+import { OX, OY } from '../env/grid';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
-import { Bar, place } from './stations';
-import { BIG_K, BigFireMark } from './feel/fire-big';
+import { Bar, place } from '../stations';
+import { BIG_K, BigFireMark } from '../feel/fire-big';
 
 const tilePx = (tx: number, ty: number) => ({ x: OX + (tx + 0.5) * TILE, y: OY + (ty + 0.5) * TILE });
 // A label over a station goes above it, or below it when the station is on the top wall (the strip of the HUD is right above): `dy` is the distance in tiles.

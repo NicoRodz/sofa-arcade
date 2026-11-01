@@ -3,13 +3,13 @@
 //   scenario A: Playa and Bosque cleared up to 2-5 -> hub -> Continuar -> map of the three worlds (screenshots) -> 2-6 (soft enemies, Libres) played by the bots.
 //   scenario B: ... up to 3-1 -> Continuar -> map of Glaciar -> 3-2 (wind) played by the bots.
 //   quick match: none of the campaign levels is reachable outside the campaign hub and map (the Partida rápida lobby lists none of them).
-// usage: npx tsx tools/camp-w23.ts [outDir]    env: PORT (4800) CDP (9770)
+// usage: npx tsx tools/camp/camp-w23.ts [outDir]    env: PORT (4800) CDP (9770)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { startServer } from '../apps/server/src/server';
+import { startServer } from '../../apps/server/src/server';
 import { ObstBot, type BotView } from '@pichi/game-obstaculos';
 import { LEVELS } from '@pichi/game-obstaculos/levels';
 import { CAMPAIGN, CAMPAIGN_CATALOG, applyResult, fullMask, newExpedition, type Expedition } from '@pichi/game-obstaculos/campaign';

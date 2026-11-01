@@ -1,10 +1,10 @@
 // HUD on its own camera (never zoomed): level card, clock with par bar, lives, stars, who is in the goal, arrows for players out of
 // the picture (with the countdown to their bubble) and the big banners.
 import Phaser from 'phaser';
-import { SILVER_PAR_MULT } from '../../index';
+import { SILVER_PAR_MULT } from '../../../index';
 import { C, CHEFS, FONT, H, W, hexNum } from '@pichi/screen-kit/art';
-import { BIOME_NAME, type WorldView } from './view';
-import { arrowPoint, VIEW_H, VIEW_W } from './camera';
+import { BIOME_NAME, type WorldView } from '../view';
+import { arrowPoint, VIEW_H, VIEW_W } from '../camera';
 import { MEDAL_COLORS, clockText, medalFor } from './hudlogic';
 
 const INK = 0x2b1b17,

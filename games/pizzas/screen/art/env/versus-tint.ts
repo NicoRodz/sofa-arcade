@@ -6,7 +6,7 @@ import type { Game } from '../../../sim/overcooked';
 import { TILE, hexNum } from '@pichi/screen-kit/art';
 import { OX, OY } from './grid';
 import { makeText } from '@pichi/screen-kit/art/fx';
-import type { RoundView } from '../hud';
+import type { RoundView } from '../hud/hud';
 
 export function tintKitchens(scene: Phaser.Scene, game: Game, view: RoundView): [number, number][][] {
   const kitchenTiles: [number, number][][] = [];

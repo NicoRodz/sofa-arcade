@@ -20,10 +20,10 @@
   "games/obstaculos/sim/player/player.ts": { "max": 340, "until": "2027-03-31" },
   "games/obstaculos/test/obst.dynamics.scenarios.ts": { "max": 441, "until": "2027-03-31" },
   "games/obstaculos/validator/validate.ts": { "max": 467, "until": "2027-03-31" },
-  "games/pizzas/screen/art/hud.ts": { "max": 352, "until": "2027-03-31" },
-  "games/pizzas/screen/art/sabotage.ts": { "max": 390, "until": "2027-03-31" },
+  "games/pizzas/screen/art/hud/hud.ts": { "max": 352, "until": "2027-03-31" },
+  "games/pizzas/screen/art/sabotage/sabotage.ts": { "max": 390, "until": "2027-03-31" },
   "games/pizzas/screen/art/stations.ts": { "max": 398, "until": "2027-03-31" },
-  "games/pizzas/screen/art/versus-hud.ts": { "max": 451, "until": "2027-03-31" },
+  "games/pizzas/screen/art/hud/versus-hud.ts": { "max": 451, "until": "2027-03-31" },
   "games/pizzas/screen/art/world.ts": { "max": 361, "until": "2027-03-31" },
   "games/pizzas/sim/rules/assist.test.ts": { "max": 556, "until": "2027-03-31" },
   "games/pizzas/sim/feel/human-bot.ts": { "max": 435, "until": "2027-03-31" },
@@ -37,15 +37,13 @@
   "platform/core/src/lobby/vote.ts": { "max": 369, "until": "2027-03-31" },
   "platform/screen/src/audio/recipes.ts": { "max": 395, "until": "2027-03-31" },
   "scripts/move.ts": { "max": 328, "until": "2027-03-31" },
-  "tools/camp-e2e.ts": { "max": 430, "until": "2027-03-31" },
-  "tools/camp-w23.ts": { "max": 386, "until": "2027-03-31" },
+  "tools/camp/camp-e2e.ts": { "max": 430, "until": "2027-03-31" },
+  "tools/camp/camp-w23.ts": { "max": 386, "until": "2027-03-31" },
   "tools/capture-recipes.ts": { "max": 331, "until": "2027-03-31" },
   "tools/latency-report/src/index.ts": { "max": 23, "until": "2027-03-31" },
   "tools/school-shots.ts": { "max": 438, "until": "2027-03-31" }
  },
  "folders": {
-  "games/obstaculos/screen/render": { "max": 12, "until": "2026-12-31" },
-  "games/pizzas/screen/art": { "max": 13, "until": "2026-12-31" },
-  "tools": { "max": 13, "until": "2026-12-31" }
+
  }
 }

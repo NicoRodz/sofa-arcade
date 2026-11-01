@@ -4,7 +4,7 @@ import { PLAYER_H, TILE } from '../../../index';
 import type { AllObstEvents } from '../../../index';
 import type { Emitter } from '@pichi/core';
 import { C, CHEFS, hexNum } from '@pichi/screen-kit/art';
-import { clockText } from '../hud';
+import { clockText } from '../hud/hud';
 import type { EntityView } from '../view';
 
 const HIT_STOP_MS = 50;

@@ -1,5 +1,5 @@
 // Pure HUD helpers (no Phaser): clock text and the medal thresholds of plan §8 (gold <= par, silver <= 1.5 par).
-import { SILVER_PAR_MULT } from '../../index';
+import { SILVER_PAR_MULT } from '../../../index';
 
 export const clockText = (sec: number): string => {
   const s = Math.max(0, Math.floor(sec));

@@ -2,16 +2,16 @@
 // the banana-skins on the floor (outlined in the colour of the team that threw them, with a ring that counts their life down), the items that fell,
 // the cooldown ring over each catapult, and the reactions to the sabotage events (splat, slip, catch, burst, cleaning). Reads `game.sab` and `game.floor`.
 import type Phaser from 'phaser';
-import type { GameEvents, Emitter } from '../../sim/round/events';
-import type { Game } from '../../sim/overcooked';
+import type { GameEvents, Emitter } from '../../../sim/round/events';
+import type { Game } from '../../../sim/overcooked';
 import type { TeamInfo } from '@pichi/core/lobby';
-import { WINDUP_MS, FLIGHT_MS, LAND_AFTER_MS, type Flight } from '../../sim/rules/sabotage-config';
-import { reticleAt, catapultState, type CatapultState } from '../../sim/rules/sabotage';
+import { WINDUP_MS, FLIGHT_MS, LAND_AFTER_MS, type Flight } from '../../../sim/rules/sabotage-config';
+import { reticleAt, catapultState, type CatapultState } from '../../../sim/rules/sabotage';
 import { C, TILE, hexNum, R } from '@pichi/screen-kit/art';
-import { OX, OY } from './env/grid';
-import { foodKey, ITEM_KIND } from './food';
+import { OX, OY } from '../env/grid';
+import { foodKey, ITEM_KIND } from '../food';
 import { type Fx, makeText } from '@pichi/screen-kit/art/fx';
-import { place } from './stations';
+import { place } from '../stations';
 
 const tilePx = (tx: number, ty: number) => ({ x: OX + (tx + 0.5) * TILE, y: OY + (ty + 0.5) * TILE });
 const arc = (from: { x: number; y: number }, to: { x: number; y: number }, t: number, lift: number) => ({

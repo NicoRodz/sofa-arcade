@@ -1,12 +1,12 @@
 // End to end of the campaign: the real server (data folder in a temp dir), the real screen in headless Chrome and two bots that are real phones on websockets.
 //   hub (nothing yet) -> Nueva expedición -> map -> 1-1 played by the bots -> results -> server restart -> reload -> "Continuar" offers 1-2.
-// usage: npx tsx tools/camp-e2e.ts [outDir]    env: PORT (4400) CDP (9730)
+// usage: npx tsx tools/camp/camp-e2e.ts [outDir]    env: PORT (4400) CDP (9730)
 import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { startServer } from '../apps/server/src/server';
+import { startServer } from '../../apps/server/src/server';
 import { ObstBot, type BotView } from '@pichi/game-obstaculos';
 
 const PORT = Number(process.env.PORT ?? 4400),
