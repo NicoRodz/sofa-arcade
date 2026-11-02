@@ -114,9 +114,26 @@ Los archivos de sim puro subieron de wall porque antes los sleeps de Chrome deja
 
 El piso es `generate.slow` de obstáculos: ~145 s solo en una máquina quieta, ~220 s con carga, de los cuales un test de 500 seeds ocupa ~100 s en un solo hilo. Un test síncrono no se reparte entre workers y partir el archivo en dos exigiría extender `baseline-moves.ts` (hoy solo mapea archivo a archivo). Vitest corre ese código ~1,65x más lento que `tsx` (500 seeds sin revalidar: 35 s en tsx; mismo trabajo en vitest ~60 s): las importaciones entre módulos pasan por getters del transform SSR. `experimental.viteModuleRunner=false` se probó y no arranca (imports sin extensión).
 
+## Tercera ronda (2-nov-2026): `generate.slow` (obstáculos) en worker_threads
+
+Mismo archivo, mismos nombres de test y mismos asserts; ya no hay un test síncrono de un solo hilo. Los tests que recorrían muchas semillas (500 seeds, full matrix, tether any, media de D, wall5, validador en el bucle) piden `runJobs()` (`games/obstaculos/test/seed-pool.ts`): reparte las opciones en round robin entre N `worker_threads` (N = `PG_TEST_WORKERS` como número o `%` de los núcleos; sin la variable, la mitad de los núcleos; nunca más que trabajos). Cada worker (`seed-worker.ts`) corre `generateLevel` + `revalidate` (`revalidate.ts`, movido sin cambios desde el test) y devuelve `{opts, level, report, errors}` más su `FALLBACK_LOG`; el test hace los asserts sobre los registros, en el orden original.
+
+- Los workers importan el TS con `execArgv: ['--import', 'tsx']`: tsx corre `generateLevel` ~1,65x más rápido que el transform de vitest, así que el reparto y el runner suman. El test de determinismo y el de estructura (misma semilla dos veces, 30 seeds, 3 dificultades) siguen en el hilo del test.
+- Los helpers viven en `games/obstaculos/test/` porque `pure-sim` (depcruise) prohíbe `node:worker_threads` en el sim; `no-test-in-prod` sigue en 0 violaciones.
+- Un worker que cae o responde mal rechaza la promesa: el test queda en rojo, no en verde.
+
+| Medición | Antes | Después |
+|---|---|---|
+| `generate.slow.test.ts` solo (`nice -n 10`, load ~7) | 152 s | 35,3 / 34,8 / 34,6 s |
+| test "500 seeds" | ~100 s | ~14 s |
+| test "full matrix" | ~51-55 s | ~10 s |
+| `baseline:check` (`PG_TEST_WORKERS=50% nice -n 10`, 3036 tests, hashes sin cambio) | 236 s | 168 s |
+
+Saboteo: con `generateLevel` devolviendo 17 filas solo para la semilla 437, el test de 500 seeds queda en rojo (`seed 437 {"seed":437,"n":8,"tether":"freeOnly","difficulty":"normal"}: rows 17`; 1 fallido, 8 pasan) y vuelve a verde al restaurar `generate.ts`.
+
 ## Ideas pendientes (segunda ronda)
 
-- Partir `generate.slow` (obstáculos) y `generate.slow` / `play.slow` (pizzas) por test en archivos distintos, con soporte de partición en `tools/meta/baseline-moves.ts` (un archivo viejo -> varios). Es lo único que baja `slow` bajo ~100 s.
+- (Hecho en la tercera ronda para obstáculos con workers, sin partir el archivo; pendiente en pizzas) Partir `generate.slow` (obstáculos) y `generate.slow` / `play.slow` (pizzas) por test en archivos distintos, con soporte de partición en `tools/meta/baseline-moves.ts` (un archivo viejo -> varios). Es lo único que baja `slow` bajo ~100 s.
 - Acelerar `generateLevel` (hot spots: `boxTouches`, `stepPlayer`, `simPlan`): exige probar que la salida sigue idéntica seed a seed; va detrás de un PR propio.
 - `menu-layout` landscape/portrait en `it.concurrent` con sesión propia (hoy 42 s, ahorraría ~15 s).
 - Compartir un solo Chrome (una pestaña por sesión) en vez de Chrome + Vite por sesión; hoy el arranque cuesta ~2 s, no es prioridad.
