@@ -1,4 +1,5 @@
 // The Manchazo round running on this screen, fed by the phones' packets: the latest stick of each phone, and button 1 (a counter that grew = one pinata).
+import { mapSeedFor } from '../../map';
 import { toMilli, type ControlPlan } from '../../sim';
 import { createManchazo, stepManchazo, type ManchazoInput, type ManchazoState } from '../../sim';
 
@@ -18,8 +19,8 @@ export class ManchazoRun {
   private acc = 0;
   private overFor = 0;
 
-  constructor(slots: readonly number[], teams: readonly number[], seed: number, control?: ControlPlan) {
-    this.state = createManchazo({ slots, teams, seed, ...(control ? { control } : {}) });
+  constructor(slots: readonly number[], teams: readonly number[], seed: number, mapSeed: number, control?: ControlPlan) {
+    this.state = createManchazo({ slots, teams, seed, mapSeed, ...(control ? { control } : {}) });
   }
 
   /** The latest packet of a phone: x and y in [-1, 1] (integer milli units from here on) and its presses counters. The first packet is only a baseline. */
@@ -53,4 +54,12 @@ export class ManchazoRun {
   }
 }
 
-export const matchRun: { run: ManchazoRun | null } = { run: null };
+export const matchRun: { run: ManchazoRun | null; rounds: number; forced: number | null } = { run: null, rounds: 0, forced: null };
+
+/** The map seed of the round about to start: a new one every round (the next draw of the lobby seed's substream). `matchRun.forced` (capture tool) wins once. */
+export function nextMapSeed(lobbySeed: number): number {
+  const seed = matchRun.forced ?? mapSeedFor(lobbySeed, matchRun.rounds);
+  matchRun.forced = null;
+  matchRun.rounds++;
+  return seed;
+}

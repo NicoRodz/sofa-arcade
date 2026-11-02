@@ -1,5 +1,5 @@
-// The grid prototype's world: bodies on the 27x15 map. Integers only (1/16 tile), no randomness yet (F2 brings the seeded generator).
-import { spawnTile } from '../../map';
+// The grid prototype's world: bodies on a 27x15 map. Integers only (1/16 tile); the map is the round's (generated from a seed in F2, the F0 one by default).
+import { f0Map, type TileMap } from '../../map';
 import { DEFAULT_CONTROL, HALF, MATCH_TICKS, TILE, type ControlPlan } from './config';
 import { NONE, type Dir } from './dir';
 
@@ -35,6 +35,7 @@ export interface GridState {
   control: ControlPlan;
   durationTicks: number;
   over: boolean;
+  map: TileMap; // read-only during the round (F5's living map will change it by state)
   bodies: GridBody[]; // in slot order: the fixed order of the tick
 }
 
@@ -50,15 +51,18 @@ export interface GridConfig {
   teams?: readonly number[]; // team of each slot, same order (default: alternating 0, 1, 0, 1...)
   control?: ControlPlan;
   durationTicks?: number;
+  map?: TileMap; // default: the F0 map
 }
 
 export function createGrid(cfg: GridConfig): GridState {
   const slots = [...cfg.slots].sort((a, b) => a - b);
   if (slots.length < 1 || slots.length > 8) throw new Error(`grid: 1 to 8 bodies, got ${slots.length}`);
+  const map = cfg.map ?? f0Map();
   const taken = [0, 0];
   const bodies = slots.map((slot, i): GridBody => {
     const team = cfg.teams ? (cfg.teams[cfg.slots.indexOf(slot)] ?? 0) : i % 2;
-    const [tx, ty] = spawnTile(team, taken[team]!++);
+    const exits = map.spawns[team]!;
+    const [tx, ty] = exits[Math.min(taken[team]!++, exits.length - 1)]!;
     return {
       slot,
       team,
@@ -77,6 +81,7 @@ export function createGrid(cfg: GridConfig): GridState {
     control: cfg.control ?? DEFAULT_CONTROL,
     durationTicks: cfg.durationTicks ?? MATCH_TICKS,
     over: false,
+    map,
     bodies,
   };
 }

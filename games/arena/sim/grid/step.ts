@@ -6,8 +6,8 @@ import { NO_GRID_INPUT, type GridInput, type GridState } from './state';
 
 export function stepGrid(s: GridState, inputs: ReadonlyMap<number, GridInput>): void {
   if (s.over) return;
-  for (const b of s.bodies) steer(b, inputs.get(b.slot) ?? NO_GRID_INPUT, s.control);
-  for (const b of s.bodies) advance(b);
+  for (const b of s.bodies) steer(s.map, b, inputs.get(b.slot) ?? NO_GRID_INPUT, s.control);
+  for (const b of s.bodies) advance(s.map, b);
   s.tick++;
   if (s.tick >= s.durationTicks) s.over = true;
 }

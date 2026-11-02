@@ -13,7 +13,8 @@ import { GridScene } from './grid/grid-scene';
 import { gridPlan } from './grid/mode';
 import { hideLobbyHint, startBlocker } from './match/lobby';
 import { roundKind } from './match/round';
-import { ManchazoRun, matchRun } from './match/run';
+import { ManchazoRun, matchRun, nextMapSeed } from './match/run';
+import { parseSeed } from '../map';
 import { MatchScene } from './match/scene';
 
 const ID = arenaManifest.id;
@@ -74,7 +75,7 @@ export const arenaScreen: ScreenGame = {
     const kind = roundKind();
     const plan = gridPlan();
     const teams = [...app.players.values()].filter((p) => p.info.connected).map((p) => teamOf(app.config.teams, p.info.id)?.id ?? 0);
-    matchRun.run = kind === 'manchazo' ? new ManchazoRun(slots, teams, app.config.seed) : null;
+    matchRun.run = kind === 'manchazo' ? new ManchazoRun(slots, teams, app.config.seed, nextMapSeed(app.config.seed)) : null;
     gridRun.run = kind === 'grid' && plan ? new GridRun(slots, plan) : null;
     run.arena = kind === 'push' ? new ArenaRun(slots, app.config.seed) : null;
     clearResults();
@@ -95,6 +96,10 @@ export const arenaScreen: ScreenGame = {
     manchazoSkipToEnd() {
       const g = matchRun.run?.state.grid;
       if (g) g.tick = g.durationTicks - 1;
+    },
+    // for the capture tool only: the next round plays the map of this seed code (`2·7KQ2M`); the phones cannot do this
+    manchazoNextMapSeed(code: string) {
+      matchRun.forced = parseSeed(code)?.seed ?? null;
     },
   }),
   players: {
