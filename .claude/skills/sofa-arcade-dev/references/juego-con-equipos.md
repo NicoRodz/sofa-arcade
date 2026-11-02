@@ -7,7 +7,7 @@ Cada paso termina en un PR pequeño contra `master` (ver SKILL.md). Puertos prop
 ## Paso 0: decisión de ruta
 
 - **Paquete nuevo** (`games/manchazo/`): sigue los pasos 1 a 12.
-- **Evolucionar Arena** (el plan de Manchazo, F1, habilita equipos en `games/arena`): omite el paso 1 y ve al 2. Ojo con lo que ya está fijado en el baseline: `games/arena/test/conformance.test.ts` clava `id`, `name` y `blurb` de Arena; `game.ts:31` fuerza `pickReset: { modeId: 'coop', teams: null }` y `screen/lobby.ts` llama `showTeams(false)` y deja `noOptions: true`. Cambiarlos cambia tests y capturas del baseline: el PR lo explica y lleva el OK de Nico. No renombres tests; si el nombre del juego cambia, el test de nombre se actualiza con justificación.
+- **Evolucionar Arena** (el plan de Manchazo, F1, habilita equipos en `games/arena`): omite el paso 1 y ve al 2. Ojo con lo que ya está fijado en el baseline: `games/arena/test/conformance.test.ts` clava `id`, `name` y `blurb` de Arena; `game.ts:31` fuerza `pickReset: { modeId: 'coop', teams: null }` y `screen/lobby.ts` llama `showTeams(false)` y deja `noOptions: true`. Cambiarlos cambia tests y capturas del baseline: el PR lo explica y lo aprueba un verificador distinto del autor, con evidencia. No renombres tests; si el nombre del juego cambia, el test de nombre se actualiza con justificación.
 - `ModeId` solo admite `coop | versus | ffa | teams | race` (`platform/core/src/contract/options.ts`). Naranja contra azul es `versus`. Un id de modo nuevo es cambio de plataforma: no.
 
 ## 1. Esqueleto del paquete (copia `games/arena/`)
