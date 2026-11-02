@@ -42,6 +42,8 @@ export const FONT = 'ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", syst
 export const W = 1920;
 export const H = 1080;
 export const HUD_H = 104;
+/** The title-safe area (90 % of the canvas): many TVs on HDMI crop the edges, so what must be read goes inside it. */
+export const SAFE = { x: W * 0.05, y: H * 0.05, w: W * 0.9, h: H * 0.9 } as const;
 export interface GridTokens {
   TILE: number;
   OX: number;

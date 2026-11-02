@@ -14,6 +14,7 @@ import type { Difficulty, LobbyConfig, MatchStart, MenuActBody, MenuBody, PhaseI
 import { createRegistry, type Registry } from '@pichi/core';
 import type { GameManifest } from '@pichi/core/contract';
 import { catalog } from './catalog';
+import type { RenderScale } from './render-scale';
 import type { PlayerRec } from './player';
 
 export interface SceneSpec {
@@ -70,6 +71,8 @@ export interface ScreenGame {
   /** Once, at boot, after the page and the shell exist: DOM listeners, audio, the game's own screens. */
   init?(): void;
   scenes?(): SceneSpec[];
+  /** F6: 2 draws this game on a 3840x2160 backbuffer (the logical canvas stays 1920x1080) when the display is 4K or `?render=2`. Absent: 1, pixels unchanged. */
+  renderScale?: RenderScale;
   /** Every Phaser frame while this is the active game (config.game; see frame.ts), just before the scenes update: advance the logic, sync the phones. */
   frame?(deltaMs: number): void;
   /** This game just became the active one (the first frame, or after another game was): drop what the last frame of a game that was not running left behind. */

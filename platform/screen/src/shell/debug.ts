@@ -5,6 +5,7 @@ import { menuCards } from '../menu';
 import { onMessage } from '../net/connection';
 import { app, connectedCount, setPhase } from './app-state';
 import { games } from './game';
+import { renderScale } from './render-scale';
 
 export function exposeDebug() {
   const base = {
@@ -13,6 +14,7 @@ export function exposeDebug() {
     forceLobby: () => {
       if (app.phase === 'menu') setPhase('lobby');
     }, // capture tool: skip the menu (and its player range)
+    renderScale: () => ({ r: renderScale(), canvas: [document.querySelector('canvas')?.width, document.querySelector('canvas')?.height] }), // F6: what the backbuffer is
     menu: () => ({ sel: app.menuSel, cards: menuCards(connectedCount()).map((c) => `${c.id}:${c.state}`) }),
   };
   (window as unknown as { __pg: unknown }).__pg = Object.assign(

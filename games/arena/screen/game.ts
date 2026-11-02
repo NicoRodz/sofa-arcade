@@ -65,6 +65,7 @@ const sceneOf = () => {
 
 export const arenaScreen: ScreenGame = {
   manifest: arenaManifest,
+  renderScale: 2, // F6: Manchazo is the one game drawn at 3840x2160 on a 4K TV (the logical canvas stays 1920x1080)
   scenes: () => [{ key: 'arena', scene: sceneOf() }],
   frame(delta) {
     hints.sync(matchRun.run && showing() ? matchRun.run.state : null, performance.now());
@@ -107,6 +108,7 @@ export const arenaScreen: ScreenGame = {
   results: { render: renderResults, scoreOf: winsOf },
   // for the capture tool only: the round jumps to its last tick, so the results can be shot without waiting 90 s
   debug: () => ({
+    manchazoTexts: () => mscene?.hudBounds(), // for the capture tool only: where the HUD texts really are
     manchazoSkipToEnd() {
       const g = matchRun.run?.state.grid;
       if (g) g.tick = g.durationTicks - 1;

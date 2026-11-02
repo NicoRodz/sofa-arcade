@@ -2,19 +2,17 @@
 // No logic here: it reads the sim's state each frame.
 import Phaser from 'phaser';
 import { C, W } from '@pichi/screen-kit/art';
-import { MAP_H, MAP_W, formatSeed, solidAt } from '../../map';
+import { MAP_W, formatSeed, solidAt, MAP_H } from '../../map';
 import { blastTiles, isHidden, percentOf, type ManchazoState } from '../../sim';
 import { bannerOf, nextLine } from './event-banner';
 import { drawEvents } from './scene-events';
 import { drawLiving } from './scene-living';
 import { floorBar } from './hud-bar';
+import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, SIDE_X, X0, Y0 } from './layout';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawCarrier, drawMark, drawPickups, type Frame } from './scene-sabotage';
 
-const PX = 56; // logical px per tile (5 cm on a 78" screen)
 const UNIT = PX / 16;
-const X0 = (W - MAP_W * PX) / 2;
-const Y0 = 150; // under the HUD band (150 px, the plan's layout)
 const WARN_TICKS = 36; // a pinata shows the diamond it is about to paint this long before it goes off
 
 export interface MatchHost {
@@ -41,19 +39,23 @@ export class MatchScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor(0x2b2b2b);
     this.g = this.add.graphics();
-    const style = (color: string) => ({ fontFamily: 'sans-serif', fontSize: '56px', color, fontStyle: 'bold' });
-    this.pct = [this.add.text(204, 36, '', style('#E69F00')), this.add.text(W - 204, 36, '', style('#4aa8e0')).setOrigin(1, 0)];
-    this.clock = this.add.text(W / 2, 20, '', style(C.cream)).setOrigin(0.5, 0);
-    // the map seed, bottom left, in the 90 px band under the floor: read it off the screen to play the same map again
-    this.seed = this.add.text(X0, Y0 + MAP_H * PX + 24, '', {
+    const style = (color: string) => ({ fontFamily: 'sans-serif', fontSize: `${PCT_SIZE}px`, color, fontStyle: 'bold' });
+    // the HUD starts at the top of the title-safe area (layout.ts): a TV that crops its edges still shows it
+    this.pct = [
+      this.add.text(SIDE_X, HUD_TOP, '', style('#E69F00')),
+      this.add.text(SIDE_X + MAP_W * PX, HUD_TOP, '', style('#4aa8e0')).setOrigin(1, 0),
+    ];
+    this.clock = this.add.text(W / 2, HUD_TOP, '', { ...style(C.cream), fontSize: `${CLOCK_SIZE}px` }).setOrigin(0.5, 0);
+    // the map seed, bottom left, in the 36 px band under the floor (above the bottom edge of the safe area): read it off the screen to play the same map again
+    this.seed = this.add.text(X0, BOTTOM_Y, '', {
       fontFamily: 'monospace',
-      fontSize: '32px',
+      fontSize: `${FOOT_SIZE}px`,
       color: '#cfcfcf',
       fontStyle: 'bold',
     });
     // F4: the announcement of each event (over the top of the floor), the "next event" line (bottom right) and the golden zone's x2
     this.next = this.add
-      .text(X0 + MAP_W * PX, Y0 + MAP_H * PX + 24, '', { fontFamily: 'sans-serif', fontSize: '32px', color: '#cfcfcf', fontStyle: 'bold' })
+      .text(X0 + MAP_W * PX, BOTTOM_Y, '', { fontFamily: 'sans-serif', fontSize: `${FOOT_SIZE}px`, color: '#cfcfcf', fontStyle: 'bold' })
       .setOrigin(1, 0);
     this.title = this.add
       .text(W / 2, Y0 + 14, '', {
@@ -122,6 +124,15 @@ export class MatchScene extends Phaser.Scene {
     this.seed.setText(s.mapSeed === null ? '' : `MAPA ${formatSeed(s.mapSeed)}`);
   }
 
+  /** For the capture tool only: the real bounds (logical px) of the HUD texts, to prove they sit inside the safe area. */
+  hudBounds(): Record<string, { x: number; y: number; w: number; h: number; text: string }> {
+    const box = (t: Phaser.GameObjects.Text) => {
+      const b = t.getBounds();
+      return { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height), text: t.text };
+    };
+    return { pctLeft: box(this.pct[0]!), pctRight: box(this.pct[1]!), clock: box(this.clock), seed: box(this.seed), next: box(this.next) };
+  }
+
   private drawFloor(s: ManchazoState) {
     this.g.fillStyle(0x4a4a4a, 1).fillRect(X0, Y0, MAP_W * PX, MAP_H * PX);
     for (let y = 0; y < MAP_H; y++)
@@ -165,9 +176,9 @@ export class MatchScene extends Phaser.Scene {
     [0, 1].forEach((t) => this.pct[t]!.setText(`${t === 0 ? '▲' : '●'} ${hidden ? '??' : percentOf(s.match, t)} %`));
     const w = MAP_W * PX;
     const bar = floorBar(hidden ? [0, 0] : s.match.counts, s.match.paintable, w); // grey track = unpainted floor, orange from the left, blue from the right
-    this.g.fillStyle(0x555555, 1).fillRect(X0, 112, w, 16);
-    this.g.fillStyle(TEAM_COLOR[0]!, 1).fillRect(X0, 112, bar.orange, 16);
-    this.g.fillStyle(TEAM_COLOR[1]!, 1).fillRect(X0 + w - bar.blue, 112, bar.blue, 16);
+    this.g.fillStyle(0x555555, 1).fillRect(X0, BAR_Y, w, BAR_H);
+    this.g.fillStyle(TEAM_COLOR[0]!, 1).fillRect(X0, BAR_Y, bar.orange, BAR_H);
+    this.g.fillStyle(TEAM_COLOR[1]!, 1).fillRect(X0 + w - bar.blue, BAR_Y, bar.blue, BAR_H);
   }
 
   /** The announcement banner (3 s), the next event, and the x2 over the golden zone. */
