@@ -12,3 +12,4 @@ export {
   type ArenaState,
   type Fighter,
 } from './state';
+export * from './grid';
