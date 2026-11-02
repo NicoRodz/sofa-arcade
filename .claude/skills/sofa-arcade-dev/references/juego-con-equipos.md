@@ -62,7 +62,7 @@ Contrato en `platform/screen/src/shell/game.ts`; el shell no nombra juegos, cada
 | Hook | Qué haces |
 |---|---|
 | `lobby.pickReset` | Parche al elegir el juego: `{ modeId: 'versus', teams: null, teamsLocked: false, modeOptions: {} }`. Sin esto el relay rechaza la config por heredar equipos del juego anterior |
-| `lobby.afterPick` | Siembra los equipos con `makeTeams` (`setConfig({ teams })`). Pizzas los arma en `setMode`; un juego de un solo modo no tiene ese paso: verifica con `?soon=1` que la config llega al relay sin rechazo |
+| `lobby.afterPick` / siembra de equipos | Ningún juego siembra equipos en `afterPick`: Pizzas los arma en `setMode` (`games/pizzas/screen/lobby/sync.ts:30-47`) y los reconcilia en cada pintado del lobby con `syncLobby` (`sync.ts:114-130`, llamado desde `lobby/lobby.ts:31`), que hace `patchConfig({ teams })` con `syncTeams`. Un juego de un solo modo no pasa por `setMode`: haz la misma reconciliación al inicio de tu `render` (`teams === null` -> `makeTeams`, y `patchConfig` solo si cambió). `afterPick` (`platform/screen/src/menu/view.ts:30`, corre tras `pickReset` y `dispatch('pick')`) solo lo usa Obstáculos (`camp.enter()`); déjalo sin definir. Verifica con `?soon=1` que la config llega al relay sin rechazo |
 | `lobby.render` | Pinta tu mitad del lobby y muestra las columnas con `showTeams(true)` y `chips` de `@pichi/screen-kit/lobby`; quita `noOptions` si el juego tiene opciones |
 | `startMatch` | Crea la ronda con equipos y tamaños; devuelve `MatchStart` o `undefined` (el pad llega del manifest) |
 | `scenes`, `frame(delta)` | Escena Phaser; `frame` avanza el sim y, al terminar, `dispatch('timeout')` |
@@ -71,7 +71,7 @@ Contrato en `platform/screen/src/shell/game.ts`; el shell no nombra juegos, cada
 | `phaseExtras` | `result` para los celulares (solo si el protocolo lo declara) |
 | `reset` | Olvida la ronda |
 
-Pantallas nuevas en lit-html (SKILL.md, "Una pantalla lit-html"). Un jugador que se cae a mitad de ronda: ver `GHOST_MS` y `dropPlayer` en Pizzas.
+Pantallas nuevas en lit-html (SKILL.md, "Una pantalla lit-html"). Un jugador que se cae a mitad de ronda: ver `GHOST_MS` (`platform/core/src/lobby/teams.ts:27`) y `dropPlayer` (`games/pizzas/sim/versus/match.ts:64`).
 
 ## 7. Celular (`controller/`)
 

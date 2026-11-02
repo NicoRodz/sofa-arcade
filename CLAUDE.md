@@ -17,7 +17,7 @@ Juegos de fiesta en red local: la pantalla grande (Phaser + DOM) corre la simula
 | Mover archivos / reaplicar sobre una rama | `npm run move` (`scripts/move.ts` + `scripts/moves.json`; `-- --dry-run` para ver) |
 
 - `slow` (`*.slow.test.ts`): corre solo si tocaste `step`/el sim, el validador, el generador o el protocolo; la suite completa la corre quien integra.
-- Tests con Chrome (`apps/controller/test/layout.slow.test.ts`, `tools/*e2e.ts`, capturas): usa tus puertos propios: `PG_PORT` y `PG_CDP` (`tools/capture`, `smoke`) o `PG_CDP_PORT` (`apps/controller/test`, `tools/obst-e2e`); los tests del celular toman puertos libres si no los fijas. 3000 y 3100 son del usuario. Al terminar, mata Chrome solo por el árbol de PIDs que lanzaste (`tools/proc/kill-tree.ts`: SIGTERM, luego SIGKILL).
+- Tests con Chrome (`apps/controller/test/layout.slow.test.ts`, `tools/*e2e.ts`, capturas): usa tus puertos propios: `PG_PORT` y `PG_CDP` (`tools/capture`, `smoke`, `lobby-games-e2e`), `PG_PORT` y `PG_CDP_PORT` (`apps/controller/test`) o `PORT` y `PG_CDP_PORT` (`tools/obst-e2e`); los tests del celular toman puertos libres si no los fijas. 3000 y 3100 son del usuario. Al terminar, mata Chrome solo por el árbol de PIDs que lanzaste (`tools/proc/kill-tree.ts`: SIGTERM, luego SIGKILL).
 - `vitest` con `--silent`/`dot` para no llenar el contexto; los logs de Puppeteer no se pegan en la salida.
 
 ## Qué leer y qué no
