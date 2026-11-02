@@ -72,7 +72,7 @@ export function handicap(sizes: readonly number[]): { radius: number[]; reserve:
 export function createMatch(
   teamOfBody: readonly number[],
   map: TileMap,
-  sabotage?: { seed: number },
+  sabotage?: { seed: number; plus?: boolean },
   events?: { seed: number; base: number },
   living?: readonly LivingSpec[],
 ): MatchState {
@@ -93,7 +93,7 @@ export function createMatch(
     reserve: h.reserve,
     radius: h.radius,
     sizes,
-    sab: sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length, shut) : null,
+    sab: sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus) : null,
     ev: events ? createEvents(map, events.seed, events.base, fountain) : null,
     live: null,
     zone: null,

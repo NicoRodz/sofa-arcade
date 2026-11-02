@@ -7,6 +7,7 @@ import { NO_GRID_INPUT, type GridInput } from '../grid/state';
 import { paintTile } from './board';
 import { stepEvents } from '../events/step';
 import { stepLiving } from '../living/step';
+import { dizzyInput } from '../sabotage/dizzy';
 import { afterMove, beforeMove, isRolling } from '../sabotage/step';
 import { dropPinata, stepPinatas } from './pinata';
 import { TRAIL_TICKS } from './config';
@@ -30,7 +31,7 @@ export function stepManchazo(s: ManchazoState, inputs: ReadonlyMap<number, Manch
     g.bodies.map((b) => !!inputs.get(b.slot)?.use),
   );
   g.bodies.forEach((b, i) => {
-    if (!stunned(i) && !isRolling(s, i)) steer(g.map, b, inputs.get(b.slot) ?? NO_MANCHAZO_INPUT, g.control);
+    if (!stunned(i) && !isRolling(s, i)) steer(g.map, b, dizzyInput(s, i, inputs.get(b.slot) ?? NO_MANCHAZO_INPUT), g.control);
   });
   g.bodies.forEach((b, i) => {
     if (stunned(i)) return;

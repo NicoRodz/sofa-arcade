@@ -1,6 +1,7 @@
 // The paint on the floor: one team (or none) per tile, with a running count per team.
 import { MAP_W } from '../../map';
 import { GOLD_FACTOR } from '../events/config';
+import { tapeLocks } from '../sabotage/plus-paint';
 import type { MatchState } from './state';
 
 export const tileIndex = (x: number, y: number): number => y * MAP_W + x;
@@ -14,9 +15,12 @@ export function paintTile(m: MatchState, x: number, y: number, team: number, tic
   const i = tileIndex(x, y);
   const old = m.paint[i]!;
   if (old === team) return;
+  const plus = m.sab?.plus;
+  if (plus && tapeLocks(plus, x, y, old)) return; // F8a: a tape keeps its colour
   const w = weightAt(m, x, y);
   if (old >= 0) m.counts[old]! -= w;
   m.paint[i] = team;
+  if (plus) plus.veiled[i] = plus.veil[team]! > 0 ? 1 : 0; // F8a: paint put down under an invisible ink stays hidden until the ink runs out
   m.counts[team]! += w;
   m.reachedAt[team] = tick;
 }
@@ -29,6 +33,9 @@ export function clearTile(m: MatchState, x: number, y: number, keep: number): vo
   const i = tileIndex(x, y);
   const old = m.paint[i]!;
   if (old < 0 || old === keep) return;
+  const plus = m.sab?.plus;
+  if (plus && tapeLocks(plus, x, y, old)) return;
   m.counts[old]! -= weightAt(m, x, y);
   m.paint[i] = -1;
+  if (plus) plus.veiled[i] = 0;
 }
