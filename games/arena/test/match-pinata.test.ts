@@ -20,6 +20,12 @@ describe('pinata blast', () => {
   });
 });
 
+describe('the spec numbers', () => {
+  it('fuse 2 s, chain 0.15 s, stun 1.2 s, footprints 3 s, 2 pinatas at once (60 ticks a second; written out so a changed constant fails)', () => {
+    expect([FUSE_TICKS, CHAIN_TICKS, STUN_TICKS, TRAIL_TICKS, MAX_ACTIVE]).toEqual([120, 9, 72, 180, 2]);
+  });
+});
+
 describe('dropping and exploding', () => {
   it('a pinata goes off after the 2 s fuse and paints its team colour, not before', () => {
     const s = duel();
@@ -93,6 +99,27 @@ describe('stain (manchado)', () => {
     tick(s, { 1: { sx: 1000, sy: 0, drop: false } }, 4);
     expect(s.grid.bodies[1]!.x).toBeGreaterThan(x);
   });
+  it('a stick held through the stun and released before it ends does not move the body afterwards (nothing is queued while stained)', () => {
+    const s = setup();
+    const x = s.grid.bodies[1]!.x;
+    tick(s, { 1: { sx: 1000, sy: 0, drop: false } }, STUN_TICKS - 1);
+    tick(s, {}, 40);
+    expect(s.grid.bodies[1]!.x).toBe(x);
+  });
+  it('a second blast on a stained player does not renew the stun', () => {
+    const s = duel();
+    put(s, 0, 13, 7);
+    put(s, 1, 14, 7);
+    tick(s, { 0: DROP });
+    put(s, 0, 12, 7);
+    tick(s, { 0: DROP }); // second pinata: the first blast chains it, so it goes off CHAIN_TICKS after
+    tick(s, {}, FUSE_TICKS - 1); // first blast: stun starts
+    const stun = s.match.bodies[1]!.stun;
+    expect(stun).toBeGreaterThan(0);
+    tick(s, {}, CHAIN_TICKS + 1); // the second blast went off in between
+    expect(s.match.pinatas).toHaveLength(0);
+    expect(s.match.bodies[1]!.stun).toBe(stun - CHAIN_TICKS - 1);
+  });
   it('a stained player cannot drop a pinata', () => {
     const s = setup();
     tick(s, { 1: DROP });
@@ -113,6 +140,16 @@ describe('stain (manchado)', () => {
 });
 
 describe('chain', () => {
+  it('pinatas due on the same tick go off in placement order: the later one paints last, so it keeps the shared tiles', () => {
+    const s = duel();
+    put(s, 0, 12, 7);
+    put(s, 1, 13, 7);
+    tick(s, { 0: DROP, 1: DROP });
+    tick(s, {}, FUSE_TICKS);
+    expect(tileOwner(s, 12, 7)).toBe(1);
+    expect(tileOwner(s, 13, 7)).toBe(1);
+    expect(tileOwner(s, 12, 5)).toBe(0); // only the first reaches it
+  });
   it('a pinata reached by a blast goes off 0.15 s later, not at its own fuse', () => {
     const s = duel();
     put(s, 0, 13, 7);

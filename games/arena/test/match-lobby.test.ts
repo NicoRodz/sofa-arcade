@@ -48,6 +48,13 @@ describe('Arena declares Manchazo: orange against blue, 2 to 8 players', () => {
     expect(teamSizes(left)).toEqual([2, 2]);
     expect(syncTeams(mode, left, [10, 11, 13, 14], 3, true)).toBe(left); // nothing changed: the same array
   });
+  it('before the first split the lobby seed deals the teams; without hand moves a leaving pair is rebalanced, with hand moves it is not', () => {
+    expect(syncTeams(mode, null, ids(4), 7, false)!.map((t) => t.playerIds)).toEqual(makeTeams(mode, ids(4), 7)!.map((t) => t.playerIds));
+    const first = syncTeams(mode, null, ids(4), 7, false)!;
+    const stay = first[1]!.playerIds;
+    expect(teamSizes(syncTeams(mode, first, stay, 7, false))).toEqual([1, 1]);
+    expect(teamSizes(syncTeams(mode, first, stay, 7, true))).toEqual([0, 2]);
+  });
   it('the handicap comes from the team sizes: radius +1 and one reserve pinata per missing player', () => {
     expect(handicap([4, 1])).toEqual({ radius: [2, 3], reserve: [0, 3] });
     expect(handicap([3, 4])).toEqual({ radius: [3, 2], reserve: [1, 0] });
