@@ -46,28 +46,29 @@ export function drawRain(g: G, x: number, y: number, w: number, h: number, px: n
 
 /** The vacuum robot centred on (cx, cy): a round body with a dark bumper, a green LED that blinks, a spinning side brush and a trail of bubbles. */
 export function drawRobot(g: G, cx: number, cy: number, px: number, tick: number): void {
+  const u = px * 1.3; // the body is drawn a third bigger than its tile: it reads from the couch, and the white box still shows the 3 columns it washes
   g.lineStyle(3, WHITE, 0.5).strokeRect(cx - px * 1.5 + 2, cy - px / 2 + 2, px * 3 - 4, px - 4); // the 3 columns it washes
-  g.fillStyle(0x000000, 0.25).fillCircle(cx + 2, cy + 4, px * 0.46);
-  g.fillStyle(num('#EDEDED'), 1).fillCircle(cx, cy, px * 0.44);
-  g.lineStyle(4, INK, 1).strokeCircle(cx, cy, px * 0.44);
+  g.fillStyle(0x000000, 0.25).fillCircle(cx + 2, cy + 4, u * 0.46);
+  g.fillStyle(num('#EDEDED'), 1).fillCircle(cx, cy, u * 0.44);
+  g.lineStyle(4, INK, 1).strokeCircle(cx, cy, u * 0.44);
   g.lineStyle(7, num('#4A4A55'), 1)
     .beginPath()
-    .arc(cx, cy, px * 0.36, Math.PI * 0.15, Math.PI * 0.85, false)
+    .arc(cx, cy, u * 0.36, Math.PI * 0.15, Math.PI * 0.85, false)
     .strokePath(); // bumper
-  g.fillStyle(num('#4A4A55'), 1).fillCircle(cx, cy - px * 0.05, px * 0.17);
-  g.fillStyle(WHITE, 1).fillCircle(cx, cy - px * 0.05, px * 0.08);
-  g.fillStyle(tick % 40 < 20 ? num('#3DD16A') : num('#1B7A3A'), 1).fillCircle(cx + px * 0.24, cy - px * 0.2, px * 0.05);
+  g.fillStyle(num('#4A4A55'), 1).fillCircle(cx, cy - u * 0.05, u * 0.17);
+  g.fillStyle(WHITE, 1).fillCircle(cx, cy - u * 0.05, u * 0.08);
+  g.fillStyle(tick % 40 < 20 ? num('#3DD16A') : num('#1B7A3A'), 1).fillCircle(cx + u * 0.24, cy - u * 0.2, u * 0.05);
   for (let k = 0; k < 3; k++) {
     const a = tick / 4 + (k * Math.PI * 2) / 3;
     g.lineStyle(3, INK, 1).lineBetween(
-      cx - px * 0.34,
-      cy + px * 0.26,
-      cx - px * 0.34 + Math.cos(a) * px * 0.14,
-      cy + px * 0.26 + Math.sin(a) * px * 0.14,
+      cx - u * 0.34,
+      cy + u * 0.26,
+      cx - u * 0.34 + Math.cos(a) * u * 0.14,
+      cy + u * 0.26 + Math.sin(a) * u * 0.14,
     );
   }
   for (let k = 0; k < 4; k++)
-    g.lineStyle(2, WHITE, 0.9).strokeCircle(cx + px * (0.5 + k * 0.18), cy + ((k * 7 + tick / 3) % 14) - 7, 3 + (k % 2) * 2);
+    g.lineStyle(2, WHITE, 0.9).strokeCircle(cx + u * (0.5 + k * 0.18), cy + ((k * 7 + tick / 3) % 14) - 7, 3 + (k % 2) * 2);
 }
 
 /** The big pinata: while it falls, its shadow grows and the pot comes down over it; on the floor it is a golden pot twice the size with a star on it. */
