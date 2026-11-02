@@ -13,7 +13,7 @@ Juegos de fiesta en red local: la pantalla grande (Phaser + DOM) corre la simula
 | Topes de tamaño | `npx vitest run --project tools` (corre `tools/meta/size-budget.test.ts`) |
 | Dependencias (8 reglas en error) | `npm run deps` · reporte: `npm run deps:report` |
 | Archivos nuevos y arranque del bundle | `npm run check:new-files` · `npm run build && npm run smoke` |
-| Puerta de equivalencia | `npm run baseline:check` (suite completa, ~4 min; solo al integrar) |
+| Puerta de equivalencia | `npm run baseline:check` (suite completa, ~3 min; solo al integrar) |
 | Dev | `npm run dev` (server + Vite) |
 | Mover archivos / reaplicar sobre una rama | `npm run move` (`scripts/move.ts` + `scripts/moves.json`; `-- --dry-run` para ver) |
 
