@@ -13,3 +13,4 @@ export {
   type Fighter,
 } from './state';
 export * from './grid';
+export * from './match';

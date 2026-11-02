@@ -50,7 +50,7 @@ export async function runArenaGridPhone({ cdp }: Ctx) {
   const room = 'AGRP';
   const fake = new WebSocket(`ws://127.0.0.1:${PORT}/ws?role=screen&room=${room}`);
   await new Promise((r) => fake.once('open', r));
-  fake.send(JSON.stringify({ t: 'config', game: 'arena', difficulty: 'normal', map: '1', seed: 1 }));
+  fake.send(JSON.stringify({ t: 'config', game: 'arena', modeId: 'versus', difficulty: 'normal', map: '1', seed: 1 }));
   fake.send(JSON.stringify({ t: 'phase', phase: 'menu' }));
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
   await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });

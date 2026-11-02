@@ -15,6 +15,7 @@ import { runMutate } from './scenarios/mutate';
 import { runHowto, runHowtoTimeout, runMenu } from './scenarios/screens';
 import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './scenarios/maps';
 import { runArenaGridPhone, runArenaGridTv } from './scenarios/arena-grid';
+import { runManchazoPhone, runManchazoTv } from './scenarios/manchazo';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
 
 type Scenario = (c: Ctx) => Promise<void>;
@@ -24,6 +25,8 @@ const MODES: Record<string, Scenario[]> = {
   phone: [runPhone],
   'arena-grid-tv': [runArenaGridTv],
   'arena-grid-phone': [runArenaGridPhone],
+  'manchazo-tv': [runManchazoTv],
+  'manchazo-phone': [runManchazoPhone],
   'versus-phone': [runVersusPhone],
   versus: [runVersus],
   'vs-hud': [runVsHud],
