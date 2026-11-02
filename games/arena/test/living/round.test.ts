@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAP_W, closing, f0Map, footprint, generateMap, v1Connection } from '../../map';
-import { createManchazo, hashManchazo, matchResult, stepManchazo } from '../../sim';
+import { createManchazo, hashManchazo, matchResult, placePickups, stepManchazo } from '../../sim';
 import { fits } from '../../sim/grid/move';
 import { play, scripts } from '../match-drive';
 
@@ -60,11 +60,15 @@ describe('a round with the living map', () => {
   });
 
   it('pickups are never under a living part', () => {
-    for (const mapSeed of MAPS) {
+    let wouldHit = 0; // maps where the pickups, placed without the living map in mind, would land under a part: there the rule has work to do
+    for (let mapSeed = 3; mapSeed < 3 + 101 * 300; mapSeed += 101) {
       const s = createManchazo(cfg(mapSeed));
-      const under = new Set(s.match.live!.pairs.flatMap((p) => footprint(p.spec)).map(([x, y]) => `${x},${y}`));
+      const specs = s.match.live!.pairs.map((p) => p.spec);
+      const under = new Set(specs.flatMap((sp) => footprint(sp)).map(([x, y]) => `${x},${y}`));
       for (const p of s.match.sab!.pickups) expect(under.has(`${p.x},${p.y}`)).toBe(false);
+      if (placePickups(generateMap(mapSeed).map, 9).some((p) => under.has(`${p.x},${p.y}`))) wouldHit++;
     }
+    expect(wouldHit).toBeGreaterThan(10);
   });
 
   it('nobody is ever shut in: every tick, every body is on floor of the one connected map, even with bodies parked on the tiles about to shut', () => {
