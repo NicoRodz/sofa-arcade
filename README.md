@@ -43,7 +43,7 @@ npm run dev
   - Celulares: `http://<IP-de-la-LAN>:3000/c`. La IP la detecta `platform/server/src/lan.ts` (primera IPv4 privada no interna).
 - El lobby de la pantalla también muestra el QR y un código de sala de 4 letras (URL `/c?room=XXXX`): los celulares escanean y entran.
 - `npm run build` + `npm start` sirven las apps ya compiladas (`dist/`) en el mismo puerto.
-- Los puertos 3000 y 3100 suelen estar ocupados por quien desarrolla; para pruebas con Chrome usa tus propios `PG_PORT` y `PG_CDP` (o `PG_CDP_PORT` en los tests del celular y `tools/obst-e2e`).
+- Los puertos 3000 y 3100 suelen estar ocupados por quien desarrolla; para pruebas con Chrome usa tus propios `PG_PORT` y `PG_CDP` (`PG_PORT` y `PG_CDP_PORT` en los tests del celular; `PORT` y `PG_CDP_PORT` en `tools/obst-e2e`).
 
 ### Tests y chequeos
 
