@@ -7,3 +7,5 @@ export { matchResult, type MatchResult, type TeamScore } from './result';
 export { NO_MANCHAZO_INPUT, stepManchazo, type ManchazoInput } from './step';
 export { handicap, type ManchazoState, type MatchState, type Pinata } from './state';
 export { blastTiles } from './blast';
+export * from '../sabotage/kinds';
+export { cardOf, drawDeck, placePickups, type Pickup, type SabotageState } from '../sabotage/state';

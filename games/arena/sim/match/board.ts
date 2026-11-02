@@ -17,3 +17,12 @@ export function paintTile(m: MatchState, x: number, y: number, team: number, tic
 
 /** Share of the floor a team has painted, in percent with one decimal (display only: the sim compares tile counts). */
 export const percentOf = (m: MatchState, team: number): number => Math.round((1000 * m.counts[team]!) / m.paintable) / 10;
+
+/** Erases a rival's paint (turpentine): the tile goes neutral. Not a gain, so no tie-break stamp. */
+export function clearTile(m: MatchState, x: number, y: number, keep: number): void {
+  const i = tileIndex(x, y);
+  const old = m.paint[i]!;
+  if (old < 0 || old === keep) return;
+  m.counts[old]!--;
+  m.paint[i] = -1;
+}

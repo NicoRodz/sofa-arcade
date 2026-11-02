@@ -16,6 +16,9 @@ import { roundKind } from './match/round';
 import { ManchazoRun, matchRun, nextMapSeed } from './match/run';
 import { parseSeed } from '../map';
 import { MatchScene } from './match/scene';
+import { createSabotageHints } from './match/phone-hints';
+import { sendMsg } from '@pichi/screen-kit/net';
+import { KINDS, type SabotageKind } from '../sim';
 
 const ID = arenaManifest.id;
 const player = (slot: number) => [...app.players.values()].find((p) => p.info.slot === slot)?.info;
@@ -46,6 +49,9 @@ const matchScene = (): MatchScene =>
     teamName: (team) => app.config.teams?.[team]?.name ?? `Equipo ${team + 1}`,
   }));
 
+// F3: what button 2 says on each phone (the sabotage in hand), from the round's state every frame
+const hints = createSabotageHints(sendMsg, (slot) => player(slot)?.id);
+
 const sceneOf = () => {
   const kind = roundKind();
   return kind === 'push' ? arenaScene() : kind === 'grid' ? gridScene() : matchScene();
@@ -55,6 +61,7 @@ export const arenaScreen: ScreenGame = {
   manifest: arenaManifest,
   scenes: () => [{ key: 'arena', scene: sceneOf() }],
   frame(delta) {
+    hints.sync(matchRun.run && showing() ? matchRun.run.state : null, performance.now());
     if (app.phase !== 'playing' || app.config.game !== ID || performance.now() < app.gateUntil) return;
     if ((matchRun.run ?? gridRun.run ?? run.arena)?.advance(delta)) dispatch('timeout'); // the final board has been on screen long enough
   },
@@ -96,6 +103,12 @@ export const arenaScreen: ScreenGame = {
     manchazoSkipToEnd() {
       const g = matchRun.run?.state.grid;
       if (g) g.tick = g.durationTicks - 1;
+    },
+    // for the capture tool only: puts a sabotage (by name, or its index in the catalog) in the hand of a slot
+    manchazoGive(slot: number, kind: SabotageKind | number) {
+      const s = matchRun.run?.state;
+      const i = s?.grid.bodies.findIndex((b) => b.slot === slot) ?? -1;
+      if (s?.match.sab && i >= 0) s.match.sab.held[i] = typeof kind === 'number' ? KINDS[kind]! : kind;
     },
     // for the capture tool only: the next round plays the map of this seed code (`2·7KQ2M`); the phones cannot do this
     manchazoNextMapSeed(code: string) {

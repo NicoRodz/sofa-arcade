@@ -1,4 +1,4 @@
-// The Manchazo round running on this screen, fed by the phones' packets: the latest stick of each phone, and button 1 (a counter that grew = one pinata).
+// The Manchazo round running on this screen, fed by the phones' packets: the latest stick of each phone, button 1 (a counter that grew = one pinata) and button 2 (the sabotage in hand).
 import { mapSeedFor } from '../../map';
 import { toMilli, type ControlPlan } from '../../sim';
 import { createManchazo, stepManchazo, type ManchazoInput, type ManchazoState } from '../../sim';
@@ -11,6 +11,7 @@ interface Pad {
   sy: number;
   seen: readonly number[]; // presses counters at the last packet
   drop: boolean; // a press arrived since the last tick
+  use: boolean; // same for button 2
 }
 
 export class ManchazoRun {
@@ -20,15 +21,16 @@ export class ManchazoRun {
   private overFor = 0;
 
   constructor(slots: readonly number[], teams: readonly number[], seed: number, mapSeed: number, control?: ControlPlan) {
-    this.state = createManchazo({ slots, teams, seed, mapSeed, ...(control ? { control } : {}) });
+    this.state = createManchazo({ slots, teams, seed, mapSeed, sabotage: true, ...(control ? { control } : {}) });
   }
 
   /** The latest packet of a phone: x and y in [-1, 1] (integer milli units from here on) and its presses counters. The first packet is only a baseline. */
   receive(slot: number, x: number, y: number, presses: readonly number[]) {
-    const p = this.pads.get(slot) ?? { sx: 0, sy: 0, seen: presses, drop: false };
+    const p = this.pads.get(slot) ?? { sx: 0, sy: 0, seen: presses, drop: false, use: false };
     p.sx = toMilli(x);
     p.sy = toMilli(y);
     if (presses[0] !== p.seen[0]) p.drop = true;
+    if (presses[1] !== p.seen[1]) p.use = true;
     p.seen = presses;
     this.pads.set(slot, p);
   }
@@ -44,8 +46,9 @@ export class ManchazoRun {
     while (this.acc + 1e-9 >= MATCH_STEP_MS && !g.over) {
       const inputs = new Map<number, ManchazoInput>();
       for (const [slot, p] of this.pads) {
-        inputs.set(slot, { sx: p.sx, sy: p.sy, drop: p.drop });
+        inputs.set(slot, { sx: p.sx, sy: p.sy, drop: p.drop, use: p.use });
         p.drop = false;
+        p.use = false;
       }
       stepManchazo(this.state, inputs);
       this.acc -= MATCH_STEP_MS;
