@@ -3,11 +3,12 @@
 import type Phaser from 'phaser';
 import type { Appearance } from '@pichi/core/avatar';
 import { TeamSprite } from '@pichi/screen-kit/art/chef';
+import { Y0 } from './layout';
 import { TEAM_COLOR, feetRing } from './scene-body';
 
-export const LOOK_SCALE = 0.62; // logical px per design unit: a character is about 65 px tall, a bit more than one 56 px tile
+export const LOOK_SCALE = 0.74; // logical px per design unit: a character is about 77 px tall, a tile and a third (56 px tiles): it reads from the couch
 const FEET = 20; // the feet sit this far under the body's centre (the torso is on it)
-const CHIP_Y = 70; // the chip centre over the feet
+const CHIP_Y = 88; // the chip centre over the feet: clear of the top of the hair, hat or crown
 const ROLE = 'arena';
 
 export class Avatars {
@@ -32,9 +33,12 @@ export class Avatars {
     s.setLook(ap, TEAM_COLOR[team % 2]!)
       .place(x, feet, LOOK_SCALE, stunned ? 0.55 : 1, 1 + feet / 2000)
       .setVisible(true);
-    const cy = feet - CHIP_Y;
-    this.chips.fillStyle(0xffffff, 1).fillCircle(x, cy, 15);
-    this.chips.lineStyle(5, TEAM_COLOR[team % 2]!, 1).strokeCircle(x, cy, 15);
-    return { x, y: cy };
+    // on the top row the chip would land on the HUD band: it goes beside the head, inside the field
+    const high = feet - CHIP_Y < Y0 + 16;
+    const cx = high ? x + 26 : x;
+    const cy = high ? Y0 + 16 : feet - CHIP_Y;
+    this.chips.fillStyle(0xffffff, 1).fillCircle(cx, cy, 15);
+    this.chips.lineStyle(5, TEAM_COLOR[team % 2]!, 1).strokeCircle(cx, cy, 15);
+    return { x: cx, y: cy };
   }
 }
