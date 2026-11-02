@@ -2,27 +2,13 @@
 import { solidAt } from '../../map';
 import { DOWN, LEFT, RIGHT, UP, type Dir } from '../grid/dir';
 import { bodyTile } from '../match/tile';
+import { dist, nearestRival } from './near';
+import { playPlus } from './plus-use';
 import type { ManchazoState } from '../match/state';
-import { FAN_FX_TICKS, FAN_PUSH, FAN_RANGE, FOOTPRINT_TICKS, GLUE_RANGE, ROLLER_TICKS } from './kinds';
-
-const dist = (a: readonly number[], b: readonly number[]) => Math.abs(a[0]! - b[0]!) + Math.abs(a[1]! - b[1]!);
+import { FAN_FX_TICKS, FAN_PUSH, FAN_RANGE, FOOTPRINT_TICKS, GLUE_RANGE, PLUS_KINDS, ROLLER_TICKS } from './kinds';
 
 /** The nearest rival body within GLUE_RANGE tiles (ties: the lowest index), or -1. */
-export function glueTarget(s: ManchazoState, i: number): number {
-  const me = s.grid.bodies[i]!;
-  const here = bodyTile(me, s.match.bodies[i]!.face);
-  let best = -1;
-  let bestD = GLUE_RANGE + 1;
-  s.grid.bodies.forEach((b, j) => {
-    if (b.team === me.team) return;
-    const d = dist(here, bodyTile(b, s.match.bodies[j]!.face));
-    if (d < bestD) {
-      best = j;
-      bestD = d;
-    }
-  });
-  return best;
-}
+export const glueTarget = (s: ManchazoState, i: number): number => nearestRival(s, i, GLUE_RANGE);
 
 /** Pushes the pinatas within FAN_RANGE of body i FAN_PUSH tiles away from it (along the longer axis; a tie goes vertical, so a left-right mirror agrees). They stop at furniture or at another pinata. */
 function blow(s: ManchazoState, i: number): void {
@@ -51,6 +37,13 @@ export function useSabotage(s: ManchazoState, i: number): boolean {
   const kind = a?.held[i];
   if (!a || !kind || a.armed[i] || s.match.bodies[i]!.stun > 0) return false;
   const team = s.grid.bodies[i]!.team;
+  if (PLUS_KINDS.includes(kind)) {
+    const played = playPlus(s, i, kind); // F8a: 'spent' leaves the hand empty, 'kept' (the sponge soaking) does not, 'refused' plays nothing
+    if (played === 'refused') return false;
+    if (played === 'spent') a.held[i] = null;
+    a.used++;
+    return true;
+  }
   if (kind === 'turpentine' || kind === 'glue') a.armed[i] = kind;
   else if (kind === 'roller') a.roller[i] = ROLLER_TICKS;
   else if (kind === 'footprints')

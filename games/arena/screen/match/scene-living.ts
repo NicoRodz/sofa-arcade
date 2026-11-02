@@ -4,7 +4,7 @@ import { closedTiles, mirrorTile, pivotsOf, statesOf } from '../../map';
 import { FOUNTAIN_RADIUS, WARN_TICKS, nextChange, type ManchazoState } from '../../sim';
 import { A, num } from '../art/palette';
 import { dashRect, drawBrush, drawFountain, drawSofa } from '../art/living-art';
-import type { Frame } from './scene-sabotage';
+import type { Frame } from './scene-frame';
 import { TEAM_COLOR } from './scene-body';
 
 const FLASH_TICKS = 24; // a part that just moved, or a splash, shows it this long

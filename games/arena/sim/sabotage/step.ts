@@ -6,6 +6,7 @@ import type { ManchazoState } from '../match/state';
 import { bodyTile } from '../match/tile';
 import { PICKUP_RESPAWN_TICKS } from './kinds';
 import { cardOf } from './state';
+import { stepPlus } from './plus-step';
 import { useSabotage } from './use';
 
 export const isRolling = (s: ManchazoState, i: number): boolean => (s.match.sab?.roller[i] ?? 0) > 0;
@@ -53,4 +54,5 @@ export function afterMove(s: ManchazoState): void {
   });
   a.footprints.forEach((t, k) => t > 0 && a.footprints[k]!--);
   for (const p of a.pickups) if (p.wait > 0) p.wait--;
+  stepPlus(s); // F8a: tapes, ink, sponge, Mareo's charge, dizziness and immunity (no-op without the flag)
 }

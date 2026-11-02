@@ -4,7 +4,7 @@ import { blastTiles, BIG_RADIUS, CLOCK_FULL, CLOCK_LIVE_TICKS, CLOCK_X, BIG_WARN
 import { A, num } from '../art/palette';
 import { drawBigPinata, drawGoldZone, drawHourglass, drawRain, drawRobot } from '../art/event-art';
 import { TEAM_COLOR } from './scene-body';
-import type { Frame } from './scene-sabotage';
+import type { Frame } from './scene-frame';
 
 const GOLD = num(A.gold);
 

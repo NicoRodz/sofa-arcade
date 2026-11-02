@@ -36,3 +36,4 @@ La TV enciende `sabotage`, `events` y `living` (`screen/match/run.ts`); sin `liv
 | `test/` | `sim`, `map-*`, `match-*`, `grid-*`, `conformance` (`checkGame`); `sabotage/`, `events/`, `living/` por flag |
 
 Pruébalo con `npm run dev` y `?soon=1`; capturas: `npx tsx tools/capture.ts manchazo-living-tv`.
+- F8a `sabotagePlus` (off: F5 bit for bit): Cinta, Tinta invisible, Esponja, Cambiazo, Mareo; Cambiazo and Mareo are one line each in `PLUS_SABOTAGES` (`sim/sabotage/kinds.ts`). Tests: `test/sabotage-plus/`.

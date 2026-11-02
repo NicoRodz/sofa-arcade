@@ -1,15 +1,9 @@
 // Manchazo's scene, sabotage layer (F3): pickups on the floor, the card each body carries, the pinata marks (turpentine, glue), the roller, the fan's gust.
 // Each card has its own colour AND shape, so it reads without colour. No logic: it reads the sim's state.
-import type Phaser from 'phaser';
 import { CARD_COLOR, drawIcon } from '../art/glyphs';
+import { drawPlusCarrier } from './scene-plus';
+import { onTop, type Frame } from './scene-frame';
 import { FAN_FX_TICKS, FAN_RANGE, ROLLER_TICKS, cardOf, type ManchazoState, type Pickup, type SabotageKind } from '../../sim';
-
-export interface Frame {
-  g: Phaser.GameObjects.Graphics;
-  x0: number;
-  y0: number;
-  px: number;
-}
 
 /** The card's icon centred on (cx, cy), r = half its size (the art is in ../art/glyphs.ts). */
 export function glyph({ g }: Frame, kind: SabotageKind, cx: number, cy: number, r: number, spin = 0) {
@@ -55,8 +49,9 @@ export function drawCarrier(f: Frame, s: ManchazoState, i: number, x: number, y:
     const t = 1 - a.gust[i]! / FAN_FX_TICKS;
     f.g.lineStyle(8, CARD_COLOR.fan, 1 - t).strokeCircle(x, y, f.px * (0.5 + FAN_RANGE * t));
   }
+  drawPlusCarrier(f, s, i, x, y);
   const held = a.held[i];
-  if (held) glyph(f, held, x, y - f.px * 0.78, f.px * 0.28, s.grid.tick / 6);
+  if (held) glyph(onTop(f), held, x + f.px * 0.72, y - f.px * 0.5, f.px * 0.28, s.grid.tick / 6); // beside the head: the avatar is as tall as the card was high
 }
 
 /** A pinata armed by a card: turpentine is white-hot with a cyan ring, glue has a green rope to the rival it rides. */

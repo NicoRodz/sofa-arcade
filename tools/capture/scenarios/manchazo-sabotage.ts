@@ -6,8 +6,8 @@ import type { Ctx } from '../session';
 // phone with button 2 wearing the card in hand. Saved as manchazo-sab-*.png. `window.__pg.manchazoGive(slot, kind)` puts the card in a hand (capture tool only).
 const KINDS = ['turpentine', 'roller', 'fan', 'footprints', 'glue'] as const;
 
-export async function runManchazoSabotageTv({ cdp, bots, join, waitFor, click }: Ctx) {
-  const room = 'MNSB';
+/** Opens the TV on `room`, picks Manchazo, starts a round with 5 phones and leaves the bots barely leaning (they stay put). */
+async function startRound({ cdp, bots, join, waitFor, click }: Ctx, room: string) {
   await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${room}&soon=1` });
   await sleep(2500);
   await join(room, 5, [], { menu: true });
@@ -37,6 +37,11 @@ export async function runManchazoSabotageTv({ cdp, bots, join, waitFor, click }:
     b.startSending();
   });
   await sleep(1200);
+}
+
+export async function runManchazoSabotageTv(ctx: Ctx) {
+  const { cdp, bots } = ctx;
+  await startRound(ctx, 'MNSB');
   KINDS.forEach((k, slot) => void cdp.eval(`window.__pg.manchazoGive(${slot}, ${JSON.stringify(k)})`));
   await sleep(500);
   await cdp.shot('manchazo-sab-hands'); // pickups on the floor and a card over every body
@@ -74,5 +79,47 @@ export async function runManchazoSabotagePhone({ cdp }: Ctx) {
   const lbl = await cdp.eval<string>(`document.getElementById('lblB').textContent`);
   console.log('button 2 label', lbl);
   if (!lbl.includes('Rodillo')) throw new Error(`button 2 says "${lbl}", not the card in hand`);
+  fake.close();
+}
+
+// Manchazo F8a: the TV with the five new cards (one per body: tape, ink, sponge, swap, dizzy) and, once two are played (the tape on the floor, the ink's ghost ring
+// round its body), and the phone with button 2 wearing the Cinta. Saved as manchazo-sab-plus-*.png.
+const PLUS = ['tape', 'ink', 'sponge', 'swap', 'dizzy'] as const;
+
+export async function runManchazoSabotagePlusTv(ctx: Ctx) {
+  const { cdp, bots } = ctx;
+  await startRound(ctx, 'MNSX');
+  PLUS.forEach((k, slot) => void cdp.eval(`window.__pg.manchazoGive(${slot}, ${JSON.stringify(k)})`));
+  await sleep(500);
+  await cdp.shot('manchazo-sab-plus-hands'); // the five icons over the five bodies
+  bots[0]!.b++; // tape: the border on the floor
+  bots[1]!.b++; // ink: its team's paint is hidden (a ghost ring round the body)
+  await sleep(400);
+  await cdp.shot('manchazo-sab-plus-active'); // two sabotages active, the other three still in hand
+}
+
+export async function runManchazoSabotagePlusPhone(ctx: Ctx) {
+  const { cdp } = ctx;
+  const room = 'MNSQ';
+  const fake = new WebSocket(`ws://127.0.0.1:${PORT}/ws?role=screen&room=${room}`);
+  await new Promise((r) => fake.once('open', r));
+  fake.send(JSON.stringify({ t: 'config', game: 'arena', modeId: 'versus', difficulty: 'normal', map: '1', seed: 1 }));
+  fake.send(JSON.stringify({ t: 'phase', phase: 'menu' }));
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 2, mobile: true });
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+  await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=${room}` });
+  await sleep(1200);
+  await cdp.eval(`document.getElementById('name').value = 'Nico'; document.getElementById('join').requestSubmit()`);
+  await sleep(1200);
+  fake.send(JSON.stringify({ t: 'phase', phase: 'lobby' }));
+  await sleep(600);
+  fake.send(JSON.stringify({ t: 'phase', phase: 'playing' }));
+  await sleep(800);
+  for (let id = 0; id < 4; id++) fake.send(JSON.stringify({ t: 'hint', playerId: id, a: null, b: 'Cinta', bIcon: 'crate' })); // what the screen sends for the tape
+  await sleep(800);
+  await cdp.shot('manchazo-sab-plus-phone-tape');
+  const lbl = await cdp.eval<string>(`document.getElementById('lblB').textContent`);
+  console.log('button 2 label', lbl);
+  if (!lbl.includes('Cinta')) throw new Error(`button 2 says "${lbl}", not the card in hand`);
   fake.close();
 }

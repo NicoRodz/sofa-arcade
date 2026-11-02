@@ -48,9 +48,10 @@ function detonate(s: ManchazoState, p: Pinata): void {
   deflectVacuum(s, p.x, p.y, hit); // F4: a blast steers the vacuum robot (no-op without the events)
   s.grid.bodies.forEach((b, i) => {
     const bm = m.bodies[i]!;
-    if (b.team === p.team || bm.stun > 0 || !hit.has(bodyTile(b, bm.face).join(','))) return;
+    if (b.team === p.team || bm.stun > 0 || (m.sab?.plus?.immune[i] ?? 0) > 0 || !hit.has(bodyTile(b, bm.face).join(','))) return;
     bm.stun = STUN_TICKS;
     if (m.sab) m.sab.roller[i] = 0; // a stain cuts a roller
+    if (m.sab?.plus) m.sab.plus.charge[i] = 0; // and a Mareo still charging
     bm.trail = 0;
     bm.trailTeam = p.team;
     b.dir = NONE;

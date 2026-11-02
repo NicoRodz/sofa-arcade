@@ -1,7 +1,8 @@
-// The five sabotage icons, each a card with its own colour AND its own silhouette (so it reads without colour): turpentine is a flask, the roller a paint
+// The ten sabotage icons (the five of v1 here, the five of F8a in glyphs-plus.ts), each a card with its own colour AND its own silhouette (so it reads without colour): turpentine is a flask, the roller a paint
 // roller, the fan a ventilator that turns, the footprints two soles, the glue an upside-down bottle with a drip. Ink on a bright disc with a white rim.
 import type { SabotageKind } from '../../sim';
 import { num } from './palette';
+import { PLUS_COLOR, PLUS_HEX, PLUS_ICONS } from './glyphs-plus';
 import { type G, INK, WHITE, poly, tilted } from './shapes';
 
 export const CARD_HEX: Record<SabotageKind, string> = {
@@ -10,6 +11,7 @@ export const CARD_HEX: Record<SabotageKind, string> = {
   fan: '#A6F07A',
   footprints: '#FF8FD8',
   glue: '#C8A2FF',
+  ...PLUS_HEX,
 };
 export const CARD_COLOR: Record<SabotageKind, number> = {
   turpentine: num(CARD_HEX.turpentine),
@@ -17,9 +19,11 @@ export const CARD_COLOR: Record<SabotageKind, number> = {
   fan: num(CARD_HEX.fan),
   footprints: num(CARD_HEX.footprints),
   glue: num(CARD_HEX.glue),
+  ...PLUS_COLOR,
 };
 
 const ICONS: Record<SabotageKind, (g: G, x: number, y: number, r: number, spin: number) => void> = {
+  ...PLUS_ICONS,
   turpentine(g, x, y, r) {
     poly(
       g,

@@ -1,7 +1,8 @@
 // What the sabotages add to a round: the shuffled deck, the pickups on the floor and, per body, what it holds, what is armed for its next pinata and what runs.
 import { MAP_W, solidAt, type TileMap } from '../../map';
 import { mulberry32 } from '@pichi/core';
-import { DECK_SEED_TAG, DECK_SIZE, KINDS, PICKUP_PAIRS, PICKUP_SEED_TAG, type Armable, type SabotageKind } from './kinds';
+import { createPlus, type PlusState } from './plus';
+import { ALL_KINDS, DECK_SEED_TAG, DECK_SIZE, KINDS, PICKUP_PAIRS, PICKUP_SEED_TAG, type Armable, type SabotageKind } from './kinds';
 
 export interface Pickup {
   x: number; // tile
@@ -20,12 +21,13 @@ export interface SabotageState {
   footprints: number[]; // per TEAM: ticks left in which that team's bodies leave the other team's footprints
   gust: number[]; // per body: ticks the TV still draws its fan gust (display only, but part of the state)
   used: number; // sabotages played this round
+  plus: PlusState | null; // F8a: the five new sabotages (flag `sabotagePlus`); null: the round is F3's, bit for bit
 }
 
-/** The deck of a round: the catalog shuffled by the substream `seed ^ DECK_SEED_TAG`, the first DECK_SIZE. Same seed, same deck. */
-export function drawDeck(seed: number): SabotageKind[] {
+/** The deck of a round: the catalog (the v1 five, or all ten with `plus`) shuffled by the substream `seed ^ DECK_SEED_TAG`, the first DECK_SIZE. Same seed, same deck. */
+export function drawDeck(seed: number, plus = false): SabotageKind[] {
   const rng = mulberry32((seed ^ DECK_SEED_TAG) >>> 0);
-  const cards = [...KINDS];
+  const cards = [...(plus ? ALL_KINDS : KINDS)];
   for (let i = cards.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [cards[i], cards[j]] = [cards[j]!, cards[i]!];
@@ -57,10 +59,10 @@ export function placePickups(map: TileMap, seed: number, avoid?: ReadonlySet<num
   return out;
 }
 
-export function createSabotage(map: TileMap, seed: number, bodies: number, avoid?: ReadonlySet<number>): SabotageState {
+export function createSabotage(map: TileMap, seed: number, bodies: number, avoid?: ReadonlySet<number>, plus = false): SabotageState {
   const none = <T>(v: T) => Array.from({ length: bodies }, () => v);
   return {
-    deck: drawDeck(seed),
+    deck: drawDeck(seed, plus),
     pickups: placePickups(map, seed, avoid),
     held: none<SabotageKind | null>(null),
     armed: none<Armable | null>(null),
@@ -68,6 +70,7 @@ export function createSabotage(map: TileMap, seed: number, bodies: number, avoid
     footprints: [0, 0],
     gust: none(0),
     used: 0,
+    plus: plus ? createPlus(bodies) : null,
   };
 }
 
