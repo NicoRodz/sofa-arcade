@@ -14,8 +14,8 @@ describe('arena conforms to the game contract', () => {
     expect(arenaManifest.soon).toBe(true);
     expect({ id: arenaManifest.id, name: arenaManifest.name, blurb: arenaManifest.blurb }).toEqual({
       id: 'arena',
-      name: 'Arena de empujones',
-      blurb: 'Empuja a tus rivales fuera de la plataforma.',
+      name: 'Manchazo',
+      blurb: 'Dos equipos sueltan piñatas que pintan el piso en rombo: gana el que deje más piso de su color.',
     });
   });
   it('a catalog refuses a second manifest with the id of a published game', () => {

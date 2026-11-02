@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { C, W } from '@pichi/screen-kit/art';
 import { MAP_H, MAP_ROWS, MAP_W } from '../../map';
 import { blastTiles, percentOf, type ManchazoState } from '../../sim';
+import { floorBar } from './hud-bar';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 
 const PX = 56; // logical px per tile (5 cm on a 78" screen)
@@ -98,15 +99,11 @@ export class MatchScene extends Phaser.Scene {
     const left = Math.max(0, Math.ceil((s.grid.durationTicks - s.grid.tick) / 60));
     this.clock.setText(s.grid.over ? '¡Fin!' : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`);
     [0, 1].forEach((t) => this.pct[t]!.setText(`${t === 0 ? '▲' : '●'} ${percentOf(s.match, t)} %`));
-    const total = s.match.counts[0]! + s.match.counts[1]!;
     const w = MAP_W * PX;
-    this.g.fillStyle(0x333333, 1).fillRect(X0, 112, w, 16);
-    if (total > 0) {
-      const a = (w * s.match.counts[0]!) / total;
-      this.g.fillStyle(TEAM_COLOR[0]!, 1).fillRect(X0, 112, a, 16);
-      this.g.fillStyle(TEAM_COLOR[1]!, 1).fillRect(X0 + a, 112, w - a, 16);
-    }
-    this.g.fillStyle(0xffffff, 1).fillRect(X0 + w / 2 - 2, 106, 4, 28);
+    const bar = floorBar(s.match.counts, s.match.paintable, w); // grey track = unpainted floor, orange from the left, blue from the right
+    this.g.fillStyle(0x555555, 1).fillRect(X0, 112, w, 16);
+    this.g.fillStyle(TEAM_COLOR[0]!, 1).fillRect(X0, 112, bar.orange, 16);
+    this.g.fillStyle(TEAM_COLOR[1]!, 1).fillRect(X0 + w - bar.blue, 112, bar.blue, 16);
   }
 
   private label(slot: number, stunned: boolean): Phaser.GameObjects.Text {

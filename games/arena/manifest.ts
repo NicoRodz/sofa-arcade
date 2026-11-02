@@ -1,4 +1,4 @@
-// Arena's entry in the game registry. `soon: true`: it is in development, so the composition root (apps/catalog) keeps it out of the screen's menu
+// Manchazo's entry in the game registry (internal id `arena`, folder `games/arena`). `soon: true`: it is in development, so the composition root (apps/catalog) keeps it out of the screen's menu
 // unless the page opens with `?soon=1`. The contract's GameManifest has no such field (it is extra here, read by apps/catalog), so nothing in platform/ changed.
 import type { GameManifest, TeamStyle } from '@pichi/core/contract';
 
@@ -8,10 +8,18 @@ export const TEAM_STYLES: readonly TeamStyle[] = [
   { name: 'Azul', color: '#0072B2', icon: '●' },
 ];
 
+// "Cómo se juega": the current rules (the one mode, and the manifest's own card, say the same).
+const STEPS = [
+  { icon: 'move', text: 'Muévete por la grilla con el stick' },
+  { icon: 'star', text: 'Suelta una piñata: a los 2 s estalla y pinta el piso en rombo' },
+  { icon: 'plate', text: 'Si te alcanza el estallido rival, quedas quieto 1,2 s' },
+  { icon: 'bell', text: 'Dos equipos: gana el que pinte más piso antes del reloj' },
+] as const;
+
 export const arenaManifest = {
   id: 'arena',
-  name: 'Arena de empujones',
-  blurb: 'Empuja a tus rivales fuera de la plataforma.',
+  name: 'Manchazo',
+  blurb: 'Dos equipos sueltan piñatas que pintan el piso en rombo: gana el que deje más piso de su color.',
   soon: true,
   minPlayers: 2,
   maxPlayers: 8,
@@ -29,22 +37,10 @@ export const arenaManifest = {
       teams: { count: [2, 2], maxRatio: 4, handicap: 'game', styles: TEAM_STYLES },
       controls: { btn1: { label: 'Piñata', icon: 'star' }, btn2: { label: 'Pronto', icon: 'jump' } },
       howTo: {
-        steps: [
-          { icon: 'move', text: 'Muévete por la grilla con el stick' },
-          { icon: 'star', text: 'Suelta una piñata: estalla a los 2 s y pinta en rombo' },
-          { icon: 'plate', text: 'Si un estallido rival te alcanza, quedas quieto 1,2 s' },
-          { icon: 'bell', text: 'Gana el equipo con más área pintada al acabar el reloj' },
-        ],
+        steps: STEPS,
       },
     },
   ],
   defaultMode: 'versus',
-  howTo: {
-    steps: [
-      { icon: 'star', text: 'Sé el último en pie sobre la plataforma' },
-      { icon: 'grab', text: 'Empujar lanza a quien tengas cerca' },
-      { icon: 'jump', text: 'Embestir te lanza hacia donde miras' },
-      { icon: 'plate', text: 'La plataforma se encoge: no te quedes en el borde' },
-    ],
-  },
+  howTo: { steps: STEPS },
 } as const satisfies GameManifest & { soon: boolean };

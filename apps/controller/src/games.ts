@@ -4,4 +4,4 @@ import { obstaculosController } from '@pichi/game-obstaculos/controller';
 import { pizzasController } from '@pichi/game-pizzas/controller';
 import type { ControllerGame } from '@pichi/controller-kit';
 
-export const controllerGames: readonly ControllerGame[] = [pizzasController, obstaculosController, arenaController];
+export const controllerGames: readonly ControllerGame[] = [pizzasController, arenaController, obstaculosController];

@@ -24,7 +24,7 @@ Datos tomados de `games/*/manifest.ts` y `apps/catalog/src/games.ts`.
 |---|---|---|---|
 | ¡Que salgan las pizzas! (`pizzas`) | Estira la masa, corta, hornea y entrega antes de que se acabe la paciencia. | 2-8 | Cooperativo; Duelo de cocinas (dos equipos, con opción de sabotaje y ventaja para el equipo chico) |
 | Obstáculos en cadena (`obstaculos`) | Una cuadrilla de exploradores cruza cinco paisajes: salten, suban sobre sus compañeros y lleguen TODOS a la meta. | 2-8 | Cooperativo. El manifest no declara modos; la campaña ofrece Continuar, Nueva expedición, Sala de práctica y Partida rápida |
-| Arena de empujones (`arena`) | Empuja a tus rivales fuera de la plataforma. | por definir | Próximamente: tarjeta no seleccionable en el menú |
+| Manchazo (`arena`) | Dos equipos sueltan piñatas que pintan el piso en rombo: gana el que deje más piso de su color. | por definir | Próximamente: tarjeta no seleccionable en el menú |
 
 Los controles son los mismos en el celular: un stick para moverte y dos botones (en Pizzas "Tomar / Soltar" y "Picar / Correr"; en Obstáculos "Saltar" y "Agarrar").
 

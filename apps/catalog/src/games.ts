@@ -17,4 +17,10 @@ export const COMING_SOON: readonly ComingSoon[] = IN_DEVELOPMENT.map(({ id, name
 /** What the screen's menu lists by default: the published games and the announced ones. */
 export const CATALOG = createCatalog(GAMES, COMING_SOON);
 /** Every game, the ones in development included: what the relay accepts and the phones name; the screen binds it only with `?soon=1`. */
-export const DEV_CATALOG = createCatalog([...GAMES, ...IN_DEVELOPMENT], COMING_SOON);
+// The menu's order with `?soon=1`: Pizzas, Manchazo (`arena`), Obstáculos. Anything not listed keeps its place after these.
+const DEV_ORDER: readonly string[] = ['pizzas', 'arena', 'obstaculos'];
+const rank = (id: string) => (DEV_ORDER.includes(id) ? DEV_ORDER.indexOf(id) : DEV_ORDER.length);
+export const DEV_CATALOG = createCatalog(
+  [...GAMES, ...IN_DEVELOPMENT].sort((a, b) => rank(a.id) - rank(b.id)),
+  COMING_SOON,
+);
