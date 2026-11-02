@@ -10,7 +10,7 @@ function fakeScene() {
   const have = new Set<string>();
   const images: Record<string, unknown>[] = [];
   const image = () => {
-    const im: Record<string, unknown> = { tint: null, mode: null, texture: null };
+    const im: Record<string, unknown> = { tint: null, mode: null, texture: null, sets: 0 };
     const chain = (name: string, f?: (...a: never[]) => void) => {
       im[name] = (...a: never[]) => {
         f?.(...a);
@@ -21,7 +21,10 @@ function fakeScene() {
     chain('setVisible');
     chain('setTintMode', ((m: number) => (im.mode = m)) as never);
     chain('setTint', ((c: number) => (im.tint = c)) as never);
-    chain('setTexture', ((k: string) => (im.texture = k)) as never);
+    chain('setTexture', ((k: string) => {
+      im.texture = k;
+      (im.sets as number)++;
+    }) as never);
     chain('setPosition');
     chain('setScale');
     chain('setAlpha');
@@ -75,6 +78,8 @@ describe('TeamSprite', () => {
     expect(String(body.texture)).toMatch(/_b$/);
     s.setLook(ap, 0x0072b2);
     expect(bake).toHaveBeenCalledTimes(1);
+    expect(garment.sets).toBe(1); // the same look and team again touches no image
+    expect(body.sets).toBe(1);
     s.setLook(ap, 0xe69f00); // the team changed (a reshuffle): a new tint, no new texture
     expect(garment.tint).toBe(0xe69f00);
     expect(bake).toHaveBeenCalledTimes(1);
