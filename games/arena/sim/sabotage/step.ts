@@ -32,7 +32,10 @@ export function afterMove(s: ManchazoState): void {
   if (!a) return;
   s.grid.bodies.forEach((b, i) => {
     const bm = m.bodies[i]!;
-    if (bm.stun > 0) return void (a.roller[i] = 0); // a stain cuts the roller
+    if (bm.stun > 0) {
+      a.roller[i] = 0; // a stain cuts the roller
+      return;
+    }
     const tile = bodyTile(b, bm.face);
     if (a.roller[i]! > 0) {
       paintTile(m, ...tile, b.team, s.grid.tick);

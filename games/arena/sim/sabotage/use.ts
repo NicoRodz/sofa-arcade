@@ -16,7 +16,10 @@ export function glueTarget(s: ManchazoState, i: number): number {
   s.grid.bodies.forEach((b, j) => {
     if (b.team === me.team) return;
     const d = dist(here, bodyTile(b, s.match.bodies[j]!.face));
-    if (d < bestD) (best = j), (bestD = d);
+    if (d < bestD) {
+      best = j;
+      bestD = d;
+    }
   });
   return best;
 }
@@ -52,7 +55,10 @@ export function useSabotage(s: ManchazoState, i: number): boolean {
   else if (kind === 'roller') a.roller[i] = ROLLER_TICKS;
   else if (kind === 'footprints')
     a.footprints[1 - team] = FOOTPRINT_TICKS; // the rivals' footprints are painted in `team`'s colour
-  else blow(s, i), (a.gust[i] = FAN_FX_TICKS);
+  else {
+    blow(s, i);
+    a.gust[i] = FAN_FX_TICKS;
+  }
   a.held[i] = null;
   a.used++;
   return true;
