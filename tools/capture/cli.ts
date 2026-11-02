@@ -17,8 +17,7 @@ import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './s
 import { runArenaGridPhone, runArenaGridTv } from './scenarios/arena-grid';
 import { runManchazoPhone, runManchazoTv } from './scenarios/manchazo';
 import { runManchazo4k, runRenderScaleOthers } from './scenarios/render-scale';
-import { runManchazoSeeds } from './scenarios/manchazo-seeds';
-import { runManchazoLooks } from './scenarios/manchazo-looks';
+import { runManchazoLooks, runManchazoSeeds } from './scenarios/manchazo-seeds';
 import { runManchazoEventsTv } from './scenarios/manchazo-events';
 import { runManchazoLivingTv } from './scenarios/manchazo-living';
 import { runManchazoSabotagePhone, runManchazoSabotageTv } from './scenarios/manchazo-sabotage';
