@@ -27,7 +27,9 @@ describe('map generator over 10000 seeds', () => {
   it('p99 of the time per seed is within budget (15 ms; 60 ms when PG_TEST_WORKERS caps the run)', () => {
     const ms = records.map((r) => r.ms).sort((a, b) => a - b);
     const p99 = ms[Math.floor(N * 0.99)]!;
-    console.log(`map-seeds: p50 ${ms[N / 2]!.toFixed(2)} ms, p99 ${p99.toFixed(2)} ms, max ${ms[N - 1]!.toFixed(2)} ms, budget ${BUDGET_MS} ms`);
+    console.log(
+      `map-seeds: p50 ${ms[N / 2]!.toFixed(2)} ms, p99 ${p99.toFixed(2)} ms, max ${ms[N - 1]!.toFixed(2)} ms, budget ${BUDGET_MS} ms`,
+    );
     expect(p99).toBeLessThan(BUDGET_MS);
   });
 });
