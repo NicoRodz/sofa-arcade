@@ -8,6 +8,7 @@ Juegos de fiesta en red local: la pantalla grande (Phaser + DOM) corre la simula
 |---|---|
 | Probar un paquete (lo normal) | `npm run test:agent -- --project game-pizzas` (también core, screen-kit, controller-kit, game-obstaculos, game-arena, app-server, catalog, tools) |
 | Rápidos / lentos / todo | `npm run test:fast` / `npm run test:slow` / `npm test` |
+| Local, sin saturar el Mac (50 % de núcleos, `nice`) | `npm run test:quick` (= CI) · `npm run test:changed` (solo lo afectado) · `npm run test:full` · detalle: `.claude/skills/sofa-arcade-dev/references/tests-rendimiento.md` |
 | Tipos, build, lint | `npm run typecheck` · `npm run build` · `npm run lint` |
 | Topes de tamaño | `npx vitest run --project tools` (corre `tools/meta/size-budget.test.ts`) |
 | Dependencias (8 reglas en error) | `npm run deps` · reporte: `npm run deps:report` |
