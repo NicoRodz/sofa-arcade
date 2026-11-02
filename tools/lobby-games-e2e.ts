@@ -19,7 +19,8 @@ async function game(c: Ctx, id: 'obstaculos' | 'arena', room: string, n: number,
   await join(room, n, [], { menu: true });
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
   for (let i = 0; i < 4; i++) {
-    if ((await cdp.eval<{ sel: string }>('window.__pg.menu()')).sel === id) break;
+    const m = await cdp.eval<{ sel: number; cards: string[] }>('window.__pg.menu()'); // `sel` is the card's index
+    if (m.cards[m.sel]?.startsWith(`${id}:`)) break;
     await key('ArrowRight');
     await sleep(150);
   }

@@ -11,8 +11,8 @@ export const TEAM_STYLES: readonly TeamStyle[] = [
 // "Cómo se juega": the current rules (the one mode, and the manifest's own card, say the same).
 const STEPS = [
   { icon: 'move', text: 'Muévete por la grilla con el stick' },
-  { icon: 'star', text: 'Suelta una piñata: a los 2 s estalla y pinta el piso en rombo' },
-  { icon: 'plate', text: 'Si te alcanza el estallido rival, quedas quieto 1,2 s' },
+  { icon: 'star', text: 'Suelta una piñata: estalla a los 2 s y pinta el piso en rombo' },
+  { icon: 'plate', text: 'Si te alcanza el estallido rival, quedas quieto 1,2 s' },
   { icon: 'bell', text: 'Dos equipos: gana el que pinte más piso antes del reloj' },
 ] as const;
 
