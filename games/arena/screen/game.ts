@@ -17,6 +17,8 @@ import { ManchazoRun, matchRun, nextMapSeed } from './match/run';
 import { parseSeed } from '../map';
 import { MatchScene } from './match/scene';
 import { createSabotageHints } from './match/phone-hints';
+import { createEventAlert } from './match/event-alert';
+import { eventDebug } from './match/debug-events';
 import { sendMsg } from '@pichi/screen-kit/net';
 import { KINDS, type SabotageKind } from '../sim';
 
@@ -52,6 +54,9 @@ const matchScene = (): MatchScene =>
 // F3: what button 2 says on each phone (the sabotage in hand), from the round's state every frame
 const hints = createSabotageHints(sendMsg, (slot) => player(slot)?.id);
 
+// F4: every event announced on the TV buzzes every phone
+const alerts = createEventAlert(sendMsg, (slot) => player(slot)?.id);
+
 const sceneOf = () => {
   const kind = roundKind();
   return kind === 'push' ? arenaScene() : kind === 'grid' ? gridScene() : matchScene();
@@ -62,6 +67,7 @@ export const arenaScreen: ScreenGame = {
   scenes: () => [{ key: 'arena', scene: sceneOf() }],
   frame(delta) {
     hints.sync(matchRun.run && showing() ? matchRun.run.state : null, performance.now());
+    alerts.sync(matchRun.run && showing() ? matchRun.run.state : null);
     if (app.phase !== 'playing' || app.config.game !== ID || performance.now() < app.gateUntil) return;
     if ((matchRun.run ?? gridRun.run ?? run.arena)?.advance(delta)) dispatch('timeout'); // the final board has been on screen long enough
   },
@@ -110,6 +116,7 @@ export const arenaScreen: ScreenGame = {
       const i = s?.grid.bodies.findIndex((b) => b.slot === slot) ?? -1;
       if (s?.match.sab && i >= 0) s.match.sab.held[i] = typeof kind === 'number' ? KINDS[kind]! : kind;
     },
+    ...eventDebug(() => matchRun.run?.state), // for the capture tool only: start an event, drop the Hourglass, put a body on a tile
     // for the capture tool only: the next round plays the map of this seed code (`2·7KQ2M`); the phones cannot do this
     manchazoNextMapSeed(code: string) {
       matchRun.forced = parseSeed(code)?.seed ?? null;
