@@ -14,6 +14,7 @@ import { runHz3Bridge, runHz3Caves, runHz3Tray, runHz3Waves } from './scenarios/
 import { runMutate } from './scenarios/mutate';
 import { runHowto, runHowtoTimeout, runMenu } from './scenarios/screens';
 import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './scenarios/maps';
+import { runArenaGridPhone, runArenaGridTv } from './scenarios/arena-grid';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
 
 type Scenario = (c: Ctx) => Promise<void>;
@@ -21,6 +22,8 @@ type Scenario = (c: Ctx) => Promise<void>;
 // each mode runs the scenarios in order; `all` is lobby, game, results as before
 const MODES: Record<string, Scenario[]> = {
   phone: [runPhone],
+  'arena-grid-tv': [runArenaGridTv],
+  'arena-grid-phone': [runArenaGridPhone],
   'versus-phone': [runVersusPhone],
   versus: [runVersus],
   'vs-hud': [runVsHud],

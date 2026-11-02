@@ -1,6 +1,8 @@
 // Arena's results: the winner and the order in which the others fell. The panel is built here (the page has no markup for this game) and sits above the button.
 import { app } from '@pichi/screen-kit/shell';
 import { $, esc } from '@pichi/screen-kit/ui';
+import { gridResultsHtml } from './grid/grid-results';
+import { gridRun } from './grid/grid-run';
 import { run } from './run';
 
 const slotName = (slot: number) => [...app.players.values()].find((p) => p.info.slot === slot)?.info.name ?? `J${slot + 1}`;
@@ -22,6 +24,11 @@ export function renderResults() {
   $('vsnote').textContent = '';
   $('resh').textContent = s?.winner == null ? 'Empate' : `¡Ganó ${slotName(s.winner)}!`;
   $('resh').style.color = '';
+  if (gridRun.run) {
+    $('resh').textContent = 'Prototipo F0: control';
+    panel().innerHTML = gridResultsHtml(slotName, esc);
+    return;
+  }
   if (!s) return;
   const order = [...s.fighters].sort((a, b) => (b.fellAt ?? Infinity) - (a.fellAt ?? Infinity)); // still standing first, then the last to fall
   panel().innerHTML = order
