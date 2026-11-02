@@ -46,13 +46,30 @@ Medido el 2-nov-2026 en el Mac de Nico (10 núcleos: 4 P + 6 E, `sysctl hw.ncpu`
 Con 3 workers en `test:fast`: 31 s / 106 s / 3,4 núcleos (más lento, no vale la pena). `nice` no cambia el CPU total, solo cede prioridad al resto del Mac; no se mide en la tabla.
 No se re-corrió el proyecto `slow` completo después del cambio (orden de Nico: Mac saturado); solo se midió `menu-layout`. Las cifras de CPU de Chrome vienen del rusage de los hijos esperados: son aproximadas.
 
+## Qué corre el CI de GitHub y qué no
+
+`.github/workflows/ci.yml` (en PR y en push a master). Este PR no lo modifica.
+
+| Job | Corre | NO corre |
+|---|---|---|
+| `check` | `npm ci`, `lint`, `typecheck`, `test:fast` (todos los proyectos salvo `slow`, sin `PG_TEST_WORKERS`), `deps`, `check-new-files` (solo PR) | proyecto `slow` (35 archivos, 330 tests), `baseline:check` (nombres, skips, hashes de `docs/screens` y goldens), `test:full`, `npm test` |
+| `smoke` | `build` + `npm run smoke` (pantalla `/screen` y celular `/c` en Chrome headless con SwiftShader) | `tools/capture`, `obst-e2e`, `lobby-games-e2e`, `menu-remote-e2e`, los 4 `*.slow` con Chrome de `apps/controller` |
+
+Verde en el CI no cubre `step`/sim/validador/generador/protocolo en sus pruebas lentas ni los goldens: eso solo lo ven `test:slow` / `baseline:check` en local.
+
+## Política de pruebas por etapa
+
+- Durante una etapa: `test:changed` o `test:quick`, más los `*.slow` que toque el cambio (`npx vitest run <archivo>.slow.test.ts`).
+- Al cerrar cada etapa: el CI de GitHub (PR).
+- Suite completa local (`test:full` + `baseline:check`): solo 1 o 2 veces por desarrollo grande, en hitos.
+
 ## Qué comando según la situación
 
 | Situación | Comando |
 |---|---|
 | Toqué un paquete | `npm run test:agent -- --project <proyecto>` |
 | Quiero saber si rompí algo, rápido | `npm run test:changed` (solo `!slow`, relativo a `origin/master`, incluye lo sin commitear) |
-| Antes del PR (equivale a CI) | `npm run test:quick` |
+| Antes del PR (equivale al paso `test:fast` del CI, no a todo el CI) | `npm run test:quick` |
 | Toqué `step`/sim/validador/generador/protocolo | `npm run test:slow` (o `npm run test:full`, limitado) |
 | Integración | `PG_TEST_WORKERS=50% nice -n 10 npm run baseline:check` |
 | Máxima velocidad sin importar el Mac | `npm test` (sin tope) |
