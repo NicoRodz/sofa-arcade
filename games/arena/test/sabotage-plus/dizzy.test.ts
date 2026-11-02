@@ -37,6 +37,18 @@ describe('dizzy (Mareo): after 0.5 s of visible charge, rivals within 2 tiles pl
     expect(x(s, 1)).toBeLessThan(10 * 16 + 8);
     expect(x(s, 2)).toBeGreaterThan(16 * 16 + 8);
   });
+  it('both axes are inverted: pushing down walks up, and a dead-zone stick still stands still', () => {
+    const s = plusRound([0, 1]);
+    put(s, 1, 10, 14);
+    plus(s).dizzy[1] = 180;
+    const y0 = s.grid.bodies[1]!.y;
+    tick(s, { 1: stick(0, 1000) }, 20);
+    expect(s.grid.bodies[1]!.y).toBeLessThan(y0);
+    expect(x(s, 1)).toBe(10 * 16 + 8);
+    const y1 = s.grid.bodies[1]!.y;
+    tick(s, { 1: stick(0, 0) }, 20);
+    expect(s.grid.bodies[1]!.y).toBe(y1);
+  });
   it('ends after 3 s: the same stick walks the right way again', () => {
     const s = plusRound([0, 1]);
     put(s, 1, 10, 14);
