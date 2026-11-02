@@ -85,7 +85,7 @@ describe('result and area', () => {
 });
 
 describe('determinism', () => {
-  it('the hash covers the paint, the tie-break stamps and the reserve', () => {
+  it('the hash covers the paint, the pinatas, the tie-break stamps and the reserve', () => {
     const base = hashManchazo(duel());
     expect(hashManchazo(duel())).toBe(base);
     const paint = duel();
@@ -94,6 +94,11 @@ describe('determinism', () => {
     const stamp = duel();
     stamp.match.reachedAt[1] = 5;
     expect(hashManchazo(stamp)).not.toBe(base);
+    const dropped = duel();
+    const idle = duel();
+    tick(dropped, { 0: DROP });
+    tick(idle);
+    expect(hashManchazo(dropped)).not.toBe(hashManchazo(idle)); // same grid, one live pinata
     const reserve = duel();
     reserve.match.reserve[0] = 1;
     expect(hashManchazo(reserve)).not.toBe(base);
