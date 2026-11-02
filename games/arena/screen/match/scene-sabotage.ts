@@ -1,16 +1,9 @@
 // Manchazo's scene, sabotage layer (F3): pickups on the floor, the card each body carries, the pinata marks (turpentine, glue), the roller, the fan's gust.
 // Each card has its own colour AND shape, so it reads without colour. No logic: it reads the sim's state.
-import type Phaser from 'phaser';
 import { CARD_COLOR, drawIcon } from '../art/glyphs';
 import { drawPlusCarrier } from './scene-plus';
+import type { Frame } from './scene-frame';
 import { FAN_FX_TICKS, FAN_RANGE, ROLLER_TICKS, cardOf, type ManchazoState, type Pickup, type SabotageKind } from '../../sim';
-
-export interface Frame {
-  g: Phaser.GameObjects.Graphics;
-  x0: number;
-  y0: number;
-  px: number;
-}
 
 /** The card's icon centred on (cx, cy), r = half its size (the art is in ../art/glyphs.ts). */
 export function glyph({ g }: Frame, kind: SabotageKind, cx: number, cy: number, r: number, spin = 0) {

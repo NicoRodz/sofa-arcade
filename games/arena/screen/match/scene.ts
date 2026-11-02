@@ -13,7 +13,8 @@ import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, S
 import { Avatars } from './scene-avatars';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawTapes } from './scene-plus';
-import { drawCarrier, drawMark, drawPickups, type Frame } from './scene-sabotage';
+import type { Frame } from './scene-frame';
+import { drawCarrier, drawMark, drawPickups } from './scene-sabotage';
 import { addBackdrop } from '../art/backdrop';
 import { FRAME, floorTexture, BAKE } from '../art/floor-bake';
 import { furnitureMap } from '../art/furniture-plan';

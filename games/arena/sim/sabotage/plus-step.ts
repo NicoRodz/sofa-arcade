@@ -22,7 +22,10 @@ export function stepPlus(s: ManchazoState): void {
   p.tapes = p.tapes.filter((t) => t.left > 0);
   p.veil.forEach((v, team) => {
     if (v === 0 || --p.veil[team]! > 0) return;
-    s.match.paint.forEach((c, k) => c === team && (p.veiled[k] = 0)); // the ink ran out: everything it hid shows at once
+    // the ink ran out: everything it hid shows at once
+    s.match.paint.forEach((c, k) => {
+      if (c === team) p.veiled[k] = 0;
+    });
   });
   for (const list of [p.dizzy, p.immune, p.swapFx, p.squeezeFx]) list.forEach((v, i) => v > 0 && list[i]!--);
   s.grid.bodies.forEach((_b, i) => {

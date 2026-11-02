@@ -5,7 +5,7 @@ import { spiralPts } from '../art/glyphs-plus';
 import { INK } from '../art/shapes';
 import { DIZZY_CHARGE_TICKS, DIZZY_RANGE, SQUEEZE_FX_TICKS, SWAP_FX_TICKS, type ManchazoState } from '../../sim';
 import { TEAM_COLOR } from './scene-body';
-import type { Frame } from './scene-sabotage';
+import type { Frame } from './scene-frame';
 
 const BLINK_TICKS = 60; // a tape in its last second blinks
 

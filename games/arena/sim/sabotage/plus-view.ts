@@ -16,7 +16,9 @@ export function shownCounts(s: ManchazoState): number[] {
   const p = m.sab?.plus;
   const out = [...m.counts];
   if (!p || s.grid.over) return out;
-  p.veiled.forEach((v, i) => v && (out[m.paint[i]!]! -= weightAt(m, i % MAP_W, Math.floor(i / MAP_W))));
+  p.veiled.forEach((v, i) => {
+    if (v) out[m.paint[i]!]! -= weightAt(m, i % MAP_W, Math.floor(i / MAP_W));
+  });
   return out;
 }
 

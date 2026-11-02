@@ -13,7 +13,6 @@ import {
   SQUEEZE_FX_TICKS,
   SWAP_FX_TICKS,
   SWAP_RANGE,
-  TAPE_HALF,
   TAPE_TICKS,
   type SabotageKind,
 } from './kinds';
@@ -98,7 +97,10 @@ export function playPlus(s: ManchazoState, i: number, kind: SabotageKind): Playe
     return 'spent';
   }
   if (kind === 'sponge') {
-    if (plus.sponge[i]! > 0) return (squeeze(s, i), 'spent');
+    if (plus.sponge[i]! > 0) {
+      squeeze(s, i);
+      return 'spent';
+    }
     const n = absorb(s, i);
     if (n === 0) return 'refused'; // no rival paint in the 3x3: the card is not spent
     plus.sponge[i] = SPONGE_TICKS;

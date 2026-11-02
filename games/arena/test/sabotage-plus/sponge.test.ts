@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { paintTile } from '../../sim';
-import { USE, countsAgree, give, owner, plus, plusRound, put, sab, tick } from './plus-drive';
+import { USE, countsAgree, give, plus, plusRound, put, sab, tick } from './plus-drive';
 
 /** Team 1 owns the 3x3 around (cx, cy) except the tiles in `skip`; body 0 (team 0) stands in the middle with the sponge. */
 function soaked(cx = 10, cy = 1, skip: [number, number][] = []) {
