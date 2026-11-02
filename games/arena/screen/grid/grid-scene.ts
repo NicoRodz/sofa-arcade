@@ -34,7 +34,7 @@ export class GridScene extends Phaser.Scene {
       color: C.cream,
     });
     this.banner = this.add
-      .text(W / 2, 52, '', {
+      .text(W - 120, 52, '', {
         fontFamily: 'sans-serif',
         fontSize: '48px',
         color: C.cream,
