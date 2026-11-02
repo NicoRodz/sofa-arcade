@@ -70,6 +70,25 @@ describe('team look: replaying a recorded figure', () => {
       expect(again.log).toEqual(direct.log);
     }
   });
+
+  it('a picked colour replaces that one paint and the style comes back; null skips the paint', () => {
+    const ops = recordFigure(base, view, role);
+    const paints = ops.filter((op) => op.t === 'paint').length;
+    const run = (pick: () => string | null) => {
+      const p = new RecordingPainter();
+      replay(ops, p, pick);
+      return p.log;
+    };
+    const isPaint = (l: string) => /^(fill|stroke|fillRect)\(/.test(l);
+    expect(run(() => null).filter(isPaint)).toEqual([]);
+    const log = run(() => '#123456');
+    expect(log.filter(isPaint).length).toBe(paints);
+    log.forEach((l, i) => {
+      if (!isPaint(l)) return;
+      expect(log[i - 1], `before ${l}`).toMatch(/^(fill|stroke)Style=#123456$/);
+      expect(log[i + 1], `after ${l}`).toMatch(/^(fill|stroke)Style=(?!#123456)/);
+    });
+  });
 });
 
 describe('team look: garment and body', () => {
