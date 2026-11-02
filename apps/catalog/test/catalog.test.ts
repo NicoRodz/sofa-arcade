@@ -29,7 +29,7 @@ describe('apps/catalog', () => {
   it('keeps the protocol at v6 and the default lobby of master', () => {
     expect(PROTOCOL_VERSION).toBe(6);
     expect(DEFAULT_CONFIG).toStrictEqual(MASTER_DEFAULT_CONFIG);
-    expect(CATALOG.ids).toEqual(['pizzas', 'obstaculos']);
+    expect(CATALOG.ids).toEqual(['pizzas', 'arena', 'obstaculos']);
     expect(CATALOG.problems()).toEqual([]);
     expect(GAMES.map((g) => g.id)).toEqual(CATALOG.ids);
   });
