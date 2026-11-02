@@ -19,6 +19,7 @@ import { MatchScene } from './match/scene';
 import { createSabotageHints } from './match/phone-hints';
 import { createEventAlert } from './match/event-alert';
 import { eventDebug } from './match/debug-events';
+import { livingDebug } from './match/debug-living';
 import { sendMsg } from '@pichi/screen-kit/net';
 import { KINDS, type SabotageKind } from '../sim';
 
@@ -117,6 +118,7 @@ export const arenaScreen: ScreenGame = {
       if (s?.match.sab && i >= 0) s.match.sab.held[i] = typeof kind === 'number' ? KINDS[kind]! : kind;
     },
     ...eventDebug(() => matchRun.run?.state), // for the capture tool only: start an event, drop the Hourglass, put a body on a tile
+    ...livingDebug(() => matchRun.run?.state), // for the capture tool only: re-time a living element, claim a brush pivot
     // for the capture tool only: the next round plays the map of this seed code (`2·7KQ2M`); the phones cannot do this
     manchazoNextMapSeed(code: string) {
       matchRun.forced = parseSeed(code)?.seed ?? null;

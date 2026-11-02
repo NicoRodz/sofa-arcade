@@ -14,6 +14,7 @@ export interface ManchazoConfig {
   control?: ControlPlan;
   sabotage?: boolean; // F3: pickups on the floor and button 2 plays them (off: the round is F1's, bit for bit)
   events?: boolean; // F4: the scheduled events, the come-back, the hidden scoreboard and the Hourglass (off: the round is F3's, bit for bit)
+  living?: boolean; // F5: the living map (brushes, sofas, fountain) on the generated map; needs `mapSeed` (off: the round is F4's, bit for bit)
   mapSeed?: number; // 25-bit map seed (see map/gen/seed.ts); without it the round is played on the F0 hand-made map
 }
 
@@ -21,8 +22,10 @@ export interface ManchazoConfig {
 export const sidesFlipped = (seed: number): boolean => mulberry32((seed ^ SIDE_SEED_TAG) >>> 0)() < 0.5;
 
 export function createManchazo(cfg: ManchazoConfig): ManchazoState {
-  const gen = cfg.mapSeed === undefined ? null : generateMap(cfg.mapSeed);
-  const map = gen?.map ?? f0Map();
+  const gen = cfg.mapSeed === undefined ? null : generateMap(cfg.mapSeed, undefined, !!cfg.living);
+  const living = cfg.living && gen ? gen.living : undefined; // the fallback has none: its list is empty, the living layer still runs
+  const base = gen?.map ?? f0Map();
+  const map = living ? { ...base, solid: base.solid.slice() } : base; // the living map shuts and opens tiles: a copy, f0Map() is shared
   const grid = createGrid({
     map,
     slots: cfg.slots,
@@ -36,6 +39,7 @@ export function createManchazo(cfg: ManchazoConfig): ManchazoState {
     map,
     cfg.sabotage ? { seed: cfg.seed } : undefined,
     cfg.events ? { seed: cfg.seed, base: grid.durationTicks } : undefined,
+    living,
   );
   grid.bodies.forEach((b, i) => (match.bodies[i]!.face = b.x < (MAP_W * TILE) / 2 ? RIGHT : LEFT)); // heading to the middle
   return { grid, match, mapSeed: gen?.seed ?? null, mapFallback: gen?.fallback ?? false };

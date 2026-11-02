@@ -2,7 +2,7 @@
 // overlapping the one before and never starting in the last 12 s. All the draws come from the `manchazo:events:<seed>` substream, in a fixed order.
 import type { Rng } from '@pichi/core';
 import { MAP_W, solidAt, type TileMap } from '../../map';
-import { DURATION, EVENT_KINDS, type EventKind, JITTER, NO_START_TICKS, RAIN_ROWS, SLOT_FRACTIONS } from './config';
+import { GOLD_ROWS_CLEAR, DURATION, EVENT_KINDS, type EventKind, JITTER, NO_START_TICKS, RAIN_ROWS, SLOT_FRACTIONS } from './config';
 import { TICK_HZ } from '../grid/config';
 
 export interface Planned {
@@ -13,7 +13,7 @@ export interface Planned {
   down: boolean; // vacuum: starts at the top going down (else the bottom, going up)
 }
 
-export function planProgram(rng: Rng, map: TileMap, base: number): Planned[] {
+export function planProgram(rng: Rng, map: TileMap, base: number, fountain = false): Planned[] {
   const kinds = [...EVENT_KINDS];
   for (let i = kinds.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -25,7 +25,8 @@ export function planProgram(rng: Rng, map: TileMap, base: number): Planned[] {
     const nominal = Math.round(frac * base + (rng() * 2 - 1) * JITTER * base);
     const at = Math.min(Math.max(nominal, prevEnd + TICK_HZ), base - NO_START_TICKS - 1);
     prevEnd = at + DURATION[kind];
-    const row = Math.floor(rng() * (map.h - RAIN_ROWS + 1));
+    const drawn = Math.floor(rng() * (map.h - RAIN_ROWS + 1));
+    const row = kind === 'gold' && fountain ? GOLD_ROWS_CLEAR[drawn % GOLD_ROWS_CLEAR.length]! : drawn; // the draw is spent either way
     const down = rng() < 0.5;
     const order: number[] = [];
     if (kind === 'rain') {
