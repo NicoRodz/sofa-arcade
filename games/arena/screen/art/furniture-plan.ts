@@ -12,6 +12,11 @@ export interface Piece {
   tone: number; // 0..2: which café shade (a hash of the position, so the same map always looks the same)
 }
 
+/** The map the furniture is planned on: the living map's `base` (every brush bar and sofa tile open) when the round has one. The sim shuts those tiles as the elements
+ * move (`map.solid` holds the current state), but they are drawn by the elements themselves: planning on `map.solid` put a sofa under each brush arm and rebaked the floor
+ * at every change. */
+export const furnitureMap = (map: TileMap, live: { base: Uint8Array } | null): TileMap => (live ? { ...map, solid: live.base } : map);
+
 const MAX_RUN = 3; // a longer run is cut into sofas of at most 3 tiles
 const tone = (x: number, y: number): number => (x * 7 + y * 13) % 3;
 

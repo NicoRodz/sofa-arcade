@@ -15,6 +15,7 @@ import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawCarrier, drawMark, drawPickups, type Frame } from './scene-sabotage';
 import { addBackdrop } from '../art/backdrop';
 import { FRAME, floorTexture, BAKE } from '../art/floor-bake';
+import { furnitureMap } from '../art/furniture-plan';
 import { PaintLayer } from '../art/paint-layer';
 import { drawPot, potLook } from '../art/pot';
 import { Splashes } from '../art/splash';
@@ -160,7 +161,7 @@ export class MatchScene extends Phaser.Scene {
 
   /** The floor is one baked image (frame, tiles, furniture); a new map swaps its texture. The paint of each tile is a layer over it (art/paint-layer.ts). */
   private drawFloor(s: ManchazoState) {
-    const key = floorTexture(this, s.grid.map, PX);
+    const key = floorTexture(this, furnitureMap(s.grid.map, s.match.live), PX);
     if (!this.floor)
       this.floor = this.add
         .image(X0 - FRAME, Y0 - FRAME, key)
