@@ -1,4 +1,4 @@
-# Arena de empujones (`@pichi/game-arena`)
+# Manchazo (`@pichi/game-arena`, antes Arena de empujones)
 
 Esqueleto del tercer juego: fighters sobre una plataforma redonda que se encoge; gana el último en pie. Existe para probar que el contrato (`GameManifest`, `GameProtocol`, `ScreenGame`, `ControllerGame`) alcanza sin tocar `platform/`. Está `soon: true`: el menú de la TV no lo ofrece salvo con `?soon=1`.
 

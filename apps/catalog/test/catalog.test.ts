@@ -69,7 +69,7 @@ describe('apps/catalog', () => {
   });
   it('games in development: only the dev catalog and parser (the relay) know them; the published ones do not change', () => {
     expect(IN_DEVELOPMENT.map((g) => g.id)).toEqual(['arena']);
-    expect(DEV_CATALOG.ids).toEqual(['pizzas', 'obstaculos', 'arena']);
+    expect(DEV_CATALOG.ids).toEqual(['pizzas', 'arena', 'obstaculos']); // the menu with ?soon=1: Manchazo (arena) is second
     expect(DEV_CATALOG.problems()).toEqual([]);
     expect(DEV_CATALOG.comingSoon).toEqual(CATALOG.comingSoon); // the card is the same, and the dev catalog hides it once the game is listed
     expect(parseDevClientMessage(cfg({ game: 'arena', modeId: 'versus' }))).toMatchObject({ t: 'config', game: 'arena', modeId: 'versus' }); // F1: Manchazo is arena's one mode

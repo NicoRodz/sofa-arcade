@@ -15,6 +15,7 @@ function panel(): HTMLElement {
   if (old) return old;
   const el = document.createElement('div');
   el.id = 'arenares';
+  el.style.marginTop = '22px'; // the title's outline (14 px stroke) reaches past its box: without this it touched the first line
   $('again').before(el);
   return el;
 }

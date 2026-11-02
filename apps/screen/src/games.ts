@@ -6,4 +6,4 @@ import { pizzasScreen } from '@pichi/game-pizzas/screen';
 import { catalog, type ScreenGame } from '@pichi/screen-kit/shell';
 
 export const screenGames = (): readonly ScreenGame[] =>
-  [pizzasScreen, obstaculosScreen, arenaScreen].filter((g) => catalog().isGameId(g.manifest.id));
+  [pizzasScreen, arenaScreen, obstaculosScreen].filter((g) => catalog().isGameId(g.manifest.id));
