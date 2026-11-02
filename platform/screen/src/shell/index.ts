@@ -6,3 +6,4 @@ export { catalog, bindCatalog } from './catalog';
 export { initPage } from './boot';
 export { exposeDebug } from './debug';
 export { soonEnabled } from '../dev-flags';
+export { renderScale, type RenderScale } from './render-scale';

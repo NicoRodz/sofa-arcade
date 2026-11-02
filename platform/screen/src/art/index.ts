@@ -1,4 +1,21 @@
-export { C, FONT, CHEFS, hexNum, H, W, TILE, U, chefOf, timerColor, progressColor, SKINS, floorPair, HUD_H, gridTokens } from './tokens';
+export {
+  C,
+  FONT,
+  CHEFS,
+  hexNum,
+  H,
+  W,
+  TILE,
+  U,
+  chefOf,
+  timerColor,
+  progressColor,
+  SKINS,
+  floorPair,
+  HUD_H,
+  SAFE,
+  gridTokens,
+} from './tokens';
 export { paintLogo } from './sofa-brand';
 export {
   R,
