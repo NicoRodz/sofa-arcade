@@ -16,6 +16,7 @@ import { runHowto, runHowtoTimeout, runMenu } from './scenarios/screens';
 import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './scenarios/maps';
 import { runArenaGridPhone, runArenaGridTv } from './scenarios/arena-grid';
 import { runManchazoPhone, runManchazoTv } from './scenarios/manchazo';
+import { runManchazo4k, runRenderScaleOthers } from './scenarios/render-scale';
 import { runManchazoSeeds } from './scenarios/manchazo-seeds';
 import { runManchazoEventsTv } from './scenarios/manchazo-events';
 import { runManchazoLivingTv } from './scenarios/manchazo-living';
@@ -31,6 +32,8 @@ const MODES: Record<string, Scenario[]> = {
   'arena-grid-phone': [runArenaGridPhone],
   'manchazo-tv': [runManchazoTv],
   'manchazo-phone': [runManchazoPhone],
+  'render-scale': [runRenderScaleOthers],
+  'manchazo-4k': [runManchazo4k],
   'manchazo-seeds': [runManchazoSeeds],
   'manchazo-sabotage-tv': [runManchazoSabotageTv],
   'manchazo-sabotage-phone': [runManchazoSabotagePhone],

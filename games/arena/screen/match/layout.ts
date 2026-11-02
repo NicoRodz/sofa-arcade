@@ -34,10 +34,10 @@ export const PCT_SIZE = 56;
 export const CLOCK_SIZE = 56;
 export const FOOT_SIZE = 28; // secondary text: the plan's minimum
 
-/** Every HUD element's worst-case rectangle. The longest strings: "▲ 100 %" (7), "10:00" (5), "MAPA 3·ABCDEF" (13), "Próximo evento: Casillas doradas (105 s)" (40). */
+/** Every HUD element's worst-case rectangle. The longest strings: "▲ 100.0 %" (9), "10:00" (5), "MAPA 3·ABCDEF" (13), "Próximo evento: Casillas doradas (105 s)" (40). */
 export const HUD: Record<string, Rect> = {
-  pctLeft: textBox(SIDE_X, HUD_TOP, PCT_SIZE, 7, 0),
-  pctRight: textBox(SIDE_X + MAP_W * PX, HUD_TOP, PCT_SIZE, 7, 1),
+  pctLeft: textBox(SIDE_X, HUD_TOP, PCT_SIZE, 9, 0),
+  pctRight: textBox(SIDE_X + MAP_W * PX, HUD_TOP, PCT_SIZE, 9, 1),
   clock: textBox(W / 2, HUD_TOP, CLOCK_SIZE, 5, 0.5),
   bar: { x: X0, y: BAR_Y, w: MAP_W * PX, h: BAR_H },
   seed: textBox(X0, BOTTOM_Y, FOOT_SIZE, 13, 0),

@@ -60,7 +60,9 @@ export function launchChrome(): ChildProcess {
   return spawn(
     CHROME,
     [
-      '--headless=new',
+      ...(process.env.CHROME_VISIBLE
+        ? ['--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding']
+        : ['--headless=new']), // CHROME_VISIBLE=1: a real window (fps measures)
       `--remote-debugging-port=${CDP}`,
       `--user-data-dir=${profile}`,
       '--window-size=1920,1080',

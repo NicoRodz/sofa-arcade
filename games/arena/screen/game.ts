@@ -108,6 +108,7 @@ export const arenaScreen: ScreenGame = {
   results: { render: renderResults, scoreOf: winsOf },
   // for the capture tool only: the round jumps to its last tick, so the results can be shot without waiting 90 s
   debug: () => ({
+    manchazoTexts: () => mscene?.hudBounds(), // for the capture tool only: where the HUD texts really are
     manchazoSkipToEnd() {
       const g = matchRun.run?.state.grid;
       if (g) g.tick = g.durationTicks - 1;

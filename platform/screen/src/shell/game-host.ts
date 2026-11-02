@@ -31,7 +31,10 @@ export function createPhaser() {
   phaser.events.on(Phaser.Core.Events.POST_RENDER, flushLag);
   phaser.events.on(Phaser.Core.Events.STEP, (_time: number, delta: number) => runFrame(delta)); // before the scenes update: the active game's logic, then its scene draws it
   phaser.events.on(Phaser.Core.Events.PRE_RENDER, fitScenes); // after the scenes updated, before they draw: a scene created this frame is already there
-  if (fpsEnabled()) startFpsProbe(() => `r${renderScale()}`);
+  if (fpsEnabled()) {
+    const probe = startFpsProbe(() => `r${renderScale()}`);
+    phaser.events.on(Phaser.Core.Events.STEP, (time: number) => probe.mark(time)); // the vsync-aligned rAF timestamp, not a clock read inside the callback (that adds jitter)
+  }
   return phaser;
 }
 

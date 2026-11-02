@@ -36,14 +36,18 @@ export function summarize(frameMs: readonly number[]): FpsStats {
 const KEEP = 20_000; // frames kept (5 min at 60 fps)
 
 export interface FpsProbe {
-  stats(): FpsStats;
+  stats(): FpsStats; // page frames (requestAnimationFrame): on a 120 Hz display this reads ~120 even though the game draws at its 60 target
+  game(): FpsStats; // frames the game actually rendered (fed by `mark()` from Phaser's STEP, with its rAF timestamp)
+  mark(now: number): void;
   reset(): void;
 }
 
 /** Starts the probe on this page; `label` is shown beside the numbers (the render scale). */
 export function startFpsProbe(label: () => string): FpsProbe {
   const times: number[] = [];
+  const drawn: number[] = [];
   let last = 0;
+  let lastDrawn = 0;
   const tick = (now: number) => {
     if (last) {
       times.push(now - last);
@@ -55,8 +59,17 @@ export function startFpsProbe(label: () => string): FpsProbe {
   requestAnimationFrame(tick);
   const probe: FpsProbe = {
     stats: () => summarize(times),
+    game: () => summarize(drawn),
+    mark: (now) => {
+      if (lastDrawn) {
+        drawn.push(now - lastDrawn);
+        if (drawn.length > KEEP) drawn.shift();
+      }
+      lastDrawn = now;
+    },
     reset: () => {
       times.length = 0;
+      drawn.length = 0;
     },
   };
   const box = document.createElement('div');
@@ -64,7 +77,7 @@ export function startFpsProbe(label: () => string): FpsProbe {
     'position:fixed;top:6px;right:6px;z-index:99;font:14px monospace;color:#0f0;background:#000a;padding:2px 6px;pointer-events:none';
   document.body.append(box);
   setInterval(() => {
-    const s = probe.stats();
+    const s = probe.game();
     box.textContent = `${label()} p95 ${s.p95.toFixed(1)} avg ${s.avg.toFixed(1)} fps (${s.frames})`;
   }, 500);
   (window as unknown as { __fps: FpsProbe }).__fps = probe;

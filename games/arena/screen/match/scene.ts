@@ -124,6 +124,15 @@ export class MatchScene extends Phaser.Scene {
     this.seed.setText(s.mapSeed === null ? '' : `MAPA ${formatSeed(s.mapSeed)}`);
   }
 
+  /** For the capture tool only: the real bounds (logical px) of the HUD texts, to prove they sit inside the safe area. */
+  hudBounds(): Record<string, { x: number; y: number; w: number; h: number; text: string }> {
+    const box = (t: Phaser.GameObjects.Text) => {
+      const b = t.getBounds();
+      return { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height), text: t.text };
+    };
+    return { pctLeft: box(this.pct[0]!), pctRight: box(this.pct[1]!), clock: box(this.clock), seed: box(this.seed), next: box(this.next) };
+  }
+
   private drawFloor(s: ManchazoState) {
     this.g.fillStyle(0x4a4a4a, 1).fillRect(X0, Y0, MAP_W * PX, MAP_H * PX);
     for (let y = 0; y < MAP_H; y++)
