@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLOCK_EXTRA_TICKS, CLOCK_FROM_TICKS, CLOCK_LIVE_TICKS, CLOCK_WARN_TICKS, HIDDEN_TICKS, isHidden } from '../../sim';
+import { CLOCK_FROM_TICKS, CLOCK_LIVE_TICKS, CLOCK_WARN_TICKS, isHidden } from '../../sim';
 import { DROP, put } from '../match-drive';
 import { borders, evRound, left, lead, paintRect, quiet, run, untilEnd } from './ev-drive';
 
@@ -50,7 +50,7 @@ describe('Hourglass: appearance', () => {
     expect(clock(s)).toMatchObject({ phase: 'warn', team: 1 });
     const late = quiet(evRound());
     lead(late, 0, BIG);
-    untilEnd(late, HIDDEN_TICKS + CLOCK_WARN_TICKS); // 13 s: too late to be disputed
+    untilEnd(late, 600 + CLOCK_WARN_TICKS); // 13 s: too late to be disputed
     run(late, 1);
     expect(clock(late).phase).toBe('idle');
   });
@@ -69,7 +69,7 @@ describe('Hourglass: charge', () => {
     expect(clock(s).charge).toBe(9 * 239);
     run(s, 1);
     expect(clock(s)).toMatchObject({ phase: 'done', outcome: 'filled' });
-    expect(s.grid.durationTicks).toBe(end + CLOCK_EXTRA_TICKS);
+    expect(s.grid.durationTicks).toBe(end + 900);
     expect(s.match.ev!.log.at(-1)).toMatchObject({ kind: 'overtime', team: 0 }); // the TV's "¡TIEMPO EXTRA!"
     expect(isHidden(s)).toBe(false);
   });
@@ -80,11 +80,11 @@ describe('Hourglass: charge', () => {
     warmup(s);
     run(s, 240);
     expect(clock(s).outcome).toBe('filled');
-    untilEnd(s, HIDDEN_TICKS + 1);
+    untilEnd(s, 600 + 1);
     expect(isHidden(s)).toBe(false);
     run(s, 1);
     expect(isHidden(s)).toBe(true);
-    expect(left(s)).toBe(HIDDEN_TICKS);
+    expect(left(s)).toBe(600);
   });
   it("speed is proportional to the loser's tiles in the circle: 6 of 9 tiles take 6 s", () => {
     const s = fallen(0);
@@ -183,7 +183,7 @@ describe('Hourglass: ending', () => {
   it('nobody charged it and the hidden scoreboard starts: it is gone', () => {
     const s = quiet(evRound());
     lead(s, 0, BIG);
-    untilEnd(s, HIDDEN_TICKS + 7 * 60); // falls with 17 s left: live at 14 s, hidden at 10 s
+    untilEnd(s, 600 + 7 * 60); // falls with 17 s left: live at 14 s, hidden at 10 s
     run(s, 1);
     expect(clock(s).phase).toBe('warn');
     run(s, 7 * 60);

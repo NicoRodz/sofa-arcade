@@ -4,7 +4,6 @@ import {
   BASE_RADIUS,
   COMEBACK_COOLDOWN_TICKS,
   COMEBACK_TICKS,
-  HIDDEN_TICKS,
   SMALL_TEAM_RADIUS_BONUS,
   losingTeam,
   isHidden,
@@ -74,24 +73,22 @@ describe('come-back', () => {
 describe('hidden scoreboard', () => {
   it('starts exactly 10 s before the end, is announced once, and the final board is not hidden', () => {
     const s = quiet(evRound());
-    untilEnd(s, HIDDEN_TICKS + 1);
+    untilEnd(s, 600 + 1);
     expect(isHidden(s)).toBe(false);
     run(s, 1);
-    expect(left(s)).toBe(HIDDEN_TICKS);
+    expect(left(s)).toBe(600);
     expect(isHidden(s)).toBe(true);
     expect(s.match.ev!.log.filter((a) => a.kind === 'hidden')).toHaveLength(0); // announced by the next step
     run(s, 1);
     run(s, 10);
-    expect(s.match.ev!.log.filter((a) => a.kind === 'hidden')).toEqual([
-      { kind: 'hidden', tick: s.grid.durationTicks - HIDDEN_TICKS, team: -1 },
-    ]);
-    run(s, HIDDEN_TICKS);
+    expect(s.match.ev!.log.filter((a) => a.kind === 'hidden')).toEqual([{ kind: 'hidden', tick: s.grid.durationTicks - 600, team: -1 }]);
+    run(s, 600);
     expect(s.grid.over).toBe(true);
     expect(isHidden(s)).toBe(false);
   });
   it('a round without the events never hides', () => {
     const s = createManchazo({ slots: [0, 1], teams: [0, 1], seed: 3 });
-    untilEnd(s, HIDDEN_TICKS);
+    untilEnd(s, 600);
     expect(isHidden(s)).toBe(false);
   });
 });
