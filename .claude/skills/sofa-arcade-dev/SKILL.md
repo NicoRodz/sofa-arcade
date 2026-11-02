@@ -56,6 +56,7 @@ npm run check:new-files
 - Tocaste tamaños: `npx vitest run --project tools`.
 - Integración: `npm run baseline:check` (~4 min) verde o explicado.
 - Salida de comandos largos a un archivo; `test:agent` usa `--silent`/`dot`.
+- Mac saturado o corrida local: `test:quick` (equivale al paso de tests del CI; el CI no corre slow ni baseline), `test:changed` (solo lo afectado), `test:full`; todos limitados a 50 % de núcleos con `nice` (`PG_TEST_WORKERS`). Mediciones y cuándo usar cada uno: `references/tests-rendimiento.md`.
 
 ## Cómo agregar...
 

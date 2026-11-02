@@ -7,11 +7,17 @@ export const sharedConfig: ViteUserConfig = { test: { testTimeout: 30000, setupF
 export const SLOW = '*.slow.test.ts';
 
 // One project per package. `dirs` are the include roots; slow files (*.slow.test.ts) are left to the `slow` project.
-export function packageProject(name: string, dirs: string[]) {
+// `isolate: false` (one module graph per worker instead of per file) only for packages whose tests hold no module or DOM state: see references/tests-rendimiento.md.
+export function packageProject(name: string, dirs: string[], opts: { isolate?: boolean } = {}) {
   return mergeConfig(
     sharedConfig,
     defineProject({
-      test: { name, include: dirs.map((d) => `${d}/**/*.test.ts`), exclude: ['**/node_modules/**', `**/${SLOW}`] },
+      test: {
+        name,
+        ...(opts.isolate === false ? { isolate: false } : {}),
+        include: dirs.map((d) => `${d}/**/*.test.ts`),
+        exclude: ['**/node_modules/**', `**/${SLOW}`],
+      },
     }),
   );
 }
