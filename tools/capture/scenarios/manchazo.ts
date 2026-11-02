@@ -3,12 +3,14 @@ import { PORT, sleep } from '../config';
 import type { Ctx } from '../session';
 
 // Manchazo F1 (Arena's default round, `?soon=1`): the TV lobby with the two teams (5 players, 3 against 2, so the handicap line shows), the round with
-// 5 phones played by bots dropping pinatas, and the results; then the phone's pad. Saved to the output folder as manchazo-*.png.
+// 5 phones played by bots dropping pinatas, and the results; then the phone's pad. Also the start menu and the how-to card. Saved to the output folder as manchazo-*.png.
 export async function runManchazoTv({ cdp, bots, join, snap, waitFor, click }: Ctx) {
   const room = 'MNCH';
   await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${room}&soon=1` });
   await sleep(2500);
   await join(room, 5, [], { menu: true });
+  await sleep(500);
+  await cdp.shot('manchazo-menu');
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
   for (let i = 0; i < 4; i++) {
     if ((await cdp.eval<{ sel: string }>('window.__pg.menu()')).sel === 'arena') break;
@@ -20,6 +22,7 @@ export async function runManchazoTv({ cdp, bots, join, snap, waitFor, click }: C
   await cdp.shot('manchazo-lobby');
   await click('#start');
   await sleep(1500);
+  await cdp.shot('manchazo-howto');
   await key('Enter'); // past the how-to / countdown, if one is up
   await waitFor((s) => s.phase === 'playing', 15_000);
   const dirs = [
