@@ -15,7 +15,7 @@ import { makeCtx } from '@pichi/core/avatar/parts';
 import { CLOTHES } from '@pichi/core/avatar/parts/data';
 import { mulberry32 } from '@pichi/core/rng';
 import { deltaE } from './color-delta';
-import { GREY_MAX, GREY_MIN, figureLayers, greyOf, recordFigure } from './look-layers';
+import { figureLayers, greyOf, recordFigure } from './look-layers';
 import { replay } from './look-ops';
 
 const INK = '#2A211C';
@@ -105,8 +105,8 @@ describe('team look: garment and body', () => {
           const g = grey[i]!;
           expect(g).toMatch(/^#([0-9a-f]{2})\1\1$/);
           const v = parseInt(g.slice(1, 3), 16) / 255;
-          expect(v).toBeGreaterThanOrEqual(GREY_MIN - 0.003);
-          expect(v).toBeLessThanOrEqual(GREY_MAX);
+          expect(v).toBeGreaterThanOrEqual(0.55 - 0.003) // literal: the test must not follow the constant it checks;
+          expect(v).toBeLessThanOrEqual(1);
         } else expect(grey[i]).toBeUndefined();
       });
     }
