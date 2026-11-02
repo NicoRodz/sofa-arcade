@@ -23,3 +23,8 @@ Con `?control=A` (plan por defecto) o `?control=B` la ronda es el prototipo gris
 ## Qué falta
 
 Mapas o modos, equipos, sonido, efectos, puntaje entre rondas, escuela y `GameOutcome` para la pantalla de resultados genérica.
+
+## Manchazo F2: mapas por semilla (`map/gen/`)
+
+`generateMap(seed)` (25 bits, 5 caracteres Crockford, `formatSeed` -> `2·7KQ2M`): dibuja la mitad izquierda y la columna central, estampa muebles con cuota por banda y carriles de salida, refleja, valida V1-V7 (`validateMap`; V1-V3 por estado del mapa vivo via `mapStates`/`LivingElement`, para F5) y reintenta hasta 64 veces; después cae al mapa de F0. `mapSeedFor(lobbySeed, ronda)` da una semilla nueva por ronda. La tele la muestra (`MAPA 2·7KQ2M`) en la ronda y en resultados. El sim lleva el mapa en `grid.map`; sin `mapSeed` la ronda usa el mapa de F0.
+
