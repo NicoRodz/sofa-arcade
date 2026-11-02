@@ -13,6 +13,7 @@ export interface ManchazoConfig {
   seed: number;
   control?: ControlPlan;
   sabotage?: boolean; // F3: pickups on the floor and button 2 plays them (off: the round is F1's, bit for bit)
+  events?: boolean; // F4: the scheduled events, the come-back, the hidden scoreboard and the Hourglass (off: the round is F3's, bit for bit)
   mapSeed?: number; // 25-bit map seed (see map/gen/seed.ts); without it the round is played on the F0 hand-made map
 }
 
@@ -34,6 +35,7 @@ export function createManchazo(cfg: ManchazoConfig): ManchazoState {
     grid.bodies.map((b) => b.team),
     map,
     cfg.sabotage ? { seed: cfg.seed } : undefined,
+    cfg.events ? { seed: cfg.seed, base: grid.durationTicks } : undefined,
   );
   grid.bodies.forEach((b, i) => (match.bodies[i]!.face = b.x < (MAP_W * TILE) / 2 ? RIGHT : LEFT)); // heading to the middle
   return { grid, match, mapSeed: gen?.seed ?? null, mapFallback: gen?.fallback ?? false };

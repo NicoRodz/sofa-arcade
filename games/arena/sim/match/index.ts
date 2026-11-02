@@ -9,3 +9,4 @@ export { handicap, type ManchazoState, type MatchState, type Pinata } from './st
 export { blastTiles } from './blast';
 export * from '../sabotage/kinds';
 export { cardOf, drawDeck, placePickups, type Pickup, type SabotageState } from '../sabotage/state';
+export * from '../events';

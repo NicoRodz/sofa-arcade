@@ -1,6 +1,8 @@
 // Pinatas: dropped on the body's tile (they do not block anyone), a fuse, then the blast paints the team's colour, stains rivals standing in it and sets
 // off the pinatas it reaches (chain). Your own team's blast never stains you.
 import { NONE } from '../grid/dir';
+import { radiusOf } from '../events/comeback';
+import { deflectVacuum } from '../events/vacuum';
 import { glueTarget } from '../sabotage/use';
 import { clearTile, paintTile } from './board';
 import { blastTiles } from './blast';
@@ -30,7 +32,7 @@ export function dropPinata(s: ManchazoState, i: number): boolean {
     team: b.team,
     owner: i,
     fuse: FUSE_TICKS,
-    radius: m.radius[b.team]!,
+    radius: radiusOf(m, b.team),
     ...(mod ? { mod } : {}),
     ...(target >= 0 ? { stuck: target } : {}),
   });
@@ -43,6 +45,7 @@ function detonate(s: ManchazoState, p: Pinata): void {
   const tiles = blastTiles(p.x, p.y, p.radius, s.grid.map);
   for (const [x, y] of tiles) (p.mod === 'turpentine' ? clearTile : paintTile)(m, x, y, p.team, s.grid.tick);
   const hit = new Set(tiles.map(([x, y]) => `${x},${y}`));
+  deflectVacuum(s, p.x, p.y, hit); // F4: a blast steers the vacuum robot (no-op without the events)
   s.grid.bodies.forEach((b, i) => {
     const bm = m.bodies[i]!;
     if (b.team === p.team || bm.stun > 0 || !hit.has(bodyTile(b, bm.face).join(','))) return;
