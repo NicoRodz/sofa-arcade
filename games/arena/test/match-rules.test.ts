@@ -105,6 +105,7 @@ describe('determinism', () => {
       const ps = play(s, seed, 600);
       hashes.push(hashManchazo(ps));
       play(s, seed, 3000);
+      hashes.push(hashManchazo(s));
       return hashes;
     };
     expect(run(11)).toEqual(run(11));
