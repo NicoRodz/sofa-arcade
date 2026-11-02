@@ -105,7 +105,8 @@ describe('team look: garment and body', () => {
           const g = grey[i]!;
           expect(g).toMatch(/^#([0-9a-f]{2})\1\1$/);
           const v = parseInt(g.slice(1, 3), 16) / 255;
-          expect(v).toBeGreaterThanOrEqual(0.55 - 0.003) // literal: the test must not follow the constant it checks;
+          // literals: the test must not follow the constants it checks
+          expect(v).toBeGreaterThanOrEqual(0.55 - 0.003);
           expect(v).toBeLessThanOrEqual(1);
         } else expect(grey[i]).toBeUndefined();
       });
