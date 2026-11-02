@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { COMING_SOON, GAMES, GAME_IDS, gameInfo, isGameId } from '@pichi/catalog';
 import {
   HOWTO_MAX_STEPS,
+  createCatalog,
   HOWTO_MIN_STEPS,
   LABEL_MAX,
   defaultModeOf,
@@ -15,6 +16,7 @@ import {
   type ModeSpec,
 } from '@pichi/core/contract';
 import { ICON_IDS, isIconId } from './icons';
+import { SOON_CARD } from './testkit';
 import { configMsg, DEFAULT_CONFIG } from '@pichi/catalog';
 
 const pizzas = GAMES[0] as GameDef;
@@ -50,11 +52,15 @@ describe('game registry', () => {
     }
   });
   it('the announced games are not in the registry, so config and phones never see them', () => {
-    expect(COMING_SOON.length).toBeGreaterThanOrEqual(1); // obstaculos left the list when F3 published it
-    for (const s of COMING_SOON) {
+    const announced = [...COMING_SOON, SOON_CARD]; // the real list is empty once every game is published: the fixture card keeps this check alive
+    expect(announced.length).toBeGreaterThanOrEqual(1);
+    for (const s of announced) {
       expect(isGameId(s.id)).toBe(false);
       expect(s.name.length).toBeGreaterThan(0);
     }
+    const withCard = createCatalog(GAMES, [SOON_CARD]);
+    expect(withCard.comingSoon).toEqual([SOON_CARD]);
+    expect(withCard.ids).not.toContain(SOON_CARD.id);
   });
   it('every icon the registry references exists', () => {
     for (const g of GAMES)

@@ -29,7 +29,7 @@ describe('apps/catalog', () => {
   it('keeps the protocol at v6 and the default lobby of master', () => {
     expect(PROTOCOL_VERSION).toBe(6);
     expect(DEFAULT_CONFIG).toStrictEqual(MASTER_DEFAULT_CONFIG);
-    expect(CATALOG.ids).toEqual(['pizzas', 'obstaculos']);
+    expect(CATALOG.ids).toEqual(['pizzas', 'arena', 'obstaculos']);
     expect(CATALOG.problems()).toEqual([]);
     expect(GAMES.map((g) => g.id)).toEqual(CATALOG.ids);
   });
@@ -64,14 +64,15 @@ describe('apps/catalog', () => {
   it('knows its games and modes', () => {
     expect(parseClientMessage(cfg({ game: 'obstaculos', modeId: 'versus' }))).toBeNull(); // obstaculos has no versus
     expect(parseClientMessage(cfg({ game: 'pizzas', modeId: 'versus' }))).not.toBeNull();
-    expect(parseClientMessage(cfg({ game: 'arena' }))).toBeNull(); // announced only
-    expect(CATALOG.comingSoon.map((s) => s.id)).toEqual(['arena']);
+    expect(parseClientMessage(cfg({ game: 'arena', modeId: 'versus' }))).toMatchObject({ game: 'arena', modeId: 'versus' }); // F5: published
+    expect(CATALOG.ids).toEqual(['pizzas', 'arena', 'obstaculos']); // the menu without ?soon=1: Manchazo is second
+    expect(CATALOG.comingSoon).toEqual([]);
   });
   it('games in development: only the dev catalog and parser (the relay) know them; the published ones do not change', () => {
-    expect(IN_DEVELOPMENT.map((g) => g.id)).toEqual(['arena']);
+    expect(IN_DEVELOPMENT).toEqual([]); // nothing in development since Manchazo's F5
     expect(DEV_CATALOG.ids).toEqual(['pizzas', 'arena', 'obstaculos']); // the menu with ?soon=1: Manchazo (arena) is second
     expect(DEV_CATALOG.problems()).toEqual([]);
-    expect(DEV_CATALOG.comingSoon).toEqual(CATALOG.comingSoon); // the card is the same, and the dev catalog hides it once the game is listed
+    expect(DEV_CATALOG.comingSoon).toEqual(CATALOG.comingSoon);
     expect(parseDevClientMessage(cfg({ game: 'arena', modeId: 'versus' }))).toMatchObject({ t: 'config', game: 'arena', modeId: 'versus' }); // F1: Manchazo is arena's one mode
     expect(parseDevClientMessage(cfg({ game: 'arena', modeId: 'coop' }))).toBeNull(); // arena declares no coop
     expect(parseDevClientMessage(cfg({ game: 'pizzas', map: 'V1' }))).toMatchObject({ map: 'V1' }); // the rest of the cable is the same

@@ -6,10 +6,10 @@ import { obstaculosProtocol } from '@pichi/game-obstaculos';
 import { pizzasProtocol } from '@pichi/game-pizzas';
 import { CATALOG, DEV_CATALOG } from './games';
 
-export const PROTOCOL = composeProtocol([pizzasProtocol, obstaculosProtocol]);
+export const PROTOCOL = composeProtocol([pizzasProtocol, arenaProtocol, obstaculosProtocol]);
 export const parseClientMessage = createClientParser(PROTOCOL, CATALOG);
 export const DEFAULT_CONFIG: LobbyConfig = defaultConfig(CATALOG, PROTOCOL);
 
-// The same with the games in development: the relay parses with these (it accepts a config that picks Arena; the screen only sends one under `?soon=1`).
-export const DEV_PROTOCOL = composeProtocol([pizzasProtocol, obstaculosProtocol, arenaProtocol]);
+// The relay's parser: every game of the build, the ones in development included (none today: Manchazo was published in F5, so this is the published one).
+export const DEV_PROTOCOL = PROTOCOL;
 export const parseDevClientMessage = createClientParser(DEV_PROTOCOL, DEV_CATALOG);
