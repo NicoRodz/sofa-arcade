@@ -18,7 +18,8 @@ function feed(seen: Set<string>) {
     if (s.grid.tick % 20 === 0) {
       const k = s.grid.tick / 20;
       const i = k % n;
-      if (p.sponge[i] === 0 && (a.held[i] === null || k % 4 === 0)) a.held[i] = PLUS_KINDS[(2 * Math.floor(k / n) + i) % PLUS_KINDS.length]!;
+      if (p.sponge[i] === 0 && (a.held[i] === null || k % 4 === 0))
+        a.held[i] = PLUS_KINDS[(2 * Math.floor(k / n) + i) % PLUS_KINDS.length]!;
     }
     if (p.tapes.length) seen.add('tape');
     if (p.veil.some((v) => v > 0)) seen.add('ink');
@@ -49,7 +50,8 @@ describe('mirror with the F8a sabotages: swapping the teams swaps everything', (
         expect(b.match.sab!.held).toEqual(a.match.sab!.held);
         expect(pb.veil).toEqual([pa.veil[1], pa.veil[0]]);
         for (const k of ['sponge', 'soaked', 'charge', 'dizzy', 'immune', 'swapFx', 'squeezeFx'] as const) expect(pb[k]).toEqual(pa[k]);
-        const tape = (p: typeof pa, flip: boolean) => p.tapes.map((t) => [flip ? MAP_W - 1 - t.x : t.x, t.y, flip ? 1 - t.team : t.team, t.left].join());
+        const tape = (p: typeof pa, flip: boolean) =>
+          p.tapes.map((t) => [flip ? MAP_W - 1 - t.x : t.x, t.y, flip ? 1 - t.team : t.team, t.left].join());
         expect(tape(pb, true)).toEqual(tape(pa, false));
         expect(b.match.counts).toEqual([a.match.counts[1], a.match.counts[0]]);
         for (let y = 0; y < 15; y++)
@@ -61,7 +63,13 @@ describe('mirror with the F8a sabotages: swapping the teams swaps everything', (
           }
         expect(hashManchazo(a)).not.toBe(hashManchazo(b));
       }
-      expect([...seen].sort(), 'the runs played every F8a card, so the mirror checks something').toEqual(['dizzy', 'ink', 'sponge', 'swap', 'tape']);
+      expect([...seen].sort(), 'the runs played every F8a card, so the mirror checks something').toEqual([
+        'dizzy',
+        'ink',
+        'sponge',
+        'swap',
+        'tape',
+      ]);
     });
   it('same seed and inputs, same hash; the F8a rounds draw their deck from the 10 sabotages', () => {
     const run = (seed: number) => {
@@ -71,8 +79,14 @@ describe('mirror with the F8a sabotages: swapping the teams swaps everything', (
     };
     expect(run(4)).toBe(run(4));
     expect(run(4)).not.toBe(run(6));
-    const decks = new Set(Array.from({ length: 40 }, (_, i) => createManchazo({ slots: [0, 1], teams: [0, 1], seed: i * 31 + 1, sabotage: true, sabotagePlus: true }).match.sab!.deck.join()));
+    const decks = new Set(
+      Array.from({ length: 40 }, (_, i) =>
+        createManchazo({ slots: [0, 1], teams: [0, 1], seed: i * 31 + 1, sabotage: true, sabotagePlus: true }).match.sab!.deck.join(),
+      ),
+    );
     expect(decks.size).toBeGreaterThan(20);
-    expect(new Set([...decks].flatMap((d) => d.split(',')))).toEqual(new Set(['turpentine', 'roller', 'fan', 'footprints', 'glue', ...PLUS_KINDS]));
+    expect(new Set([...decks].flatMap((d) => d.split(',')))).toEqual(
+      new Set(['turpentine', 'roller', 'fan', 'footprints', 'glue', ...PLUS_KINDS]),
+    );
   });
 });

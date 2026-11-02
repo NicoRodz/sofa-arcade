@@ -19,4 +19,3 @@ export function dizzyThreat(s: ManchazoState, i: number): boolean {
     (b, k) => b.team !== me.team && p.charge[k]! > 0 && dist(here, bodyTile(b, s.match.bodies[k]!.face)) <= DIZZY_RANGE,
   );
 }
-

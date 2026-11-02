@@ -28,7 +28,10 @@ describe('sponge: first B absorbs rival paint in the 3x3, second B (within 5 s) 
     expect(countsAgree(s)).toBe(true);
   });
   it('the second press paints as many tiles as it took, in a clockwise spiral from your tile, and empties the hand', () => {
-    const s = soaked(15, 5, [[14, 4], [15, 4]]); // 7 rival tiles around (15, 5)
+    const s = soaked(15, 5, [
+      [14, 4],
+      [15, 4],
+    ]); // 7 rival tiles around (15, 5)
     tick(s, { 0: USE });
     expect(plus(s).soaked[0]).toBe(7);
     tick(s, {}, 100);
@@ -43,7 +46,12 @@ describe('sponge: first B absorbs rival paint in the 3x3, second B (within 5 s) 
   });
   it('team 1 squeezes the mirror image', () => {
     const s = plusRound([0, 1]);
-    for (const [x, y] of [[14, 5], [15, 5], [16, 5]] as const) paintTile(s.match, x, y, 0, 0);
+    for (const [x, y] of [
+      [14, 5],
+      [15, 5],
+      [16, 5],
+    ] as const)
+      paintTile(s.match, x, y, 0, 0);
     put(s, 1, 15, 5);
     put(s, 0, 2, 14);
     give(s, 1, 'sponge');
@@ -64,7 +72,17 @@ describe('sponge: first B absorbs rival paint in the 3x3, second B (within 5 s) 
     expect(s.match.counts).toEqual([0, 0]);
   });
   it('counter: with no rival paint in the 3x3 nothing happens and the card is not spent', () => {
-    const s = soaked(10, 1, [[9, 0], [10, 0], [11, 0], [9, 1], [10, 1], [11, 1], [9, 2], [10, 2], [11, 2]]);
+    const s = soaked(10, 1, [
+      [9, 0],
+      [10, 0],
+      [11, 0],
+      [9, 1],
+      [10, 1],
+      [11, 1],
+      [9, 2],
+      [10, 2],
+      [11, 2],
+    ]);
     tick(s, { 0: USE });
     expect(sab(s).held[0]).toBe('sponge');
     expect(plus(s).sponge[0]).toBe(0);

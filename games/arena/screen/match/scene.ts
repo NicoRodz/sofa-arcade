@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import type { Appearance } from '@pichi/core/avatar';
 import { C, FONT, W } from '@pichi/screen-kit/art';
 import { MAP_W, formatSeed } from '../../map';
-import { blastTiles, isHidden, percentOf, type ManchazoState } from '../../sim';
+import { blastTiles, isHidden, shownCounts, shownPaint, shownPercent, type ManchazoState } from '../../sim';
 import { bannerOf, nextLine } from './event-banner';
 import { drawEvents } from './scene-events';
 import { drawLiving } from './scene-living';
@@ -12,6 +12,7 @@ import { floorBar } from './hud-bar';
 import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, SIDE_X, X0, Y0 } from './layout';
 import { Avatars } from './scene-avatars';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
+import { drawTapes } from './scene-plus';
 import { drawCarrier, drawMark, drawPickups, type Frame } from './scene-sabotage';
 import { addBackdrop } from '../art/backdrop';
 import { FRAME, floorTexture, BAKE } from '../art/floor-bake';
@@ -124,7 +125,8 @@ export class MatchScene extends Phaser.Scene {
     }
     const f: Frame = { g: this.g, x0: X0, y0: Y0, px: PX };
     this.drawFloor(s);
-    this.paint.sync(s.match.paint);
+    this.paint.sync(shownPaint(s)); // F8a: paint put down under an invisible ink reads neutral until the ink runs out
+    drawTapes(f, s);
     drawLiving(f, s);
     drawPickups(f, s);
     drawEvents(f, s);
@@ -197,9 +199,9 @@ export class MatchScene extends Phaser.Scene {
     const left = Math.max(0, Math.ceil((s.grid.durationTicks - s.grid.tick) / 60));
     this.clock.setText(s.grid.over ? '¡Fin!' : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`);
     const hidden = isHidden(s); // F4: the last 10 s are played blind: no percentages, no bar
-    [0, 1].forEach((t) => this.pct[t]!.setText(`${t === 0 ? '▲' : '●'} ${hidden ? '??' : percentOf(s.match, t)} %`));
+    [0, 1].forEach((t) => this.pct[t]!.setText(`${t === 0 ? '▲' : '●'} ${hidden ? '??' : shownPercent(s, t)} %`));
     const w = MAP_W * PX;
-    const bar = floorBar(hidden ? [0, 0] : s.match.counts, s.match.paintable, w); // grey track = unpainted floor, orange from the left, blue from the right
+    const bar = floorBar(hidden ? [0, 0] : shownCounts(s), s.match.paintable, w); // grey track = unpainted floor, orange from the left, blue from the right
     this.g.fillStyle(num(A.frame), 1).fillRoundedRect(X0 - 4, BAR_Y - 4, w + 8, BAR_H + 8, 10);
     this.g.fillStyle(0xd9cdb4, 1).fillRoundedRect(X0, BAR_Y, w, BAR_H, 6); // the track: floor still unpainted
     this.g.fillStyle(TEAM_COLOR[0]!, 1).fillRoundedRect(X0, BAR_Y, bar.orange, BAR_H, { tl: 6, bl: 6, tr: 0, br: 0 });

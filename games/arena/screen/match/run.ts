@@ -27,6 +27,7 @@ export class ManchazoRun {
       seed,
       mapSeed,
       sabotage: true,
+      sabotagePlus: true, // F8a: the five new sabotages are in the deck (the sim without the flag is F5's)
       events: true,
       living: true,
       ...(control ? { control } : {}),

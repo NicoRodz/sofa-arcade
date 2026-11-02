@@ -2,6 +2,7 @@
 // Each card has its own colour AND shape, so it reads without colour. No logic: it reads the sim's state.
 import type Phaser from 'phaser';
 import { CARD_COLOR, drawIcon } from '../art/glyphs';
+import { drawPlusCarrier } from './scene-plus';
 import { FAN_FX_TICKS, FAN_RANGE, ROLLER_TICKS, cardOf, type ManchazoState, type Pickup, type SabotageKind } from '../../sim';
 
 export interface Frame {
@@ -55,6 +56,7 @@ export function drawCarrier(f: Frame, s: ManchazoState, i: number, x: number, y:
     const t = 1 - a.gust[i]! / FAN_FX_TICKS;
     f.g.lineStyle(8, CARD_COLOR.fan, 1 - t).strokeCircle(x, y, f.px * (0.5 + FAN_RANGE * t));
   }
+  drawPlusCarrier(f, s, i, x, y);
   const held = a.held[i];
   if (held) glyph(f, held, x, y - f.px * 0.78, f.px * 0.28, s.grid.tick / 6);
 }

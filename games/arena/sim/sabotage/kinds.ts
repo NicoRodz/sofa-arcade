@@ -59,13 +59,15 @@ export const PLUS_SABOTAGES: readonly { kind: SabotageKind; name: string; effect
   {
     kind: 'sponge',
     name: 'Esponja',
-    effect: 'Primer B: absorbe la pintura rival del 3x3 (queda neutra, guarda hasta 9). Segundo B antes de 5 s: la exprime en espiral a tu alrededor',
+    effect:
+      'Primer B: absorbe la pintura rival del 3x3 (queda neutra, guarda hasta 9). Segundo B antes de 5 s: la exprime en espiral a tu alrededor',
     answer: 'Sin pintura rival en el 3x3 no se gasta; si no la exprimes a tiempo, se pierde',
   },
   {
     kind: 'swap',
     name: 'Cambiazo',
-    effect: 'Cambias de lugar con el rival más cercano a 6 casillas o menos (empate: el de menor id); ambos quedan inmunes a manchones 0,5 s',
+    effect:
+      'Cambias de lugar con el rival más cercano a 6 casillas o menos (empate: el de menor id); ambos quedan inmunes a manchones 0,5 s',
     answer: 'Sin rival en rango no se gasta; te deja lejos de tu territorio',
   },
   {
