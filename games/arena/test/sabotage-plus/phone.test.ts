@@ -25,10 +25,11 @@ describe('button 2 on the phone with the F8a cards (hint and buzz, no protocol c
       (m) => sent.push(m),
       (slot) => slot + 10,
     );
-    const s = plusRound([0, 1, 1]);
+    const s = plusRound([0, 1, 1, 1]);
     put(s, 0, 10, 0);
-    put(s, 1, 11, 0);
+    put(s, 1, 12, 0); // exactly at the reach (2 tiles): it is warned
     put(s, 2, 20, 14);
+    put(s, 3, 13, 0); // one tile past the reach: it is not
     hints.sync(s, 0);
     sent.length = 0;
     give(s, 0, 'dizzy');
@@ -36,8 +37,8 @@ describe('button 2 on the phone with the F8a cards (hint and buzz, no protocol c
     hints.sync(s, 100);
     const buzzes = () => sent.filter((m) => m.t === 'buzz').map((m) => [m.playerId, m.kind]);
     expect(buzzes().some(([id]) => id === 10)).toBe(false); // the caster is not warned of its own Mareo
-    expect(buzzes()).toContainEqual([11, 'alert']); // the rival next to it: walk away
-    expect(buzzes().some(([id]) => id === 12)).toBe(false);
+    expect(buzzes()).toContainEqual([11, 'alert']); // the rival within reach: walk away
+    expect(buzzes().some(([id]) => id === 12 || id === 13)).toBe(false); // the far one and the one just outside the reach
     expect(sent.find((m) => m.t === 'hint' && m.playerId === 11).a).toBe('¡Aléjate! Mareo');
     tick(s, {}, 30);
     sent.length = 0;
