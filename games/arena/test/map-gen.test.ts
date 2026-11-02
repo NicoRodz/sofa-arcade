@@ -16,6 +16,7 @@ import {
   solidAt,
   validateMap,
 } from '../map';
+import { blastTiles } from '../sim';
 
 const SEEDS = Array.from({ length: 300 }, (_, i) => i * 104729 + 7);
 
@@ -91,5 +92,14 @@ describe('generateMap', () => {
               expect(solidAt(map, ex + dx, ey + dy)).toBe(false);
     }
     expect(f0Map().solid).toHaveLength(405);
+  });
+
+  it('a blast is cut by the furniture of the map it is on', () => {
+    for (const s of SEEDS.slice(0, 40)) {
+      const { map } = generateMap(s);
+      for (let y = 0; y < MAP_H; y++)
+        for (let x = 0; x < MAP_W; x++)
+          if (!solidAt(map, x, y)) for (const [bx, by] of blastTiles(x, y, 2, map)) expect(solidAt(map, bx, by)).toBe(false);
+    }
   });
 });

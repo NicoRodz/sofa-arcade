@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAP_H, MAP_W, generateMap, mirrorTile, solidAt } from '../map';
+import { MAP_H, MAP_W, floorCount, generateMap, mirrorTile, solidAt } from '../map';
 import { createManchazo, hashManchazo, matchResult } from '../sim';
 import { play } from './match-drive';
 
@@ -45,6 +45,9 @@ describe('mirror on a generated map: swapping the teams swaps the result', () =>
             const pa = x.match.paint[ty * MAP_W + tx]!;
             expect(y.match.paint[ty * MAP_W + (MAP_W - 1 - tx)]).toBe(pa < 0 ? pa : 1 - pa);
           }
+        for (let k = 0; k < MAP_W * MAP_H; k++)
+          if (x.match.paint[k]! >= 0) expect(solidAt(x.grid.map, k % MAP_W, Math.floor(k / MAP_W))).toBe(false); // paint never lands on furniture
+        expect(x.match.paintable).toBe(floorCount(x.grid.map));
         const wx = matchResult(x).winner;
         expect(matchResult(y).winner).toBe(wx === null ? null : 1 - wx);
         expect(hashManchazo(x)).not.toBe(hashManchazo(y));
