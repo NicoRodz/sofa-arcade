@@ -28,3 +28,7 @@ Mapas o modos, equipos, sonido, efectos, puntaje entre rondas, escuela y `GameOu
 
 `generateMap(seed)` (25 bits, 5 caracteres Crockford, `formatSeed` -> `2·7KQ2M`): dibuja la mitad izquierda y la columna central, estampa muebles con cuota por banda y carriles de salida, refleja, valida V1-V7 (`validateMap`; V1-V3 por estado del mapa vivo via `mapStates`/`LivingElement`, para F5) y reintenta hasta 64 veces; después cae al mapa de F0. `mapSeedFor(lobbySeed, ronda)` da una semilla nueva por ronda. La tele la muestra (`MAPA 2·7KQ2M`) en la ronda y en resultados. El sim lleva el mapa en `grid.map`; sin `mapSeed` la ronda usa el mapa de F0.
 
+
+## Manchazo F3: sabotajes v1 (`sim/sabotage/`)
+
+Detrás de `sabotage: true` (la tele lo enciende; sin él la ronda y su hash son los de F1/F2). Mazo por semilla (`seed ^ DECK_SEED_TAG`), 3 pares espejo de recogibles en el piso (`seed ^ PICKUP_SEED_TAG`), que vuelven a los 12 s con la carta siguiente. Botón 2 juega la carta en mano; el celular la muestra en el botón (`screen/match/phone-hints.ts`). Aguarrás, Rodillo, Ventilador, Huellas tramposas y Pegote: efecto y contra en `kinds.ts`.

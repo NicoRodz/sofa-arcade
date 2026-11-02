@@ -6,6 +6,7 @@ import { MAP_H, MAP_W, formatSeed, solidAt } from '../../map';
 import { blastTiles, percentOf, type ManchazoState } from '../../sim';
 import { floorBar } from './hud-bar';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
+import { drawCarrier, drawMark, drawPickups, type Frame } from './scene-sabotage';
 
 const PX = 56; // logical px per tile (5 cm on a 78" screen)
 const UNIT = PX / 16;
@@ -54,13 +55,16 @@ export class MatchScene extends Phaser.Scene {
       this.seed.setText('');
       return this.labels.forEach((t) => t.setVisible(false));
     }
+    const f: Frame = { g: this.g, x0: X0, y0: Y0, px: PX };
     this.drawFloor(s);
-    this.drawPinatas(s);
+    drawPickups(f, s);
+    this.drawPinatas(s, f);
     s.grid.bodies.forEach((b, i) => {
       const m = s.match.bodies[i]!;
       const x = X0 + b.x * UNIT,
         y = Y0 + b.y * UNIT;
       bodyOutline(this.g, x, y, b.team, m.stun > 0, m.trail > 0);
+      drawCarrier(f, s, i, x, y);
       this.label(b.slot, m.stun > 0)
         .setVisible(true)
         .setPosition(x, y)
@@ -86,7 +90,7 @@ export class MatchScene extends Phaser.Scene {
     this.g.lineStyle(4, 0x888888, 1).strokeRect(X0, Y0, MAP_W * PX, MAP_H * PX);
   }
 
-  private drawPinatas(s: ManchazoState) {
+  private drawPinatas(s: ManchazoState, f: Frame) {
     for (const p of s.match.pinatas) {
       const cx = X0 + p.x * PX + PX / 2,
         cy = Y0 + p.y * PX + PX / 2;
@@ -96,6 +100,7 @@ export class MatchScene extends Phaser.Scene {
       }
       this.g.fillStyle(TEAM_COLOR[p.team]!, 1).fillCircle(cx, cy, PX * 0.3);
       this.g.lineStyle(4, 0xffffff, 1).strokeCircle(cx, cy, PX * 0.3);
+      drawMark(f, s, p, cx, cy);
       const left = Math.max(0, p.fuse) / 120;
       this.g
         .lineStyle(5, 0xffe066, 1)

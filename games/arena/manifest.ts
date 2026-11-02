@@ -13,7 +13,7 @@ const STEPS = [
   { icon: 'move', text: 'Muévete por la grilla con el stick' },
   { icon: 'star', text: 'Suelta una piñata: estalla a los 2 s y pinta el piso en rombo' },
   { icon: 'plate', text: 'Si te alcanza el estallido rival, quedas quieto 1,2 s' },
-  { icon: 'bell', text: 'Dos equipos: gana el que pinte más piso antes del reloj' },
+  { icon: 'bell', text: 'Gana quien pinte más piso. Recoge sabotajes y úsalos con el botón 2' },
 ] as const;
 
 export const arenaManifest = {
@@ -35,7 +35,7 @@ export const arenaManifest = {
       label: 'Naranja contra azul',
       players: [2, 8],
       teams: { count: [2, 2], maxRatio: 4, handicap: 'game', styles: TEAM_STYLES },
-      controls: { btn1: { label: 'Piñata', icon: 'star' }, btn2: { label: 'Pronto', icon: 'jump' } },
+      controls: { btn1: { label: 'Piñata', icon: 'star' }, btn2: { label: 'Sabotaje', icon: 'bell' } },
       howTo: {
         steps: STEPS,
       },

@@ -1,6 +1,8 @@
 // The Manchazo round: the grid world (bodies, F0) plus what F1 adds around it. Kept apart from the grid so F0's sim stays bit for bit what it was.
 import { MAP_H, MAP_W, floorCount, type TileMap } from '../../map';
 import { RIGHT, type Dir, type GridState } from '../grid';
+import type { Armable } from '../sabotage/kinds';
+import { createSabotage, type SabotageState } from '../sabotage/state';
 import { BASE_RADIUS, SMALL_TEAM_RADIUS_BONUS } from './config';
 
 export interface Pinata {
@@ -11,6 +13,8 @@ export interface Pinata {
   owner: number; // index in grid.bodies
   fuse: number; // ticks left
   radius: number;
+  mod?: Armable; // armed by a sabotage: 'turpentine' erases rival paint instead of painting, 'glue' follows `stuck`
+  stuck?: number; // glue: index of the body it is stuck to (x, y follow that body's tile)
 }
 
 /** What a body carries besides the grid's own fields. `stun` > 0: stained and still; `trail` > 0: leaving `trailTeam` footprints. */
@@ -32,6 +36,7 @@ export interface MatchState {
   reserve: number[]; // extra pinatas per team (one per missing player), spent when a player already has MAX_ACTIVE out
   radius: number[]; // blast radius per team
   sizes: number[]; // players per team
+  sab: SabotageState | null; // the sabotages (F3); null when the round plays without them: its sim and its hash are then F1's
 }
 
 export interface ManchazoState {
@@ -50,7 +55,7 @@ export function handicap(sizes: readonly number[]): { radius: number[]; reserve:
   };
 }
 
-export function createMatch(teamOfBody: readonly number[], map: TileMap): MatchState {
+export function createMatch(teamOfBody: readonly number[], map: TileMap, sabotage?: { seed: number }): MatchState {
   const sizes = [0, 0];
   for (const t of teamOfBody) sizes[t]!++;
   const h = handicap(sizes);
@@ -65,5 +70,6 @@ export function createMatch(teamOfBody: readonly number[], map: TileMap): MatchS
     reserve: h.reserve,
     radius: h.radius,
     sizes,
+    sab: sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length) : null,
   };
 }
