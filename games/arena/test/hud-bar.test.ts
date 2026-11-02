@@ -23,7 +23,8 @@ describe('the HUD floor bar matches the percent labels', () => {
   it('empty floor draws nothing; a full floor never overflows the track', () => {
     expect(floorBar([0, 0], 400, 1000)).toEqual({ orange: 0, blue: 0 });
     expect(floorBar([0, 0], 0, 1000)).toEqual({ orange: 0, blue: 0 });
-    const full = floorBar([300, 100], 400, 1000);
-    expect(full.orange + full.blue).toBeLessThanOrEqual(1000);
+    expect(floorBar([200, 200], 400, 1000)).toEqual({ orange: 500, blue: 500 });
+    const over = floorBar([300, 200], 400, 1000); // counts that do not fit the floor (should not happen): the bars still do not cross
+    expect(over.orange + over.blue).toBeLessThanOrEqual(1000);
   });
 });
