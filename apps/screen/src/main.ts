@@ -1,6 +1,7 @@
 // Pichiclub's screen: the composition root. The shell (platform/screen) owns the flow; each game plugs in through its ScreenGame (games.ts).
 import './mount';
 import './catalog';
+import { drawManchazoCard } from '@pichi/game-arena/screen/art';
 import { drawCardArt, iris, starCanvas } from '@pichi/game-pizzas/screen/art';
 import { paintLogo } from '@pichi/screen-kit/art';
 import { initChips, initLobby, paintUi } from '@pichi/screen-kit/lobby';
@@ -13,7 +14,7 @@ import { initKeys } from '@pichi/screen-kit/vote';
 import { screenGames } from './games';
 
 registerGames(screenGames());
-bindServices({ iris, cardArt: drawCardArt, starCanvas, render: paintUi });
+bindServices({ iris, cardArt: (cv, id) => (id === 'arena' ? drawManchazoCard(cv) : drawCardArt(cv, id)), starCanvas, render: paintUi });
 for (const g of games().list()) g.init?.();
 initChips();
 initPage();
