@@ -35,7 +35,9 @@ export function paintRect(s: ManchazoState, team: number, x0: number, y0: number
 export const recount = (s: ManchazoState, team: number) => s.match.paint.reduce((n, v) => n + (v === team ? 1 : 0), 0);
 export const left = (s: ManchazoState) => s.grid.durationTicks - s.grid.tick;
 /** Puts the round `ticks` before its end (a multiple of 60 ticks away, so the once-a-second checks fall on it). */
-export const untilEnd = (s: ManchazoState, ticks: number) => void (s.grid.tick = s.grid.durationTicks - ticks);
+export const untilEnd = (s: ManchazoState, ticks: number) => {
+  s.grid.tick = s.grid.durationTicks - ticks;
+};
 export { MAP_W };
 /** Gives a team a lead of `tiles` painted tiles over the other (painted rows from the top, left half for team 0, right half for team 1). */
 export function lead(s: ManchazoState, team: number, tiles: number) {
@@ -44,7 +46,9 @@ export function lead(s: ManchazoState, team: number, tiles: number) {
     for (let x = 0; x < MAP_W && n < tiles; x++) {
       const px = team === 0 ? x : MAP_W - 1 - x;
       if (y >= 5 && y <= 9 && px > 8 && px < 18) continue; // keep the middle (the Hourglass's circle and the gold zone) unpainted
-      if (!solidAt(s.grid.map, px, y) && s.match.paint[y * MAP_W + px]! < 0) paintTile(s.match, px, y, team, 0), n++;
+      if (solidAt(s.grid.map, px, y) || s.match.paint[y * MAP_W + px]! >= 0) continue;
+      paintTile(s.match, px, y, team, 0);
+      n++;
     }
 }
 

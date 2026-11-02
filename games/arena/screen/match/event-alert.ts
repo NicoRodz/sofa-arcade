@@ -10,7 +10,10 @@ export function createEventAlert(send: (m: BuzzMsg) => void, playerOf: (slot: nu
     /** After every frame; `s` null (no round) resets. Sends one alert per phone for each new announcement. */
     sync(s: ManchazoState | null) {
       const n = s?.match.ev?.log.length ?? 0;
-      if (!s || n < seen) return void (seen = n);
+      if (!s || n < seen) {
+        seen = n;
+        return;
+      }
       if (n > seen)
         for (const b of s.grid.bodies) {
           const id = playerOf(b.slot);

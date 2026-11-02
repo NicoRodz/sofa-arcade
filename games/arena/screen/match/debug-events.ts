@@ -38,7 +38,9 @@ export function eventDebug(get: Get) {
       if (!s?.match.ev) return;
       s.match.ev.next = s.match.ev.program.length;
       s.match.paint.forEach((v, i) => {
-        if (v === loser) (s.match.paint[i] = -1), s.match.counts[loser]!--; // the trailing team has nothing; the other holds its own side
+        if (v !== loser) return; // the trailing team has nothing; the other holds its own side
+        s.match.paint[i] = -1;
+        s.match.counts[loser]!--;
       });
       for (let y = 0; y < 15; y++)
         for (let x = 0; x < MAP_W; x++)
