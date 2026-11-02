@@ -5,6 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { snapshot } from '../../../platform/controller/src/menu/fixture';
 import { ORIENTATIONS, insetsName, openSession, type Scenario, type Session } from './harness';
+import { settleJs, waitUntil } from './settle';
 
 const INTRO_SEEN = `localStorage.setItem('pichiclub.captainIntro.v1', '1')`;
 let s: Session;
@@ -17,7 +18,9 @@ afterAll(async () => {
   await s?.close();
 }, 30_000);
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const settle = () => s.eval(settleJs());
+// The confirmation's "Sí" is dead for 500 ms and the page repaints on a timer: wait until it is live (ceiling 3 s).
+const yesLive = () => waitUntil(() => s.eval<boolean>(`document.querySelector('[data-cm=yes]')?.disabled === false`), 3000);
 const WIDE = `document.documentElement.style.setProperty('--font', 'Verdana, sans-serif'); window.dispatchEvent(new Event('resize'))`;
 const tapEl = (sel: string) =>
   `(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) throw new Error('no ${sel}'); e.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); })()`;
@@ -105,15 +108,14 @@ describe('Captain menu layout', () => {
         await s.load(sc);
         if (st.wide) await s.eval(WIDE);
         for (const step of st.steps) {
-          if (step === 'WAIT') await sleep(620);
+          if (step === 'WAIT') expect(await yesLive(), 'the confirmation arms itself').toBe(true);
           else await s.eval(step);
-          await sleep(40);
+          await settle();
         }
         let listGo: Measured['go'] = null;
         for (const v of vps)
           for (const ins of v.insets) {
             await s.setViewport(v, ins);
-            await sleep(30);
             const m = await s.eval<Measured>(MEASURE);
             probes++;
             for (const b of m.bad) bad.push(`${st.name} @ ${v.name} ${insetsName(ins)}: ${b}`);
@@ -134,7 +136,7 @@ describe('Captain menu layout', () => {
         await s.setViewport(v, v.insets[0]!);
         const a = (await s.eval<Measured>(MEASURE)).go!;
         await s.eval(tapEl('.cm-go'));
-        await sleep(60);
+        await settle();
         const b = (await s.eval<Measured>(MEASURE)).go!;
         expect(Math.abs(a.x - b.x), v.name).toBeLessThanOrEqual(8);
         expect(Math.abs(a.y - b.y), v.name).toBeLessThanOrEqual(8);
@@ -181,7 +183,6 @@ describe('Captain menu map tabs', () => {
       for (const v of wide ? TAB_VIEWPORTS.slice(1) : TAB_VIEWPORTS) {
         // Verdana at 320 px needs a third row: legible, but out of the two-row promise
         await s.setViewport(v, v.insets[0]!);
-        await sleep(40);
         const m = await s.eval<{ bad: string[]; n: number }>(TABS_MEASURE);
         expect(m.n, v.name).toBe(6);
         for (const b of m.bad) bad.push(`${v.name}: ${b}`);
@@ -260,15 +261,15 @@ describe('Captain menu behaviour', () => {
     await fresh();
     await s.eval(tapEl('.cm-go'));
     await s.eval(tapEl('[data-cm=yes]')); // too early (and a disabled button takes no tap)
-    await sleep(120);
+    await settle();
     await s.eval(tapEl('[data-cm=yes]'));
     expect(await sent()).toEqual([]);
-    await sleep(520);
+    expect(await yesLive()).toBe(true);
     await s.eval(tapEl('[data-cm=back]'));
     expect(await sent()).toEqual([]);
     expect(await s.eval<boolean>(`!!document.querySelector('.cm-go[data-cm=go]')`)).toBe(true);
     await s.eval(tapEl('.cm-go'));
-    await sleep(620);
+    expect(await yesLive()).toBe(true);
     await s.eval(tapEl('[data-cm=yes]'));
     expect(await sent()).toEqual([{ t: 'menuAct', rev: 3, act: 'start' }]);
   });

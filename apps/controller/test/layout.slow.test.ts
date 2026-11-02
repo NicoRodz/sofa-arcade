@@ -4,6 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ASSIST_CARD_LINES, ASSIST_FOR, ASSIST_GIVES, assistLabel, assistToast } from '../../../games/pizzas/controller/assist';
 import { violations } from './checks';
+import { settleJs, waitUntil } from './settle';
 import { ORIENTATIONS, SCENARIOS, VIEWPORTS, insetsName, openSession, type Box, type Session } from './harness';
 
 let s: Session;
@@ -21,7 +22,7 @@ async function showNote(kind: string, font: string) {
     `document.documentElement.style.setProperty('--font', ${JSON.stringify(font || 'inherit')}); window.dispatchEvent(new Event('resize'))`,
   );
   await s.eval(`window.__push({ t: 'buzz', playerId: 1, kind: '${kind}' })`);
-  await new Promise((r) => setTimeout(r, 300));
+  await s.eval(settleJs()); // the fade-in is 150 ms
   return s.eval<{ shown: boolean; pe: string; vw: number; sw: number; cw: number; boxes: Box[]; hits: string[]; btns: Box[] }>(`(() => {
     const el = document.getElementById('evnote');
     const box = (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; };
@@ -34,27 +35,33 @@ async function showNote(kind: string, font: string) {
 
 describe('phone layout', () => {
   for (const [orientation, vps] of Object.entries(ORIENTATIONS)) {
-    it(`${orientation}: no overlaps, clipped text, small touch targets, covered buttons or safe-area violations in any state`, async () => {
-      const bad: string[] = [];
-      let probes = 0;
-      for (const sc of SCENARIOS) {
-        await s.load(sc);
-        for (const v of vps)
-          for (const ins of v.insets) {
-            await s.setViewport(v, ins);
-            const p = await s.probe();
-            probes++;
-            // the probe must really see the emulated environment: a green from measuring nothing is worthless
-            expect(p.vw).toBe(v.w);
-            expect(p.vh).toBe(v.h);
-            expect(p.inset).toEqual(ins);
-            expect(p.items.length, `${sc.name} ${v.name}: nothing measured`).toBeGreaterThan(1);
-            for (const msg of violations(p)) bad.push(`${sc.name} @ ${v.name} ${insetsName(ins)}: ${msg}`);
-          }
+    // each orientation drives its own Chrome, so the two run side by side (the rest of the file shares `s`)
+    it.concurrent(`${orientation}: no overlaps, clipped text, small touch targets, covered buttons or safe-area violations in any state`, async () => {
+      const ls = await openSession();
+      try {
+        const bad: string[] = [];
+        let probes = 0;
+        for (const sc of SCENARIOS) {
+          await ls.load(sc);
+          for (const v of vps)
+            for (const ins of v.insets) {
+              await ls.setViewport(v, ins);
+              const p = await ls.probe();
+              probes++;
+              // the probe must really see the emulated environment: a green from measuring nothing is worthless
+              expect(p.vw).toBe(v.w);
+              expect(p.vh).toBe(v.h);
+              expect(p.inset).toEqual(ins);
+              expect(p.items.length, `${sc.name} ${v.name}: nothing measured`).toBeGreaterThan(1);
+              for (const msg of violations(p)) bad.push(`${sc.name} @ ${v.name} ${insetsName(ins)}: ${msg}`);
+            }
+        }
+        expect(ls.pageErrors()).toEqual([]);
+        expect(probes).toBeGreaterThan(orientation === 'landscape' ? 100 : 250);
+        expect(bad).toEqual([]);
+      } finally {
+        await ls.close();
       }
-      expect(s.pageErrors()).toEqual([]);
-      expect(probes).toBeGreaterThan(orientation === 'landscape' ? 100 : 250);
-      expect(bad).toEqual([]);
     }, 280_000);
   }
 
@@ -101,7 +108,7 @@ describe('phone layout', () => {
 
   it('contextual buttons: label, glyph and greyed state follow the hint; a later hint replaces the earlier one whole; leaving the round gives the game its labels back', async () => {
     const read = async () => {
-      await new Promise((r) => setTimeout(r, 250));
+      await s.eval(settleJs());
       return readNow();
     }; // the greying is a 120 ms transition: read the settled style
     const readNow = () =>
@@ -234,7 +241,7 @@ describe('phone layout', () => {
     expect(await vis('assisthelp')).toBe(false);
     await s.eval(`document.body.dataset.assisthelp = 'open'; window.__push({ t: 'phase', phase: 'playing' })`);
     expect(await vis('assisthelp'), 'the round hides the card').toBe(false);
-    await new Promise((r) => setTimeout(r, 3500));
+    await waitUntil(async () => !(await vis('assisttoast')), 3500); // same 3.5 s ceiling as before, but it returns as soon as the notice is gone
     expect(await vis('assisttoast'), 'the notice fades by itself').toBe(false);
   }, 60_000);
 

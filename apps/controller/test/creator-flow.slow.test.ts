@@ -1,6 +1,7 @@
 // The creator in the real page (headless Chrome, fake relay): what the phone sends and stores, and that the layout probe really sees the creator's controls.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SCENARIOS, VIEWPORTS, openSession, type Session } from './harness';
+import { settleJs } from './settle';
 
 let s: Session;
 beforeAll(async () => {
@@ -20,7 +21,7 @@ const sent = (type: string) =>
 const open = async (name: string) => {
   await s.load(scenario(name));
   await s.setViewport(VIEWPORTS[0]!, VIEWPORTS[0]!.insets[0]!);
-  await new Promise((r) => setTimeout(r, 150));
+  await s.eval(settleJs());
 };
 
 describe('creator in the page', () => {
@@ -64,7 +65,7 @@ describe('creator in the page', () => {
     await open('creator-dup');
     expect(await s.eval(`document.getElementById('cr-dup').textContent`)).toBe('Igual que Ana, ¿cambias algo?');
     await tap('.cr-chip[data-field=cl]:not([aria-pressed=true])');
-    await new Promise((r) => setTimeout(r, 50));
+    await s.eval(settleJs());
     expect(await s.eval(`document.getElementById('cr-dup').hidden`)).toBe(true);
   }, 60_000);
 

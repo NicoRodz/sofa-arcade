@@ -1,12 +1,14 @@
 // Phone layout harness: serves the controller with Vite, drives it in headless Chrome (touch + mobile emulation, safe-area
 // insets) with a fake WebSocket standing in for the relay, and measures what ends up on screen.
 // Shared by layout.test.ts (automatic overlap / touch-size checks) and capture.ts (screenshots).
-import { spawn, execSync, type ChildProcess } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer, type ViteDevServer } from 'vite';
+import { killTree } from '../../../tools/proc/kill-tree';
+import { pageReadyJs, settleJs, waitUntil } from './settle';
 import { WebSocket } from 'ws';
 import { portFor } from './free-port';
 import type { Scenario } from './scenario-types';
@@ -72,45 +74,6 @@ export const TOUCH_SELECTORS = [
 export const insetsName = (i: Insets) =>
   i.left || i.right || i.bottom || i.top ? `inset-${i.top}-${i.right}-${i.bottom}-${i.left}` : 'noinset';
 
-// ---- process hygiene: Chrome is killed by PID tree (SIGTERM, then SIGKILL)
-function descendants(pid: number): number[] {
-  const rows = execSync('ps -A -o pid=,ppid=')
-    .toString()
-    .trim()
-    .split('\n')
-    .map((l) => l.trim().split(/\s+/).map(Number));
-  const out: number[] = [];
-  const walk = (p: number) => {
-    for (const [c, pp] of rows)
-      if (pp === p && c !== undefined) {
-        out.push(c);
-        walk(c);
-      }
-  };
-  walk(pid);
-  return out;
-}
-async function killTree(proc: ChildProcess) {
-  if (!proc.pid) return;
-  const pids = [proc.pid, ...descendants(proc.pid)];
-  for (const p of pids) {
-    try {
-      process.kill(p, 'SIGTERM');
-    } catch {
-      /* gone */
-    }
-  }
-  await sleep(500);
-  for (const p of pids) {
-    try {
-      process.kill(p, 0);
-      process.kill(p, 'SIGKILL');
-    } catch {
-      /* gone */
-    }
-  }
-}
-
 class Cdp {
   private id = 0;
   private pending = new Map<number, (v: any) => void>();
@@ -151,6 +114,7 @@ const FAKE_WS = `(() => {
   FakeWS.CONNECTING = 0; FakeWS.OPEN = 1; FakeWS.CLOSING = 2; FakeWS.CLOSED = 3;
   window.WebSocket = FakeWS;
   window.__push = (m) => { const s = socks[socks.length - 1]; if (s && s.onmessage) s.onmessage({ data: JSON.stringify(m) }); };
+  window.__wsOpen = () => socks.some((s) => s.readyState === 1);
   window.__closeSocket = () => { const s = socks[socks.length - 1]; if (s) s.close(); };
 })();`;
 
@@ -722,8 +686,8 @@ export async function openSession(): Promise<Session> {
   };
   try {
     let targets: any[] = [];
-    for (let i = 0; i < 60 && !targets.length; i++) {
-      await sleep(200);
+    for (let i = 0; i < 240 && !targets.length; i++) {
+      await sleep(50);
       try {
         targets = ((await (await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`)).json()) as any[]).filter((t) => t.type === 'page');
       } catch {
@@ -748,7 +712,7 @@ export async function openSession(): Promise<Session> {
         screenOrientation: v.w > v.h ? { type: 'landscapePrimary', angle: 90 } : { type: 'portraitPrimary', angle: 0 },
       });
       await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets });
-      await sleep(60);
+      await cdp.eval(settleJs(v.w, v.h));
     };
     return {
       async load(s) {
@@ -756,21 +720,16 @@ export async function openSession(): Promise<Session> {
         const store = s.fresh
           ? `localStorage.clear()`
           : `localStorage.setItem('pg.name', 'Nico'); localStorage.setItem('pg.room', 'main'); localStorage.setItem('pg.token', 'tok')`;
-        await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=main` });
-        await sleep(300);
+        const url = `http://127.0.0.1:${PORT}/c/?room=main`;
+        await cdp.send('Page.navigate', { url });
+        await waitUntil(() => cdp.eval<boolean>(`location.href.startsWith('http') && document.readyState === 'complete'`), 6000, 10);
         await cdp.eval(store);
-        await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/c/?room=main` });
-        for (let i = 0; i < 50; i++) {
-          if (await cdp.eval<boolean>(`document.readyState === 'complete' && typeof window.__push === 'function'`)) break;
-          await sleep(100);
-        }
-        await sleep(250); // the stored name starts the pad; the fake socket opens
-        for (const m of s.msgs) {
-          await cdp.eval(`window.__push(${JSON.stringify(m)})`);
-          await sleep(15);
-        }
+        await cdp.eval(`window.__old = true`); // marks the document we are leaving, so the wait below sees only the new one
+        await cdp.send('Page.navigate', { url });
+        await waitUntil(() => cdp.eval<boolean>(pageReadyJs(!s.fresh)), 6000, 10); // the stored name starts the pad; the fake socket opens
+        for (const m of s.msgs) await cdp.eval(`window.__push(${JSON.stringify(m)})`);
         if (s.after) await cdp.eval(s.after);
-        await sleep(120);
+        await cdp.eval(settleJs());
       },
       setViewport,
       async probe() {
@@ -784,13 +743,13 @@ export async function openSession(): Promise<Session> {
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
         await sleep(50);
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-        await sleep(300);
+        await cdp.eval(settleJs());
       },
       async hold(x, y, ms) {
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
         await sleep(ms);
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-        await sleep(300);
+        await cdp.eval(settleJs());
       },
       eval: (e) => cdp.eval(e),
       pageErrors: () => cdp.errors,

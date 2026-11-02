@@ -22,11 +22,13 @@ export function packageProject(name: string, dirs: string[], opts: { isolate?: b
   );
 }
 
+// `slow` tests are CPU-bound (sim, generators) or drive Chrome; with every core busy a 16 s test took 32 s and hit the 30 s default, so this project gets 120 s per test.
+// The timeout only stops a hang: no assert changes.
 export function slowProject(allDirs: string[]) {
   return mergeConfig(
     sharedConfig,
     defineProject({
-      test: { name: 'slow', include: allDirs.map((d) => `${d}/**/${SLOW}`), exclude: ['**/node_modules/**'] },
+      test: { name: 'slow', testTimeout: 120_000, include: allDirs.map((d) => `${d}/**/${SLOW}`), exclude: ['**/node_modules/**'] },
     }),
   );
 }
