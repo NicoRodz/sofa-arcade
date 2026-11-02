@@ -2,7 +2,7 @@
 // (who sent it, the lobby open, the game's verdict, a stale `start`).
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MenuBody } from '@pichi/core';
-import { obstaculosManifest } from '@pichi/game-obstaculos/manifest';
+import { GAMES } from '@pichi/catalog';
 import { pizzasManifest } from '@pichi/game-pizzas/manifest';
 
 const sent: any[] = [];
@@ -33,16 +33,20 @@ const touch = (over: object = {}) => ({
 beforeAll(async () => {
   const gameMod = await import('../shell/game');
   const stub = (manifest: unknown, lobby: object = {}) => ({ manifest, lobby }) as never;
-  gameMod.registerGames([
-    stub(pizzasManifest, {
-      menu: () => body,
-      menuAct: (a: unknown, rev: number) => {
-        acts.push([a, rev]);
-        return verdict;
-      },
-    }),
-    stub(obstaculosManifest),
-  ]);
+  // pizzas drives the form; every other published game (whatever the build lists) is a bare stub, so the registry matches the bound catalog
+  gameMod.registerGames(
+    GAMES.map((g) =>
+      g === pizzasManifest
+        ? stub(pizzasManifest, {
+            menu: () => body,
+            menuAct: (a: unknown, rev: number) => {
+              acts.push([a, rev]);
+              return verdict;
+            },
+          })
+        : stub(g),
+    ),
+  );
   app = (await import('../shell/app-state')).app;
   bridge = await import('./menu-bridge');
 });

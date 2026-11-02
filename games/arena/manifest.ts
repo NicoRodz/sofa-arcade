@@ -1,5 +1,4 @@
-// Manchazo's entry in the game registry (internal id `arena`, folder `games/arena`). `soon: true`: it is in development, so the composition root (apps/catalog) keeps it out of the screen's menu
-// unless the page opens with `?soon=1`. The contract's GameManifest has no such field (it is extra here, read by apps/catalog), so nothing in platform/ changed.
+// Manchazo's entry in the game registry (internal id `arena`, folder `games/arena`). Published since F5: it has sabotages and events, so apps/catalog lists it in the menu (second, after Pizzas).
 import type { GameManifest, TeamStyle } from '@pichi/core/contract';
 
 // Manchazo's two teams: orange + triangle against blue + circle (the colour-blind safe pair of the grid scene; the glyph tells them apart too).
@@ -20,7 +19,6 @@ export const arenaManifest = {
   id: 'arena',
   name: 'Manchazo',
   blurb: 'Dos equipos sueltan piñatas que pintan el piso en rombo: gana el que deje más piso de su color.',
-  soon: true,
   minPlayers: 2,
   maxPlayers: 8,
   controls: {
@@ -43,4 +41,4 @@ export const arenaManifest = {
   ],
   defaultMode: 'versus',
   howTo: { steps: STEPS },
-} as const satisfies GameManifest & { soon: boolean };
+} as const satisfies GameManifest;

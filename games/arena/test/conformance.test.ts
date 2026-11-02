@@ -10,8 +10,8 @@ describe('arena conforms to the game contract', () => {
   it('manifest, wire protocol and phone agree (ids, modes, howTo, slots)', () => {
     expect(checkGame({ manifest: arenaManifest, protocol: arenaProtocol, controller: arenaController })).toEqual([]);
   });
-  it('is announced as soon, with the card the menu always showed', () => {
-    expect(arenaManifest.soon).toBe(true);
+  it('is published (no `soon` flag), with the card the menu always showed', () => {
+    expect('soon' in arenaManifest).toBe(false);
     expect({ id: arenaManifest.id, name: arenaManifest.name, blurb: arenaManifest.blurb }).toEqual({
       id: 'arena',
       name: 'Manchazo',

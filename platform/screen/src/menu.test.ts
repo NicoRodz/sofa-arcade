@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { COMING_SOON, GAMES } from '@pichi/catalog';
 import type { GameDef } from '@pichi/core/contract';
+import { SOON_CARD } from '@pichi/core/testkit';
 import { SFX } from './audio/recipes';
 import {
   GRID_COLS,
@@ -40,12 +41,12 @@ describe('registry -> cards', () => {
     expect(menuCards(4, [...liveOne, mk('nuevo', 3, 5)], [])[1]!.range).toBe('3 a 5 jugadores');
   });
   it('announced games show as "soon" after the live ones; once published they stop showing twice', () => {
-    const before = menuCards(4, liveOne);
-    expect(before.map((c) => c.id)).toEqual(['pizzas', ...COMING_SOON.map((s) => s.id)]);
+    const before = menuCards(4, liveOne, [SOON_CARD]); // the fixture card: the real list is empty once every game is published
+    expect(before.map((c) => c.id)).toEqual(['pizzas', SOON_CARD.id]);
     expect(before.slice(1).every((c) => c.state === 'soon' && c.notice === 'Próximamente')).toBe(true);
-    const published = ids(4, [...liveOne, mk('arena', 2, 8)]); // an announced game moves into the registry
-    expect(published.filter((x) => x === 'arena')).toHaveLength(1);
-    expect(menuCards(4, [...liveOne, mk('arena', 2, 8)]).find((c) => c.id === 'arena')!.state).toBe('ready');
+    const published = ids(4, [...liveOne, mk(SOON_CARD.id, 2, 8)], [SOON_CARD]); // an announced game moves into the registry
+    expect(published.filter((x) => x === SOON_CARD.id)).toHaveLength(1);
+    expect(menuCards(4, [...liveOne, mk(SOON_CARD.id, 2, 8)], [SOON_CARD]).find((c) => c.id === SOON_CARD.id)!.state).toBe('ready');
   });
 });
 
@@ -72,7 +73,7 @@ describe('range -> enabled / disabled', () => {
   it('a disabled card refuses to be picked (with the reason); a ready one is picked; a soon card does nothing', () => {
     expect(menuPick(cards4(1), 'b')).toEqual({ kind: 'refuse', notice: 'Hay 1 jugador: necesita al menos 3' });
     expect(menuPick(cards4(3), 'b')).toEqual({ kind: 'pick', id: 'b' });
-    expect(menuPick(menuCards(4), COMING_SOON[0]!.id)).toEqual({ kind: 'none' });
+    expect(menuPick(menuCards(4, liveOne, [SOON_CARD]), SOON_CARD.id)).toEqual({ kind: 'none' });
     expect(menuPick(cards4(3), 'nope')).toEqual({ kind: 'none' });
   });
 });
