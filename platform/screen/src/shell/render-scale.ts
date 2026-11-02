@@ -3,7 +3,12 @@
 
 export type RenderScale = 1 | 2;
 
-/** A display must have at least this many physical pixels across (screen.width x devicePixelRatio) before r = 2 is worth its cost. */
+/**
+ * A display must have at least this many physical pixels across (screen.width x devicePixelRatio) before r = 2 is worth its cost.
+ * The product is invariant to browser zoom. Examples: 4K TV over HDMI 3840x1 or 1920x2 = 3840 -> 2; MacBook Pro 16" at its default
+ * 1728x2 = 3456 -> 2 (still sharper than a 1920 buffer); Retina 1440x2 = 2880, MacBook Pro 14" 1512x2 = 3024, 1440p 2560x1 -> 1.
+ * Limit: it looks at the display, not the window, so a small window on a 4K display also gets r = 2 (`?render=1` forces 1).
+ */
 export const MIN_PHYSICAL_WIDTH = 3200;
 
 /** `?render=1|2` forces the scale of the games that opt in (anything else: no override). Never set by the phones or the relay. */

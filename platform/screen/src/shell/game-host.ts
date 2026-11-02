@@ -30,7 +30,6 @@ export function createPhaser() {
   });
   phaser.events.on(Phaser.Core.Events.POST_RENDER, flushLag);
   phaser.events.on(Phaser.Core.Events.STEP, (_time: number, delta: number) => runFrame(delta)); // before the scenes update: the active game's logic, then its scene draws it
-  phaser.events.on(Phaser.Core.Events.PRE_RENDER, fitScenes); // after the scenes updated, before they draw: a scene created this frame is already there
   if (fpsEnabled()) {
     const probe = startFpsProbe(() => `r${renderScale()}`);
     phaser.events.on(Phaser.Core.Events.STEP, (time: number) => probe.mark(time)); // the vsync-aligned rAF timestamp, not a clock read inside the callback (that adds jitter)
@@ -45,12 +44,16 @@ function applyRenderScale(gameId: string) {
   if (r === renderScale()) return;
   setCurrentRenderScale(r);
   phaser!.scale.setGameSize(W * r, H * r); // the canvas element is now W*r x H*r; FIT still stretches it to the window
+  // The per-frame hook exists only while r = 2: with no opted-in game on screen (Pizzas, Obstaculos) the hot path runs no F6 code at all.
+  phaser!.events.off(Phaser.Core.Events.PRE_RENDER, fitScenes);
+  if (r === 2)
+    phaser!.events.on(Phaser.Core.Events.PRE_RENDER, fitScenes); // after the scenes updated, before they draw: a scene created this frame is already there
+  else fitScenes(); // back to 1: give the opted-in scenes their camera and text resolution back, once
 }
 
 /** At r = 2 the logical 1920x1080 still is what a scene draws: its camera zooms from the top-left corner and its texts rasterise at 2x. Every frame, so nothing depends on when a scene is created. */
 function fitScenes() {
   const r = renderScale();
-  if (r === 1) return;
   for (const g of games().list()) {
     if (!g.renderScale) continue;
     for (const s of byGame.get(g.manifest.id) ?? []) {
