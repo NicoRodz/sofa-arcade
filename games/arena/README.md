@@ -32,3 +32,7 @@ Mapas o modos, equipos, sonido, efectos, puntaje entre rondas, escuela y `GameOu
 ## Manchazo F3: sabotajes v1 (`sim/sabotage/`)
 
 Detrás de `sabotage: true` (la tele lo enciende; sin él la ronda y su hash son los de F1/F2). Mazo por semilla (`seed ^ DECK_SEED_TAG`), 3 pares espejo de recogibles en el piso (`seed ^ PICKUP_SEED_TAG`), que vuelven a los 12 s con la carta siguiente. Botón 2 juega la carta en mano; el celular la muestra en el botón (`screen/match/phone-hints.ts`). Aguarrás, Rodillo, Ventilador, Huellas tramposas y Pegote: efecto y contra en `kinds.ts`.
+
+## Manchazo F4: eventos v1 y Reloj de arena (`sim/events/`)
+
+Detrás de `events: true` (la tele lo enciende; sin él la ronda y su hash son los de F3). Programa por semilla (`manchazo:events:<seed>`): 3 de 4 eventos programables (Gran piñata, Lluvia, Casillas doradas, Robot aspiradora) en franjas de 25 %, 46 % y 67 % de la duración base (+-4 %, sin solaparse, ninguno en los últimos 12 s). Remontada (+1 de radio al equipo que pierde por más de 15 %, 10 s, 20 s de enfriamiento) y Marcador oculto (últimos 10 s, contados desde el final vigente) se revisan en el tick. Reloj de arena disputado según `manchazo-decisiones.md` (substream `manchazo:clock:<seed>`): `clock.ts`. Cada anuncio queda en `ev.log`; la tele lo muestra (`screen/match/event-banner.ts`) y cada celular vibra (`event-alert.ts`). Captura: `npx tsx tools/capture.ts manchazo-events-tv`.

@@ -1,7 +1,9 @@
 // The Manchazo round: the grid world (bodies, F0) plus what F1 adds around it. Kept apart from the grid so F0's sim stays bit for bit what it was.
 import { MAP_H, MAP_W, floorCount, type TileMap } from '../../map';
 import { RIGHT, type Dir, type GridState } from '../grid';
+import type { EventsState } from '../events/state';
 import type { Armable } from '../sabotage/kinds';
+import { createEvents } from '../events/state';
 import { createSabotage, type SabotageState } from '../sabotage/state';
 import { BASE_RADIUS, SMALL_TEAM_RADIUS_BONUS } from './config';
 
@@ -18,6 +20,14 @@ export interface Pinata {
 }
 
 /** What a body carries besides the grid's own fields. `stun` > 0: stained and still; `trail` > 0: leaving `trailTeam` footprints. */
+/** Inclusive tile rectangle. */
+export interface GoldZone {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
+
 export interface BodyMatch {
   stun: number;
   trail: number;
@@ -37,6 +47,8 @@ export interface MatchState {
   radius: number[]; // blast radius per team
   sizes: number[]; // players per team
   sab: SabotageState | null; // the sabotages (F3); null when the round plays without them: its sim and its hash are then F1's
+  ev: EventsState | null; // the events (F4); null when the round plays without them
+  zone: GoldZone | null; // the golden tiles while the event runs: a tile in it weighs GOLD_FACTOR in `counts`
 }
 
 export interface ManchazoState {
@@ -55,7 +67,12 @@ export function handicap(sizes: readonly number[]): { radius: number[]; reserve:
   };
 }
 
-export function createMatch(teamOfBody: readonly number[], map: TileMap, sabotage?: { seed: number }): MatchState {
+export function createMatch(
+  teamOfBody: readonly number[],
+  map: TileMap,
+  sabotage?: { seed: number },
+  events?: { seed: number; base: number },
+): MatchState {
   const sizes = [0, 0];
   for (const t of teamOfBody) sizes[t]!++;
   const h = handicap(sizes);
@@ -71,5 +88,7 @@ export function createMatch(teamOfBody: readonly number[], map: TileMap, sabotag
     radius: h.radius,
     sizes,
     sab: sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length) : null,
+    ev: events ? createEvents(map, events.seed, events.base) : null,
+    zone: null,
   };
 }

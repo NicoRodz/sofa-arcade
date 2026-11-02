@@ -21,7 +21,7 @@ export class ManchazoRun {
   private overFor = 0;
 
   constructor(slots: readonly number[], teams: readonly number[], seed: number, mapSeed: number, control?: ControlPlan) {
-    this.state = createManchazo({ slots, teams, seed, mapSeed, sabotage: true, ...(control ? { control } : {}) });
+    this.state = createManchazo({ slots, teams, seed, mapSeed, sabotage: true, events: true, ...(control ? { control } : {}) });
   }
 
   /** The latest packet of a phone: x and y in [-1, 1] (integer milli units from here on) and its presses counters. The first packet is only a baseline. */

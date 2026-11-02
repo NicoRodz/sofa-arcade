@@ -1,10 +1,11 @@
 // One tick of a Manchazo round (60 Hz). Mutates the state; same state + same inputs = same result.
-// Order (the plan's): inputs by slot -> sabotages -> movement -> drops -> stain and footprints -> pinatas (placement order) -> clock. The sabotages' paint and pickups run right after movement.
+// Order (the plan's): inputs by slot -> sabotages -> movement -> drops -> stain and footprints -> pinatas (placement order) -> events (F4: schedule, come-back, Hourglass; they may add to the round's length) -> clock. The sabotages' paint and pickups run right after movement.
 import { NONE } from '../grid/dir';
 import { steer } from '../grid/control';
 import { advance } from '../grid/move';
 import { NO_GRID_INPUT, type GridInput } from '../grid/state';
 import { paintTile } from './board';
+import { stepEvents } from '../events/step';
 import { afterMove, beforeMove, isRolling } from '../sabotage/step';
 import { dropPinata, stepPinatas } from './pinata';
 import { TRAIL_TICKS } from './config';
@@ -49,6 +50,7 @@ export function stepManchazo(s: ManchazoState, inputs: ReadonlyMap<number, Manch
     }
   });
   stepPinatas(s);
+  stepEvents(s);
   g.tick++;
   if (g.tick >= g.durationTicks) g.over = true;
 }
