@@ -69,7 +69,7 @@ describe('apps/catalog', () => {
     expect(CATALOG.comingSoon).toEqual([]);
   });
   it('games in development: only the dev catalog and parser (the relay) know them; the published ones do not change', () => {
-    expect(IN_DEVELOPMENT.map((g) => g.id)).toEqual([]); // nothing in development since Manchazo's F5
+    expect(IN_DEVELOPMENT).toEqual([]); // nothing in development since Manchazo's F5
     expect(DEV_CATALOG.ids).toEqual(['pizzas', 'arena', 'obstaculos']); // the menu with ?soon=1: Manchazo (arena) is second
     expect(DEV_CATALOG.problems()).toEqual([]);
     expect(DEV_CATALOG.comingSoon).toEqual(CATALOG.comingSoon);
