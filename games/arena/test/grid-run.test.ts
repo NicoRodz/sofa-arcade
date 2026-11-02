@@ -26,7 +26,8 @@ describe('grid run (the phones feeding the grid sim)', () => {
     const r = new GridRun([0], 'A');
     r.receive(0, 0.3333333, -0.9);
     r.advance(GRID_STEP_MS);
-    expect(Number.isInteger(r.state.bodies[0]!.q)).toBe(true);
+    expect(r.stickOf(0)).toEqual({ sx: 333, sy: -900 });
+    expect(Number.isInteger(r.stickOf(0)!.sx) && Number.isInteger(r.stickOf(0)!.sy)).toBe(true);
     expect(r.state.bodies[0]!.q).toBe(3); // UP
   });
 

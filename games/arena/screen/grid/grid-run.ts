@@ -19,6 +19,11 @@ export class GridRun {
     this.sticks.set(slot, { sx: toMilli(x), sy: toMilli(y) });
   }
 
+  /** The stick the sim will see for a phone (integer milli units), or undefined before its first packet. */
+  stickOf(slot: number): GridInput | undefined {
+    return this.sticks.get(slot);
+  }
+
   /** Advances by a frame's time in fixed ticks. Returns true once, when the round has been over long enough. */
   advance(deltaMs: number): boolean {
     if (this.state.over) {
