@@ -27,8 +27,8 @@ export class Avatars {
   /** Draws one player at its body's centre (x, y); returns where the number goes. */
   show(g: Phaser.GameObjects.Graphics, slot: number, ap: Appearance, team: number, x: number, y: number, stunned: boolean, trail: boolean) {
     const feet = y + FEET;
-    let s = this.sprites.get(slot);
-    if (!s) this.sprites.set(slot, (s = new TeamSprite(this.scene, ROLE)));
+    const s = this.sprites.get(slot) ?? new TeamSprite(this.scene, ROLE);
+    this.sprites.set(slot, s);
     feetRing(g, x, feet, team, stunned, trail);
     s.setLook(ap, TEAM_COLOR[team % 2]!)
       .place(x, feet, LOOK_SCALE, stunned ? 0.55 : 1, 1 + feet / 2000)
