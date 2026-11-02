@@ -35,6 +35,7 @@ export interface MatchHost {
 
 export class MatchScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics;
+  private over!: Phaser.GameObjects.Graphics;
   private pct: Phaser.GameObjects.Text[] = [];
   private clock!: Phaser.GameObjects.Text;
   private seed!: Phaser.GameObjects.Text;
@@ -59,6 +60,7 @@ export class MatchScene extends Phaser.Scene {
     this.splashes = new Splashes();
     this.paint = new PaintLayer(this, X0, Y0, PX);
     this.g = this.add.graphics();
+    this.over = this.add.graphics().setDepth(20); // above the avatars (depth ~1), below their number chips (30): the card over a head, the Mareo's spiral
     this.avatars = new Avatars(this);
     const style = (color: string) => ({ fontFamily: FONT, fontSize: `${PCT_SIZE}px`, color, fontStyle: 'bold' });
     // the HUD starts at the top of the title-safe area (layout.ts): a TV that crops its edges still shows it
@@ -116,6 +118,7 @@ export class MatchScene extends Phaser.Scene {
   update() {
     const s = this.host.state();
     this.g.clear();
+    this.over.clear();
     this.avatars.begin();
     if (!s) {
       this.pct.forEach((t) => t.setText(''));
@@ -124,7 +127,7 @@ export class MatchScene extends Phaser.Scene {
       [this.next, this.title, this.sub, this.tag].forEach((t) => t.setText(''));
       return this.labels.forEach((t) => t.setVisible(false));
     }
-    const f: Frame = { g: this.g, x0: X0, y0: Y0, px: PX };
+    const f: Frame = { g: this.g, over: this.over, x0: X0, y0: Y0, px: PX };
     this.drawFloor(s);
     this.paint.sync(shownPaint(s)); // F8a: paint put down under an invisible ink reads neutral until the ink runs out
     drawTapes(f, s);

@@ -36,3 +36,8 @@ La TV enciende `sabotage`, `events` y `living` (`screen/match/run.ts`); sin `liv
 | `test/` | `sim`, `map-*`, `match-*`, `grid-*`, `conformance` (`checkGame`); `sabotage/`, `events/`, `living/` por flag |
 
 Pruébalo con `npm run dev` y `?soon=1`; capturas: `npx tsx tools/capture.ts manchazo-living-tv`.
+
+## Manchazo F8a: sabotagePlus
+
+Flag `sabotagePlus` (off: the round is F5's, bit for bit). Five new cards: Cinta (tape), Tinta invisible (ink), Esponja (sponge), Cambiazo (swap), Mareo (dizzy).
+Cambiazo and Mareo both go in; if the playtest rejects one, take it out of `PLUS_SABOTAGES` (`sim/sabotage/kinds.ts`) and the deck is drawn from the rest. Tests: `test/sabotage-plus/`, `test/art/`.

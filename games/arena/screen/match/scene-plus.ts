@@ -5,7 +5,7 @@ import { spiralPts } from '../art/glyphs-plus';
 import { INK } from '../art/shapes';
 import { DIZZY_CHARGE_TICKS, DIZZY_RANGE, SQUEEZE_FX_TICKS, SWAP_FX_TICKS, type ManchazoState } from '../../sim';
 import { TEAM_COLOR } from './scene-body';
-import type { Frame } from './scene-frame';
+import { onTop, type Frame } from './scene-frame';
 
 const BLINK_TICKS = 60; // a tape in its last second blinks
 
@@ -46,7 +46,10 @@ export function drawPlusCarrier(f: Frame, s: ManchazoState, i: number, x: number
   if (!p) return;
   const t = s.grid.tick;
   const team = s.grid.bodies[i]!.team;
-  if (p.veil[team]! > 0) ring(f, x, y, f.px * 0.7, 0xf4f4fa, 0.55 + 0.25 * Math.sin(t / 6), 3); // its team's paint is hidden: a ghost ring
+  if (p.veil[team]! > 0) {
+    ring(f, x, y, f.px * 0.7, INK, 0.55, 7); // its team's paint is hidden: a ghost ring, white on a dark underlay so it reads on the cream floor too
+    ring(f, x, y, f.px * 0.7, 0xf4f4fa, 0.75 + 0.25 * Math.sin(t / 6), 3);
+  }
   if (p.sponge[i]! > 0) {
     ring(f, x, y, f.px * 0.62, CARD_COLOR.sponge, 0.6 + 0.4 * Math.sin(t / 4), 5);
     for (let k = 0; k < p.soaked[i]!; k++)
@@ -57,7 +60,7 @@ export function drawPlusCarrier(f: Frame, s: ManchazoState, i: number, x: number
     spiral(f, x, y, f.px * (0.4 + (DIZZY_RANGE + 0.5) * k), 2.2, t / 5, CARD_COLOR.dizzy, 0.95, 6); // the aura grows to the reach: leave it
     ring(f, x, y, f.px * (DIZZY_RANGE + 0.5), CARD_COLOR.dizzy, 0.3, 3);
   }
-  if (p.dizzy[i]! > 0) spiral(f, x, y - f.px * 0.82, f.px * 0.3, 2, -t / 4, CARD_COLOR.dizzy, 1, 5); // over its head: the stick is backwards
+  if (p.dizzy[i]! > 0) spiral(onTop(f), x, y - f.px * 0.82, f.px * 0.3, 2, -t / 4, CARD_COLOR.dizzy, 1, 5); // over its head: the stick is backwards
   if (p.swapFx[i]! > 0)
     ring(f, x, y, f.px * (0.4 + 0.9 * (1 - p.swapFx[i]! / SWAP_FX_TICKS)), CARD_COLOR.swap, p.swapFx[i]! / SWAP_FX_TICKS, 7);
   if (p.immune[i]! > 0) ring(f, x, y, f.px * 0.58, CARD_COLOR.swap, 0.8, 3);

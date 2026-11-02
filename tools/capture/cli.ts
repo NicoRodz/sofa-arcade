@@ -20,7 +20,12 @@ import { runManchazo4k, runRenderScaleOthers } from './scenarios/render-scale';
 import { runManchazoLooks, runManchazoSeeds } from './scenarios/manchazo-seeds';
 import { runManchazoEventsTv } from './scenarios/manchazo-events';
 import { runManchazoLivingTv } from './scenarios/manchazo-living';
-import { runManchazoSabotagePhone, runManchazoSabotageTv } from './scenarios/manchazo-sabotage';
+import {
+  runManchazoSabotagePhone,
+  runManchazoSabotagePlusPhone,
+  runManchazoSabotagePlusTv,
+  runManchazoSabotageTv,
+} from './scenarios/manchazo-sabotage';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
 
 type Scenario = (c: Ctx) => Promise<void>;
@@ -38,6 +43,8 @@ const MODES: Record<string, Scenario[]> = {
   'manchazo-looks': [runManchazoLooks],
   'manchazo-sabotage-tv': [runManchazoSabotageTv],
   'manchazo-sabotage-phone': [runManchazoSabotagePhone],
+  'manchazo-sabotage-plus-tv': [runManchazoSabotagePlusTv],
+  'manchazo-sabotage-plus-phone': [runManchazoSabotagePlusPhone],
   'manchazo-events-tv': [runManchazoEventsTv],
   'manchazo-living-tv': [runManchazoLivingTv],
   'versus-phone': [runVersusPhone],
