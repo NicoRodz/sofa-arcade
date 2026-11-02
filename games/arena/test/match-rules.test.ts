@@ -94,11 +94,11 @@ describe('determinism', () => {
     const stamp = duel();
     stamp.match.reachedAt[1] = 5;
     expect(hashManchazo(stamp)).not.toBe(base);
-    const dropped = duel();
-    const idle = duel();
-    tick(dropped, { 0: DROP });
-    tick(idle);
-    expect(hashManchazo(dropped)).not.toBe(hashManchazo(idle)); // same grid, one live pinata
+    const lit = duel();
+    tick(lit, { 0: DROP });
+    const same = hashManchazo(lit);
+    lit.match.pinatas[0]!.fuse--;
+    expect(hashManchazo(lit)).not.toBe(same); // only the fuse of a live pinata changed
     const reserve = duel();
     reserve.match.reserve[0] = 1;
     expect(hashManchazo(reserve)).not.toBe(base);
