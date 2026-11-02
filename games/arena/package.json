@@ -6,6 +6,7 @@
     ".": "./index.ts",
     "./sim": "./sim/index.ts",
     "./screen": "./screen/index.ts",
+    "./screen/art": "./screen/art/index.ts",
     "./controller": "./controller/index.ts"
   },
   "scripts": {

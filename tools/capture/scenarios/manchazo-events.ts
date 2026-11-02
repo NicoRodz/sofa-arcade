@@ -1,7 +1,7 @@
 import { PORT, sleep } from '../config';
 import type { Ctx } from '../session';
 
-// Manchazo F4: the TV with the events. The big pinata (landing shadow and announcement), the rain washing a painted band, the disputed Hourglass (the losing
+// Manchazo F4: the TV with the events. The big pinata (landing shadow and announcement), the rain washing a painted band, the golden tiles, the vacuum robot, the disputed Hourglass (the losing
 // team's carrier inside the circle, a rival at its edge, the bar filling) and ¡TIEMPO EXTRA!. Saved as manchazo-ev-*.png. The `window.__pg.manchazo*` hooks put
 // the round in the state each shot needs (capture tool only); the events themselves run on the real 60 Hz clock.
 export async function runManchazoEventsTv({ cdp, bots, join, waitFor, click }: Ctx) {
@@ -54,6 +54,12 @@ export async function runManchazoEventsTv({ cdp, bots, join, waitFor, click }: C
   await call('manchazoClockCharge', 40);
   await sleep(1300);
   await cdp.shot('manchazo-ev-tiempo-extra'); // ¡TIEMPO EXTRA! +15 s
+  await call('manchazoEvent', 'gold');
+  await sleep(3500);
+  await cdp.shot('manchazo-ev-doradas'); // the golden tiles weigh double while the event runs
+  await call('manchazoEvent', 'vacuum');
+  await sleep(4000);
+  await cdp.shot('manchazo-ev-robot'); // the vacuum robot eating paint
   const s = await cdp.eval<{ phase: string }>('window.__pg.snapshot()');
   console.log('phase after the extra time', s.phase);
 }

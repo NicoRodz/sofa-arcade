@@ -2,8 +2,8 @@
 // No logic here: it reads the sim's state each frame.
 import Phaser from 'phaser';
 import type { Appearance } from '@pichi/core/avatar';
-import { C, W } from '@pichi/screen-kit/art';
-import { MAP_W, formatSeed, solidAt, MAP_H } from '../../map';
+import { C, FONT, W } from '@pichi/screen-kit/art';
+import { MAP_W, formatSeed } from '../../map';
 import { blastTiles, isHidden, percentOf, type ManchazoState } from '../../sim';
 import { bannerOf, nextLine } from './event-banner';
 import { drawEvents } from './scene-events';
@@ -13,6 +13,13 @@ import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, S
 import { Avatars } from './scene-avatars';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawCarrier, drawMark, drawPickups, type Frame } from './scene-sabotage';
+import { addBackdrop } from '../art/backdrop';
+import { FRAME, floorTexture, BAKE } from '../art/floor-bake';
+import { furnitureMap } from '../art/furniture-plan';
+import { PaintLayer } from '../art/paint-layer';
+import { drawPot, potLook } from '../art/pot';
+import { Splashes } from '../art/splash';
+import { A, num } from '../art/palette';
 
 const UNIT = PX / 16;
 const WARN_TICKS = 36; // a pinata shows the diamond it is about to paint this long before it goes off
@@ -35,16 +42,23 @@ export class MatchScene extends Phaser.Scene {
   private tag!: Phaser.GameObjects.Text;
   private labels = new Map<number, Phaser.GameObjects.Text>();
   private avatars!: Avatars; // rebuilt in create(): a scene that restarts destroys its game objects
+  private paint!: PaintLayer; // same: the paint images and the floor image belong to the scene's display list
+  private floor?: Phaser.GameObjects.Image;
+  private splashes = new Splashes();
 
   constructor(private host: MatchHost) {
     super('arena');
   }
 
   create() {
-    this.cameras.main.setBackgroundColor(0x2b2b2b);
+    this.cameras.main.setBackgroundColor(num(A.cocoa));
+    addBackdrop(this);
+    this.floor = undefined;
+    this.splashes = new Splashes();
+    this.paint = new PaintLayer(this, X0, Y0, PX);
     this.g = this.add.graphics();
     this.avatars = new Avatars(this);
-    const style = (color: string) => ({ fontFamily: 'sans-serif', fontSize: `${PCT_SIZE}px`, color, fontStyle: 'bold' });
+    const style = (color: string) => ({ fontFamily: FONT, fontSize: `${PCT_SIZE}px`, color, fontStyle: 'bold' });
     // the HUD starts at the top of the title-safe area (layout.ts): a TV that crops its edges still shows it
     this.pct = [
       this.add.text(SIDE_X, HUD_TOP, '', style('#E69F00')),
@@ -53,18 +67,18 @@ export class MatchScene extends Phaser.Scene {
     this.clock = this.add.text(W / 2, HUD_TOP, '', { ...style(C.cream), fontSize: `${CLOCK_SIZE}px` }).setOrigin(0.5, 0);
     // the map seed, bottom left, in the 36 px band under the floor (above the bottom edge of the safe area): read it off the screen to play the same map again
     this.seed = this.add.text(X0, BOTTOM_Y, '', {
-      fontFamily: 'monospace',
+      fontFamily: 'ui-monospace, Menlo, monospace',
       fontSize: `${FOOT_SIZE}px`,
-      color: '#cfcfcf',
+      color: '#E8DCC4',
       fontStyle: 'bold',
     });
     // F4: the announcement of each event (over the top of the floor), the "next event" line (bottom right) and the golden zone's x2
     this.next = this.add
-      .text(X0 + MAP_W * PX, BOTTOM_Y, '', { fontFamily: 'sans-serif', fontSize: `${FOOT_SIZE}px`, color: '#cfcfcf', fontStyle: 'bold' })
+      .text(X0 + MAP_W * PX, BOTTOM_Y, '', { fontFamily: FONT, fontSize: `${FOOT_SIZE}px`, color: '#E8DCC4', fontStyle: 'bold' })
       .setOrigin(1, 0);
     this.title = this.add
       .text(W / 2, Y0 + 14, '', {
-        fontFamily: 'sans-serif',
+        fontFamily: FONT,
         fontSize: '72px',
         color: '#ffffff',
         fontStyle: 'bold',
@@ -75,7 +89,7 @@ export class MatchScene extends Phaser.Scene {
       .setDepth(10);
     this.sub = this.add
       .text(W / 2, Y0 + 100, '', {
-        fontFamily: 'sans-serif',
+        fontFamily: FONT,
         fontSize: '34px',
         color: '#ffffff',
         fontStyle: 'bold',
@@ -86,7 +100,7 @@ export class MatchScene extends Phaser.Scene {
       .setDepth(10);
     this.tag = this.add
       .text(0, 0, 'x2', {
-        fontFamily: 'sans-serif',
+        fontFamily: FONT,
         fontSize: '44px',
         color: '#ffd23f',
         fontStyle: 'bold',
@@ -110,10 +124,13 @@ export class MatchScene extends Phaser.Scene {
     }
     const f: Frame = { g: this.g, x0: X0, y0: Y0, px: PX };
     this.drawFloor(s);
+    this.paint.sync(s.match.paint);
     drawLiving(f, s);
     drawPickups(f, s);
     drawEvents(f, s);
     this.drawPinatas(s, f);
+    this.splashes.track(s, s.grid.map);
+    this.splashes.draw(this.g, s, X0, Y0, PX);
     s.grid.bodies.forEach((b, i) => {
       const m = s.match.bodies[i]!;
       const x = X0 + b.x * UNIT,
@@ -142,20 +159,16 @@ export class MatchScene extends Phaser.Scene {
     return { pctLeft: box(this.pct[0]!), pctRight: box(this.pct[1]!), clock: box(this.clock), seed: box(this.seed), next: box(this.next) };
   }
 
+  /** The floor is one baked image (frame, tiles, furniture); a new map swaps its texture. The paint of each tile is a layer over it (art/paint-layer.ts). */
   private drawFloor(s: ManchazoState) {
-    this.g.fillStyle(0x4a4a4a, 1).fillRect(X0, Y0, MAP_W * PX, MAP_H * PX);
-    for (let y = 0; y < MAP_H; y++)
-      for (let x = 0; x < MAP_W; x++) {
-        const solid = solidAt(s.grid.map, x, y);
-        const team = s.match.paint[y * MAP_W + x]!;
-        const px = X0 + x * PX,
-          py = Y0 + y * PX;
-        const base = solid ? 0x1c1c1c : team >= 0 ? TEAM_COLOR[team]! : (x + y) % 2 ? 0x5a5a5a : 0x626262;
-        this.g.fillStyle(base, 1).fillRect(px + 1, py + 1, PX - 2, PX - 2);
-        if (team === 0) this.g.fillStyle(0xffffff, 0.35).fillCircle(px + PX / 2, py + PX / 2, 5); // dot on orange, bar on blue: the teams differ without colour
-        if (team === 1) this.g.fillStyle(0xffffff, 0.35).fillRect(px + 10, py + PX / 2 - 3, PX - 20, 6);
-      }
-    this.g.lineStyle(4, 0x888888, 1).strokeRect(X0, Y0, MAP_W * PX, MAP_H * PX);
+    const key = floorTexture(this, furnitureMap(s.grid.map, s.match.live), PX);
+    if (!this.floor)
+      this.floor = this.add
+        .image(X0 - FRAME, Y0 - FRAME, key)
+        .setOrigin(0, 0)
+        .setScale(1 / BAKE)
+        .setDepth(-2);
+    else if (this.floor.texture.key !== key) this.floor.setTexture(key);
   }
 
   private drawPinatas(s: ManchazoState, f: Frame) {
@@ -163,17 +176,19 @@ export class MatchScene extends Phaser.Scene {
       const cx = X0 + p.x * PX + PX / 2,
         cy = Y0 + p.y * PX + PX / 2;
       if (p.fuse <= WARN_TICKS) {
-        for (const [x, y] of blastTiles(p.x, p.y, p.radius, s.grid.map))
-          this.g.lineStyle(3, 0xffffff, 0.9).strokeRect(X0 + x * PX + 4, Y0 + y * PX + 4, PX - 8, PX - 8);
+        const pulse = 0.25 + 0.2 * Math.sin(s.grid.tick / 3);
+        for (const [x, y] of blastTiles(p.x, p.y, p.radius, s.grid.map)) {
+          this.g.fillStyle(TEAM_COLOR[p.team]!, pulse).fillRect(X0 + x * PX + 4, Y0 + y * PX + 4, PX - 8, PX - 8);
+          this.g.lineStyle(3, num(A.ink), 0.8).strokeRect(X0 + x * PX + 4, Y0 + y * PX + 4, PX - 8, PX - 8);
+        }
       }
-      this.g.fillStyle(TEAM_COLOR[p.team]!, 1).fillCircle(cx, cy, PX * 0.3);
-      this.g.lineStyle(4, 0xffffff, 1).strokeCircle(cx, cy, PX * 0.3);
+      drawPot(this.g, cx, cy, PX, potLook(p.team), Math.max(0, p.fuse) / 120, s.grid.tick);
       drawMark(f, s, p, cx, cy);
       const left = Math.max(0, p.fuse) / 120;
       this.g
-        .lineStyle(5, 0xffe066, 1)
+        .lineStyle(4, 0xffe066, 0.9)
         .beginPath()
-        .arc(cx, cy, PX * 0.42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left, false)
+        .arc(cx, cy, PX * 0.46, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left, false)
         .strokePath();
     }
   }
@@ -185,17 +200,20 @@ export class MatchScene extends Phaser.Scene {
     [0, 1].forEach((t) => this.pct[t]!.setText(`${t === 0 ? '▲' : '●'} ${hidden ? '??' : percentOf(s.match, t)} %`));
     const w = MAP_W * PX;
     const bar = floorBar(hidden ? [0, 0] : s.match.counts, s.match.paintable, w); // grey track = unpainted floor, orange from the left, blue from the right
-    this.g.fillStyle(0x555555, 1).fillRect(X0, BAR_Y, w, BAR_H);
-    this.g.fillStyle(TEAM_COLOR[0]!, 1).fillRect(X0, BAR_Y, bar.orange, BAR_H);
-    this.g.fillStyle(TEAM_COLOR[1]!, 1).fillRect(X0 + w - bar.blue, BAR_Y, bar.blue, BAR_H);
+    this.g.fillStyle(num(A.frame), 1).fillRoundedRect(X0 - 4, BAR_Y - 4, w + 8, BAR_H + 8, 10);
+    this.g.fillStyle(0xd9cdb4, 1).fillRoundedRect(X0, BAR_Y, w, BAR_H, 6); // the track: floor still unpainted
+    this.g.fillStyle(TEAM_COLOR[0]!, 1).fillRoundedRect(X0, BAR_Y, bar.orange, BAR_H, { tl: 6, bl: 6, tr: 0, br: 0 });
+    this.g.fillStyle(TEAM_COLOR[1]!, 1).fillRoundedRect(X0 + w - bar.blue, BAR_Y, bar.blue, BAR_H, { tl: 0, bl: 0, tr: 6, br: 6 });
+    for (let k = 0; k < bar.orange - 6; k += 14) this.g.fillStyle(0xffffff, 0.6).fillCircle(X0 + 8 + k, BAR_Y + BAR_H / 2, 2.5); // dots / stripes: the bar tells the teams without colour too
+    for (let k = 0; k < bar.blue - 6; k += 12) this.g.fillStyle(0xffffff, 0.55).fillRect(X0 + w - 10 - k, BAR_Y + 2, 4, BAR_H - 4);
   }
 
   /** The announcement banner (3 s), the next event, and the x2 over the golden zone. */
   private drawAnnouncements(s: ManchazoState) {
     const b = bannerOf(s, this.host.teamName.bind(this.host));
     if (b) {
-      this.g.fillStyle(0x000000, 0.6).fillRoundedRect(X0 + 40, Y0 + 6, MAP_W * PX - 80, 146, 20);
-      this.g.lineStyle(6, b.team >= 0 ? TEAM_COLOR[b.team]! : 0xffd23f, 1).strokeRoundedRect(X0 + 40, Y0 + 6, MAP_W * PX - 80, 146, 20);
+      this.g.fillStyle(num(A.cocoa), 0.82).fillRoundedRect(X0 + 40, Y0 + 6, MAP_W * PX - 80, 146, 20);
+      this.g.lineStyle(6, b.team >= 0 ? TEAM_COLOR[b.team]! : num(A.gold), 1).strokeRoundedRect(X0 + 40, Y0 + 6, MAP_W * PX - 80, 146, 20);
     }
     this.title.setText(b?.title ?? '').setAlpha(b ? Math.min(1, b.age / 8) : 1);
     this.sub.setText(b?.sub ?? '');
@@ -208,10 +226,7 @@ export class MatchScene extends Phaser.Scene {
   private label(slot: number, stunned: boolean): Phaser.GameObjects.Text {
     let t = this.labels.get(slot);
     if (!t) {
-      t = this.add
-        .text(0, 0, '', { fontFamily: 'sans-serif', fontSize: '22px', color: '#111111', fontStyle: 'bold' })
-        .setOrigin(0.5)
-        .setDepth(31);
+      t = this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '22px', color: '#111111', fontStyle: 'bold' }).setOrigin(0.5).setDepth(31);
       this.labels.set(slot, t);
     }
     return t.setAlpha(stunned ? 0.5 : 1);
