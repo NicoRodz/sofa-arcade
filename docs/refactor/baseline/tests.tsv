@@ -127,7 +127,7 @@ apps/catalog/test/catalog.test.ts	passed	apps/catalog games in development: only
 apps/catalog/test/catalog.test.ts	passed	apps/catalog keeps the protocol at v6 and the default lobby of master
 apps/catalog/test/catalog.test.ts	passed	apps/catalog knows its games and modes
 games/arena/test/conformance.test.ts	passed	arena conforms to the game contract a catalog refuses a second manifest with the id of a published game
-games/arena/test/conformance.test.ts	passed	arena conforms to the game contract is announced as soon, with the card the menu always showed
+games/arena/test/conformance.test.ts	passed	arena conforms to the game contract is published (no `soon` flag), with the card the menu always showed
 games/arena/test/conformance.test.ts	passed	arena conforms to the game contract manifest, wire protocol and phone agree (ids, modes, howTo, slots)
 games/arena/test/run.test.ts	passed	arena run (the phones feeding the sim) a stalled frame does not fast-forward the round
 games/arena/test/run.test.ts	passed	arena run (the phones feeding the sim) announces the end of the winner banner exactly once
