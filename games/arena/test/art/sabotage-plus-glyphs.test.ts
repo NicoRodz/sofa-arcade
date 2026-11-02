@@ -23,6 +23,12 @@ describe('the ten sabotage icons read without colour', () => {
   it('each new icon draws its own shape on the card (not a copy of a v1 one)', () => {
     for (const k of PLUS_KINDS) expect(silhouette(k).length).toBeGreaterThan(200);
   });
+  it('the sponge is a rounded block with five holes, and the icon is the disc plus that block (the holes are what makes it a sponge)', () => {
+    const calls = silhouette('sponge').split('|');
+    expect(calls.filter((c) => c.startsWith('fillRoundedRect(')).length).toBe(1);
+    const disc = silhouette('swap').split('|').filter((c) => c.startsWith('fillCircle(')).length; // the swap draws the disc and no holes
+    expect(calls.filter((c) => c.startsWith('fillCircle(')).length).toBeGreaterThanOrEqual(disc + 5);
+  });
   it('the dizzy spiral turns with the spin; the others ignore it', () => {
     const spun = (k: (typeof ALL_KINDS)[number], spin: number) => {
       const r = recorder();
