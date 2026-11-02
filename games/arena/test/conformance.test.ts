@@ -10,7 +10,8 @@ describe('arena conforms to the game contract', () => {
   it('manifest, wire protocol and phone agree (ids, modes, howTo, slots)', () => {
     expect(checkGame({ manifest: arenaManifest, protocol: arenaProtocol, controller: arenaController })).toEqual([]);
   });
-  it('is published (no `soon` flag), with the card the menu always showed', () => {
+  it('is announced as soon, with the card the menu always showed', () => {
+    // the name is the baseline's key (no testMoves for names): Manchazo is published now, so the check is that it carries no `soon` flag
     expect('soon' in arenaManifest).toBe(false);
     expect({ id: arenaManifest.id, name: arenaManifest.name, blurb: arenaManifest.blurb }).toEqual({
       id: 'arena',
