@@ -39,4 +39,5 @@ export function startProblem(mode: Pick<ModeSpec, 'players' | 'teams'>, teams: r
   return setup.ok ? '' : setup.problems[0]!;
 }
 
-export const teamSizes = (teams: readonly Pick<TeamInfo, 'playerIds'>[] | null | undefined): number[] => (teams ?? []).map((t) => t.playerIds.length);
+export const teamSizes = (teams: readonly Pick<TeamInfo, 'playerIds'>[] | null | undefined): number[] =>
+  (teams ?? []).map((t) => t.playerIds.length);

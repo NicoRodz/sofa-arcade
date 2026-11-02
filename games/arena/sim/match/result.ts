@@ -15,7 +15,13 @@ export interface MatchResult {
 
 export function matchResult(s: ManchazoState): MatchResult {
   const m = s.match;
-  const rows: TeamResult[] = m.counts.map((tiles, team) => ({ teamId: team, score: tiles, delivered: 0, vip: 0, reachedAt: m.reachedAt[team]! }));
+  const rows: TeamResult[] = m.counts.map((tiles, team) => ({
+    teamId: team,
+    score: tiles,
+    delivered: 0,
+    vip: 0,
+    reachedAt: m.reachedAt[team]!,
+  }));
   const { order, winner } = rankTeams(rows);
   return {
     order: order.map((r) => ({ team: r.teamId, tiles: r.score, percent: percentOf(m, r.teamId) })),

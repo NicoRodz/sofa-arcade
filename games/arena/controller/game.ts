@@ -4,5 +4,5 @@ import { DIFFICULTY_LABEL } from '@pichi/core';
 
 export const arenaController: ControllerGame = {
   id: 'arena',
-  setupLabel: (cfg) => `Último en pie · ${DIFFICULTY_LABEL[cfg.difficulty]}`,
+  setupLabel: (cfg) => (cfg.teams ? 'Naranja contra azul' : `Último en pie · ${DIFFICULTY_LABEL[cfg.difficulty]}`),
 };

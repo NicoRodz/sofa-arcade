@@ -7,7 +7,11 @@ describe('round length by connected players', () => {
   it('2-4 -> 75 s, 5-6 -> 90 s, 7-8 -> 105 s', () => {
     expect([2, 3, 4, 5, 6, 7, 8].map(matchSeconds)).toEqual([75, 75, 75, 90, 90, 105, 105]);
     for (const n of [2, 4, 5, 6, 7, 8]) {
-      const s = createManchazo({ slots: Array.from({ length: n }, (_v, i) => i), teams: Array.from({ length: n }, (_v, i) => i % 2), seed: 3 });
+      const s = createManchazo({
+        slots: Array.from({ length: n }, (_v, i) => i),
+        teams: Array.from({ length: n }, (_v, i) => i % 2),
+        seed: 3,
+      });
       expect(s.grid.durationTicks).toBe(matchTicks(n));
     }
   });
