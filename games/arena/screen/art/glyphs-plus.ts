@@ -76,14 +76,12 @@ export const PLUS_ICONS: Record<PlusIcon, Drawer> = {
       const a = Math.PI * (0.78 - (k / 12) * 1.56) + Math.PI / 2; // round belly from the right flank to the left
       drop.push([x + Math.cos(a) * r * 0.46, y + r * 0.14 + Math.sin(a) * r * 0.46]);
     }
-    g.lineStyle(4, INK, 1);
-    for (let k = 0; k < drop.length; k++) {
-      const [a, b] = [drop[k]!, drop[(k + 1) % drop.length]!];
-      if (k % 2 === 0) g.beginPath().moveTo(a[0], a[1]).lineTo(b[0], b[1]).strokePath(); // dashed: it is there but cannot be seen
-    }
-    g.fillStyle(INK, 1)
-      .fillCircle(x + r * 0.5, y - r * 0.4, r * 0.07)
-      .fillCircle(x - r * 0.52, y + r * 0.52, r * 0.07);
+    poly(g, drop, WHITE, INK, 5); // a solid, thick outline: the drop is there but empty (invisible)
+    g.lineStyle(4, INK, 1)
+      .beginPath()
+      .moveTo(x - r * 0.58, y + r * 0.62)
+      .lineTo(x + r * 0.58, y - r * 0.5)
+      .strokePath(); // struck through: you cannot see it
   },
   sponge(g, x, y, r) {
     g.fillStyle(WHITE, 1).fillRoundedRect(x - r * 0.6, y - r * 0.4, r * 1.2, r * 0.8, r * 0.22);
