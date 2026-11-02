@@ -13,13 +13,19 @@ const packages: Record<string, string[]> = {
   catalog: ['apps/catalog/test'],
   tools: ['tools'],
 };
+// Packages whose tests are pure (no DOM, no module state): they run without per-file isolation (about -40% CPU), also under shuffle.
+const noIsolate = new Set(['core', 'game-obstaculos']);
 // Directories with slow tests only (a fast project of theirs would run 0 tests).
 const slowOnly: string[] = ['apps/controller'];
 
+// Local CPU cap: PG_TEST_WORKERS=50% (or a number). Unset (CI, `npm test`) keeps the vitest default, which is every core but one.
+const maxWorkers = process.env.PG_TEST_WORKERS || undefined;
+
 export default defineConfig({
   test: {
+    ...(maxWorkers ? { maxWorkers } : {}),
     projects: [
-      ...Object.entries(packages).map(([name, dirs]) => packageProject(name, dirs)),
+      ...Object.entries(packages).map(([name, dirs]) => packageProject(name, dirs, { isolate: !noIsolate.has(name) })),
       slowProject([...Object.values(packages).flat(), ...slowOnly]),
     ],
   },
