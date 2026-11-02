@@ -49,6 +49,7 @@ const matchScene = (): MatchScene =>
   (mscene ??= new MatchScene({
     state: () => (matchRun.run && showing() ? matchRun.run.state : null),
     name: (slot) => player(slot)?.name ?? `J${slot + 1}`,
+    look: (slot) => player(slot)?.ap,
     teamName: (team) => app.config.teams?.[team]?.name ?? `Equipo ${team + 1}`,
   }));
 
