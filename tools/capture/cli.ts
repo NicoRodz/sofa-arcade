@@ -17,6 +17,7 @@ import { runDash, runFase1, runJuice, runMaps, runNewmaps, runReplay } from './s
 import { runArenaGridPhone, runArenaGridTv } from './scenarios/arena-grid';
 import { runManchazoPhone, runManchazoTv } from './scenarios/manchazo';
 import { runManchazoSeeds } from './scenarios/manchazo-seeds';
+import { runManchazoSabotagePhone, runManchazoSabotageTv } from './scenarios/manchazo-sabotage';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
 
 type Scenario = (c: Ctx) => Promise<void>;
@@ -29,6 +30,8 @@ const MODES: Record<string, Scenario[]> = {
   'manchazo-tv': [runManchazoTv],
   'manchazo-phone': [runManchazoPhone],
   'manchazo-seeds': [runManchazoSeeds],
+  'manchazo-sabotage-tv': [runManchazoSabotageTv],
+  'manchazo-sabotage-phone': [runManchazoSabotagePhone],
   'versus-phone': [runVersusPhone],
   versus: [runVersus],
   'vs-hud': [runVsHud],

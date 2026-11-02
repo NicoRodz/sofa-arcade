@@ -8,7 +8,7 @@ function setup() {
   const s = round();
   put(s, 0, 10, 0);
   put(s, 1, 20, 14);
-  for (let x = 4; x <= 16; x++) for (let y = 0; y <= 1; y++) if (!(x === 10 && y === 1 && false)) paintTile(s.match, x, y, 1, 0);
+  for (let x = 4; x <= 16; x++) for (let y = 0; y <= 1; y++) paintTile(s.match, x, y, 1, 0);
   paintTile(s.match, 11, 0, 0, 0); // its own paint inside the diamond
   return s;
 }
