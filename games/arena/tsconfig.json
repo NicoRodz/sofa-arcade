@@ -5,7 +5,9 @@
       "ES2022",
       "DOM"
     ],
-    "types": []
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "*.ts",
