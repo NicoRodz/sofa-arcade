@@ -17,7 +17,8 @@ const tone = (x: number, y: number): number => (x * 7 + y * 13) % 3;
 
 export function planFurniture(map: TileMap): Piece[] {
   const taken = new Uint8Array(MAP_W * MAP_H);
-  const free = (x: number, y: number): boolean => solidAt(map, x, y) && !taken[y * MAP_W + x];
+  // in bounds: solidAt counts the outside as furniture, and a sofa must not run off the board
+  const free = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < MAP_W && y < MAP_H && solidAt(map, x, y) && !taken[y * MAP_W + x];
   const take = (x: number, y: number, w: number, h: number) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) taken[(y + j) * MAP_W + x + i] = 1;
   };
