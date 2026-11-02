@@ -44,6 +44,16 @@ describe('the living map is placed by the seed', () => {
     expect([...kinds].sort()).toEqual(['brush', 'fountain', 'sofa']);
     expect(pairs.size).toBeGreaterThanOrEqual(3);
     expect(fountains).toEqual(new Set([true, false]));
+    let freeCentre = 0;
+    let without = 0; // the centre is floor and the seed still says no: the odds are not 1
+    for (const seed of SEEDS) {
+      const g = gen(seed);
+      if (g.map.solid[FOUNTAIN_TILE[1] * MAP_W + FOUNTAIN_TILE[0]] !== 0) continue;
+      freeCentre++;
+      if (!g.living.some((e) => e.kind === 'fountain')) without++;
+    }
+    expect(without).toBeGreaterThan(freeCentre * 0.15);
+    expect(without).toBeLessThan(freeCentre * 0.55); // about a third
   });
 
   it('V1-V3 hold in every combination of states, V4-V7 on the base map (150 seeds)', () => {

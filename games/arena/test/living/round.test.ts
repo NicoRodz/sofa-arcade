@@ -32,6 +32,8 @@ describe('a round with the living map', () => {
     expect(s.match.live).toBeNull(); // the living map needs a generated map
     const l = createManchazo(cfg(MAPS[0]!));
     expect(l.grid.map).not.toBe(generateMap(MAPS[0]!).map);
+    expect(l.grid.map.solid).not.toBe(l.match.live!.base); // the map shuts and opens tiles; `base` is its own copy with every part open
+    expect(l.grid.map.solid).not.toEqual(l.match.live!.base); // state 0 stands from the first tick
     expect(l.match.live!.pairs.length).toBeGreaterThan(0);
     const [spec] = l.match.live!.pairs.map((p) => p.spec);
     for (const [x, y] of footprint(spec!).filter((t) => t[0] < 13)) expect(l.match.live!.base[y * MAP_W + x]).toBe(0); // base: every part open

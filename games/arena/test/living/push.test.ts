@@ -99,7 +99,13 @@ describe('the push rule: a body in the way is moved along the part, a pinata mak
   it('a body on the pivot is never pushed (the pivot stays open)', () => {
     const s = openRound([brush(4, 4, 0)]);
     put(s, 0, 4, 4);
-    tick(s, {}, 241 * 4);
+    const open = () => [s.grid.map.solid[4 * 27 + 4], s.grid.map.solid[4 * 27 + 22]]; // both pivots (the mirror of column 4 is 22)
+    expect(open()).toEqual([0, 0]);
+    for (let n = 0; n < 4; n++) {
+      tick(s, {}, 240);
+      expect(open()).toEqual([0, 0]);
+    }
+    expect(pair(s).state).toBe(3); // changes on ticks 240, 480 and 720
     expect(tileOf(s, 0)).toEqual([4, 4]);
     expect(pair(s).waited).toBe(0);
   });
