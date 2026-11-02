@@ -1,71 +1,70 @@
 import { describe, expect, it } from 'vitest';
 import { DIFFICULTY_PARAMS } from '../constants';
 import { parseLevel } from '../parse';
-import { modesOf, validateState } from '../validator';
+import { modesOf } from '../validator';
 import { DIFFICULTIES, type Difficulty } from '@pichi/core/difficulty';
 import type { Tether } from '../types';
 import { FALLBACK_LOG, MAX_ATTEMPTS, generateLevel, type GenerateOpts } from './generate';
 import { LEVELS } from '../levels';
+import { runJobs } from '../test/seed-pool';
 
 const TETHERS: Tether[] = ['chainOnly', 'freeOnly'];
 const NS = [2, 4, 8];
 
-// An independent check: parse + the validator again on the level the generator handed back, for its own n, mode(s) and difficulty.
-function revalidate(o: GenerateOpts, rows: string[], level: ReturnType<typeof generateLevel>['level']): string[] {
-  const errors: string[] = [...parseLevel(level).errors];
-  for (const mode of modesOf(level)) {
-    const r = validateState(level, { n: o.n, mode, diff: o.difficulty });
-    if (!r.ok) errors.push(`${mode}: ${r.errors.join('; ')}`);
-  }
-  if (rows.length !== 18) errors.push(`rows ${rows.length}`);
-  return errors;
-}
+// The options of a seed: difficulty, players and tether rotate with it.
+const optsOf = (seed: number): GenerateOpts => ({
+  seed,
+  n: NS[seed % 3]!,
+  tether: TETHERS[seed % 2]!,
+  difficulty: DIFFICULTIES[Math.floor(seed / 3) % 3]!,
+});
 
 describe('generateLevel: 500 consecutive seeds, every one valid', { timeout: 900_000 }, () => {
-  it('500 seeds (difficulty, players and mode rotating) produce a valid level each, with no hand-made fallback and within the attempt cap', () => {
+  it('500 seeds (difficulty, players and mode rotating) produce a valid level each, with no hand-made fallback and within the attempt cap', async () => {
     FALLBACK_LOG.length = 0;
     const bad: string[] = [];
     let inBand = 0,
       attempts = 0;
     const seen = new Set<string>();
-    for (let seed = 1; seed <= 500; seed++) {
-      const o: GenerateOpts = { seed, n: NS[seed % 3]!, tether: TETHERS[seed % 2]!, difficulty: DIFFICULTIES[Math.floor(seed / 3) % 3]! };
-      const { level, report } = generateLevel(o);
-      const errs = revalidate(o, level.rows, level);
-      if (errs.length) bad.push(`seed ${seed} ${JSON.stringify(o)}: ${errs.join(' | ')}`);
-      if (report.fallback) bad.push(`seed ${seed}: fell back to ${report.fallback}`);
-      if (report.attempts > MAX_ATTEMPTS) bad.push(`seed ${seed}: ${report.attempts} attempts`);
+    // The seeds are generated and revalidated in worker threads (test/seed-pool.ts); the records come back in seed order and are asserted here.
+    // (The same goes for every test below that loops over many generateLevel calls.)
+    const { records, fallbackLog } = await runJobs(Array.from({ length: 500 }, (_, i) => optsOf(i + 1)));
+    expect(records).toHaveLength(500);
+    for (const { opts, level, report, errors } of records) {
+      if (errors.length) bad.push(`seed ${opts.seed} ${JSON.stringify(opts)}: ${errors.join(' | ')}`);
+      if (report.fallback) bad.push(`seed ${opts.seed}: fell back to ${report.fallback}`);
+      if (report.attempts > MAX_ATTEMPTS) bad.push(`seed ${opts.seed}: ${report.attempts} attempts`);
       if (report.inBand) inBand++;
       attempts += report.attempts;
       seen.add(level.rows.join('\n'));
     }
     expect(bad).toEqual([]);
-    expect(FALLBACK_LOG).toEqual([]);
+    expect(fallbackLog).toEqual([]);
     expect(seen.size).toBeGreaterThan(450); // different seeds, different levels
     expect(inBand / 500).toBeGreaterThan(0.7); // the chosen candidate lands in its difficulty band
     expect(attempts / 500).toBeLessThan(6); // the retries are rare
   });
 
-  it('the full matrix: 3 difficulties x n in {2,4,8} x 2 modes x 20 seeds, all valid', () => {
+  it('the full matrix: 3 difficulties x n in {2,4,8} x 2 modes x 20 seeds, all valid', async () => {
     const bad: string[] = [];
+    const jobs: GenerateOpts[] = [];
     for (const difficulty of DIFFICULTIES)
       for (const n of NS)
-        for (const tether of TETHERS)
-          for (let seed = 1000; seed < 1020; seed++) {
-            const o: GenerateOpts = { seed, n, tether, difficulty };
-            const { level } = generateLevel(o);
-            const errs = revalidate(o, level.rows, level);
-            if (errs.length) bad.push(`${JSON.stringify(o)}: ${errs.join(' | ')}`);
-          }
+        for (const tether of TETHERS) for (let seed = 1000; seed < 1020; seed++) jobs.push({ seed, n, tether, difficulty });
+    const { records } = await runJobs(jobs);
+    for (const r of records) if (r.errors.length) bad.push(`${JSON.stringify(r.opts)}: ${r.errors.join(' | ')}`);
+    expect(records).toHaveLength(360);
     expect(bad).toEqual([]);
   });
 
-  it('tether any: valid in both modes at once', () => {
-    for (let seed = 7000; seed < 7020; seed++) {
-      const o: GenerateOpts = { seed, n: 4, tether: 'any', difficulty: 'normal' };
-      const { level, report } = generateLevel(o);
+  it('tether any: valid in both modes at once', async () => {
+    const { records } = await runJobs(
+      Array.from({ length: 20 }, (_, i): GenerateOpts => ({ seed: 7000 + i, n: 4, tether: 'any', difficulty: 'normal' })),
+    );
+    expect(records).toHaveLength(20);
+    for (const { level, report, errors } of records) {
       expect(report.fallback).toBeNull();
-      expect(revalidate(o, level.rows, level)).toEqual([]);
+      expect(errors).toEqual([]);
       expect(modesOf(level)).toEqual(['chain', 'free']);
     }
   });
@@ -106,38 +105,43 @@ describe('generateLevel: determinism and structure', { timeout: 120_000 }, () =>
     }
   });
 
-  it('the harder the difficulty, the higher D on average (bands 10-35 < 35-60 < 60-85)', () => {
-    const mean = (d: Difficulty) => {
+  it('the harder the difficulty, the higher D on average (bands 10-35 < 35-60 < 60-85)', async () => {
+    const mean = async (d: Difficulty) => {
       let s = 0;
-      for (let seed = 300; seed < 320; seed++) s += generateLevel({ seed, n: 4, tether: 'freeOnly', difficulty: d }).report.d;
+      const { records } = await runJobs(
+        Array.from({ length: 20 }, (_, i): GenerateOpts => ({ seed: 300 + i, n: 4, tether: 'freeOnly', difficulty: d })),
+      );
+      for (const r of records) s += r.report.d;
       return s / 20;
     };
-    const e = mean('easy'),
-      nm = mean('normal'),
-      h = mean('hard');
+    const e = await mean('easy'),
+      nm = await mean('normal'),
+      h = await mean('hard');
     expect(e).toBeLessThan(nm);
     expect(nm).toBeLessThan(h);
   });
 
-  it('cooperative modules respect n: with 2 players no tower of 3 and no wall of 5 ever appears; with 8 they can', () => {
-    const wall5 = (n: number) => {
+  it('cooperative modules respect n: with 2 players no tower of 3 and no wall of 5 ever appears; with 8 they can', async () => {
+    const wall5 = async (n: number) => {
       let c = 0;
-      for (let seed = 400; seed < 440; seed++)
-        if (generateLevel({ seed, n, tether: 'freeOnly', difficulty: 'hard' }).report.modules.includes('wall5')) c++;
+      const { records } = await runJobs(
+        Array.from({ length: 40 }, (_, i): GenerateOpts => ({ seed: 400 + i, n, tether: 'freeOnly', difficulty: 'hard' })),
+      );
+      for (const r of records) if (r.report.modules.includes('wall5')) c++;
       return c;
     };
-    expect(wall5(2)).toBe(0);
-    expect(wall5(8)).toBeGreaterThan(0);
+    expect(await wall5(2)).toBe(0);
+    expect(await wall5(8)).toBeGreaterThan(0);
   });
 
-  it('the validator is in the loop: over 60 seeds some drafts are refused and retried, and what comes back always validates', () => {
+  it('the validator is in the loop: over 60 seeds some drafts are refused and retried, and what comes back always validates', async () => {
     let rejected = 0;
-    for (let seed = 1; seed <= 60; seed++) {
-      const o: GenerateOpts = { seed, n: NS[seed % 3]!, tether: TETHERS[seed % 2]!, difficulty: DIFFICULTIES[Math.floor(seed / 3) % 3]! };
-      const { level, report } = generateLevel(o);
+    const { records } = await runJobs(Array.from({ length: 60 }, (_, i) => optsOf(i + 1)));
+    for (const { opts, report, errors } of records) {
       rejected += report.rejected;
-      expect(revalidate(o, level.rows, level), `seed ${seed}`).toEqual([]);
+      expect(errors, `seed ${opts.seed}`).toEqual([]);
     }
+    expect(records).toHaveLength(60);
     expect(rejected).toBeGreaterThan(0);
   });
 
