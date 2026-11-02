@@ -13,7 +13,7 @@ import {
   v3Exits,
   validateMap,
 } from '../../map';
-import { CLOCK_X, GOLD_COLS, clockRow, createEvents } from '../../sim';
+import { CLOCK_X, GOLD_COLS, clockRow, createEvents, createManchazo } from '../../sim';
 
 const SEEDS = Array.from({ length: 150 }, (_, i) => i * 7919 + 13);
 const gen = (seed: number) => generateMap(seed, undefined, true);
@@ -118,6 +118,24 @@ describe('the fountain, the Hourglass circle and the golden zone share the middl
         expect(near(13, 7, GOLD_COLS[0], GOLD_COLS[1], p.row, p.row + 2)).toBeGreaterThan(2);
     }
     expect(checked).toBeGreaterThan(20);
+  });
+
+  it('in a real round (flag on, any round seed) the circle row and the gold rows the round drew stay out of the splash, and a round without the fountain draws as in F4', () => {
+    let withFountain = 0;
+    for (const mapSeed of SEEDS)
+      for (const seed of [1, 2, 3]) {
+        const s = createManchazo({ slots: [0, 1], teams: [0, 1], seed, mapSeed, events: true, living: true });
+        const ev = s.match.ev!;
+        if (!s.match.live!.fountain) {
+          expect(ev.clock.row).toBe(clockRow(s.grid.map, seed));
+          continue;
+        }
+        withFountain++;
+        expect(near(13, 7, CLOCK_X - 1, CLOCK_X + 1, ev.clock.row - 1, ev.clock.row + 1)).toBeGreaterThan(2);
+        for (const p of ev.program.filter((q) => q.kind === 'gold'))
+          expect(near(13, 7, GOLD_COLS[0], GOLD_COLS[1], p.row, p.row + 2)).toBeGreaterThan(2);
+      }
+    expect(withFountain).toBeGreaterThan(100);
   });
 
   it('without a fountain the circle and the program are what F4 drew (bit for bit)', () => {
