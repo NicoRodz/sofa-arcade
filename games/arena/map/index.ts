@@ -7,3 +7,5 @@ export {
   isSolid,
   spawnTile,
 } from './layout';
+export { emptyMap, f0Map, floorCount, hashMap, mirrorTile, solidAt, type Tile, type TileMap } from './tile-map';
+export * from './gen';

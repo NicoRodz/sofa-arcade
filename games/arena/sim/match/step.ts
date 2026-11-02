@@ -22,11 +22,11 @@ export function stepManchazo(s: ManchazoState, inputs: ReadonlyMap<number, Manch
   const m = s.match;
   const stunned = (i: number) => m.bodies[i]!.stun > 0;
   g.bodies.forEach((b, i) => {
-    if (!stunned(i)) steer(b, inputs.get(b.slot) ?? NO_MANCHAZO_INPUT, g.control);
+    if (!stunned(i)) steer(g.map, b, inputs.get(b.slot) ?? NO_MANCHAZO_INPUT, g.control);
   });
   g.bodies.forEach((b, i) => {
     if (stunned(i)) return;
-    advance(b);
+    advance(g.map, b);
     if (b.dir !== NONE) m.bodies[i]!.face = b.dir;
   });
   g.bodies.forEach((b, i) => {

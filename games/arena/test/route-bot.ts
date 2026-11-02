@@ -1,6 +1,6 @@
 // Scripted bot, tests only (never in the product): walks a list of waypoint tiles by the shortest path (BFS), asking for a straight line whenever
 // it can. It is the reference of the F0 circuit metric: the stick it sends is always a pure axis at full tilt, like a perfect player.
-import { MAP_H, MAP_W, isSolid } from '../map';
+import { MAP_H, MAP_W, f0Map, solidAt, type TileMap } from '../map';
 import { DOWN, LEFT, NONE, RIGHT, UP, type Dir, type GridBody, type GridInput } from '../sim';
 
 const STEPS: readonly (readonly [Dir, number, number])[] = [
@@ -12,7 +12,7 @@ const STEPS: readonly (readonly [Dir, number, number])[] = [
 const SPAN = 16;
 
 /** Steps to the target from every tile (-1 for furniture or unreachable). */
-export function distanceField(tx: number, ty: number): Int16Array {
+export function distanceField(tx: number, ty: number, map: TileMap = f0Map()): Int16Array {
   const d = new Int16Array(MAP_W * MAP_H).fill(-1);
   d[ty * MAP_W + tx] = 0;
   const q = [[tx, ty]] as [number, number][];
@@ -21,7 +21,7 @@ export function distanceField(tx: number, ty: number): Int16Array {
     for (const [, dx, dy] of STEPS) {
       const nx = x + dx,
         ny = y + dy;
-      if (isSolid(nx, ny) || d[ny * MAP_W + nx] !== -1) continue;
+      if (solidAt(map, nx, ny) || d[ny * MAP_W + nx] !== -1) continue;
       d[ny * MAP_W + nx] = d[y * MAP_W + x]! + 1;
       q.push([nx, ny]);
     }
@@ -33,8 +33,11 @@ export class RouteBot {
   next = 0; // index of the waypoint being chased
   private fields: Int16Array[];
 
-  constructor(private waypoints: readonly (readonly [number, number])[]) {
-    this.fields = waypoints.map(([x, y]) => distanceField(x, y));
+  constructor(
+    private waypoints: readonly (readonly [number, number])[],
+    private map: TileMap = f0Map(),
+  ) {
+    this.fields = waypoints.map(([x, y]) => distanceField(x, y, map));
   }
 
   get done(): boolean {
@@ -52,7 +55,7 @@ export class RouteBot {
     for (const [dir, dx, dy] of STEPS) {
       const nx = tx + dx,
         ny = ty + dy;
-      if (isSolid(nx, ny) || d[ny * MAP_W + nx] !== here - 1) continue;
+      if (solidAt(this.map, nx, ny) || d[ny * MAP_W + nx] !== here - 1) continue;
       if (pick === NONE || dir === b.dir) pick = dir; // prefer to keep the heading
     }
     const [, dx, dy] = STEPS[pick === NONE ? 0 : pick]!;

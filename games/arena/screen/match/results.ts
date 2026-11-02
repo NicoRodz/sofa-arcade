@@ -1,4 +1,5 @@
 // Manchazo's results panel: who won, the area of each team and the small team's edge when there was one. Pure functions of the round's state (no DOM).
+import { formatSeed } from '../../map';
 import { handicap, matchResult, type ManchazoState } from '../../sim';
 
 export interface ResultsView {
@@ -6,6 +7,7 @@ export interface ResultsView {
   color: string; // winner's colour ('' on a draw)
   rows: { icon: string; name: string; percent: string; tiles: number; color: string }[];
   note: string;
+  mapCode: string; // 'MAPA 2·7KQ2M' ('' on the F0 map)
 }
 
 export function resultsView(s: ManchazoState, teams: readonly { name: string; icon: string; color: string }[]): ResultsView {
@@ -19,6 +21,7 @@ export function resultsView(s: ManchazoState, teams: readonly { name: string; ic
   const h = handicap(sizes);
   const small = sizes[0] === sizes[1] ? -1 : sizes.indexOf(Math.min(...sizes));
   return {
+    mapCode: s.mapSeed === null ? '' : `MAPA ${formatSeed(s.mapSeed)}`,
     heading: win ? `¡Ganó ${win.name}!` : 'Empate',
     color: win?.color ?? '',
     rows,
@@ -36,5 +39,8 @@ export function resultsHtml(v: ResultsView, esc: (s: string) => string): string 
         `<div class="arow" style="color:${esc(r.color)}"><b>${i + 1}</b> ${esc(r.icon)} ${esc(r.name)} · ${esc(r.percent)} del área · ${r.tiles} casillas</div>`,
     )
     .join('');
-  return `${rows}${v.note ? `<div class="arow">${esc(v.note)}</div>` : ''}`;
+  const seed = v.mapCode
+    ? `<div class="arow" style="font:700 44px monospace;letter-spacing:.08em;margin-top:14px">${esc(v.mapCode)}</div>`
+    : '';
+  return `${rows}${v.note ? `<div class="arow">${esc(v.note)}</div>` : ''}${seed}`;
 }

@@ -2,7 +2,7 @@
 // No logic here: it reads the sim's state each frame.
 import Phaser from 'phaser';
 import { C, W } from '@pichi/screen-kit/art';
-import { MAP_H, MAP_ROWS, MAP_W } from '../../map';
+import { MAP_H, MAP_W, formatSeed, solidAt } from '../../map';
 import { blastTiles, percentOf, type ManchazoState } from '../../sim';
 import { floorBar } from './hud-bar';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
@@ -23,6 +23,7 @@ export class MatchScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics;
   private pct: Phaser.GameObjects.Text[] = [];
   private clock!: Phaser.GameObjects.Text;
+  private seed!: Phaser.GameObjects.Text;
   private labels = new Map<number, Phaser.GameObjects.Text>();
 
   constructor(private host: MatchHost) {
@@ -35,6 +36,13 @@ export class MatchScene extends Phaser.Scene {
     const style = (color: string) => ({ fontFamily: 'sans-serif', fontSize: '56px', color, fontStyle: 'bold' });
     this.pct = [this.add.text(204, 36, '', style('#E69F00')), this.add.text(W - 204, 36, '', style('#4aa8e0')).setOrigin(1, 0)];
     this.clock = this.add.text(W / 2, 20, '', style(C.cream)).setOrigin(0.5, 0);
+    // the map seed, bottom left, in the 90 px band under the floor: read it off the screen to play the same map again
+    this.seed = this.add.text(X0, Y0 + MAP_H * PX + 24, '', {
+      fontFamily: 'monospace',
+      fontSize: '32px',
+      color: '#cfcfcf',
+      fontStyle: 'bold',
+    });
   }
 
   update() {
@@ -43,6 +51,7 @@ export class MatchScene extends Phaser.Scene {
     if (!s) {
       this.pct.forEach((t) => t.setText(''));
       this.clock.setText('');
+      this.seed.setText('');
       return this.labels.forEach((t) => t.setVisible(false));
     }
     this.drawFloor(s);
@@ -58,13 +67,14 @@ export class MatchScene extends Phaser.Scene {
         .setText(String(b.slot + 1));
     });
     this.drawHud(s);
+    this.seed.setText(s.mapSeed === null ? '' : `MAPA ${formatSeed(s.mapSeed)}`);
   }
 
   private drawFloor(s: ManchazoState) {
     this.g.fillStyle(0x4a4a4a, 1).fillRect(X0, Y0, MAP_W * PX, MAP_H * PX);
     for (let y = 0; y < MAP_H; y++)
       for (let x = 0; x < MAP_W; x++) {
-        const solid = MAP_ROWS[y]![x] === '#';
+        const solid = solidAt(s.grid.map, x, y);
         const team = s.match.paint[y * MAP_W + x]!;
         const px = X0 + x * PX,
           py = Y0 + y * PX;
@@ -81,7 +91,7 @@ export class MatchScene extends Phaser.Scene {
       const cx = X0 + p.x * PX + PX / 2,
         cy = Y0 + p.y * PX + PX / 2;
       if (p.fuse <= WARN_TICKS) {
-        for (const [x, y] of blastTiles(p.x, p.y, p.radius))
+        for (const [x, y] of blastTiles(p.x, p.y, p.radius, s.grid.map))
           this.g.lineStyle(3, 0xffffff, 0.9).strokeRect(X0 + x * PX + 4, Y0 + y * PX + 4, PX - 8, PX - 8);
       }
       this.g.fillStyle(TEAM_COLOR[p.team]!, 1).fillCircle(cx, cy, PX * 0.3);

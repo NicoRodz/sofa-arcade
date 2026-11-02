@@ -1,5 +1,5 @@
 // The Manchazo round: the grid world (bodies, F0) plus what F1 adds around it. Kept apart from the grid so F0's sim stays bit for bit what it was.
-import { MAP_H, MAP_W, isSolid } from '../../map';
+import { MAP_H, MAP_W, floorCount, type TileMap } from '../../map';
 import { RIGHT, type Dir, type GridState } from '../grid';
 import { BASE_RADIUS, SMALL_TEAM_RADIUS_BONUS } from './config';
 
@@ -37,6 +37,8 @@ export interface MatchState {
 export interface ManchazoState {
   grid: GridState;
   match: MatchState;
+  mapSeed: number | null; // the seed the map came from (shown on the TV); null for a round on the F0 map that asked for none
+  mapFallback: boolean; // the seed did not validate in 64 attempts: the F0 map stands in
 }
 
 /** The small team's edge (handicap 'game'): +1 radius and one reserve pinata per player it lacks next to the biggest team. Even teams: none. */
@@ -48,17 +50,15 @@ export function handicap(sizes: readonly number[]): { radius: number[]; reserve:
   };
 }
 
-export function createMatch(teamOfBody: readonly number[]): MatchState {
+export function createMatch(teamOfBody: readonly number[], map: TileMap): MatchState {
   const sizes = [0, 0];
   for (const t of teamOfBody) sizes[t]!++;
   const h = handicap(sizes);
-  let paintable = 0;
-  for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) if (!isSolid(x, y)) paintable++;
   return {
     paint: new Int8Array(MAP_W * MAP_H).fill(-1),
     counts: [0, 0],
     reachedAt: [0, 0],
-    paintable,
+    paintable: floorCount(map),
     pinatas: [],
     nextId: 0,
     bodies: teamOfBody.map(() => ({ stun: 0, trail: 0, trailTeam: 0, face: RIGHT })),

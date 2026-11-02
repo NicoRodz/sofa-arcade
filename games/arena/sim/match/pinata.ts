@@ -24,7 +24,7 @@ export function dropPinata(s: ManchazoState, i: number): boolean {
 
 function detonate(s: ManchazoState, p: Pinata): void {
   const m = s.match;
-  const tiles = blastTiles(p.x, p.y, p.radius);
+  const tiles = blastTiles(p.x, p.y, p.radius, s.grid.map);
   for (const [x, y] of tiles) paintTile(m, x, y, p.team, s.grid.tick);
   const hit = new Set(tiles.map(([x, y]) => `${x},${y}`));
   s.grid.bodies.forEach((b, i) => {
