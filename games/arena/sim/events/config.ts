@@ -49,3 +49,9 @@ export const CLOCK_RETREAT = CLOCK_CIRCLE; // units lost per tick while it goes 
 export const CLOCK_EXTRA_TICKS = 15 * TICK_HZ;
 
 export const BANNER_TICKS = 3 * TICK_HZ; // the TV keeps an announcement up this long
+
+// F5, the fountain stands on the middle line at (13, 7) and splashes the tiles within 2 of it. The Hourglass's circle and the golden zone are also on the
+// middle line, so with a fountain in the round they keep out of its splash: the circle's centre row is at least FOUNTAIN_CLEAR + 1 rows from row 7 (rows 1-3
+// and 11-13), and the golden zone starts on one of GOLD_ROWS_CLEAR (it is 3 rows tall, so it ends 3 or more rows from row 7). Without a fountain nothing changes.
+export const FOUNTAIN_CLEAR = 3;
+export const GOLD_ROWS_CLEAR: readonly number[] = [0, 1, 2, 10, 11, 12];

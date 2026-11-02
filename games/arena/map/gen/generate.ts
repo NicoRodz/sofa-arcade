@@ -4,6 +4,8 @@ import { mulberry32, type Rng } from '@pichi/core';
 import { MAP_H, MAP_W } from '../layout';
 import { emptyMap, f0Map, mirrorTile, type Tile, type TileMap } from '../tile-map';
 import { furnish } from './furniture';
+import { placeLiving } from './living-place';
+import type { LivingSpec } from './living-shapes';
 import { MAP_SEED_TAG } from './seed';
 import { isValidMap } from './validate';
 import { v1Connection } from './validate-state';
@@ -23,6 +25,7 @@ export interface GeneratedMap {
   seed: number;
   attempts: number; // 1..64 when generated; 64 plus the fallback when none validated
   fallback: boolean; // the F0 map stands in
+  living: LivingSpec[]; // F5: the pairs and the fountain placed on it (empty unless asked for, and on the fallback)
 }
 
 /** The random stream of attempt k of a seed: its own substream, so a retry shares nothing with the attempt before. */
@@ -78,11 +81,12 @@ export function draw(rng: Rng): TileMap {
   return m;
 }
 
-/** `accept` is the validator (injectable so a test can force the fallback); it defaults to V1-V7. */
-export function generateMap(seed: number, accept: (m: TileMap) => boolean = isValidMap): GeneratedMap {
+/** `accept` is the validator of the base map (injectable so a test can force the fallback); it defaults to V1-V7. With `withLiving` the living map is placed on a valid map (F5). */
+export function generateMap(seed: number, accept: (m: TileMap) => boolean = isValidMap, withLiving = false): GeneratedMap {
   for (let k = 0; k < MAX_ATTEMPTS; k++) {
-    const map = draw(attemptRng(seed, k));
-    if (accept(map)) return { map, seed, attempts: k + 1, fallback: false };
+    const rng = attemptRng(seed, k);
+    const map = draw(rng);
+    if (accept(map)) return { map, seed, attempts: k + 1, fallback: false, living: withLiving ? placeLiving(map, rng) : [] };
   }
-  return { map: f0Map(), seed, attempts: MAX_ATTEMPTS, fallback: true };
+  return { map: f0Map(), seed, attempts: MAX_ATTEMPTS, fallback: true, living: [] };
 }

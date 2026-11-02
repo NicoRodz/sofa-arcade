@@ -1,10 +1,11 @@
 // The Manchazo round: the grid world (bodies, F0) plus what F1 adds around it. Kept apart from the grid so F0's sim stays bit for bit what it was.
-import { MAP_H, MAP_W, floorCount, type TileMap } from '../../map';
+import { MAP_H, MAP_W, floorCount, footprint, type LivingSpec, type TileMap } from '../../map';
 import { RIGHT, type Dir, type GridState } from '../grid';
 import type { EventsState } from '../events/state';
 import type { Armable } from '../sabotage/kinds';
 import { createEvents } from '../events/state';
 import { createSabotage, type SabotageState } from '../sabotage/state';
+import { createLive, type LiveState } from '../living/state';
 import { BASE_RADIUS, SMALL_TEAM_RADIUS_BONUS } from './config';
 
 export interface Pinata {
@@ -48,6 +49,7 @@ export interface MatchState {
   sizes: number[]; // players per team
   sab: SabotageState | null; // the sabotages (F3); null when the round plays without them: its sim and its hash are then F1's
   ev: EventsState | null; // the events (F4); null when the round plays without them
+  live: LiveState | null; // the living map (F5); null when the round plays without it
   zone: GoldZone | null; // the golden tiles while the event runs: a tile in it weighs GOLD_FACTOR in `counts`
 }
 
@@ -72,23 +74,30 @@ export function createMatch(
   map: TileMap,
   sabotage?: { seed: number },
   events?: { seed: number; base: number },
+  living?: readonly LivingSpec[],
 ): MatchState {
   const sizes = [0, 0];
   for (const t of teamOfBody) sizes[t]!++;
   const h = handicap(sizes);
-  return {
+  const paintable = floorCount(map); // every living tile open: a closed one is still a tile of the floor
+  const shut = living ? new Set(living.flatMap((l) => footprint(l)).map(([x, y]) => y * MAP_W + x)) : undefined;
+  const fountain = !!living?.some((l) => l.kind === 'fountain');
+  const m: MatchState = {
     paint: new Int8Array(MAP_W * MAP_H).fill(-1),
     counts: [0, 0],
     reachedAt: [0, 0],
-    paintable: floorCount(map),
+    paintable,
     pinatas: [],
     nextId: 0,
     bodies: teamOfBody.map(() => ({ stun: 0, trail: 0, trailTeam: 0, face: RIGHT })),
     reserve: h.reserve,
     radius: h.radius,
     sizes,
-    sab: sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length) : null,
-    ev: events ? createEvents(map, events.seed, events.base) : null,
+    sab: sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length, shut) : null,
+    ev: events ? createEvents(map, events.seed, events.base, fountain) : null,
+    live: null,
     zone: null,
   };
+  if (living) m.live = createLive(map, living); // last: its state 0 shuts tiles of the map the others were built on
+  return m;
 }

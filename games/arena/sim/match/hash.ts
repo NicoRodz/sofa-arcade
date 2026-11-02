@@ -1,6 +1,7 @@
 // FNV-1a over the whole round (grid + paint + pinatas + stains): the replay check and the determinism and mirror tests use it.
 import { hashMap } from '../../map';
 import { hashGrid } from '../grid/hash';
+import { liveWords } from '../living/hash';
 import { eventsWords } from '../events/hash';
 import { sabotageWords } from '../sabotage/hash';
 import type { ManchazoState } from './state';
@@ -20,5 +21,6 @@ export function hashManchazo(s: ManchazoState): number {
     sabotageWords(m.sab).forEach(mix);
   }
   if (m.ev) eventsWords(m).forEach(mix);
+  if (m.live) liveWords(m.live).forEach(mix);
   return h >>> 0;
 }

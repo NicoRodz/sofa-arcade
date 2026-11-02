@@ -10,3 +10,4 @@ export { blastTiles } from './blast';
 export * from '../sabotage/kinds';
 export { cardOf, drawDeck, placePickups, type Pickup, type SabotageState } from '../sabotage/state';
 export * from '../events';
+export * from '../living';

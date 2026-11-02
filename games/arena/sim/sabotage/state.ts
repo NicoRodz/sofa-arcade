@@ -40,7 +40,7 @@ const near = (map: TileMap, x: number, y: number): boolean =>
  * The pickups: PICKUP_PAIRS mirror pairs (x and MAP_W - 1 - x), one per band of rows, on floor on both sides, in the team's half (columns 4-12) and not within 3
  * tiles of an exit. The tile of each band comes from the substream `seed ^ PICKUP_SEED_TAG`, drawn from candidates in reading order: same seed, same places.
  */
-export function placePickups(map: TileMap, seed: number): Pickup[] {
+export function placePickups(map: TileMap, seed: number, avoid?: ReadonlySet<number>): Pickup[] {
   const rng = mulberry32((seed ^ PICKUP_SEED_TAG) >>> 0);
   const out: Pickup[] = [];
   const band = Math.ceil(map.h / PICKUP_PAIRS);
@@ -48,7 +48,7 @@ export function placePickups(map: TileMap, seed: number): Pickup[] {
     const cands: [number, number][] = [];
     for (let y = pair * band; y < Math.min(map.h, (pair + 1) * band); y++)
       for (let x = 4; x <= 12; x++) {
-        const ok = (px: number) => !solidAt(map, px, y) && !near(map, px, y);
+        const ok = (px: number) => !solidAt(map, px, y) && !near(map, px, y) && !avoid?.has(y * MAP_W + px); // F5: never under a living part
         if (ok(x) && ok(MAP_W - 1 - x)) cands.push([x, y]);
       }
     const c = cands[Math.floor(rng() * cands.length)];
@@ -57,11 +57,11 @@ export function placePickups(map: TileMap, seed: number): Pickup[] {
   return out;
 }
 
-export function createSabotage(map: TileMap, seed: number, bodies: number): SabotageState {
+export function createSabotage(map: TileMap, seed: number, bodies: number, avoid?: ReadonlySet<number>): SabotageState {
   const none = <T>(v: T) => Array.from({ length: bodies }, () => v);
   return {
     deck: drawDeck(seed),
-    pickups: placePickups(map, seed),
+    pickups: placePickups(map, seed, avoid),
     held: none<SabotageKind | null>(null),
     armed: none<Armable | null>(null),
     roller: none(0),

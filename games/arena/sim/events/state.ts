@@ -1,7 +1,7 @@
 // What the events add to a round (F4). Everything random is drawn when the round is created (the program, the rows, the rain order, the Hourglass row), so
 // the tick itself never consumes RNG: the same seed gives the same program, whatever the players do.
-import { solidAt, type TileMap } from '../../map';
-import { CLOCK_X, type EventKind } from './config';
+import { FOUNTAIN_TILE, solidAt, type TileMap } from '../../map';
+import { CLOCK_X, FOUNTAIN_CLEAR, type EventKind } from './config';
 import { planProgram, type Planned } from './plan';
 import { substream } from './rng';
 
@@ -43,24 +43,26 @@ const countFloor = (map: TileMap, cy: number) => {
 };
 
 /** The Hourglass's row: among the rows whose 3x3 has the most floor (nine when the map allows), one drawn from `manchazo:clock:<seed>`. */
-export function clockRow(map: TileMap, seed: number): number {
-  const rows = Array.from({ length: map.h - 2 }, (_, k) => k + 1);
+export function clockRow(map: TileMap, seed: number, fountain = false): number {
+  const rows = Array.from({ length: map.h - 2 }, (_, k) => k + 1).filter(
+    (y) => !fountain || Math.abs(y - FOUNTAIN_TILE[1]) > FOUNTAIN_CLEAR,
+  );
   const best = Math.max(...rows.map((y) => countFloor(map, y)));
   const cands = rows.filter((y) => countFloor(map, y) === best);
   return cands[Math.floor(substream(`manchazo:clock:${seed}`)() * cands.length)]!;
 }
 
-export function createEvents(map: TileMap, seed: number, base: number): EventsState {
+export function createEvents(map: TileMap, seed: number, base: number, fountain = false): EventsState {
   return {
     base,
-    program: planProgram(substream(`manchazo:events:${seed}`), map, base),
+    program: planProgram(substream(`manchazo:events:${seed}`), map, base, fountain),
     next: 0,
     active: null,
     big: null,
     rain: null,
     vac: null,
     comeback: { team: -1, until: 0, cool: 0 },
-    clock: { phase: 'idle', outcome: 'none', row: clockRow(map, seed), team: -1, liveAt: 0, endsAt: 0, charge: 0 },
+    clock: { phase: 'idle', outcome: 'none', row: clockRow(map, seed, fountain), team: -1, liveAt: 0, endsAt: 0, charge: 0 },
     hiddenShown: false,
     log: [],
   };

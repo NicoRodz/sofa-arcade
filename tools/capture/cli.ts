@@ -18,6 +18,7 @@ import { runArenaGridPhone, runArenaGridTv } from './scenarios/arena-grid';
 import { runManchazoPhone, runManchazoTv } from './scenarios/manchazo';
 import { runManchazoSeeds } from './scenarios/manchazo-seeds';
 import { runManchazoEventsTv } from './scenarios/manchazo-events';
+import { runManchazoLivingTv } from './scenarios/manchazo-living';
 import { runManchazoSabotagePhone, runManchazoSabotageTv } from './scenarios/manchazo-sabotage';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
 
@@ -34,6 +35,7 @@ const MODES: Record<string, Scenario[]> = {
   'manchazo-sabotage-tv': [runManchazoSabotageTv],
   'manchazo-sabotage-phone': [runManchazoSabotagePhone],
   'manchazo-events-tv': [runManchazoEventsTv],
+  'manchazo-living-tv': [runManchazoLivingTv],
   'versus-phone': [runVersusPhone],
   versus: [runVersus],
   'vs-hud': [runVsHud],

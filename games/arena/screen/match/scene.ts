@@ -6,6 +6,7 @@ import { MAP_H, MAP_W, formatSeed, solidAt } from '../../map';
 import { blastTiles, isHidden, percentOf, type ManchazoState } from '../../sim';
 import { bannerOf, nextLine } from './event-banner';
 import { drawEvents } from './scene-events';
+import { drawLiving } from './scene-living';
 import { floorBar } from './hud-bar';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawCarrier, drawMark, drawPickups, type Frame } from './scene-sabotage';
@@ -101,6 +102,7 @@ export class MatchScene extends Phaser.Scene {
     }
     const f: Frame = { g: this.g, x0: X0, y0: Y0, px: PX };
     this.drawFloor(s);
+    drawLiving(f, s);
     drawPickups(f, s);
     drawEvents(f, s);
     this.drawPinatas(s, f);
