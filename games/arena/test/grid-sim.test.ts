@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '@pichi/core';
-import { createGrid, fits, hashGrid, stepGrid, type ControlPlan, type GridInput, type GridState } from '../sim';
+import { isSolid } from '../map';
+import { createGrid, hashGrid, stepGrid, type ControlPlan, type GridInput, type GridState } from '../sim';
 
 /** A scripted "player": a random stick held for a random 3-40 ticks, from its own seed. Same seed, same script. */
 function scripts(n: number, seed: number) {
@@ -58,9 +59,20 @@ describe('grid sim determinism and safety', () => {
     it(`plan ${plan}: 10,000 random ticks with 8 bodies never put a body inside furniture, off a corridor line, or off the map`, () => {
       let bad = 0;
       let moved = 0;
+      const last = new Map<number, [number, number]>();
       const { s } = play(plan, 8, 10_000, 7, (st) => {
         for (const b of st.bodies) {
-          if (!fits(b.x, b.y)) bad++;
+          // own oracle (not the sim's `fits`): every tile under the 16x16 footprint must be floor
+          for (const [ox, oy] of [
+            [-8, -8],
+            [7, -8],
+            [-8, 7],
+            [7, 7],
+          ] as const)
+            if (isSolid(Math.floor((b.x + ox) / 16), Math.floor((b.y + oy) / 16))) bad++;
+          const p = last.get(b.slot) ?? [b.x, b.y];
+          if (Math.abs(b.x - p[0]) + Math.abs(b.y - p[1]) > 2 + 5) bad++; // 2 units of speed at most, plus the corner assist's 5
+          last.set(b.slot, [b.x, b.y]);
           if ((b.x - 8) % 16 !== 0 && (b.y - 8) % 16 !== 0) bad++; // at least one coordinate stays on a tile centre line
         }
       });
@@ -80,6 +92,10 @@ describe('grid sim determinism and safety', () => {
   it('up to 8 bodies, 3 against 3 takes three spawns per team; 9 are refused', () => {
     const s = createGrid({ slots: [0, 1, 2, 3, 4, 5] });
     expect(s.bodies.filter((b) => b.team === 0)).toHaveLength(3);
+    const eight = createGrid({ slots: [0, 1, 2, 3, 4, 5, 6, 7] }).bodies;
+    expect(new Set(eight.map((b) => `${b.x},${b.y}`)).size).toBe(8); // every body on its own spawn
+    expect(eight[0]!.x).toBe(8);
+    expect(eight[1]!.x).toBe(26 * 16 + 8); // team 1 starts mirrored on the other side
     expect(createGrid({ slots: [0, 1, 2, 3, 4, 5, 6, 7] }).bodies).toHaveLength(8);
     expect(() => createGrid({ slots: [0, 1, 2, 3, 4, 5, 6, 7, 8] })).toThrow();
   });
