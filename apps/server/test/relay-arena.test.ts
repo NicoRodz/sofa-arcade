@@ -38,11 +38,11 @@ describe('relay: a game in development', () => {
     a.send({ t: 'join', name: 'Ana', token: 'a' });
     await a.next('joined');
     await a.next('config');
-    a.send({ t: 'config', game: 'arena', difficulty: 'normal', map: 'auto', seed: 1 });
+    a.send({ t: 'config', game: 'arena', modeId: 'versus', difficulty: 'normal', map: 'auto', seed: 1 });
     await settle();
     expect(a.msgs.filter((m) => m.t === 'config')).toEqual([]); // no broadcast
     expect(srv.relay.rooms.get('c-arena')!.config.game).toBe('pizzas'); // the lobby did not move
-    screen.send({ t: 'config', game: 'arena', difficulty: 'normal', map: 'auto', seed: 1 }); // what the screen sends under ?soon=1
+    screen.send({ t: 'config', game: 'arena', modeId: 'versus', difficulty: 'normal', map: 'auto', seed: 1 }); // what the screen sends under ?soon=1
     expect(await a.next('config')).toMatchObject({ game: 'arena' });
     [screen.ws, a.ws].forEach((w) => w.close());
   });

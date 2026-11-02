@@ -90,6 +90,13 @@ export const arenaScreen: ScreenGame = {
     if (ran) showScene(catalog().defaultGame);
   },
   results: { render: renderResults, scoreOf: winsOf },
+  // for the capture tool only: the round jumps to its last tick, so the results can be shot without waiting 90 s
+  debug: () => ({
+    manchazoSkipToEnd() {
+      const g = matchRun.run?.state.grid;
+      if (g) g.tick = g.durationTicks - 1;
+    },
+  }),
   players: {
     input(p, m) {
       if (app.config.game !== ID || app.phase !== 'playing') return;

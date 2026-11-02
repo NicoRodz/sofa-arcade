@@ -72,8 +72,8 @@ describe('apps/catalog', () => {
     expect(DEV_CATALOG.ids).toEqual(['pizzas', 'obstaculos', 'arena']);
     expect(DEV_CATALOG.problems()).toEqual([]);
     expect(DEV_CATALOG.comingSoon).toEqual(CATALOG.comingSoon); // the card is the same, and the dev catalog hides it once the game is listed
-    expect(parseDevClientMessage(cfg({ game: 'arena' }))).toMatchObject({ t: 'config', game: 'arena' });
-    expect(parseDevClientMessage(cfg({ game: 'arena', modeId: 'versus' }))).toBeNull(); // arena declares no versus
+    expect(parseDevClientMessage(cfg({ game: 'arena', modeId: 'versus' }))).toMatchObject({ t: 'config', game: 'arena', modeId: 'versus' }); // F1: Manchazo is arena's one mode
+    expect(parseDevClientMessage(cfg({ game: 'arena', modeId: 'coop' }))).toBeNull(); // arena declares no coop
     expect(parseDevClientMessage(cfg({ game: 'pizzas', map: 'V1' }))).toMatchObject({ map: 'V1' }); // the rest of the cable is the same
   });
 });
