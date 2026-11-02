@@ -21,7 +21,7 @@ import { replay } from './look-ops';
 const INK = '#2A211C';
 const ORANGE = 0xe69f00;
 const BLUE = 0x0072b2;
-const base = defaultAppearance();
+const base = defaultAppearance(0);
 const view = 'front' as const;
 const role = 'arena';
 

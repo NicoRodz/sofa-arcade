@@ -36,7 +36,7 @@ function fakeScene() {
   return { scene: scene as never, have, images };
 }
 
-const ap = defaultAppearance();
+const ap = defaultAppearance(0);
 const other = { ...ap, hat: 3 };
 
 describe('TeamSprite', () => {
