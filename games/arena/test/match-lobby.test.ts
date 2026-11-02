@@ -49,7 +49,10 @@ describe('Arena declares Manchazo: orange against blue, 2 to 8 players', () => {
     expect(syncTeams(mode, left, [10, 11, 13, 14], 3, true)).toBe(left); // nothing changed: the same array
   });
   it('before the first split the lobby seed deals the teams; without hand moves a leaving pair is rebalanced, with hand moves it is not', () => {
-    expect(syncTeams(mode, null, ids(4), 7, false)!.map((t) => t.playerIds)).toEqual(makeTeams(mode, ids(4), 7)!.map((t) => t.playerIds));
+    for (const seed of [1, 2, 3, 7, 11, 99])
+      expect(syncTeams(mode, null, ids(5), seed, false)!.map((t) => t.playerIds)).toEqual(
+        makeTeams(mode, ids(5), seed)!.map((t) => t.playerIds),
+      );
     const first = syncTeams(mode, null, ids(4), 7, false)!;
     const stay = first[1]!.playerIds;
     expect(teamSizes(syncTeams(mode, first, stay, 7, false))).toEqual([1, 1]);

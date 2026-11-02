@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAIN_TICKS, FUSE_TICKS, MAX_ACTIVE, STUN_TICKS, TRAIL_TICKS, blastTiles, handicap } from '../sim';
+import { NONE, CHAIN_TICKS, FUSE_TICKS, MAX_ACTIVE, STUN_TICKS, TRAIL_TICKS, blastTiles, handicap } from '../sim';
 import { DROP, NONE_IN, duel, put, tick, tileOwner } from './match-drive';
 
 describe('pinata blast', () => {
@@ -99,26 +99,24 @@ describe('stain (manchado)', () => {
     tick(s, { 1: { sx: 1000, sy: 0, drop: false } }, 4);
     expect(s.grid.bodies[1]!.x).toBeGreaterThan(x);
   });
-  it('a stick held through the stun and released before it ends does not move the body afterwards (nothing is queued while stained)', () => {
+  it('a stick held through the stun queues nothing: the body keeps no heading and no request until the stun ends', () => {
     const s = setup();
-    const x = s.grid.bodies[1]!.x;
-    tick(s, { 1: { sx: 1000, sy: 0, drop: false } }, STUN_TICKS - 1);
-    tick(s, {}, 40);
-    expect(s.grid.bodies[1]!.x).toBe(x);
+    tick(s, { 1: { sx: 1000, sy: 0, drop: false } }, STUN_TICKS - 2);
+    expect([s.grid.bodies[1]!.dir, s.grid.bodies[1]!.q, s.grid.bodies[1]!.req]).toEqual([NONE, NONE, null]);
   });
   it('a second blast on a stained player does not renew the stun', () => {
     const s = duel();
     put(s, 0, 13, 7);
     put(s, 1, 14, 7);
     tick(s, { 0: DROP });
+    tick(s, {}, 29);
     put(s, 0, 12, 7);
-    tick(s, { 0: DROP }); // second pinata: the first blast chains it, so it goes off CHAIN_TICKS after
-    tick(s, {}, FUSE_TICKS - 1); // first blast: stun starts
-    const stun = s.match.bodies[1]!.stun;
-    expect(stun).toBeGreaterThan(0);
-    tick(s, {}, CHAIN_TICKS + 1); // the second blast went off in between
+    tick(s, { 0: DROP }); // 30 ticks later; the first blast chains it, so it goes off CHAIN_TICKS after the first
+    tick(s, {}, FUSE_TICKS - 31); // the first blast: the stun starts
+    expect(s.match.bodies[1]!.stun).toBe(STUN_TICKS);
+    tick(s, {}, CHAIN_TICKS); // the second blast: it does not start the stun over
     expect(s.match.pinatas).toHaveLength(0);
-    expect(s.match.bodies[1]!.stun).toBe(stun - CHAIN_TICKS - 1);
+    expect(s.match.bodies[1]!.stun).toBe(STUN_TICKS - CHAIN_TICKS);
   });
   it('a stained player cannot drop a pinata', () => {
     const s = setup();
