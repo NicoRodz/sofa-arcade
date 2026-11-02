@@ -65,6 +65,7 @@ describe('generateMap', () => {
       else expect(validateMap(g.map)).toEqual([]);
     }
     expect(fallbacks / SEEDS.length).toBeLessThan(0.01);
+    expect(SEEDS.reduce((n, s) => n + generateMap(s).attempts, 0) / SEEDS.length).toBeLessThan(2); // it builds a connected map, it does not just retry until one is
   });
 
   it('when no attempt validates, the F0 map stands in after 64 attempts', () => {

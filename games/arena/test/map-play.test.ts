@@ -1,3 +1,4 @@
+import { mulberry32 } from '@pichi/core';
 import { describe, expect, it } from 'vitest';
 import { floorCount, generateMap, solidAt, type TileMap } from '../map';
 import { createGrid, stepGrid, type GridInput } from '../sim';
@@ -62,5 +63,28 @@ describe('playability: the test bot walks every floor tile of a generated map', 
     const g = generateMap(7);
     const s = createGrid({ slots: [0, 1], teams: [0, 1], map: g.map });
     expect(s.bodies.map((b) => [Math.floor(b.x / 16), Math.floor(b.y / 16)])).toEqual([g.map.spawns[0]![0], g.map.spawns[1]![0]]);
+  });
+
+  it('a player pushing the stick at random never gets a corner of its footprint into furniture', () => {
+    for (const seed of [5, 6, 7]) {
+      const { map } = generateMap(seed);
+      const s = createGrid({ slots: [0], map, durationTicks: 10 ** 9 });
+      const b = s.bodies[0]!;
+      const rnd = mulberry32(seed);
+      let input: GridInput = { sx: 0, sy: 0 };
+      for (let t = 0; t < 6000; t++) {
+        if (t % 20 === 0)
+          input =
+            rnd() < 0.2 ? { sx: 0, sy: 0 } : { sx: Math.round(Math.cos(rnd() * 6.3) * 1000), sy: Math.round(Math.sin(rnd() * 6.3) * 1000) };
+        stepGrid(s, new Map([[0, input]]));
+        for (const [dx, dy] of [
+          [-8, -8],
+          [7, -8],
+          [-8, 7],
+          [7, 7],
+        ] as const)
+          expect(solidAt(map, Math.floor((b.x + dx) / 16), Math.floor((b.y + dy) / 16))).toBe(false);
+      }
+    }
   });
 });
