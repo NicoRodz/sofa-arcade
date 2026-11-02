@@ -20,6 +20,8 @@ import { createSabotageHints } from './match/phone-hints';
 import { createEventAlert } from './match/event-alert';
 import { eventDebug } from './match/debug-events';
 import { livingDebug } from './match/debug-living';
+import { looksDebug } from './match/debug-looks';
+import type { Appearance } from '@pichi/core/avatar';
 import { sendMsg } from '@pichi/screen-kit/net';
 import { KINDS, type SabotageKind } from '../sim';
 
@@ -44,11 +46,13 @@ const gridScene = (): GridScene =>
   }));
 
 // F1: Manchazo, the default round
+const lookOverride = new Map<number, Appearance>(); // capture tool only (debug-looks.ts): a look set by hand wins over the player's own
 let mscene: MatchScene | undefined;
 const matchScene = (): MatchScene =>
   (mscene ??= new MatchScene({
     state: () => (matchRun.run && showing() ? matchRun.run.state : null),
     name: (slot) => player(slot)?.name ?? `J${slot + 1}`,
+    look: (slot) => lookOverride.get(slot) ?? player(slot)?.ap,
     teamName: (team) => app.config.teams?.[team]?.name ?? `Equipo ${team + 1}`,
   }));
 
@@ -121,6 +125,7 @@ export const arenaScreen: ScreenGame = {
     },
     ...eventDebug(() => matchRun.run?.state), // for the capture tool only: start an event, drop the Hourglass, put a body on a tile
     ...livingDebug(() => matchRun.run?.state), // for the capture tool only: re-time a living element, claim a brush pivot
+    ...looksDebug(() => matchRun.run?.state ?? null, lookOverride), // for the capture tool only: the teams, and a look set on a slot
     // for the capture tool only: the next round plays the map of this seed code (`2·7KQ2M`); the phones cannot do this
     manchazoNextMapSeed(code: string) {
       matchRun.forced = parseSeed(code)?.seed ?? null;

@@ -16,6 +16,7 @@ const BARRELS = [
   '@pichi/screen-kit/shell',
   '@pichi/screen-kit',
   '@pichi/screen-kit/art',
+  '@pichi/screen-kit/art/chef',
   '@pichi/screen-kit/audio',
   '@pichi/screen-kit/lobby',
   '@pichi/screen-kit/menu/index',

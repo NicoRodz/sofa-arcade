@@ -1,6 +1,7 @@
-// Manchazo's Phaser scene: the 27x15 floor with the paint of each team, pinatas with their fuse, the grey bodies with a team ring, and the HUD band.
+// Manchazo's Phaser scene: the 27x15 floor with the paint of each team, pinatas with their fuse, the players (their avatar in the colour of their team; a grey disc without a look), and the HUD band.
 // No logic here: it reads the sim's state each frame.
 import Phaser from 'phaser';
+import type { Appearance } from '@pichi/core/avatar';
 import { C, W } from '@pichi/screen-kit/art';
 import { MAP_W, formatSeed, solidAt, MAP_H } from '../../map';
 import { blastTiles, isHidden, percentOf, type ManchazoState } from '../../sim';
@@ -9,6 +10,7 @@ import { drawEvents } from './scene-events';
 import { drawLiving } from './scene-living';
 import { floorBar } from './hud-bar';
 import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, SIDE_X, X0, Y0 } from './layout';
+import { Avatars } from './scene-avatars';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawCarrier, drawMark, drawPickups, type Frame } from './scene-sabotage';
 
@@ -18,6 +20,7 @@ const WARN_TICKS = 36; // a pinata shows the diamond it is about to paint this l
 export interface MatchHost {
   state(): ManchazoState | null;
   name(slot: number): string;
+  look(slot: number): Appearance | undefined; // the player's own avatar; none: the grey disc
   teamName(team: number): string;
 }
 
@@ -31,6 +34,7 @@ export class MatchScene extends Phaser.Scene {
   private sub!: Phaser.GameObjects.Text;
   private tag!: Phaser.GameObjects.Text;
   private labels = new Map<number, Phaser.GameObjects.Text>();
+  private avatars!: Avatars; // rebuilt in create(): a scene that restarts destroys its game objects
 
   constructor(private host: MatchHost) {
     super('arena');
@@ -39,6 +43,7 @@ export class MatchScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor(0x2b2b2b);
     this.g = this.add.graphics();
+    this.avatars = new Avatars(this);
     const style = (color: string) => ({ fontFamily: 'sans-serif', fontSize: `${PCT_SIZE}px`, color, fontStyle: 'bold' });
     // the HUD starts at the top of the title-safe area (layout.ts): a TV that crops its edges still shows it
     this.pct = [
@@ -95,6 +100,7 @@ export class MatchScene extends Phaser.Scene {
   update() {
     const s = this.host.state();
     this.g.clear();
+    this.avatars.begin();
     if (!s) {
       this.pct.forEach((t) => t.setText(''));
       this.clock.setText('');
@@ -112,11 +118,14 @@ export class MatchScene extends Phaser.Scene {
       const m = s.match.bodies[i]!;
       const x = X0 + b.x * UNIT,
         y = Y0 + b.y * UNIT;
-      bodyOutline(this.g, x, y, b.team, m.stun > 0, m.trail > 0);
+      const ap = this.host.look(b.slot);
+      let at = { x, y };
+      if (ap) at = this.avatars.show(this.g, b.slot, ap, b.team, x, y, m.stun > 0, m.trail > 0);
+      else bodyOutline(this.g, x, y, b.team, m.stun > 0, m.trail > 0);
       drawCarrier(f, s, i, x, y);
       this.label(b.slot, m.stun > 0)
         .setVisible(true)
-        .setPosition(x, y)
+        .setPosition(at.x, at.y)
         .setText(String(b.slot + 1));
     });
     this.drawHud(s);
@@ -199,7 +208,10 @@ export class MatchScene extends Phaser.Scene {
   private label(slot: number, stunned: boolean): Phaser.GameObjects.Text {
     let t = this.labels.get(slot);
     if (!t) {
-      t = this.add.text(0, 0, '', { fontFamily: 'sans-serif', fontSize: '26px', color: '#111111', fontStyle: 'bold' }).setOrigin(0.5);
+      t = this.add
+        .text(0, 0, '', { fontFamily: 'sans-serif', fontSize: '22px', color: '#111111', fontStyle: 'bold' })
+        .setOrigin(0.5)
+        .setDepth(31);
       this.labels.set(slot, t);
     }
     return t.setAlpha(stunned ? 0.5 : 1);
