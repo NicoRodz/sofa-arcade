@@ -89,6 +89,14 @@ describe('grid control, plan A (default)', () => {
       open: 0,
     });
   });
+
+  it('a request already failed (300 ms) and then released stays failed: it is not also counted as cancelled', () => {
+    const s = solo();
+    hold(s, RIGHT_STICK, 4);
+    hold(s, UP_STICK, 30); // blocked by the map edge for more than 300 ms
+    hold(s, REST, 1);
+    expect(turnReport(s)).toMatchObject({ requested: 2, executed: 1, failed: 1, cancelled: 0, open: 0 });
+  });
 });
 
 describe('grid control, plan B (auto-advance)', () => {
