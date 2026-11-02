@@ -38,9 +38,19 @@ export function teamHint(sizes: readonly number[], problem: string): { text: str
   };
 }
 
+// The platform styles #teambar, not this line: without a place of its own it fell at the top-left corner, over the title. Same spot and look as #teambar/#teamhint.
+const HINT_CSS = `#arenahint { position: absolute; left: 650px; top: 428px; width: 1190px; height: 38px; display: flex; align-items: center; gap: 10px; }
+#arenahint.off { display: none; }
+#arenahint .pill { height: 38px; padding: 0 14px; font-size: 19px; border-width: 3px; white-space: nowrap; flex: none; }
+#arenahinttext { margin-left: auto; font: 700 20px var(--font); color: rgba(255,244,224,.75); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#arenahint.bad #arenahinttext { color: #FFB020; }`;
+
 function hintEl(): HTMLElement {
   const old = document.getElementById('arenahint');
   if (old) return old;
+  const css = document.createElement('style');
+  css.textContent = HINT_CSS;
+  document.head.append(css);
   const el = document.createElement('div');
   el.id = 'arenahint';
   el.innerHTML = '<button id="arenashuffle" class="pill">Mezclar</button> <span id="arenahinttext"></span>';

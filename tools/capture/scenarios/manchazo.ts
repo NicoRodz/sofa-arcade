@@ -51,6 +51,16 @@ export async function runManchazoTv({ cdp, bots, join, snap, waitFor, click }: C
   await sleep(800);
   console.log('phase', ((await snap()) as { phase: string }).phase);
   await cdp.shot('manchazo-results');
+  // back to the lobby: reset() hides Arena's team hint, and the lobby's own render must show it again
+  await click('#again');
+  await waitFor((st) => st.phase === 'lobby', 15_000);
+  await sleep(1200);
+  const hint = await cdp.eval<{ off: boolean; top: number; text: string }>(
+    `(() => { const el = document.getElementById('arenahint'); return { off: el.classList.contains('off'), top: Math.round(el.getBoundingClientRect().top), text: el.textContent }; })()`,
+  );
+  console.log('lobby hint after a round', JSON.stringify(hint));
+  if (hint.off || !hint.text.includes('contra')) throw new Error('the lobby hint is hidden after returning from a round');
+  await cdp.shot('manchazo-lobby-back');
 }
 
 export async function runManchazoPhone({ cdp }: Ctx) {
