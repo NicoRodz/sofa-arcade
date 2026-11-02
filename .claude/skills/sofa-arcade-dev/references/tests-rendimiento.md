@@ -80,9 +80,51 @@ Ojo: `test:changed` corre todo si cambia `vitest.config.ts` o un archivo del que
 
 No aprovechable para vitest: corre en Node y los tests son sim determinista en CPU (un solo hilo por worker, sin kernels paralelizables); pasar eso a GPU exige reescribir el sim y rompería el determinismo bit a bit de los goldens. En Chrome, lo contrario: los tests de layout del celular no necesitan GPU y `--disable-gpu` baja 28 % de CPU. Las capturas y el `smoke` sí renderizan WebGL (Phaser); ahí la GPU solo cambiaría los píxeles (hashes en el baseline) y CI usa SwiftShader, así que no se toca.
 
-## Ideas pendientes
+## Segunda ronda (2-nov-2026): esperas por condición en el harness de Chrome
 
-- El wall de `layout.slow` (317 s) es de `sleep()` en `harness.ts` (300+250+120 ms por escenario): sustituir por esperas de condición (`waitFor` sobre el DOM) lo bajaría a una fracción; no se hizo por riesgo de flaky. `harness.ts` está en su tope de líneas (810).
+Medición inicial de `slow` (35 archivos, 330 tests, `--reporter=verbose`, 9 workers, Mac compartido con carga ~5): 317 s de wall. Origen del tiempo: `layout.slow` 314 s = `sleep()` fijos del harness (`load` 60+300+250+120 ms más 15 ms por mensaje, `setViewport` 60 ms, `tap` 350 ms; ~660 `setViewport` y ~80 `load` por corrida) y el wall de un solo Chrome para los dos tests largos (landscape 132 s, portrait 102 s); `menu-layout` 82 s por lo mismo. Arranque de Chrome + Vite: ~2 s por sesión, no pesa. No hay build en `slow` (Vite en modo dev). `generate.slow` (obstáculos) 198 s es CPU puro de `generateLevel` (un solo test de 500 seeds = 107 s).
+
+Qué se cambió:
+
+1. `apps/controller/test/settle.ts` (nuevo): `settleJs()` espera en la página el viewport pedido, 2 frames y las transiciones/animaciones cortas (<= 400 ms; las que se repiten se ignoran), con techo de 1,5 s; `waitUntil()` hace polling con techo. El harness lo usa en `load`, `setViewport`, `tap` y `hold`; `load` espera además `readyState === 'complete'` del documento NUEVO (marca `window.__old`) y `window.__wsOpen()` (nuevo en el WebSocket falso) en vez de 300 + 250 ms.
+2. `menu-layout`, `creator-flow` y `layout.slow`: sleeps de asentamiento por `settleJs`; el "Sí" de la confirmación (muerto 500 ms, repinta con un timer) se espera con `yesLive()` (techo 3 s) y el aviso del Ayudante con `waitUntil` (mismo techo de 3,5 s, vuelve apenas desaparece). Los asserts no cambian; los `sleep` que son semántica de tiempo se conservan donde no había condición observable.
+3. Los dos tests largos de `layout.slow` (landscape y portrait) son `it.concurrent` y cada uno abre su propia sesión (Chrome + Vite, puertos libres de `free-port.ts`); el resto del archivo sigue en la sesión compartida.
+4. `harness.ts` usa `tools/proc/kill-tree.ts` (antes tenía una copia): ahora espera hasta que el árbol muera (techo `graceMs`) en vez de 500-600 ms fijos, y SIGKILL solo a lo que sobreviva. Sigue siendo por PID. `harness.ts` baja de 810 a 769 líneas (`size-budget.json` ajustado con `size:ratchet`).
+5. `slowProject` con `testTimeout: 120_000`: con todos los núcleos ocupados `kneader N=8` pasó de 16 s a 32 s y cayó en el tope de 30 s (una corrida roja antes de este cambio). Solo detiene cuelgues; no toca asserts.
+
+No se tocaron capturas, hashes ni goldens (`baseline:check` verde: 3036 tests, hashes sin cambio, sin reintentos).
+
+### Antes / después (wall por archivo, `--project slow`, 9 workers, Mac cargado)
+
+| Archivo | Antes (s) | Después, 3 corridas (s) |
+|---|---|---|
+| `apps/controller/test/layout.slow.test.ts` | 314 | 117 / 115 / 117 |
+| `apps/controller/test/menu-layout.slow.test.ts` | 82 | 44 / 42 / 42 |
+| `games/obstaculos/generate/generate.slow.test.ts` | 198 | 224 / 215 / 222 |
+| `games/pizzas/test/mech/kneader/bot.slow.test.ts` | 53 | 99 / 96 / 97 |
+| `games/pizzas/test/mech/gen/play.slow.test.ts` | 43 | 79 / 75 / 77 |
+| `games/pizzas/sim/generate.slow.test.ts` | 42 | 63 / 59 / 61 |
+| `games/pizzas/sim/generate.versus.slow.test.ts` | 25 | 42 / 40 / 41 |
+| `mech/gate`, `beltReverse`, `ovenHeat` bot.slow | 25 / 23 / 20 | 47 / 45 / 47, 45 / 42 / 44, 30 / 30 / 29 |
+| **`slow` completo (wall)** | **317** | **224 / 216 / 222** |
+
+Los archivos de sim puro subieron de wall porque antes los sleeps de Chrome dejaban núcleos libres; ahora los 9 workers compiten solo por CPU. El CPU total de esos archivos no cambió. `baseline:check` (`PG_TEST_WORKERS=50% nice -n 10`, corre fast + slow completos, 3036 tests): 236 s de wall (antes ~5-6 min). `test:full` ya es un subconjunto de `baseline:check`: no hace falta correr los dos.
+
+### Lo que no baja de 3 min y por qué
+
+El piso es `generate.slow` de obstáculos: ~145 s solo en una máquina quieta, ~220 s con carga, de los cuales un test de 500 seeds ocupa ~100 s en un solo hilo. Un test síncrono no se reparte entre workers y partir el archivo en dos exigiría extender `baseline-moves.ts` (hoy solo mapea archivo a archivo). Vitest corre ese código ~1,65x más lento que `tsx` (500 seeds sin revalidar: 35 s en tsx; mismo trabajo en vitest ~60 s): las importaciones entre módulos pasan por getters del transform SSR. `experimental.viteModuleRunner=false` se probó y no arranca (imports sin extensión).
+
+## Ideas pendientes (segunda ronda)
+
+- Partir `generate.slow` (obstáculos) y `generate.slow` / `play.slow` (pizzas) por test en archivos distintos, con soporte de partición en `tools/meta/baseline-moves.ts` (un archivo viejo -> varios). Es lo único que baja `slow` bajo ~100 s.
+- Acelerar `generateLevel` (hot spots: `boxTouches`, `stepPlayer`, `simPlan`): exige probar que la salida sigue idéntica seed a seed; va detrás de un PR propio.
+- `menu-layout` landscape/portrait en `it.concurrent` con sesión propia (hoy 42 s, ahorraría ~15 s).
+- Compartir un solo Chrome (una pestaña por sesión) en vez de Chrome + Vite por sesión; hoy el arranque cuesta ~2 s, no es prioridad.
+- Subir `slow` a 3 workers fijos en `test:full` solo si se parte lo anterior; con el piso actual no cambia el wall.
+
+## Ideas pendientes (primera ronda)
+
+- (Hecho en la segunda ronda) esperas por condición en `harness.ts`.
 - Partir `layout.slow` / `generate.slow` (500 seeds) en varios archivos o `describe.concurrent` para repartir entre workers, o reducir seeds solo en local con una env (sin perder la corrida completa en integración).
 - `isolate: false` en `game-pizzas` solo para los archivos sim puros (separar los de `screen/` con DOM en otro proyecto): ahorraría ~40 % de los 75 s de CPU.
 - Cache de transformaciones de vitest (`experimental.fsModuleCache`): no se probó.

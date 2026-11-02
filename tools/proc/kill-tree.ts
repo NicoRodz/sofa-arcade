@@ -21,7 +21,16 @@ function descendants(pid: number): number[] {
   return out;
 }
 
-// SIGTERM the whole tree, wait graceMs, then SIGKILL whatever is still alive
+const alive = (p: number) => {
+  try {
+    process.kill(p, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// SIGTERM the whole tree, wait until it is gone (at most graceMs), then SIGKILL whatever is still alive
 export async function killTree(proc: ChildProcess, graceMs = 600) {
   if (!proc.pid) return;
   const pids = [proc.pid, ...descendants(proc.pid)];
@@ -32,7 +41,7 @@ export async function killTree(proc: ChildProcess, graceMs = 600) {
       /* gone */
     }
   }
-  await sleep(graceMs);
+  for (const end = Date.now() + graceMs; Date.now() < end && pids.some(alive); ) await sleep(20);
   for (const p of pids) {
     try {
       process.kill(p, 0);
