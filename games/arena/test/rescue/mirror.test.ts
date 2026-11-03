@@ -34,7 +34,15 @@ function incident(s: ManchazoState, flip: boolean) {
   putAt(s, 1, 20, 2, flip);
   putAt(s, 3, 20, 12, flip);
   s.match.sab!.held[0] = t % 2 ? 'roller' : 'fan';
-  s.match.pinatas.push({ id: s.match.nextId++, x: flip ? MAP_W - 1 - (x - 2) : x - 2, y: 7, team: s.grid.bodies[1]!.team, owner: 1, fuse: 1, radius: 2 });
+  s.match.pinatas.push({
+    id: s.match.nextId++,
+    x: flip ? MAP_W - 1 - (x - 2) : x - 2,
+    y: 7,
+    team: s.grid.bodies[1]!.team,
+    owner: 1,
+    fuse: 1,
+    radius: 2,
+  });
   if (t % 3 === 0) {
     s.match.sab!.held[1] = s.match.sab!.held[3] = null;
     putAt(s, 1, x, 7, flip); // after the loot lands, two bodies step on it the same tick
@@ -60,7 +68,9 @@ function expectMirrored(a: ManchazoState, b: ManchazoState) {
   expect(rb.log).toEqual(ra.log.map((e) => ({ ...e, x: MAP_W - 1 - e.x })));
   expect(b.match.bodies.map((m) => [m.stun, m.trail])).toEqual(a.match.bodies.map((m) => [m.stun, m.trail]));
   expect(b.match.sab!.held).toEqual(a.match.sab!.held);
-  expect(b.match.sab!.pickups.map((_p, k) => [b.match.sab!.pickups[twin(k)]!.drawn, b.match.sab!.pickups[twin(k)]!.wait])).toEqual(a.match.sab!.pickups.map((p) => [p.drawn, p.wait]));
+  expect(b.match.sab!.pickups.map((_p, k) => [b.match.sab!.pickups[twin(k)]!.drawn, b.match.sab!.pickups[twin(k)]!.wait])).toEqual(
+    a.match.sab!.pickups.map((p) => [p.drawn, p.wait]),
+  );
   expect(b.match.counts).toEqual([a.match.counts[1], a.match.counts[0]]);
   for (let y = 0; y < 15; y++)
     for (let x = 0; x < MAP_W; x++) {
@@ -90,7 +100,7 @@ describe('rescue and loot mirror: swapping the teams swaps everything', () => {
           playAll(b, 101, true, 150);
           expectMirrored(a, b);
         }
-        for (const e of a.match.res!.log) (e.kind === 'rescue' ? rescues++ : e.kind === 'drop' ? drops++ : e.kind === 'take' && takes++);
+        for (const e of a.match.res!.log) e.kind === 'rescue' ? rescues++ : e.kind === 'drop' ? drops++ : e.kind === 'take' && takes++;
         expect(hashManchazo(a)).not.toBe(hashManchazo(b));
       }
       expect(rescues).toBeGreaterThan(0); // the test means something: the rules fired

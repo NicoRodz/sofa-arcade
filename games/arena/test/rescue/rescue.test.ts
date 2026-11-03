@@ -48,7 +48,13 @@ describe('rescue: a teammate in contact for 12 ticks in a row frees the stained 
     for (const [what, move] of [
       ['diagonal', (s: ReturnType<typeof duo>) => put(s, 2, 4, 6)],
       ['two tiles away', (s: ReturnType<typeof duo>) => put(s, 2, 5, 7)],
-      ['a rival next to it', (s: ReturnType<typeof duo>) => (put(s, 2, 20, 11), put(s, 1, 4, 7))],
+      [
+        'a rival next to it',
+        (s: ReturnType<typeof duo>) => {
+          put(s, 2, 20, 11);
+          put(s, 1, 4, 7);
+        },
+      ],
       ['a stained teammate', (s: ReturnType<typeof duo>) => stain(s, 2)],
     ] as const) {
       const s = duo();

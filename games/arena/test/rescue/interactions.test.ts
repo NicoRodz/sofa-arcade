@@ -10,7 +10,18 @@ describe('rescue and the Hourglass: a stained body does not count in the circle,
     const ev = s.match.ev!;
     ev.next = ev.program.length; // no scheduled event
     Object.assign(ev.clock, { phase: 'live', team: 0, row: 7, liveAt: 0, endsAt: 99999, charge: 0 });
-    for (const [x, y] of [[12, 6], [13, 6], [14, 6], [12, 7], [13, 7], [14, 7], [12, 8], [13, 8], [14, 8]] as const) paintTile(s.match, x, y, 0, 0); // the circle in the loser's colour
+    for (const [x, y] of [
+      [12, 6],
+      [13, 6],
+      [14, 6],
+      [12, 7],
+      [13, 7],
+      [14, 7],
+      [12, 8],
+      [13, 8],
+      [14, 8],
+    ] as const)
+      paintTile(s.match, x, y, 0, 0); // the circle in the loser's colour
     put(s, 0, 14, 8); // inside the circle, stained
     put(s, 2, 15, 8); // its teammate next to it, outside the circle
     put(s, 1, 22, 2);

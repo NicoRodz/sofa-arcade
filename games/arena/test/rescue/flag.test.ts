@@ -20,7 +20,14 @@ describe('rescue off: the round is the PR2 one, bit for bit', () => {
     expect(s.match.counts).toEqual(counts);
   });
   it('with the flag on the same round really differs (its own state and hash)', () => {
-    const s = createManchazo({ slots: [0, 1, 2, 3, 4, 5, 6, 7], teams: [0, 1, 0, 1, 0, 1, 0, 1], seed: 33, mapSeed: 90210, ...full, rescue: true });
+    const s = createManchazo({
+      slots: [0, 1, 2, 3, 4, 5, 6, 7],
+      teams: [0, 1, 0, 1, 0, 1, 0, 1],
+      seed: 33,
+      mapSeed: 90210,
+      ...full,
+      rescue: true,
+    });
     play(s, 5, 99999);
     expect(s.match.res).not.toBeNull();
     expect(hashManchazo(s)).not.toBe(254918007);

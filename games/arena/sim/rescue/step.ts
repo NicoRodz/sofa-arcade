@@ -15,9 +15,15 @@ function stepContact(s: ManchazoState): void {
   const stained = m.bodies.map((bm) => bm.stun > 0);
   const freed: { i: number; by: number[] }[] = [];
   bodies.forEach((b, i) => {
-    if (!stained[i]) return void (r.contact[i] = 0);
+    if (!stained[i]) {
+      r.contact[i] = 0;
+      return;
+    }
     const by = bodies.flatMap((o, j) => (j !== i && !stained[j] && o.team === b.team && dist(tiles[i]!, tiles[j]!) <= 1 ? [j] : []));
-    if (by.length === 0) return void (r.contact[i] = 0); // contact broken: the count starts over
+    if (by.length === 0) {
+      r.contact[i] = 0; // contact broken: the count starts over
+      return;
+    }
     if (++r.contact[i]! >= RESCUE_TICKS) freed.push({ i, by });
   });
   for (const { i, by } of freed) {
@@ -53,7 +59,11 @@ function stepLoot(s: ManchazoState): void {
   const tiles = s.grid.bodies.map((b, i) => bodyTile(b, m.bodies[i]!.face));
   const takes = r.loot.flatMap((l, k) => {
     const who = s.grid.bodies.flatMap((_b, i) =>
-      m.bodies[i]!.stun === 0 && a.held[i] === null && tiles[i]![0] === l.x && tiles[i]![1] === l.y && (i !== l.owner || l.age >= LOOT_LOCK_TICKS)
+      m.bodies[i]!.stun === 0 &&
+      a.held[i] === null &&
+      tiles[i]![0] === l.x &&
+      tiles[i]![1] === l.y &&
+      (i !== l.owner || l.age >= LOOT_LOCK_TICKS)
         ? [i]
         : [],
     );

@@ -19,8 +19,22 @@ export const SWING_CUE = 'score-swing';
 // PR2: a change of act. The warning (120 ticks before) and the change itself have their own cue each; the sound layer picks the sample.
 export const PHASE_CUES = { warn: 'phase-warn', scramble: 'phase-scramble', final: 'phase-final' } as const;
 
+// PR3: a stained body freed by its team, and the loot's three moments (a card falls, somebody picks it up, nobody does and it goes back to its spawner)
+export const RESCUE_CUE = 'rescue-free';
+export const LOOT_CUES = { drop: 'loot-drop', take: 'loot-take', expire: 'loot-expire' } as const;
+
 export const cueOf = (e: FeedEvent): string =>
-  e.type === 'fired' ? SABOTAGE_CUES[e.kind] : e.type === 'swing' ? SWING_CUE : e.warn ? PHASE_CUES.warn : PHASE_CUES[e.phase];
+  e.type === 'fired'
+    ? SABOTAGE_CUES[e.kind]
+    : e.type === 'swing'
+      ? SWING_CUE
+      : e.type === 'rescue'
+        ? RESCUE_CUE
+        : e.type === 'loot'
+          ? LOOT_CUES[e.what]
+          : e.warn
+            ? PHASE_CUES.warn
+            : PHASE_CUES[e.phase];
 
 type Sink = (cue: string, e: FeedEvent) => void;
 let sink: Sink | null = null;
