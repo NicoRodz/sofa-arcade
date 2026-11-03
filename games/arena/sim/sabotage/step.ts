@@ -9,6 +9,7 @@ import { PICKUP_RESPAWN_TICKS } from './kinds';
 import { cardOf } from './state';
 import { stepPlus } from './plus-step';
 import { useSabotage } from './use';
+import { tryPass } from '../shot/pass';
 
 export const isRolling = (s: ManchazoState, i: number): boolean => (s.match.sab?.roller[i] ?? 0) > 0;
 
@@ -16,7 +17,7 @@ export const isRolling = (s: ManchazoState, i: number): boolean => (s.match.sab?
 export function beforeMove(s: ManchazoState, uses: readonly boolean[]): void {
   const a = s.match.sab;
   if (!a) return;
-  s.grid.bodies.forEach((_b, i) => uses[i] && useSabotage(s, i));
+  s.grid.bodies.forEach((_b, i) => uses[i] && (tryPass(s, i) || useSabotage(s, i))); // PR4: B first passes a Pegote it carries, when it can
   s.grid.bodies.forEach((b, i) => {
     const bm = s.match.bodies[i]!;
     if (a.roller[i]! > 0 && bm.stun === 0) {

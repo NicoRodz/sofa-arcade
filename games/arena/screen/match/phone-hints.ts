@@ -2,7 +2,7 @@
 // card is armed. The label is the STATE of the sim, sent whole when it changes (and again every REFRESH_MS, so a phone that reconnects is right in a second);
 // picking a card up also buzzes the phone (colour on the button, vibration): nothing changes on a phone without calling for attention.
 import type { ClientMsg, HintLabels, IconId } from '@pichi/core';
-import { PLUS_SABOTAGES, SABOTAGES, dizzyThreat, type ManchazoState, type SabotageKind } from '../../sim';
+import { PLUS_SABOTAGES, SABOTAGES, carried, dizzyThreat, type ManchazoState, type SabotageKind } from '../../sim';
 
 // biome-ignore format: one card per entry
 export const ICON_OF: Record<SabotageKind, IconId> = { turpentine: 'wash', roller: 'jump', fan: 'move', footprints: 'plate', glue: 'grab', tape: 'crate', ink: 'dough', sponge: 'cheese', swap: 'move', dizzy: 'bell' };
@@ -14,6 +14,8 @@ export interface PlusHint {
   squeeze: number;
   dizzy: boolean;
   threat: boolean;
+  aim?: boolean; // PR4: a shot is being aimed (button 2 was pressed with a flying card): the label says so until it leaves
+  glued?: boolean; // PR4: a Pegote rides this body
 }
 const NO_PLUS: PlusHint = { squeeze: 0, dizzy: false, threat: false };
 
@@ -26,9 +28,13 @@ export function sabotageHint(held: SabotageKind | null, armed: SabotageKind | nu
     ? { a: '¡Mareado! Stick al revés', aIcon: ICON_OF.dizzy }
     : plus.threat
       ? { a: '¡Aléjate! Mareo', aIcon: ICON_OF.dizzy }
-      : armed
-        ? { a: `Piñata ${NAME_OF[armed].toLowerCase()}`, aIcon: ICON_OF[armed] }
-        : { a: null };
+      : plus.glued
+        ? { a: '¡Te pegaron el Pegote!', aIcon: ICON_OF.glue }
+        : plus.aim && held
+          ? { a: 'Apuntando…', aIcon: ICON_OF[held] }
+          : armed
+            ? { a: `Piñata ${NAME_OF[armed].toLowerCase()}`, aIcon: ICON_OF[armed] }
+            : { a: null };
   return { ...a, ...b };
 }
 
@@ -49,7 +55,7 @@ type HintMsg = Extract<ClientMsg, { t: 'hint' }>;
 type BuzzMsg = Extract<ClientMsg, { t: 'buzz' }>;
 
 export function createSabotageHints(send: (m: HintMsg | BuzzMsg) => void, playerOf: (slot: number) => number | undefined) {
-  const sent = new Map<number, { key: string; at: number; held: SabotageKind | null; dizzy: boolean; threat: boolean }>();
+  const sent = new Map<number, { key: string; at: number; held: SabotageKind | null; dizzy: boolean; threat: boolean; glued: boolean }>();
   const glowed = new Map<number, number>(); // PR3: the rescue glow each phone last saw
   return {
     /** After every frame: `s` null (no round) hands every labelled phone back to the game's own labels. */
@@ -68,6 +74,8 @@ export function createSabotageHints(send: (m: HintMsg | BuzzMsg) => void, player
           squeeze: Math.ceil((p?.sponge[i] ?? 0) / 60),
           dizzy: (p?.dizzy[i] ?? 0) > 0,
           threat: dizzyThreat(s, i),
+          aim: (sab.shot?.prep[i] ?? 0) > 0,
+          glued: carried(s, i) !== undefined,
         };
         const base = sabotageHint(held, sab.armed[i]!, state);
         const stained = s.match.res && s.match.bodies[i]!.stun > 0; // PR3: a teammate next to you frees you
@@ -83,7 +91,8 @@ export function createSabotageHints(send: (m: HintMsg | BuzzMsg) => void, player
         if (held && last?.held !== held) send({ t: 'buzz', playerId: id, kind: 'alert' });
         if (state.threat && !last?.threat && !state.dizzy) send({ t: 'buzz', playerId: id, kind: 'alert' }); // a Mareo is charging next to you: walk away
         if (state.dizzy && !last?.dizzy) send({ t: 'buzz', playerId: id, kind: 'big' }); // it hit
-        sent.set(id, { key, at: now, held, dizzy: state.dizzy, threat: state.threat });
+        if (state.glued && !last?.glued) send({ t: 'buzz', playerId: id, kind: 'big' }); // PR4: a Pegote landed on you (or was passed to you)
+        sent.set(id, { key, at: now, held, dizzy: state.dizzy, threat: state.threat, glued: !!state.glued });
       });
     },
   };

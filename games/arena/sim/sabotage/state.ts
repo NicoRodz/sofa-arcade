@@ -2,6 +2,7 @@
 import { MAP_W, solidAt, type TileMap } from '../../map';
 import { mulberry32, type Rng } from '@pichi/core';
 import { createPlus, type PlusState } from './plus';
+import { createShots, type ShotState } from '../shot/state';
 import { ALL_KINDS, DECK_SEED_TAG, DECK_SIZE, KINDS, PICKUP_PAIRS, PICKUP_SEED_TAG, type Armable, type SabotageKind } from './kinds';
 
 export interface Pickup {
@@ -21,6 +22,7 @@ export interface SabotageState {
   footprints: number[]; // per TEAM: ticks left in which that team's bodies leave the other team's footprints
   gust: number[]; // per body: ticks the TV still draws its fan gust (display only, but part of the state)
   used: number; // sabotages played this round
+  shot: ShotState | null; // PR4: Pegote, Cambiazo and Mareo are aimed and thrown (flag `projectiles`); null: the round is PR3's, bit for bit
   plus: PlusState | null; // F8a: the five new sabotages (flag `sabotagePlus`); null: the round is F3's, bit for bit
 }
 
@@ -85,6 +87,7 @@ export function createSabotage(
   avoid?: ReadonlySet<number>,
   plus = false,
   plaza?: { x: number; y: number; h: number },
+  shots = false,
 ): SabotageState {
   const none = <T>(v: T) => Array.from({ length: bodies }, () => v);
   return {
@@ -96,6 +99,7 @@ export function createSabotage(
     footprints: [0, 0],
     gust: none(0),
     used: 0,
+    shot: shots ? createShots(bodies) : null,
     plus: plus ? createPlus(bodies) : null,
   };
 }

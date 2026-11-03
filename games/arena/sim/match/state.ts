@@ -20,6 +20,8 @@ export interface Pinata {
   radius: number;
   mod?: Armable; // armed by a sabotage: 'turpentine' erases rival paint instead of painting, 'glue' follows `stuck`
   stuck?: number; // glue: index of the body it is stuck to (x, y follow that body's tile)
+  passes?: number; // PR4 (flag `projectiles`): times this Pegote changed hands (undefined: a glue pinata of the old rule, not passable)
+  lock?: number; // PR4: ticks left in which it cannot be passed again
 }
 
 /** What a body carries besides the grid's own fields. `stun` > 0: stained and still; `trail` > 0: leaving `trailTeam` footprints. */
@@ -77,7 +79,7 @@ export function handicap(sizes: readonly number[]): { radius: number[]; reserve:
 export function createMatch(
   teamOfBody: readonly number[],
   map: TileMap,
-  sabotage?: { seed: number; plus?: boolean; plaza?: { x: number; y: number; h: number } }, // `plaza`: the free rectangle where a Plaza round puts the pickups
+  sabotage?: { seed: number; plus?: boolean; plaza?: { x: number; y: number; h: number }; shots?: boolean }, // `plaza`: the free rectangle where a Plaza round puts the pickups
   events?: { seed: number; base: number; plus?: boolean; phases?: boolean },
   living?: readonly LivingSpec[],
   rescue?: boolean,
@@ -88,7 +90,9 @@ export function createMatch(
   const paintable = floorCount(map); // every living tile open: a closed one is still a tile of the floor
   const shut = living ? new Set(living.flatMap((l) => footprint(l)).map(([x, y]) => y * MAP_W + x)) : undefined;
   const fountain = !!living?.some((l) => l.kind === 'fountain');
-  const sab = sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus, sabotage.plaza) : null;
+  const sab = sabotage
+    ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus, sabotage.plaza, !!sabotage.shots)
+    : null;
   // F8b: Mudanza keeps its hands off the living parts' tiles and the sabotage pickups
   const avoid = new Set([...(shut ?? []), ...(sab?.pickups.map((p) => p.y * MAP_W + p.x) ?? [])]);
   const m: MatchState = {

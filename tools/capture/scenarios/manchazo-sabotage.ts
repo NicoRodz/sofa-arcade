@@ -7,7 +7,7 @@ import type { Ctx } from '../session';
 const KINDS = ['turpentine', 'roller', 'fan', 'footprints', 'glue'] as const;
 
 /** Opens the TV on `room`, picks Manchazo, starts a round with `phones` phones and leaves the bots barely leaning (they stay put). `uhd`: the display is 3840x2160 (scale 2 over 1920x1080). */
-async function startRound({ cdp, bots, join, waitFor, click }: Ctx, room: string, phones = 5, uhd = false, seed = '') {
+export async function startRound({ cdp, bots, join, waitFor, click }: Ctx, room: string, phones = 5, uhd = false, seed = '') {
   if (uhd)
     await cdp.send('Emulation.setDeviceMetricsOverride', {
       width: 1920,

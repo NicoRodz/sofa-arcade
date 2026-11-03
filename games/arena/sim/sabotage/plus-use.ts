@@ -60,9 +60,8 @@ function squeeze(s: ManchazoState, i: number): void {
   plus.squeezeFx[i] = SQUEEZE_FX_TICKS;
 }
 
-function swap(s: ManchazoState, i: number): Played {
-  const j = nearestRival(s, i, SWAP_RANGE);
-  if (j < 0) return 'refused'; // nobody within range: the card is not spent
+/** Bodies i and j trade places (and headings); each lands standing and both are immune for IMMUNE_TICKS. */
+export function swapBodies(s: ManchazoState, i: number, j: number): void {
   const plus = s.match.sab!.plus!;
   const [a, b] = [s.grid.bodies[i]!, s.grid.bodies[j]!];
   const [fa, fb] = [s.match.bodies[i]!.face, s.match.bodies[j]!.face];
@@ -80,6 +79,12 @@ function swap(s: ManchazoState, i: number): Played {
     plus.immune[k] = IMMUNE_TICKS;
     plus.swapFx[k] = SWAP_FX_TICKS;
   }
+}
+
+function swap(s: ManchazoState, i: number): Played {
+  const j = nearestRival(s, i, SWAP_RANGE);
+  if (j < 0) return 'refused'; // nobody within range: the card is not spent
+  swapBodies(s, i, j);
   return 'spent';
 }
 
