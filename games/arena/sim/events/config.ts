@@ -2,8 +2,12 @@
 import { TICK_HZ, ms2ticks } from '../grid/config';
 
 /** The events the program draws from (3 of these 4 per round). The come-back, the hidden scoreboard and the Hourglass are not scheduled: they check the round. */
-export type EventKind = 'bigPinata' | 'rain' | 'gold' | 'vacuum';
+export type EventKind = 'bigPinata' | 'rain' | 'gold' | 'vacuum' | PlusEventKind;
 export const EVENT_KINDS: readonly EventKind[] = ['bigPinata', 'rain', 'gold', 'vacuum'];
+/** F8b: the five new scheduled events (flag `eventsPlus`: they join the pool, 3 of the 9 per round). */
+export type PlusEventKind = 'blackout' | 'contagion' | 'happyHour' | 'move' | 'balloons';
+export const EVENT_PLUS_KINDS: readonly PlusEventKind[] = ['blackout', 'contagion', 'happyHour', 'move', 'balloons'];
+export const ALL_EVENT_KINDS: readonly EventKind[] = [...EVENT_KINDS, ...EVENT_PLUS_KINDS]; // hash order: the F4 four keep their indexes
 
 export const SLOT_FRACTIONS = [0.25, 0.46, 0.67] as const; // of the BASE duration (the Hourglass's extra time never moves them)
 export const JITTER = 0.04; // +-4 % of the base around each slot
@@ -23,11 +27,34 @@ export const VACUUM_TICKS = 10 * TICK_HZ;
 export const VACUUM_STEP_TICKS = 20; // one tile every 20 ticks (3 tiles/s)
 export const VACUUM_WIDTH = 3; // columns it cleans, centred on its own
 
+// F8b. Apagon: only the render changes. Contagio: warning, then one pass over a copy of the board. Hora feliz: reach +1 and no per-player cap. Mudanza: warning,
+// then two mirrored pairs of lone pieces of furniture jump to alternatives drawn and validated at creation (a pair whose destination holds a body or a pinata waits).
+// Globos: three mirrored pairs of balloons, a shadow first; each paints 3x3 for the team with more bodies within 2 tiles when it lands (a tie lands neutral).
+export const BLACKOUT_TICKS = 6 * TICK_HZ;
+export const BLACKOUT_LIGHT = 2.5; // tiles: the circle of light around each player (render only)
+export const CONTAGION_WARN_TICKS = 3 * TICK_HZ;
+export const CONTAGION_SHOW_TICKS = 1 * TICK_HZ; // the TV keeps the result up this long
+export const CONTAGION_MIN = 3; // rival tiles among the 4 orthogonal neighbours that turn a painted tile
+export const HAPPY_TICKS = 8 * TICK_HZ;
+export const HAPPY_BONUS = 1;
+export const MOVE_WARN_TICKS = 2 * TICK_HZ;
+export const MOVE_WINDOW_TICKS = 3 * TICK_HZ; // a pair that cannot land (a body or a pinata on its destination) keeps trying this long, then stays put
+export const MOVE_PAIRS = 2;
+export const BALLOON_WARN_TICKS = 3 * TICK_HZ;
+export const BALLOON_SHOW_TICKS = 1 * TICK_HZ;
+export const BALLOON_PAIRS = 3;
+export const BALLOON_AROUND = 2; // Chebyshev tiles: who counts as "around" a balloon
+
 export const DURATION: Record<EventKind, number> = {
   bigPinata: BIG_WARN_TICKS + BIG_WAIT_TICKS,
   rain: RAIN_TICKS,
   gold: GOLD_TICKS,
   vacuum: VACUUM_TICKS,
+  blackout: BLACKOUT_TICKS,
+  contagion: CONTAGION_WARN_TICKS + CONTAGION_SHOW_TICKS,
+  happyHour: HAPPY_TICKS,
+  move: MOVE_WARN_TICKS + MOVE_WINDOW_TICKS,
+  balloons: BALLOON_WARN_TICKS + BALLOON_SHOW_TICKS,
 };
 
 export const GAP_PERCENT = 15; // "losing by more than 15 points of area" (come-back and Hourglass)
@@ -55,3 +82,7 @@ export const BANNER_TICKS = 3 * TICK_HZ; // the TV keeps an announcement up this
 // and 11-13), and the golden zone starts on one of GOLD_ROWS_CLEAR (it is 3 rows tall, so it ends 3 or more rows from row 7). Without a fountain nothing changes.
 export const FOUNTAIN_CLEAR = 3;
 export const GOLD_ROWS_CLEAR: readonly number[] = [0, 1, 2, 10, 11, 12];
+
+/** The F8b events that act in the tick (Apagon only darkens the TV and Hora feliz is read by the pinatas, so neither is here). */
+export type ActingPlusKind = 'contagion' | 'move' | 'balloons';
+export const isActingPlus = (k: EventKind): k is ActingPlusKind => k === 'contagion' || k === 'move' || k === 'balloons';

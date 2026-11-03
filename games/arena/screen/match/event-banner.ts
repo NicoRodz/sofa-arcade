@@ -2,9 +2,12 @@
 // No Phaser: the scene draws it, `event-banner.test.ts` reads it.
 import {
   BANNER_TICKS,
+  BALLOON_WARN_TICKS,
   BIG_WARN_TICKS,
   CLOCK_WARN_TICKS,
+  CONTAGION_WARN_TICKS,
   HIDDEN_TICKS,
+  MOVE_WARN_TICKS,
   type AnnounceKind,
   type EventKind,
   type ManchazoState,
@@ -23,6 +26,11 @@ export const EVENT_NAMES: Record<EventKind, string> = {
   rain: 'Lluvia',
   gold: 'Casillas doradas',
   vacuum: 'Robot aspiradora',
+  blackout: 'Apagón',
+  contagion: 'Contagio',
+  happyHour: 'Hora feliz',
+  move: 'Mudanza',
+  balloons: 'Globos en disputa',
 };
 
 const secs = (ticks: number) => Math.round(ticks / 60);
@@ -37,6 +45,16 @@ export function bannerText(kind: AnnounceKind, team: string): { title: string; s
       return { title: 'CASILLAS DORADAS', sub: 'La zona dorada vale x2 durante 15 s' };
     case 'vacuum':
       return { title: 'ROBOT ASPIRADORA', sub: 'Despinta lo que pisa: desvíalo con una explosión' };
+    case 'blackout':
+      return { title: 'APAGÓN', sub: 'Solo ves un círculo de luz a tu alrededor durante 6 s' };
+    case 'contagion':
+      return { title: 'CONTAGIO', sub: `En ${secs(CONTAGION_WARN_TICKS)} s se pasa al rival lo que tenga 3 vecinas suyas: junta tu color` };
+    case 'happyHour':
+      return { title: '¡HORA FELIZ!', sub: 'Piñatas con +1 de alcance y sin límite durante 8 s' };
+    case 'move':
+      return { title: 'MUDANZA', sub: `Dos pares de muebles saltan en ${secs(MOVE_WARN_TICKS)} s: ojo con los marcados` };
+    case 'balloons':
+      return { title: 'GLOBOS EN DISPUTA', sub: `Caen en ${secs(BALLOON_WARN_TICKS)} s: gana el equipo con más gente alrededor` };
     case 'comeback':
       return { title: '¡REMONTADA!', sub: `Piñatas más grandes para ${team}` };
     case 'hidden':

@@ -1,8 +1,9 @@
 // What the events add to a round (F4). Everything random is drawn when the round is created (the program, the rows, the rain order, the Hourglass row), so
 // the tick itself never consumes RNG: the same seed gives the same program, whatever the players do.
-import { FOUNTAIN_TILE, solidAt, type TileMap } from '../../map';
-import { CLOCK_X, FOUNTAIN_CLEAR, type EventKind } from './config';
+import { FOUNTAIN_TILE, solidAt, type LivingSpec, type TileMap } from '../../map';
+import { CLOCK_X, EVENT_KINDS, FOUNTAIN_CLEAR, EVENT_PLUS_KINDS, type EventKind } from './config';
 import { planProgram, type Planned } from './plan';
+import { createPlusEvents, type PlusEvents } from './plus-state';
 import { substream } from './rng';
 
 export type AnnounceKind = EventKind | 'comeback' | 'hidden' | 'clockWarn' | 'overtime' | 'clockBroken';
@@ -34,6 +35,7 @@ export interface EventsState {
   clock: ClockState;
   hiddenShown: boolean;
   log: Announcement[];
+  plus?: PlusEvents; // F8b: the five new events (flag `eventsPlus`); absent without it (the key is not even there: a serialised F4 state stays as it was)
 }
 
 const countFloor = (map: TileMap, cy: number) => {
@@ -52,10 +54,20 @@ export function clockRow(map: TileMap, seed: number, fountain = false): number {
   return cands[Math.floor(substream(`manchazo:clock:${seed}`)() * cands.length)]!;
 }
 
-export function createEvents(map: TileMap, seed: number, base: number, fountain = false): EventsState {
+/** `plus`: the F8b events join the pool (the living specs and the tiles to keep as they are come from the caller: Mudanza validates against them). */
+export interface PlusOptions {
+  living: readonly LivingSpec[];
+  avoid: ReadonlySet<number>;
+}
+
+export function createEvents(map: TileMap, seed: number, base: number, fountain = false, opts?: PlusOptions): EventsState {
+  const plus = opts ? createPlusEvents(map, seed, opts.living, opts.avoid) : undefined;
+  const pool: EventKind[] = plus
+    ? [...EVENT_KINDS, ...EVENT_PLUS_KINDS.filter((k) => k !== 'move' || plus.moves.length > 0)]
+    : [...EVENT_KINDS];
   return {
     base,
-    program: planProgram(substream(`manchazo:events:${seed}`), map, base, fountain),
+    program: planProgram(substream(`manchazo:events:${seed}`), map, base, fountain, pool),
     next: 0,
     active: null,
     big: null,
@@ -65,6 +77,7 @@ export function createEvents(map: TileMap, seed: number, base: number, fountain 
     clock: { phase: 'idle', outcome: 'none', row: clockRow(map, seed, fountain), team: -1, liveAt: 0, endsAt: 0, charge: 0 },
     hiddenShown: false,
     log: [],
+    ...(plus ? { plus } : {}),
   };
 }
 

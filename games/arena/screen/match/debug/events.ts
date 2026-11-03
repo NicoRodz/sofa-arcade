@@ -2,14 +2,14 @@
 import {
   CLOCK_FROM_TICKS,
   CLOCK_FULL,
-  EVENT_KINDS,
+  ALL_EVENT_KINDS,
   paintTile,
   startMajor,
   type EventKind,
   type ManchazoState,
   type Planned,
-} from '../../sim';
-import { MAP_W, solidAt } from '../../map';
+} from '../../../sim';
+import { MAP_W, solidAt } from '../../../map';
 
 type Get = () => ManchazoState | undefined;
 
@@ -23,14 +23,38 @@ export function eventDebug(get: Get) {
     manchazoEvent(kind: EventKind) {
       const s = get();
       const ev = s?.match.ev;
-      if (!s || !ev || !EVENT_KINDS.includes(kind)) return;
+      if (!s || !ev || !ALL_EVENT_KINDS.includes(kind)) return;
       const q = ev.program.find((p) => p.kind === kind);
       const p: Planned = { kind, at: s.grid.tick, row: q?.row ?? 6, down: q?.down ?? true, order: q ? [...q.order] : [] };
       if (kind === 'rain' && p.order.length === 0)
         for (let y = p.row; y < p.row + 3; y++) for (let x = 0; x <= 13; x++) if (!solidAt(s.grid.map, x, y)) p.order.push(y * MAP_W + x);
+      if (!ev.plus && ALL_EVENT_KINDS.indexOf(kind) >= 4) return;
+      if (kind === 'move' && !ev.plus?.moves.length) return;
       Object.assign(ev, { active: null, big: null, rain: null, vac: null });
+      if (ev.plus) Object.assign(ev.plus, { contagion: null, move: null, balloon: null });
       ev.program.splice(ev.next, 0, p);
       startMajor(s, p);
+    },
+    /** Where the F8b events act this round (Mudanza's pairs, the balloon spots of the left half); null without `eventsPlus`. */
+    manchazoPlusInfo() {
+      const s = get();
+      const p = s?.match.ev?.plus;
+      return p ? { moves: p.moves, balloons: p.balloons, pinatas: s.match.pinatas.length } : null;
+    },
+    /** Stress for the frame rate: `n` pinatas on free tiles (alternating teams and owners), each with `fuse` ticks left (what Hora feliz's missing cap could pile up). */
+    manchazoFlood(n: number, fuse: number): number {
+      const s = get();
+      if (!s) return 0;
+      const m = s.match;
+      let k = 0;
+      for (let y = 0; y < 15 && k < n; y++)
+        for (let x = 0; x < MAP_W && k < n; x++) {
+          if (solidAt(s.grid.map, x, y) || m.pinatas.some((p) => p.x === x && p.y === y)) continue;
+          const owner = k % s.grid.bodies.length;
+          m.pinatas.push({ id: m.nextId++, x, y, team: s.grid.bodies[owner]!.team, owner, fuse, radius: 1 });
+          k++;
+        }
+      return k;
     },
     /** The round jumps to 30 s left with `loser` trailing by a wide margin: the Hourglass falls within a second. */
     manchazoClockFall(loser: number) {
@@ -63,9 +87,9 @@ export function eventDebug(get: Get) {
         for (let y = y0; y <= y1; y++)
           for (let x = x0; x <= x1; x++) if (!solidAt(s.grid.map, x, y)) paintTile(s.match, x, y, team, s.grid.tick);
     },
-    /** The first body of `team` on a tile; returns its slot. */
-    manchazoPutTeam(team: number, x: number, y: number): number {
-      const b = get()?.grid.bodies.find((q) => q.team === team);
+    /** The `nth` body (0 the first) of `team` on a tile; returns its slot. */
+    manchazoPutTeam(team: number, x: number, y: number, nth = 0): number {
+      const b = get()?.grid.bodies.filter((q) => q.team === team)[nth];
       if (b) [b.x, b.y] = [x * 16 + 8, y * 16 + 8];
       return b?.slot ?? -1;
     },

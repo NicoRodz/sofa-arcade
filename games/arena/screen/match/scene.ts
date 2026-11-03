@@ -7,6 +7,7 @@ import { MAP_W, formatSeed } from '../../map';
 import { blastTiles, isHidden, shownCounts, shownPaint, shownPercent, type ManchazoState } from '../../sim';
 import { bannerOf, nextLine } from './event-banner';
 import { drawEvents } from './scene-events';
+import { drawEventsPlus } from './scene-events-plus';
 import { drawLiving } from './scene-living';
 import { floorBar } from './hud-bar';
 import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, SIDE_X, X0, Y0 } from './layout';
@@ -151,6 +152,9 @@ export class MatchScene extends Phaser.Scene {
         .setPosition(at.x, at.y)
         .setText(String(b.slot + 1));
     });
+    // F8b: the events' layer (the blackout goes on `over`, above the avatars; the banner's box stays lit)
+    const lit = bannerOf(s, this.host.teamName.bind(this.host)) ? ([X0 + 40, Y0 + 6, X0 + MAP_W * PX - 40, Y0 + 152] as const) : null;
+    drawEventsPlus(f, s, this.over, lit);
     this.drawHud(s);
     this.drawAnnouncements(s);
     this.seed.setText(s.mapSeed === null ? '' : `MAPA ${formatSeed(s.mapSeed)}`);

@@ -13,8 +13,9 @@ export interface Planned {
   down: boolean; // vacuum: starts at the top going down (else the bottom, going up)
 }
 
-export function planProgram(rng: Rng, map: TileMap, base: number, fountain = false): Planned[] {
-  const kinds = [...EVENT_KINDS];
+/** `pool`: the kinds the program draws from (the F4 four; with `eventsPlus`, up to nine). */
+export function planProgram(rng: Rng, map: TileMap, base: number, fountain = false, pool: readonly EventKind[] = EVENT_KINDS): Planned[] {
+  const kinds = [...pool];
   for (let i = kinds.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [kinds[i], kinds[j]] = [kinds[j]!, kinds[i]!];

@@ -2,6 +2,7 @@
 // off the pinatas it reaches (chain). Your own team's blast never stains you.
 import { NONE } from '../grid/dir';
 import { radiusOf } from '../events/comeback';
+import { happyBonus, happyOn } from '../events/happy';
 import { deflectVacuum } from '../events/vacuum';
 import { glueTarget } from '../sabotage/use';
 import { clearTile, paintTile } from './board';
@@ -20,7 +21,7 @@ export function dropPinata(s: ManchazoState, i: number): boolean {
   if (target >= 0) [x, y] = bodyTile(s.grid.bodies[target]!, m.bodies[target]!.face);
   else if (m.pinatas.some((p) => p.x === x && p.y === y)) return false;
   const active = m.pinatas.filter((p) => p.owner === i).length;
-  if (active >= MAX_ACTIVE) {
+  if (active >= MAX_ACTIVE && !happyOn(m)) {
     if (m.reserve[b.team]! <= 0) return false;
     m.reserve[b.team]!--;
   }
@@ -42,7 +43,7 @@ export function dropPinata(s: ManchazoState, i: number): boolean {
 
 function detonate(s: ManchazoState, p: Pinata): void {
   const m = s.match;
-  const tiles = blastTiles(p.x, p.y, p.radius, s.grid.map);
+  const tiles = blastTiles(p.x, p.y, p.radius + happyBonus(m), s.grid.map); // F8b: Hora feliz reaches one tile further
   for (const [x, y] of tiles) (p.mod === 'turpentine' ? clearTile : paintTile)(m, x, y, p.team, s.grid.tick);
   const hit = new Set(tiles.map(([x, y]) => `${x},${y}`));
   deflectVacuum(s, p.x, p.y, hit); // F4: a blast steers the vacuum robot (no-op without the events)

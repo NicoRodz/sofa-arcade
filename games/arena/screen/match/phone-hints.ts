@@ -32,6 +32,19 @@ export function sabotageHint(held: SabotageKind | null, armed: SabotageKind | nu
   return { ...a, ...b };
 }
 
+/** What the live F8b event says on every phone's button A (only when the sabotage does not use it): the event's one-line rule. */
+export function eventHint(s: ManchazoState): { a: string; aIcon: IconId } | null {
+  const plus = s.match.ev?.plus;
+  const kind = s.match.ev?.active?.kind;
+  if (!plus || !kind) return null;
+  if (kind === 'happyHour') return { a: '¡Hora feliz! Piñatas sin límite', aIcon: 'star' };
+  if (kind === 'blackout') return { a: 'Apagón: solo ves tu círculo', aIcon: 'bell' };
+  if (kind === 'contagion' && plus.contagion && plus.contagion.flipped < 0) return { a: 'Contagio: junta tu color', aIcon: 'plate' };
+  if (kind === 'move' && plus.move && plus.move.done.some((d) => d === 0)) return { a: 'Mudanza: aléjate de lo marcado', aIcon: 'move' };
+  if (kind === 'balloons' && plus.balloon?.owner[0] === -2) return { a: 'Globos: rodea uno con tu equipo', aIcon: 'grab' };
+  return null;
+}
+
 type HintMsg = Extract<ClientMsg, { t: 'hint' }>;
 type BuzzMsg = Extract<ClientMsg, { t: 'buzz' }>;
 
@@ -55,7 +68,9 @@ export function createSabotageHints(send: (m: HintMsg | BuzzMsg) => void, player
           dizzy: (p?.dizzy[i] ?? 0) > 0,
           threat: dizzyThreat(s, i),
         };
-        const h = sabotageHint(held, sab.armed[i]!, state);
+        const base = sabotageHint(held, sab.armed[i]!, state);
+        const e = base.a == null ? eventHint(s) : null;
+        const h = e ? { ...base, ...e } : base;
         const key = JSON.stringify(h);
         const last = sent.get(id);
         if (last && last.key === key && now - last.at < HINT_REFRESH_MS) return;

@@ -1,6 +1,6 @@
 // Capture-tool hooks for the living map (`window.__pg.manchazoLiving*`, only through the shell's `debug`): they re-time an element so its change falls in a
 // given number of ticks, or give a pivot an owner, nothing else. The sim itself runs on the real 60 Hz clock.
-import type { ManchazoState } from '../../sim';
+import type { ManchazoState } from '../../../sim';
 
 type Get = () => ManchazoState | undefined;
 
