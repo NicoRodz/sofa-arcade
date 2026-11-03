@@ -1,7 +1,7 @@
 // F9: what shakes one phone besides the labels: stain, lootlost and rescued (and `big` for the rescuer) are EVENTS read from the sim's state, one buzz per event, to the phone they touch.
 import { describe, expect, it } from 'vitest';
 import { RESCUE_TICKS } from '../../sim';
-import { createPhoneAlerts } from '../../screen/match/phone-alerts';
+import { createPhoneAlerts } from '../../screen/match/phone/phone-alerts';
 import { blastAt, give, put, rround, stain, tick } from '../rescue/rescue-drive';
 
 type Sent = { playerId: number; kind: string };

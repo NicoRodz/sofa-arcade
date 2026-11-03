@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { RESCUE_GLOW_TICKS, RESCUE_TICKS, STUN_TICKS } from '../../sim';
 import { LOOT_CUES, RESCUE_CUE, cueOf, playCues, setCueSink } from '../../screen/match/hud/cues';
 import { Feed, feedHash } from '../../screen/match/hud/feed';
-import { createPhoneAlerts } from '../../screen/match/phone-alerts';
+import { createPhoneAlerts } from '../../screen/match/phone/phone-alerts';
 import { createSabotageHints } from '../../screen/match/phone-hints';
 import { drawLoot, drawRescue } from '../../screen/match/scene-rescue';
 import { recorder } from '../art/recorder';

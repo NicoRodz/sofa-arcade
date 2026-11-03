@@ -16,7 +16,7 @@ import { roundKind } from './match/round';
 import { ManchazoRun, matchRun, nextMapSeed } from './match/run';
 import { parseSeed } from '../map';
 import { MatchScene } from './match/scene';
-import { createPhoneAlerts } from './match/phone-alerts';
+import { createPhoneAlerts } from './match/phone/phone-alerts';
 import { createSabotageHints } from './match/phone-hints';
 import { createEventAlert } from './match/event-alert';
 import { eventDebug } from './match/debug/events';

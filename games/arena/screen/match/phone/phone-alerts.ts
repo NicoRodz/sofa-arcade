@@ -2,7 +2,7 @@
 // a colour, a tone and a vibration (games/arena/controller): you were stained, a teammate freed you, your card fell on the floor, and (for the rescuers) the glow of the rescue.
 // Every one is an EVENT read from the sim's state (a stun that began, a new line of the rescue log, a glow that rose), never a timer of its own: a frame that skips ticks still sees it.
 import type { ClientMsg } from '@pichi/core';
-import type { ManchazoState } from '../../sim';
+import type { ManchazoState } from '../../../sim';
 
 type BuzzMsg = Extract<ClientMsg, { t: 'buzz' }>;
 
