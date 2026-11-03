@@ -17,13 +17,13 @@ for (let i = 0; ARCHETYPES.some((k) => taken[k] < PER_KIND); i++) {
   if (taken[k] < PER_KIND) (SEEDS.push(seed), taken[k]++);
 }
 
-describe('map generator over 10000 seeds of each archetype', () => {
+describe('map generator over 10000 seeds', () => {
   let records: SeedRecord[];
   beforeAll(async () => {
     records = await generateAll(SEEDS);
   }, 600_000);
 
-  it('every seed gives a valid map (V1-V9) of its archetype, and under 1 % fall back', () => {
+  it('every seed gives a valid map (V1-V7) and under 1 % fall back', () => {
     expect(records).toHaveLength(SEEDS.length);
     expect(records.map((r) => r.seed)).toEqual(SEEDS);
     expect(records.filter((r) => r.violations.length)).toEqual([]);
@@ -41,7 +41,7 @@ describe('map generator over 10000 seeds of each archetype', () => {
     for (const k of ARCHETYPES) expect(Math.abs(first.filter((a) => a === k).length / first.length - 0.25)).toBeLessThan(0.03);
   });
 
-  it('p99 of the time per seed is within budget for each archetype (15 ms; 60 ms when PG_TEST_WORKERS caps the run)', () => {
+  it('p99 of the time per seed is within budget (15 ms; 60 ms when PG_TEST_WORKERS caps the run)', () => {
     for (const k of ARCHETYPES) {
       const ms = records
         .filter((r) => r.chosen === k)
