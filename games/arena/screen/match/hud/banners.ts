@@ -4,7 +4,7 @@ import { SABOTAGES, PLUS_SABOTAGES, type SabotageKind } from '../../../sim';
 import type { FeedEvent } from './feed';
 
 export const BANNER_TICKS = 60;
-export const ICON_TICKS = 90; // the icon over the player outlives its banner: it is what tells who to chase
+export const ICON_TICKS = 60; // the icon over the player lasts 1 s: long enough to see who to chase, short enough not to hide the neighbours
 
 const NAMES = Object.fromEntries([...SABOTAGES, ...PLUS_SABOTAGES].map((k) => [k.kind, k.name])) as Record<SabotageKind, string>;
 export const sabotageName = (kind: SabotageKind): string => NAMES[kind];

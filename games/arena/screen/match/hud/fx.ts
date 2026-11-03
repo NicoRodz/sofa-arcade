@@ -1,5 +1,5 @@
-// The couch layer of the HUD (PR1): the icon (1.5 tiles wide, team halo) over whoever played a sabotage, one banner pill per team ("AZUL 3 → MAREO"), the big "+X %" when a
-// team's share jumps and a flash on the floor bar where it grew. Everything is read from the TV's feed (feed.ts) and the state; nothing here touches the sim.
+// The couch layer of the HUD (PR1): a 1-tile icon with a team halo over whoever played a sabotage (1 s), one pill per team in the HUD strip ("AZUL 3 → MAREO", never over the
+// floor), the "+X %" right after a team's percentage (what it gained in the last 2 s) and a flash on the floor bar where it grew. Everything is read from the TV's feed (feed.ts) and the state; nothing here touches the sim.
 import type Phaser from 'phaser';
 import { FONT } from '@pichi/screen-kit/art';
 import { MAP_W } from '../../../map';
@@ -12,11 +12,12 @@ import { Banners, BANNER_TICKS, ICON_TICKS } from './banners';
 import { playCues } from './cues';
 import type { Feed } from './feed';
 
-const HEX = ['#E69F00', '#4aa8e0'];
+const HEX = ['#FFB81C', '#6EC6FF']; // lighter than the team colours: the "+X %" sits on the dark background and must stay readable from the couch
+const GAP = 16; // between a percentage and its "+X %"
 export const POP_TICKS = 70;
 const FLASH_TICKS = 24;
-const ICON_R = PX * 0.75; // 1.5 tiles across
-const ICON_UP = 131; // the icon's centre over the body's: clear of the number chip above the head
+const ICON_R = PX * 0.5; // 1 tile across: big enough to read, small enough not to cover the neighbours
+const ICON_UP = 112; // the icon's centre over the body's: clear of the number chip above the head
 const PILLS = [HUD.pillLeft!, HUD.pillRight!];
 const ease = (t: number) => 1 - (1 - Math.min(1, t)) ** 3;
 
@@ -39,20 +40,12 @@ export class HudFx {
         })
         .setOrigin(ox, 0)
         .setDepth(26);
-    this.pills = [0, 1].map((t) => text(PILLS[t]!, 40, t, 0, 0).setColor('#ffffff').setOrigin(0.5, 0.5).setDepth(26));
-    this.pops = [0, 1].map((t) =>
-      text(
-        t === 0 ? { x: HUD.popLeft!.x, y: HUD.popLeft!.y } : { x: HUD.popRight!.x + HUD.popRight!.w, y: HUD.popRight!.y },
-        POP_SIZE,
-        t,
-        t === 0 ? 0 : 1,
-        8,
-      ),
-    );
+    this.pills = [0, 1].map((t) => text(PILLS[t]!, 30, t, 0, 4).setColor('#ffffff').setOrigin(0.5, 0.5).setDepth(26));
+    this.pops = [0, 1].map((t) => text({ x: 0, y: HUD.pctLeft!.y + 4 }, POP_SIZE, t, t === 0 ? 0 : 1, 7).setStroke('#24160f', 7));
   }
 
-  /** Every frame; `feed` null (no round) hides everything. `f.over` is the layer above the avatars. */
-  update(f: Frame, s: ManchazoState | null, feed: Feed | null) {
+  /** Every frame; `feed` null (no round) hides everything. `f.over` is the layer above the avatars; `pct` are the two percentage texts the "+X %" sits next to. */
+  update(f: Frame, s: ManchazoState | null, feed: Feed | null, pct: readonly Phaser.GameObjects.Text[]) {
     this.pills.forEach((t) => t.setText(''));
     this.pops.forEach((t) => t.setText(''));
     if (!s || !feed) return;
@@ -63,7 +56,7 @@ export class HudFx {
     const g = f.over ?? f.g;
     this.drawIcons(g, s, feed, tick);
     this.drawPills(g, tick);
-    this.drawSwings(g, s, feed, tick);
+    this.drawSwings(g, s, feed, tick, pct);
   }
 
   private drawIcons(g: Phaser.GameObjects.Graphics, s: ManchazoState, feed: Feed, tick: number) {
@@ -74,14 +67,14 @@ export class HudFx {
       const b = s.grid.bodies[e.type === 'fired' ? e.body : -1];
       if (e.type !== 'fired' || !b || age < 0) continue;
       const x = X0 + (b.x * PX) / 16;
-      const y = Math.max(Y0 + ICON_R + 8, Y0 + (b.y * PX) / 16 - ICON_UP);
+      const y = Math.max(Y0 + ICON_R + 16, Y0 + (b.y * PX) / 16 - ICON_UP);
       const pop = ease(age / 8);
-      const fade = age > ICON_TICKS - 20 ? (ICON_TICKS - age) / 20 : 1;
+      const fade = age > ICON_TICKS - 12 ? (ICON_TICKS - age) / 12 : 1;
       const col = TEAM_COLOR[e.team % 2]!;
       const r = ICON_R * (0.4 + 0.6 * pop);
-      g.fillStyle(col, 0.35 * fade).fillCircle(x, y, r + 20 + 8 * Math.sin(age / 5)); // the halo of the team
-      g.lineStyle(10, col, fade).strokeCircle(x, y, r + 7);
-      g.lineStyle(4, 0xffffff, fade).strokeCircle(x, y, r + 13);
+      g.fillStyle(col, 0.35 * fade).fillCircle(x, y, r + 10 + 4 * Math.sin(age / 5)); // the halo of the team
+      g.lineStyle(6, col, fade).strokeCircle(x, y, r + 4);
+      g.lineStyle(3, 0xffffff, fade).strokeCircle(x, y, r + 8);
       drawIcon(g, e.kind, x, y, r, tick / 6);
     }
   }
@@ -90,20 +83,20 @@ export class HudFx {
     this.banners.visible(tick).forEach((p, t) => {
       if (!p) return;
       const r = PILLS[t]!;
-      const slide = (1 - ease(p.age / 8)) * 40 * (t === 0 ? -1 : 1);
+      const slide = (1 - ease(p.age / 8)) * 24 * (t === 0 ? -1 : 1);
       const a = p.age > BANNER_TICKS - 12 ? (BANNER_TICKS - p.age) / 12 : 1;
       const [x, y] = [r.x + r.w / 2 + slide, r.y + r.h / 2];
-      g.fillStyle(0x24160f, 0.88 * a).fillRoundedRect(x - r.w / 2, y - r.h / 2, r.w, r.h, 16);
-      g.lineStyle(7, TEAM_COLOR[t]!, a).strokeRoundedRect(x - r.w / 2, y - r.h / 2, r.w, r.h, 16);
+      g.fillStyle(0x24160f, 0.78 * a).fillRoundedRect(x - r.w / 2, y - r.h / 2, r.w, r.h, 14);
+      g.lineStyle(5, TEAM_COLOR[t]!, a).strokeRoundedRect(x - r.w / 2, y - r.h / 2, r.w, r.h, 14);
       this.pills[t]!.setText(p.text)
         .setPosition(x, y)
         .setAlpha(a)
-        .setScale(Math.min(1, (r.w - 28) / this.pills[t]!.width));
+        .setScale(Math.min(1, (r.w - 24) / this.pills[t]!.width));
     });
   }
 
-  /** The "+X %" next to the team's percentage and a flash on the floor bar over the share it just won. */
-  private drawSwings(g: Phaser.GameObjects.Graphics, s: ManchazoState, feed: Feed, tick: number) {
+  /** The "+X %" right after the team's percentage (what it gained over the last 2 s, feed.gain) and a flash on the floor bar over the share it just won. */
+  private drawSwings(g: Phaser.GameObjects.Graphics, s: ManchazoState, feed: Feed, tick: number, pct: readonly Phaser.GameObjects.Text[]) {
     const seen = [false, false];
     const w = MAP_W * PX;
     for (let k = feed.log.length - 1; k >= 0; k--) {
@@ -113,11 +106,15 @@ export class HudFx {
       if (e.type !== 'swing' || seen[e.team] || age < 0) continue;
       seen[e.team] = true;
       const pop = this.pops[e.team]!;
-      const grow = 1 + 0.5 * (1 - ease(age / 10));
-      pop
-        .setText(`+${Math.round(e.pp)} %`)
-        .setScale(grow)
-        .setAlpha(age > POP_TICKS - 20 ? (POP_TICKS - age) / 20 : 1);
+      const gain = Math.round(feed.gain(e.team));
+      const grow = 1 + 0.4 * (1 - ease(age / 10));
+      const p = pct[e.team]!;
+      if (gain >= 1)
+        pop
+          .setText(`+${gain} %`)
+          .setPosition(e.team === 0 ? p.x + p.width + GAP : p.x - p.width - GAP, p.y + 4)
+          .setScale(grow)
+          .setAlpha(age > POP_TICKS - 12 ? (POP_TICKS - age) / 12 : 1);
       if (age < FLASH_TICKS && !isHidden(s)) {
         const bw = (w * e.pp) / 100;
         const own = Math.min(w, (w * shownCounts(s)[e.team]!) / s.match.paintable);

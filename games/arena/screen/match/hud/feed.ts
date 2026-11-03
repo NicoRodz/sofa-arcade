@@ -6,6 +6,7 @@ import { isHidden, shownCounts, type ManchazoState, type SabotageKind } from '..
 export const SWING_PP = 1.5; // a team gaining this many percentage points ...
 export const SWING_WINDOW = 60; // ... within this many ticks is a swing
 export const SWING_COOL = 60; // and the same team does not announce another one for this long
+export const RECENT_WINDOW = 120; // the "+X %" on screen is what the team gained over the last 2 s: never since the start of the round
 
 export type FeedEvent =
   | { type: 'fired'; tick: number; body: number; slot: number; team: number; kind: SabotageKind }
@@ -21,7 +22,7 @@ export class Feed {
   private used = -1; // sabotages played so far (-1: no baseline yet)
   private held: (SabotageKind | null)[] = [];
   private sponge: number[] = [];
-  private hist: number[][] = []; // the last SWING_WINDOW + 1 shares, oldest first
+  private hist: number[][] = []; // the last RECENT_WINDOW + 1 shares, oldest first
   private lastSwing = [-1e9, -1e9];
   private sink = 0; // log entries already handed out by `fresh`
 
@@ -49,14 +50,20 @@ export class Feed {
     if (isHidden(s)) return void (this.hist = []); // the last 10 s are played blind: no swing may leak the score
     const now = pct(s);
     this.hist.push(now);
-    if (this.hist.length > SWING_WINDOW + 1) this.hist.shift();
+    if (this.hist.length > RECENT_WINDOW + 1) this.hist.shift();
     for (const team of [0, 1]) {
-      const gain = now[team]! - Math.min(...this.hist.map((h) => h[team]!));
+      const gain = this.gain(team, SWING_WINDOW);
       if (gain >= SWING_PP && tick - this.lastSwing[team]! >= SWING_COOL) {
         this.lastSwing[team] = tick;
         this.log.push({ type: 'swing', tick, team, pp: gain });
       }
     }
+  }
+
+  /** What `team` gained (pp) over the last `window` ticks: its share now minus its lowest share inside that window. 0 with no history (the round just began, or the score is hidden). */
+  gain(team: number, window: number = RECENT_WINDOW): number {
+    const w = this.hist.slice(-(window + 1)).map((h) => h[team]!);
+    return w.length ? w[w.length - 1]! - Math.min(...w) : 0;
   }
 
   /** The events logged since the last call (what a sink such as the audio layer plays once each). */

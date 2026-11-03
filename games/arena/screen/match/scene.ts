@@ -10,10 +10,11 @@ import { drawEvents } from './scene-events';
 import { drawEventsPlus } from './scene-events-plus';
 import { drawLiving } from './scene-living';
 import { floorBar } from './hud-bar';
-import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, EVENT_DY, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, SIDE_X, X0, Y0 } from './layout';
+import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, SIDE_X, X0, Y0 } from './layout';
 import { Avatars } from './scene-avatars';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawTapes } from './scene-plus';
+import { eventStrip, STRIP_ALPHA } from './hud/event-strip';
 import { HudFx } from './hud/fx';
 import type { Feed } from './hud/feed';
 import type { Frame } from './scene-frame';
@@ -86,27 +87,22 @@ export class MatchScene extends Phaser.Scene {
     this.next = this.add
       .text(X0 + MAP_W * PX, BOTTOM_Y, '', { fontFamily: FONT, fontSize: `${FOOT_SIZE}px`, color: '#E8DCC4', fontStyle: 'bold' })
       .setOrigin(1, 0);
+    // the event banner is a strip in the bottom band (hud/event-strip.ts): title and subtitle side by side, positioned each frame
+    const strip = (size: number, stroke: number, color: string) => ({
+      fontFamily: FONT,
+      fontSize: `${size}px`,
+      color,
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: stroke,
+    });
     this.title = this.add
-      .text(W / 2, Y0 + EVENT_DY + 8, '', {
-        fontFamily: FONT,
-        fontSize: '72px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 8,
-      })
-      .setOrigin(0.5, 0)
+      .text(0, 0, '', strip(30, 5, '#ffffff'))
+      .setOrigin(0, 0.5)
       .setDepth(10);
     this.sub = this.add
-      .text(W / 2, Y0 + EVENT_DY + 94, '', {
-        fontFamily: FONT,
-        fontSize: '34px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 6,
-      })
-      .setOrigin(0.5, 0)
+      .text(0, 0, '', strip(24, 4, '#f3e9d2'))
+      .setOrigin(0, 0.5)
       .setDepth(10);
     this.tag = this.add
       .text(0, 0, 'x2', {
@@ -128,7 +124,7 @@ export class MatchScene extends Phaser.Scene {
     this.avatars.begin();
     if (!s) {
       this.pct.forEach((t) => t.setText(''));
-      this.fx.update({ g: this.g, x0: X0, y0: Y0, px: PX }, null, null);
+      this.fx.update({ g: this.g, x0: X0, y0: Y0, px: PX }, null, null, this.pct);
       this.clock.setText('');
       this.seed.setText('');
       [this.next, this.title, this.sub, this.tag].forEach((t) => t.setText(''));
@@ -159,14 +155,11 @@ export class MatchScene extends Phaser.Scene {
         .setText(String(b.slot + 1));
     });
     // F8b: the events' layer (the blackout goes on `over`, above the avatars; the banner's box stays lit)
-    const lit = bannerOf(s, this.host.teamName.bind(this.host))
-      ? ([X0 + 40, Y0 + EVENT_DY, X0 + MAP_W * PX - 40, Y0 + EVENT_DY + 146] as const)
-      : null;
-    drawEventsPlus(f, s, this.over, lit);
+    drawEventsPlus(f, s, this.over, null); // the banner is under the floor now: nothing inside it has to stay lit
     this.drawHud(s);
-    this.fx.update(f, s, this.host.feed?.() ?? null);
-    this.drawAnnouncements(s);
-    this.seed.setText(s.mapSeed === null ? '' : `MAPA ${formatSeed(s.mapSeed)}`);
+    this.fx.update(f, s, this.host.feed?.() ?? null, this.pct);
+    const strip = this.drawAnnouncements(s);
+    this.seed.setText(s.mapSeed === null || strip ? '' : `MAPA ${formatSeed(s.mapSeed)}`);
   }
 
   /** For the capture tool only: the real bounds (logical px) of the HUD texts, to prove they sit inside the safe area. */
@@ -230,21 +223,24 @@ export class MatchScene extends Phaser.Scene {
     for (let k = 0; k < bar.blue - 6; k += 12) this.g.fillStyle(0xffffff, 0.55).fillRect(X0 + w - 10 - k, BAR_Y + 2, 4, BAR_H - 4);
   }
 
-  /** The announcement banner (3 s), the next event, and the x2 over the golden zone. */
-  private drawAnnouncements(s: ManchazoState) {
+  /** The announcement strip under the floor (1.5 s, then it shrinks), the next event, and the x2 over the golden zone. True while the strip is up: it takes the seed's and the next event's place. */
+  private drawAnnouncements(s: ManchazoState): boolean {
     const b = bannerOf(s, this.host.teamName.bind(this.host));
-    if (b) {
-      this.g.fillStyle(num(A.cocoa), 0.82).fillRoundedRect(X0 + 40, Y0 + EVENT_DY, MAP_W * PX - 80, 146, 20);
-      this.g
-        .lineStyle(6, b.team >= 0 ? TEAM_COLOR[b.team]! : num(A.gold), 1)
-        .strokeRoundedRect(X0 + 40, Y0 + EVENT_DY, MAP_W * PX - 80, 146, 20);
-    }
-    this.title.setText(b?.title ?? '').setAlpha(b ? Math.min(1, b.age / 8) : 1);
+    this.title.setText(b?.title ?? '');
     this.sub.setText(b?.sub ?? '');
-    this.next.setText(nextLine(s));
+    const st = b ? eventStrip(b.age, this.title.width, this.sub.width) : null;
+    if (b && st) {
+      const cy = st.y + st.h / 2;
+      this.g.fillStyle(num(A.cocoa), STRIP_ALPHA * st.alpha).fillRoundedRect(st.x, st.y, st.w, st.h, 14);
+      this.g.lineStyle(4, b.team >= 0 ? TEAM_COLOR[b.team]! : num(A.gold), st.alpha).strokeRoundedRect(st.x, st.y, st.w, st.h, 14);
+      this.title.setPosition(st.titleX, cy).setScale(st.scale).setAlpha(st.alpha);
+      this.sub.setPosition(st.subX, cy).setScale(st.scale).setAlpha(st.alpha);
+    } else [this.title, this.sub].forEach((t) => t.setText(''));
+    this.next.setText(st ? '' : nextLine(s));
     const z = s.match.zone;
     this.tag.setText(z ? 'x2' : '');
     if (z) this.tag.setPosition(X0 + ((z.x0 + z.x1 + 1) / 2) * PX, Y0 + ((z.y0 + z.y1 + 1) / 2) * PX);
+    return st !== null;
   }
 
   private label(slot: number, stunned: boolean): Phaser.GameObjects.Text {

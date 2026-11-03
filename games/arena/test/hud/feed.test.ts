@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAP_W, solidAt } from '../../map';
 import { PLUS_KINDS, createManchazo, hashManchazo, isHidden, paintTile, type ManchazoState } from '../../sim';
-import { Feed, SWING_COOL, feedHash } from '../../screen/match/hud/feed';
+import { Feed, RECENT_WINDOW, SWING_COOL, feedHash } from '../../screen/match/hud/feed';
 import { USE, give, put, tick as step } from '../sabotage/sab-drive';
 import { plus, plusRound, playUses } from '../sabotage-plus/plus-drive';
 
@@ -120,6 +120,24 @@ describe('the TV feed: score swings', () => {
       g.observe(slow);
     }
     expect(g.log).toEqual([]);
+  });
+
+  it('the "+X %" is what a team gained in the last 2 s, not since the round began or since an old jump', () => {
+    const s = plusRound([0, 1]);
+    const f = new Feed();
+    run(s, f, 1);
+    paint(s, 0, Math.ceil((20 / 100) * total(s))); // a big early jump: about 20 pp
+    run(s, f, 1);
+    expect(f.gain(0)).toBeGreaterThan(19);
+    run(s, f, RECENT_WINDOW + 5); // 2 s of nothing: the jump leaves the window
+    expect(f.gain(0)).toBe(0);
+    paint(s, 0, Math.ceil((3 / 100) * total(s))); // a fresh +3
+    run(s, f, 1);
+    expect(f.gain(0)).toBeGreaterThan(2.9);
+    expect(f.gain(0)).toBeLessThan(3.6); // 3 pp, not 23
+    expect(f.gain(1)).toBe(0);
+    const swing = f.log.filter((e) => e.type === 'swing').at(-1)!;
+    expect(swing.type === 'swing' && swing.pp).toBeLessThan(3.6);
   });
 
   it('while the scoreboard is hidden (the last 10 s) no swing is announced', () => {

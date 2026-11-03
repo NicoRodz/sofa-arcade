@@ -2,7 +2,8 @@ import { PORT, sleep } from '../../config';
 import type { Ctx } from '../../session';
 
 // Manchazo PR1 (couch legibility): one round with events at 3840x2160. Painted halves, four sabotages played at once (two per team), a Casillas doradas event and a
-// big paint jump for the orange team. Run it on master and on the branch with SHOT=<name> and compare the two pictures from 3 m.
+// small paint gain for each team in the last second. The two painted halves go in 2 s earlier, so the "+X %" in the picture is what each team won in the last seconds
+// (a few pp), not the whole painted half. Run it on master and on the branch with SHOT=<name> and compare the two pictures from 3 m.
 export async function runManchazoLegibilityTv({ cdp, bots, join, waitFor, click }: Ctx) {
   const room = 'MNLG';
   await cdp.send('Emulation.setDeviceMetricsOverride', {
@@ -41,7 +42,7 @@ export async function runManchazoLegibilityTv({ cdp, bots, join, waitFor, click 
   const [o, b] = [of(0), of(1)];
   await call('manchazoPaint', 0, 0, 2, 11, 12);
   await call('manchazoPaint', 1, 15, 2, 26, 12);
-  await sleep(300);
+  await sleep(2400); // the halves' own "+X %" leaves the screen and the 2 s window
   await call('manchazoGive', o[0], 'dizzy');
   await call('manchazoGive', o[1], 'roller');
   await call('manchazoGive', b[0], 'tape');
@@ -49,7 +50,8 @@ export async function runManchazoLegibilityTv({ cdp, bots, join, waitFor, click 
   await call('manchazoEvent', 'gold');
   await sleep(300);
   for (const slot of [o[0], o[1], b[0], b[1]]) bots[slot!]!.b++; // button 2: the four play their card
-  await call('manchazoPaint', 0, 3, 3, 9, 7); // a big jump for orange
+  await call('manchazoPaint', 0, 0, 13, 5, 14); // orange wins 12 tiles of the bottom rows
+  await call('manchazoPaint', 1, 21, 13, 26, 14); // blue too
   await sleep(Number(process.env.WAIT_MS ?? 450));
   await cdp.shot(process.env.SHOT ?? 'manchazo-legibility');
 }
