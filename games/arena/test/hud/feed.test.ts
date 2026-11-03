@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAP_W, solidAt } from '../../map';
 import { PLUS_KINDS, createManchazo, hashManchazo, isHidden, paintTile, type ManchazoState } from '../../sim';
-import { Feed, RECENT_WINDOW, SWING_COOL, feedHash } from '../../screen/match/hud/feed';
+import { Feed, SWING_COOL, feedHash } from '../../screen/match/hud/feed';
 import { USE, give, put, tick as step } from '../sabotage/sab-drive';
 import { plus, plusRound, playUses } from '../sabotage-plus/plus-drive';
 
@@ -129,7 +129,7 @@ describe('the TV feed: score swings', () => {
     paint(s, 0, Math.ceil((20 / 100) * total(s))); // a big early jump: about 20 pp
     run(s, f, 1);
     expect(f.gain(0)).toBeGreaterThan(19);
-    run(s, f, RECENT_WINDOW + 5); // 2 s of nothing: the jump leaves the window
+    run(s, f, 125); // a little over 2 s (120 ticks) of nothing: the jump leaves the window
     expect(f.gain(0)).toBe(0);
     paint(s, 0, Math.ceil((3 / 100) * total(s))); // a fresh +3
     run(s, f, 1);
