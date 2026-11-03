@@ -1,5 +1,5 @@
 // One tick of a Manchazo round (60 Hz). Mutates the state; same state + same inputs = same result.
-// Order (the plan's): inputs by slot -> sabotages -> movement -> living map (F5) -> drops -> rescue and loot (PR3) -> stain and footprints -> pinatas (placement order) -> events (F4: schedule, come-back, Hourglass; they may add to the round's length) -> clock. The sabotages' paint and pickups run right after movement.
+// Order (the plan's): inputs by slot -> sabotages -> movement -> living map (F5) -> drops -> rescue and loot (PR3) -> stain and footprints -> shots (PR4) -> pinatas (placement order) -> events (F4: schedule, come-back, Hourglass; they may add to the round's length) -> clock. The sabotages' paint and pickups run right after movement.
 import { NONE } from '../grid/dir';
 import { steer } from '../grid/control';
 import { advance } from '../grid/move';
@@ -10,6 +10,7 @@ import { stepLiving } from '../living/step';
 import { dizzyInput } from '../sabotage/dizzy';
 import { afterMove, beforeMove, isRolling } from '../sabotage/step';
 import { stepRescue } from '../rescue/step';
+import { stepShots } from '../shot/step';
 import { dropPinata, stepPinatas } from './pinata';
 import { TRAIL_TICKS } from './config';
 import type { ManchazoState } from './state';
@@ -54,6 +55,7 @@ export function stepManchazo(s: ManchazoState, inputs: ReadonlyMap<number, Manch
       paintTile(m, ...bodyTile(b, bm.face), bm.trailTeam, g.tick);
     }
   });
+  stepShots(s); // PR4: shots fly, aims launch (no-op without the flag)
   stepPinatas(s);
   stepEvents(s);
   g.tick++;

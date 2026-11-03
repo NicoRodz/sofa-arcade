@@ -16,3 +16,4 @@ export * from './grid';
 export * from './match';
 export * from './phase';
 export * from './rescue';
+export * from './shot';

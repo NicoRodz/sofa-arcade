@@ -1,6 +1,7 @@
 // The sabotage part of the round's hash (mixed only when the sabotages are on, so a round without them keeps its hash).
 import { ALL_KINDS } from './kinds';
 import { plusWords } from './plus';
+import { shotWords } from '../shot/state';
 import type { SabotageState } from './state';
 
 export function sabotageWords(a: SabotageState): number[] {
@@ -15,5 +16,6 @@ export function sabotageWords(a: SabotageState): number[] {
     ...a.gust,
     a.used,
     ...(a.plus ? plusWords(a.plus) : []),
+    ...(a.shot ? shotWords(a.shot) : []),
   ];
 }

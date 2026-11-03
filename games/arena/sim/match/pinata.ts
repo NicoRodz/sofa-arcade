@@ -6,6 +6,7 @@ import { happyBonus, happyOn } from '../events/happy';
 import { capRadius } from '../phase/radius';
 import { deflectVacuum } from '../events/vacuum';
 import { dropLoot } from '../rescue/loot';
+import { cancelAim } from '../shot/aim';
 import { glueTarget } from '../sabotage/use';
 import { clearTile, paintTile } from './board';
 import { blastTiles } from './blast';
@@ -53,6 +54,7 @@ function detonate(s: ManchazoState, p: Pinata): void {
     const bm = m.bodies[i]!;
     if (b.team === p.team || bm.stun > 0 || (m.sab?.plus?.immune[i] ?? 0) > 0 || !hit.has(bodyTile(b, bm.face).join(','))) return;
     bm.stun = STUN_TICKS;
+    cancelAim(s, i); // PR4: a stain cuts an aim before the card falls (no-op without the flag)
     if (m.res) {
       m.res.contact[i] = 0; // PR3: a new stain starts its rescue count over, and the card in hand falls
       dropLoot(s, i);

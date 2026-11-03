@@ -21,6 +21,7 @@ export function hashManchazo(s: ManchazoState): number {
   if (m.sab) {
     for (const p of m.pinatas) [p.mod === 'glue' ? 2 : p.mod === 'turpentine' ? 1 : 0, p.stuck ?? -1].forEach(mix);
     sabotageWords(m.sab).forEach(mix);
+    if (m.sab.shot) for (const p of m.pinatas) [p.passes ?? -1, p.lock ?? 0].forEach(mix); // PR4: the Pegote's passes
   }
   if (m.ev) eventsWords(m).forEach(mix);
   if (m.live) liveWords(m.live).forEach(mix);

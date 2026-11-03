@@ -4,6 +4,8 @@ import { DOWN, LEFT, RIGHT, UP, type Dir } from '../grid/dir';
 import { bodyTile } from '../match/tile';
 import { dist, nearestRival } from './near';
 import { playPlus } from './plus-use';
+import { isShotKind } from '../shot/config';
+import { startAim } from '../shot/aim';
 import type { ManchazoState } from '../match/state';
 import { FAN_FX_TICKS, FAN_PUSH, FAN_RANGE, FOOTPRINT_TICKS, GLUE_RANGE, PLUS_KINDS, ROLLER_TICKS } from './kinds';
 
@@ -36,6 +38,7 @@ export function useSabotage(s: ManchazoState, i: number): boolean {
   const a = s.match.sab;
   const kind = a?.held[i];
   if (!a || !kind || a.armed[i] || s.match.bodies[i]!.stun > 0) return false;
+  if (a.shot && isShotKind(kind)) return startAim(s, i); // PR4: Pegote, Cambiazo and Mareo are aimed: the card leaves with the shot (shot/step.ts)
   const team = s.grid.bodies[i]!.team;
   if (PLUS_KINDS.includes(kind)) {
     const played = playPlus(s, i, kind); // F8a: 'spent' leaves the hand empty, 'kept' (the sponge soaking) does not, 'refused' plays nothing
