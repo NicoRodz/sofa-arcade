@@ -16,6 +16,7 @@ import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawTapes } from './scene-plus';
 import { eventStrip, STRIP_ALPHA } from './hud/event-strip';
 import { HudFx } from './hud/fx';
+import { ArchetypeFx } from './hud/archetype-fx';
 import type { Feed } from './hud/feed';
 import type { Frame } from './scene-frame';
 import { drawCarrier, drawMark, drawPickups } from './scene-sabotage';
@@ -53,6 +54,7 @@ export class MatchScene extends Phaser.Scene {
   private paint!: PaintLayer; // same: the paint images and the floor image belong to the scene's display list
   private floor?: Phaser.GameObjects.Image;
   private splashes = new Splashes();
+  private arch!: ArchetypeFx; // the map's name at the start of the round
   private fx!: HudFx; // PR1: sabotage icons, pills and the "+X %" (rebuilt in create(), it owns Text objects)
 
   constructor(private host: MatchHost) {
@@ -69,6 +71,7 @@ export class MatchScene extends Phaser.Scene {
     this.over = this.add.graphics().setDepth(20); // above the avatars (depth ~1), below their number chips (30): the card over a head, the Mareo's spiral
     this.avatars = new Avatars(this);
     this.fx = new HudFx(this, this.host.teamName.bind(this.host));
+    this.arch = new ArchetypeFx(this);
     const style = (color: string) => ({ fontFamily: FONT, fontSize: `${PCT_SIZE}px`, color, fontStyle: 'bold' });
     // the HUD starts at the top of the title-safe area (layout.ts): a TV that crops its edges still shows it
     this.pct = [
@@ -125,6 +128,7 @@ export class MatchScene extends Phaser.Scene {
     if (!s) {
       this.pct.forEach((t) => t.setText(''));
       this.fx.update({ g: this.g, x0: X0, y0: Y0, px: PX }, null, null, this.pct);
+      this.arch.update(null);
       this.clock.setText('');
       this.seed.setText('');
       [this.next, this.title, this.sub, this.tag].forEach((t) => t.setText(''));
@@ -158,6 +162,7 @@ export class MatchScene extends Phaser.Scene {
     drawEventsPlus(f, s, this.over, null); // the banner is under the floor now: nothing inside it has to stay lit
     this.drawHud(s);
     this.fx.update(f, s, this.host.feed?.() ?? null, this.pct);
+    this.arch.update(s);
     const strip = this.drawAnnouncements(s);
     this.seed.setText(s.mapSeed === null || strip ? '' : mapCaption(s.mapSeed, s.mapArchetype));
   }

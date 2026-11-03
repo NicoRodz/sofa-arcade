@@ -2,14 +2,14 @@
 // does not show it is retried, never relabelled. All four read the left half; the right half is its mirror image, so one half is enough.
 import { MAP_H, MAP_W } from '../../layout';
 import { solidAt, type TileMap } from '../../tile-map';
-import { ROOM_H, ROOM_W } from './islas';
 import type { Archetype } from './kinds';
 import { SIDE_MAX_X } from './plaza';
-import { doorsInWall, barRows, corridorRows, freeRooms } from './rooms';
+import { barRows, corridorRows, sealedRooms } from './rooms';
 
 export const MIN_CORRIDORS = 3; // Pasillos: rows with a free run of 10 that touches the middle line, and as many wall bars
-export const MIN_ROOMS = 2; // Islas: free 4x3 rooms per half
-export const MIN_DOORS = 3; // Islas: 1-tile doors in one wall column
+export const MIN_ROOMS = 2; // Islas: sealed rooms per half (2 to 4)
+export const MAX_ROOMS = 4;
+export const MIN_ROOM_FLOOR = 24; // Islas: floor tiles in all the rooms of a half together (a pair of 3x3 pockets between two furniture bars is not a floor plan)
 export const PLAZA_W = 7;
 export const PLAZA_H = 5;
 export const SIDE_WALL_SHARE = 0.3; // Plaza: share of furniture in the sides (columns 0-8)
@@ -19,15 +19,19 @@ const HALF = (MAP_W - 1) / 2;
 type Signature = (m: TileMap) => string | null;
 
 const pasillos: Signature = (m) => {
+  const rooms = sealedRooms(m).length;
+  if (rooms >= MIN_ROOMS) return `${rooms} sealed rooms: a floor plan, not corridors`; // Islas has its own signature
   const c = corridorRows(m).length;
   const b = barRows(m).length;
   return c >= MIN_CORRIDORS && b >= MIN_CORRIDORS ? null : `${c} corridors and ${b} wall bars (need ${MIN_CORRIDORS} of each)`;
 };
 
 const islas: Signature = (m) => {
-  const rooms = freeRooms(m, ROOM_W, ROOM_H).length;
-  const doors = doorsInWall(m);
-  return rooms >= MIN_ROOMS && doors >= MIN_DOORS ? null : `${rooms} rooms, ${doors} doors in the widest wall`;
+  const rooms = sealedRooms(m);
+  const floor = rooms.reduce((n, r) => n + r.tiles, 0);
+  if (rooms.length < MIN_ROOMS || rooms.length > MAX_ROOMS)
+    return `${rooms.length} sealed rooms in the half (need ${MIN_ROOMS} to ${MAX_ROOMS})`;
+  return floor >= MIN_ROOM_FLOOR ? null : `${rooms.length} sealed rooms hold ${floor} floor tiles (need ${MIN_ROOM_FLOOR})`;
 };
 
 /** The first free 7x5 rectangle centred on the middle line (top-left corner), or null. The maps are mirrored, so any free 7x5 that crosses the line holds this one. */
@@ -42,6 +46,7 @@ export function plazaRect(m: TileMap): { x: number; y: number } | null {
 }
 
 const plaza: Signature = (m) => {
+  if (sealedRooms(m).length >= MIN_ROOMS) return 'sealed rooms: a floor plan, not a plaza'; // Islas has its own signature
   if (!plazaRect(m)) return `no free ${PLAZA_W}x${PLAZA_H} plaza across the middle line`;
   let walls = 0;
   for (let yy = 0; yy < MAP_H; yy++) for (let xx = 0; xx <= SIDE_MAX_X; xx++) if (solidAt(m, xx, yy)) walls++;

@@ -1,5 +1,5 @@
-// Where an archetype wants its living elements, read off the map: the sofas across the corridors of Pasillos (they are its doors), the brushes in the middle of
-// the rooms of Islas. Anchors only: placeLiving still keeps a pair only if V1-V3 hold in every combination of states.
+// Where an archetype wants its living elements, read off the map: the sofas across the corridors of Pasillos (they are its doors), the brushes on the open floor of Islas
+// (a brush sweeps a cross of 5, wider than a room's core, so it stands in the corridors and the avenue). Anchors only: placeLiving still keeps a pair only if V1-V3 hold in every combination of states.
 import { MAP_H } from '../../layout';
 import { solidAt, type Tile, type TileMap } from '../../tile-map';
 import { LIVING_MAX_X } from '../living-shapes';
@@ -20,7 +20,7 @@ export function livingPlan(kind: MapKind, m: TileMap): LivingPlan | null {
     return anchors.length ? { kind: 'sofa', anchors, variant: 1 } : null;
   }
   if (kind === 'islas') {
-    const anchors: Tile[] = []; // every tile with its whole 3x3 free (the inside of a room), left of column 10
+    const anchors: Tile[] = []; // every tile with its whole 3x3 free, left of column 10
     for (let y = 1; y < MAP_H - 1; y++)
       for (let x = 1; x <= LIVING_MAX_X; x++)
         if ([-1, 0, 1].every((dy) => [-1, 0, 1].every((dx) => !solidAt(m, x + dx, y + dy)))) anchors.push([x, y]);

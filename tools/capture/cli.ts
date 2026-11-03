@@ -20,6 +20,7 @@ import { runManchazo4k, runRenderScaleOthers } from './scenarios/render-scale';
 import { runManchazoLooks, runManchazoSeeds } from './scenarios/manchazo-seeds';
 import { runManchazoEventsPlusTv, runManchazoEventsTv } from './scenarios/manchazo-events';
 import { runManchazoLivingTv } from './scenarios/manchazo-living';
+import { runManchazoArchetypeTv } from './scenarios/legibility/manchazo-archetype';
 import { runManchazoLegibilityTv } from './scenarios/legibility/manchazo-legibility';
 import { runManchazoPhasesTv } from './scenarios/legibility/manchazo-phases';
 import {
@@ -52,6 +53,7 @@ const MODES: Record<string, Scenario[]> = {
   'manchazo-living-tv': [runManchazoLivingTv],
   'manchazo-legibility-tv': [runManchazoLegibilityTv],
   'manchazo-phases-tv': [runManchazoPhasesTv],
+  'manchazo-archetype-tv': [runManchazoArchetypeTv],
   'versus-phone': [runVersusPhone],
   versus: [runVersus],
   'vs-hud': [runVsHud],
