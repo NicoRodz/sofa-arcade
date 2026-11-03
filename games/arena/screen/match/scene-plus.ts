@@ -50,7 +50,7 @@ export function drawPlusCarrier(f: Frame, s: ManchazoState, i: number, x: number
     ring(f, x, y, f.px * 0.7, INK, 0.55, 7); // its team's paint is hidden: a ghost ring, white on a dark underlay so it reads on the cream floor too
     ring(f, x, y, f.px * 0.7, 0xf4f4fa, 0.75 + 0.25 * Math.sin(t / 6), 3);
   }
-  if (p.sponge[i]! > 0) {
+  if (p.sponge[i]! > 0 && !p.wrap) {
     ring(f, x, y, f.px * 0.62, CARD_COLOR.sponge, 0.6 + 0.4 * Math.sin(t / 4), 5);
     for (let k = 0; k < p.soaked[i]!; k++)
       f.g.fillStyle(CARD_COLOR.sponge, 1).fillCircle(x - f.px * 0.5 + k * (f.px / 8), y + f.px * 0.84, f.px * 0.07); // one drop per tile held
