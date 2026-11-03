@@ -148,8 +148,9 @@ describe('grid control, plan A (default)', () => {
     hold(s, RIGHT_STICK, 20);
     const b = s.bodies[0]!;
     hold(s, REST, 3);
-    hold(s, RIGHT_STICK, 1);
     expect([b.dir, b.moved]).toEqual([RIGHT, true]);
+    hold(s, RIGHT_STICK, 1);
+    expect(b.dir).toBe(RIGHT);
     hold(s, REST, 4);
     expect(b.dir).toBe(NONE);
   });
