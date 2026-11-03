@@ -1,5 +1,5 @@
-// The sound cue for each thing the HUD announces: a table of ids and a hook, no audio files (the F8m suite is still in production). When it lands, `setCueSink` gets the
-// audio layer's `play` and each cue id names a sample; until then nothing is connected and every cue is dropped.
+// The sound cue for each thing the HUD announces: a table of ids and a hook. `setCueSink` is connected by screen/audio/audio.ts; which file each cue plays is in
+// screen/audio/cue-sounds.ts (a new cue needs its line there: its test fails otherwise).
 import type { SabotageKind } from '../../../sim';
 import type { FeedEvent } from './feed';
 
