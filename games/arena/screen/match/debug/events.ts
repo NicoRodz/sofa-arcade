@@ -8,8 +8,8 @@ import {
   type EventKind,
   type ManchazoState,
   type Planned,
-} from '../../sim';
-import { MAP_W, solidAt } from '../../map';
+} from '../../../sim';
+import { MAP_W, solidAt } from '../../../map';
 
 type Get = () => ManchazoState | undefined;
 
