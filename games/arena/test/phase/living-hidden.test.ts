@@ -4,7 +4,8 @@ import { nextChange } from '../../sim/living/state';
 import { borders, lead } from '../events/ev-drive';
 import { idle, phaseRound, quietEvents, toTick } from './phase-drive';
 
-const livingRound = (extra = {}) => quietEvents(phaseRound([0, 1, 0, 1], 5, { sabotage: true, living: true, mapSeed: 777, classicMap: true, ...extra }));
+const livingRound = (extra = {}) =>
+  quietEvents(phaseRound([0, 1, 0, 1], 5, { sabotage: true, living: true, mapSeed: 777, classicMap: true, ...extra }));
 const clocks = (s: ManchazoState) => [...s.match.live!.pairs, ...(s.match.live!.fountain ? [s.match.live!.fountain] : [])];
 
 describe('the Final speeds the living parts x0.75', () => {
