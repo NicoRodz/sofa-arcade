@@ -21,7 +21,7 @@ body[data-game=arena][data-team=on][data-view=playing] #hud { color: var(--cream
 body[data-game=arena][data-arena-card] #btnB:not(.off) {
   --btn: var(--card); --btn2: var(--card2); border-color: #fff; color: var(--ink);
   box-shadow: 0 0 0 .9vmin var(--ink), 0 0 3vmin .6vmin var(--card);
-  animation: arenacard .5s ease-out;
+  animation: arenacard .4s ease-out;
 }
 body[data-game=arena][data-arena-card] #btnB:not(.off) .ico { width: 64%; height: 64%; }
 body[data-game=arena][data-arena-card] #lblB:not(.off) .pl { background: var(--card); color: var(--ink); font-weight: 900; box-shadow: 0 0 0 .6vmin var(--ink); }
@@ -34,12 +34,12 @@ body[data-game=arena][data-view=playing][data-arena-st] #arenast { display: bloc
 body[data-arena-st=dizzy] #arenast { background: #C2188E; animation: arenawobble .5s ease-in-out infinite alternate; }
 body[data-arena-st=stained] #arenast { background: #D7263D; }
 @keyframes arenawobble { from { transform: translate(-50%, -50%) rotate(-4deg) scale(1); } to { transform: translate(-50%, -50%) rotate(4deg) scale(1.08); } }
-/* Dizzy: the stick is read backwards, so the ring turns upside down and spins slowly, in the banner's colour; the zone's colour wash says it too. */
-body[data-game=arena][data-arena-st=dizzy] #stickhint { border-color: #FF4FC3; color: #FF4FC3; background: rgba(194,24,142,.28); animation: arenaspin 1.6s linear infinite reverse; }
-body[data-game=arena][data-arena-st=dizzy] #stickhint .ico { transform: rotate(180deg); }
+/* Dizzy: the stick is read backwards, so the glyph turns upside down and spins slowly (the glyph, not the ring: a turning ring changes its box and the layout gate reads that as an overlap; the card pop ends within 400 ms for the same reason: the gate waits for it), in the banner's colour; the zone's colour wash says it too. */
+body[data-game=arena][data-arena-st=dizzy] #stickhint { border-color: #FF4FC3; color: #FF4FC3; background: rgba(194,24,142,.28); }
+body[data-game=arena][data-arena-st=dizzy] #stickhint .ico { transform: rotate(180deg); animation: arenaspin 1.6s linear infinite; }
 body[data-game=arena][data-arena-st=dizzy] #stickLbl .pl { background: #C2188E; color: #fff; }
 body[data-game=arena][data-arena-st=stained] #zone { background: repeating-linear-gradient(45deg, rgba(215,38,61,.3) 0 3vmin, transparent 3vmin 6vmin); }
-@keyframes arenaspin { to { transform: rotate(-360deg); } }
+@keyframes arenaspin { from { transform: rotate(180deg); } to { transform: rotate(-180deg); } }
 
 /* The notice: the whole phone in one colour for a moment, over the pad (the pad keeps working: pointer-events none). */
 #arenacue { position: fixed; inset: 0; z-index: 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vmin; padding: 0 5vmin; text-align: center; pointer-events: none; background: var(--bg, #fff); color: var(--fg, #000); opacity: 0; transition: opacity .18s; }
