@@ -3,6 +3,8 @@ import {
   CLOCK_FROM_TICKS,
   CLOCK_FULL,
   FINAL_TICKS,
+  STUN_TICKS,
+  dropLoot,
   openingTicks,
   ALL_EVENT_KINDS,
   paintTile,
@@ -10,10 +12,12 @@ import {
   type EventKind,
   type ManchazoState,
   type Planned,
+  type SabotageKind,
 } from '../../../sim';
 import { MAP_W, solidAt } from '../../../map';
 
 type Get = () => ManchazoState | undefined;
+const pins = new Set<number>(); // timers that hold a rescue state still for a screenshot (capture tool only)
 
 export function eventDebug(get: Get) {
   const circle = (s: ManchazoState, fn: (x: number, y: number) => void) => {
@@ -99,6 +103,39 @@ export function eventDebug(get: Get) {
     manchazoPut(slot: number, x: number, y: number) {
       const b = get()?.grid.bodies.find((q) => q.slot === slot);
       if (b) [b.x, b.y] = [x * 16 + 8, y * 16 + 8];
+    },
+    /** PR3: body `slot` is stained at a tile and, when it has a card, drops it through the real rule (the sim runs on: the card lies on the floor and ages by itself). */
+    manchazoDrop(slot: number, kind: SabotageKind, x: number, y: number) {
+      const s = get();
+      const i = s?.grid.bodies.findIndex((q) => q.slot === slot) ?? -1;
+      if (!s?.match.res || !s.match.sab || i < 0) return;
+      [s.grid.bodies[i]!.x, s.grid.bodies[i]!.y] = [x * 16 + 8, y * 16 + 8];
+      s.match.sab.held[i] = kind;
+      s.match.bodies[i]!.stun = STUN_TICKS;
+      dropLoot(s, i);
+    },
+    /** PR3: holds a rescue for a screenshot: `stained` at (x, y) and `mate` beside it, the count pinned at 5 of 12 (so the ring is drawn) and `glow` ticks of rescue glow on both (0: none). `manchazoUnpin` lets go. */
+    manchazoPinRescue(stained: number, mate: number, x: number, y: number, glow = 0) {
+      const s = get();
+      const at = (slot: number) => s?.grid.bodies.findIndex((q) => q.slot === slot) ?? -1;
+      const [a, b] = [at(stained), at(mate)];
+      if (!s?.match.res || a < 0 || b < 0) return;
+      [s.grid.bodies[a]!.x, s.grid.bodies[a]!.y] = [x * 16 + 8, y * 16 + 8];
+      [s.grid.bodies[b]!.x, s.grid.bodies[b]!.y] = [(x + 1) * 16 + 8, y * 16 + 8];
+      pins.add(
+        window.setInterval(() => {
+          const r = s.match.res!;
+          if (glow > 0) r.glow[a] = r.glow[b] = glow;
+          else {
+            s.match.bodies[a]!.stun = STUN_TICKS;
+            r.contact[a] = 5;
+          }
+        }, 4),
+      );
+    },
+    manchazoUnpin() {
+      pins.forEach((id) => window.clearInterval(id));
+      pins.clear();
     },
     /** PR2: the round jumps to `ticks` before the change into `phase` (default 1: the next tick is the one before the change) with no scheduled event left. */
     manchazoPhaseJump(phase: 'scramble' | 'final', ticks = 1) {

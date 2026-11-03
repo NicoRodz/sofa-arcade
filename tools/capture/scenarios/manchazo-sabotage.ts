@@ -6,11 +6,20 @@ import type { Ctx } from '../session';
 // phone with button 2 wearing the card in hand. Saved as manchazo-sab-*.png. `window.__pg.manchazoGive(slot, kind)` puts the card in a hand (capture tool only).
 const KINDS = ['turpentine', 'roller', 'fan', 'footprints', 'glue'] as const;
 
-/** Opens the TV on `room`, picks Manchazo, starts a round with 5 phones and leaves the bots barely leaning (they stay put). */
-async function startRound({ cdp, bots, join, waitFor, click }: Ctx, room: string) {
+/** Opens the TV on `room`, picks Manchazo, starts a round with `phones` phones and leaves the bots barely leaning (they stay put). `uhd`: the display is 3840x2160 (scale 2 over 1920x1080). */
+async function startRound({ cdp, bots, join, waitFor, click }: Ctx, room: string, phones = 5, uhd = false, seed = '') {
+  if (uhd)
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1920,
+      height: 1080,
+      deviceScaleFactor: 2,
+      mobile: false,
+      screenWidth: 1920,
+      screenHeight: 1080,
+    });
   await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${room}&soon=1` });
   await sleep(2500);
-  await join(room, 5, [], { menu: true });
+  await join(room, phones, [], { menu: true });
   await sleep(500);
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
   for (let i = 0; i < 4; i++) {
@@ -21,6 +30,7 @@ async function startRound({ cdp, bots, join, waitFor, click }: Ctx, room: string
   }
   await key('Enter');
   await sleep(2200);
+  if (seed) await cdp.eval(`window.__pg.manchazoNextMapSeed(${JSON.stringify(seed)})`);
   await click('#start');
   await sleep(1500);
   await key('Enter');
@@ -33,7 +43,7 @@ async function startRound({ cdp, bots, join, waitFor, click }: Ctx, room: string
     [1, 0],
   ] as const;
   bots.forEach((b, i) => {
-    b.vec = { x: dirs[i]![0] * 0.01, y: dirs[i]![1] * 0.01 }; // barely leaning: they stay put
+    b.vec = { x: dirs[i % 5]![0] * 0.01, y: dirs[i % 5]![1] * 0.01 }; // barely leaning: they stay put
     b.startSending();
   });
   await sleep(1200);
@@ -122,4 +132,32 @@ export async function runManchazoSabotagePlusPhone(ctx: Ctx) {
   console.log('button 2 label', lbl);
   if (!lbl.includes('Cinta')) throw new Error(`button 2 says "${lbl}", not the card in hand`);
   fake.close();
+}
+
+// Manchazo PR3: the Rescue and the Loot at 4K (what a sofa 3 m from the TV must read). Two bodies of team 0: one stained with the other beside it and the ring
+// half full; then the glow of the rescue; then two cards on the floor (one still locked for the team that lost it). Saved as manchazo-rescate-*.png.
+export async function runManchazoRescueTv(ctx: Ctx) {
+  const { cdp } = ctx;
+  await startRound(ctx, 'MNRS', 6, true, '2·00103'); // an Ocho map: open rows 4-6 and 12
+  await sleep(4500); // the archetype banner goes away
+  const call = (fn: string, ...args: unknown[]) => cdp.eval<unknown>(`window.__pg.${fn}(${args.map((a) => JSON.stringify(a)).join(', ')})`);
+  const team = (await cdp.eval<{ slot: number; team: number }[]>('window.__pg.manchazoTeams()'))
+    .filter((p) => p.team === 0)
+    .map((p) => p.slot);
+  const rival = (await cdp.eval<{ slot: number; team: number }[]>('window.__pg.manchazoTeams()'))
+    .filter((p) => p.team === 1)
+    .map((p) => p.slot);
+  console.log('team 0', team, 'team 1', rival);
+  await call('manchazoPinRescue', team[0], team[1], 6, 12);
+  await sleep(400);
+  await cdp.shot('manchazo-rescate-aro');
+  await call('manchazoUnpin');
+  await call('manchazoPinRescue', team[0], team[1], 6, 12, 22);
+  await sleep(400);
+  await cdp.shot('manchazo-rescate-brillo');
+  await call('manchazoUnpin');
+  await call('manchazoDrop', rival[0], 'roller', 18, 5);
+  await call('manchazoDrop', rival[1], 'fan', 20, 13);
+  await sleep(500);
+  await cdp.shot('manchazo-botin');
 }

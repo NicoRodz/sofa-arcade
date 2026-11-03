@@ -20,16 +20,16 @@ export function drawLoot(f: Frame, s: ManchazoState) {
     const locked = l.age < LOCK;
     const bob = Math.sin((s.grid.tick + l.x * 7) / 8) * 3;
     g.fillStyle(0x000000, 0.25).fillEllipse(cx, cy + f.px * 0.34, f.px * 0.55, f.px * 0.15);
-    g.fillStyle(0xfff4d6, locked ? 0.55 : 0.95).fillCircle(cx, cy + bob, f.px * 0.44);
-    g.lineStyle(5, CARD_COLOR[l.kind], 1).strokeCircle(cx, cy + bob, f.px * 0.44);
+    g.fillStyle(0xfff4d6, locked ? 0.55 : 0.95).fillCircle(cx, cy + bob, f.px * 0.58);
+    g.lineStyle(7, CARD_COLOR[l.kind], 1).strokeCircle(cx, cy + bob, f.px * 0.58);
     g.beginPath()
-      .lineStyle(4, 0xffffff, 0.9)
-      .arc(cx, cy + bob, f.px * 0.55, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * left) / LOOT_TICKS, false)
+      .lineStyle(6, 0xffffff, 0.9)
+      .arc(cx, cy + bob, f.px * 0.92, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * left) / LOOT_TICKS, false)
       .strokePath();
-    drawIcon(g, l.kind, cx, cy + bob, f.px * 0.3, s.grid.tick / 8);
+    drawIcon(g, l.kind, cx, cy + bob, f.px * 0.4, s.grid.tick / 8);
     if (locked) {
       const own = TEAM_COLOR[s.grid.bodies[l.owner]!.team % 2]!; // the colour of the one who lost it: it cannot take it back yet
-      g.lineStyle(4, own, 0.9).strokeCircle(cx, cy + bob, f.px * 0.52);
+      g.lineStyle(4, own, 0.9).strokeCircle(cx, cy + bob, f.px * 0.66);
       g.fillStyle(own, 0.9).fillRoundedRect(cx - 8, cy + bob + f.px * 0.1, 16, 12, 3);
       g.lineStyle(3, own, 0.9).strokeCircle(cx, cy + bob + f.px * 0.1, 6);
     }
@@ -46,12 +46,12 @@ export function drawRescue(f: Frame, s: ManchazoState, i: number, x: number, y: 
   const c = r.contact[i]!;
   if (c > 0 && s.match.bodies[i]!.stun > 0) {
     const t = c / RESCUE_TICKS;
-    g.lineStyle(10, 0x24160f, 0.6).strokeCircle(x, y, f.px * 0.72);
+    g.lineStyle(14, 0x24160f, 0.6).strokeCircle(x, y, f.px * 0.92);
     g.beginPath()
-      .lineStyle(8, 0xffffff, 1)
-      .arc(x, y, f.px * 0.72, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * t, false)
+      .lineStyle(11, 0xffffff, 1)
+      .arc(x, y, f.px * 0.92, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * t, false)
       .strokePath();
-    g.lineStyle(4, col, 1).strokeCircle(x, y, f.px * 0.82);
+    g.lineStyle(4, col, 1).strokeCircle(x, y, f.px * 1.02);
   }
   const glow = r.glow[i]!;
   if (glow > 0) {
