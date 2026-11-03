@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAP_W, solidAt } from '../../map';
 import { PLUS_KINDS, createManchazo, hashManchazo, isHidden, paintTile, type ManchazoState } from '../../sim';
-import { Feed, SWING_COOL, SWING_PP, feedHash } from '../../screen/match/hud/feed';
+import { Feed, SWING_COOL, feedHash } from '../../screen/match/hud/feed';
 import { USE, give, put, tick as step } from '../sabotage/sab-drive';
 import { plus, plusRound, playUses } from '../sabotage-plus/plus-drive';
 
@@ -84,11 +84,11 @@ describe('the TV feed: which body played which sabotage', () => {
 
 describe('the TV feed: score swings', () => {
   const total = (s: ManchazoState) => s.match.paintable;
-  it(`a team gaining ${SWING_PP} pp in one tick is announced, 1 tile less is not`, () => {
+  it(`a team gaining 1.5 pp in one tick is announced, 1 tile less is not`, () => {
     const s = plusRound([0, 1]);
     const f = new Feed();
     run(s, f, 2);
-    const need = Math.ceil((SWING_PP / 100) * total(s));
+    const need = Math.ceil((1.5 / 100) * total(s));
     paint(s, 0, need - 1);
     run(s, f, 1);
     expect(f.log).toEqual([]);
@@ -97,7 +97,7 @@ describe('the TV feed: score swings', () => {
     expect(f.log).toHaveLength(1);
     const e = f.log[0]!;
     expect(e.type === 'swing' && e.team).toBe(0);
-    expect(e.type === 'swing' && e.pp).toBeGreaterThanOrEqual(SWING_PP);
+    expect(e.type === 'swing' && e.pp).toBeGreaterThanOrEqual(1.5);
   });
 
   it('the same team waits SWING_COOL ticks for the next one; a slow climb never counts', () => {
