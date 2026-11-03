@@ -51,7 +51,7 @@ export function drawCarrier(f: Frame, s: ManchazoState, i: number, x: number, y:
   }
   drawPlusCarrier(f, s, i, x, y);
   const held = a.held[i];
-  if (held) glyph(onTop(f), held, x + f.px * 0.72, y - f.px * 0.5, f.px * 0.28, s.grid.tick / 6); // beside the head: the avatar is as tall as the card was high
+  if (held) glyph(onTop(f), held, x + f.px * 0.8, y - f.px * 0.55, f.px * 0.4, s.grid.tick / 6); // beside the head: the avatar is as tall as the card was high
 }
 
 /** A pinata armed by a card: turpentine is white-hot with a cyan ring, glue has a green rope to the rival it rides. */

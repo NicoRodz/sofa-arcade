@@ -54,6 +54,7 @@ const matchScene = (): MatchScene =>
     name: (slot) => player(slot)?.name ?? `J${slot + 1}`,
     look: (slot) => lookOverride.get(slot) ?? player(slot)?.ap,
     teamName: (team) => app.config.teams?.[team]?.name ?? `Equipo ${team + 1}`,
+    feed: () => (matchRun.run && showing() ? matchRun.run.feed : null),
   }));
 
 // F3: what button 2 says on each phone (the sabotage in hand), from the round's state every frame
