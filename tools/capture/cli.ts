@@ -28,6 +28,7 @@ import {
   runManchazoSabotagePlusPhone,
   runManchazoSabotagePlusTv,
   runManchazoSabotageTv,
+  runManchazoRescueTv,
 } from './scenarios/manchazo-sabotage';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
 
@@ -45,6 +46,7 @@ const MODES: Record<string, Scenario[]> = {
   'manchazo-seeds': [runManchazoSeeds],
   'manchazo-looks': [runManchazoLooks],
   'manchazo-sabotage-tv': [runManchazoSabotageTv],
+  'manchazo-rescue-tv': [runManchazoRescueTv],
   'manchazo-sabotage-phone': [runManchazoSabotagePhone],
   'manchazo-sabotage-plus-tv': [runManchazoSabotagePlusTv],
   'manchazo-sabotage-plus-phone': [runManchazoSabotagePlusPhone],

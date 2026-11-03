@@ -7,6 +7,7 @@ import { createEvents } from '../events/state';
 import { createSabotage, type SabotageState } from '../sabotage/state';
 import { createLive, type LiveState } from '../living/state';
 import { createPhase, type PhaseState } from '../phase/state';
+import { createRescue, type RescueState } from '../rescue/state';
 import { BASE_RADIUS, SMALL_TEAM_RADIUS_BONUS } from './config';
 
 export interface Pinata {
@@ -52,6 +53,7 @@ export interface MatchState {
   ev: EventsState | null; // the events (F4); null when the round plays without them
   live: LiveState | null; // the living map (F5); null when the round plays without it
   ph: PhaseState | null; // the three acts (PR2); null when the round plays without them: its sim and its hash are then the F8b's
+  res: RescueState | null; // Rescue and Loot (PR3); null when the round plays without them: its sim and its hash are then PR2's
   zone: GoldZone | null; // the golden tiles while the event runs: a tile in it weighs GOLD_FACTOR in `counts`
 }
 
@@ -78,6 +80,7 @@ export function createMatch(
   sabotage?: { seed: number; plus?: boolean; plaza?: { x: number; y: number; h: number } }, // `plaza`: the free rectangle where a Plaza round puts the pickups
   events?: { seed: number; base: number; plus?: boolean; phases?: boolean },
   living?: readonly LivingSpec[],
+  rescue?: boolean,
 ): MatchState {
   const sizes = [0, 0];
   for (const t of teamOfBody) sizes[t]!++;
@@ -105,6 +108,7 @@ export function createMatch(
       : null,
     ph: events?.phases ? createPhase(events.base) : null,
     live: null,
+    res: rescue ? createRescue(teamOfBody.length) : null,
     zone: null,
   };
   if (living) m.live = createLive(map, living); // last: its state 0 shuts tiles of the map the others were built on

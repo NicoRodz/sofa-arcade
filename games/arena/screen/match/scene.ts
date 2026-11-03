@@ -19,6 +19,7 @@ import { HudFx } from './hud/fx';
 import { ArchetypeFx } from './hud/archetype-fx';
 import type { Feed } from './hud/feed';
 import type { Frame } from './scene-frame';
+import { drawLoot, drawRescue } from './scene-rescue';
 import { drawCarrier, drawMark, drawPickups } from './scene-sabotage';
 import { addBackdrop } from '../art/backdrop';
 import { FRAME, floorTexture, BAKE } from '../art/floor-bake';
@@ -140,6 +141,7 @@ export class MatchScene extends Phaser.Scene {
     drawTapes(f, s);
     drawLiving(f, s);
     drawPickups(f, s);
+    drawLoot(f, s); // PR3: the cards lying on the floor
     drawEvents(f, s);
     this.drawPinatas(s, f);
     this.splashes.track(s, s.grid.map);
@@ -153,6 +155,7 @@ export class MatchScene extends Phaser.Scene {
       if (ap) at = this.avatars.show(this.g, b.slot, ap, b.team, x, y, m.stun > 0, m.trail > 0);
       else bodyOutline(this.g, x, y, b.team, m.stun > 0, m.trail > 0);
       drawCarrier(f, s, i, x, y);
+      drawRescue(f, s, i, x, y); // PR3: the rescue ring and glow
       this.label(b.slot, m.stun > 0)
         .setVisible(true)
         .setPosition(at.x, at.y)

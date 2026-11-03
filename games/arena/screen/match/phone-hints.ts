@@ -50,6 +50,7 @@ type BuzzMsg = Extract<ClientMsg, { t: 'buzz' }>;
 
 export function createSabotageHints(send: (m: HintMsg | BuzzMsg) => void, playerOf: (slot: number) => number | undefined) {
   const sent = new Map<number, { key: string; at: number; held: SabotageKind | null; dizzy: boolean; threat: boolean }>();
+  const glowed = new Map<number, number>(); // PR3: the rescue glow each phone last saw
   return {
     /** After every frame: `s` null (no round) hands every labelled phone back to the game's own labels. */
     sync(s: ManchazoState | null, now: number) {
@@ -69,8 +70,12 @@ export function createSabotageHints(send: (m: HintMsg | BuzzMsg) => void, player
           threat: dizzyThreat(s, i),
         };
         const base = sabotageHint(held, sab.armed[i]!, state);
-        const e = base.a == null ? eventHint(s) : null;
+        const stained = s.match.res && s.match.bodies[i]!.stun > 0; // PR3: a teammate next to you frees you
+        const e = base.a == null ? (stained ? { a: '¡Manchado! Que un compañero se pegue', aIcon: 'bell' as IconId } : eventHint(s)) : null;
         const h = e ? { ...base, ...e } : base;
+        const glow = s.match.res?.glow[i] ?? 0;
+        if (glow > (glowed.get(id) ?? 0)) send({ t: 'buzz', playerId: id, kind: 'big' }); // the glow started (a rise, so a frame that skips ticks still sees it): freed, or you freed a teammate
+        glowed.set(id, glow);
         const key = JSON.stringify(h);
         const last = sent.get(id);
         if (last && last.key === key && now - last.at < HINT_REFRESH_MS) return;

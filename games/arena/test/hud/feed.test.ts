@@ -194,7 +194,12 @@ describe('the TV feed is only a reader: replay and mirror', () => {
           log.map((e) =>
             e.type === 'phase'
               ? [e.type, e.tick, e.phase, e.warn].join()
-              : [e.type, e.tick, flip ? 1 - e.team : e.team, e.type === 'fired' ? `${e.body}/${e.kind}` : e.pp.toFixed(3)].join(),
+              : [
+                  e.type,
+                  e.tick,
+                  flip ? 1 - e.team : e.team,
+                  e.type === 'fired' ? `${e.body}/${e.kind}` : e.type === 'swing' ? e.pp.toFixed(3) : e.type,
+                ].join(),
           );
         expect(a.length).toBeGreaterThan(0);
         expect(norm(b, true)).toEqual(norm(a, false));

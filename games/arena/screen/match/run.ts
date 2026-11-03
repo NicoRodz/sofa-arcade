@@ -31,6 +31,7 @@ export class ManchazoRun {
       sabotage: true,
       sabotagePlus: true, // F8a: the five new sabotages are in the deck (the sim without the flag is F5's)
       events: true,
+      rescue: true, // PR3: a teammate next to a stained body frees it after 12 ticks; a stained body drops its card (the sim without the flag is PR2's)
       phases: true, // PR2: Opening, Scramble and Final (the sim without the flag is F8b's)
       eventsPlus: true, // F8b: the five new events are in the pool (the sim without the flag is F8a's)
       living: true,

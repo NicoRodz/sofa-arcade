@@ -4,6 +4,7 @@ import { hashGrid } from '../grid/hash';
 import { liveWords } from '../living/hash';
 import { eventsWords } from '../events/hash';
 import { phaseWords } from '../phase/state';
+import { rescueWords } from '../rescue/state';
 import { sabotageWords } from '../sabotage/hash';
 import type { ManchazoState } from './state';
 
@@ -24,5 +25,6 @@ export function hashManchazo(s: ManchazoState): number {
   if (m.ev) eventsWords(m).forEach(mix);
   if (m.live) liveWords(m.live).forEach(mix);
   if (m.ph) phaseWords(m.ph).forEach(mix);
+  if (m.res) rescueWords(m.res).forEach(mix);
   return h >>> 0;
 }
