@@ -34,7 +34,12 @@ export interface LastAlert {
 export function alertFor(kind: AlertKind, last: LastAlert | null, now: number): AlertSpec {
   const spec = ALERTS[kind];
   if (kind === 'lootlost' && last?.kind === 'stain' && now - last.at < FOLD_MS)
-    return { ...ALERTS.stain, line: 'Y soltaste tu sabotaje: cayó al piso', ms: ALERTS.stain.ms + 300, tone: [...ALERTS.stain.tone, ...spec.tone.slice(-1)] };
+    return {
+      ...ALERTS.stain,
+      line: 'Y soltaste tu sabotaje: cayó al piso',
+      ms: ALERTS.stain.ms + 300,
+      tone: [...ALERTS.stain.tone, ...spec.tone.slice(-1)],
+    };
   return spec;
 }
 

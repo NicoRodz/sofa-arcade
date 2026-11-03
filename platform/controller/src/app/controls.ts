@@ -29,7 +29,13 @@ function fitLabels(root: HTMLElement) {
 const hinted = (base: GameControls['btn1'], label: string | null, icon: IconId | undefined, hold: boolean): GameControls['btn1'] =>
   label ? { ...base, label, ...(icon ? { icon } : {}), hold } : base;
 const sameHint = (x: HintLabels, y: HintLabels) =>
-  x.a === y.a && x.b === y.b && x.aIcon === y.aIcon && x.bIcon === y.bIcon && !!x.aOff === !!y.aOff && !!x.bOff === !!y.bOff && x.st === y.st;
+  x.a === y.a &&
+  x.b === y.b &&
+  x.aIcon === y.aIcon &&
+  x.bIcon === y.bIcon &&
+  !!x.aOff === !!y.aOff &&
+  !!x.bOff === !!y.bOff &&
+  x.st === y.st;
 
 export interface Controls {
   apply(c?: GameControls | null): void;

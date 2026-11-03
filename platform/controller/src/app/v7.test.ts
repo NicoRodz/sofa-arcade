@@ -45,7 +45,9 @@ const pad: GameControls = {
 
 describe('protocol v7: button A under a status', () => {
   it('with `st` the A button keeps its label and icon (the hint text is only for phones that do not know st); B still takes the hint', () => {
-    const s = session({ hint: { a: '¡Manchado! Que un compañero se pegue', b: 'Pegote', aIcon: 'oven', bIcon: 'chop', st: 'stained' } as never });
+    const s = session({
+      hint: { a: '¡Manchado! Que un compañero se pegue', b: 'Pegote', aIcon: 'oven', bIcon: 'chop', st: 'stained' } as never,
+    });
     createControls(s).apply(pad);
     expect(el('lblA').innerHTML).toContain('Pegarse');
     expect(el('lblA').innerHTML).not.toContain('Manchado');
@@ -66,7 +68,13 @@ describe('protocol v7: button A under a status', () => {
 });
 
 describe('protocol v7: an older phone that gets a kind it does not know', () => {
-  const mk = (s: Session) => createPhaseUi(s, { ctl: { setHint: vi.fn(), apply: vi.fn() }, howto: { onPhase: vi.fn(), render: vi.fn() }, cap: { watch: { show: vi.fn() } } as never, schools: [] });
+  const mk = (s: Session) =>
+    createPhaseUi(s, {
+      ctl: { setHint: vi.fn(), apply: vi.fn() },
+      howto: { onPhase: vi.fn(), render: vi.fn() },
+      cap: { watch: { show: vi.fn() } } as never,
+      schools: [],
+    });
   it('an unknown kind does not throw and flashes the phone (no vibration pattern to play)', () => {
     const vibrate = vi.fn(() => true);
     vi.stubGlobal('navigator', { vibrate });

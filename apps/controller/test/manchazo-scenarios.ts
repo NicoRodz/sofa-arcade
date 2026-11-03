@@ -6,10 +6,26 @@ const TEAMS = [
   { id: 0, name: 'Naranja', color: '#E69F00', icon: '▲', playerIds: [1] },
   { id: 1, name: 'Azul', color: '#0072B2', icon: '●', playerIds: [2] },
 ];
-const CONTROLS = { stick: { label: 'Moverse', icon: 'move' }, btn1: { label: 'Piñata', icon: 'star' }, btn2: { label: 'Sabotaje', icon: 'bell' } };
+const CONTROLS = {
+  stick: { label: 'Moverse', icon: 'move' },
+  btn1: { label: 'Piñata', icon: 'star' },
+  btn2: { label: 'Sabotaje', icon: 'bell' },
+};
 const base = (team: 0 | 1): object[] => [
   { t: 'joined', player: { id: 1, name: 'Nico', color: team ? '#2F7DE1' : '#FF7A1A', slot: 0 }, room: 'main' },
-  { t: 'config', game: 'arena', difficulty: 'normal', map: 'auto', seed: 1, controls: CONTROLS, howTo: { steps: [{ icon: 'move', text: 'Muévete' }] }, modeId: 'versus', teams: TEAMS, teamsLocked: true, modeOptions: {} },
+  {
+    t: 'config',
+    game: 'arena',
+    difficulty: 'normal',
+    map: 'auto',
+    seed: 1,
+    controls: CONTROLS,
+    howTo: { steps: [{ icon: 'move', text: 'Muévete' }] },
+    modeId: 'versus',
+    teams: TEAMS,
+    teamsLocked: true,
+    modeOptions: {},
+  },
   { t: 'you', teamId: team, color: TEAMS[team]!.color, icon: TEAMS[team]!.icon },
   { t: 'phase', phase: 'lobby' },
   { t: 'phase', phase: 'playing' },

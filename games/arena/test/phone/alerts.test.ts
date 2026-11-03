@@ -41,7 +41,7 @@ describe('alerts: the words of each notice', () => {
   });
 });
 
-describe('the card colours of the phone are the TV\'s', () => {
+describe("the card colours of the phone are the TV's", () => {
   it('CARD_HEX of the phone equals CARD_HEX of screen/art/glyphs, key by key', () => {
     expect(CARD_HEX).toEqual({ ...TV_CARD_HEX });
     expect(Object.keys(CARD_HEX).length).toBe(10);

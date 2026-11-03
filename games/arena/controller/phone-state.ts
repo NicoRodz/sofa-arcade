@@ -9,7 +9,14 @@ export const STATUS_STALE_MS = 2500;
 // The card colours are the TV's (screen/art/glyphs CARD_HEX; a test keeps the two tables equal): the phone cannot import the TV's art (it draws with Phaser).
 // biome-ignore format: one card per entry
 export const CARD_HEX: Record<string, string> = { turpentine: '#7FE3FF', roller: '#FFD166', fan: '#A6F07A', footprints: '#FF8FD8', glue: '#C8A2FF', tape: '#E6D5A8', ink: '#F4F4FA', sponge: '#7DE0B0', swap: '#FF7A7A', dizzy: '#9AA0FF' };
-const shade = (hex: string, k: number) => `#${[1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * k).toString(16).padStart(2, '0')).join('')}`;
+const shade = (hex: string, k: number) =>
+  `#${[1, 3, 5]
+    .map((i) =>
+      Math.round(parseInt(hex.slice(i, i + 2), 16) * k)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
 
 export function createPhoneState(body: HTMLElement) {
   let stale: ReturnType<typeof setTimeout> | undefined;
