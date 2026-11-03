@@ -74,7 +74,11 @@ describe.each(ARCHETYPES)('%s', (kind) => {
 describe('V8 tells the archetypes apart', () => {
   it('Plaza and Ocho signatures reject every map of the other three, Pasillos accepts at most 10 % of them (50 maps each)', () => {
     const maps = Object.fromEntries(ARCHETYPES.map((k) => [k, of(k, 50).map((s) => generateMap(s).map)])) as Record<Archetype, TileMap[]>;
-    for (const [kind, most] of [['plaza', 0], ['ocho', 0], ['pasillos', 15]] as const) {
+    for (const [kind, most] of [
+      ['plaza', 0],
+      ['ocho', 0],
+      ['pasillos', 15],
+    ] as const) {
       const others = ARCHETYPES.filter((k) => k !== kind).flatMap((k) => maps[k]);
       expect(others.filter((m) => v8Signature(kind, m) === null).length, kind).toBeLessThanOrEqual(most);
     }
@@ -98,8 +102,13 @@ describe('the Plaza is 7x5 (literal numbers, not the validator constants)', () =
     for (const seed of of('plaza', 30)) {
       const { map } = generateMap(seed);
       const free = (x: number, y: number) => map.solid[y * map.w + x] === 0;
-      const rows = Array.from({ length: map.h }, (_, y) => y).filter((y) => Array.from({ length: 7 }, (_, i) => free(10 + i, y)).every(Boolean));
-      expect(rows.some((y) => [1, 2, 3, 4].every((d) => rows.includes(y + d))), `seed ${seed}`).toBe(true);
+      const rows = Array.from({ length: map.h }, (_, y) => y).filter((y) =>
+        Array.from({ length: 7 }, (_, i) => free(10 + i, y)).every(Boolean),
+      );
+      expect(
+        rows.some((y) => [1, 2, 3, 4].every((d) => rows.includes(y + d))),
+        `seed ${seed}`,
+      ).toBe(true);
     }
   });
 });

@@ -42,7 +42,12 @@ const near = (map: TileMap, x: number, y: number): boolean =>
  * The pickups: PICKUP_PAIRS mirror pairs (x and MAP_W - 1 - x), one per band of rows, on floor on both sides, in the team's half (columns 4-12) and not within 3
  * tiles of an exit. The tile of each band comes from the substream `seed ^ PICKUP_SEED_TAG`, drawn from candidates in reading order: same seed, same places.
  */
-export function placePickups(map: TileMap, seed: number, avoid?: ReadonlySet<number>, plaza?: { x: number; y: number; h: number }): Pickup[] {
+export function placePickups(
+  map: TileMap,
+  seed: number,
+  avoid?: ReadonlySet<number>,
+  plaza?: { x: number; y: number; h: number },
+): Pickup[] {
   const rng = mulberry32((seed ^ PICKUP_SEED_TAG) >>> 0);
   const out: Pickup[] = [];
   if (plaza) return placeInPlaza(map, rng, plaza, avoid);
