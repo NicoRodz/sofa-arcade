@@ -34,7 +34,8 @@ export class Banners {
           weight: 0,
           born: e.tick,
         });
-      else for (const p of this.alive) if (p.team === e.team && e.tick - p.born < BANNER_TICKS) p.weight = Math.max(p.weight, e.pp);
+      else if (e.type === 'swing')
+        for (const p of this.alive) if (p.team === e.team && e.tick - p.born < BANNER_TICKS) p.weight = Math.max(p.weight, e.pp);
     }
   }
 

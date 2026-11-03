@@ -21,7 +21,9 @@ import {
 import { losingTeam } from './gap';
 import { announce } from './state';
 
-export const isHidden = (s: ManchazoState): boolean => !!s.match.ev && !s.grid.over && s.grid.durationTicks - s.grid.tick <= HIDDEN_TICKS;
+// PR2: with the acts on, the last 10 s are blind only when the round was close as they began (`ph.hidden`, decided once; undecided counts as blind, as before)
+export const isHidden = (s: ManchazoState): boolean =>
+  !!s.match.ev && !s.grid.over && s.grid.durationTicks - s.grid.tick <= HIDDEN_TICKS && s.match.ph?.hidden !== false;
 
 const inCircle = (row: number, x: number, y: number): boolean => Math.abs(x - CLOCK_X) <= 1 && Math.abs(y - row) <= 1;
 

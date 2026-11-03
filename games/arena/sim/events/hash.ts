@@ -16,6 +16,10 @@ const KINDS: readonly AnnounceKind[] = [
   'happyHour',
   'move',
   'balloons',
+  'warnScramble',
+  'phaseScramble',
+  'warnFinal',
+  'phaseFinal',
 ];
 const PHASES = ['idle', 'warn', 'live', 'done'];
 const OUTCOMES = ['none', 'filled', 'broken', 'gone'];

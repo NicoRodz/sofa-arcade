@@ -16,6 +16,7 @@ export interface ManchazoConfig {
   sabotagePlus?: boolean; // F8a: the five new sabotages join the deck (needs `sabotage`; off: the round is F5's, bit for bit)
   events?: boolean; // F4: the scheduled events, the come-back, the hidden scoreboard and the Hourglass (off: the round is F3's, bit for bit)
   eventsPlus?: boolean; // F8b: the five new events join the pool (needs `events`; off: the round is F8a's, bit for bit)
+  phases?: boolean; // PR2: the round in three acts (Opening, Scramble, Final); needs `events` (off: the round is F8b's, bit for bit)
   living?: boolean; // F5: the living map (brushes, sofas, fountain) on the generated map; needs `mapSeed` (off: the round is F4's, bit for bit)
   classicMap?: boolean; // the map comes from the F2 generator (Clasico), not from the seed's archetype: tests that pin hashes from before the archetypes
   mapSeed?: number; // 25-bit map seed (see map/gen/seed.ts); without it the round is played on the F0 hand-made map
@@ -47,7 +48,7 @@ export function createManchazo(cfg: ManchazoConfig): ManchazoState {
     grid.bodies.map((b) => b.team),
     map,
     cfg.sabotage ? { seed: cfg.seed, plus: !!cfg.sabotagePlus, ...plazaOf(gen?.archetype, base) } : undefined,
-    cfg.events ? { seed: cfg.seed, base: grid.durationTicks, plus: !!cfg.eventsPlus } : undefined,
+    cfg.events ? { seed: cfg.seed, base: grid.durationTicks, plus: !!cfg.eventsPlus, phases: !!cfg.phases } : undefined,
     living,
   );
   grid.bodies.forEach((b, i) => (match.bodies[i]!.face = b.x < (MAP_W * TILE) / 2 ? RIGHT : LEFT)); // heading to the middle

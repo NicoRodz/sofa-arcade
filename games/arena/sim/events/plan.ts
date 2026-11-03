@@ -4,6 +4,8 @@ import type { Rng } from '@pichi/core';
 import { MAP_W, solidAt, type TileMap } from '../../map';
 import { GOLD_ROWS_CLEAR, DURATION, EVENT_KINDS, type EventKind, JITTER, NO_START_TICKS, RAIN_ROWS, SLOT_FRACTIONS } from './config';
 import { TICK_HZ } from '../grid/config';
+import { rawPhase } from '../phase/config';
+import { eligiblePhases } from '../phase/eligible';
 
 export interface Planned {
   kind: EventKind;
@@ -13,22 +15,35 @@ export interface Planned {
   down: boolean; // vacuum: starts at the top going down (else the bottom, going up)
 }
 
-/** `pool`: the kinds the program draws from (the F4 four; with `eventsPlus`, up to nine). */
-export function planProgram(rng: Rng, map: TileMap, base: number, fountain = false, pool: readonly EventKind[] = EVENT_KINDS): Planned[] {
+/**
+ * `pool`: the kinds the program draws from (the F4 four; with `eventsPlus`, up to nine). `phased` (PR2): a slot only takes a kind its act allows (`eligiblePhases`): the first one of the
+ * shuffle that fits; none fits (a pool of only big events at the 25 % slot, which falls in the Opening): the slot is spent and nothing starts. Every draw is made either way.
+ */
+export function planProgram(
+  rng: Rng,
+  map: TileMap,
+  base: number,
+  fountain = false,
+  pool: readonly EventKind[] = EVENT_KINDS,
+  phased = false,
+): Planned[] {
   const kinds = [...pool];
   for (let i = kinds.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [kinds[i], kinds[j]] = [kinds[j]!, kinds[i]!];
   }
   let prevEnd = 0;
-  return SLOT_FRACTIONS.map((frac, k): Planned => {
-    const kind = kinds[k]!;
+  const program: Planned[] = [];
+  for (const frac of SLOT_FRACTIONS) {
     const nominal = Math.round(frac * base + (rng() * 2 - 1) * JITTER * base);
     const at = Math.min(Math.max(nominal, prevEnd + TICK_HZ), base - NO_START_TICKS - 1);
-    prevEnd = at + DURATION[kind];
+    const fit = phased ? kinds.findIndex((k) => eligiblePhases(k).includes(rawPhase(at, base, base))) : 0; // not phased: the next of the shuffle, as always
+    const kind = fit >= 0 ? kinds.splice(fit, 1)[0]! : null;
     const drawn = Math.floor(rng() * (map.h - RAIN_ROWS + 1));
     const row = kind === 'gold' && fountain ? GOLD_ROWS_CLEAR[drawn % GOLD_ROWS_CLEAR.length]! : drawn; // the draw is spent either way
     const down = rng() < 0.5;
+    if (kind === null) continue;
+    prevEnd = at + DURATION[kind];
     const order: number[] = [];
     if (kind === 'rain') {
       for (let y = row; y < row + RAIN_ROWS; y++)
@@ -38,6 +53,7 @@ export function planProgram(rng: Rng, map: TileMap, base: number, fountain = fal
         [order[i], order[j]] = [order[j]!, order[i]!];
       }
     }
-    return { kind, at, row, order, down };
-  });
+    program.push({ kind, at, row, order, down });
+  }
+  return program;
 }
