@@ -8,3 +8,7 @@ export { stepEvents } from './step';
 export { eventsWords } from './hash';
 export { clockRow, createEvents, announce, type Announcement, type AnnounceKind, type ClockState, type EventsState } from './state';
 export type { Planned } from './plan';
+export { happyBonus, happyOn } from './happy';
+export { drawBalloons, drawMoves, type MovePair } from './plus-draw';
+export type { PlusEvents } from './plus-state';
+export { startPlus } from './plus-step';

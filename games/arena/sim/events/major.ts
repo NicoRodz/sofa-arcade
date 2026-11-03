@@ -3,8 +3,10 @@ import { MAP_W, solidAt } from '../../map';
 import { clearTile } from '../match/board';
 import type { ManchazoState } from '../match/state';
 import { bodyTile } from '../match/tile';
-import { BIG_FUSE_TICKS, BIG_RADIUS, BIG_WARN_TICKS, CLOCK_X, DURATION, GOLD_COLS, GOLD_ROWS, RAIN_TICKS } from './config';
+import { BIG_FUSE_TICKS, BIG_RADIUS, BIG_WARN_TICKS, CLOCK_X, DURATION, GOLD_COLS, GOLD_ROWS, RAIN_TICKS, isActingPlus } from './config';
+import { losingTeam } from './gap';
 import type { Planned } from './plan';
+import { startPlus, stepPlus } from './plus-step';
 import { announce } from './state';
 import { startVacuum, stepVacuum } from './vacuum';
 
@@ -41,7 +43,8 @@ export function startMajor(s: ManchazoState, p: Planned): void {
   else if (p.kind === 'gold') {
     m.zone = { x0: GOLD_COLS[0], x1: GOLD_COLS[1], y0: p.row, y1: p.row + GOLD_ROWS - 1 };
     reweigh(s, 1);
-  } else startVacuum(s, p);
+  } else if (p.kind === 'vacuum') startVacuum(s, p);
+  else if (isActingPlus(p.kind)) startPlus(s, p.kind); // happy hour and the blackout are read off `active`
 }
 
 function stepBig(s: ManchazoState): void {
@@ -92,6 +95,7 @@ function finish(s: ManchazoState): void {
   ev.big = null;
   ev.rain = null;
   ev.vac = null;
+  if (ev.plus) Object.assign(ev.plus, { contagion: null, move: null, balloon: null });
   ev.active = null;
 }
 
@@ -99,10 +103,15 @@ export function stepMajor(s: ManchazoState): void {
   const ev = s.match.ev!;
   const t = s.grid.tick;
   if (ev.active && t >= ev.active.end) finish(s);
-  if (!ev.active && ev.next < ev.program.length && t >= ev.program[ev.next]!.at) startMajor(s, ev.program[ev.next]!);
+  if (!ev.active && ev.next < ev.program.length && t >= ev.program[ev.next]!.at) {
+    // Contagio is not played when a team already trails by more than 15 %: it is skipped (the slot is spent, nothing is announced)
+    if (ev.program[ev.next]!.kind === 'contagion' && losingTeam(s.match) >= 0) ev.next++;
+    else startMajor(s, ev.program[ev.next]!);
+  }
   const a = ev.active;
   if (!a) return;
   if (a.kind === 'bigPinata') stepBig(s);
   else if (a.kind === 'rain') stepRain(s, ev.program[ev.next - 1]!);
   else if (a.kind === 'vacuum') stepVacuum(s);
+  else if (isActingPlus(a.kind)) stepPlus(s, a.kind);
 }

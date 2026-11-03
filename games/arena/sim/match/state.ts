@@ -73,7 +73,7 @@ export function createMatch(
   teamOfBody: readonly number[],
   map: TileMap,
   sabotage?: { seed: number; plus?: boolean },
-  events?: { seed: number; base: number },
+  events?: { seed: number; base: number; plus?: boolean },
   living?: readonly LivingSpec[],
 ): MatchState {
   const sizes = [0, 0];
@@ -82,6 +82,9 @@ export function createMatch(
   const paintable = floorCount(map); // every living tile open: a closed one is still a tile of the floor
   const shut = living ? new Set(living.flatMap((l) => footprint(l)).map(([x, y]) => y * MAP_W + x)) : undefined;
   const fountain = !!living?.some((l) => l.kind === 'fountain');
+  const sab = sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus) : null;
+  // F8b: Mudanza keeps its hands off the living parts' tiles and the sabotage pickups
+  const avoid = new Set([...(shut ?? []), ...(sab?.pickups.map((p) => p.y * MAP_W + p.x) ?? [])]);
   const m: MatchState = {
     paint: new Int8Array(MAP_W * MAP_H).fill(-1),
     counts: [0, 0],
@@ -93,8 +96,8 @@ export function createMatch(
     reserve: h.reserve,
     radius: h.radius,
     sizes,
-    sab: sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus) : null,
-    ev: events ? createEvents(map, events.seed, events.base, fountain) : null,
+    sab,
+    ev: events ? createEvents(map, events.seed, events.base, fountain, events.plus ? { living: living ?? [], avoid } : undefined) : null,
     live: null,
     zone: null,
   };
