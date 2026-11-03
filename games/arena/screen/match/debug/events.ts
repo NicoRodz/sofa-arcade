@@ -2,6 +2,8 @@
 import {
   CLOCK_FROM_TICKS,
   CLOCK_FULL,
+  FINAL_TICKS,
+  openingTicks,
   ALL_EVENT_KINDS,
   paintTile,
   startMajor,
@@ -97,6 +99,13 @@ export function eventDebug(get: Get) {
     manchazoPut(slot: number, x: number, y: number) {
       const b = get()?.grid.bodies.find((q) => q.slot === slot);
       if (b) [b.x, b.y] = [x * 16 + 8, y * 16 + 8];
+    },
+    /** PR2: the round jumps to `ticks` before the change into `phase` (default 1: the next tick is the one before the change) with no scheduled event left. */
+    manchazoPhaseJump(phase: 'scramble' | 'final', ticks = 1) {
+      const s = get();
+      if (!s?.match.ev) return;
+      s.match.ev.next = s.match.ev.program.length;
+      s.grid.tick = (phase === 'final' ? s.grid.durationTicks - FINAL_TICKS : openingTicks(s.grid.durationTicks)) - ticks;
     },
     /** Leaves the charge `ticks` of full charge short of full. */
     manchazoClockCharge(ticksShort: number) {

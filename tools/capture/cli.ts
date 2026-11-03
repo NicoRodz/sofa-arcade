@@ -21,6 +21,7 @@ import { runManchazoLooks, runManchazoSeeds } from './scenarios/manchazo-seeds';
 import { runManchazoEventsPlusTv, runManchazoEventsTv } from './scenarios/manchazo-events';
 import { runManchazoLivingTv } from './scenarios/manchazo-living';
 import { runManchazoLegibilityTv } from './scenarios/legibility/manchazo-legibility';
+import { runManchazoPhasesTv } from './scenarios/legibility/manchazo-phases';
 import {
   runManchazoSabotagePhone,
   runManchazoSabotagePlusPhone,
@@ -50,6 +51,7 @@ const MODES: Record<string, Scenario[]> = {
   'manchazo-events-plus-tv': [runManchazoEventsPlusTv],
   'manchazo-living-tv': [runManchazoLivingTv],
   'manchazo-legibility-tv': [runManchazoLegibilityTv],
+  'manchazo-phases-tv': [runManchazoPhasesTv],
   'versus-phone': [runVersusPhone],
   versus: [runVersus],
   'vs-hud': [runVsHud],
