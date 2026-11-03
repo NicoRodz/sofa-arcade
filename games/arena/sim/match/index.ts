@@ -15,3 +15,4 @@ export type { PlusState, Tape } from '../sabotage/plus';
 export { cardOf, drawDeck, placePickups, type Pickup, type SabotageState } from '../sabotage/state';
 export * from '../events';
 export * from '../living';
+export * from '../wrap';

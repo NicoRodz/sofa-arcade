@@ -30,6 +30,7 @@ export class ManchazoRun {
       mapSeed,
       sabotage: true,
       sabotagePlus: true, // F8a: the five new sabotages are in the deck (the sim without the flag is F5's)
+      sabotageV2: true, // PR6: the Sponge soaks and squeezes a diamond (and bursts if you are stained loaded); the Tape is a 5-tile line that cuts blasts (the sim without the flag is PR4's)
       events: true,
       projectiles: true, // PR4: Pegote, Cambiazo and Mareo are aimed, thrown and dodged; a Pegote can be passed (the sim without the flag is PR3's)
       rescue: true, // PR3: a teammate next to a stained body frees it after 12 ticks; a stained body drops its card (the sim without the flag is PR2's)

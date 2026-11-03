@@ -17,6 +17,7 @@ export interface ManchazoConfig {
   events?: boolean; // F4: the scheduled events, the come-back, the hidden scoreboard and the Hourglass (off: the round is F3's, bit for bit)
   eventsPlus?: boolean; // F8b: the five new events join the pool (needs `events`; off: the round is F8a's, bit for bit)
   projectiles?: boolean; // PR4: Pegote, Cambiazo and Mareo are aimed, thrown and dodged; a Pegote can be passed; needs `sabotage` (off: the round is PR3's, bit for bit)
+  sabotageV2?: boolean; // PR6: the Sponge soaks in a diamond and squeezes radius 2 or 3 (bursts if you are stained loaded); the Tape is a 5-tile line that cuts blasts; needs `sabotagePlus` (off: the round is PR4's, bit for bit)
   rescue?: boolean; // PR3: a teammate next to a stained body frees it after 12 ticks; a stained body drops its card (off: the round is PR2's, bit for bit)
   phases?: boolean; // PR2: the round in three acts (Opening, Scramble, Final); needs `events` (off: the round is F8b's, bit for bit)
   living?: boolean; // F5: the living map (brushes, sofas, fountain) on the generated map; needs `mapSeed` (off: the round is F4's, bit for bit)
@@ -49,7 +50,9 @@ export function createManchazo(cfg: ManchazoConfig): ManchazoState {
   const match = createMatch(
     grid.bodies.map((b) => b.team),
     map,
-    cfg.sabotage ? { seed: cfg.seed, plus: !!cfg.sabotagePlus, shots: !!cfg.projectiles, ...plazaOf(gen?.archetype, base) } : undefined,
+    cfg.sabotage
+      ? { seed: cfg.seed, plus: !!cfg.sabotagePlus, shots: !!cfg.projectiles, wrap: !!cfg.sabotageV2, ...plazaOf(gen?.archetype, base) }
+      : undefined,
     cfg.events ? { seed: cfg.seed, base: grid.durationTicks, plus: !!cfg.eventsPlus, phases: !!cfg.phases } : undefined,
     living,
     !!cfg.rescue,

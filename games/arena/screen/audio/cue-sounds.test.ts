@@ -2,21 +2,22 @@ import { existsSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { LOOT_CUES, PHASE_CUES, RESCUE_CUE, SABOTAGE_CUES, SHOT_CUES, SWING_CUE } from '../match/hud/cues';
+import { LOOT_CUES, PHASE_CUES, RESCUE_CUE, SABOTAGE_CUES, SHOT_CUES, SWING_CUE, WRAP_CUES } from '../match/hud/cues';
 import { SILENT_CUES, allCues, soundOfCue } from './cue-sounds';
 import { AUDIO_FILES, urlOf } from './files';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), 'assets');
 
 describe('cue -> file mapping', () => {
-  it('lists every cue the HUD can emit (10 sabotages, the swing, 3 phase cues, the rescue, 3 loot cues, 6 shot cues)', () => {
+  it('lists every cue the HUD can emit (10 sabotages, the swing, 3 phase cues, the rescue, 3 loot cues, 6 shot cues, 3 wrap cues)', () => {
     expect(allCues()).toHaveLength(
       Object.keys(SABOTAGE_CUES).length +
         1 +
         Object.keys(PHASE_CUES).length +
         1 +
         Object.keys(LOOT_CUES).length +
-        Object.keys(SHOT_CUES).length,
+        Object.keys(SHOT_CUES).length +
+        Object.keys(WRAP_CUES).length,
     );
     expect(allCues()).toContain(SWING_CUE);
   });
@@ -51,6 +52,12 @@ describe('cue -> file mapping', () => {
   });
   it('every shot cue is either silent on purpose or has a sound', () => {
     for (const c of Object.values(SHOT_CUES)) expect(SILENT_CUES.includes(c) !== (soundOfCue(c) !== null)).toBe(true);
+  });
+  it('the three PR6 cues (tape lands, sponge squeezed, sponge bursts) each have a sound; none is silent', () => {
+    expect(soundOfCue(WRAP_CUES.tape)).toEqual({ file: 'sabotage-use', gain: 0.6 });
+    expect(soundOfCue(WRAP_CUES.squeeze)).toEqual({ file: 'pinata-pop', gain: 0.7 });
+    expect(soundOfCue(WRAP_CUES.burst)).toEqual({ file: 'pinata-pop', gain: 1 });
+    for (const c of Object.values(WRAP_CUES)) expect(SILENT_CUES).not.toContain(c);
   });
   it('an unknown cue has no sound', () => expect(soundOfCue('nope')).toBeNull());
 });

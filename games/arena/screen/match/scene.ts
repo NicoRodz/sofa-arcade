@@ -14,6 +14,7 @@ import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, S
 import { Avatars } from './scene-avatars';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawTapes } from './scene-plus';
+import { drawWrapFloor } from '../wrap';
 import { eventStrip, STRIP_ALPHA } from './hud/event-strip';
 import { HudFx } from './hud/fx';
 import { ArchetypeFx } from './hud/archetype-fx';
@@ -140,6 +141,7 @@ export class MatchScene extends Phaser.Scene {
     this.drawFloor(s);
     this.paint.sync(shownPaint(s)); // F8a: paint put down under an invisible ink reads neutral until the ink runs out
     drawTapes(f, s);
+    drawWrapFloor(f, s); // PR6: the packing tape and its wind-up (no-op without the flag)
     drawLiving(f, s);
     drawPickups(f, s);
     drawLoot(f, s); // PR3: the cards lying on the floor

@@ -1,6 +1,6 @@
 // The sound cue for each thing the HUD announces: a table of ids and a hook. `setCueSink` is connected by screen/audio/audio.ts; which file each cue plays is in
 // screen/audio/cue-sounds.ts (a new cue needs its line there: its test fails otherwise).
-import type { SabotageKind, ShotLogKind } from '../../../sim';
+import type { SabotageKind, ShotLogKind, WrapLogKind } from '../../../sim';
 import type { FeedEvent } from './feed';
 
 export const SABOTAGE_CUES: Record<SabotageKind, string> = {
@@ -33,6 +33,9 @@ export const SHOT_CUES: Record<ShotLogKind, string> = {
   cancel: 'shot-cancel',
 };
 
+// PR6: the packing tape lands, a sponge is squeezed, a loaded sponge bursts (the card's own `fired` cue plays at the press)
+export const WRAP_CUES: Record<WrapLogKind, string> = { tape: 'wrap-tape', squeeze: 'wrap-squeeze', burst: 'wrap-burst' };
+
 export const cueOf = (e: FeedEvent): string =>
   e.type === 'fired'
     ? SABOTAGE_CUES[e.kind]
@@ -44,9 +47,11 @@ export const cueOf = (e: FeedEvent): string =>
           ? LOOT_CUES[e.what]
           : e.type === 'shot'
             ? SHOT_CUES[e.what]
-            : e.warn
-              ? PHASE_CUES.warn
-              : PHASE_CUES[e.phase];
+            : e.type === 'wrap'
+              ? WRAP_CUES[e.what]
+              : e.warn
+                ? PHASE_CUES.warn
+                : PHASE_CUES[e.phase];
 
 type Sink = (cue: string, e: FeedEvent) => void;
 let sink: Sink | null = null;

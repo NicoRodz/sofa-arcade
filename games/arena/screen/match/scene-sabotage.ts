@@ -2,6 +2,7 @@
 // Each card has its own colour AND shape, so it reads without colour. No logic: it reads the sim's state.
 import { CARD_COLOR, drawIcon } from '../art/glyphs';
 import { drawPlusCarrier } from './scene-plus';
+import { drawWrapCarrier } from '../wrap';
 import { onTop, type Frame } from './scene-frame';
 import { FAN_FX_TICKS, FAN_RANGE, ROLLER_TICKS, cardOf, pairOut, type ManchazoState, type Pickup, type SabotageKind } from '../../sim';
 
@@ -51,6 +52,7 @@ export function drawCarrier(f: Frame, s: ManchazoState, i: number, x: number, y:
     f.g.lineStyle(8, CARD_COLOR.fan, 1 - t).strokeCircle(x, y, f.px * (0.5 + FAN_RANGE * t));
   }
   drawPlusCarrier(f, s, i, x, y);
+  drawWrapCarrier(f, s, i, x, y); // PR6: the sponge v2's diamond, clock and burst
   const held = a.held[i];
   if (held) glyph(onTop(f), held, x + f.px * 0.8, y - f.px * 0.55, f.px * 0.4, s.grid.tick / 6); // beside the head: the avatar is as tall as the card was high
 }

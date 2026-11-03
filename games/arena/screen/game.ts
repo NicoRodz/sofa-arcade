@@ -22,6 +22,7 @@ import { eventDebug } from './match/debug/events';
 import { livingDebug } from './match/debug/living';
 import { looksDebug } from './match/debug/looks';
 import { shotDebug } from './match/debug/shot';
+import { wrapDebug } from './match/debug/wrap';
 import type { Appearance } from '@pichi/core/avatar';
 import { claimMusic } from '@pichi/screen-kit/audio';
 import { sendMsg } from '@pichi/screen-kit/net';
@@ -144,6 +145,7 @@ export const arenaScreen: ScreenGame = {
     ...eventDebug(() => matchRun.run?.state), // for the capture tool only: start an event, drop the Hourglass, put a body on a tile
     ...livingDebug(() => matchRun.run?.state), // for the capture tool only: re-time a living element, claim a brush pivot
     ...shotDebug(() => matchRun.run?.state), // for the capture tool only: hold an aim, a shot in the air or a passed Pegote
+    ...wrapDebug(() => matchRun.run?.state), // for the capture tool only: hold the sponge soaking, its squeeze or a tape on screen
     ...looksDebug(() => matchRun.run?.state ?? null, lookOverride), // for the capture tool only: the teams, and a look set on a slot
     // for the capture tool only: the next round plays the map of this seed code (`2·7KQ2M`); the phones cannot do this
     manchazoNextMapSeed(code: string) {

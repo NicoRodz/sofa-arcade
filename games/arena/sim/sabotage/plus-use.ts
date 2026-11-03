@@ -17,6 +17,8 @@ import {
   type SabotageKind,
 } from './kinds';
 import { nearestRival } from './near';
+import { startSponge, squeezeSponge } from '../wrap/sponge';
+import { startTape } from '../wrap/tape';
 
 export type Played = 'spent' | 'kept' | 'refused';
 
@@ -93,6 +95,7 @@ export function playPlus(s: ManchazoState, i: number, kind: SabotageKind): Playe
   if (!plus) return 'refused';
   const team = s.grid.bodies[i]!.team;
   if (kind === 'tape') {
+    if (plus.wrap) return startTape(s, i) ? 'spent' : 'refused'; // PR6: the packing tape lands after its wind-up
     const [x, y] = bodyTile(s.grid.bodies[i]!, s.match.bodies[i]!.face);
     plus.tapes.push({ x, y, team, left: TAPE_TICKS });
     return 'spent';
@@ -102,6 +105,14 @@ export function playPlus(s: ManchazoState, i: number, kind: SabotageKind): Playe
     return 'spent';
   }
   if (kind === 'sponge') {
+    if (plus.wrap) {
+      // PR6: the first B starts soaking (refused with no rival paint around), the second squeezes at once
+      if (plus.sponge[i]! > 0) {
+        squeezeSponge(s, i);
+        return 'spent';
+      }
+      return startSponge(s, i) ? 'kept' : 'refused';
+    }
     if (plus.sponge[i]! > 0) {
       squeeze(s, i);
       return 'spent';
