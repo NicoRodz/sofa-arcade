@@ -32,6 +32,7 @@ import {
 } from './scenarios/manchazo-sabotage';
 import { runManchazoShotTv } from './scenarios/legibility/manchazo-shot';
 import { runManchazoWrapTv } from './scenarios/legibility/manchazo-wrap';
+import { runManchazoTopFeedTv } from './scenarios/legibility/manchazo-topfeed';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
 
 type Scenario = (c: Ctx) => Promise<void>;
@@ -54,6 +55,7 @@ const MODES: Record<string, Scenario[]> = {
   'manchazo-sabotage-plus-phone': [runManchazoSabotagePlusPhone],
   'manchazo-shot-tv': [runManchazoShotTv],
   'manchazo-wrap-tv': [runManchazoWrapTv],
+  'manchazo-topfeed-tv': [runManchazoTopFeedTv],
   'manchazo-events-tv': [runManchazoEventsTv],
   'manchazo-events-plus-tv': [runManchazoEventsPlusTv],
   'manchazo-living-tv': [runManchazoLivingTv],
