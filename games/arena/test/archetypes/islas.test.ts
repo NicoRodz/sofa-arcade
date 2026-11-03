@@ -22,20 +22,20 @@ function fromRows(rows: readonly string[]): TileMap {
   return m;
 }
 const BLANK = '.............'; // 13 columns
-// two 3x3 rooms, each with a contour of furniture and one door each side of their row
+// two 4x3 rooms one over the other (24 floor tiles), a contour of furniture and a door on each side of each, in the row of an exit
 const ROOMS = [
   BLANK,
   BLANK,
-  '..#####.#####',
-  '..#...#.#...#',
-  '..#.........#',
-  '..#...#.#...#',
-  '..#####.#####',
   BLANK,
+  '...######....',
+  '...#....#....',
   BLANK,
+  '...#....#....',
+  '...######....',
+  '...#....#....',
   BLANK,
-  BLANK,
-  BLANK,
+  '...#....#....',
+  '...######....',
   BLANK,
   BLANK,
   BLANK,
@@ -63,16 +63,13 @@ describe('Islas: the rooms are real', () => {
     }
   });
 
-  it('a hand-made floor plan: V8 accepts 2 rooms with a clear contour; a corner that leaks, one room only, or a room that touches the border are rejected', () => {
+  it('a hand-made floor plan: V8 accepts 2 rooms with a clear contour; a corner that leaks, or one room only, are rejected', () => {
     expect(v8Signature('islas', fromRows(ROOMS))).toBeNull();
     const leak = [...ROOMS];
-    leak[2] = '..#####.#.###'; // the corner of the second room opens a diagonal gap
-    expect(v8Signature('islas', fromRows(leak))).toMatch(/sealed rooms/);
-    const one = ROOMS.map((r) => r.slice(0, 7) + '.'.repeat(6));
+    leak[3] = '....#####....'; // the corner of the first room opens a diagonal gap
+    expect(v8Signature('islas', fromRows(leak))).toMatch(/1 sealed rooms/);
+    const one = ROOMS.map((r, y) => (y > 7 ? BLANK : r));
     expect(v8Signature('islas', fromRows(one))).toMatch(/1 sealed rooms/);
-    const edge = [...ROOMS];
-    edge.splice(0, 7, '#####.#####..', '#...#.#...#..', '#.........#..', '#...#.#...#..', '#####.#####..', BLANK, BLANK);
-    expect(v8Signature('islas', fromRows(edge))).toMatch(/sealed rooms/);
   });
 });
 

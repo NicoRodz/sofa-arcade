@@ -46,6 +46,7 @@ export function plazaRect(m: TileMap): { x: number; y: number } | null {
 }
 
 const plaza: Signature = (m) => {
+  if (sealedRooms(m).length >= MIN_ROOMS) return 'sealed rooms: a floor plan, not a plaza'; // Islas has its own signature
   if (!plazaRect(m)) return `no free ${PLAZA_W}x${PLAZA_H} plaza across the middle line`;
   let walls = 0;
   for (let yy = 0; yy < MAP_H; yy++) for (let xx = 0; xx <= SIDE_MAX_X; xx++) if (solidAt(m, xx, yy)) walls++;
