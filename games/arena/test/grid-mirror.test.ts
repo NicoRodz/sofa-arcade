@@ -10,7 +10,8 @@ function symmetricMap(seed: number): TileMap {
   const rnd = mulberry32(seed);
   const m = emptyMap([[[1, 1]], [[MAP_W - 2, 1]]]);
   for (let y = 0; y < MAP_H; y++)
-    for (let x = 0; x < MAP_W; x++) if (x <= (MAP_W - 1) / 2 && rnd() < 0.28 && !(x < 3 && y < 3)) m.solid[y * MAP_W + x] = m.solid[y * MAP_W + (MAP_W - 1 - x)] = 1;
+    for (let x = 0; x < MAP_W; x++)
+      if (x <= (MAP_W - 1) / 2 && rnd() < 0.28 && !(x < 3 && y < 3)) m.solid[y * MAP_W + x] = m.solid[y * MAP_W + (MAP_W - 1 - x)] = 1;
   return m;
 }
 
@@ -31,8 +32,14 @@ describe('grid control mirror: the same run seen in a mirror (stick x flipped) i
             const mag = rnd() < 0.12 ? 100 : 250 + Math.floor(rnd() * 750);
             cur = { sx: Math.round(Math.cos(ang) * mag), sy: Math.round(Math.sin(ang) * mag) };
           }
-          if (rnd() < 0.03) for (const b of [p, q]) ((b.dir = NONE), (b.moved = false)); // a pinata drop or a roll: the body is put standing
-          stepGrid(a, new Map<number, GridInput>([[0, cur], [1, { sx: -cur.sx, sy: cur.sy }]]));
+          if (rnd() < 0.03) for (const b of [p, q]) (b.dir = NONE), (b.moved = false); // a pinata drop or a roll: the body is put standing
+          stepGrid(
+            a,
+            new Map<number, GridInput>([
+              [0, cur],
+              [1, { sx: -cur.sx, sy: cur.sy }],
+            ]),
+          );
           expect([q.x, q.y, q.dir, q.q]).toEqual([MAP_W * 16 - p.x, p.y, flipDir(p.dir), p.q === NONE ? NONE : flipDir(p.q)]);
           expect(q.stats).toEqual(p.stats);
         }

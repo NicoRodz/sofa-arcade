@@ -6,7 +6,15 @@ describe('simulated human with a noisy stick on the F0 circuit', () => {
   for (const plan of ['A', 'B'] as const) {
     it(`plan ${plan}: 24 runs finish, with (almost) no tick stopped by mistake and no failed turn`, () => {
       const t = humanTotals(plan, 24);
-      if (process.env.PG_HUMAN_REPORT) console.info(`HUMAN plan ${plan}`, JSON.stringify({ ...t, stoppedPct: +((100 * t.stopped) / t.wanting).toFixed(2), failedPct: +((100 * t.failed) / t.requested).toFixed(2) }));
+      if (process.env.PG_HUMAN_REPORT)
+        console.info(
+          `HUMAN plan ${plan}`,
+          JSON.stringify({
+            ...t,
+            stoppedPct: +((100 * t.stopped) / t.wanting).toFixed(2),
+            failedPct: +((100 * t.failed) / t.requested).toFixed(2),
+          }),
+        );
       expect(t.finished).toBe(24);
       expect(t.stopped / t.wanting).toBeLessThan(0.005);
       expect(t.failed / t.requested).toBeLessThan(0.02);
