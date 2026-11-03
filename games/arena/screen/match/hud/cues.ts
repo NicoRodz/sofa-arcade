@@ -1,6 +1,6 @@
 // The sound cue for each thing the HUD announces: a table of ids and a hook. `setCueSink` is connected by screen/audio/audio.ts; which file each cue plays is in
 // screen/audio/cue-sounds.ts (a new cue needs its line there: its test fails otherwise).
-import type { SabotageKind } from '../../../sim';
+import type { SabotageKind, ShotLogKind } from '../../../sim';
 import type { FeedEvent } from './feed';
 
 export const SABOTAGE_CUES: Record<SabotageKind, string> = {
@@ -23,6 +23,16 @@ export const PHASE_CUES = { warn: 'phase-warn', scramble: 'phase-scramble', fina
 export const RESCUE_CUE = 'rescue-free';
 export const LOOT_CUES = { drop: 'loot-drop', take: 'loot-take', expire: 'loot-expire' } as const;
 
+// PR4: the projectiles' six moments (`sab.shot.log`): a shot leaves, hits, ends on a wall or its range, two rival shots cancel, a Pegote is passed, an aim is cut
+export const SHOT_CUES: Record<ShotLogKind, string> = {
+  launch: 'shot-launch',
+  hit: 'shot-hit',
+  miss: 'shot-miss',
+  clash: 'shot-clash',
+  pass: 'shot-pass',
+  cancel: 'shot-cancel',
+};
+
 export const cueOf = (e: FeedEvent): string =>
   e.type === 'fired'
     ? SABOTAGE_CUES[e.kind]
@@ -32,9 +42,11 @@ export const cueOf = (e: FeedEvent): string =>
         ? RESCUE_CUE
         : e.type === 'loot'
           ? LOOT_CUES[e.what]
-          : e.warn
-            ? PHASE_CUES.warn
-            : PHASE_CUES[e.phase];
+          : e.type === 'shot'
+            ? SHOT_CUES[e.what]
+            : e.warn
+              ? PHASE_CUES.warn
+              : PHASE_CUES[e.phase];
 
 type Sink = (cue: string, e: FeedEvent) => void;
 let sink: Sink | null = null;

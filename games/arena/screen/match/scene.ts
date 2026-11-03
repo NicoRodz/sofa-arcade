@@ -21,6 +21,7 @@ import type { Feed } from './hud/feed';
 import type { Frame } from './scene-frame';
 import { drawLoot, drawRescue } from './scene-rescue';
 import { drawCarrier, drawMark, drawPickups } from './scene-sabotage';
+import { drawAim, drawGlueCarrier, drawShots } from './scene-shot';
 import { addBackdrop } from '../art/backdrop';
 import { FRAME, floorTexture, BAKE } from '../art/floor-bake';
 import { furnitureMap } from '../art/furniture-plan';
@@ -146,6 +147,7 @@ export class MatchScene extends Phaser.Scene {
     this.drawPinatas(s, f);
     this.splashes.track(s, s.grid.map);
     this.splashes.draw(this.g, s, X0, Y0, PX);
+    drawAim(f, s); // PR4: the line of each aim
     s.grid.bodies.forEach((b, i) => {
       const m = s.match.bodies[i]!;
       const x = X0 + b.x * UNIT,
@@ -156,11 +158,13 @@ export class MatchScene extends Phaser.Scene {
       else bodyOutline(this.g, x, y, b.team, m.stun > 0, m.trail > 0);
       drawCarrier(f, s, i, x, y);
       drawRescue(f, s, i, x, y); // PR3: the rescue ring and glow
+      drawGlueCarrier(f, s, i, x, y); // PR4: the Pegote it carries (fuse, passes)
       this.label(b.slot, m.stun > 0)
         .setVisible(true)
         .setPosition(at.x, at.y)
         .setText(String(b.slot + 1));
     });
+    drawShots(f, s); // PR4: the shots in the air and what they did
     // F8b: the events' layer (the blackout goes on `over`, above the avatars; the banner's box stays lit)
     drawEventsPlus(f, s, this.over, null); // the banner is under the floor now: nothing inside it has to stay lit
     this.drawHud(s);
