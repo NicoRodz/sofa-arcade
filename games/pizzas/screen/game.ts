@@ -8,6 +8,7 @@ import { addPlayer, dropPlayer, removePlayer, returnPlayer } from '../sim';
 import { pizzasManifest } from '../manifest';
 import { drawLogo } from './art/dom/ui';
 import { initAudio } from './audio';
+import { phaseFor } from '@pichi/screen-kit/audio';
 import { phoneResult } from '../sim/versus/report';
 import { pizzasDebug } from './debug';
 import { frame, initHost, school, scene } from './match/loop';
@@ -33,7 +34,7 @@ export const pizzasScreen: ScreenGame = {
   manifest: pizzasManifest,
   init() {
     const audio = initAudio(pizzasBus, () => ({
-      phase: app.phase,
+      phase: phaseFor(app.phase, app.config.game, PIZZAS), // a game with music of its own (Manchazo) keeps the tarantela out of its lobby and results
       started: pz.game.started && app.config.game === PIZZAS,
       timeLeftMs: app.phase === 'playing' && pz.game.started && app.config.game === PIZZAS ? pz.game.params.roundMs - pz.game.time : null,
     }));

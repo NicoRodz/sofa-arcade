@@ -22,7 +22,9 @@ import { eventDebug } from './match/debug/events';
 import { livingDebug } from './match/debug/living';
 import { looksDebug } from './match/debug/looks';
 import type { Appearance } from '@pichi/core/avatar';
+import { claimMusic } from '@pichi/screen-kit/audio';
 import { sendMsg } from '@pichi/screen-kit/net';
+import { createArenaAudio } from './audio';
 import { KINDS, type SabotageKind } from '../sim';
 
 const ID = arenaManifest.id;
@@ -63,6 +65,9 @@ const hints = createSabotageHints(sendMsg, (slot) => player(slot)?.id);
 // F4: every event announced on the TV buzzes every phone
 const alerts = createEventAlert(sendMsg, (slot) => player(slot)?.id);
 
+// F8m: the music and the sounds, created on the first frame of the lobby (audio/)
+const audio = createArenaAudio();
+
 const sceneOf = () => {
   const kind = roundKind();
   return kind === 'push' ? arenaScene() : kind === 'grid' ? gridScene() : matchScene();
@@ -71,10 +76,21 @@ const sceneOf = () => {
 export const arenaScreen: ScreenGame = {
   manifest: arenaManifest,
   renderScale: 2, // F6: Manchazo is the one game drawn at 3840x2160 on a 4K TV (the logical canvas stays 1920x1080)
+  init() {
+    claimMusic(ID); // the lobby and the results are ours (audio/): Pizzas' lobby tarantela stays quiet
+  },
   scenes: () => [{ key: 'arena', scene: sceneOf() }],
+  globalKey(e) {
+    if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) audio.toggleMute(); // Pizzas' audio listens to the same key and flag
+  },
   frame(delta) {
     hints.sync(matchRun.run && showing() ? matchRun.run.state : null, performance.now());
     alerts.sync(matchRun.run && showing() ? matchRun.run.state : null);
+    audio.sync({
+      state: matchRun.run && showing() ? matchRun.run.state : null,
+      phase: app.phase,
+      live: performance.now() >= app.gateUntil,
+    });
     if (app.phase !== 'playing' || app.config.game !== ID || performance.now() < app.gateUntil) return;
     if ((matchRun.run ?? gridRun.run ?? run.arena)?.advance(delta)) dispatch('timeout'); // the final board has been on screen long enough
   },
