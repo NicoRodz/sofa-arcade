@@ -1,7 +1,7 @@
 // The map seed: 25 bits written as 5 Crockford base32 characters (no I, L, O or U: they read well from the couch) behind the generator's version,
 // for example `2·7KQ2M`. A seed of another version is not the same map, so the screen says so instead of drawing a different one.
 import { mulberry32 } from '@pichi/core';
-import { ARCHETYPE_NAMES, type MapKind } from './archetypes/kinds';
+import { ARCHETYPE_NAMES, archetypeOf, type MapKind } from './archetypes/kinds';
 
 /** 1 was F0's hand-made map; 2 was the single generator; 3 draws the seed's archetype (Pasillos, Islas, Plaza, Ocho). Any change to how a seed becomes a map bumps it. */
 export const GENERATOR_VERSION = 3;
@@ -38,10 +38,21 @@ export function parseSeed(text: string): { version: number; seed: number } | nul
   return { version: m[1] ? Number(m[1]) : GENERATOR_VERSION, seed };
 }
 
-/** The map seed of round `round` (0, 1, 2...) of a lobby: the round-th draw of the substream `lobbySeed ^ MAP_SEED_TAG`. Same lobby seed and round, same map. */
+const REDRAWS = 16; // a round whose archetype repeats the last round's draws again at most this many times (then it keeps the repeat: the bound keeps the walk finite)
+
+/**
+ * The map seed of round `round` (0, 1, 2...) of a lobby: draws of the substream `lobbySeed ^ MAP_SEED_TAG`, one per round, plus a redraw (the next draw of the
+ * stream) while the seed's archetype is the one the round before played, so the same archetype never comes twice in a row (up to REDRAWS redraws).
+ * Same lobby seed and round, same map. Outside the sim: the lobby hands the seed to the round.
+ */
 export function mapSeedFor(lobbySeed: number, round: number): number {
   const rng = mulberry32((lobbySeed ^ MAP_SEED_TAG) >>> 0);
-  let v = 0;
-  for (let k = 0; k <= round; k++) v = rng();
-  return Math.floor(v * SEED_SPACE);
+  const draw = () => Math.floor(rng() * SEED_SPACE);
+  let seed = draw();
+  for (let k = 1; k <= round; k++) {
+    const last = archetypeOf(seed);
+    seed = draw();
+    for (let n = 0; n < REDRAWS && archetypeOf(seed) === last; n++) seed = draw();
+  }
+  return seed;
 }
