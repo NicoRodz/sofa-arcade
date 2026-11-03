@@ -84,6 +84,20 @@ describe('top feed: what each team shows', () => {
     expect(topFeed({ log: [fired(100, 0, 0, 'fan')], grabs: [grab(100, 0, 0, 'fan')] }, 100, name)[0]!.verb).toBe('usó'); // same tick: the play
   });
 
+  it('never more than 2 entries on screen (one row per team), whatever piles up; only a played card enters the log side', () => {
+    const grabs = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => grab(100 + k, k % 2, k, 'fan'));
+    const log: FeedEvent[] = [
+      fired(120, 0, 0, 'tape'),
+      { type: 'swing', tick: 121, team: 1, pp: 3 },
+      { type: 'phase', tick: 122, phase: 'final', warn: false },
+      { type: 'rescue', tick: 123, body: 1, slot: 1, team: 1 },
+    ];
+    const rows = topFeed({ log, grabs }, 125, name);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ verb: 'usó', kind: 'tape' }); // team 0: the play at 120 beats the takes at 100..106
+    expect(rows[1]).toMatchObject({ verb: 'tomó', slot: 7 }); // team 1: the swing, the phase and the rescue are not cards: its newest take stays
+  });
+
   it('a long name is cut so the line fits its row', () => {
     const e = topFeed({ log: [], grabs: [grab(0, 1, 7, 'ink')] }, 0, name)[1]!;
     expect(e.who).toBe(`Gabrielit… tomó la Tinta invisible`);

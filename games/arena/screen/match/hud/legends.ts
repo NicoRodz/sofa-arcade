@@ -10,7 +10,7 @@ export const LEGENDS: Record<SabotageKind, { item: string; legend: string }> = {
   footprints: { item: 'las Huellas', legend: 'los rivales que caminan pintan por ti' },
   glue: { item: 'el Pegote', legend: 'disparas: se pega al primer rival golpeado' },
   tape: { item: 'la Cinta', legend: 'barrera de 5 casillas que corta explosiones' },
-  ink: { item: 'la Tinta invisible', legend: 'tu pintura se oculta y luego se revela' },
+  ink: { item: 'la Tinta invisible', legend: 'tu pintura se oculta, luego se revela' },
   sponge: { item: 'la Esponja', legend: 'absorbes pintura rival y luego la exprimes' },
   swap: { item: 'el Cambiazo', legend: 'disparas: cambias lugar con el rival golpeado' },
   dizzy: { item: 'el Mareo', legend: 'disparas: el rival golpeado maneja al revés' },
