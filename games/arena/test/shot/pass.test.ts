@@ -28,7 +28,7 @@ describe('Pegote pass: B by the carrier, to a rival of it on its tile or an orth
     const s = glued();
     put(s, 2, 10, 14); // teammate of the thrower, next to the carrier (a rival of the carrier)
     tick(s, press(1));
-    expect(glue(s)).toMatchObject({ stuck: 2, team: 1, owner: 1, passes: 1, lock: PASS_LOCK_TICKS - 1, x: 10, y: 14 });
+    expect(glue(s)).toMatchObject({ stuck: 2, team: 1, owner: 1, passes: 1, lock: 29, x: 10, y: 14 });
     expect(s.match.sab!.shot!.log.at(-1)).toMatchObject({ kind: 'pass', body: 1, target: 2 });
   });
   it('the same tile counts, a diagonal or two tiles away does not', () => {
@@ -72,7 +72,7 @@ describe('Pegote pass: B by the carrier, to a rival of it on its tile or an orth
     tick(s, press(1));
     expect(glue(s).stuck).toBe(2);
     put(s, 1, 10, 14); // body 1, a rival of its new carrier, stands beside it
-    tick(s, {}, PASS_LOCK_TICKS - 2); // lock now 1
+    tick(s, {}, 28); // lock now 1 (literal: 30 ticks in all)
     expect(canPass(s, 2)).toBe(false);
     tick(s, press(2));
     expect(glue(s).stuck).toBe(2); // refused at lock 1 (the press tick still counted down)
