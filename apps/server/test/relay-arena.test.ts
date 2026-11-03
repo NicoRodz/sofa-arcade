@@ -47,3 +47,45 @@ describe('relay: a game in development', () => {
     [screen.ws, a.ws].forEach((w) => w.close());
   });
 });
+
+// Protocol v7 (F9): the six new buzz kinds and the `st` / `card` of a hint cross the relay to the phone they name, and only that one; a v6 hint stays as it was.
+describe('relay: protocol v7 (the phone of Manchazo)', () => {
+  const kinds = ['stain', 'rescued', 'lootlost', 'dizzy', 'phase', 'hourglass'] as const;
+  it('the new buzz kinds reach the named phone; a phone cannot send them to another; an unknown kind is dropped', async () => {
+    const screen = open('?role=screen&room=v7-buzz');
+    const a = open('?room=v7-buzz');
+    const b = open('?room=v7-buzz');
+    await Promise.all([screen.ready, a.ready, b.ready]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    b.send({ t: 'join', name: 'Beto', token: 'b' });
+    const idA = ((await a.next('joined')) as Extract<ServerMsg, { t: 'joined' }>).player.id;
+    const idB = ((await b.next('joined')) as Extract<ServerMsg, { t: 'joined' }>).player.id;
+    await a.next('phase');
+    await b.next('phase');
+    a.send({ t: 'buzz', playerId: idB, kind: 'stain' }); // a phone cannot buzz another one
+    screen.ws.send(JSON.stringify({ t: 'buzz', playerId: idA, kind: 'from-the-future' }));
+    for (const kind of kinds) {
+      screen.send({ t: 'buzz', playerId: idA, kind });
+      expect(await a.next('buzz')).toEqual({ t: 'buzz', kind });
+    }
+    await settle();
+    expect(a.msgs.filter((m) => m.t === 'buzz')).toEqual([]); // the unknown kind never arrived
+    expect(b.msgs.filter((m) => m.t === 'buzz')).toEqual([]);
+    [screen.ws, a.ws, b.ws].forEach((w) => w.close());
+  });
+  it('a hint carries `st` and `card` to its phone; an unknown status or a malformed card is dropped and the labels still go through; a v6 hint has neither key', async () => {
+    const screen = open('?role=screen&room=v7-hint');
+    const a = open('?room=v7-hint');
+    await Promise.all([screen.ready, a.ready]);
+    a.send({ t: 'join', name: 'Ana', token: 'a' });
+    const idA = ((await a.next('joined')) as Extract<ServerMsg, { t: 'joined' }>).player.id;
+    await a.next('phase');
+    screen.send({ t: 'hint', playerId: idA, a: '¡Mareado!', b: 'Pegote', st: 'dizzy', card: 'glue' });
+    expect(await a.next('hint')).toEqual({ t: 'hint', a: '¡Mareado!', b: 'Pegote', st: 'dizzy', card: 'glue' });
+    screen.ws.send(JSON.stringify({ t: 'hint', playerId: idA, a: 'x', b: null, st: 'frozen', card: 'Not A Card' }));
+    expect(await a.next('hint')).toEqual({ t: 'hint', a: 'x', b: null });
+    screen.send({ t: 'hint', playerId: idA, a: 'Cargar', b: null });
+    expect(await a.next('hint')).toEqual({ t: 'hint', a: 'Cargar', b: null });
+    [screen.ws, a.ws].forEach((w) => w.close());
+  });
+});
