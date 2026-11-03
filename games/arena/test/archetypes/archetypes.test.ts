@@ -81,8 +81,20 @@ describe('V8 tells the archetypes apart', () => {
   });
 });
 
-describe('the Plaza is the plan\'s 7x5 (literal numbers, not the validator\'s constants)', () => {
-  it('30 Plaza maps hold a free block of columns 10-16 and 5 consecutive rows, and no Plaza map accepts a smaller plaza', () => {
+describe('the Plaza is 7x5 (literal numbers, not the validator constants)', () => {
+  it('V8 accepts a walled map with a free 7x5 on the middle line and rejects one with a 5x5 or a 7x4', () => {
+    const walled = (x0: number, x1: number, y0: number, y1: number): TileMap => {
+      const m = emptyMap();
+      m.solid.fill(1);
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) m.solid[y * m.w + x] = 0;
+      return m;
+    };
+    expect(v8Signature('plaza', walled(10, 16, 5, 9))).toBeNull();
+    expect(v8Signature('plaza', walled(11, 15, 5, 9))).toMatch(/no free 7x5/);
+    expect(v8Signature('plaza', walled(10, 16, 5, 8))).toMatch(/no free 7x5/);
+  });
+
+  it('30 Plaza maps hold a free block of columns 10-16 and 5 consecutive rows', () => {
     for (const seed of of('plaza', 30)) {
       const { map } = generateMap(seed);
       const free = (x: number, y: number) => map.solid[y * map.w + x] === 0;
