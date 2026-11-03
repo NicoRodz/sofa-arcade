@@ -14,3 +14,4 @@ export {
 } from './state';
 export * from './grid';
 export * from './match';
+export * from './phase';

@@ -3,7 +3,7 @@
 import { CARD_COLOR, drawIcon } from '../art/glyphs';
 import { drawPlusCarrier } from './scene-plus';
 import { onTop, type Frame } from './scene-frame';
-import { FAN_FX_TICKS, FAN_RANGE, ROLLER_TICKS, cardOf, type ManchazoState, type Pickup, type SabotageKind } from '../../sim';
+import { FAN_FX_TICKS, FAN_RANGE, ROLLER_TICKS, cardOf, pairOut, type ManchazoState, type Pickup, type SabotageKind } from '../../sim';
 
 /** The card's icon centred on (cx, cy), r = half its size (the art is in ../art/glyphs.ts). */
 export function glyph({ g }: Frame, kind: SabotageKind, cx: number, cy: number, r: number, spin = 0) {
@@ -16,6 +16,7 @@ export function drawPickups(f: Frame, s: ManchazoState) {
   const a = s.match.sab;
   if (!a) return;
   a.pickups.forEach((p: Pickup, k) => {
+    if (!pairOut(s.match, p.pair)) return; // PR2: this pair is not out yet in this act
     const [cx, cy] = centre(f, p.x, p.y);
     if (p.wait > 0) return void f.g.lineStyle(3, 0x8a7461, 0.35).strokeCircle(cx, cy, f.px * 0.28); // empty: it comes back // empty: it comes back
     const bob = Math.sin((s.grid.tick + k * 9) / 10) * 3;

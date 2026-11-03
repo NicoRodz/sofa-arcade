@@ -10,7 +10,15 @@ export const RECENT_WINDOW = 120; // the "+X %" on screen is what the team gaine
 
 export type FeedEvent =
   | { type: 'fired'; tick: number; body: number; slot: number; team: number; kind: SabotageKind }
-  | { type: 'swing'; tick: number; team: number; pp: number };
+  | { type: 'swing'; tick: number; team: number; pp: number }
+  | { type: 'phase'; tick: number; phase: 'scramble' | 'final'; warn: boolean }; // PR2: a change of act announced (warn: 120 ticks before it)
+
+const PHASE_LOG = {
+  warnScramble: ['scramble', true],
+  phaseScramble: ['scramble', false],
+  warnFinal: ['final', true],
+  phaseFinal: ['final', false],
+} as const;
 
 const pct = (s: ManchazoState): number[] => {
   const c = shownCounts(s);
@@ -24,6 +32,7 @@ export class Feed {
   private sponge: number[] = [];
   private hist: number[][] = []; // the last RECENT_WINDOW + 1 shares, oldest first
   private lastSwing = [-1e9, -1e9];
+  private seenLog = 0; // entries of the sim's announcement log already read
   private sink = 0; // log entries already handed out by `fresh`
 
   /** Call after every tick of the round. */
@@ -46,6 +55,14 @@ export class Feed {
       this.used = a.used;
       this.held = [...a.held];
       this.sponge = [...sponge];
+    }
+    const ann = s.match.ev?.log ?? [];
+    for (; this.seenLog < ann.length; this.seenLog++) {
+      const a = ann[this.seenLog]!;
+      if (a.kind in PHASE_LOG) {
+        const [phase, warn] = PHASE_LOG[a.kind as keyof typeof PHASE_LOG];
+        this.log.push({ type: 'phase', tick: a.tick, phase, warn });
+      }
     }
     if (isHidden(s)) return void (this.hist = []); // the last 10 s are played blind: no swing may leak the score
     const now = pct(s);
@@ -81,8 +98,13 @@ export function feedHash(log: readonly FeedEvent[]): number {
     h = Math.imul(h ^ (n | 0), 0x01000193) >>> 0;
   };
   for (const e of log) {
-    mix(e.type === 'fired' ? 1 : 2);
+    mix(e.type === 'fired' ? 1 : e.type === 'swing' ? 2 : 3);
     mix(e.tick);
+    if (e.type === 'phase') {
+      mix(e.phase === 'final' ? 1 : 0);
+      mix(e.warn ? 1 : 0);
+      continue;
+    }
     mix(e.team);
     if (e.type === 'fired') [e.body, e.slot, e.kind.length, e.kind.charCodeAt(0), e.kind.charCodeAt(1)].forEach(mix);
     else mix(Math.round(e.pp * 100));

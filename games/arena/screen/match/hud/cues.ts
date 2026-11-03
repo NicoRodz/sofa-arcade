@@ -16,8 +16,11 @@ export const SABOTAGE_CUES: Record<SabotageKind, string> = {
   dizzy: 'sab-dizzy',
 };
 export const SWING_CUE = 'score-swing';
+// PR2: a change of act. The warning (120 ticks before) and the change itself have their own cue each; the sound layer picks the sample.
+export const PHASE_CUES = { warn: 'phase-warn', scramble: 'phase-scramble', final: 'phase-final' } as const;
 
-export const cueOf = (e: FeedEvent): string => (e.type === 'fired' ? SABOTAGE_CUES[e.kind] : SWING_CUE);
+export const cueOf = (e: FeedEvent): string =>
+  e.type === 'fired' ? SABOTAGE_CUES[e.kind] : e.type === 'swing' ? SWING_CUE : e.warn ? PHASE_CUES.warn : PHASE_CUES[e.phase];
 
 type Sink = (cue: string, e: FeedEvent) => void;
 let sink: Sink | null = null;

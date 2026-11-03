@@ -4,6 +4,7 @@ import { NONE } from '../grid/dir';
 import { paintTile } from '../match/board';
 import type { ManchazoState } from '../match/state';
 import { bodyTile } from '../match/tile';
+import { pairOut, respawnTicks } from '../phase/pickups';
 import { PICKUP_RESPAWN_TICKS } from './kinds';
 import { cardOf } from './state';
 import { stepPlus } from './plus-step';
@@ -45,10 +46,10 @@ export function afterMove(s: ManchazoState): void {
     if (a.footprints[b.team]! > 0 && b.moved) paintTile(m, ...tile, 1 - b.team, s.grid.tick);
     if (a.held[i] === null)
       for (const p of a.pickups)
-        if (p.wait === 0 && p.x === tile[0] && p.y === tile[1]) {
+        if (p.wait === 0 && pairOut(m, p.pair) && p.x === tile[0] && p.y === tile[1]) {
           a.held[i] = cardOf(a, p);
           p.drawn++;
-          p.wait = PICKUP_RESPAWN_TICKS;
+          p.wait = respawnTicks(m, PICKUP_RESPAWN_TICKS);
           break;
         }
   });

@@ -3,6 +3,7 @@
 import { NONE } from '../grid/dir';
 import { radiusOf } from '../events/comeback';
 import { happyBonus, happyOn } from '../events/happy';
+import { capRadius } from '../phase/radius';
 import { deflectVacuum } from '../events/vacuum';
 import { glueTarget } from '../sabotage/use';
 import { clearTile, paintTile } from './board';
@@ -43,7 +44,7 @@ export function dropPinata(s: ManchazoState, i: number): boolean {
 
 function detonate(s: ManchazoState, p: Pinata): void {
   const m = s.match;
-  const tiles = blastTiles(p.x, p.y, p.radius + happyBonus(m), s.grid.map); // F8b: Hora feliz reaches one tile further
+  const tiles = blastTiles(p.x, p.y, capRadius(m, p.radius + happyBonus(m)), s.grid.map); // F8b: Hora feliz reaches one tile further (PR2: never past the cap)
   for (const [x, y] of tiles) (p.mod === 'turpentine' ? clearTile : paintTile)(m, x, y, p.team, s.grid.tick);
   const hit = new Set(tiles.map(([x, y]) => `${x},${y}`));
   deflectVacuum(s, p.x, p.y, hit); // F4: a blast steers the vacuum robot (no-op without the events)

@@ -6,6 +6,7 @@ import {
   BIG_WARN_TICKS,
   CLOCK_WARN_TICKS,
   CONTAGION_WARN_TICKS,
+  FINAL_TICKS,
   HIDDEN_TICKS,
   MOVE_WARN_TICKS,
   type AnnounceKind,
@@ -65,6 +66,14 @@ export function bannerText(kind: AnnounceKind, team: string): { title: string; s
       return { title: '¡TIEMPO EXTRA!', sub: `+15 s para todos (lo cargó ${team})` };
     case 'clockBroken':
       return { title: 'EL RELOJ SE ROMPIÓ', sub: 'Nadie lo llenó a tiempo' };
+    case 'warnScramble':
+      return { title: 'REVUELTA EN 2 s', sub: 'Más sabotajes y los eventos grandes: prepárate' };
+    case 'phaseScramble':
+      return { title: '¡REVUELTA!', sub: '2 pares de sabotajes y vuelven más rápido; entran los eventos grandes' };
+    case 'warnFinal':
+      return { title: 'FINAL EN 2 s', sub: 'Las piñatas van a crecer: cuida tu terreno' };
+    case 'phaseFinal':
+      return { title: '¡FINAL!', sub: `Últimos ${secs(FINAL_TICKS)} s: piñatas con +1 de radio y el mapa se acelera` };
   }
 }
 

@@ -6,7 +6,9 @@ import { planProgram, type Planned } from './plan';
 import { createPlusEvents, type PlusEvents } from './plus-state';
 import { substream } from './rng';
 
-export type AnnounceKind = EventKind | 'comeback' | 'hidden' | 'clockWarn' | 'overtime' | 'clockBroken';
+// PR2: the acts of the round announce themselves in the same log (`warn*` 120 ticks before the change, `phase*` when it happens)
+export type PhaseAnnounce = 'warnScramble' | 'phaseScramble' | 'warnFinal' | 'phaseFinal';
+export type AnnounceKind = EventKind | 'comeback' | 'hidden' | 'clockWarn' | 'overtime' | 'clockBroken' | PhaseAnnounce;
 export interface Announcement {
   kind: AnnounceKind;
   tick: number;
@@ -60,14 +62,14 @@ export interface PlusOptions {
   avoid: ReadonlySet<number>;
 }
 
-export function createEvents(map: TileMap, seed: number, base: number, fountain = false, opts?: PlusOptions): EventsState {
+export function createEvents(map: TileMap, seed: number, base: number, fountain = false, opts?: PlusOptions, phased = false): EventsState {
   const plus = opts ? createPlusEvents(map, seed, opts.living, opts.avoid) : undefined;
   const pool: EventKind[] = plus
     ? [...EVENT_KINDS, ...EVENT_PLUS_KINDS.filter((k) => k !== 'move' || plus.moves.length > 0)]
     : [...EVENT_KINDS];
   return {
     base,
-    program: planProgram(substream(`manchazo:events:${seed}`), map, base, fountain, pool),
+    program: planProgram(substream(`manchazo:events:${seed}`), map, base, fountain, pool, phased),
     next: 0,
     active: null,
     big: null,
