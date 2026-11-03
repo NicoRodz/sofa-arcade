@@ -1,5 +1,5 @@
 // The Manchazo round: the grid world (bodies, F0) plus what F1 adds around it. Kept apart from the grid so F0's sim stays bit for bit what it was.
-import { MAP_H, MAP_W, floorCount, footprint, type LivingSpec, type TileMap } from '../../map';
+import { MAP_H, MAP_W, floorCount, footprint, type LivingSpec, type MapKind, type TileMap } from '../../map';
 import { RIGHT, type Dir, type GridState } from '../grid';
 import type { EventsState } from '../events/state';
 import type { Armable } from '../sabotage/kinds';
@@ -57,6 +57,7 @@ export interface ManchazoState {
   grid: GridState;
   match: MatchState;
   mapSeed: number | null; // the seed the map came from (shown on the TV); null for a round on the F0 map that asked for none
+  mapArchetype: MapKind | null; // what the TV calls the map ('clasico' when the seed's archetype did not validate); null on the F0 map without a seed
   mapFallback: boolean; // the seed did not validate in 64 attempts: the F0 map stands in
 }
 
@@ -72,7 +73,7 @@ export function handicap(sizes: readonly number[]): { radius: number[]; reserve:
 export function createMatch(
   teamOfBody: readonly number[],
   map: TileMap,
-  sabotage?: { seed: number; plus?: boolean },
+  sabotage?: { seed: number; plus?: boolean; plaza?: { x: number; y: number; h: number } }, // `plaza`: the free rectangle where a Plaza round puts the pickups
   events?: { seed: number; base: number; plus?: boolean },
   living?: readonly LivingSpec[],
 ): MatchState {
@@ -82,7 +83,7 @@ export function createMatch(
   const paintable = floorCount(map); // every living tile open: a closed one is still a tile of the floor
   const shut = living ? new Set(living.flatMap((l) => footprint(l)).map(([x, y]) => y * MAP_W + x)) : undefined;
   const fountain = !!living?.some((l) => l.kind === 'fountain');
-  const sab = sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus) : null;
+  const sab = sabotage ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus, sabotage.plaza) : null;
   // F8b: Mudanza keeps its hands off the living parts' tiles and the sabotage pickups
   const avoid = new Set([...(shut ?? []), ...(sab?.pickups.map((p) => p.y * MAP_W + p.x) ?? [])]);
   const m: MatchState = {

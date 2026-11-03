@@ -60,6 +60,8 @@ export interface Stamp {
   quota: number[]; // furniture tiles each band may take in the half (columns 0-12)
   w: number;
   h: number;
+  centre?: number; // furniture tiles the centre column may still take (default: no limit); an archetype that keeps the middle line open sets 0
+  maxX?: number; // last column a piece may take (default 13: the whole half and the centre column); an archetype that keeps a zone open lowers it
 }
 
 const COLUMNS_LEFT = 14; // columns 0-13: the half and the centre column
@@ -71,13 +73,14 @@ export function stamp(s: Stamp, piece: Piece, x: number, y: number, connected: (
   for (const [dx, dy] of piece.cells) {
     const px = x + dx;
     const py = y + dy;
-    if (px < 0 || px >= COLUMNS_LEFT || py < 0 || py >= s.h) return 0;
+    if (px < 0 || px > (s.maxX ?? COLUMNS_LEFT - 1) || py < 0 || py >= s.h) return 0;
     const i = py * s.w + px;
     if (s.solid[i] === 1 || s.keep[i] === 1) return 0;
     if (s.band[i]! >= 0) charge[s.band[i]!]!++;
     at.push(i, py * s.w + (s.w - 1 - px));
   }
-  if (charge.some((c, b) => c > s.quota[b]!)) return 0;
+  const onCentre = piece.cells.filter(([dx]) => x + dx === COLUMNS_LEFT - 1).length;
+  if (charge.some((c, b) => c > s.quota[b]!) || (s.centre !== undefined && onCentre > s.centre)) return 0;
   const added: number[] = [];
   for (const i of at)
     if (s.solid[i] === 0) {
@@ -89,6 +92,7 @@ export function stamp(s: Stamp, piece: Piece, x: number, y: number, connected: (
     return 0;
   }
   charge.forEach((c, b) => (s.quota[b]! -= c));
+  if (s.centre !== undefined) s.centre -= onCentre;
   return added.length;
 }
 
@@ -97,7 +101,7 @@ export function furnish(s: Stamp, rng: Rng, connected: () => boolean, tries: num
   let n = 0;
   for (let t = 0; t < tries && s.quota.some((q) => q > 0); t++) {
     const piece = pickPiece(rng);
-    n += stamp(s, piece, Math.floor(rng() * COLUMNS_LEFT), Math.floor(rng() * s.h), connected);
+    n += stamp(s, piece, Math.floor(rng() * (s.maxX === undefined ? COLUMNS_LEFT : s.maxX + 1)), Math.floor(rng() * s.h), connected);
   }
   return n;
 }

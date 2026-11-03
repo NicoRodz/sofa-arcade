@@ -8,7 +8,7 @@ describe('sabotage flag off: the round is F1/F2, bit for bit', () => {
     [7, undefined, 1748725922, [77, 95]],
     [9, 123456, 774602940, [75, 145]],
   ] as const)('seed %i map %s', (seed, mapSeed, hash, counts) => {
-    const s = createManchazo({ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed, ...(mapSeed ? { mapSeed } : {}) });
+    const s = createManchazo({ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed, ...(mapSeed ? { mapSeed, classicMap: true } : {}) });
     expect(s.match.sab).toBeNull();
     play(s, 5, 2400);
     expect(hashManchazo(s)).toBe(hash);

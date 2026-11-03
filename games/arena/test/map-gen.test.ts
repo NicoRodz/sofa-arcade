@@ -22,10 +22,10 @@ const SEEDS = Array.from({ length: 300 }, (_, i) => i * 104729 + 7);
 
 describe('seed code (Crockford base32, version first)', () => {
   it('writes 5 characters without I, L, O or U, behind the generator version', () => {
-    expect(GENERATOR_VERSION).toBe(2);
+    expect(GENERATOR_VERSION).toBe(3);
     expect(encodeSeed(0)).toBe('00000');
     expect(encodeSeed(SEED_SPACE - 1)).toBe('ZZZZZ');
-    expect(formatSeed(7 * 32 ** 4 + 19 * 32 ** 3 + 23 * 32 ** 2 + 2 * 32 + 20)).toBe('2·7KQ2M');
+    expect(formatSeed(7 * 32 ** 4 + 19 * 32 ** 3 + 23 * 32 ** 2 + 2 * 32 + 20)).toBe('3·7KQ2M');
     for (const s of SEEDS) expect(encodeSeed(s)).toMatch(/^[0-9A-HJKMNP-TV-Z]{5}$/);
   });
 
@@ -68,18 +68,18 @@ describe('generateMap', () => {
     expect(SEEDS.reduce((n, s) => n + generateMap(s).attempts, 0) / SEEDS.length).toBeLessThan(2); // it builds a connected map, it does not just retry until one is
   });
 
-  it('when no attempt validates, the F0 map stands in after 64 attempts', () => {
+  it('when no attempt validates, the F0 map stands in after 64 attempts of the archetype and 64 of Clasico', () => {
     const g = generateMap(99, () => false);
-    expect(g).toMatchObject({ fallback: true, attempts: MAX_ATTEMPTS, seed: 99 });
+    expect(g).toMatchObject({ fallback: true, attempts: 2 * MAX_ATTEMPTS, seed: 99 });
     expect(g.map).toBe(f0Map());
     expect(floorCount(g.map)).toBe(floorCount(f0Map()));
   });
 
   it('a failing attempt is retried with the next substream: only the attempts that fail are skipped', () => {
     let calls = 0;
-    const g = generateMap(5, () => ++calls === 3);
+    const g = generateMap(5, () => ++calls === 3, false, false);
     expect(g).toMatchObject({ fallback: false, attempts: 3 });
-    const ok = generateMap(5, () => true);
+    const ok = generateMap(5, () => true, false, false);
     expect(hashMap(g.map)).not.toBe(hashMap(ok.map));
   });
 
