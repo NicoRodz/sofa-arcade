@@ -94,7 +94,7 @@ describe('scene: the rescue ring, the glow and the cards on the floor', () => {
     drawRescue(frame(a), s, 0, 100, 100);
     expect(a.calls.some((c) => c.startsWith('arc('))).toBe(true);
     expect(a.calls.join('|')).toContain(
-      `arc(100.000,100.000,${(56 * 0.72).toFixed(3)},${(-Math.PI / 2).toFixed(3)},${(-Math.PI / 2 + (Math.PI * 2 * 6) / RESCUE_TICKS).toFixed(3)}`,
+      `arc(100.000,100.000,${(56 * 0.92).toFixed(3)},${(-Math.PI / 2).toFixed(3)},${(-Math.PI / 2 + (Math.PI * 2 * 6) / RESCUE_TICKS).toFixed(3)}`,
     );
     const b = recorder();
     drawRescue(frame(b), s, 1, 100, 100); // the rival: no contact, no glow
