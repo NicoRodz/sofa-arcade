@@ -159,7 +159,9 @@ export class MatchScene extends Phaser.Scene {
         .setText(String(b.slot + 1));
     });
     // F8b: the events' layer (the blackout goes on `over`, above the avatars; the banner's box stays lit)
-    const lit = bannerOf(s, this.host.teamName.bind(this.host)) ? ([X0 + 40, Y0 + EVENT_DY, X0 + MAP_W * PX - 40, Y0 + EVENT_DY + 146] as const) : null;
+    const lit = bannerOf(s, this.host.teamName.bind(this.host))
+      ? ([X0 + 40, Y0 + EVENT_DY, X0 + MAP_W * PX - 40, Y0 + EVENT_DY + 146] as const)
+      : null;
     drawEventsPlus(f, s, this.over, lit);
     this.drawHud(s);
     this.fx.update(f, s, this.host.feed?.() ?? null);
@@ -223,7 +225,8 @@ export class MatchScene extends Phaser.Scene {
     this.g.fillStyle(TEAM_COLOR[1]!, 1).fillRoundedRect(X0 + w - bar.blue, BAR_Y, bar.blue, BAR_H, { tl: 0, bl: 0, tr: 6, br: 6 });
     for (let k = 0; k < bar.orange - 6; k += 14) this.g.fillStyle(0xffffff, 0.6).fillCircle(X0 + 8 + k, BAR_Y + BAR_H / 2, 2.5); // dots / stripes: the bar tells the teams without colour too
     this.g.fillStyle(num(A.ink), 0.9).fillRect(X0 + w / 2 - 2, BAR_Y, 4, BAR_H); // the middle: who is ahead of the line
-    if (!hidden) for (const x of [X0 + bar.orange, X0 + w - bar.blue]) this.g.fillStyle(0xffffff, 1).fillRect(x - 3, BAR_Y - 5, 6, BAR_H + 10); // the leading edges: the tug of war
+    if (!hidden)
+      for (const x of [X0 + bar.orange, X0 + w - bar.blue]) this.g.fillStyle(0xffffff, 1).fillRect(x - 3, BAR_Y - 5, 6, BAR_H + 10); // the leading edges: the tug of war
     for (let k = 0; k < bar.blue - 6; k += 12) this.g.fillStyle(0xffffff, 0.55).fillRect(X0 + w - 10 - k, BAR_Y + 2, 4, BAR_H - 4);
   }
 
@@ -232,7 +235,9 @@ export class MatchScene extends Phaser.Scene {
     const b = bannerOf(s, this.host.teamName.bind(this.host));
     if (b) {
       this.g.fillStyle(num(A.cocoa), 0.82).fillRoundedRect(X0 + 40, Y0 + EVENT_DY, MAP_W * PX - 80, 146, 20);
-      this.g.lineStyle(6, b.team >= 0 ? TEAM_COLOR[b.team]! : num(A.gold), 1).strokeRoundedRect(X0 + 40, Y0 + EVENT_DY, MAP_W * PX - 80, 146, 20);
+      this.g
+        .lineStyle(6, b.team >= 0 ? TEAM_COLOR[b.team]! : num(A.gold), 1)
+        .strokeRoundedRect(X0 + 40, Y0 + EVENT_DY, MAP_W * PX - 80, 146, 20);
     }
     this.title.setText(b?.title ?? '').setAlpha(b ? Math.min(1, b.age / 8) : 1);
     this.sub.setText(b?.sub ?? '');

@@ -5,7 +5,14 @@ import type { Ctx } from '../session';
 // big paint jump for the orange team. Run it on master and on the branch with SHOT=<name> and compare the two pictures from 3 m.
 export async function runManchazoLegibilityTv({ cdp, bots, join, waitFor, click }: Ctx) {
   const room = 'MNLG';
-  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 2, mobile: false, screenWidth: 1920, screenHeight: 1080 });
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 1920,
+    height: 1080,
+    deviceScaleFactor: 2,
+    mobile: false,
+    screenWidth: 1920,
+    screenHeight: 1080,
+  });
   await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/screen/?room=${room}&soon=1&render=2` });
   await sleep(2500);
   await join(room, 8, [], { menu: true });

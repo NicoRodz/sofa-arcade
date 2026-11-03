@@ -5,7 +5,14 @@ import { SABOTAGE_CUES, SWING_CUE, cueOf, playCues, setCueSink } from '../../scr
 import type { FeedEvent } from '../../screen/match/hud/feed';
 
 const team = (t: number) => (t === 0 ? 'Naranja' : 'Azul');
-const fired = (tick: number, t: number, slot: number, kind: 'dizzy' | 'roller' | 'tape' = 'dizzy'): FeedEvent => ({ type: 'fired', tick, body: slot, slot, team: t, kind });
+const fired = (tick: number, t: number, slot: number, kind: 'dizzy' | 'roller' | 'tape' = 'dizzy'): FeedEvent => ({
+  type: 'fired',
+  tick,
+  body: slot,
+  slot,
+  team: t,
+  kind,
+});
 
 describe('sabotage banners', () => {
   it('reads "AZUL 3 → MAREO" and lives exactly 60 ticks', () => {

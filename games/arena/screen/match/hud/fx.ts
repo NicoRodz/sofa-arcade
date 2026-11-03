@@ -7,7 +7,7 @@ import { isHidden, shownCounts, type ManchazoState } from '../../../sim';
 import { drawIcon } from '../../art/glyphs';
 import { BAR_H, BAR_Y, HUD, POP_SIZE, PX, X0, Y0 } from '../layout';
 import { TEAM_COLOR } from '../scene-body';
-import { type Frame } from '../scene-frame';
+import type { Frame } from '../scene-frame';
 import { Banners, BANNER_TICKS, ICON_TICKS } from './banners';
 import { playCues } from './cues';
 import type { Feed } from './feed';
@@ -29,11 +29,26 @@ export class HudFx {
     this.banners = new Banners(teamName);
     const text = (rect: { x: number; y: number }, size: number, team: number, ox: number, stroke: number) =>
       scene.add
-        .text(rect.x, rect.y, '', { fontFamily: FONT, fontSize: `${size}px`, color: HEX[team]!, fontStyle: 'bold', stroke: '#000000', strokeThickness: stroke })
+        .text(rect.x, rect.y, '', {
+          fontFamily: FONT,
+          fontSize: `${size}px`,
+          color: HEX[team]!,
+          fontStyle: 'bold',
+          stroke: '#000000',
+          strokeThickness: stroke,
+        })
         .setOrigin(ox, 0)
         .setDepth(26);
     this.pills = [0, 1].map((t) => text(PILLS[t]!, 40, t, 0, 0).setColor('#ffffff').setOrigin(0.5, 0.5).setDepth(26));
-    this.pops = [0, 1].map((t) => text(t === 0 ? { x: HUD.popLeft!.x, y: HUD.popLeft!.y } : { x: HUD.popRight!.x + HUD.popRight!.w, y: HUD.popRight!.y }, POP_SIZE, t, t === 0 ? 0 : 1, 8));
+    this.pops = [0, 1].map((t) =>
+      text(
+        t === 0 ? { x: HUD.popLeft!.x, y: HUD.popLeft!.y } : { x: HUD.popRight!.x + HUD.popRight!.w, y: HUD.popRight!.y },
+        POP_SIZE,
+        t,
+        t === 0 ? 0 : 1,
+        8,
+      ),
+    );
   }
 
   /** Every frame; `feed` null (no round) hides everything. `f.over` is the layer above the avatars. */
@@ -80,7 +95,10 @@ export class HudFx {
       const [x, y] = [r.x + r.w / 2 + slide, r.y + r.h / 2];
       g.fillStyle(0x24160f, 0.88 * a).fillRoundedRect(x - r.w / 2, y - r.h / 2, r.w, r.h, 16);
       g.lineStyle(7, TEAM_COLOR[t]!, a).strokeRoundedRect(x - r.w / 2, y - r.h / 2, r.w, r.h, 16);
-      this.pills[t]!.setText(p.text).setPosition(x, y).setAlpha(a).setScale(Math.min(1, (r.w - 28) / this.pills[t]!.width));
+      this.pills[t]!.setText(p.text)
+        .setPosition(x, y)
+        .setAlpha(a)
+        .setScale(Math.min(1, (r.w - 28) / this.pills[t]!.width));
     });
   }
 
@@ -96,7 +114,10 @@ export class HudFx {
       seen[e.team] = true;
       const pop = this.pops[e.team]!;
       const grow = 1 + 0.5 * (1 - ease(age / 10));
-      pop.setText(`+${Math.round(e.pp)} %`).setScale(grow).setAlpha(age > POP_TICKS - 20 ? (POP_TICKS - age) / 20 : 1);
+      pop
+        .setText(`+${Math.round(e.pp)} %`)
+        .setScale(grow)
+        .setAlpha(age > POP_TICKS - 20 ? (POP_TICKS - age) / 20 : 1);
       if (age < FLASH_TICKS && !isHidden(s)) {
         const bw = (w * e.pp) / 100;
         const own = Math.min(w, (w * shownCounts(s)[e.team]!) / s.match.paintable);

@@ -45,7 +45,10 @@ describe('the TV feed: which body played which sabotage', () => {
       give(s, 0, kind);
       run(s, f, 1); // the hand is seen holding it
       run(s, f, 1, { 0: USE });
-      expect(f.log.map((e) => e.type === 'fired' && e.kind), `card ${i} ${kind}`).toEqual([kind]);
+      expect(
+        f.log.map((e) => e.type === 'fired' && e.kind),
+        `card ${i} ${kind}`,
+      ).toEqual([kind]);
     }
   });
 
@@ -147,7 +150,8 @@ describe('the TV feed is only a reader: replay and mirror', () => {
       if (st.grid.tick % 20 === 0) {
         const k = st.grid.tick / 20;
         const i = k % n;
-        if (a.plus!.sponge[i] === 0 && (a.held[i] === null || k % 4 === 0)) a.held[i] = PLUS_KINDS[(2 * Math.floor(k / n) + i) % PLUS_KINDS.length]!;
+        if (a.plus!.sponge[i] === 0 && (a.held[i] === null || k % 4 === 0))
+          a.held[i] = PLUS_KINDS[(2 * Math.floor(k / n) + i) % PLUS_KINDS.length]!;
       }
       if (withFeed) f.observe(st);
     });
