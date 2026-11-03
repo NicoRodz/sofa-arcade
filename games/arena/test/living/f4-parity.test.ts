@@ -1,4 +1,4 @@
-// F5 flag off = F4 bit for bit. The numbers below were computed on master 31646fc (F4, before the living map existed) and are pinned here: the flag-off
+// Re-pinned for the fluid-turn movement (new base movement, flag off). Originally: F5 flag off = F4 bit for bit. The numbers below were computed on master 31646fc (F4, before the living map existed) and are pinned here: the flag-off
 // test in round.test.ts only compares two rounds of this code, which would not notice a hash that drifted away from F4.
 import { describe, expect, it } from 'vitest';
 import { generateMap } from '../../map';

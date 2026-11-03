@@ -14,7 +14,7 @@ const full = {
   rescue: true,
 } as const;
 
-// Hashes taken on master (0a3da64, PR3) with every flag on, full rounds: the new flag off must not change a single bit.
+// Re-pinned for the fluid-turn movement (the flag-off bits are the new base movement). Originally taken on master (0a3da64, PR3) with every flag on, full rounds: the new flag off must not change a single bit.
 describe('projectiles off: the round is the PR3 one, bit for bit', () => {
   it.each([
     [{ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 21, mapSeed: 5150, ...full }, 1833595283, [111, 187], 5400],

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createManchazo, hashManchazo } from '../../sim';
 import { play } from '../match-drive';
 
-// Hashes taken on master (9930e93, before F3): a round without the flag must not change by a single bit.
+// Re-pinned for the fluid-turn movement (the flag-off bits are the new base movement). Originally taken on master (9930e93, before F3): a round without the flag must not change by a single bit.
 describe('sabotage flag off: the round is F1/F2, bit for bit', () => {
   it.each([
     [7, undefined, 3413193088, [116, 132]],

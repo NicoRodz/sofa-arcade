@@ -1,4 +1,4 @@
-// F8a flag off = F5 bit for bit. The numbers below were computed on master eb50ca6 (before the five new sabotages existed) with the loop below and are pinned
+// Re-pinned for the fluid-turn movement (new base movement, flag off). Originally: F8a flag off = F5 bit for bit. The numbers below were computed on master eb50ca6 (before the five new sabotages existed) with the loop below and are pinned
 // here: comparing two rounds of this code would not notice a hash that drifted away from master. Cards of the v1 five are put in hands so they are played.
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '@pichi/core';

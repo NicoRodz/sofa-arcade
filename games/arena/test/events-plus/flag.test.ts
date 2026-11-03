@@ -3,7 +3,7 @@ import { ALL_EVENT_KINDS, DURATION, NO_START_TICKS, createManchazo, hashManchazo
 import { play } from '../match-drive';
 import { plusRound } from './plus-drive';
 
-// Hashes taken on master (217f779, F8a) with the events on and no `eventsPlus`: the F8b flag off must not change a single bit.
+// Re-pinned for the fluid-turn movement (the flag-off bits are the new base movement). Originally taken on master (217f779, F8a) with the events on and no `eventsPlus`: the F8b flag off must not change a single bit.
 describe('eventsPlus off: the round is F8a, bit for bit', () => {
   it.each([
     [{ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 7, sabotage: true, events: true }, 776222362, [153, 157]],

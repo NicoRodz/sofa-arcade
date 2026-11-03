@@ -4,7 +4,7 @@ import { play } from '../match-drive';
 
 const full = { sabotage: true, sabotagePlus: true, events: true, eventsPlus: true, living: true, classicMap: true } as const;
 
-// Hashes taken on master (0ccdba5, PR1) with every flag on except `phases`, full rounds: the new flag off must not change a single bit.
+// Re-pinned for the fluid-turn movement (the flag-off bits are the new base movement). Originally taken on master (0ccdba5, PR1) with every flag on except `phases`, full rounds: the new flag off must not change a single bit.
 describe('phases off: the round is the F8b one, bit for bit', () => {
   it.each([
     [{ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 21, mapSeed: 5150, ...full }, 2150945116, [106, 175], 5400],
