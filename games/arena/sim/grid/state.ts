@@ -8,6 +8,7 @@ export interface TurnRequest {
   dir: Dir;
   age: number; // ticks since the request
   failed: boolean;
+  idle: number; // ticks since the stick last asked for it: the buffer runs on this
 }
 
 export interface TurnStats {
@@ -24,6 +25,10 @@ export interface GridBody {
   y: number;
   dir: Dir; // heading (NONE = standing)
   q: Dir; // stick quantized last tick (hysteresis memory)
+  last: Dir; // last heading (breaks the tie of a body exactly between two lane centres, mirror-safe)
+  rest: number; // plan A: ticks the stick has been in the dead zone (capped at the grace)
+  lane: number; // transient: the centre of the lane `turn` slides to (1/16 tile)
+  turn: Dir; // transient: the turn `steer` chose this tick, which `advance` slides to and executes
   frac: number; // sub-unit movement carry, in units * TICK_HZ
   moved: boolean; // advanced during the last tick
   req: TurnRequest | null;
@@ -70,6 +75,10 @@ export function createGrid(cfg: GridConfig): GridState {
       y: ty * TILE + HALF,
       dir: NONE,
       q: NONE,
+      last: NONE,
+      rest: 0,
+      turn: NONE,
+      lane: 0,
       frac: 0,
       moved: false,
       req: null,

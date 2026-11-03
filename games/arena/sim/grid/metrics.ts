@@ -3,7 +3,7 @@ import { FAIL_TICKS } from './config';
 import type { GridBody, GridState, TurnStats } from './state';
 
 export const newRequest = (b: GridBody, dir: GridBody['dir']): void => {
-  b.req = { dir, age: 0, failed: false };
+  b.req = { dir, age: 0, failed: false, idle: 0 };
   b.stats.requested++;
 };
 
