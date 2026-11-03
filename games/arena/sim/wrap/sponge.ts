@@ -16,23 +16,26 @@ function diamond(s: ManchazoState, i: number, radius: number): [number, number][
   return blastTiles(x, y, radius, s.grid.map, tapeCut(s));
 }
 
-/** Turns the rival paint of body i's diamond neutral; returns the tiles that really went neutral (a tape may refuse some). */
+/** Turns the rival paint of body i's diamond neutral and returns how many DISTINCT tiles this sponge holds now: a tile soaked twice (rival repaints it, the sponge takes it again) counts once. A tape may refuse some tiles. */
 function soakAround(s: ManchazoState, i: number): number {
   const m = s.match;
   const team = s.grid.bodies[i]!.team;
-  let n = 0;
+  const taken = s.match.sab!.plus!.wrap!.taken[i]!;
   for (const [x, y] of diamond(s, i, SPONGE_RADIUS)) {
     const before = m.paint[y * MAP_W + x]!;
     if (before < 0 || before === team) continue;
     clearTile(m, x, y, team);
-    if (m.paint[y * MAP_W + x] === -1) n++;
+    const k = y * MAP_W + x;
+    if (m.paint[k] === -1 && !taken.includes(k)) taken.push(k);
   }
-  return n;
+  taken.sort((a, b) => a - b); // ascending: the state (and its hash) does not depend on the walk order
+  return taken.length;
 }
 
 /** First B: starts soaking, or refuses (false) when there is no rival paint to take at all (the card is not spent). */
 export function startSponge(s: ManchazoState, i: number): boolean {
   const plus = s.match.sab!.plus!;
+  plus.wrap!.taken[i] = []; // a new sponge starts from nothing
   const n = soakAround(s, i);
   if (n === 0) return false;
   plus.sponge[i] = SPONGE_HOLD_TICKS;
@@ -57,6 +60,7 @@ function empty(s: ManchazoState, i: number): void {
   const plus = s.match.sab!.plus!;
   plus.sponge[i] = 0;
   plus.soaked[i] = 0;
+  plus.wrap!.taken[i] = [];
   plus.wrap!.soak[i] = 0;
   if (s.match.sab!.held[i] === 'sponge') s.match.sab!.held[i] = null;
 }
@@ -80,7 +84,7 @@ export function stepSponge(s: ManchazoState): void {
   s.grid.bodies.forEach((_b, i) => {
     if (plus.sponge[i]! === 0) return;
     if (w.soak[i]! > 0) {
-      plus.soaked[i]! += soakAround(s, i);
+      plus.soaked[i] = soakAround(s, i);
       w.soak[i]!--;
     }
     if (--plus.sponge[i]! === 0) squeezeSponge(s, i);

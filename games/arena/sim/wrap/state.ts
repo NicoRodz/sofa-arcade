@@ -21,6 +21,7 @@ export interface WrapEntry {
 
 export interface WrapState {
   soak: number[]; // per body: ticks left of the soaking phase (0: not soaking; the sponge may still be held: `plus.sponge`)
+  taken: number[][]; // per body: the DISTINCT tiles (y * MAP_W + x, ascending) this sponge has soaked since its first B; `plus.soaked` is its length
   prep: number[]; // per body: ticks left of the tape's wind-up (0: none)
   aim: { x: number; y: number; dir: Dir }[]; // per body: where its tape's line is centred and which way it was facing when it was pressed (read while `prep` > 0)
   strips: Strip[];
@@ -30,6 +31,7 @@ export interface WrapState {
 
 export const createWrap = (bodies: number): WrapState => ({
   soak: Array.from({ length: bodies }, () => 0),
+  taken: Array.from({ length: bodies }, () => []),
   prep: Array.from({ length: bodies }, () => 0),
   aim: Array.from({ length: bodies }, () => ({ x: 0, y: 0, dir: 0 as Dir })),
   strips: [],
@@ -40,6 +42,7 @@ export const createWrap = (bodies: number): WrapState => ({
 /** The part of the round's hash that PR6 adds (mixed only when the flag is on). */
 export const wrapWords = (w: WrapState): number[] => [
   ...w.soak,
+  ...w.taken.flatMap((a) => [a.length, ...a]),
   ...w.prep,
   ...w.aim.flatMap((a) => [a.x, a.y, a.dir]),
   ...w.fx,
