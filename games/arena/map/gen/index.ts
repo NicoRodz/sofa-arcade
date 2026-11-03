@@ -3,6 +3,7 @@ export { MAX_LIVING_PAIRS, mapStates, type LivingElement, type MapState } from '
 export { placeLiving, holdsEverywhere, v9LivingConnection } from './living-place';
 export { ARCHETYPES, ARCHETYPE_NAMES, archetypeOf, type Archetype, type MapKind } from './archetypes/kinds';
 export { PLAZA_H, plazaRect, v8Signature } from './archetypes/signature';
+export { sealedRooms, type Room } from './archetypes/rooms';
 export {
   BRUSH_REACH,
   FOUNTAIN_TILE,

@@ -22,10 +22,10 @@ const SEEDS = Array.from({ length: 300 }, (_, i) => i * 104729 + 7);
 
 describe('seed code (Crockford base32, version first)', () => {
   it('writes 5 characters without I, L, O or U, behind the generator version', () => {
-    expect(GENERATOR_VERSION).toBe(3);
+    expect(GENERATOR_VERSION).toBe(4);
     expect(encodeSeed(0)).toBe('00000');
     expect(encodeSeed(SEED_SPACE - 1)).toBe('ZZZZZ');
-    expect(formatSeed(7 * 32 ** 4 + 19 * 32 ** 3 + 23 * 32 ** 2 + 2 * 32 + 20)).toBe('3·7KQ2M');
+    expect(formatSeed(7 * 32 ** 4 + 19 * 32 ** 3 + 23 * 32 ** 2 + 2 * 32 + 20)).toBe('4·7KQ2M');
     for (const s of SEEDS) expect(encodeSeed(s)).toMatch(/^[0-9A-HJKMNP-TV-Z]{5}$/);
   });
 

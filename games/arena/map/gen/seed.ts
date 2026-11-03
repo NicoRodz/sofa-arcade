@@ -3,8 +3,8 @@
 import { mulberry32 } from '@pichi/core';
 import { ARCHETYPE_NAMES, archetypeOf, type MapKind } from './archetypes/kinds';
 
-/** 1 was F0's hand-made map; 2 was the single generator; 3 draws the seed's archetype (Pasillos, Islas, Plaza, Ocho). Any change to how a seed becomes a map bumps it. */
-export const GENERATOR_VERSION = 3;
+/** 1 was F0's hand-made map; 2 was the single generator; 3 drew the seed's archetype (Pasillos, Islas, Plaza, Ocho); 4 redraws Islas as a floor plan of sealed rooms (and Pasillos refuses a floor plan). Any change to how a seed becomes a map bumps it. */
+export const GENERATOR_VERSION = 4;
 export const SEED_CHARS = 5;
 export const SEED_SPACE = 32 ** SEED_CHARS; // 33,554,432 maps
 export const MAP_SEED_TAG = 0x4d41505f; // substream of the lobby seed that hands out one map seed per round
