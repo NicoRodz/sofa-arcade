@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_KINDS } from '../../sim';
-import { Banners, BANNER_TICKS, sabotageName } from '../../screen/match/hud/banners';
+import { Banners, sabotageName } from '../../screen/match/hud/banners';
 import { SABOTAGE_CUES, SWING_CUE, cueOf, playCues, setCueSink } from '../../screen/match/hud/cues';
 import type { FeedEvent } from '../../screen/match/hud/feed';
 
@@ -19,8 +19,8 @@ describe('sabotage banners', () => {
     const b = new Banners(team);
     b.push([fired(100, 1, 2)]);
     expect(b.visible(100)[1]?.text).toBe('AZUL 3 → MAREO');
-    expect(b.visible(100 + BANNER_TICKS - 1)[1]).not.toBeNull();
-    expect(b.visible(100 + BANNER_TICKS)[1]).toBeNull();
+    expect(b.visible(159)[1]).not.toBeNull();
+    expect(b.visible(160)[1]).toBeNull();
     expect(b.visible(100)[0]).toBeNull();
   });
 
