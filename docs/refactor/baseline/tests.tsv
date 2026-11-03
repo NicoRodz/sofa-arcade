@@ -1599,12 +1599,7 @@ apps/server/test/magnet.ws.slow.test.ts	passed	magnetism over the relay an Ayuda
 apps/server/test/magnet.ws.slow.test.ts	passed	magnetism over the relay lands more first presses with the magnet on than off, through the wire (phones -> relay -> screen -> sim)
 apps/server/test/magnet.ws.slow.test.ts	passed	magnetism over the relay the lobby's own rules (roundRules: burn, fire, events, magnet) make a playable round over the relay
 games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area bar (204,124 1512x22) is inside
-games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area clock (862,54 196x70) is inside
 games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area next (932,991 784x35) is inside
-games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area pctLeft (204,54 353x70) is inside
-games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area pctRight (1363,54 353x70) is inside
-games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area pillLeft (592,56 290x56) is inside
-games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area pillRight (1038,56 290x56) is inside
 games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area seed (204,991 255x35) is inside
 games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area strip (204,992 1512x34) is inside
 games/arena/test/hud-safe-area.test.ts	passed	Manchazo HUD inside the 90 % safe area the floor itself spans the whole safe width minus margins (it is not HUD text, but must not poke out)
@@ -2588,10 +2583,7 @@ games/obstaculos/sim/player/player.test.ts	passed	running (plan §2) reaches 330
 games/obstaculos/campaign/progress/progress.test.ts	passed	S2's catalog adapted to the interface every CAMPAIGN level that is built is in it, and none that is planned
 games/obstaculos/campaign/progress/progress.test.ts	passed	S2's catalog adapted to the interface has the built levels only (Playa, Bosque and Glaciar, 1-1..3-7), one boss each, the world order of the plan and the practice stations
 games/arena/test/hud/banners.test.ts	passed	sabotage banners every card has a name and a sound cue (the cue table is the future audio hook)
-games/arena/test/hud/banners.test.ts	passed	sabotage banners never more than 2 on screen: one pill per team, the newest of a team when no swing ranks them
-games/arena/test/hud/banners.test.ts	passed	sabotage banners reads "AZUL 3 → MAREO" and lives exactly 60 ticks
 games/arena/test/hud/banners.test.ts	passed	sabotage banners the cue sink gets one cue per event; with none connected nothing happens
-games/arena/test/hud/banners.test.ts	passed	sabotage banners with several alive in a team the one with the biggest swing since it was played wins
 games/pizzas/sim/sabotage-config.test.ts	passed	sabotage config defaults: Suave on Fácil and Normal, Caos on Difícil; a round with no option is off
 games/pizzas/sim/sabotage-config.test.ts	passed	sabotage config the balance table of the plan (section 5)
 games/pizzas/sim/sabotage-config.test.ts	passed	sabotage config the catapult is a letter that no coop map uses
@@ -3483,7 +3475,6 @@ games/obstaculos/screen/campaign/model.test.ts	passed	the trail of a world the t
 games/arena/test/hud/phase.test.ts	passed	the TV announces the acts each one has its own sound cue and reaches the sink once (`setCueSink`), the warning apart from the change
 games/arena/test/hud/phase.test.ts	passed	the TV announces the acts replay: the same round gives the same feed hash; the mirrored round (teams swapped) logs the same acts at the same ticks
 games/arena/test/hud/phase.test.ts	passed	the TV announces the acts the feed logs each warning (120 ticks ahead) and each change once, with its tick
-games/arena/test/hud/phase.test.ts	passed	the TV announces the acts the pills of PR1 (one per team, for sabotages) ignore the phase events
 games/arena/test/hud/phase.test.ts	passed	the TV announces the acts the strip says ¡FINAL! for 3 s after the change, then the previous message is gone; before it, the warning
 games/arena/test/hud/feed.test.ts	passed	the TV feed is only a reader: replay and mirror 4 even: the mirrored round gives the mirrored log (teams swapped, same ticks, cards and swings)
 games/arena/test/hud/feed.test.ts	passed	the TV feed is only a reader: replay and mirror 4 even: two runs give the same log hash, and observing never changes the sim's hash
