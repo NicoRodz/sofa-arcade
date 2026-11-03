@@ -44,7 +44,7 @@ describe('button 2 on the phone with the F8a cards (hint and buzz, no protocol c
     sent.length = 0;
     hints.sync(s, 200 + HINT_REFRESH_MS);
     expect(plus(s).dizzy[1]).toBeGreaterThan(0);
-    expect(buzzes()).toContainEqual([11, 'big']);
+    expect(buzzes()).toContainEqual([11, 'dizzy']); // F9: the hit has its own notice (it was `big` before v7)
     expect(sent.find((m) => m.t === 'hint' && m.playerId === 11).a).toBe('¡Mareado! Stick al revés');
   });
   it('the TV runs rounds with the F8a cards in the deck', () => {

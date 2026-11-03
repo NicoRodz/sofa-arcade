@@ -1,7 +1,7 @@
 // What button 2 says on each phone (F3): the sabotage in hand, "Sin sabotaje" greyed when there is none, and what the pinata of button 1 carries once a
 // card is armed. The label is the STATE of the sim, sent whole when it changes (and again every REFRESH_MS, so a phone that reconnects is right in a second);
 // picking a card up also buzzes the phone (colour on the button, vibration): nothing changes on a phone without calling for attention.
-import type { ClientMsg, HintLabels, IconId } from '@pichi/core';
+import type { ClientMsg, HintLabels, HintStatus, IconId } from '@pichi/core';
 import { PLUS_SABOTAGES, SABOTAGES, carried, dizzyThreat, type ManchazoState, type SabotageKind } from '../../sim';
 
 // biome-ignore format: one card per entry
@@ -56,7 +56,6 @@ type BuzzMsg = Extract<ClientMsg, { t: 'buzz' }>;
 
 export function createSabotageHints(send: (m: HintMsg | BuzzMsg) => void, playerOf: (slot: number) => number | undefined) {
   const sent = new Map<number, { key: string; at: number; held: SabotageKind | null; dizzy: boolean; threat: boolean; glued: boolean }>();
-  const glowed = new Map<number, number>(); // PR3: the rescue glow each phone last saw
   return {
     /** After every frame: `s` null (no round) hands every labelled phone back to the game's own labels. */
     sync(s: ManchazoState | null, now: number) {
@@ -78,19 +77,19 @@ export function createSabotageHints(send: (m: HintMsg | BuzzMsg) => void, player
           glued: carried(s, i) !== undefined,
         };
         const base = sabotageHint(held, sab.armed[i]!, state);
-        const stained = s.match.res && s.match.bodies[i]!.stun > 0; // PR3: a teammate next to you frees you
+        const stunned = s.match.bodies[i]!.stun > 0;
+        const stained = s.match.res && stunned; // PR3: a teammate next to you frees you
         const e = base.a == null ? (stained ? { a: '¡Manchado! Que un compañero se pegue', aIcon: 'bell' as IconId } : eventHint(s)) : null;
-        const h = e ? { ...base, ...e } : base;
-        const glow = s.match.res?.glow[i] ?? 0;
-        if (glow > (glowed.get(id) ?? 0)) send({ t: 'buzz', playerId: id, kind: 'big' }); // the glow started (a rise, so a frame that skips ticks still sees it): freed, or you freed a teammate
-        glowed.set(id, glow);
+        // F9 (protocol v7): the status this phone wears while it lasts (the phone paints "¡MAREADO!" / "¡MANCHADO!" until a hint stops saying it) and the card in hand (its colour on button B)
+        const st: HintStatus | undefined = state.dizzy ? 'dizzy' : stunned ? 'stained' : undefined;
+        const h = { ...base, ...e, ...(st ? { st } : {}), ...(held ? { card: held } : {}) };
         const key = JSON.stringify(h);
         const last = sent.get(id);
         if (last && last.key === key && now - last.at < HINT_REFRESH_MS) return;
         send({ t: 'hint', playerId: id, ...h });
         if (held && last?.held !== held) send({ t: 'buzz', playerId: id, kind: 'alert' });
         if (state.threat && !last?.threat && !state.dizzy) send({ t: 'buzz', playerId: id, kind: 'alert' }); // a Mareo is charging next to you: walk away
-        if (state.dizzy && !last?.dizzy) send({ t: 'buzz', playerId: id, kind: 'big' }); // it hit
+        if (state.dizzy && !last?.dizzy) send({ t: 'buzz', playerId: id, kind: 'dizzy' }); // it hit: the phone turns "¡MAREADO!" (F9)
         if (state.glued && !last?.glued) send({ t: 'buzz', playerId: id, kind: 'big' }); // PR4: a Pegote landed on you (or was passed to you)
         sent.set(id, { key, at: now, held, dizzy: state.dizzy, threat: state.threat, glued: !!state.glued });
       });

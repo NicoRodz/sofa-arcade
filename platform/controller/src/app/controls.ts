@@ -29,7 +29,13 @@ function fitLabels(root: HTMLElement) {
 const hinted = (base: GameControls['btn1'], label: string | null, icon: IconId | undefined, hold: boolean): GameControls['btn1'] =>
   label ? { ...base, label, ...(icon ? { icon } : {}), hold } : base;
 const sameHint = (x: HintLabels, y: HintLabels) =>
-  x.a === y.a && x.b === y.b && x.aIcon === y.aIcon && x.bIcon === y.bIcon && !!x.aOff === !!y.aOff && !!x.bOff === !!y.bOff;
+  x.a === y.a &&
+  x.b === y.b &&
+  x.aIcon === y.aIcon &&
+  x.bIcon === y.bIcon &&
+  !!x.aOff === !!y.aOff &&
+  !!x.bOff === !!y.bOff &&
+  x.st === y.st;
 
 export interface Controls {
   apply(c?: GameControls | null): void;
@@ -44,7 +50,8 @@ export function createControls(s: Session): Controls {
     s.controls = c;
     const h = s.hint;
     setControl($('stickhint'), $('stickLbl'), c.stick);
-    setControl($('btnA'), $('lblA'), hinted(c.btn1, h.a, h.aIcon, !!c.btn1.hold));
+    // v7: a hint with a status (`st`) is worn by the game's own half (banner, colours); its A text is only for phones that do not know `st`, so here A keeps its own label and icon
+    setControl($('btnA'), $('lblA'), h.st ? c.btn1 : hinted(c.btn1, h.a, h.aIcon, !!c.btn1.hold));
     setControl($('btnB'), $('lblB'), hinted(c.btn2, h.b, h.bIcon, false));
     for (const [id, lbl, isOff] of [
       ['btnA', 'lblA', h.aOff],

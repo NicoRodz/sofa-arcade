@@ -4,7 +4,7 @@ import type { Slots } from '../contract/slots';
 import type { IconId } from '../icons';
 import type { ModeOptions } from '../lobby/parse';
 import type { TeamInfo } from '../lobby/teams';
-import type { Phase } from './constants';
+import type { HintStatus, Phase } from './constants';
 
 export interface Score {
   id: number;
@@ -47,6 +47,8 @@ export interface HintLabels {
   bIcon?: IconId;
   aOff?: boolean;
   bOff?: boolean;
+  st?: HintStatus; // v7: the status this phone wears right now (dizzy, stained), for as long as the hints keep saying it
+  card?: string; // v7: the card in hand, an opaque token (CARD_RE) the game's phone half draws on button B
 }
 /** The optional fields of a hint, copied only when set (the relay forwards exactly these, nothing else from the payload). */
 export const hintExtras = (h: HintLabels): Omit<HintLabels, 'a' | 'b'> => ({
@@ -54,4 +56,6 @@ export const hintExtras = (h: HintLabels): Omit<HintLabels, 'a' | 'b'> => ({
   ...(h.bIcon ? { bIcon: h.bIcon } : {}),
   ...(h.aOff ? { aOff: true } : {}),
   ...(h.bOff ? { bOff: true } : {}),
+  ...(h.st ? { st: h.st } : {}),
+  ...(h.card ? { card: h.card } : {}),
 });

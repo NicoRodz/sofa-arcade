@@ -1,0 +1,50 @@
+/* Manchazo's phone (F9). Everything is scoped to body[data-game=arena]: Pizzas and Obstaculos never see a rule of this file. */
+
+/* The team is the background: orange wears dots, blue stripes (a pattern as well as a colour: the two read apart for a colour-blind player). --tc is the platform's (the team's colour). The pattern is
+   faint on purpose (11 % / 9 % cream): it tells the team at a glance and never competes with the buttons and their words. */
+body[data-game=arena][data-team=on][data-view=playing] {
+  background-color: var(--tc);
+  background-image: linear-gradient(rgba(43,27,23,.3), rgba(43,27,23,.3));
+}
+body[data-game=arena][data-team=on][data-view=playing][data-arena-team="0"] {
+  background-image: radial-gradient(circle at 50% 50%, rgba(255,244,224,.11) 0 22%, transparent 24%), linear-gradient(rgba(43,27,23,.3), rgba(43,27,23,.3));
+  background-size: 7vmin 7vmin, auto;
+}
+body[data-game=arena][data-team=on][data-view=playing][data-arena-team="1"] {
+  background-image: repeating-linear-gradient(135deg, rgba(255,244,224,.09) 0 2.4vmin, transparent 2.4vmin 5.6vmin), linear-gradient(rgba(43,27,23,.3), rgba(43,27,23,.3));
+}
+
+/* The player's name (the platform paints it in the chef's colour, which is lost on a team colour): cream on a dark plate, readable on both teams. */
+body[data-game=arena][data-team=on][data-view=playing] #hud { color: var(--cream); background: rgba(43,27,23,.62); padding: 0 .9vmin; border-radius: 1.4vmin; text-shadow: none; }
+
+/* Button B is the card in hand: its colour, a white rim, a bigger glyph, and the plate in the card's colour. Greyed (".off", nothing in hand) it stays the platform's grey. */
+body[data-game=arena][data-arena-card] #btnB:not(.off) {
+  --btn: var(--card); --btn2: var(--card2); border-color: #fff; color: var(--ink);
+  box-shadow: 0 0 0 .9vmin var(--ink), 0 0 3vmin .6vmin var(--card);
+  animation: arenacard .4s ease-out;
+}
+body[data-game=arena][data-arena-card] #btnB:not(.off) .ico { width: 64%; height: 64%; }
+body[data-game=arena][data-arena-card] #lblB:not(.off) .pl { background: var(--card); color: var(--ink); font-weight: 900; box-shadow: 0 0 0 .6vmin var(--ink); }
+@keyframes arenacard { 0% { transform: scale(.6) rotate(-14deg); } 60% { transform: scale(1.14) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
+
+/* A status lasts as long as the hints keep saying it: a banner low and centred (the band between the stick and button A is free: B and its plate end near the middle of the height), and a pad that shows the change. */
+#arenast { position: fixed; left: 47%; top: 84%; transform: translate(-50%, -50%); z-index: 7; display: none; padding: .4vmin 4vmin; border: .8vmin solid #fff; border-radius: 3vmin; font: 900 clamp(20px, 8vmin, 38px) var(--font); letter-spacing: .02em; white-space: nowrap; pointer-events: none; color: #fff; text-shadow: 0 .6vmin 0 rgba(0,0,0,.35); }
+#arenast::after { content: var(--arenast, ''); }
+body[data-game=arena][data-view=playing][data-arena-st] #arenast { display: block; }
+body[data-arena-st=dizzy] #arenast { background: #C2188E; animation: arenawobble .5s ease-in-out infinite alternate; }
+body[data-arena-st=stained] #arenast { background: #D7263D; }
+@keyframes arenawobble { from { transform: translate(-50%, -50%) rotate(-4deg) scale(1); } to { transform: translate(-50%, -50%) rotate(4deg) scale(1.08); } }
+/* Dizzy: the stick is read backwards, so the glyph turns upside down and spins slowly (the glyph, not the ring: a turning ring changes its box and the layout gate reads that as an overlap; the card pop ends within 400 ms for the same reason: the gate waits for it), in the banner's colour; the zone's colour wash says it too. */
+body[data-game=arena][data-arena-st=dizzy] #stickhint { border-color: #FF4FC3; color: #FF4FC3; background: rgba(194,24,142,.28); }
+body[data-game=arena][data-arena-st=dizzy] #stickhint .ico { transform: rotate(180deg); animation: arenaspin 1.6s linear infinite; }
+body[data-game=arena][data-arena-st=dizzy] #stickLbl .pl { background: #C2188E; color: #fff; }
+body[data-game=arena][data-arena-st=stained] #zone { background: repeating-linear-gradient(45deg, rgba(215,38,61,.3) 0 3vmin, transparent 3vmin 6vmin); }
+@keyframes arenaspin { from { transform: rotate(180deg); } to { transform: rotate(-180deg); } }
+
+/* The notice: the whole phone in one colour for a moment, over the pad (the pad keeps working: pointer-events none). */
+#arenacue { position: fixed; inset: 0; z-index: 8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vmin; padding: 0 5vmin; text-align: center; pointer-events: none; background: var(--bg, #fff); color: var(--fg, #000); opacity: 0; transition: opacity .18s; }
+#arenacue.on { opacity: .94; }
+#arenacue b { font: 900 clamp(30px, 15vmin, 72px)/1 var(--font); letter-spacing: .01em; }
+#arenacue span { font: 800 clamp(16px, 6vmin, 30px)/1.1 var(--font); }
+#arenacue.on b { animation: arenapop .35s ease-out; }
+@keyframes arenapop { 0% { transform: scale(.55) rotate(-6deg); } 65% { transform: scale(1.12) rotate(2deg); } 100% { transform: scale(1) rotate(0); } }
