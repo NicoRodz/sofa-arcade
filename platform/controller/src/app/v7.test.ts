@@ -41,7 +41,7 @@ const pad: GameControls = {
   stick: { icon: 'stick', label: 'Mover' },
   btn1: { icon: 'bell', label: 'Pegarse', hold: true },
   btn2: { icon: 'chop', label: 'Sabotaje' },
-} as GameControls;
+} as unknown as GameControls;
 
 describe('protocol v7: button A under a status', () => {
   it('with `st` the A button keeps its label and icon (the hint text is only for phones that do not know st); B still takes the hint', () => {
