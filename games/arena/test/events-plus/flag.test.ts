@@ -8,7 +8,16 @@ describe('eventsPlus off: the round is F8a, bit for bit', () => {
   it.each([
     [{ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 7, sabotage: true, events: true }, 2364289968, [107, 103]],
     [
-      { slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 9, sabotage: true, sabotagePlus: true, events: true, mapSeed: 123456, classicMap: true },
+      {
+        slots: [0, 1, 2, 3, 4],
+        teams: [0, 1, 0, 1, 1],
+        seed: 9,
+        sabotage: true,
+        sabotagePlus: true,
+        events: true,
+        mapSeed: 123456,
+        classicMap: true,
+      },
       1109769916,
       [122, 112],
     ],

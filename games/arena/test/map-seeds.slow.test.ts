@@ -14,7 +14,7 @@ const taken: Record<Archetype, number> = { pasillos: 0, islas: 0, plaza: 0, ocho
 for (let i = 0; ARCHETYPES.some((k) => taken[k] < PER_KIND); i++) {
   const seed = (i * 3359 + 17) % SEED_SPACE;
   const k = archetypeOf(seed);
-  if (taken[k] < PER_KIND) (SEEDS.push(seed), taken[k]++);
+  if (taken[k] < PER_KIND) SEEDS.push(seed), taken[k]++;
 }
 
 describe('map generator over 10000 seeds', () => {
@@ -48,7 +48,9 @@ describe('map generator over 10000 seeds', () => {
         .map((r) => r.ms)
         .sort((a, b) => a - b);
       const p99 = ms[Math.floor(ms.length * 0.99)]!;
-      console.log(`map-seeds: ${k} p50 ${ms[ms.length / 2]!.toFixed(2)} ms, p99 ${p99.toFixed(2)} ms, max ${ms[ms.length - 1]!.toFixed(2)} ms, budget ${BUDGET_MS} ms`);
+      console.log(
+        `map-seeds: ${k} p50 ${ms[ms.length / 2]!.toFixed(2)} ms, p99 ${p99.toFixed(2)} ms, max ${ms[ms.length - 1]!.toFixed(2)} ms, budget ${BUDGET_MS} ms`,
+      );
       expect(p99).toBeLessThan(BUDGET_MS);
     }
   });

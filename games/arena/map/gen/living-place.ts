@@ -39,7 +39,9 @@ export function placeLiving(base: TileMap, rng: Rng, plan: LivingPlan | null = n
     const phase = Math.floor(rng() * 1000);
     const from = planned ? Math.floor(rng() * plan.anchors.length) : 0;
     for (let n = 0; n < TRIES; n++) {
-      const [ax, ay] = planned ? plan.anchors[(from + n) % plan.anchors.length]! : [Math.floor(rng() * (LIVING_MAX_X + 1)), Math.floor(rng() * MAP_H)];
+      const [ax, ay] = planned
+        ? plan.anchors[(from + n) % plan.anchors.length]!
+        : [Math.floor(rng() * (LIVING_MAX_X + 1)), Math.floor(rng() * MAP_H)];
       const spec: LivingSpec = { kind, x: ax, y: ay, variant, phase };
       const tiles = footprint(spec);
       const free = tiles.every(

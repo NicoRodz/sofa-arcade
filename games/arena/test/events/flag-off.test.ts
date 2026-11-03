@@ -8,7 +8,13 @@ describe('events flag off: the round is F3, bit for bit', () => {
     [7, undefined, 2259385247, [107, 104]],
     [9, 123456, 2117369832, [117, 128]],
   ] as const)('seed %i map %s', (seed, mapSeed, hash, counts) => {
-    const s = createManchazo({ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed, sabotage: true, ...(mapSeed ? { mapSeed, classicMap: true } : {}) });
+    const s = createManchazo({
+      slots: [0, 1, 2, 3, 4],
+      teams: [0, 1, 0, 1, 1],
+      seed,
+      sabotage: true,
+      ...(mapSeed ? { mapSeed, classicMap: true } : {}),
+    });
     expect(s.match.ev).toBeNull();
     play(s, 5, 4500);
     expect(hashManchazo(s)).toBe(hash);

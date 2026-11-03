@@ -50,7 +50,12 @@ export function draw(rng: Rng): TileMap {
 
 /** `accept` is the validator of the base map (injectable so a test can force the fallback); it defaults to V1-V7. With `withLiving` the living map is placed on a valid map (F5). `archetypes: false` skips the seed's archetype and draws Clasico, the generator of
  * F2 as it was (a test that pins a hash from before the archetypes asks for it). */
-export function generateMap(seed: number, accept: (m: TileMap) => boolean = isValidMap, withLiving = false, archetypes = true): GeneratedMap {
+export function generateMap(
+  seed: number,
+  accept: (m: TileMap) => boolean = isValidMap,
+  withLiving = false,
+  archetypes = true,
+): GeneratedMap {
   const chosen = archetypeOf(seed);
   const done = (map: TileMap, kind: MapKind, attempts: number, rng: Rng): GeneratedMap | null => {
     const living = withLiving ? placeLiving(map, rng, livingPlan(kind, map)) : [];
