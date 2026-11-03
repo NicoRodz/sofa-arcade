@@ -10,7 +10,9 @@ const dir = join(dirname(fileURLToPath(import.meta.url)), 'assets');
 
 describe('cue -> file mapping', () => {
   it('lists every cue the HUD can emit (10 sabotages, the swing, 3 phase cues, the rescue, 3 loot cues)', () => {
-    expect(allCues()).toHaveLength(Object.keys(SABOTAGE_CUES).length + 1 + Object.keys(PHASE_CUES).length + 1 + Object.keys(LOOT_CUES).length);
+    expect(allCues()).toHaveLength(
+      Object.keys(SABOTAGE_CUES).length + 1 + Object.keys(PHASE_CUES).length + 1 + Object.keys(LOOT_CUES).length,
+    );
     expect(allCues()).toContain(SWING_CUE);
   });
   it.each(allCues().filter((c) => !SILENT_CUES.includes(c)))('cue %s has a sound whose file exists and is not empty', (cue) => {

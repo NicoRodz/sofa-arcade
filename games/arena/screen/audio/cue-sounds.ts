@@ -35,4 +35,10 @@ export function soundOfCue(cue: string): CueSound | null {
 }
 
 /** Every cue id the HUD can emit (for the tests: each one must have a file). */
-export const allCues = (): string[] => [...Object.values(SABOTAGE_CUES), SWING_CUE, ...Object.values(PHASE_CUES), RESCUE_CUE, ...Object.values(LOOT_CUES)];
+export const allCues = (): string[] => [
+  ...Object.values(SABOTAGE_CUES),
+  SWING_CUE,
+  ...Object.values(PHASE_CUES),
+  RESCUE_CUE,
+  ...Object.values(LOOT_CUES),
+];
