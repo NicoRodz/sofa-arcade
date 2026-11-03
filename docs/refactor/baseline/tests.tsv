@@ -124,7 +124,7 @@ apps/catalog/test/catalog.test.ts	passed	apps/catalog accepts and rejects the ma
 apps/catalog/test/catalog.test.ts	passed	apps/catalog accepts and rejects the puestos of Pizzas
 apps/catalog/test/catalog.test.ts	passed	apps/catalog accepts and rejects the signal kinds of Obstaculos
 apps/catalog/test/catalog.test.ts	passed	apps/catalog games in development: only the dev catalog and parser (the relay) know them; the published ones do not change
-apps/catalog/test/catalog.test.ts	passed	apps/catalog keeps the protocol at v7 and the default lobby of master
+apps/catalog/test/catalog.test.ts	passed	apps/catalog keeps the protocol at v6 and the default lobby of master
 apps/catalog/test/catalog.test.ts	passed	apps/catalog knows its games and modes
 games/arena/test/conformance.test.ts	passed	arena conforms to the game contract a catalog refuses a second manifest with the id of a published game
 games/arena/test/conformance.test.ts	passed	arena conforms to the game contract is announced as soon, with the card the menu always showed

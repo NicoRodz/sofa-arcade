@@ -1,20 +1,21 @@
 /* Manchazo's phone (F9). Everything is scoped to body[data-game=arena]: Pizzas and Obstaculos never see a rule of this file. */
 
-/* The team is the background: orange wears dots, blue stripes (a pattern as well as a colour: the two read apart for a colour-blind player). --tc is the platform's (the team's colour). */
+/* The team is the background: orange wears dots, blue stripes (a pattern as well as a colour: the two read apart for a colour-blind player). --tc is the platform's (the team's colour). The pattern is
+   faint on purpose (11 % / 9 % cream): it tells the team at a glance and never competes with the buttons and their words. */
 body[data-game=arena][data-team=on][data-view=playing] {
   background-color: var(--tc);
-  background-image: linear-gradient(rgba(43,27,23,.34), rgba(43,27,23,.34));
+  background-image: linear-gradient(rgba(43,27,23,.3), rgba(43,27,23,.3));
 }
 body[data-game=arena][data-team=on][data-view=playing][data-arena-team="0"] {
-  background-image: radial-gradient(circle at 50% 50%, rgba(255,244,224,.34) 0 26%, transparent 28%), linear-gradient(rgba(43,27,23,.34), rgba(43,27,23,.34));
+  background-image: radial-gradient(circle at 50% 50%, rgba(255,244,224,.11) 0 22%, transparent 24%), linear-gradient(rgba(43,27,23,.3), rgba(43,27,23,.3));
   background-size: 7vmin 7vmin, auto;
 }
 body[data-game=arena][data-team=on][data-view=playing][data-arena-team="1"] {
-  background-image: repeating-linear-gradient(135deg, rgba(255,244,224,.3) 0 2.4vmin, transparent 2.4vmin 5.6vmin), linear-gradient(rgba(43,27,23,.34), rgba(43,27,23,.34));
+  background-image: repeating-linear-gradient(135deg, rgba(255,244,224,.09) 0 2.4vmin, transparent 2.4vmin 5.6vmin), linear-gradient(rgba(43,27,23,.3), rgba(43,27,23,.3));
 }
 
-/* The player's name (the platform paints it in the chef's colour, which is lost on a team colour). */
-body[data-game=arena][data-team=on][data-view=playing] #hud { color: var(--cream); text-shadow: 0 .5vmin 0 var(--ink); }
+/* The player's name (the platform paints it in the chef's colour, which is lost on a team colour): cream on a dark plate, readable on both teams. */
+body[data-game=arena][data-team=on][data-view=playing] #hud { color: var(--cream); background: rgba(43,27,23,.62); padding: 0 .9vmin; border-radius: 1.4vmin; text-shadow: none; }
 
 /* Button B is the card in hand: its colour, a white rim, a bigger glyph, and the plate in the card's colour. Greyed (".off", nothing in hand) it stays the platform's grey. */
 body[data-game=arena][data-arena-card] #btnB:not(.off) {
@@ -26,8 +27,8 @@ body[data-game=arena][data-arena-card] #btnB:not(.off) .ico { width: 64%; height
 body[data-game=arena][data-arena-card] #lblB:not(.off) .pl { background: var(--card); color: var(--ink); font-weight: 900; box-shadow: 0 0 0 .6vmin var(--ink); }
 @keyframes arenacard { 0% { transform: scale(.6) rotate(-14deg); } 60% { transform: scale(1.14) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
 
-/* A status lasts as long as the hints keep saying it: a banner at the top, and a pad that shows the change. */
-#arenast { position: fixed; left: 47%; top: 58%; transform: translate(-50%, -50%); z-index: 7; display: none; padding: .4vmin 4vmin; border: .8vmin solid #fff; border-radius: 3vmin; font: 900 clamp(20px, 8vmin, 38px) var(--font); letter-spacing: .02em; white-space: nowrap; pointer-events: none; color: #fff; text-shadow: 0 .6vmin 0 rgba(0,0,0,.35); }
+/* A status lasts as long as the hints keep saying it: a banner low and centred (the band between the stick and button A is free: B and its plate end near the middle of the height), and a pad that shows the change. */
+#arenast { position: fixed; left: 47%; top: 84%; transform: translate(-50%, -50%); z-index: 7; display: none; padding: .4vmin 4vmin; border: .8vmin solid #fff; border-radius: 3vmin; font: 900 clamp(20px, 8vmin, 38px) var(--font); letter-spacing: .02em; white-space: nowrap; pointer-events: none; color: #fff; text-shadow: 0 .6vmin 0 rgba(0,0,0,.35); }
 #arenast::after { content: var(--arenast, ''); }
 body[data-game=arena][data-view=playing][data-arena-st] #arenast { display: block; }
 body[data-arena-st=dizzy] #arenast { background: #C2188E; animation: arenawobble .5s ease-in-out infinite alternate; }

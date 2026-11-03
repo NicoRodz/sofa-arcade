@@ -152,7 +152,7 @@ export function safeArea(p: Probe): string[] {
   return out;
 }
 
-// 5. Nothing on the pad sits on top of anything else: stick, two buttons, station card, HUD, zoom banner.
+// 5. Nothing on the pad sits on top of anything else: stick, two buttons, station card, HUD, zoom banner, Manchazo's status banner.
 export function padOverlaps(p: Probe): string[] {
   const out: string[] = [];
   const parts = [
@@ -165,6 +165,7 @@ export function padOverlaps(p: Probe): string[] {
     '#puesto',
     '#school',
     '#hud',
+    '#arenast',
     '#zoomfix',
     '#signals',
   ].flatMap((s) => all(p, s));

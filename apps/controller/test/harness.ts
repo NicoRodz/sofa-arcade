@@ -172,6 +172,7 @@ export const SELECTORS = [
   '#lblB .lbl',
   '#lblB .hold',
   '#hud',
+  '#arenast',
   '#puesto',
   '#pico',
   '#pname',

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { RESCUE_GLOW_TICKS, RESCUE_TICKS, STUN_TICKS } from '../../sim';
 import { LOOT_CUES, RESCUE_CUE, cueOf, playCues, setCueSink } from '../../screen/match/hud/cues';
 import { Feed, feedHash } from '../../screen/match/hud/feed';
+import { createPhoneAlerts } from '../../screen/match/phone-alerts';
 import { createSabotageHints } from '../../screen/match/phone-hints';
 import { drawLoot, drawRescue } from '../../screen/match/scene-rescue';
 import { recorder } from '../art/recorder';
@@ -137,25 +138,31 @@ describe('scene: the rescue ring, the glow and the cards on the floor', () => {
 });
 
 describe('phone: a freed body and its rescuer buzz, a stained body is told what to do', () => {
+  // F9 (protocol v7): the buzz of a rescue moved from the hint labeller (it sent `big` to both phones) to createPhoneAlerts: the freed phone gets `rescued` (its own notice), the rescuer keeps `big`.
   it('buzz big when the glow starts; the stained hint names the rescue', () => {
+    // (the name stays: the baseline lists tests by name) the freed phone now gets `rescued` and the rescuer `big`
     const s = rround([0, 1, 0]);
     put(s, 0, 3, 7);
     put(s, 2, 4, 7);
     put(s, 1, 20, 3);
     const sent: { t: string; playerId: number; kind?: string; a?: string | null }[] = [];
-    const hints = createSabotageHints(
-      (m) => void sent.push(m as never),
-      (slot) => slot + 100,
-    );
+    const slotId = (slot: number) => slot + 100;
+    const hints = createSabotageHints((m) => void sent.push(m as never), slotId);
+    const alerts = createPhoneAlerts((m) => void sent.push(m as never), slotId);
     stain(s, 0);
     tick(s);
     hints.sync(s, 1000);
+    alerts.sync(s);
     expect(sent.find((m) => m.t === 'hint' && m.playerId === 100)!.a).toContain('Manchado');
     tick(s, {}, RESCUE_TICKS);
     hints.sync(s, 2000);
-    const buzzes = sent.filter((m) => m.t === 'buzz' && m.kind === 'big').map((m) => m.playerId);
-    expect(buzzes.sort()).toEqual([100, 102]);
+    alerts.sync(s);
+    const of = (kind: string) => sent.filter((m) => m.t === 'buzz' && m.kind === kind).map((m) => m.playerId);
+    expect(of('rescued')).toEqual([100]);
+    expect(of('big')).toEqual([102]);
     hints.sync(s, 2100);
-    expect(sent.filter((m) => m.t === 'buzz' && m.kind === 'big')).toHaveLength(2); // once, not every frame
+    alerts.sync(s);
+    expect(of('rescued')).toHaveLength(1); // once, not every frame
+    expect(of('big')).toHaveLength(1);
   });
 });

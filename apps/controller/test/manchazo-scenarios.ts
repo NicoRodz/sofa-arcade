@@ -15,14 +15,20 @@ const base = (team: 0 | 1): object[] => [
   { t: 'phase', phase: 'playing' },
 ];
 const hint = (h: object) => ({ t: 'hint', a: null, b: 'Sin sabotaje', bIcon: 'star', bOff: true, ...h });
+/** The TV resends a status hint every second while it holds; the phone drops the status after 2.5 s of silence, so a scenario that must keep it repeats the hint like the TV does. */
+const keep = (h: object) => `setInterval(() => window.__push(${JSON.stringify(h)}), 1000)`;
 const buzz = (kind: string) => ({ t: 'buzz', kind });
+
+// A and its icon in the hint are for phones that predate `st`: the v7 phone keeps its own Piñata label and star (platform/controller controls.ts) and shows the status as a banner.
+const DIZZY = hint({ a: '¡Mareado! Stick al revés', aIcon: 'bell', st: 'dizzy' });
+const STAINED = hint({ a: '¡Manchado! Que un compañero se pegue', aIcon: 'bell', st: 'stained' });
 
 export const MANCHAZO_SCENARIOS: Scenario[] = [
   { name: 'manchazo-orange', msgs: [...base(0), hint({})] },
   { name: 'manchazo-blue', msgs: [...base(1), hint({})] },
   { name: 'manchazo-card', msgs: [...base(0), hint({ b: 'Turpentina', bIcon: 'wash', bOff: false, card: 'turpentine' })] },
-  { name: 'manchazo-dizzy', msgs: [...base(1), hint({ a: '¡Mareado! Stick al revés', aIcon: 'bell', st: 'dizzy' })] },
-  { name: 'manchazo-stained', msgs: [...base(0), hint({ st: 'stained' }), buzz('stain'), buzz('lootlost')] },
+  { name: 'manchazo-dizzy', msgs: [...base(1), DIZZY], after: keep(DIZZY) },
+  { name: 'manchazo-stained', msgs: [...base(0), STAINED, buzz('stain'), buzz('lootlost')], after: keep(STAINED) },
   { name: 'manchazo-rescued', msgs: [...base(0), hint({}), buzz('rescued')] },
   { name: 'manchazo-phase', msgs: [...base(1), hint({}), buzz('phase')] },
   { name: 'manchazo-hourglass', msgs: [...base(0), hint({}), buzz('hourglass')] },
