@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { FINAL_TICKS, PHASE_WARN_TICKS, openingTicks, stepManchazo } from '../../sim';
 import { bannerOf } from '../../screen/match/event-banner';
-import { Banners } from '../../screen/match/hud/banners';
 import { PHASE_CUES, cueOf, playCues, setCueSink } from '../../screen/match/hud/cues';
 import { Feed, feedHash, type FeedEvent } from '../../screen/match/hud/feed';
+import { topFeed } from '../../screen/match/hud/top-feed';
 import { phaseRound, quietEvents } from '../phase/phase-drive';
 
 const name = (t: number) => (t === 0 ? 'Naranja' : 'Azul');
@@ -57,11 +57,10 @@ describe('the TV announces the acts', () => {
     expect(seen(fin)).toMatchObject({ kind: 'phaseFinal', title: '¡FINAL!', team: -1, age: 1 });
     expect(seen(fin + 179)).toBeNull();
   });
-  it('the pills of PR1 (one per team, for sabotages) ignore the phase events', () => {
+  it('the top feed (one row per team, for cards) ignores the phase events', () => {
     const { f } = drive();
-    const b = new Banners(name);
-    b.push(f.log);
-    expect(b.visible(5000)).toEqual([null, null]);
+    expect(f.log.some((e) => e.type === 'phase')).toBe(true);
+    for (const e of f.log) expect(topFeed(f, e.tick, (slot) => `J${slot}`)).toEqual([null, null]);
   });
   it('replay: the same round gives the same feed hash; the mirrored round (teams swapped) logs the same acts at the same ticks', () => {
     const a = drive([0, 1, 0, 1]).f;

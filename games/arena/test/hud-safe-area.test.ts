@@ -18,7 +18,7 @@ describe('Manchazo HUD inside the 90 % safe area', () => {
 
   it('the HUD does not run over the floor: the top elements end above it and the bottom text starts below it', () => {
     expect(FLOOR_BOTTOM).toBe(Y0 + MAP_H * 56);
-    for (const k of ['pctLeft', 'pctRight', 'clock', 'bar']) expect(HUD[k]!.y + HUD[k]!.h).toBeLessThanOrEqual(Y0);
+    for (const k of ['pct0', 'pct1', 'clock', 'bar', 'feed0', 'feed1']) expect(HUD[k]!.y + HUD[k]!.h).toBeLessThanOrEqual(Y0);
     for (const k of ['seed', 'next']) expect(HUD[k]!.y).toBeGreaterThanOrEqual(FLOOR_BOTTOM);
   });
 

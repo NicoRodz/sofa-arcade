@@ -31,7 +31,7 @@ describe('the event banner strip: under the floor, short, then it shrinks', () =
 
 describe('the sabotage layer never covers the board', () => {
   it('the team pills end above the floor and the strip starts below it', () => {
-    for (const k of ['pillLeft', 'pillRight']) expect(HUD[k]!.y + HUD[k]!.h).toBeLessThanOrEqual(Y0);
+    for (const k of ['feed0', 'feed1']) expect(HUD[k]!.y + HUD[k]!.h).toBeLessThanOrEqual(Y0);
     expect(HUD.strip!.y).toBeGreaterThanOrEqual(FLOOR_BOTTOM);
   });
 });

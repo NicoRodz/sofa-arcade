@@ -2,7 +2,7 @@
 // No logic here: it reads the sim's state each frame.
 import Phaser from 'phaser';
 import type { Appearance } from '@pichi/core/avatar';
-import { C, FONT, W } from '@pichi/screen-kit/art';
+import { C, FONT } from '@pichi/screen-kit/art';
 import { MAP_W, mapCaption } from '../../map';
 import { blastTiles, isHidden, shownCounts, shownPaint, shownPercent, type ManchazoState } from '../../sim';
 import { bannerOf, nextLine } from './event-banner';
@@ -10,7 +10,7 @@ import { drawEvents } from './scene-events';
 import { drawEventsPlus } from './scene-events-plus';
 import { drawLiving } from './scene-living';
 import { floorBar } from './hud-bar';
-import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, SIDE_X, X0, Y0 } from './layout';
+import { BAR_H, BAR_Y, BOTTOM_Y, CLOCK_SIZE, FOOT_SIZE, HUD_TOP, PCT_SIZE, PX, ROW_H, SIDE_X, X0, Y0 } from './layout';
 import { Avatars } from './scene-avatars';
 import { TEAM_COLOR, bodyOutline } from './scene-body';
 import { drawTapes } from './scene-plus';
@@ -73,15 +73,15 @@ export class MatchScene extends Phaser.Scene {
     this.g = this.add.graphics();
     this.over = this.add.graphics().setDepth(20); // above the avatars (depth ~1), below their number chips (30): the card over a head, the Mareo's spiral
     this.avatars = new Avatars(this);
-    this.fx = new HudFx(this, this.host.teamName.bind(this.host));
+    this.fx = new HudFx(this, (slot) => this.host.name(slot));
     this.arch = new ArchetypeFx(this);
     const style = (color: string) => ({ fontFamily: FONT, fontSize: `${PCT_SIZE}px`, color, fontStyle: 'bold' });
     // the HUD starts at the top of the title-safe area (layout.ts): a TV that crops its edges still shows it
     this.pct = [
-      this.add.text(SIDE_X, HUD_TOP, '', style('#E69F00')),
-      this.add.text(SIDE_X + MAP_W * PX, HUD_TOP, '', style('#4aa8e0')).setOrigin(1, 0),
-    ];
-    this.clock = this.add.text(W / 2, HUD_TOP, '', { ...style(C.cream), fontSize: `${CLOCK_SIZE}px` }).setOrigin(0.5, 0);
+      this.add.text(SIDE_X, HUD_TOP + ROW_H / 2, '', style('#E69F00')).setOrigin(0, 0.5),
+      this.add.text(SIDE_X, HUD_TOP + ROW_H * 1.5, '', style('#4aa8e0')).setOrigin(0, 0.5),
+    ]; // both on the left, one per team row: the top feed sits beside them (hud/feed-rows.ts)
+    this.clock = this.add.text(X0 + MAP_W * PX, HUD_TOP, '', { ...style(C.cream), fontSize: `${CLOCK_SIZE}px` }).setOrigin(1, 0);
     // the map seed, bottom left, in the 36 px band under the floor (above the bottom edge of the safe area): read it off the screen to play the same map again
     this.seed = this.add.text(X0, BOTTOM_Y, '', {
       fontFamily: 'ui-monospace, Menlo, monospace',
@@ -182,7 +182,7 @@ export class MatchScene extends Phaser.Scene {
       const b = t.getBounds();
       return { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height), text: t.text };
     };
-    return { pctLeft: box(this.pct[0]!), pctRight: box(this.pct[1]!), clock: box(this.clock), seed: box(this.seed), next: box(this.next) };
+    return { pct0: box(this.pct[0]!), pct1: box(this.pct[1]!), clock: box(this.clock), seed: box(this.seed), next: box(this.next) };
   }
 
   /** The floor is one baked image (frame, tiles, furniture); a new map swaps its texture. The paint of each tile is a layer over it (art/paint-layer.ts). */

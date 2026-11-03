@@ -16,6 +16,15 @@ export const SWING_WINDOW = 60; // ... within this many ticks is a swing
 export const SWING_COOL = 60; // and the same team does not announce another one for this long
 export const RECENT_WINDOW = 120; // the "+X %" on screen is what the team gained over the last 2 s: never since the start of the round
 
+/** A hand that filled up: a pickup walked over, or a dropped card picked up. Kept apart from `log` so the log, its hash and the sound cues stay as they were. */
+export interface GrabEvent {
+  tick: number;
+  body: number;
+  slot: number;
+  team: number;
+  kind: SabotageKind;
+}
+
 export type FeedEvent =
   | { type: 'fired'; tick: number; body: number; slot: number; team: number; kind: SabotageKind }
   | { type: 'swing'; tick: number; team: number; pp: number }
@@ -39,6 +48,8 @@ const pct = (s: ManchazoState): number[] => {
 
 export class Feed {
   readonly log: FeedEvent[] = [];
+  readonly grabs: GrabEvent[] = []; // the top feed's "tomó" (top-feed.ts)
+  private primed = false; // the first observation only learns the hands: a card already held at the start was not taken just now
   private used = -1; // sabotages played so far (-1: no baseline yet)
   private held: (SabotageKind | null)[] = [];
   private sponge: number[] = [];
@@ -67,6 +78,12 @@ export class Feed {
           }
         });
       }
+      if (this.primed)
+        s.grid.bodies.forEach((b, body) => {
+          const now = a.held[body] ?? null;
+          if (now && (this.held[body] ?? null) === null) this.grabs.push({ tick, body, slot: b.slot, team: b.team, kind: now });
+        });
+      this.primed = true;
       this.used = a.used;
       this.held = [...a.held];
       this.sponge = [...sponge];
