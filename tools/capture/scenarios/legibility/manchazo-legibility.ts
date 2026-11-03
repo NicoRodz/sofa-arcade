@@ -1,5 +1,5 @@
-import { PORT, sleep } from '../config';
-import type { Ctx } from '../session';
+import { PORT, sleep } from '../../config';
+import type { Ctx } from '../../session';
 
 // Manchazo PR1 (couch legibility): one round with events at 3840x2160. Painted halves, four sabotages played at once (two per team), a Casillas doradas event and a
 // big paint jump for the orange team. Run it on master and on the branch with SHOT=<name> and compare the two pictures from 3 m.

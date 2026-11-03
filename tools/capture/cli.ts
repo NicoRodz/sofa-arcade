@@ -20,7 +20,7 @@ import { runManchazo4k, runRenderScaleOthers } from './scenarios/render-scale';
 import { runManchazoLooks, runManchazoSeeds } from './scenarios/manchazo-seeds';
 import { runManchazoEventsPlusTv, runManchazoEventsTv } from './scenarios/manchazo-events';
 import { runManchazoLivingTv } from './scenarios/manchazo-living';
-import { runManchazoLegibilityTv } from './scenarios/manchazo-legibility';
+import { runManchazoLegibilityTv } from './scenarios/legibility/manchazo-legibility';
 import {
   runManchazoSabotagePhone,
   runManchazoSabotagePlusPhone,
