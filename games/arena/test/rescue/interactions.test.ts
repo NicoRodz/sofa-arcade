@@ -19,7 +19,7 @@ describe('rescue and the Hourglass: a stained body does not count in the circle,
   };
   it('the charge stays at 0 while the only body of the losing team inside is stained, and runs once it is freed', () => {
     const s = clockRound();
-    tick(s, {}, RESCUE_TICKS - 1);
+    tick(s, {}, 11);
     expect(s.match.bodies[0]!.stun).toBeGreaterThan(0);
     expect(s.match.ev!.clock.charge).toBe(0); // 11 ticks stained inside the circle: it does not count
     tick(s); // the 12th tick frees it before the clock reads the circle: it counts at once

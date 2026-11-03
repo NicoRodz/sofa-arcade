@@ -22,8 +22,7 @@ function stepContact(s: ManchazoState): void {
   });
   for (const { i, by } of freed) {
     const bm = m.bodies[i]!;
-    bm.stun = 0;
-    bm.trail = 0; // the rival footprints that would follow the stain never start
+    bm.stun = 0; // free at once; the rival footprints that follow a stain that ends on its own never start (the countdown only starts them when it reaches 0)
     r.contact[i] = 0;
     for (const k of [i, ...by]) r.glow[k] = RESCUE_GLOW_TICKS;
     r.log.push({ kind: 'rescue', tick: s.grid.tick, body: i, x: tiles[i]![0], y: tiles[i]![1], card: null });

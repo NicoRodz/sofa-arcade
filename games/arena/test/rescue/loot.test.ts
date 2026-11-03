@@ -47,13 +47,14 @@ describe('loot: who can pick it up and when', () => {
   it('the owner cannot at tick 119 and can at tick 120; anybody else can at once', () => {
     const s = setup();
     s.match.bodies[0]!.stun = 0; // let the owner stand on it (the lock is about the loot's age, not the stain)
-    tick(s, {}, LOOT_LOCK_TICKS - 1);
-    expect(lootOf(s)[0]!.age).toBe(LOOT_LOCK_TICKS - 1);
+    tick(s, {}, 119);
+    expect(lootOf(s)[0]!.age).toBe(119);
     expect(s.match.sab!.held[0]).toBeNull();
     tick(s);
     expect(s.match.sab!.held[0]).toBe('roller');
     expect(lootOf(s)).toEqual([]);
     expect(res(s).log.at(-1)).toMatchObject({ kind: 'take', body: 0, card: 'roller' });
+    expect([LOOT_LOCK_TICKS, LOOT_TICKS]).toEqual([120, 240]);
     const t = setup();
     put(t, 1, 3, 7); // a rival walks onto it
     tick(t);
@@ -104,7 +105,7 @@ describe('loot: it goes back to its spawner', () => {
   it('present through tick 240, gone at 241; the empty spawner offers the same card again at once', () => {
     const { s, p } = lost(0);
     s.match.bodies[0]!.stun = 99999; // nobody picks it up
-    tick(s, {}, LOOT_TICKS);
+    tick(s, {}, 240);
     expect(lootOf(s)).toHaveLength(1);
     expect(p.drawn).toBe(1);
     tick(s);

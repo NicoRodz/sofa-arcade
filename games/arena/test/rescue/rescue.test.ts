@@ -15,13 +15,14 @@ const duo = () => {
 describe('rescue: a teammate in contact for 12 ticks in a row frees the stained body', () => {
   it('frees on the 12th tick of contact and not on the 11th, and clears the footprints that would follow', () => {
     const s = duo();
-    tick(s, {}, RESCUE_TICKS - 1);
-    expect(s.match.bodies[0]!.stun).toBeGreaterThan(0);
-    expect(res(s).contact[0]).toBe(RESCUE_TICKS - 1);
+    tick(s, {}, 11);
+    expect(s.match.bodies[0]!.stun).toBe(STUN_TICKS - 11);
+    expect(res(s).contact[0]).toBe(11);
     tick(s);
     expect(s.match.bodies[0]!.stun).toBe(0);
+    expect(RESCUE_TICKS).toBe(12);
     expect(s.match.bodies[0]!.trail).toBe(0); // a natural end of the stain would start TRAIL_TICKS of rival footprints
-    expect(res(s).log.filter((e) => e.kind === 'rescue')).toEqual([{ kind: 'rescue', tick: RESCUE_TICKS - 1, body: 0, x: 3, y: 7, card: null }]);
+    expect(res(s).log.filter((e) => e.kind === 'rescue')).toEqual([{ kind: 'rescue', tick: 11, body: 0, x: 3, y: 7, card: null }]);
   });
   it('without rescue a stain lasts its full STUN_TICKS and then leaves TRAIL_TICKS of footprints', () => {
     const s = rround([0, 1, 0], 5, { rescue: false });
@@ -87,6 +88,18 @@ describe('rescue: a teammate in contact for 12 ticks in a row frees the stained 
     tick(s);
     expect(s.match.bodies[0]!.stun).toBe(0);
     expect(s.match.bodies[0]!.trail).toBe(0);
+  });
+  it('a stain that is hit again the tick it ends starts its count from 0, not from the old one', () => {
+    const s = duo();
+    s.match.bodies[0]!.stun = 1;
+    res(s).contact[0] = 10;
+    blastAt(s, 1, 7); // two tiles to the left: it reaches body 0 (3, 7) and not its rescuer (4, 7)
+    tick(s);
+    expect(s.match.bodies[0]!.stun).toBe(STUN_TICKS);
+    expect(res(s).contact[0]).toBe(0);
+    tick(s);
+    expect(s.match.bodies[0]!.stun).toBeGreaterThan(0); // with the old count it would be 12 and free it one tick after the new stain
+    expect(res(s).contact[0]).toBe(1);
   });
   it('a body already in its footprints stage (stun over) is not rescued: it plays the footprints out', () => {
     const s = duo();
