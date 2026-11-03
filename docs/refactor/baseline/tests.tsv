@@ -1179,13 +1179,20 @@ games/pizzas/sim/overcooked.test.ts	passed	grab and drop a player holds at most 
 games/pizzas/sim/overcooked.test.ts	passed	grab and drop a second press in the same tick finds the hands full
 games/pizzas/sim/overcooked.test.ts	passed	grab and drop grabs from a crate, drops on a counter and picks it up again
 games/pizzas/sim/overcooked.test.ts	passed	grab and drop moves with the stick, faces the last non-null vector and stops at walls
+games/arena/test/grid-mirror.test.ts	passed	grid control mirror: the same run seen in a mirror (stick x flipped) is the mirror, tick by tick plan A: positions mirror (x' = W - x), headings mirror, the turn stats are equal
+games/arena/test/grid-mirror.test.ts	passed	grid control mirror: the same run seen in a mirror (stick x flipped) is the mirror, tick by tick plan B: positions mirror (x' = W - x), headings mirror, the turn stats are equal
+games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) a body at rest, misaligned by more than the assist, slides to the lane centre and goes (it does not stay stuck)
+games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) a body exactly between two lane centres picks the side the stick leans to (mirror-safe), or the way it was heading
 games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) a request already failed (300 ms) and then released stays failed: it is not also counted as cancelled
 games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) a request released before 300 ms without running is cancelled, not failed
 games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) a turn asked just before a free junction is buffered and runs there (aligned to its centre)
-games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) beyond the assist the turn is NOT taken: a request out of the buffer stops the body and fails at 300 ms
-games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) corner assist: within 0.35 tile of a centre the turn happens now, the body is aligned
+games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) corner assist: within 0.4 tile of a lane centre the body slides onto it without stopping, and turns on arrival
+games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) diagonal: against a wall the body takes the free axis (it never stands while the other axis serves)
+games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) never stands: the stick against a wall with no lane keeps the body running along its corridor, and the unmet turn fails once at 300 ms
+games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) plan A release grace: a 3-tick dip into the dead zone does not stop the body, 4 ticks do
 games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) reverses at once and moves 4 tiles a second (64 units/s)
 games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) the body goes where the stick points and stands when it is released
+games/arena/test/grid-control.test.ts	passed	grid control, plan A (default) turn buffer: a tap of 1 tick asked 12 units before the lane still turns there (180 ms)
 games/arena/test/grid-control.test.ts	passed	grid control, plan B (auto-advance) a turn asked near a junction uses the same buffer and assist
 games/arena/test/grid-control.test.ts	passed	grid control, plan B (auto-advance) pushing backwards is a U-turn; pushing forward changes nothing
 games/arena/test/grid-control.test.ts	passed	grid control, plan B (auto-advance) the body keeps going after the stick is released, until a wall
@@ -2715,6 +2722,9 @@ games/obstaculos/validator/sim.test.ts	passed	simPlan runs the real stepPlayer f
 games/obstaculos/validator/sim.test.ts	passed	simPlan runs the real stepPlayer pushing against a wall on the ground is abandoned early instead of running to the step cap
 games/obstaculos/validator/sim.test.ts	passed	simPlan runs the real stepPlayer the hand: a body falling short beside a ledge is caught at its edge (viaHand); without the zone it slides back to the foot
 games/obstaculos/validator/sim.test.ts	passed	simPlan runs the real stepPlayer the stick scale shortens the reach: 70 % of the stick lands closer than 92 %
+games/arena/test/grid-human.test.ts	passed	simulated human with a noisy stick on the F0 circuit plan A: 24 runs finish, with (almost) no tick stopped by mistake and no failed turn
+games/arena/test/grid-human.test.ts	passed	simulated human with a noisy stick on the F0 circuit plan B: 24 runs finish, with (almost) no tick stopped by mistake and no failed turn
+games/arena/test/grid-human.test.ts	passed	simulated human with a noisy stick on the F0 circuit the run is deterministic: same seed, same numbers
 games/obstaculos/screen/adapter.test.ts	passed	SimWorldView: campaign A5 entities a player on the pickaxe takes it: held, with the holder's id; the target shows its clock once hit; the wind phase is reported
 games/obstaculos/screen/adapter.test.ts	passed	SimWorldView: campaign A5 entities a quick-match session has no wind and no enemies in its view
 games/obstaculos/screen/adapter.test.ts	passed	SimWorldView: campaign A5 entities the view lists the enemy, the pickaxe and the target, passes checkWorldView, and the enemy walks
