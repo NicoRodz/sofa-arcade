@@ -93,10 +93,11 @@ describe('the feed reads a "tomó" off the hands', () => {
     step(s, {});
     f.observe(s);
     expect(f.grabs).toEqual([{ tick: s.grid.tick, body: 1, slot: 1, team: 1, kind: 'roller' }]);
+    expect(f.log).toEqual([]); // taking is not in the log: its hash and its cues are as before
     step(s, { 1: USE });
     f.observe(s);
     expect(f.grabs).toHaveLength(1);
-    expect(f.log.every((e) => e.type === 'fired')).toBe(true); // the log (and its hash) only know the play
+    expect(f.log.map((e) => e.type)).toEqual(['fired']); // the log only knows the play
   });
 
   it('a card already in hand at the first observation was not "taken just now"', () => {
