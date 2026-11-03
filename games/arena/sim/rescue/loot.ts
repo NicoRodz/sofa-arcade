@@ -44,7 +44,10 @@ export function dropLoot(s: ManchazoState, i: number): void {
   let from = r.from[i]!;
   if (kind) {
     a.held[i] = null;
-    if (kind === 'sponge' && a.plus) a.plus.sponge[i] = a.plus.soaked[i] = 0; // the paint it soaked is lost; the card falls clean
+    if (kind === 'sponge' && a.plus) {
+      a.plus.sponge[i] = a.plus.soaked[i] = 0; // the paint it soaked is lost; the card falls clean
+      if (a.plus.wrap) a.plus.wrap.taken[i] = [];
+    }
   } else if (a.armed[i]) {
     kind = a.armed[i]!;
     a.armed[i] = null;
