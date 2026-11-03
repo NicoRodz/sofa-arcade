@@ -1,5 +1,5 @@
 // Manchazo's results panel: who won, the area of each team and the small team's edge when there was one. Pure functions of the round's state (no DOM).
-import { formatSeed } from '../../map';
+import { mapCaption } from '../../map';
 import { handicap, matchResult, type ManchazoState } from '../../sim';
 
 export interface ResultsView {
@@ -7,7 +7,7 @@ export interface ResultsView {
   color: string; // winner's colour ('' on a draw)
   rows: { icon: string; name: string; percent: string; tiles: number; color: string }[];
   note: string;
-  mapCode: string; // 'MAPA 2·7KQ2M' ('' on the F0 map)
+  mapCode: string; // 'MAPA 3·7KQ2M · ISLAS' ('' on the F0 map)
 }
 
 export function resultsView(s: ManchazoState, teams: readonly { name: string; icon: string; color: string }[]): ResultsView {
@@ -21,7 +21,7 @@ export function resultsView(s: ManchazoState, teams: readonly { name: string; ic
   const h = handicap(sizes);
   const small = sizes[0] === sizes[1] ? -1 : sizes.indexOf(Math.min(...sizes));
   return {
-    mapCode: s.mapSeed === null ? '' : `MAPA ${formatSeed(s.mapSeed)}`,
+    mapCode: s.mapSeed === null ? '' : mapCaption(s.mapSeed, s.mapArchetype),
     heading: win ? `¡Ganó ${win.name}!` : 'Empate',
     color: win?.color ?? '',
     rows,

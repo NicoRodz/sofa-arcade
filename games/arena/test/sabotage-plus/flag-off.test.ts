@@ -34,6 +34,7 @@ describe('sabotagePlus off is F5 (pinned from master eb50ca6)', () => {
         teams: [0, 1, 0, 1, 0, 1],
         seed: 9,
         mapSeed,
+        classicMap: true,
         sabotage: true,
         events: true,
         living: true,

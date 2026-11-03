@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import type { Appearance } from '@pichi/core/avatar';
 import { C, FONT, W } from '@pichi/screen-kit/art';
-import { MAP_W, formatSeed } from '../../map';
+import { MAP_W, mapCaption } from '../../map';
 import { blastTiles, isHidden, shownCounts, shownPaint, shownPercent, type ManchazoState } from '../../sim';
 import { bannerOf, nextLine } from './event-banner';
 import { drawEvents } from './scene-events';
@@ -159,7 +159,7 @@ export class MatchScene extends Phaser.Scene {
     this.drawHud(s);
     this.fx.update(f, s, this.host.feed?.() ?? null, this.pct);
     const strip = this.drawAnnouncements(s);
-    this.seed.setText(s.mapSeed === null || strip ? '' : `MAPA ${formatSeed(s.mapSeed)}`);
+    this.seed.setText(s.mapSeed === null || strip ? '' : mapCaption(s.mapSeed, s.mapArchetype));
   }
 
   /** For the capture tool only: the real bounds (logical px) of the HUD texts, to prove they sit inside the safe area. */

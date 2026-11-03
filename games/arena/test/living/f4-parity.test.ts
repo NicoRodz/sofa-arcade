@@ -23,6 +23,7 @@ describe('flag off is F4 (pinned from master 31646fc)', () => {
         teams: [0, 1, 0, 1, 0, 1],
         seed: 9,
         mapSeed: Number(seed),
+        classicMap: true,
         sabotage: true,
         events: true,
       });
@@ -43,7 +44,7 @@ describe('flag off is F4 (pinned from master 31646fc)', () => {
       for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 0x01000193);
     };
     for (const seed of Array.from({ length: 40 }, (_, i) => i * 7919 + 13)) {
-      const { map } = generateMap(seed);
+      const { map } = generateMap(seed, undefined, false, false);
       mix(JSON.stringify(createEvents(map, seed, 4500)));
       mix(String(clockRow(map, seed)));
     }

@@ -17,6 +17,7 @@ export interface ManchazoConfig {
   events?: boolean; // F4: the scheduled events, the come-back, the hidden scoreboard and the Hourglass (off: the round is F3's, bit for bit)
   eventsPlus?: boolean; // F8b: the five new events join the pool (needs `events`; off: the round is F8a's, bit for bit)
   living?: boolean; // F5: the living map (brushes, sofas, fountain) on the generated map; needs `mapSeed` (off: the round is F4's, bit for bit)
+  classicMap?: boolean; // the map comes from the F2 generator (Clasico), not from the seed's archetype: tests that pin hashes from before the archetypes
   mapSeed?: number; // 25-bit map seed (see map/gen/seed.ts); without it the round is played on the F0 hand-made map
 }
 
@@ -24,7 +25,7 @@ export interface ManchazoConfig {
 export const sidesFlipped = (seed: number): boolean => mulberry32((seed ^ SIDE_SEED_TAG) >>> 0)() < 0.5;
 
 export function createManchazo(cfg: ManchazoConfig): ManchazoState {
-  const gen = cfg.mapSeed === undefined ? null : generateMap(cfg.mapSeed, undefined, !!cfg.living);
+  const gen = cfg.mapSeed === undefined ? null : generateMap(cfg.mapSeed, undefined, !!cfg.living, !cfg.classicMap);
   const living = cfg.living && gen ? gen.living : undefined; // the fallback has none: its list is empty, the living layer still runs
   const base = gen?.map ?? f0Map();
   const map = living || cfg.eventsPlus ? { ...base, solid: base.solid.slice() } : base; // the living map and Mudanza shut and open tiles: a copy, f0Map() is shared
@@ -44,5 +45,5 @@ export function createManchazo(cfg: ManchazoConfig): ManchazoState {
     living,
   );
   grid.bodies.forEach((b, i) => (match.bodies[i]!.face = b.x < (MAP_W * TILE) / 2 ? RIGHT : LEFT)); // heading to the middle
-  return { grid, match, mapSeed: gen?.seed ?? null, mapFallback: gen?.fallback ?? false };
+  return { grid, match, mapSeed: gen?.seed ?? null, mapArchetype: gen?.archetype ?? null, mapFallback: gen?.fallback ?? false };
 }

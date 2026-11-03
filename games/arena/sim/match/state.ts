@@ -1,5 +1,5 @@
 // The Manchazo round: the grid world (bodies, F0) plus what F1 adds around it. Kept apart from the grid so F0's sim stays bit for bit what it was.
-import { MAP_H, MAP_W, floorCount, footprint, type LivingSpec, type TileMap } from '../../map';
+import { MAP_H, MAP_W, floorCount, footprint, type LivingSpec, type MapKind, type TileMap } from '../../map';
 import { RIGHT, type Dir, type GridState } from '../grid';
 import type { EventsState } from '../events/state';
 import type { Armable } from '../sabotage/kinds';
@@ -57,6 +57,7 @@ export interface ManchazoState {
   grid: GridState;
   match: MatchState;
   mapSeed: number | null; // the seed the map came from (shown on the TV); null for a round on the F0 map that asked for none
+  mapArchetype: MapKind | null; // what the TV calls the map ('clasico' when the seed's archetype did not validate); null on the F0 map without a seed
   mapFallback: boolean; // the seed did not validate in 64 attempts: the F0 map stands in
 }
 

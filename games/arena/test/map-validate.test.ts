@@ -30,7 +30,7 @@ function open(edit: (put: (x: number, y: number) => void) => void = () => {}): T
 }
 /** A map that validates (a generated one), as a copy to damage. */
 function fair(): TileMap {
-  const g = generateMap(1);
+  const g = generateMap(1, undefined, false, false);
   const m = { ...g.map, solid: g.map.solid.slice() };
   expect(g.fallback).toBe(false);
   expect(validateMap(m)).toEqual([]);

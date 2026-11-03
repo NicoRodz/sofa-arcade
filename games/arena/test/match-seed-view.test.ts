@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatSeed, mapSeedFor } from '../map';
+import { ARCHETYPE_NAMES, archetypeOf, formatSeed, mapSeedFor } from '../map';
 import { createManchazo } from '../sim';
 import { matchRun, nextMapSeed } from '../screen/match/run';
 import { resultsHtml, resultsView } from '../screen/match/results';
+
+const SEED_7KQ2M = 7 * 32 ** 4 + 19 * 32 ** 3 + 23 * 32 ** 2 + 2 * 32 + 20;
 
 afterEach(() => {
   matchRun.rounds = 0;
@@ -11,10 +13,10 @@ afterEach(() => {
 
 describe('the map seed on the TV', () => {
   it('results show it as MAPA <version>·<code>, big, and a round on the F0 map shows none', () => {
-    const s = createManchazo({ slots: [0, 1], teams: [0, 1], seed: 1, mapSeed: 7 * 32 ** 4 + 19 * 32 ** 3 + 23 * 32 ** 2 + 2 * 32 + 20 });
+    const s = createManchazo({ slots: [0, 1], teams: [0, 1], seed: 1, mapSeed: SEED_7KQ2M });
     const v = resultsView(s, []);
-    expect(v.mapCode).toBe('MAPA 2·7KQ2M');
-    expect(resultsHtml(v, (t) => t)).toContain('MAPA 2·7KQ2M');
+    expect(v.mapCode).toBe(`MAPA 3·7KQ2M · ${ARCHETYPE_NAMES[archetypeOf(SEED_7KQ2M)]}`);
+    expect(resultsHtml(v, (t) => t)).toContain(`MAPA 3·7KQ2M · ${ARCHETYPE_NAMES[archetypeOf(SEED_7KQ2M)]}`);
     const f0 = resultsView(createManchazo({ slots: [0, 1], teams: [0, 1], seed: 1 }), []);
     expect(f0.mapCode).toBe('');
     expect(resultsHtml(f0, (t) => t)).not.toContain('MAPA');
@@ -26,6 +28,6 @@ describe('the map seed on the TV', () => {
     expect(new Set(seen).size).toBe(5);
     matchRun.forced = 31;
     expect([nextMapSeed(555), nextMapSeed(555)]).toEqual([31, mapSeedFor(555, 6)]);
-    expect(formatSeed(31)).toBe('2·0000Z');
+    expect(formatSeed(31)).toBe('3·0000Z');
   });
 });

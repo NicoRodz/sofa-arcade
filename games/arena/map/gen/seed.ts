@@ -1,9 +1,10 @@
 // The map seed: 25 bits written as 5 Crockford base32 characters (no I, L, O or U: they read well from the couch) behind the generator's version,
 // for example `2·7KQ2M`. A seed of another version is not the same map, so the screen says so instead of drawing a different one.
 import { mulberry32 } from '@pichi/core';
+import { ARCHETYPE_NAMES, type MapKind } from './archetypes/kinds';
 
-/** 1 was F0's hand-made map; 2 is this generator. Any change to how a seed becomes a map bumps it. */
-export const GENERATOR_VERSION = 2;
+/** 1 was F0's hand-made map; 2 was the single generator; 3 draws the seed's archetype (Pasillos, Islas, Plaza, Ocho). Any change to how a seed becomes a map bumps it. */
+export const GENERATOR_VERSION = 3;
 export const SEED_CHARS = 5;
 export const SEED_SPACE = 32 ** SEED_CHARS; // 33,554,432 maps
 export const MAP_SEED_TAG = 0x4d41505f; // substream of the lobby seed that hands out one map seed per round
@@ -19,6 +20,10 @@ export function encodeSeed(seed: number): string {
 
 /** `2·7KQ2M` (what the screen shows after "MAPA "). */
 export const formatSeed = (seed: number, version = GENERATOR_VERSION): string => `${version}·${encodeSeed(seed)}`;
+
+/** What the TV writes next to the map: `MAPA 3·7KQ2M · ISLAS`. */
+export const mapCaption = (seed: number, kind: MapKind | null): string =>
+  `MAPA ${formatSeed(seed)}${kind ? ` · ${ARCHETYPE_NAMES[kind]}` : ''}`;
 
 /** Reads `2·7KQ2M` (also `2-7kq2m` or the bare code, version = current). Crockford's look-alikes read as their digit: O -> 0, I and L -> 1. Null when it is not a seed. */
 export function parseSeed(text: string): { version: number; seed: number } | null {

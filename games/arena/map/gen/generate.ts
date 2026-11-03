@@ -1,30 +1,32 @@
 // The seeded map generator: the left half and the centre column are drawn, the right half is their mirror image, the result is validated (V1-V7) and, if it
-// fails, the next attempt (`attempt k` of the substream) is tried, up to 64 times. After that the F0 hand-made map stands in. Same seed, same map: bit for bit.
+// fails (V1-V7, then V8, the signature of the seed's archetype), the next attempt (`attempt k` of the substream) is tried, up to 64 times. After that the Clasico
+// generator of F2 gets 64 attempts, and after that the F0 hand-made map stands in. Same seed, same map: bit for bit.
 import { mulberry32, type Rng } from '@pichi/core';
-import { MAP_H, MAP_W } from '../layout';
-import { emptyMap, f0Map, mirrorTile, type Tile, type TileMap } from '../tile-map';
+import { MAP_W, MAP_H } from '../layout';
+import { emptyMap, f0Map, mirrorTile, type TileMap } from '../tile-map';
+import { bandsOf, exitsOf, keepAround, quotaOf } from './exits';
 import { furnish } from './furniture';
-import { placeLiving } from './living-place';
-import type { LivingSpec } from './living-shapes';
+import { drawArchetype } from './archetypes/draw';
+import { archetypeOf, type MapKind } from './archetypes/kinds';
+import { livingPlan } from './archetypes/living-for';
+import { v8Signature } from './archetypes/signature';
+import { placeLiving, v9LivingConnection } from './living-place';
+import { elementsOf, type LivingSpec } from './living-shapes';
 import { MAP_SEED_TAG } from './seed';
 import { isValidMap } from './validate';
 import { v1Connection } from './validate-state';
 
 export const MAX_ATTEMPTS = 64;
-const EXIT_ROWS = [1, 5, 9, 13]; // the 4 exits of a team, in column 1; each moves up to 1 row with the seed
-const EXIT_COLUMN = 1;
-const EXIT_RADIUS = 2; // Manhattan radius kept free around each exit
 const TARGET_LOW = 0.19; // furniture share aimed at (the validator accepts 18-24 %)
 const TARGET_SPAN = 0.02;
-const MAX_JOGS = 2; // vertical steps of a lane
-const CENTRE = (MAP_W - 1) / 2;
 const TRIES = 600;
 
 export interface GeneratedMap {
   map: TileMap;
   seed: number;
-  attempts: number; // 1..64 when generated; 64 plus the fallback when none validated
-  fallback: boolean; // the F0 map stands in
+  attempts: number; // 1..64 for the seed's archetype, 65..128 for Clasico; 128 when the F0 map stands in
+  fallback: boolean; // the F0 map stands in (a seed whose archetype did not validate gets 'clasico', which is not this)
+  archetype: MapKind; // what the TV calls the map: the seed's archetype, or 'clasico' when it fell back
   living: LivingSpec[]; // F5: the pairs and the fountain placed on it (empty unless asked for, and on the fallback)
 }
 
@@ -35,58 +37,38 @@ export function attemptRng(seed: number, k: number): Rng {
   return rng;
 }
 
-/** The lane of an exit: a staircase of floor from its tile to the centre column with at most 2 jogs, so every walk to the centre is 12 to 14 steps (V4 by construction). */
-function lane(rng: Rng, [ex, ey]: Tile): Tile[] {
-  const jogs = new Set<number>();
-  for (let n = Math.floor(rng() * (MAX_JOGS + 1)); jogs.size < n; )
-    jogs.add(EXIT_COLUMN + 2 + Math.floor(rng() * (CENTRE - EXIT_COLUMN - 3)));
-  const cells: Tile[] = [];
-  let y = ey;
-  for (let x = ex; x <= CENTRE; x++) {
-    cells.push([x, y]);
-    if (jogs.has(x)) {
-      const next = y + (rng() < 0.5 ? -1 : 1);
-      y = next < 0 || next >= MAP_H ? y - (next - y) : next;
-      cells.push([x, y]);
-    }
-  }
-  return cells;
-}
-
-/** One attempt, not yet validated. */
+/** One Clasico attempt, not yet validated: the exits' lanes and furniture drawn evenly over the half. */
 export function draw(rng: Rng): TileMap {
-  const exits: Tile[] = EXIT_ROWS.map((r) => [EXIT_COLUMN, Math.min(MAP_H - 1, Math.max(0, r + Math.floor(rng() * 3) - 1))]);
+  const exits = exitsOf(rng);
   const m = emptyMap([exits, exits.map(mirrorTile)]);
-  const keep = new Uint8Array(MAP_W * MAP_H);
-  for (const [ex, ey] of exits) {
-    for (let y = ey - EXIT_RADIUS; y <= ey + EXIT_RADIUS; y++)
-      for (let x = ex - EXIT_RADIUS; x <= ex + EXIT_RADIUS; x++)
-        if (x >= 0 && y >= 0 && y < MAP_H && Math.abs(x - ex) + Math.abs(y - ey) <= EXIT_RADIUS) keep[y * MAP_W + x] = 1;
-    for (const [x, y] of lane(rng, [ex, ey])) keep[y * MAP_W + x] = 1;
-  }
-  // Bands: the half split by the nearest exit's row. Each takes the same floor, so the regions V5 compares come out even.
-  const band = new Int8Array(MAP_W * MAP_H).fill(-1);
-  const cells = exits.map(() => 0);
-  for (let y = 0; y < MAP_H; y++)
-    for (let x = 0; x < CENTRE; x++) {
-      let best = 0;
-      exits.forEach(([, ey], k) => (Math.abs(y - ey) < Math.abs(y - exits[best]![1]) ? (best = k) : 0));
-      band[y * MAP_W + x] = best;
-      cells[best]!++;
-    }
-  const share = (MAP_W * MAP_H * (TARGET_LOW + rng() * TARGET_SPAN)) / 2 / exits.length; // furniture tiles per band
-  const floor = (CENTRE * MAP_H) / exits.length - share;
-  const quota = cells.map((c) => Math.max(0, Math.round(c - floor)));
+  const keep = keepAround(exits, rng);
+  const { band, cells } = bandsOf(exits);
+  const quota = quotaOf(cells, TARGET_LOW + rng() * TARGET_SPAN);
   furnish({ solid: m.solid, keep, band, quota, w: MAP_W, h: MAP_H }, rng, () => v1Connection(m) === null, TRIES);
   return m;
 }
 
-/** `accept` is the validator of the base map (injectable so a test can force the fallback); it defaults to V1-V7. With `withLiving` the living map is placed on a valid map (F5). */
-export function generateMap(seed: number, accept: (m: TileMap) => boolean = isValidMap, withLiving = false): GeneratedMap {
+/** `accept` is the validator of the base map (injectable so a test can force the fallback); it defaults to V1-V7. With `withLiving` the living map is placed on a valid map (F5). `archetypes: false` skips the seed's archetype and draws Clasico, the generator of
+ * F2 as it was (a test that pins a hash from before the archetypes asks for it). */
+export function generateMap(seed: number, accept: (m: TileMap) => boolean = isValidMap, withLiving = false, archetypes = true): GeneratedMap {
+  const chosen = archetypeOf(seed);
+  const done = (map: TileMap, kind: MapKind, attempts: number, rng: Rng): GeneratedMap | null => {
+    const living = withLiving ? placeLiving(map, rng, livingPlan(kind, map)) : [];
+    if (withLiving && v9LivingConnection(map, elementsOf(living)) !== null) return null; // V9: a combination of the movers shuts the map
+    return { map, seed, attempts, fallback: false, archetype: kind, living };
+  };
+  for (let k = 0; archetypes && k < MAX_ATTEMPTS; k++) {
+    const rng = attemptRng(seed, k);
+    const map = drawArchetype(chosen, rng);
+    if (!accept(map) || v8Signature(chosen, map) !== null) continue;
+    const g = done(map, chosen, k + 1, rng);
+    if (g) return g;
+  }
   for (let k = 0; k < MAX_ATTEMPTS; k++) {
     const rng = attemptRng(seed, k);
     const map = draw(rng);
-    if (accept(map)) return { map, seed, attempts: k + 1, fallback: false, living: withLiving ? placeLiving(map, rng) : [] };
+    const g = accept(map) ? done(map, 'clasico', (archetypes ? MAX_ATTEMPTS : 0) + k + 1, rng) : null;
+    if (g) return g;
   }
-  return { map: f0Map(), seed, attempts: MAX_ATTEMPTS, fallback: true, living: [] };
+  return { map: f0Map(), seed, attempts: (archetypes ? 2 : 1) * MAX_ATTEMPTS, fallback: true, archetype: 'clasico', living: [] };
 }
