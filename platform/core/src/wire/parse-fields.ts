@@ -9,7 +9,7 @@ import { LABEL_MAX } from '../contract/catalog';
 import { isIconId, type IconId } from '../icons';
 import { parseCaps } from '../lobby/menu';
 import { intIn, num, parseModeOptions, parseTeams, MAX_PLAYERS, text } from '../lobby/parse';
-import { BUTTON_COUNT, PHASES, PRESS_MOD, isSeed } from './constants';
+import { BUTTON_COUNT, CARD_RE, PHASES, PRESS_MOD, isHintStatus, isSeed } from './constants';
 import type { ClientMsg } from './client-msg';
 import type { PuestoAssign, PuestoMsg, Score } from './phase';
 import { hintExtras } from './phase';
@@ -140,6 +140,8 @@ export function parseHint(m: Msg): Of<'hint'> | null {
       ...(bIcon ? { bIcon } : {}),
       ...(m.aOff === true ? { aOff: true } : {}),
       ...(m.bOff === true ? { bOff: true } : {}),
+      ...(isHintStatus(m.st) ? { st: m.st } : {}), // v7: an unknown status or card token from a newer screen is dropped, the labels still go through
+      ...(typeof m.card === 'string' && CARD_RE.test(m.card) ? { card: m.card } : {}),
     }),
   };
 }

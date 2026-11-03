@@ -13,6 +13,8 @@ import {
 import { DEFAULT_CONFIG, GAMES, configMsg, parseClientMessage } from '@pichi/catalog';
 import { assignPuestos } from '@pichi/game-pizzas/sim/phone/puestos';
 
+const ALERT_BUZZES = ['stain', 'rescued', 'lootlost', 'dizzy', 'phase', 'hourglass']; // v7 (F9): see protocol-v7.test.ts
+
 describe('protocol', () => {
   it('rejects malformed messages and clamps input', () => {
     expect(parseClientMessage('nope')).toBeNull();
@@ -72,7 +74,7 @@ describe('protocol', () => {
       expect(
         p.reduce((a, b) => a + b, 0),
         k,
-      ).toBeLessThan(k.startsWith('ev') ? 800 : 200); // the event buzzes (eventsV2) are longer on purpose: a whole-phone note
+      ).toBeLessThan(k.startsWith('ev') || ALERT_BUZZES.includes(k) ? 800 : 200); // the event buzzes (eventsV2) and the v7 alerts are longer on purpose: a whole-phone note
   });
   it('the slip buzz is a single 120 ms pulse (sabotage); the hint message carries two labels of at most 14 characters, or null', () => {
     expect(BUZZ_PATTERNS.slip).toEqual([120]);

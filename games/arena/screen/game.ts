@@ -16,6 +16,7 @@ import { roundKind } from './match/round';
 import { ManchazoRun, matchRun, nextMapSeed } from './match/run';
 import { parseSeed } from '../map';
 import { MatchScene } from './match/scene';
+import { createPhoneAlerts } from './match/phone-alerts';
 import { createSabotageHints } from './match/phone-hints';
 import { createEventAlert } from './match/event-alert';
 import { eventDebug } from './match/debug/events';
@@ -66,6 +67,9 @@ const hints = createSabotageHints(sendMsg, (slot) => player(slot)?.id);
 // F4: every event announced on the TV buzzes every phone
 const alerts = createEventAlert(sendMsg, (slot) => player(slot)?.id);
 
+// F9: stained, freed, loot lost: each shakes only the phone it happened to
+const phoneAlerts = createPhoneAlerts(sendMsg, (slot) => player(slot)?.id);
+
 // F8m: the music and the sounds, created on the first frame of the lobby (audio/)
 const audio = createArenaAudio();
 
@@ -87,6 +91,7 @@ export const arenaScreen: ScreenGame = {
   frame(delta) {
     hints.sync(matchRun.run && showing() ? matchRun.run.state : null, performance.now());
     alerts.sync(matchRun.run && showing() ? matchRun.run.state : null);
+    phoneAlerts.sync(matchRun.run && showing() ? matchRun.run.state : null);
     audio.sync({
       state: matchRun.run && showing() ? matchRun.run.state : null,
       phase: app.phase,

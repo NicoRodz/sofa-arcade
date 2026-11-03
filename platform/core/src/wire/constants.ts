@@ -7,8 +7,10 @@
 // 5: Ayudante ('assist' from a phone, and to the screens and that phone; PublicPlayer.assist). Additive: an older screen never reads it, an older phone never sends it.
 // 6: Cocina escuela (phase 'school'; 'school' from the screen to one phone: its step and instruction; 'schoolDone' from a phone: it already did the school, or skips it; PublicPlayer.school). Additive:
 // an older phone shows its normal pad in that phase and an older screen never enters it.
+// 7: Manchazo's phone (F9). Two new optional pieces, both additive: six new buzz kinds (stain, rescued, lootlost, dizzy, phase, hourglass: a colour, a tone and a vibration on the phone) and two optional fields of `hint`
+// (`st`: a status the phone wears while it lasts, `card`: the card in hand). A v6 phone vibrates or flashes for an unknown buzz kind and ignores both fields; a v6 screen never sends them.
 // One global version: a GameProtocol that changes the cable raises it (design pichiclub-refactor §2.1).
-export const PROTOCOL_VERSION = 6;
+export const PROTOCOL_VERSION = 7;
 export const WS_PATH = '/ws';
 export const DEFAULT_ROOM = 'main';
 export const INPUT_HZ = 30;
@@ -28,9 +30,15 @@ export type Phase = (typeof PHASES)[number];
 // R7: a short vibration on one phone (Android); iOS has no vibration API, so the phone flashes its colour instead.
 // The screen decides when (it owns the game events); the phone only plays the pattern, in ms on / off / on...
 // biome-ignore format: one line per pattern would add five lines to a file at its size cap
-export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15], slip: [120], alert: [60, 40, 60], big: [80, 30, 80], dodge: [50, 30, 50], ice: [40], evrush: [90, 40, 90, 40, 90], evbday: [60, 30, 60, 30, 220], evdark: [320, 90, 320], evspill: [80, 40, 80], evwin: [40, 30, 140], evfail: [220, 60, 220] } as const satisfies Record<string, readonly number[]>;
+export const BUZZ_PATTERNS = { pick: [20], chop: [40], bad: [30, 40, 30], dash: [15], slip: [120], alert: [60, 40, 60], big: [80, 30, 80], dodge: [50, 30, 50], ice: [40], evrush: [90, 40, 90, 40, 90], evbday: [60, 30, 60, 30, 220], evdark: [320, 90, 320], evspill: [80, 40, 80], evwin: [40, 30, 140], evfail: [220, 60, 220], stain: [140, 50, 140], rescued: [50, 30, 50, 30, 160], lootlost: [90, 40, 220], dizzy: [60, 30, 60, 30, 60, 30, 200], phase: [120, 60, 120, 60, 240], hourglass: [80, 40, 80, 40, 80, 40, 260] } as const satisfies Record<string, readonly number[]>;
 export type BuzzKind = keyof typeof BUZZ_PATTERNS;
 export const isBuzzKind = (v: unknown): v is BuzzKind => typeof v === 'string' && Object.hasOwn(BUZZ_PATTERNS, v);
+
+// A status the phone wears while it lasts (hint.st): the screen sends it whole with every hint, so the phone drops it when the hints stop carrying it.
+export const HINT_STATUSES = ['dizzy', 'stained'] as const;
+export type HintStatus = (typeof HINT_STATUSES)[number];
+export const isHintStatus = (v: unknown): v is HintStatus => typeof v === 'string' && (HINT_STATUSES as readonly string[]).includes(v);
+export const CARD_RE = /^[a-z]{1,16}$/; // hint.card: an opaque token the game's own phone half knows how to draw (the platform never reads it)
 
 // What the lobby has chosen; the screen owns it and the relay forwards it to the phones.
 export const SEED_MAX = 2 ** 32;

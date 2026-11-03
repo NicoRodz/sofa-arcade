@@ -26,8 +26,8 @@ const cfg = (over: object) => JSON.stringify({ t: 'config', ...DEFAULT_CONFIG, .
 const input = { t: 'input', seq: 1, x: 0, y: 0, btn: 0, presses: [0, 0], ts: 1 };
 
 describe('apps/catalog', () => {
-  it('keeps the protocol at v6 and the default lobby of master', () => {
-    expect(PROTOCOL_VERSION).toBe(6);
+  it('keeps the protocol at v7 and the default lobby of master', () => {
+    expect(PROTOCOL_VERSION).toBe(7);
     expect(DEFAULT_CONFIG).toStrictEqual(MASTER_DEFAULT_CONFIG);
     expect(CATALOG.ids).toEqual(['pizzas', 'arena', 'obstaculos']);
     expect(CATALOG.problems()).toEqual([]);

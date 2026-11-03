@@ -4,6 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ASSIST_CARD_LINES, ASSIST_FOR, ASSIST_GIVES, assistLabel, assistToast } from '../../../games/pizzas/controller/assist';
 import { violations } from './checks';
+import { MANCHAZO_SCENARIOS } from './manchazo-scenarios';
 import { settleJs, waitUntil } from './settle';
 import { ORIENTATIONS, SCENARIOS, VIEWPORTS, insetsName, openSession, type Box, type Session } from './harness';
 
@@ -41,7 +42,7 @@ describe('phone layout', () => {
       try {
         const bad: string[] = [];
         let probes = 0;
-        for (const sc of SCENARIOS) {
+        for (const sc of [...SCENARIOS, ...MANCHAZO_SCENARIOS]) {
           await ls.load(sc);
           for (const v of vps)
             for (const ins of v.insets) {
