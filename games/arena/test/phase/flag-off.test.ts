@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createManchazo, hashManchazo } from '../../sim';
 import { play } from '../match-drive';
 
-const full = { sabotage: true, sabotagePlus: true, events: true, eventsPlus: true, living: true } as const;
+const full = { sabotage: true, sabotagePlus: true, events: true, eventsPlus: true, living: true, classicMap: true } as const;
 
 // Hashes taken on master (0ccdba5, PR1) with every flag on except `phases`, full rounds: the new flag off must not change a single bit.
 describe('phases off: the round is the F8b one, bit for bit', () => {
