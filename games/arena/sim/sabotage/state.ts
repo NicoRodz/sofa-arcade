@@ -1,6 +1,6 @@
 // What the sabotages add to a round: the shuffled deck, the pickups on the floor and, per body, what it holds, what is armed for its next pinata and what runs.
 import { MAP_W, solidAt, type TileMap } from '../../map';
-import { mulberry32 } from '@pichi/core';
+import { mulberry32, type Rng } from '@pichi/core';
 import { createPlus, type PlusState } from './plus';
 import { ALL_KINDS, DECK_SEED_TAG, DECK_SIZE, KINDS, PICKUP_PAIRS, PICKUP_SEED_TAG, type Armable, type SabotageKind } from './kinds';
 
@@ -42,9 +42,10 @@ const near = (map: TileMap, x: number, y: number): boolean =>
  * The pickups: PICKUP_PAIRS mirror pairs (x and MAP_W - 1 - x), one per band of rows, on floor on both sides, in the team's half (columns 4-12) and not within 3
  * tiles of an exit. The tile of each band comes from the substream `seed ^ PICKUP_SEED_TAG`, drawn from candidates in reading order: same seed, same places.
  */
-export function placePickups(map: TileMap, seed: number, avoid?: ReadonlySet<number>): Pickup[] {
+export function placePickups(map: TileMap, seed: number, avoid?: ReadonlySet<number>, plaza?: { x: number; y: number; h: number }): Pickup[] {
   const rng = mulberry32((seed ^ PICKUP_SEED_TAG) >>> 0);
   const out: Pickup[] = [];
+  if (plaza) return placeInPlaza(map, rng, plaza, avoid);
   const band = Math.ceil(map.h / PICKUP_PAIRS);
   for (let pair = 0; pair < PICKUP_PAIRS; pair++) {
     const cands: [number, number][] = [];
@@ -59,11 +60,31 @@ export function placePickups(map: TileMap, seed: number, avoid?: ReadonlySet<num
   return out;
 }
 
-export function createSabotage(map: TileMap, seed: number, bodies: number, avoid?: ReadonlySet<number>, plus = false): SabotageState {
+/** Plaza: the three pairs stand inside the plaza (its left-half columns up to 12), one per third of its rows, so the sabotages are fought over in the open middle. */
+function placeInPlaza(map: TileMap, rng: Rng, z: { x: number; y: number; h: number }, avoid?: ReadonlySet<number>): Pickup[] {
+  const out: Pickup[] = [];
+  for (let pair = 0; pair < PICKUP_PAIRS; pair++) {
+    const cands: [number, number][] = [];
+    for (let y = z.y + Math.floor((pair * z.h) / PICKUP_PAIRS); y < z.y + Math.floor(((pair + 1) * z.h) / PICKUP_PAIRS); y++)
+      for (let x = z.x; x <= 12; x++) if (!solidAt(map, x, y) && !near(map, x, y) && !avoid?.has(y * MAP_W + x)) cands.push([x, y]);
+    const c = cands[Math.floor(rng() * cands.length)];
+    if (c) out.push({ x: c[0], y: c[1], pair, drawn: 0, wait: 0 }, { x: MAP_W - 1 - c[0], y: c[1], pair, drawn: 0, wait: 0 });
+  }
+  return out;
+}
+
+export function createSabotage(
+  map: TileMap,
+  seed: number,
+  bodies: number,
+  avoid?: ReadonlySet<number>,
+  plus = false,
+  plaza?: { x: number; y: number; h: number },
+): SabotageState {
   const none = <T>(v: T) => Array.from({ length: bodies }, () => v);
   return {
     deck: drawDeck(seed, plus),
-    pickups: placePickups(map, seed, avoid),
+    pickups: placePickups(map, seed, avoid, plaza),
     held: none<SabotageKind | null>(null),
     armed: none<Armable | null>(null),
     roller: none(0),

@@ -2,7 +2,7 @@ export { MAX_ATTEMPTS, attemptRng, draw, generateMap, type GeneratedMap } from '
 export { MAX_LIVING_PAIRS, mapStates, type LivingElement, type MapState } from './living';
 export { placeLiving, holdsEverywhere, v9LivingConnection } from './living-place';
 export { ARCHETYPES, ARCHETYPE_NAMES, archetypeOf, type Archetype, type MapKind } from './archetypes/kinds';
-export { v8Signature } from './archetypes/signature';
+export { PLAZA_H, plazaRect, v8Signature } from './archetypes/signature';
 export {
   BRUSH_REACH,
   FOUNTAIN_TILE,

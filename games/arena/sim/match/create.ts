@@ -1,6 +1,6 @@
 // Builds a Manchazo round: the grid world for the connected players, the teams' handicap, and the round length by head count.
 import { mulberry32 } from '@pichi/core';
-import { MAP_W, generateMap, f0Map } from '../../map';
+import { MAP_W, PLAZA_H, generateMap, f0Map, plazaRect, type MapKind, type TileMap } from '../../map';
 import { LEFT, RIGHT } from '../grid/dir';
 import { TILE, type ControlPlan } from '../grid/config';
 import { createGrid } from '../grid/state';
@@ -24,6 +24,12 @@ export interface ManchazoConfig {
 /** The side each team starts on: from the round seed (substream SIDE_SEED_TAG), so the same team is not always on the left. Mirror map: both sides are equal. */
 export const sidesFlipped = (seed: number): boolean => mulberry32((seed ^ SIDE_SEED_TAG) >>> 0)() < 0.5;
 
+/** A Plaza round puts its sabotage pickups inside the plaza (V8 guarantees there is one). */
+const plazaOf = (kind: MapKind | undefined, map: TileMap): { plaza?: { x: number; y: number; h: number } } => {
+  const r = kind === 'plaza' ? plazaRect(map) : null;
+  return r ? { plaza: { ...r, h: PLAZA_H } } : {};
+};
+
 export function createManchazo(cfg: ManchazoConfig): ManchazoState {
   const gen = cfg.mapSeed === undefined ? null : generateMap(cfg.mapSeed, undefined, !!cfg.living, !cfg.classicMap);
   const living = cfg.living && gen ? gen.living : undefined; // the fallback has none: its list is empty, the living layer still runs
@@ -40,7 +46,7 @@ export function createManchazo(cfg: ManchazoConfig): ManchazoState {
   const match = createMatch(
     grid.bodies.map((b) => b.team),
     map,
-    cfg.sabotage ? { seed: cfg.seed, plus: !!cfg.sabotagePlus } : undefined,
+    cfg.sabotage ? { seed: cfg.seed, plus: !!cfg.sabotagePlus, ...plazaOf(gen?.archetype, base) } : undefined,
     cfg.events ? { seed: cfg.seed, base: grid.durationTicks, plus: !!cfg.eventsPlus } : undefined,
     living,
   );

@@ -30,18 +30,23 @@ const islas: Signature = (m) => {
   return rooms >= MIN_ROOMS && doors >= MIN_DOORS ? null : `${rooms} rooms, ${doors} doors in the widest wall`;
 };
 
+/** The first free 7x5 rectangle centred on the middle line (top-left corner), or null. The maps are mirrored, so any free 7x5 that crosses the line holds this one. */
+export function plazaRect(m: TileMap): { x: number; y: number } | null {
+  const x = HALF - (PLAZA_W - 1) / 2;
+  for (let y = 0; y + PLAZA_H <= MAP_H; y++) {
+    let open = true;
+    for (let dy = 0; open && dy < PLAZA_H; dy++) for (let dx = 0; open && dx < PLAZA_W; dx++) open = !solidAt(m, x + dx, y + dy);
+    if (open) return { x, y };
+  }
+  return null;
+}
+
 const plaza: Signature = (m) => {
-  for (let y = 0; y + PLAZA_H <= MAP_H; y++)
-    for (let x = HALF - PLAZA_W + 1; x <= HALF; x++) {
-      let open = true;
-      for (let dy = 0; open && dy < PLAZA_H; dy++) for (let dx = 0; open && dx < PLAZA_W; dx++) open = !solidAt(m, x + dx, y + dy);
-      if (!open) continue;
-      let walls = 0;
-      for (let yy = 0; yy < MAP_H; yy++) for (let xx = 0; xx <= SIDE_MAX_X; xx++) if (solidAt(m, xx, yy)) walls++;
-      const share = walls / ((SIDE_MAX_X + 1) * MAP_H);
-      return share >= SIDE_WALL_SHARE ? null : `the sides hold ${(share * 100).toFixed(0)} % of furniture`;
-    }
-  return `no free ${PLAZA_W}x${PLAZA_H} plaza across the middle line`;
+  if (!plazaRect(m)) return `no free ${PLAZA_W}x${PLAZA_H} plaza across the middle line`;
+  let walls = 0;
+  for (let yy = 0; yy < MAP_H; yy++) for (let xx = 0; xx <= SIDE_MAX_X; xx++) if (solidAt(m, xx, yy)) walls++;
+  const share = walls / ((SIDE_MAX_X + 1) * MAP_H);
+  return share >= SIDE_WALL_SHARE ? null : `the sides hold ${(share * 100).toFixed(0)} % of furniture`;
 };
 
 /** A solid block that leans on the middle line (its right edge on column 12) and has a free ring of 16 or more tiles all the way round it, centre line included. */
