@@ -45,7 +45,7 @@ describe('director', () => {
     d.sync({ state: s, phase: 'playing', live: true });
     expect(log).toContain('layer:final');
   });
-  it('results play win once for a decided round and lose for a draw', () => {
+  it('results play win once, also for a draw (nobody lost: no defeat jingle on a shared TV)', () => {
     const win = fake();
     const s = round();
     s.match.counts = [10, 3];
@@ -58,7 +58,7 @@ describe('director', () => {
     t.match.counts = [4, 4];
     t.match.reachedAt = [9, 9];
     createDirector(draw.sound).sync({ state: t, phase: 'results', live: true });
-    expect(draw.log).toContain('play:lose');
+    expect(draw.log.filter((x) => x.startsWith('play:'))).toEqual(['play:win']);
   });
   it('a new round does not replay what the last one had', () => {
     const { log, sound } = fake();

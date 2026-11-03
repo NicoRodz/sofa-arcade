@@ -26,7 +26,6 @@ La TV enciende `sabotage`, `events` y `living` (`screen/match/run.ts`); sin `liv
 Rescate: un compañero no manchado en tu casilla o en una ortogonal 12 ticks seguidos te libera (sin huellas rivales); si el contacto se corta, el conteo vuelve a 0; ambos brillan 30 ticks. Botín: al mancharte, tu carta cae en la casilla válida más cercana (nunca muro, parte viva, fuente, recogible ni otro botín) 240 ticks; tú no la tomas los primeros 120, otro sí; si dos la pisan en el mismo tick nadie la toma; si nadie, vuelve a su recogible. Sin el flag la ronda es la de PR2 bit a bit (`test/rescue/flag.test.ts`). Captura: `manchazo-rescue-tv`.
 
 ## Carpetas
-
 | Ruta | Qué hay |
 |---|---|
 | `manifest.ts`, `protocol.ts`, `index.ts` | Manifest (modo único, equipos, controles, howTo) y protocolo (solo el id); sin Phaser |
@@ -35,7 +34,7 @@ Rescate: un compañero no manchado en tu casilla o en una ortogonal 12 ticks seg
 | `sim/match/` | Ronda: crear, tick, piñatas, estallidos, pintura, resultado, lobby, hash |
 | `sim/sabotage/`, `events/`, `living/`, `rescue/` | Un flag cada uno; azar solo en substreams con tag |
 | `sim/state.ts`, `sim/step.ts` | Arena de empujones original (sin `?control` ni Manchazo) |
-| `screen/`, `screen/match/`, `screen/grid/` | `game.ts` (el `ScreenGame`), `match/` (ronda, escena, HUD, banner de eventos, pistas del celular), `grid/` (prototipo F0 `?control=A\|B`) |
+| `screen/`, `screen/match/`, `screen/grid/` | `game.ts` (el `ScreenGame`), `match/` (ronda, escena, HUD, banner de eventos, pistas del celular), `audio/` (música y sonidos F8m, `engine.ts` Web Audio), `grid/` (prototipo F0 `?control=A\|B`) |
 | `controller/` | Línea del lobby; el pad llega con el manifest |
 | `test/` | `sim`, `map-*`, `match-*`, `grid-*`, `conformance` (`checkGame`); `sabotage/`, `events/`, `living/` por flag |
 Pruébalo con `npm run dev` y `?soon=1`; capturas: `npx tsx tools/capture.ts manchazo-living-tv`.

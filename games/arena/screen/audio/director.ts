@@ -1,8 +1,8 @@
 // Decides what Manchazo plays, frame by frame, from the shell's phase and the sim's state; the Sound (engine.ts) does it. Nothing runs until `sync` is called.
 //   lobby: lobby.ogg      round: the three layers, crossfaded by layerOf (layers.ts)      results: win / lose once      one-shots: tracker.ts (state) and cue-sounds.ts (HUD cues)
-// Result jingle: a decided round plays win.ogg, a draw plays lose.ogg (the TV has no single "own" team: the draw is the only sad ending).
+// Result jingle: always win.ogg. The TV has no "own" team, so a defeat jingle makes no sense, and a draw (a tie in tiles AND in who got there first) loses nobody:
+// the fanfare celebrates the match, not a team. lose.ogg stays in the suite, unused until a phone (which does have a team) plays it.
 import type { ManchazoState } from '../../sim';
-import { matchResult } from '../../sim';
 import { soundOfCue } from './cue-sounds';
 import type { Sound } from './engine';
 import { layerOf, modeOf, type Mode } from './layers';
@@ -23,7 +23,7 @@ export function createDirector(sound: Sound) {
     sync({ state, phase, live }: SyncInput): void {
       const next = modeOf({ phase, live, over: !!state?.grid.over, hasRound: !!state });
       sound.loop(next === 'lobby' ? 'lobby' : next === 'round' ? 'round' : null);
-      if (next === 'results' && mode !== 'results' && state) sound.play(matchResult(state).winner === null ? 'lose' : 'win');
+      if (next === 'results' && mode !== 'results' && state) sound.play('win');
       mode = next;
       if (!state || next === 'lobby') {
         seen = null;

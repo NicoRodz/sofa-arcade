@@ -2,18 +2,18 @@ import { existsSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { PHASE_CUES, SABOTAGE_CUES, SWING_CUE } from '../match/hud/cues';
-import { allCues, soundOfCue } from './cue-sounds';
+import { LOOT_CUES, PHASE_CUES, RESCUE_CUE, SABOTAGE_CUES, SWING_CUE } from '../match/hud/cues';
+import { SILENT_CUES, allCues, soundOfCue } from './cue-sounds';
 import { AUDIO_FILES, urlOf } from './files';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), 'assets');
 
 describe('cue -> file mapping', () => {
-  it('lists every cue the HUD can emit (10 sabotages, the swing, 3 phase cues)', () => {
-    expect(allCues()).toHaveLength(Object.keys(SABOTAGE_CUES).length + 1 + Object.keys(PHASE_CUES).length);
+  it('lists every cue the HUD can emit (10 sabotages, the swing, 3 phase cues, the rescue, 3 loot cues)', () => {
+    expect(allCues()).toHaveLength(Object.keys(SABOTAGE_CUES).length + 1 + Object.keys(PHASE_CUES).length + 1 + Object.keys(LOOT_CUES).length);
     expect(allCues()).toContain(SWING_CUE);
   });
-  it.each(allCues())('cue %s has a sound whose file exists and is not empty', (cue) => {
+  it.each(allCues().filter((c) => !SILENT_CUES.includes(c)))('cue %s has a sound whose file exists and is not empty', (cue) => {
     const s = soundOfCue(cue);
     expect(s, `no sound for ${cue}`).not.toBeNull();
     const path = join(dir, `${s!.file}.ogg`);
@@ -25,6 +25,13 @@ describe('cue -> file mapping', () => {
     for (const c of Object.values(SABOTAGE_CUES)) expect(soundOfCue(c)?.file).toBe('sabotage-use');
     for (const c of Object.values(PHASE_CUES)) expect(soundOfCue(c)?.file).toBe('event-alert');
     expect(soundOfCue(SWING_CUE)?.file).toBe('pickup');
+  });
+  it('the PR3 cues: rescue -> pickup, loot drop -> event-alert, take -> pickup, expire is silent', () => {
+    expect(soundOfCue(RESCUE_CUE)?.file).toBe('pickup');
+    expect(soundOfCue(LOOT_CUES.drop)?.file).toBe('event-alert');
+    expect(soundOfCue(LOOT_CUES.take)?.file).toBe('pickup');
+    expect(soundOfCue(LOOT_CUES.expire)).toBeNull();
+    expect(SILENT_CUES).toEqual([LOOT_CUES.expire]);
   });
   it('an unknown cue has no sound', () => expect(soundOfCue('nope')).toBeNull());
 });
