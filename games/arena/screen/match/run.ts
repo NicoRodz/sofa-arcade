@@ -29,6 +29,7 @@ export class ManchazoRun {
       sabotage: true,
       sabotagePlus: true, // F8a: the five new sabotages are in the deck (the sim without the flag is F5's)
       events: true,
+      eventsPlus: true, // F8b: the five new events are in the pool (the sim without the flag is F8a's)
       living: true,
       ...(control ? { control } : {}),
     });

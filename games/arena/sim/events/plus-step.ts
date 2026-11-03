@@ -22,10 +22,9 @@ export function startPlus(s: ManchazoState, kind: ActingPlusKind): void {
   else if (kind === 'balloons') plus.balloon = { landAt: t + BALLOON_WARN_TICKS, owner: plus.balloons.flatMap(() => [-2, -2]) };
 }
 
-/** Contagio: in one pass over a copy of the board, every painted tile with CONTAGION_MIN or more rival tiles among its 4 neighbours turns to the rival's colour. */
-function contagion(s: ManchazoState): number {
-  const m = s.match;
-  const before = m.paint.slice();
+/** Contagio: the tiles that turn (and the colour they turn to) if the pass ran on the board now: painted tiles with CONTAGION_MIN or more rival tiles among their 4 neighbours. */
+export function contagionTurns(s: ManchazoState): [number, number, number][] {
+  const before = s.match.paint.slice(); // one pass over a copy: a tile that turns does not count for its neighbours
   const turn: [number, number, number][] = [];
   for (let y = 0; y < MAP_H; y++)
     for (let x = 0; x < MAP_W; x++) {
@@ -35,8 +34,13 @@ function contagion(s: ManchazoState): number {
       for (const [dx, dy] of ORTHO) if (before[tileIndex(x + dx, y + dy)] === 1 - own && !solidAt(s.grid.map, x + dx, y + dy)) rivals++;
       if (rivals >= CONTAGION_MIN) turn.push([x, y, 1 - own]);
     }
+  return turn;
+}
+
+function contagion(s: ManchazoState): number {
+  const m = s.match;
   let n = 0;
-  for (const [x, y, team] of turn) {
+  for (const [x, y, team] of contagionTurns(s)) {
     paintTile(m, x, y, team, s.grid.tick);
     if (m.paint[tileIndex(x, y)] === team) n++; // a tape keeps its colour
   }

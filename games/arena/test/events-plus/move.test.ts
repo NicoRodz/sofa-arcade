@@ -73,7 +73,7 @@ describe('Mudanza in the round', () => {
   it('a paint on the destination is wiped and the counts follow (count = tiles painted)', () => {
     const s = setup();
     park(s);
-    const [{ to }] = ev(s).plus!.moves;
+    const { to } = ev(s).plus!.moves[0]!;
     s.match.paint[to[1] * 27 + to[0]] = 0; // as a pinata would have left it
     s.match.counts[0] = 1;
     run(s, 10 + MOVE_WARN_TICKS + 2);
@@ -113,7 +113,7 @@ describe('Mudanza in the round', () => {
   it('with the living map the base the screen and the pairs rebuild from follows the move', () => {
     const s = setup(true);
     park(s);
-    const [{ from, to }] = ev(s).plus!.moves;
+    const { from, to } = ev(s).plus!.moves[0]!;
     run(s, 10 + MOVE_WARN_TICKS + 2);
     expect(s.match.live!.base[from[1] * 27 + from[0]]).toBe(0);
     expect(s.match.live!.base[to[1] * 27 + to[0]]).toBe(1);

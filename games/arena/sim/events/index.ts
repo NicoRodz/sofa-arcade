@@ -11,4 +11,4 @@ export type { Planned } from './plan';
 export { happyBonus, happyOn } from './happy';
 export { drawBalloons, drawMoves, type MovePair } from './plus-draw';
 export type { PlusEvents } from './plus-state';
-export { startPlus } from './plus-step';
+export { contagionTurns, startPlus } from './plus-step';

@@ -2,7 +2,7 @@
 import {
   CLOCK_FROM_TICKS,
   CLOCK_FULL,
-  EVENT_KINDS,
+  ALL_EVENT_KINDS,
   paintTile,
   startMajor,
   type EventKind,
@@ -23,12 +23,15 @@ export function eventDebug(get: Get) {
     manchazoEvent(kind: EventKind) {
       const s = get();
       const ev = s?.match.ev;
-      if (!s || !ev || !EVENT_KINDS.includes(kind)) return;
+      if (!s || !ev || !ALL_EVENT_KINDS.includes(kind)) return;
       const q = ev.program.find((p) => p.kind === kind);
       const p: Planned = { kind, at: s.grid.tick, row: q?.row ?? 6, down: q?.down ?? true, order: q ? [...q.order] : [] };
       if (kind === 'rain' && p.order.length === 0)
         for (let y = p.row; y < p.row + 3; y++) for (let x = 0; x <= 13; x++) if (!solidAt(s.grid.map, x, y)) p.order.push(y * MAP_W + x);
+      if (!ev.plus && ALL_EVENT_KINDS.indexOf(kind) >= 4) return;
+      if (kind === 'move' && !ev.plus?.moves.length) return;
       Object.assign(ev, { active: null, big: null, rain: null, vac: null });
+      if (ev.plus) Object.assign(ev.plus, { contagion: null, move: null, balloon: null });
       ev.program.splice(ev.next, 0, p);
       startMajor(s, p);
     },
