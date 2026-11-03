@@ -49,7 +49,7 @@ describe('Mudanza: the alternatives are generated and validated with the seed', 
       const moves = ev(plusRound(1, [0, 1], m, living)).plus!.moves;
       for (const sub of [[0], [1], [0, 1]]) {
         const solid = base.map.solid.slice();
-        for (const { from, to } of sub.map((k) => moves[k]).filter((p) => p))
+        for (const { from, to } of sub.flatMap((k) => (moves[k] ? [moves[k]!] : [])))
           for (const f of [(t: readonly [number, number]) => t, mirrorTile]) {
             solid[f(from)[1] * 27 + f(from)[0]] = 0;
             solid[f(to)[1] * 27 + f(to)[0]] = 1;
