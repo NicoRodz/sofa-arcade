@@ -1,6 +1,6 @@
 // PR6 risk: can the packing tape shut anyone in or cover a door of Islas? It only cuts blasts and locks the paint under it; this fuzz proves movement never sees it.
-// Same round twice (4 archetypes, the living map, Mudanza, the sabotages, 4 scripted bodies): in A the tape is erased the tick it lands, in B it stays, and in B a
-// strip over EVERY floor tile is kept down as the worst case. Every body position and the whole solid field must be identical tick by tick.
+// Same round twice (4 archetypes, the living map, Mudanza, 4 scripted bodies, no pickups on the floor): in A nobody ever uses a card, so there is no tape at all; in B everyone
+// puts tape every 50 ticks and a strip over EVERY floor tile is kept down as the worst case. Every body position and the whole solid field must be identical tick by tick.
 import { describe, expect, it } from 'vitest';
 import { ARCHETYPES, MAP_H, MAP_W, archetypeOf, generateMap, sealedRooms, solidAt, type Archetype } from '../../map';
 import { createManchazo, stepManchazo, type ManchazoInput, type ManchazoState } from '../../sim';
@@ -31,6 +31,10 @@ const round = (mapSeed: number, seed: number): ManchazoState =>
     'move',
     100,
   );
+const bare = (s: ManchazoState): ManchazoState => {
+  s.match.sab!.pickups = []; // the only card in play is the tape: no other card can move or slow a body
+  return s;
+};
 const floorTiles = (s: ManchazoState): number[] => {
   const out: number[] = [];
   for (let y = 0; y < MAP_H; y++) for (let x = 0; x < MAP_W; x++) if (!solidAt(s.grid.map, x, y)) out.push(y * MAP_W + x);
@@ -42,9 +46,9 @@ interface Trace {
   tapes: number;
   moved: boolean;
 }
-/** Plays the round; `keep` leaves the tape down (B) or erases it as it lands (A). Everyone holds the tape card and presses B every 50 ticks. */
-function play(mapSeed: number, seed: number, keep: boolean): Trace {
-  const s = round(mapSeed, seed);
+/** Plays the round; `tape` is B (everyone holds the tape card, presses B every 50 ticks, strips everywhere) and false is A (the card is held and never used). */
+function play(mapSeed: number, seed: number, tape: boolean): Trace {
+  const s = bare(round(mapSeed, seed));
   const first = Array.from(s.grid.map.solid).join('');
   const ps = scripts(4, seed);
   const frames: string[] = [];
@@ -52,11 +56,10 @@ function play(mapSeed: number, seed: number, keep: boolean): Trace {
     const inputs = new Map<number, ManchazoInput>();
     ps.forEach((p, i) => {
       if (s.match.sab!.held[i] === null) s.match.sab!.held[i] = 'tape';
-      inputs.set(s.grid.bodies[i]!.slot, { ...p(), drop: false, use: t % 50 === i * 7 });
+      inputs.set(s.grid.bodies[i]!.slot, { ...p(), drop: false, use: tape && t % 50 === i * 7 });
     });
-    if (keep && t % 20 === 0) wrap(s).strips.push({ owner: 9, team: 0, tiles: floorTiles(s), left: 360 }); // worst case: every floor tile under tape
+    if (tape && t % 20 === 0) wrap(s).strips.push({ owner: 9, team: 0, tiles: floorTiles(s), left: 360 }); // worst case: every floor tile under tape
     stepManchazo(s, inputs);
-    if (!keep) wrap(s).strips = [];
     frames.push(`${s.grid.bodies.map((b) => `${b.x},${b.y}`).join(';')}|${Array.from(s.grid.map.solid).join('')}`);
   }
   return { frames, tapes: wrap(s).log.filter((e) => e.kind === 'tape').length, moved: Array.from(s.grid.map.solid).join('') !== first };
