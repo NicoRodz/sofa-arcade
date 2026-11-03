@@ -1,6 +1,6 @@
 // The top feed: what each team took or used and what it does. Legends for the 10 cards, who wins the row, how long an entry lives, and the feed's "tomó" read off the sim's hands.
 import { describe, expect, it } from 'vitest';
-import { ALL_KINDS } from '../../sim';
+import { ALL_KINDS, SHOT_KINDS, TAPE_LEN } from '../../sim';
 import { Feed, type FeedEvent, type GrabEvent } from '../../screen/match/hud/feed';
 import { LEGENDS } from '../../screen/match/hud/legends';
 import { ENTRY_TICKS, NAME_MAX, entryMotion, topFeed } from '../../screen/match/hud/top-feed';
@@ -29,6 +29,26 @@ describe('the legend of every card', () => {
       expect(words(LEGENDS[k].legend)).toBeGreaterThanOrEqual(4);
       expect(words(LEGENDS[k].legend)).toBeLessThanOrEqual(7);
     }
+  });
+});
+
+describe('the legends tell what the cards do today (after PR4 projectiles and PR6 Cinta/Esponja v2)', () => {
+  const legend = (k: (typeof ALL_KINDS)[number]) => LEGENDS[k].legend;
+
+  it('the cards that fly say they are shot and hit ONE rival: no "cercano" any more', () => {
+    for (const k of SHOT_KINDS) {
+      expect(legend(k)).toMatch(/^disparas/);
+      expect(legend(k)).toMatch(/golpeado/);
+      expect(legend(k)).not.toMatch(/cercan/);
+    }
+    expect([...SHOT_KINDS].sort()).toEqual(['dizzy', 'glue', 'swap']);
+  });
+
+  it('the Cinta is a barrier of TAPE_LEN tiles that cuts blasts (not "un cuadro"); the Esponja soaks and then squeezes', () => {
+    expect(legend('tape')).toContain(`${TAPE_LEN} casillas`);
+    expect(legend('tape')).toMatch(/explosiones/);
+    expect(legend('tape')).not.toMatch(/cuadro/);
+    expect(legend('sponge')).toMatch(/absorbes.*exprimes/);
   });
 });
 
