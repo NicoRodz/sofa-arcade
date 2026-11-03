@@ -45,7 +45,17 @@ describe('mirror with the sponge v2 and the packing tape: swapping the teams swa
         const [wa, wb] = [wrap(a), wrap(b)];
         for (const k of ['soak', 'prep', 'fx'] as const) expect(wb[k]).toEqual(wa[k]);
         const strips = (w: typeof wa, flip: boolean) =>
-          w.strips.map((t) => [t.owner, flip ? 1 - t.team : t.team, t.left, t.tiles.map((i) => (flip ? 26 - (i % MAP_W) : i % MAP_W) + 100 * Math.floor(i / MAP_W)).sort().join('/')].join());
+          w.strips.map((t) =>
+            [
+              t.owner,
+              flip ? 1 - t.team : t.team,
+              t.left,
+              t.tiles
+                .map((i) => (flip ? 26 - (i % MAP_W) : i % MAP_W) + 100 * Math.floor(i / MAP_W))
+                .sort()
+                .join('/'),
+            ].join(),
+          );
         expect(strips(wb, true)).toEqual(strips(wa, false));
         const log = (w: typeof wa, flip: boolean) => w.log.map((e) => [e.kind, e.tick, e.body, flip ? 26 - e.x : e.x, e.y, e.n].join());
         expect(log(wb, true)).toEqual(log(wa, false));

@@ -8,7 +8,11 @@ import { scripts } from '../match-drive';
 const MASTER: Record<number, { hashes: number[]; used: number; counts: number[] }> = {
   3: { hashes: [2787300730, 139846225, 2513339269, 1998470180, 633805046, 3564849779, 3136320187, 2860419685], used: 18, counts: [92, 63] },
   4242: { hashes: [670812129, 2374843814, 1170424104, 3767734318, 2490989473, 828477090, 3133139111, 116763], used: 18, counts: [78, 83] },
-  99991: { hashes: [1436726935, 373078386, 1141262405, 2031656713, 3275878097, 32876539, 1857260268, 1319796230], used: 18, counts: [89, 60] },
+  99991: {
+    hashes: [1436726935, 373078386, 1141262405, 2031656713, 3275878097, 32876539, 1857260268, 1319796230],
+    used: 18,
+    counts: [89, 60],
+  },
 };
 
 function run(mapSeed: number, v2: boolean) {
@@ -41,13 +45,16 @@ function run(mapSeed: number, v2: boolean) {
 }
 
 describe('sabotageV2 off is master (pinned from 9ad24e0)', () => {
-  it.each(Object.keys(MASTER).map(Number))('map seed %i: the hash tick by tick, the cards played and the counts equal the master ones', (mapSeed) => {
-    const { s, hashes } = run(mapSeed, false);
-    expect(s.match.sab!.plus!.wrap).toBeNull();
-    expect(hashes).toEqual(MASTER[mapSeed]!.hashes);
-    expect(s.match.sab!.used).toBe(MASTER[mapSeed]!.used);
-    expect(s.match.counts).toEqual(MASTER[mapSeed]!.counts);
-  });
+  it.each(Object.keys(MASTER).map(Number))(
+    'map seed %i: the hash tick by tick, the cards played and the counts equal the master ones',
+    (mapSeed) => {
+      const { s, hashes } = run(mapSeed, false);
+      expect(s.match.sab!.plus!.wrap).toBeNull();
+      expect(hashes).toEqual(MASTER[mapSeed]!.hashes);
+      expect(s.match.sab!.used).toBe(MASTER[mapSeed]!.used);
+      expect(s.match.counts).toEqual(MASTER[mapSeed]!.counts);
+    },
+  );
   it('with the flag on the round is another round (the rules changed), and it replays: same seed, same hashes', () => {
     const a = run(3, true);
     expect(a.s.match.sab!.plus!.wrap).not.toBeNull();

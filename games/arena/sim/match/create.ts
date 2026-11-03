@@ -50,7 +50,9 @@ export function createManchazo(cfg: ManchazoConfig): ManchazoState {
   const match = createMatch(
     grid.bodies.map((b) => b.team),
     map,
-    cfg.sabotage ? { seed: cfg.seed, plus: !!cfg.sabotagePlus, shots: !!cfg.projectiles, wrap: !!cfg.sabotageV2, ...plazaOf(gen?.archetype, base) } : undefined,
+    cfg.sabotage
+      ? { seed: cfg.seed, plus: !!cfg.sabotagePlus, shots: !!cfg.projectiles, wrap: !!cfg.sabotageV2, ...plazaOf(gen?.archetype, base) }
+      : undefined,
     cfg.events ? { seed: cfg.seed, base: grid.durationTicks, plus: !!cfg.eventsPlus, phases: !!cfg.phases } : undefined,
     living,
     !!cfg.rescue,

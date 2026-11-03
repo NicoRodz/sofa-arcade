@@ -4,7 +4,12 @@ import { FINAL_TICKS, paintTile } from '../../sim';
 import { USE, blastAt, countsAgree, face, give, owner, plus, put, sab, tick, wrap, wrapRound } from './wrap-drive';
 
 const at = (x: number, y: number) => y * 27 + x;
-const D2: [number, number][] = [11, 12, 13, 14, 15].map((x): [number, number] => [x, 0]).concat([12, 13, 14].map((x): [number, number] => [x, 1]), [[13, 2]]);
+const D2: [number, number][] = [11, 12, 13, 14, 15]
+  .map((x): [number, number] => [x, 0])
+  .concat(
+    [12, 13, 14].map((x): [number, number] => [x, 1]),
+    [[13, 2]],
+  );
 
 describe('with the projectiles (PR4)', () => {
   it('a Mareo shot flies through the tape and hits the rival behind it', () => {
