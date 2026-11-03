@@ -65,10 +65,10 @@ export function drawAim(f: Frame, s: ManchazoState) {
     const col = TEAM_COLOR[b.team % 2]!;
     const t = 1 - left / AIM_TICKS;
     const march = (s.grid.tick * 3) % (f.px * 0.5); // the dashes run toward the tip
-    f.g.lineStyle(16, INK, 0.5).lineBetween(cx, cy, cx + dx * len, cy + dy * len);
+    f.g.lineStyle(f.px * 0.36, INK, 0.55).lineBetween(cx, cy, cx + dx * len, cy + dy * len);
     for (let o = -f.px * 0.5 + march; o < len - f.px * 0.3; o += f.px * 0.5) {
       const [a, e] = [Math.max(o, f.px * 0.3), Math.min(o + f.px * 0.3, len - f.px * 0.3)];
-      if (e > a) f.g.lineStyle(10, col, 0.95).lineBetween(cx + dx * a, cy + dy * a, cx + dx * e, cy + dy * e);
+      if (e > a) f.g.lineStyle(f.px * 0.24, col, 0.95).lineBetween(cx + dx * a, cy + dy * a, cx + dx * e, cy + dy * e);
     }
     const [x, y] = bodyPx(f, s, i);
     g.lineStyle(14, INK, 0.6).strokeCircle(x, y, f.px * 0.82);
