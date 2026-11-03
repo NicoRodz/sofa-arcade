@@ -81,6 +81,17 @@ describe('V8 tells the archetypes apart', () => {
   });
 });
 
+describe('the Plaza is the plan\'s 7x5 (literal numbers, not the validator\'s constants)', () => {
+  it('30 Plaza maps hold a free block of columns 10-16 and 5 consecutive rows, and no Plaza map accepts a smaller plaza', () => {
+    for (const seed of of('plaza', 30)) {
+      const { map } = generateMap(seed);
+      const free = (x: number, y: number) => map.solid[y * map.w + x] === 0;
+      const rows = Array.from({ length: map.h }, (_, y) => y).filter((y) => Array.from({ length: 7 }, (_, i) => free(10 + i, y)).every(Boolean));
+      expect(rows.some((y) => [1, 2, 3, 4].every((d) => rows.includes(y + d))), `seed ${seed}`).toBe(true);
+    }
+  });
+});
+
 describe('V9 and the Clasico fallback', () => {
   it('V9 names the combination that cuts the map, and Clasico is the F2 generator bit for bit (hashes taken on master 48dad5f)', () => {
     const g = generateMap(2);
