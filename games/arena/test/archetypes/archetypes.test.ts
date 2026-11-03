@@ -15,6 +15,7 @@ import {
   validateMap,
   type Archetype,
   type LivingElement,
+  type TileMap,
 } from '../../map';
 
 const SEEDS = Array.from({ length: 4000 }, (_, i) => (i * 3359 + 17) % SEED_SPACE);
@@ -66,6 +67,16 @@ describe.each(ARCHETYPES)('%s', (kind) => {
       );
       expect(circle).toBeGreaterThanOrEqual(7);
       expect(column.some((y) => column.includes(y + 1) && column.includes(y + 2))).toBe(true);
+    }
+  });
+});
+
+describe('V8 tells the archetypes apart', () => {
+  it('Plaza and Ocho signatures reject every map of the other three, Pasillos accepts at most 10 % of them (50 maps each)', () => {
+    const maps = Object.fromEntries(ARCHETYPES.map((k) => [k, of(k, 50).map((s) => generateMap(s).map)])) as Record<Archetype, TileMap[]>;
+    for (const [kind, most] of [['plaza', 0], ['ocho', 0], ['pasillos', 15]] as const) {
+      const others = ARCHETYPES.filter((k) => k !== kind).flatMap((k) => maps[k]);
+      expect(others.filter((m) => v8Signature(kind, m) === null).length, kind).toBeLessThanOrEqual(most);
     }
   });
 });
