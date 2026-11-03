@@ -1,6 +1,7 @@
 // The Manchazo round running on this screen, fed by the phones' packets: the latest stick of each phone, button 1 (a counter that grew = one pinata) and button 2 (the sabotage in hand).
 import { mapSeedFor } from '../../map';
 import { toMilli, type ControlPlan } from '../../sim';
+import { Feed } from './hud/feed';
 import { createManchazo, stepManchazo, type ManchazoInput, type ManchazoState } from '../../sim';
 
 export const MATCH_STEP_MS = 1000 / 60;
@@ -16,6 +17,7 @@ interface Pad {
 
 export class ManchazoRun {
   readonly state: ManchazoState;
+  readonly feed = new Feed(); // PR1: what the TV announces (sabotages played, score swings), read from the state after each tick
   private pads = new Map<number, Pad>();
   private acc = 0;
   private overFor = 0;
@@ -62,6 +64,7 @@ export class ManchazoRun {
         p.use = false;
       }
       stepManchazo(this.state, inputs);
+      this.feed.observe(this.state);
       this.acc -= MATCH_STEP_MS;
     }
     return false;

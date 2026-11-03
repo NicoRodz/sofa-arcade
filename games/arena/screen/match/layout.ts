@@ -8,8 +8,8 @@ export const X0 = (W - MAP_W * PX) / 2;
 export const Y0 = 150; // under the HUD band
 export const FLOOR_BOTTOM = Y0 + MAP_H * PX; // 990
 export const HUD_TOP = SAFE.y; // the HUD's text starts at the top of the safe area
-export const BAR_Y = 130; // floor bar, between the percentages and the floor
-export const BAR_H = 16;
+export const BAR_Y = 124; // floor bar, between the percentages and the floor (PR1: taller, so the tug of war reads from the couch)
+export const BAR_H = 22;
 export const BOTTOM_Y = FLOOR_BOTTOM + 1; // seed and next event
 export const SIDE_X = X0; // the percentages sit over the floor's edges
 
@@ -33,6 +33,10 @@ export const textBox = (x: number, y: number, size: number, chars: number, ox: 0
 export const PCT_SIZE = 56;
 export const CLOCK_SIZE = 56;
 export const FOOT_SIZE = 28; // secondary text: the plan's minimum
+export const PILL_W = 290; // PR1: the sabotage pills in the HUD strip (never over the floor), one per team between its percentage and the clock
+export const PILL_H = 56;
+export const POP_SIZE = 44; // the "+X %" right after each team's percentage
+export const STRIP_H = 34; // the event banner lives in the bottom band, under the floor
 
 /** Every HUD element's worst-case rectangle. The longest strings: "▲ 100.0 %" (9), "10:00" (5), "MAPA 3·ABCDEF" (13), "Próximo evento: Casillas doradas (105 s)" (40). */
 export const HUD: Record<string, Rect> = {
@@ -40,6 +44,9 @@ export const HUD: Record<string, Rect> = {
   pctRight: textBox(SIDE_X + MAP_W * PX, HUD_TOP, PCT_SIZE, 9, 1),
   clock: textBox(W / 2, HUD_TOP, CLOCK_SIZE, 5, 0.5),
   bar: { x: X0, y: BAR_Y, w: MAP_W * PX, h: BAR_H },
+  pillLeft: { x: X0 + 388, y: HUD_TOP + 2, w: PILL_W, h: PILL_H },
+  pillRight: { x: X0 + MAP_W * PX - 388 - PILL_W, y: HUD_TOP + 2, w: PILL_W, h: PILL_H },
+  strip: { x: X0, y: FLOOR_BOTTOM + 2, w: MAP_W * PX, h: STRIP_H }, // the event banner (seed and next event step aside while it is up)
   seed: textBox(X0, BOTTOM_Y, FOOT_SIZE, 13, 0),
   next: textBox(X0 + MAP_W * PX, BOTTOM_Y, FOOT_SIZE, 40, 1),
 };
