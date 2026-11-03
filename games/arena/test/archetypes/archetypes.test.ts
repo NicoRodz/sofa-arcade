@@ -7,6 +7,9 @@ import {
   generateMap,
   hashMap,
   mapSeedFor,
+  elementsOf,
+  mapStates,
+  v1Connection,
   v8Signature,
   v9LivingConnection,
   validateMap,
@@ -42,11 +45,11 @@ describe.each(ARCHETYPES)('%s', (kind) => {
 
   it('V8 is red on an empty map and V9 is green with the living map placed (every state of every pair connected)', () => {
     expect(v8Signature(kind, emptyMap())).not.toBeNull();
-    for (const seed of of(kind, 20)) {
+    for (const seed of of(kind, 60)) {
       const g = generateMap(seed, undefined, true);
       expect(g.archetype).toBe(kind);
-      const elements: LivingElement[] = g.living.filter((l) => l.kind !== 'fountain').map(() => ({ id: 'x', states: 1, closed: () => [] }));
-      expect(v9LivingConnection(g.map, elements)).toBeNull();
+      expect(v9LivingConnection(g.map, elementsOf(g.living))).toBeNull(); // the real elements (brushes 4 states, sofas 2), not stand-ins
+      for (const st of mapStates(g.map, elementsOf(g.living))) expect(v1Connection(st.map), `seed ${seed} states ${st.states}`).toBeNull();
     }
   });
 
