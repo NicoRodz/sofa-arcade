@@ -30,7 +30,7 @@ import {
   runManchazoSabotageTv,
   runManchazoRescueTv,
 } from './scenarios/manchazo-sabotage';
-import { runManchazoShotTv } from './scenarios/manchazo-shot';
+import { runManchazoShotTv } from './scenarios/legibility/manchazo-shot';
 import { runCast, runGame, runLobby, runResults, runSolo } from './scenarios/play';
 
 type Scenario = (c: Ctx) => Promise<void>;

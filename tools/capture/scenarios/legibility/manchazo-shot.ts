@@ -1,6 +1,6 @@
-import { sleep } from '../config';
-import type { Ctx } from '../session';
-import { startRound } from './manchazo-sabotage';
+import { sleep } from '../../config';
+import type { Ctx } from '../../session';
+import { startRound } from '../manchazo-sabotage';
 
 // Manchazo PR4: the projectiles at 4K (3840x2160): the aim of a Pegote, a Cambiazo in flight and a Pegote that was just passed (fuse, pass pips, the arc). The
 // `window.__pg.manchazoPin*` hooks hold each thing still on a free stretch of floor (capture tool only). Saved as manchazo-proyectil-*.png.
