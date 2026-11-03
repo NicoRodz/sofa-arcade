@@ -35,7 +35,7 @@ export interface EventsState {
   clock: ClockState;
   hiddenShown: boolean;
   log: Announcement[];
-  plus: PlusEvents | null; // F8b: the five new events (flag `eventsPlus`); null: the round is F8a's, bit for bit
+  plus?: PlusEvents; // F8b: the five new events (flag `eventsPlus`); absent without it (the key is not even there: a serialised F4 state stays as it was)
 }
 
 const countFloor = (map: TileMap, cy: number) => {
@@ -61,7 +61,7 @@ export interface PlusOptions {
 }
 
 export function createEvents(map: TileMap, seed: number, base: number, fountain = false, opts?: PlusOptions): EventsState {
-  const plus = opts ? createPlusEvents(map, seed, opts.living, opts.avoid) : null;
+  const plus = opts ? createPlusEvents(map, seed, opts.living, opts.avoid) : undefined;
   const pool: EventKind[] = plus
     ? [...EVENT_KINDS, ...EVENT_PLUS_KINDS.filter((k) => k !== 'move' || plus.moves.length > 0)]
     : [...EVENT_KINDS];
@@ -77,7 +77,7 @@ export function createEvents(map: TileMap, seed: number, base: number, fountain 
     clock: { phase: 'idle', outcome: 'none', row: clockRow(map, seed, fountain), team: -1, liveAt: 0, endsAt: 0, charge: 0 },
     hiddenShown: false,
     log: [],
-    plus,
+    ...(plus ? { plus } : {}),
   };
 }
 

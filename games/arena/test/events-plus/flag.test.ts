@@ -28,7 +28,8 @@ describe('eventsPlus off: the round is F8a, bit for bit', () => {
     ],
   ] as const)('round %#', (cfg, hash, counts) => {
     const s = createManchazo(cfg);
-    expect(s.match.ev!.plus).toBeNull();
+    expect(s.match.ev!.plus).toBeUndefined();
+    expect('plus' in s.match.ev!).toBe(false);
     play(s, 5, 4500);
     expect(hashManchazo(s)).toBe(hash);
     expect(s.match.counts).toEqual(counts);
