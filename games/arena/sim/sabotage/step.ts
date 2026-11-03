@@ -45,9 +45,10 @@ export function afterMove(s: ManchazoState): void {
     }
     if (a.footprints[b.team]! > 0 && b.moved) paintTile(m, ...tile, 1 - b.team, s.grid.tick);
     if (a.held[i] === null)
-      for (const p of a.pickups)
+      for (const [k, p] of a.pickups.entries())
         if (p.wait === 0 && pairOut(m, p.pair) && p.x === tile[0] && p.y === tile[1]) {
           a.held[i] = cardOf(a, p);
+          if (m.res) m.res.from[i] = k; // PR3: the spawner a dropped card goes back to
           p.drawn++;
           p.wait = respawnTicks(m, PICKUP_RESPAWN_TICKS);
           break;

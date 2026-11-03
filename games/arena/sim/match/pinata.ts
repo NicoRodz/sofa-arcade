@@ -5,6 +5,7 @@ import { radiusOf } from '../events/comeback';
 import { happyBonus, happyOn } from '../events/happy';
 import { capRadius } from '../phase/radius';
 import { deflectVacuum } from '../events/vacuum';
+import { dropLoot } from '../rescue/loot';
 import { glueTarget } from '../sabotage/use';
 import { clearTile, paintTile } from './board';
 import { blastTiles } from './blast';
@@ -52,6 +53,10 @@ function detonate(s: ManchazoState, p: Pinata): void {
     const bm = m.bodies[i]!;
     if (b.team === p.team || bm.stun > 0 || (m.sab?.plus?.immune[i] ?? 0) > 0 || !hit.has(bodyTile(b, bm.face).join(','))) return;
     bm.stun = STUN_TICKS;
+    if (m.res) {
+      m.res.contact[i] = 0; // PR3: a new stain starts its rescue count over, and the card in hand falls
+      dropLoot(s, i);
+    }
     if (m.sab) m.sab.roller[i] = 0; // a stain cuts a roller
     if (m.sab?.plus) m.sab.plus.charge[i] = 0; // and a Mareo still charging
     bm.trail = 0;
