@@ -5,12 +5,12 @@ import { play } from '../match-drive';
 
 const full = { sabotage: true, sabotagePlus: true, events: true, eventsPlus: true, living: true, classicMap: true, phases: true } as const;
 
-// Hashes taken on master (6f9d231, PR2) with every flag on, full rounds: the new flag off must not change a single bit.
+// Re-pinned for the fluid-turn movement (the flag-off bits are the new base movement). Originally taken on master (6f9d231, PR2) with every flag on, full rounds: the new flag off must not change a single bit.
 describe('rescue off: the round is the PR2 one, bit for bit', () => {
   it.each([
-    [{ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 21, mapSeed: 5150, ...full }, 717972615, [186, 88], 5400],
-    [{ slots: [0, 1, 2, 3, 4, 5, 6, 7], teams: [0, 1, 0, 1, 0, 1, 0, 1], seed: 33, mapSeed: 90210, ...full }, 254918007, [182, 137], 6300],
-    [{ slots: [0, 1], teams: [0, 1], seed: 8, mapSeed: 777, ...full }, 1416276350, [83, 58], 4500],
+    [{ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 21, mapSeed: 5150, ...full }, 4045091785, [111, 187], 5400],
+    [{ slots: [0, 1, 2, 3, 4, 5, 6, 7], teams: [0, 1, 0, 1, 0, 1, 0, 1], seed: 33, mapSeed: 90210, ...full }, 1188966170, [174, 131], 6300],
+    [{ slots: [0, 1], teams: [0, 1], seed: 8, mapSeed: 777, ...full }, 3941163731, [76, 61], 4500],
   ] as const)('round %#', (cfg, hash, counts, ticks) => {
     const s = createManchazo(cfg);
     expect(s.match.res).toBeNull();
@@ -30,7 +30,7 @@ describe('rescue off: the round is the PR2 one, bit for bit', () => {
     });
     play(s, 5, 99999);
     expect(s.match.res).not.toBeNull();
-    expect(hashManchazo(s)).not.toBe(254918007);
+    expect(hashManchazo(s)).not.toBe(1188966170);
   });
   it('the flag needs nothing else: without sabotages the rescue still plays and no loot exists', () => {
     const s = createManchazo({ slots: [0, 1], teams: [0, 1], seed: 8, rescue: true });

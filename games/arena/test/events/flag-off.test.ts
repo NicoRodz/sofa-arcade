@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { createManchazo, hashManchazo } from '../../sim';
 import { play } from '../match-drive';
 
-// Hashes taken on master (b367f39, before F4) with the sabotages on: a round without the events flag must not change by a single bit.
+// Re-pinned for the fluid-turn movement (the flag-off bits are the new base movement). Originally taken on master (b367f39, before F4) with the sabotages on: a round without the events flag must not change by a single bit.
 describe('events flag off: the round is F3, bit for bit', () => {
   it.each([
-    [7, undefined, 2259385247, [107, 104]],
-    [9, 123456, 2117369832, [117, 128]],
+    [7, undefined, 931750987, [153, 157]],
+    [9, 123456, 2039021274, [124, 180]],
   ] as const)('seed %i map %s', (seed, mapSeed, hash, counts) => {
     const s = createManchazo({
       slots: [0, 1, 2, 3, 4],
@@ -24,6 +24,6 @@ describe('events flag off: the round is F3, bit for bit', () => {
     const s = createManchazo({ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 7, sabotage: true, events: true });
     play(s, 5, 4500);
     expect(s.match.ev!.log.length).toBeGreaterThanOrEqual(3);
-    expect(hashManchazo(s)).not.toBe(2259385247);
+    expect(hashManchazo(s)).not.toBe(931750987);
   });
 });

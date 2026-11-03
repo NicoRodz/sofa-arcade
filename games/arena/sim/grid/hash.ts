@@ -16,8 +16,10 @@ export function hashGrid(s: GridState): number {
     mix(b.y);
     mix(b.dir + 1);
     mix(b.q + 1);
+    mix(b.last + 1);
+    mix(b.rest);
     mix(b.frac);
-    mix(b.req ? b.req.dir + 1 + (b.req.age << 3) : 0);
+    mix(b.req ? b.req.dir + 1 + (b.req.age << 3) + (b.req.idle << 16) : 0);
     mix(b.stats.requested);
     mix(b.stats.executed);
     mix(b.stats.failed);

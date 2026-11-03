@@ -1,4 +1,4 @@
-// PR6 flag off = master 9ad24e0 (PR4) bit for bit. The numbers below were computed on master with the loop below (every other flag on, cards of all ten kinds put in hands and
+// Re-pinned for the fluid-turn movement (new base movement, flag off). Originally: PR6 flag off = master 9ad24e0 (PR4) bit for bit. The numbers below were computed on master with the loop below (every other flag on, cards of all ten kinds put in hands and
 // played) and are pinned here: comparing two rounds of this code would not notice a hash that drifted away from master.
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '@pichi/core';
@@ -6,12 +6,20 @@ import { KINDS, PLUS_KINDS, createManchazo, hashManchazo, stepManchazo } from '.
 import { scripts } from '../match-drive';
 
 const MASTER: Record<number, { hashes: number[]; used: number; counts: number[] }> = {
-  3: { hashes: [2787300730, 139846225, 2513339269, 1998470180, 633805046, 3564849779, 3136320187, 2860419685], used: 18, counts: [92, 63] },
-  4242: { hashes: [670812129, 2374843814, 1170424104, 3767734318, 2490989473, 828477090, 3133139111, 116763], used: 18, counts: [78, 83] },
-  99991: {
-    hashes: [1436726935, 373078386, 1141262405, 2031656713, 3275878097, 32876539, 1857260268, 1319796230],
+  3: {
+    hashes: [3423210426, 3327844951, 261246384, 2253088308, 1224787789, 1892412335, 1146180396, 2796636052],
+    used: 19,
+    counts: [77, 99],
+  },
+  4242: {
+    hashes: [4247707361, 218218099, 2780867199, 1513938957, 2522680115, 2503047567, 1018905830, 2100952440],
     used: 18,
-    counts: [89, 60],
+    counts: [94, 81],
+  },
+  99991: {
+    hashes: [1383571927, 1579581327, 1328323321, 1792386837, 2241013056, 2546339458, 135930485, 3645381427],
+    used: 19,
+    counts: [76, 94],
   },
 };
 

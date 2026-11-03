@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { emptyMap } from '../map';
 import { DOWN, NONE, RIGHT, turnReport } from '../sim';
-import { DOWN_STICK, LEFT_STICK, REST, RIGHT_STICK, UP_STICK, hold, solo } from './grid-drive';
+import { DOWN_STICK, LEFT_STICK, REST, RIGHT_STICK, UP_STICK, hold, solo, stick } from './grid-drive';
 
 // Row 0 is open; below it the furniture of '.##.....#' blocks columns 1 and 2, column 3 (x 48..63, centre 56) is free.
 describe('grid control, plan A (default)', () => {
@@ -12,7 +13,7 @@ describe('grid control, plan A (default)', () => {
     expect(b.dir).toBe(RIGHT);
     expect(b.x).toBeGreaterThan(30);
     expect(b.y).toBe(8);
-    hold(s, REST, 1);
+    hold(s, REST, 5); // 66 ms of grace: a thumb dip is not a release
     const x = b.x;
     hold(s, REST, 30);
     expect([b.dir, b.x]).toEqual([NONE, x]);
@@ -44,43 +45,121 @@ describe('grid control, plan A (default)', () => {
     }); // the start from rest and the turn
   });
 
-  it('corner assist: within 0.35 tile of a centre the turn happens now, the body is aligned', () => {
+  it('corner assist: within 0.4 tile of a lane centre the body slides onto it without stopping, and turns on arrival', () => {
     const s = solo();
     hold(s, RIGHT_STICK, 5);
     const b = s.bodies[0]!;
     b.x = 52; // 4 units before centre 56
     hold(s, DOWN_STICK, 1);
-    expect(b.dir).toBe(DOWN);
-    expect(b.x).toBe(56);
+    expect([b.dir, b.moved]).toEqual([RIGHT, true]); // still sliding along, not stopped
+    hold(s, DOWN_STICK, 5);
+    expect([b.dir, b.x]).toEqual([DOWN, 56]);
     const t = solo();
     hold(t, RIGHT_STICK, 5);
-    t.bodies[0]!.x = 61; // 5 units past the centre: assist still takes it back
+    const c = t.bodies[0]!;
+    c.x = 62; // 6 units past the centre: inside the 6-unit assist, it slides back to it
     hold(t, DOWN_STICK, 1);
-    expect([t.bodies[0]!.dir, t.bodies[0]!.x]).toEqual([DOWN, 56]);
+    expect(c.x).toBeLessThan(62);
+    expect(c.moved).toBe(true);
+    hold(t, DOWN_STICK, 8);
+    expect([c.dir, c.x]).toEqual([DOWN, 56]);
+    const u = solo();
+    hold(u, RIGHT_STICK, 5);
+    u.bodies[0]!.x = 63; // 7 past: outside the assist, this lane is gone, the body goes on to the next one
+    hold(u, DOWN_STICK, 2);
+    expect([u.bodies[0]!.dir, u.bodies[0]!.x > 63]).toEqual([RIGHT, true]);
   });
 
-  it('beyond the assist the turn is NOT taken: a request out of the buffer stops the body and fails at 300 ms', () => {
+  it('turn buffer: a tap of 1 tick asked 12 units before the lane still turns there (180 ms)', () => {
+    const s = solo({ control: 'B' });
+    hold(s, RIGHT_STICK, 5);
+    const b = s.bodies[0]!;
+    b.x = 44; // 12 units before centre 56: outside the assist, so the tap must be kept
+    hold(s, DOWN_STICK, 1);
+    expect(b.dir).toBe(RIGHT);
+    hold(s, REST, 20);
+    expect([b.dir, b.x]).toEqual([DOWN, 56]);
+    expect(turnReport(s)).toMatchObject({ failed: 0, executed: 2 });
+    const t = solo({ control: 'B' });
+    hold(t, RIGHT_STICK, 5);
+    t.bodies[0]!.x = 24; // 32 units before the lane: past the 180 ms the tap is gone
+    hold(t, DOWN_STICK, 1);
+    hold(t, REST, 40);
+    expect(t.bodies[0]!.dir).toBe(RIGHT);
+    expect(turnReport(t)).toMatchObject({ cancelled: 1, open: 0 });
+  });
+
+  it('diagonal: against a wall the body takes the free axis (it never stands while the other axis serves)', () => {
+    const s = solo(); // spawn on row 0: up is the map edge, right is free
+    hold(s, stick(300, -900), 20);
+    const b = s.bodies[0]!;
+    expect([b.dir, b.x > 8, b.y]).toEqual([RIGHT, true, 8]);
+    const t = solo();
+    hold(t, RIGHT_STICK, 5);
+    t.bodies[0]!.x = 56; // tile 3: down and right are both free: the stronger axis wins
+    hold(t, stick(500, 900), 3);
+    expect(t.bodies[0]!.dir).toBe(DOWN);
+    const u = solo();
+    hold(u, RIGHT_STICK, 5);
+    u.bodies[0]!.x = 56;
+    hold(u, stick(900, 500), 3);
+    expect(u.bodies[0]!.dir).toBe(RIGHT);
+  });
+
+  it('never stands: the stick against a wall with no lane keeps the body running along its corridor, and the unmet turn fails once at 300 ms', () => {
     const s = solo();
     hold(s, RIGHT_STICK, 4); // along row 0: up is the map edge, blocked everywhere
     const b = s.bodies[0]!;
-    hold(s, UP_STICK, 8); // inside the 9-tick buffer: it still runs
-    expect(b.dir).toBe(RIGHT);
-    hold(s, UP_STICK, 2); // buffer over (150 ms)
-    expect(b.dir).toBe(NONE);
-    expect(turnReport(s).failed).toBe(0); // not yet 300 ms
-    hold(s, UP_STICK, 10);
+    hold(s, UP_STICK, 60);
+    expect([b.dir, b.moved]).toEqual([RIGHT, true]);
     const r = turnReport(s);
     expect([r.requested, r.executed, r.failed]).toEqual([2, 1, 1]);
-    expect(r.failedRate).toBeCloseTo(0.5, 6);
     hold(s, UP_STICK, 100);
     expect(turnReport(s).failed).toBe(1); // counted once
+  });
+
+  it('a body at rest, misaligned by more than the assist, slides to the lane centre and goes (it does not stay stuck)', () => {
+    const s = solo();
+    hold(s, RIGHT_STICK, 5);
+    hold(s, REST, 6);
+    const b = s.bodies[0]!;
+    expect(b.dir).toBe(NONE);
+    b.x = 49; // 7 before centre 56, standing
+    hold(s, DOWN_STICK, 12);
+    expect([b.dir, b.x]).toEqual([DOWN, 56]);
+    expect(b.y).toBeGreaterThan(8);
+  });
+
+  it('a body exactly between two lane centres picks the side the stick leans to (mirror-safe), or the way it was heading', () => {
+    const s = solo({ map: emptyMap([[[1, 1]], [[2, 1]]]) });
+    const b = s.bodies[0]!;
+    [b.x, b.y, b.last] = [160, 24, DOWN]; // on the edge between tiles 9 and 10, last heading across the lane axis
+    hold(s, stick(300, 900), 4);
+    expect(b.x).toBeGreaterThan(160);
+    const t = solo({ map: emptyMap([[[1, 1]], [[2, 1]]]) });
+    const c = t.bodies[0]!;
+    [c.x, c.y, c.last] = [160, 24, DOWN];
+    hold(t, stick(-300, 900), 4);
+    expect(c.x).toBeLessThan(160);
+  });
+
+  it('plan A release grace: a 3-tick dip into the dead zone does not stop the body, 4 ticks do', () => {
+    const s = solo();
+    hold(s, RIGHT_STICK, 20);
+    const b = s.bodies[0]!;
+    hold(s, REST, 3);
+    expect([b.dir, b.moved]).toEqual([RIGHT, true]);
+    hold(s, RIGHT_STICK, 1);
+    expect(b.dir).toBe(RIGHT);
+    hold(s, REST, 4);
+    expect(b.dir).toBe(NONE);
   });
 
   it('a request released before 300 ms without running is cancelled, not failed', () => {
     const s = solo();
     hold(s, RIGHT_STICK, 4);
     hold(s, UP_STICK, 5); // up from row 0 is the map edge: blocked
-    hold(s, REST, 1);
+    hold(s, REST, 5); // released (66 ms grace): the buffered turn goes with it
     expect(turnReport(s)).toMatchObject({
       requested: 2,
       executed: 1,
@@ -125,7 +204,7 @@ describe('grid control, plan B (auto-advance)', () => {
     hold(s, RIGHT_STICK, 5);
     const b = s.bodies[0]!;
     b.x = 52;
-    hold(s, DOWN_STICK, 1);
+    hold(s, DOWN_STICK, 5);
     expect([b.dir, b.x]).toEqual([DOWN, 56]);
     hold(s, REST, 20);
     expect(b.dir).toBe(DOWN); // keeps going down

@@ -1,4 +1,4 @@
-// F8a flag off = F5 bit for bit. The numbers below were computed on master eb50ca6 (before the five new sabotages existed) with the loop below and are pinned
+// Re-pinned for the fluid-turn movement (new base movement, flag off). Originally: F8a flag off = F5 bit for bit. The numbers below were computed on master eb50ca6 (before the five new sabotages existed) with the loop below and are pinned
 // here: comparing two rounds of this code would not notice a hash that drifted away from master. Cards of the v1 five are put in hands so they are played.
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '@pichi/core';
@@ -8,19 +8,19 @@ import { scripts } from '../match-drive';
 /** Round hash of 6 players (sabotage + events + living, no sabotagePlus) at tick 0, every 250 ticks up to 1500, and at 1499, per map seed. */
 const F5_HASHES: Record<number, { hashes: number[]; used: number; counts: number[] }> = {
   3: {
-    hashes: [1206329826, 2382081195, 1095044078, 3237676917, 2765352785, 1753022071, 3517357106, 1417720485],
+    hashes: [3621468194, 3928108362, 3255600981, 200914398, 198332447, 3451587629, 622893632, 2274349267],
     used: 13,
-    counts: [79, 78],
+    counts: [79, 117],
   },
   4242: {
-    hashes: [3224226066, 543761242, 1765875895, 1141952343, 2316730941, 1958752435, 1445363712, 1329311444],
+    hashes: [1296822290, 2240810159, 575033955, 2931017491, 1202426537, 802350535, 4058367720, 254479072],
     used: 12,
-    counts: [61, 86],
+    counts: [80, 102],
   },
   99991: {
-    hashes: [3896086963, 3384877917, 2483181287, 969599208, 2842783227, 943876726, 19362690, 1976488333],
+    hashes: [994773235, 3386927935, 2399376646, 999472042, 464707410, 2770527835, 3233242418, 3660664668],
     used: 13,
-    counts: [75, 73],
+    counts: [67, 97],
   },
 };
 
