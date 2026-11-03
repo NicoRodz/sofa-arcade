@@ -37,6 +37,28 @@ describe('Mudanza: the alternatives are generated and validated with the seed', 
       }
     expect(rounds).toBeGreaterThan(20); // most seeds have valid moves
   });
+  it('a pair can land before the other (one waits for a body): every subset of the moves keeps V1-V3 in every living state (seeds that cut tiles off with only one pair landed)', () => {
+    for (const [m, living] of [
+      [11767634, false],
+      [8267436, true],
+      [7602240, true],
+      [7942757, true],
+      [8370383, true],
+    ] as const) {
+      const base = generateMap(m, undefined, living);
+      const moves = ev(plusRound(1, [0, 1], m, living)).plus!.moves;
+      for (const sub of [[0], [1], [0, 1]]) {
+        const solid = base.map.solid.slice();
+        for (const { from, to } of sub.map((k) => moves[k]).filter((p) => p))
+          for (const f of [(t: readonly [number, number]) => t, mirrorTile]) {
+            solid[f(from)[1] * 27 + f(from)[0]] = 0;
+            solid[f(to)[1] * 27 + f(to)[0]] = 1;
+          }
+        const bad = validateMap({ ...base.map, solid }, elementsOf(base.living)).filter((v) => ['V1', 'V2', 'V3'].includes(v.id));
+        expect(bad, `seed ${m} living ${living} subset ${sub}`).toEqual([]);
+      }
+    }
+  });
   it('a round with no valid move keeps Mudanza out of the pool', () => {
     for (let m = 1; m < 200; m++) {
       const s = plusRound(1, [0, 1], m);

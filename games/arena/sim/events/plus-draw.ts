@@ -70,9 +70,19 @@ const withMoves = (map: TileMap, moves: readonly MovePair[]): TileMap => {
   return { ...map, solid };
 };
 
+/** Pairs land on their own (one waits while a body stands on its destination), so every subset of the moves must keep V1-V3 in every state of the living map. */
+const safeSubsets = (map: TileMap, moves: readonly MovePair[], living: readonly LivingSpec[]): boolean => {
+  const els = elementsOf(living);
+  for (let mask = 1; mask < 1 << moves.length; mask++) {
+    const sub = moves.filter((_m, k) => (mask >> k) & 1);
+    if (validateMap(withMoves(map, sub), els).some((v) => v.id === 'V1' || v.id === 'V2' || v.id === 'V3')) return false;
+  }
+  return true;
+};
+
 /**
  * The furniture Mudanza moves: MOVE_PAIRS lone pieces (a 1x1 box with no furniture beside it) of columns 1-12, each to a free tile that also has none beside it. A
- * selection is kept only if the moved map passes V1-V7 (and V1-V3 in every state of the living map), so nobody can be shut in whatever the players do. `avoid`:
+ * selection is kept only if the moved map passes V1-V7 (and V1-V3 in every state of the living map, also with only some of the pairs landed), so nobody can be shut in whatever the players do. `avoid`:
  * tiles that must stay as they are (living parts' footprints, sabotage pickups). Fewer than MOVE_PAIRS valid pairs: none, and Mudanza leaves the pool.
  */
 export function drawMoves(map: TileMap, seed: number, living: readonly LivingSpec[], avoid: ReadonlySet<number>): MovePair[] {
@@ -103,7 +113,12 @@ export function drawMoves(map: TileMap, seed: number, living: readonly LivingSpe
         break;
       }
     }
-    if (picked.length === MOVE_PAIRS && validateMap(withMoves(map, picked), elementsOf(living), false).length === 0) return picked;
+    if (
+      picked.length === MOVE_PAIRS &&
+      validateMap(withMoves(map, picked), elementsOf(living), false).length === 0 &&
+      safeSubsets(map, picked, living)
+    )
+      return picked;
   }
   return [];
 }
