@@ -38,3 +38,7 @@ Rescate: un compañero no manchado en tu casilla o en una ortogonal 12 ticks seg
 | `controller/` | Línea del lobby; el pad llega con el manifest |
 | `test/` | `sim`, `map-*`, `match-*`, `grid-*`, `conformance` (`checkGame`); `sabotage/`, `events/`, `living/` por flag |
 Pruébalo con `npm run dev` y `?soon=1`; capturas: `npx tsx tools/capture.ts manchazo-living-tv`.
+
+## PR4: sabotajes con proyectil (flag `projectiles`, encendido en `ManchazoRun`)
+
+Pegote, Cambiazo y Mareo se apuntan: B prepara 12 ticks (la carta sigue en la mano) y el disparo sale hacia el `face` (3 unidades/tick, alcance 7 casillas). Atraviesa compañeros, cuerpos manchados o inmunes, cinta, botín y piñatas; se detiene en muros y muebles vivos cerrados. Pega al primer rival en su camino (menor índice); dos disparos rivales que se tocan se anulan. Una mancha durante la preparación la corta (la carta cae como botín, o queda en la mano sin Rescate); con el disparo en vuelo sigue, salvo el Cambiazo si el lanzador quedó manchado. Pegote: mecha 120, color del lanzador; si falla, piñata común donde se detuvo. El portador pulsa B para pasarlo a un rival suyo en su casilla u ortogonal (el color, dueño y radio pasan al que lo pasa); 30 ticks sin re-pase, tope de 3 pases, mecha mínima 45 tras un pase. Código en `sim/shot/`; tests en `test/shot/`.
