@@ -1,5 +1,6 @@
 // Layout rules for the phone page, checked on a Probe (see harness.ts). Each returns human-readable violations.
 import { ASSIST_SAFE, CR_STACK } from './assist-scenarios';
+import { PAD_PARTS } from './match-probe';
 import { TOUCH_SELECTORS, type Box, type Insets, type Item, type Probe } from './harness';
 
 export const MIN_TOUCH = 44; // CSS px: Apple's HIG minimum; Android recommends 48 dp
@@ -155,20 +156,7 @@ export function safeArea(p: Probe): string[] {
 // 5. Nothing on the pad sits on top of anything else: stick, two buttons, station card, HUD, zoom banner, Manchazo's status banner.
 export function padOverlaps(p: Probe): string[] {
   const out: string[] = [];
-  const parts = [
-    '#stickhint',
-    '#btnA',
-    '#btnB',
-    '#stickLbl .pl',
-    '#lblA .pl',
-    '#lblB .pl',
-    '#puesto',
-    '#school',
-    '#hud',
-    '#arenast',
-    '#zoomfix',
-    '#signals',
-  ].flatMap((s) => all(p, s));
+  const parts = PAD_PARTS.flatMap((s) => all(p, s));
   for (let a = 0; a < parts.length; a++)
     for (let b = a + 1; b < parts.length; b++) {
       const A = parts[a]!,

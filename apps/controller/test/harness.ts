@@ -13,6 +13,7 @@ import { WebSocket } from 'ws';
 import { portFor } from './free-port';
 import type { Scenario } from './scenario-types';
 import { ASSIST_PROBE, ASSIST_TOUCH, assistHelpScenarios } from './assist-scenarios';
+import { MATCH_PROBE } from './match-probe';
 
 const CHROME = process.env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -171,13 +172,7 @@ export const SELECTORS = [
   '#lblB .pl',
   '#lblB .lbl',
   '#lblB .hold',
-  '#hud',
-  '#arenast',
-  '#puesto',
-  '#pico',
-  '#pname',
-  '#phint',
-  '#pswap',
+  ...MATCH_PROBE,
   '#school',
   '#schoolstep',
   '#schooltext',
