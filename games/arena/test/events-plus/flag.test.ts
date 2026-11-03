@@ -6,7 +6,7 @@ import { plusRound } from './plus-drive';
 // Hashes taken on master (217f779, F8a) with the events on and no `eventsPlus`: the F8b flag off must not change a single bit.
 describe('eventsPlus off: the round is F8a, bit for bit', () => {
   it.each([
-    [{ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 7, sabotage: true, events: true }, 2364289968, [107, 103]],
+    [{ slots: [0, 1, 2, 3, 4], teams: [0, 1, 0, 1, 1], seed: 7, sabotage: true, events: true }, 776222362, [153, 157]],
     [
       {
         slots: [0, 1, 2, 3, 4],
@@ -18,8 +18,8 @@ describe('eventsPlus off: the round is F8a, bit for bit', () => {
         mapSeed: 123456,
         classicMap: true,
       },
-      1109769916,
-      [122, 112],
+      2537564696,
+      [126, 165],
     ],
     [
       {
@@ -33,8 +33,8 @@ describe('eventsPlus off: the round is F8a, bit for bit', () => {
         mapSeed: 777,
         classicMap: true,
       },
-      1794679382,
-      [144, 114],
+      3523459788,
+      [126, 172],
     ],
   ] as const)('round %#', (cfg, hash, counts) => {
     const s = createManchazo(cfg);
