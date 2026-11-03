@@ -88,6 +88,7 @@ export function createSabotage(
   plus = false,
   plaza?: { x: number; y: number; h: number },
   shots = false,
+  wrap = false,
 ): SabotageState {
   const none = <T>(v: T) => Array.from({ length: bodies }, () => v);
   return {
@@ -100,7 +101,7 @@ export function createSabotage(
     gust: none(0),
     used: 0,
     shot: shots ? createShots(bodies) : null,
-    plus: plus ? createPlus(bodies) : null,
+    plus: plus ? createPlus(bodies, wrap) : null,
   };
 }
 

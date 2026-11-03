@@ -3,6 +3,7 @@ import { bodyTile } from '../match/tile';
 import type { ManchazoState } from '../match/state';
 import { DIZZY_RANGE, DIZZY_TICKS } from './kinds';
 import { dist } from './near';
+import { stepWrap } from '../wrap/step';
 
 function fire(s: ManchazoState, i: number): void {
   const plus = s.match.sab!.plus!;
@@ -28,8 +29,9 @@ export function stepPlus(s: ManchazoState): void {
     });
   });
   for (const list of [p.dizzy, p.immune, p.swapFx, p.squeezeFx]) list.forEach((v, i) => v > 0 && list[i]!--);
+  stepWrap(s); // PR6: the packing tape and the sponge v2 have their own clocks (no-op without the flag)
   s.grid.bodies.forEach((_b, i) => {
-    if (p.sponge[i]! > 0 && --p.sponge[i]! === 0) {
+    if (!p.wrap && p.sponge[i]! > 0 && --p.sponge[i]! === 0) {
       p.soaked[i] = 0; // not squeezed in time: the paint is lost and the hand is empty
       if (a.held[i] === 'sponge') a.held[i] = null;
     }

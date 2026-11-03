@@ -79,7 +79,7 @@ export function handicap(sizes: readonly number[]): { radius: number[]; reserve:
 export function createMatch(
   teamOfBody: readonly number[],
   map: TileMap,
-  sabotage?: { seed: number; plus?: boolean; plaza?: { x: number; y: number; h: number }; shots?: boolean }, // `plaza`: the free rectangle where a Plaza round puts the pickups
+  sabotage?: { seed: number; plus?: boolean; plaza?: { x: number; y: number; h: number }; shots?: boolean; wrap?: boolean }, // `plaza`: the free rectangle where a Plaza round puts the pickups
   events?: { seed: number; base: number; plus?: boolean; phases?: boolean },
   living?: readonly LivingSpec[],
   rescue?: boolean,
@@ -91,7 +91,7 @@ export function createMatch(
   const shut = living ? new Set(living.flatMap((l) => footprint(l)).map(([x, y]) => y * MAP_W + x)) : undefined;
   const fountain = !!living?.some((l) => l.kind === 'fountain');
   const sab = sabotage
-    ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus, sabotage.plaza, !!sabotage.shots)
+    ? createSabotage(map, sabotage.seed, teamOfBody.length, shut, !!sabotage.plus, sabotage.plaza, !!sabotage.shots, !!sabotage.wrap)
     : null;
   // F8b: Mudanza keeps its hands off the living parts' tiles and the sabotage pickups
   const avoid = new Set([...(shut ?? []), ...(sab?.pickups.map((p) => p.y * MAP_W + p.x) ?? [])]);

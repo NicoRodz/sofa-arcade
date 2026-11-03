@@ -8,8 +8,14 @@ const NEIGHBOURS = [
   [0, -1],
 ] as const;
 
-/** Tiles reached from (x, y) within `radius` steps over floor, the origin first, in a fixed order. */
-export function blastTiles(x: number, y: number, radius: number, map: TileMap = f0Map()): [number, number][] {
+/** Tiles reached from (x, y) within `radius` steps over floor, the origin first, in a fixed order. `cut` (PR6: the packing tape) shuts more tiles like a wall; the origin is kept either way. */
+export function blastTiles(
+  x: number,
+  y: number,
+  radius: number,
+  map: TileMap = f0Map(),
+  cut?: (x: number, y: number) => boolean,
+): [number, number][] {
   const seen = new Set<number>([y * MAP_W + x]);
   const out: [number, number][] = [[x, y]];
   const dist = [0];
@@ -19,7 +25,7 @@ export function blastTiles(x: number, y: number, radius: number, map: TileMap = 
     for (const [dx, dy] of NEIGHBOURS) {
       const nx = cx + dx!,
         ny = cy + dy!;
-      if (solidAt(map, nx, ny) || seen.has(ny * MAP_W + nx)) continue;
+      if (solidAt(map, nx, ny) || seen.has(ny * MAP_W + nx) || cut?.(nx, ny)) continue;
       seen.add(ny * MAP_W + nx);
       out.push([nx, ny]);
       dist.push(dist[h]! + 1);

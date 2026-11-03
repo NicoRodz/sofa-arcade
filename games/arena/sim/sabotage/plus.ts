@@ -1,5 +1,6 @@
 // What the five F8a sabotages add to a round (flag `sabotagePlus`): the tapes on the floor, the invisible ink, and per body the sponge, the dizzy charge, the dizziness and the immunity.
 import { MAP_H, MAP_W } from '../../map';
+import { createWrap, wrapWords, type WrapState } from '../wrap/state';
 
 export interface Tape {
   x: number; // centre tile of the 3x3
@@ -19,9 +20,10 @@ export interface PlusState {
   immune: number[]; // per body: ticks left of the swap's immunity
   swapFx: number[]; // per body: ticks the TV still draws the swap (display only, but part of the state)
   squeezeFx: number[]; // per body: same for the sponge's squeeze
+  wrap: WrapState | null; // PR6: the sponge v2 and the packing tape (flag `sabotageV2`); null: the sponge and the tape are F8a's, bit for bit
 }
 
-export function createPlus(bodies: number): PlusState {
+export function createPlus(bodies: number, wrap = false): PlusState {
   const zeros = () => Array.from({ length: bodies }, () => 0);
   return {
     tapes: [],
@@ -34,6 +36,7 @@ export function createPlus(bodies: number): PlusState {
     immune: zeros(),
     swapFx: zeros(),
     squeezeFx: zeros(),
+    wrap: wrap ? createWrap(bodies) : null,
   };
 }
 
@@ -50,5 +53,6 @@ export function plusWords(p: PlusState): number[] {
     ...p.immune,
     ...p.swapFx,
     ...p.squeezeFx,
+    ...(p.wrap ? wrapWords(p.wrap) : []),
   ];
 }

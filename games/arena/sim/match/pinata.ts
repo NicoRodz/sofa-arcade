@@ -7,6 +7,8 @@ import { capRadius } from '../phase/radius';
 import { deflectVacuum } from '../events/vacuum';
 import { dropLoot } from '../rescue/loot';
 import { cancelAim } from '../shot/aim';
+import { burstSponge } from '../wrap/sponge';
+import { cancelTape, tapeCut } from '../wrap/tape';
 import { glueTarget } from '../sabotage/use';
 import { clearTile, paintTile } from './board';
 import { blastTiles } from './blast';
@@ -46,7 +48,7 @@ export function dropPinata(s: ManchazoState, i: number): boolean {
 
 function detonate(s: ManchazoState, p: Pinata): void {
   const m = s.match;
-  const tiles = blastTiles(p.x, p.y, capRadius(m, p.radius + happyBonus(m)), s.grid.map); // F8b: Hora feliz reaches one tile further (PR2: never past the cap)
+  const tiles = blastTiles(p.x, p.y, capRadius(m, p.radius + happyBonus(m)), s.grid.map, tapeCut(s)); // F8b: Hora feliz reaches one tile further (PR2: never past the cap)
   for (const [x, y] of tiles) (p.mod === 'turpentine' ? clearTile : paintTile)(m, x, y, p.team, s.grid.tick);
   const hit = new Set(tiles.map(([x, y]) => `${x},${y}`));
   deflectVacuum(s, p.x, p.y, hit); // F4: a blast steers the vacuum robot (no-op without the events)
@@ -55,6 +57,8 @@ function detonate(s: ManchazoState, p: Pinata): void {
     if (b.team === p.team || bm.stun > 0 || (m.sab?.plus?.immune[i] ?? 0) > 0 || !hit.has(bodyTile(b, bm.face).join(','))) return;
     bm.stun = STUN_TICKS;
     cancelAim(s, i); // PR4: a stain cuts an aim before the card falls (no-op without the flag)
+    cancelTape(s, i); // PR6: a stain cuts a tape still winding up, and a loaded sponge bursts in the attacker's colour (before the card could fall)
+    burstSponge(s, i, p.team);
     if (m.res) {
       m.res.contact[i] = 0; // PR3: a new stain starts its rescue count over, and the card in hand falls
       dropLoot(s, i);
