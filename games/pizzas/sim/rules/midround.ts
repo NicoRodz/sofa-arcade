@@ -12,17 +12,11 @@
 //   rat        Rata               a rat steals the item of a counter; a dash scares it (and the item goes back). Cooperative only
 // Versus: the same event, at the same instant, to both teams (one global state). The rat is never in the pool there (it would double the sabotage).
 import { ANNOUNCE_MS } from './announce';
-import type { EventKind, Mid, Rat } from './types';
+import type { EventKind, Mid } from './types';
 export type { EventKind, Mid, Rat } from './types';
-import { DIRS, isFloor } from '../maps';
 import { mulberry32 } from '@pichi/core';
-import type { Difficulty } from '@pichi/core';
-import { magnetFor } from '../feel/magnet';
 import { newSurfaceState } from '../surfaces/config';
-import { gentleRatStep, ratPrize } from '../feel/rat';
-import { ratPull, stealOnEscape } from '../feel/rat-loot';
-import { ratCaves } from '../feel/rat-caves';
-import type { Game, Station } from '../round/state';
+import type { Game } from '../round/state';
 import { spill } from '../mech/oil/spill';
 import { hazardParams } from '../hazards/hazard-v2';
 import { hz3Params } from '../hazards/hazard-v3';
@@ -30,70 +24,12 @@ import { book } from '../hazards/score-ledger';
 import { planEvents, type Planned } from '../hazards/events-v2';
 import { endVersusRats, spawnVersusRats, stepVersusRats, versusRats } from '../feel/rat-versus';
 import { ev2End, ev2SpillWatch, ev2Spilt, ev2Start, ev2Tick } from '../ev2/events';
+import { ACTIVE_MS, EVENTS_SEED_TAG, EVENT_KINDS, EVENT_FROM_MS, EVENT_TO_MS, INSPECTOR_BONUS } from './event-catalog';
+import { COOP_RAT, ratGone, ratStep, spawnRat } from './rat-event';
 
-export const EVENT_KINDS: readonly EventKind[] = ['rush', 'inspector', 'blackout', 'birthday', 'rat', 'frost', 'spill'];
-export const EVENTS_SEED_TAG = 0xe7e47e55;
-export const EVENT_FROM_MS = 60_000; // the event starts between these two instants of the match
-export const EVENT_TO_MS = 120_000;
+export * from './event-catalog';
+export * from './rat-event';
 export { ANNOUNCE_MS } from './announce';
-export const ACTIVE_MS: Record<EventKind, number> = {
-  rush: 3000,
-  inspector: 20_000,
-  blackout: 10_000,
-  birthday: 3000,
-  rat: 25_000,
-  frost: 30_000,
-  spill: 3000,
-}; // how long it counts as "on" (the rat leaves earlier when it is gone)
-export const RUSH_ORDERS = 3;
-export const EVENT_MAX_QUEUE = 6; // a rush never grows a queue past what the order strip can show
-export const INSPECTOR_BONUS = 100;
-export const BIRTHDAY_POINTS = 150;
-export const RAT_SPEED = 2.4; // tiles/s
-export const RAT_FLEE_SPEED = 6;
-export const RAT_PATIENCE_MS = 10_000; // the rat waits this long for a counter that holds something, then leaves
-export const RAT_SCARE_RADIUS = 1.1; // a chef that is dashing this close to the rat scares it
-
-/** Names for the banner and the lobby (Spanish: the screen shows them as they are). */
-export const EVENT_INFO: Record<EventKind, { title: string; blurb: string }> = {
-  rush: { title: '¡HORA PUNTA!', blurb: 'Llegan 3 pedidos de golpe' },
-  inspector: { title: '¡INSPECTOR!', blurb: 'Sin platos sucios al terminar: +100' },
-  blackout: { title: '¡CORTE DE LUZ!', blurb: 'Hornos apagados 10 s' },
-  birthday: { title: '¡CUMPLEAÑOS!', blurb: 'Pedido triple: 150 puntos' },
-  rat: { title: '¡UNA RATA!', blurb: 'Huye si te acercas: atrápala cuando jadee o arrinconada' },
-  frost: { title: '¡OLA DE FRÍO!', blurb: 'Todo el piso es hielo 30 s' },
-  spill: { title: '¡DERRAME!', blurb: 'Manchas de aceite por la cocina' },
-};
-
-/** The lobby option: events on or off. Missing = the difficulty's default (Sí in Normal and Difícil, No in Fácil). */
-export const EVENTS_OPTION = 'events';
-export const defaultEvents = (d: Difficulty) => d !== 'easy';
-export const eventsOf = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty): boolean => {
-  const v = modeOptions?.[EVENTS_OPTION];
-  return typeof v === 'boolean' ? v : defaultEvents(d);
-};
-
-/** The lobby option: the map's Carta del día (recipes/cards.ts) on or off. Missing = on (there is no switch for it on the screen yet: a test or a later menu sets it to false). */
-export const RECIPES_OPTION = 'recipes';
-export const recipesOf = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined): boolean => {
-  const v = modeOptions?.[RECIPES_OPTION];
-  return typeof v === 'boolean' ? v : true;
-};
-
-/** How much faster than the base table the lobby rounds serve orders: the playtest of 25-oct found Normal too slack once the controls got good (spare time, one oven was enough). */
-export const PACE: Record<Difficulty, number> = { easy: 1.2, normal: 1.6, hard: 1.8 };
-
-/** What the lobby switches on for a round (coop and versus alike): the burning oven always (the sim leaves the fire out on Easy and under the Suave sabotage), the event by the option, the map's card of recipes, the magnetism of the chefs. */
-export const roundRules = (modeOptions: Readonly<Record<string, boolean | number | string>> | undefined, d: Difficulty) => ({
-  burn: true,
-  fire: true,
-  events: eventsOf(modeOptions, d),
-  recipes: recipesOf(modeOptions),
-  magnet: magnetFor(modeOptions, d),
-  pace: PACE[d],
-  frost: true,
-  versusV3: true, // VERSUS_V3: a rat per kitchen and the Ola de frio in versus (ignored by a coop round)
-}); // magnet (feel/magnet.ts): on in every lobby round, stronger in Easy; the option `magnet: false` turns it off
 
 /** What the sim does for the two events that touch the queues; passed in so this file keeps no value import of the sim (the imports stay acyclic). */
 export interface MidFx {
@@ -146,141 +82,6 @@ export function createMid(g: Game, seed: number): Mid {
 /** How long an event counts as on: the table, except the blackout (12 s Normal, 15 s Hard under HAZARD_V2). */
 export const activeMs = (g: Pick<Game, 'difficulty'>, k: EventKind): number =>
   k === 'blackout' ? hazardParams(g.difficulty).events.blackoutMs : ACTIVE_MS[k];
-
-// --- The rat ----------------------------------------------------------------------------------------------------------------------------------------
-const tileOf = (r: Rat): [number, number] => [Math.floor(r.x), Math.floor(r.y)];
-
-// First step (a tile) of a shortest path over floor tiles from `from` to any tile where `goal` holds; null when already there or unreachable.
-function nextTile(g: Game, from: [number, number], goal: (x: number, y: number) => boolean): [number, number] | null {
-  if (goal(from[0], from[1])) return null;
-  const prev = new Map<string, string>([[`${from[0]},${from[1]}`, '']]);
-  const queue: [number, number][] = [from];
-  for (let i = 0; i < queue.length; i++) {
-    const [x, y] = queue[i]!;
-    for (const [dx, dy] of g.ratFrame?.dirs ?? DIRS) {
-      const nx = x + dx,
-        ny = y + dy,
-        k = `${nx},${ny}`;
-      if (!isFloor(g.grid, nx, ny) || prev.has(k)) continue;
-      prev.set(k, `${x},${y}`);
-      if (goal(nx, ny)) {
-        let cur = k;
-        while (prev.get(prev.get(cur)!) !== '') cur = prev.get(cur)!;
-        const [sx, sy] = cur.split(',').map(Number) as [number, number];
-        return [sx, sy];
-      }
-      queue.push([nx, ny]);
-    }
-  }
-  return null;
-}
-
-function spawnRat(g: Game, m: Mid) {
-  const two = ratCaves(g, m.startAt); // HAZARD_V3 map 15: in by one cave, out by the other; the main stream is not touched
-  if (two) {
-    const [from, hole] = two;
-    m.rat = { x: from[0] + 0.5, y: from[1] + 0.5, state: 'seek', item: null, from: -1, hole: [hole[0], hole[1]], scared: false, idleMs: 0 };
-    g.bus.emit('rat:appear', { at: [from[0], from[1]] });
-    return;
-  }
-  const holes: [number, number][] = [];
-  g.grid.forEach((row, y) =>
-    row.forEach((_t, x) => {
-      if (isFloor(g.grid, x, y) && DIRS.some(([dx, dy]) => g.grid[y + dy]?.[x + dx]?.kind === 'wall')) holes.push([x, y]);
-    }),
-  );
-  const pool = holes.length ? holes : [[1, 1] as [number, number]];
-  const hole = pool[Math.floor(m.rng() * pool.length)]!;
-  m.rat = { x: hole[0] + 0.5, y: hole[1] + 0.5, state: 'seek', item: null, from: -1, hole, scared: false, idleMs: 0 };
-  g.bus.emit('rat:appear', { at: hole });
-}
-
-function ratGone(g: Game, m: Mid) {
-  const r = m.rat;
-  if (!r) return;
-  const took = stealOnEscape(g, m, r); // HAZARD_V3: an escaping rat takes an item with it
-  m.rat = null;
-  g.bus.emit('rat:gone', { stolen: r.item !== null || took });
-}
-
-function scareRat(g: Game, m: Mid, playerId: number) {
-  const r = m.rat!;
-  r.scared = true;
-  r.state = 'flee';
-  let returned = false;
-  if (r.item) {
-    // the thief drops its loot where it took it from, if that counter is still free
-    const st: Station | undefined = g.stations[r.from];
-    if (st && st.item === null && st.fire === undefined) {
-      st.item = r.item;
-      returned = true;
-    }
-    r.item = null;
-  }
-  const bonus = g.magnet ? ratPrize(g) : 0; // the gentle rat pays for being scared
-  g.bus.emit('rat:scared', { player: playerId, returned, ...(bonus ? { bonus } : {}) });
-}
-
-function ratStep(g: Game, m: Mid, dtMs: number) {
-  const r = m.rat!;
-  if (g.magnet && gentleRatStep(g, m, dtMs, { nextTile, scare: scareRat, gone: ratGone, floor: (gg, x, y) => isFloor(gg.grid, x, y) }))
-    return; // magnetism: the gentle rat (feel/rat.ts); once scared the old flee below takes over
-  if (!r.scared)
-    for (const p of g.players.values()) {
-      if (p.ghost || p.dashMs <= 0 || Math.hypot(p.x - r.x, p.y - r.y) > RAT_SCARE_RADIUS) continue;
-      scareRat(g, m, p.id);
-      break;
-    }
-  let goal: (x: number, y: number) => boolean;
-  if (r.state === 'seek') {
-    // the nearest counter that holds something (ties by station index)
-    let best = -1,
-      bestD = Infinity;
-    g.stations.forEach((s, i) => {
-      if (s.kind !== 'counter' || !s.item || s.fire !== undefined) return;
-      const d = Math.hypot(s.tx + 0.5 - r.x, s.ty + 0.5 - r.y) - ratPull(g, s.item);
-      if (d < bestD) {
-        best = i;
-        bestD = d;
-      }
-    });
-    if (best < 0) {
-      // nothing to steal: wait for a while and then leave
-      r.idleMs += dtMs;
-      if (r.idleMs >= RAT_PATIENCE_MS) r.state = 'flee';
-      return;
-    }
-    r.idleMs = 0;
-    const s = g.stations[best]!;
-    const [tx, ty] = tileOf(r);
-    if (Math.abs(tx - s.tx) + Math.abs(ty - s.ty) === 1) {
-      // next to it: grab
-      r.item = s.item;
-      r.from = best;
-      s.item = null;
-      r.state = 'flee';
-      g.bus.emit('rat:steal', { station: best, item: r.item! });
-      return;
-    }
-    goal = (x, y) => Math.abs(x - s.tx) + Math.abs(y - s.ty) === 1;
-  } else {
-    if (tileOf(r)[0] === r.hole[0] && tileOf(r)[1] === r.hole[1]) {
-      ratGone(g, m);
-      return;
-    }
-    goal = (x, y) => x === r.hole[0] && y === r.hole[1];
-  }
-  const step = nextTile(g, tileOf(r), goal);
-  if (!step) return;
-  const dx = step[0] + 0.5 - r.x,
-    dy = step[1] + 0.5 - r.y,
-    d = Math.hypot(dx, dy) || 1;
-  const move = Math.min(d, ((r.scared ? RAT_FLEE_SPEED : RAT_SPEED) * dtMs) / 1000);
-  r.x += (dx / d) * move;
-  r.y += (dy / d) * move;
-}
-
-const COOP_RAT = { step: ratStep, gone: ratGone }; // what the versus rats (feel/rat-versus.ts) run on a view of the round
 
 // --- The inspector ----------------------------------------------------------------------------------------------------------------------------------
 /** Dirty plates that physically lie in a team's kitchen: at the return window, in the sink, on a counter or in a chef's hands. */
