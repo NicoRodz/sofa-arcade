@@ -59,18 +59,20 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
+const ctx0 = () => ctxs[0]!;
+const el0 = () => els[0]!;
 const load = async () => (await import('./engine')) as typeof import('./engine');
 
 describe('Manchazo engine unlock', () => {
   it('stays suspended and asks for a click until a gesture reaches the TV, then runs', async () => {
     const { createEngine } = await load();
     expect(createEngine()).not.toBeNull();
-    expect(ctxs[0].state).toBe('suspended');
-    expect(els[0].textContent).toBe('Haz clic para activar el sonido');
+    expect(ctx0().state).toBe('suspended');
+    expect(el0().textContent).toBe('Haz clic para activar el sonido');
     win.dispatchEvent(new Event('pointerdown'));
-    expect(ctxs[0].state).toBe('running');
-    expect(els[0].textContent).toBe(''); // unlocked and not muted: the hint hides
-    expect(els[0].style.display).toBe('none');
+    expect(ctx0().state).toBe('running');
+    expect(el0().textContent).toBe(''); // unlocked and not muted: the hint hides
+    expect(el0().style.display).toBe('none');
   });
   it('a gesture in the menu, before the engine exists, unlocks the engine the moment it is created', async () => {
     const { audioGate } = await import('@pichi/screen-kit/audio');
@@ -78,16 +80,16 @@ describe('Manchazo engine unlock', () => {
     win.dispatchEvent(new Event('keydown')); // the menu click
     const { createEngine } = await load();
     createEngine();
-    expect(ctxs[0].state).toBe('running');
+    expect(ctx0().state).toBe('running');
   });
   it('a later gesture resumes the context if the browser suspended it again', async () => {
     const { createEngine } = await load();
     createEngine();
     win.dispatchEvent(new Event('pointerdown'));
-    ctxs[0].state = 'suspended';
+    ctx0().state = 'suspended';
     win.dispatchEvent(new Event('touchstart'));
-    expect(ctxs[0].resumes).toBe(2);
-    expect(ctxs[0].state).toBe('running');
+    expect(ctx0().resumes).toBe(2);
+    expect(ctx0().state).toBe('running');
   });
 });
 
@@ -97,21 +99,21 @@ describe('Manchazo mute flag', () => {
     const { createEngine, MUTE_KEY } = await load();
     const sound = createEngine()!;
     win.dispatchEvent(new Event('pointerdown'));
-    expect(els[0].textContent).toBe(''); // not muted here: no "silenciado" sign
+    expect(el0().textContent).toBe(''); // not muted here: no "silenciado" sign
     sound.toggleMute();
     expect(store.get(MUTE_KEY)).toBe('1');
     expect(MUTE_KEY).not.toBe('pg.muted');
     expect(store.get('pg.muted')).toBe('1');
-    expect(els[0].textContent).toBe('Sonido silenciado (M)');
+    expect(el0().textContent).toBe('Sonido silenciado (M)');
     sound.toggleMute();
     expect(store.get(MUTE_KEY)).toBe('0');
-    expect(els[0].textContent).toBe('');
+    expect(el0().textContent).toBe('');
   });
   it('a Manchazo mute from an earlier session shows the sign from the start', async () => {
     const { createEngine, MUTE_KEY } = await load();
     store.set(MUTE_KEY, '1');
     createEngine();
     win.dispatchEvent(new Event('pointerdown'));
-    expect(els[0].textContent).toBe('Sonido silenciado (M)');
+    expect(el0().textContent).toBe('Sonido silenciado (M)');
   });
 });
