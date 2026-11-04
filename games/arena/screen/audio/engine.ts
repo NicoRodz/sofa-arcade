@@ -1,7 +1,8 @@
 // Web Audio side of Manchazo's sound: one AudioContext, the decoded files, the lobby loop, the three round layers started together, one-shots. It REUSES the platform's mixing
-// (createChain: buses -> master -> compressor -> soft clip; masterGain; DUCK_GAIN) and Pizzas' mute flag and key. Nothing here decides WHAT plays: director.ts does.
+// (createChain: buses -> master -> compressor -> soft clip; masterGain; DUCK_GAIN). It registers its context with the platform's audio gate (the first gesture on the TV, even in the menu, unlocks it)
+// and shows the platform's sound hint while the context is blocked or Manchazo is muted. Nothing here decides WHAT plays: director.ts does.
 // The game never depends on audio: a file that fails to load, a suspended context or a missing AudioContext only means silence.
-import { DUCK_GAIN, DUCK_S, createChain, masterGain } from '@pichi/screen-kit/audio';
+import { DUCK_GAIN, DUCK_S, audioGate, createChain, createSoundHint, masterGain } from '@pichi/screen-kit/audio';
 import { AUDIO_FILES, urlOf, type AudioFile } from './files';
 import { LAYERS, LAYER_FILES, layerGains, type Layer } from './layers';
 
@@ -14,7 +15,7 @@ export interface Sound {
   toggleMute(): void;
 }
 
-const MUTE_KEY = 'pg.muted'; // the same flag as Pizzas' and Obstáculos' audio: M mutes all of them
+export const MUTE_KEY = 'pg.muted.arena'; // Manchazo's own flag: Pizzas' and Obstáculos' 'pg.muted' must not silence Manchazo without a sign (the hint shows "Sonido silenciado (M)" when it is muted)
 export const MUSIC_TRIM = 1.5; // the files are mastered at about -15 LUFS and the music bus sits at 0.35: this brings the music up next to the one-shots (-12 LUFS)
 export const FADE_TAU = 0.15; // s: fading a loop out
 export const XFADE_TAU = 0.35; // s: crossfading between layers (95 % in about 1 s)
@@ -33,6 +34,11 @@ export function createEngine(): Sound | null {
     /* storage blocked: start unmuted */
   }
   chain.master.gain.value = masterGain(muted);
+  const hint = createSoundHint(
+    () => ctx.state === 'running',
+    () => muted,
+  );
+  ctx.addEventListener('statechange', hint.refresh);
   const bed = ctx.createGain(); // between the loops and the music bus: ducked under a stinger
   bed.connect(chain.music);
 
@@ -49,11 +55,7 @@ export function createEngine(): Sound | null {
   };
   for (const f of AUDIO_FILES) load(f);
 
-  const unlock = () => {
-    if (ctx.state !== 'running') void ctx.resume().catch(() => {});
-  };
-  window.addEventListener('pointerdown', unlock);
-  window.addEventListener('keydown', unlock);
+  audioGate().register(ctx); // resumes on the first gesture, or at once if one already happened in the menu
 
   interface Running {
     kind: LoopKind;
@@ -142,6 +144,7 @@ export function createEngine(): Sound | null {
       } catch {
         /* ignore */
       }
+      hint.refresh();
     },
   };
 }

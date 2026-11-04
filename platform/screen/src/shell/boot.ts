@@ -1,9 +1,11 @@
 // Page-level setup that belongs to no screen: the room code and QR, and the 1920x1080 stage scaled to the window. Moved out of main.ts (F4b).
 import { joinUrl, NO_URL, type JoinView } from '../screens/lobby/model';
 import { renderJoinCard } from '../screens/lobby/view';
+import { audioGate } from '../audio';
 import { app } from './app-state';
 
 export function initPage() {
+  audioGate(); // listens from boot: the first gesture in the menu unlocks the audio of every game, also one that creates its context later
   const join: JoinView = { code: app.room, qrSvg: '', url: '' };
   renderJoinCard(join);
   fetch(`/api/info?room=${encodeURIComponent(app.room)}`)

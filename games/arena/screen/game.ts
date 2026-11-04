@@ -87,7 +87,7 @@ export const arenaScreen: ScreenGame = {
   },
   scenes: () => [{ key: 'arena', scene: sceneOf() }],
   globalKey(e) {
-    if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) audio.toggleMute(); // Pizzas' audio listens to the same key and flag
+    if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) audio.toggleMute(); // Manchazo's mute is its own flag (pg.muted.arena); the sound hint shows it
   },
   frame(delta) {
     hints.sync(matchRun.run && showing() ? matchRun.run.state : null, performance.now());
