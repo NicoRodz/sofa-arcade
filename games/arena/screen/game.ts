@@ -87,7 +87,7 @@ export const arenaScreen: ScreenGame = {
   },
   scenes: () => [{ key: 'arena', scene: sceneOf() }],
   globalKey(e) {
-    if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) audio.toggleMute(); // Pizzas' audio listens to the same key and flag
+    if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) audio.toggleMute(); // the mute flag (pg.muted) is shared with Pizzas, whose M listener is global: all flip together; the sound hint shows "Sonido silenciado (M)"
   },
   frame(delta) {
     hints.sync(matchRun.run && showing() ? matchRun.run.state : null, performance.now());
