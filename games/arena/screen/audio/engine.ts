@@ -15,7 +15,7 @@ export interface Sound {
   toggleMute(): void;
 }
 
-export const MUTE_KEY = 'pg.muted.arena'; // Manchazo's own flag: Pizzas' and Obstáculos' 'pg.muted' must not silence Manchazo without a sign (the hint shows "Sonido silenciado (M)" when it is muted)
+export const MUTE_KEY = 'pg.muted'; // shared with Pizzas and Obstáculos on purpose: their M listeners are global (Pizzas' is always on), so M flips every flag at once; a separate key would drift out of step. The sign "Sonido silenciado (M)" is how a mute carried over from another game is made visible here
 export const MUSIC_TRIM = 1.5; // the files are mastered at about -15 LUFS and the music bus sits at 0.35: this brings the music up next to the one-shots (-12 LUFS)
 export const FADE_TAU = 0.15; // s: fading a loop out
 export const XFADE_TAU = 0.35; // s: crossfading between layers (95 % in about 1 s)

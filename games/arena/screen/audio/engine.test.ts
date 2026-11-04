@@ -94,26 +94,25 @@ describe('Manchazo engine unlock', () => {
 });
 
 describe('Manchazo mute flag', () => {
-  it("is its own: Pizzas' 'pg.muted' does not mute Manchazo, and muting Manchazo does not touch Pizzas' flag", async () => {
+  it("is the shared 'pg.muted': a mute from Pizzas silences Manchazo AND says so on screen", async () => {
     store.set('pg.muted', '1'); // muted in Pizzas
+    const { createEngine, MUTE_KEY } = await load();
+    createEngine();
+    expect(MUTE_KEY).toBe('pg.muted');
+    win.dispatchEvent(new Event('pointerdown'));
+    expect(el0().textContent).toBe('Sonido silenciado (M)');
+    expect(el0().style.display).toBe('');
+  });
+  it('M in Manchazo flips the shared flag and the sign, and unmuting hides it', async () => {
     const { createEngine, MUTE_KEY } = await load();
     const sound = createEngine()!;
     win.dispatchEvent(new Event('pointerdown'));
-    expect(el0().textContent).toBe(''); // not muted here: no "silenciado" sign
+    expect(el0().textContent).toBe('');
     sound.toggleMute();
     expect(store.get(MUTE_KEY)).toBe('1');
-    expect(MUTE_KEY).not.toBe('pg.muted');
-    expect(store.get('pg.muted')).toBe('1');
     expect(el0().textContent).toBe('Sonido silenciado (M)');
     sound.toggleMute();
     expect(store.get(MUTE_KEY)).toBe('0');
     expect(el0().textContent).toBe('');
-  });
-  it('a Manchazo mute from an earlier session shows the sign from the start', async () => {
-    const { createEngine, MUTE_KEY } = await load();
-    store.set(MUTE_KEY, '1');
-    createEngine();
-    win.dispatchEvent(new Event('pointerdown'));
-    expect(el0().textContent).toBe('Sonido silenciado (M)');
   });
 });
