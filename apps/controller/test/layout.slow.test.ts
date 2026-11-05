@@ -373,6 +373,8 @@ describe('phone layout', () => {
       s.eval<[number, number]>(
         `(() => { const r = document.querySelector('#signals [data-sig=${kind}]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`,
       );
+    // the pad's first packet (the `go:0` baseline) leaves on its own timer: wait for it, or a fast settle taps before it exists
+    expect(await waitUntil(() => s.eval<boolean>(`window.__sent.some((m) => m.t === 'input')`), 3000)).toBe(true);
     for (const kind of ['arrowL', 'arrowU', 'arrowR', 'wait', 'arrowD', 'go']) {
       const [x, y] = await centre(kind);
       await s.tap(x, y);
