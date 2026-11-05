@@ -718,8 +718,12 @@ export async function openSession(): Promise<Session> {
           ? `localStorage.clear()`
           : `localStorage.setItem('pg.name', 'Nico'); localStorage.setItem('pg.room', 'main'); localStorage.setItem('pg.token', 'tok')`;
         const url = `http://127.0.0.1:${PORT}/c/?room=main`;
-        await cdp.send('Page.navigate', { url });
-        await waitUntil(() => cdp.eval<boolean>(`location.href.startsWith('http') && document.readyState === 'complete'`), 6000, 10);
+        const onOrigin = () => cdp.eval<boolean>(`location.href.startsWith('http') && document.readyState === 'complete'`);
+        // storage is set from a document of our origin: the one the previous scenario left will do, only a fresh tab needs a first navigation
+        if (!(await onOrigin().catch(() => false))) {
+          await cdp.send('Page.navigate', { url });
+          await waitUntil(onOrigin, 6000, 10);
+        }
         await cdp.eval(store);
         await cdp.eval(`window.__old = true`); // marks the document we are leaving, so the wait below sees only the new one
         await cdp.send('Page.navigate', { url });
