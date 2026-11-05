@@ -666,6 +666,7 @@ export async function openSession(): Promise<Session> {
       '--headless=new',
       `--remote-debugging-port=${CDP_PORT}`,
       `--user-data-dir=${profile}`,
+      '--disable-frame-rate-limit', // rAF settles as fast as the page paints, not one 16 ms vsync per frame: every settle is ~5x shorter (the wait is by condition, not by frame count)
       '--disable-gpu', // layout probes need no GPU: measured -28% CPU, same wall
       '--hide-scrollbars',
       '--no-first-run',

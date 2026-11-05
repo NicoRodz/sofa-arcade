@@ -9,9 +9,14 @@ export const settleJs = (vw?: number, vh?: number): string => `(async () => {
   const size = ${vw === undefined ? 'null' : `[${vw}, ${vh}]`};
   while (size && (innerWidth !== size[0] || innerHeight !== size[1]) && performance.now() - t0 < 2000) await sleep(5);
   await frame(); await frame();
-  const busy = () => document.getAnimations().some((a) => a.playState !== 'finished' && a.playState !== 'idle' && a.playState !== 'paused'
+  const busy = () => document.getAnimations().filter((a) => a.playState !== 'finished' && a.playState !== 'idle' && a.playState !== 'paused'
     && (a instanceof CSSTransition || a.effect.getComputedTiming().endTime <= 400));
-  while (busy()) { if (performance.now() - t0 > 1500) return false; await frame(); }
+  for (let list = busy(); list.length; list = busy()) {
+    const left = 1500 - (performance.now() - t0);
+    if (left <= 0) return false;
+    await Promise.race([Promise.allSettled(list.map((a) => a.finished)), sleep(left)]); // wake when they end, no frame spinning
+    await frame();
+  }
   await frame();
   return true;
 })()`;
