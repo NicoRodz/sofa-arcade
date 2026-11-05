@@ -20,7 +20,7 @@ export function creatorScenarios(b: Builders): Scenario[] {
   // name submitted -> the relay answers (joined, config, lobby) -> then the script gets its turn
   const flow = (name: string, then: string, pre = ''): string =>
     // a promise (the harness awaits it) instead of a bare timer: the settle that follows must not outrun the relay's answer
-    `(async () => { ${pre}; ${submit(name)}; await new Promise((done) => setTimeout(() => { ${[b.player(name), b.config(), b.phase('lobby')].map((m) => `window.__push(${JSON.stringify(m)})`).join('; ')}; ${then}; done(0); }, 40)); })()`;
+    `(async () => { ${pre}; ${submit(name)}; await new Promise((done, fail) => setTimeout(() => { try { ${[b.player(name), b.config(), b.phase('lobby')].map((m) => `window.__push(${JSON.stringify(m)})`).join('; ')}; ${then}; done(0); } catch (e) { fail(e); } }, 40)); })()`;
   const lobby = (name: string) => [b.player(name), b.config(), b.phase('lobby')] as object[];
   const step = (s: string) => tap(`.cr-tab[data-step=${s}]`);
   return [
