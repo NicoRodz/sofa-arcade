@@ -129,7 +129,12 @@ describe('starting a round', () => {
 
   it('a double beginRound while the iris is moving starts once', () => {
     let swaps = 0;
-    shell.bindServices({ iris: (swap) => (swaps++, swap()) }); // iris never ends
+    shell.bindServices({
+      iris: (swap) => {
+        swaps++;
+        swap();
+      },
+    }); // iris never ends
     flow.beginRound();
     flow.beginRound();
     expect(swaps).toBe(1);
