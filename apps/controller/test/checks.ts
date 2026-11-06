@@ -4,38 +4,7 @@ import { PAD_PARTS } from './match-probe';
 import { TOUCH_SELECTORS, type Box, type Insets, type Item, type Probe } from './harness';
 
 export const MIN_TOUCH = 44; // CSS px: Apple's HIG minimum; Android recommends 48 dp
-const EPS = 0.75;
-
-const inside = (b: Box, o: Box, tol = EPS) =>
-  b.x >= o.x - tol && b.y >= o.y - tol && b.x + b.w <= o.x + o.w + tol && b.y + b.h <= o.y + o.h + tol;
-const rectsHit = (a: Box, b: Box) => a.x < b.x + b.w - EPS && b.x < a.x + a.w - EPS && a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS;
-const corners = (b: Box) =>
-  [
-    [b.x, b.y],
-    [b.x + b.w, b.y],
-    [b.x, b.y + b.h],
-    [b.x + b.w, b.y + b.h],
-  ] as const;
-const dist = (px: number, py: number, c: { cx: number; cy: number }) => Math.hypot(px - c.cx, py - c.cy);
-const circleOf = (b: Box) => ({ cx: b.x + b.w / 2, cy: b.y + b.h / 2, r: Math.min(b.w, b.h) / 2 });
-// circle vs rectangle: distance from the centre to the closest point of the rectangle
-const circleHitsRect = (b: Box, r: Box) => {
-  const c = circleOf(b);
-  const nx = Math.max(r.x, Math.min(c.cx, r.x + r.w)),
-    ny = Math.max(r.y, Math.min(c.cy, r.y + r.h));
-  return dist(nx, ny, c) < c.r - EPS;
-};
-
-const one = (p: Probe, sel: string) => p.items.find((i) => i.sel === sel);
-const all = (p: Probe, sel: string) => p.items.filter((i) => i.sel === sel);
-const safeRect = (p: Probe): Box => ({
-  x: p.inset.left,
-  y: p.inset.top,
-  w: p.vw - p.inset.left - p.inset.right,
-  h: p.vh - p.inset.top - p.inset.bottom,
-});
-const fmt = (b: Box) => `[${b.x.toFixed(0)},${b.y.toFixed(0)} ${b.w.toFixed(0)}x${b.h.toFixed(0)}]`;
-const nm = (i: Item) => `${i.sel}#${i.i}`;
+import { EPS, all, circleHitsRect, circleOf, corners, dist, fmt, inside, nm, one, rectsHit, safeRect } from './checks-geometry';
 
 // 1. Everything you press is at least 44x44 CSS px.
 const TOUCH = TOUCH_SELECTORS;
