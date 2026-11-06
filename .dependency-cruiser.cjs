@@ -8,7 +8,7 @@
 // Run: npm run deps   npm run deps:report (writes docs/refactor/depcruise-report.md)
 
 const APPS = '^apps/[^/]+/src/main\\.ts$';
-const TESTS = '(\\.test\\.ts$|/test/|/harness/)';
+const TESTS = '(\\.test\\.ts$|\\.kit\\.ts$|/test/|/harness/)';
 const PACKAGES = '(platform/[^/]+|games/[^/]+|apps/[^/]+|tools/latency-report)';
 const UI = '(screen|controller|server)';
 const SIM = '^(platform/core/|games/[^/]+/(?!screen/|controller/|server/|test/))';
