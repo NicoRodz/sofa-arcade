@@ -3,3 +3,4 @@ dist
 *.csv
 data
 .vitest
+tmp

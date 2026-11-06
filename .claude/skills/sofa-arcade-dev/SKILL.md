@@ -54,6 +54,7 @@ npm run check:new-files
 - Tocaste `step`/sim, validador, generador o protocolo: `npm run test:slow` (goldens y espejo).
 - Tocaste algo que se compila o arranca (imports, barriles, `main.ts`, catálogo): `npm run build && npm run smoke`.
 - Tocaste tamaños: `npx vitest run --project tools`.
+- Tocaste el render de la pantalla de Pizzas (arte, HUD, resultados): `npm run visual` (local, solo macOS, ~20 s; no está en test:slow ni en CI). `npm run visual:update` regraba los goldens solo en un PR que explique la regla. Detalle: `tools/visual/README.md`.
 - Integración: `npm run baseline:check` (~4 min) verde o explicado.
 - Salida de comandos largos a un archivo; `test:agent` usa `--silent`/`dot`.
 - Mac saturado o corrida local: `test:quick` (equivale al paso de tests del CI; el CI no corre slow ni baseline), `test:changed` (solo lo afectado), `test:full`; todos limitados a 50 % de núcleos con `nice` (`PG_TEST_WORKERS`). Mediciones y cuándo usar cada uno: `references/tests-rendimiento.md`.
