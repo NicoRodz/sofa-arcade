@@ -787,6 +787,7 @@
   ".dependency-cruiser.cjs": "scripts/move-overlay/dependency-cruiser.cjs"
  },
  "testMoves": {
+  "apps/controller/test/layout.slow.test.ts": ["apps/controller/test/layout.slow.test.ts", "apps/controller/test/layout-pad.slow.test.ts", "apps/controller/test/layout-captain.slow.test.ts"],
   "games/obstaculos/campaign/learning.slow.test.ts": "games/obstaculos/campaign/progress/learning.slow.test.ts",
   "games/obstaculos/campaign/practice.test.ts": "games/obstaculos/campaign/progress/practice.test.ts",
   "games/obstaculos/campaign/progress.test.ts": "games/obstaculos/campaign/progress/progress.test.ts",
