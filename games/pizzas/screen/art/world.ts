@@ -12,7 +12,7 @@ import { Hud, ticketKey, type RoundView } from './hud/hud';
 import { StationViews, place } from './stations';
 import { foodKey, HELD } from './food';
 import { PuestoMarks, type PuestoView } from './hud/puestos';
-import { FlagView } from './flags/flag-view';
+import { FinaleView } from './flags/finale-view';
 import { SabotageView } from './sabotage/sabotage';
 import { BurnView } from './sabotage/burn';
 import { EventsView } from './events';
@@ -31,10 +31,7 @@ export class World {
   private chefs = new Map<number, Chef>();
   private marks: PuestoMarks;
   private off: (() => void)[] = [];
-  private kitchenTiles: [number, number][][] = []; // versus: the floor tiles of each kitchen (tile centres)
-  private flags: FlagView[] = [];
-  private dims: Phaser.GameObjects.Graphics[] = [];
-  private finale: { winner: number | null; ms: number; next: number } | null = null; // versus: the end-of-round celebration
+  private finale!: FinaleView; // versus: the end-of-round celebration (flags, dimmed kitchen, confetti)
   private sabotage: SabotageView | null = null; // versus with sabotage: reticle, bags in the air, rubbish on the floor, catapult rings
   private events: EventsView | null = null; // the mid-round event: banner, pill, blackout, balloons, the rat (only when the round has one)
   private ratSignal: RatSignal | null = null; // the gentle rat's arrow and alarm (only with the magnet and the events)
@@ -53,10 +50,11 @@ export class World {
   ) {
     this.paint = { mapId, seed };
     this.bg = buildBackground(scene, paintGrid(game.grid), mapId, seed, game.rec?.topping, game.rec?.topping2 ?? undefined);
-    if (game.versus && view?.teams) this.kitchenTiles = tintKitchens(scene, game, view);
+    const kitchenTiles: [number, number][][] = game.versus && view?.teams ? tintKitchens(scene, game, view) : []; // versus: the floor tiles of each kitchen (tile centres)
     this.fx = new Fx(scene);
     this.stations = new StationViews(scene, game, this.fx);
     this.hud = new Hud(scene, game, view);
+    this.finale = new FinaleView(scene, game, view, this.hud, this.fx, kitchenTiles, this.chefs);
     if (game.sab) this.sabotage = new SabotageView(scene, game, view, this.fx, bus);
     if (game.burn) this.burn = new BurnView(scene, game, this.fx, bus);
     if (game.mid) this.events = new EventsView(scene, game, view, this.fx, bus);
@@ -186,7 +184,7 @@ export class World {
     on('roundEnd', (e) => {
       this.hud.timeUp();
       this.fx.shake(250, 0.006);
-      if (g.versus) this.startFinale(e.winner ?? null);
+      if (g.versus) this.finale.start(e.winner ?? null);
     });
     // versus: the golden order, the handicap and the chefs that drop
     const teamName = (t: number) => this.view?.teams?.[t]?.name ?? `Equipo ${t + 1}`;
@@ -217,66 +215,9 @@ export class World {
     });
   }
 
-  // Versus, the round just ended: the scoreboard reveals, the winner's kitchen celebrates under a waving flag and the other one slumps under a flag at half mast.
-  private startFinale(winner: number | null) {
-    this.hud.vs?.reveal(winner);
-    this.finale = { winner, ms: 0, next: 0 };
-    this.game.teams.forEach((t) => {
-      const team = this.view?.teams?.[t.id];
-      const tiles = this.kitchenTiles[t.id];
-      if (!team || !tiles?.length) return;
-      const mx = tiles.reduce((a, p) => a + p[0], 0) / tiles.length,
-        my = tiles.reduce((a, p) => a + p[1], 0) / tiles.length;
-      const [gx, gy] = tiles.reduce((a, p) => (Math.hypot(p[0] - mx, p[1] - my) < Math.hypot(a[0] - mx, a[1] - my) ? p : a));
-      const mood = winner === null ? 'idle' : t.id === winner ? 'wave' : 'droop';
-      const f = new FlagView(
-        this.scene,
-        `flag_${t.id}`,
-        team.color,
-        team.icon,
-        mood,
-        OX + gx * TILE,
-        OY + (gy + 0.4) * TILE,
-        100 + OY + (gy + 1) * TILE,
-        TILE * (mood === 'droop' ? 1.5 : 2.1),
-      );
-      f.raise();
-      this.flags.push(f);
-      if (winner !== null && t.id !== winner) {
-        const dim = this.scene.add.graphics().setDepth(3).setAlpha(0);
-        dim.fillStyle(0x1a0f0c, 0.34);
-        for (const [x, y] of tiles) dim.fillRect(OX + (x - 0.5) * TILE, OY + (y - 0.5) * TILE, TILE, TILE);
-        this.scene.tweens.add({ targets: dim, alpha: 1, duration: 900 });
-        this.dims.push(dim);
-      }
-    });
-  }
-  private updateFinale(dtMs: number) {
-    const f = this.finale;
-    if (!f) return;
-    f.ms += dtMs;
-    for (const fl of this.flags) fl.update(dtMs);
-    if (f.ms < f.next) return;
-    f.next = f.ms + 700;
-    for (const [id, chef] of this.chefs) {
-      const team = this.game.players.get(id)?.team;
-      if (f.winner === null) continue;
-      if (team === f.winner) chef.celebrate();
-      else chef.fail();
-    }
-    if (f.winner !== null && f.ms < 2400) {
-      const tiles = this.kitchenTiles[f.winner] ?? [];
-      const at = tiles[Math.floor(Math.random() * tiles.length)];
-      if (at) {
-        this.fx.confettiBurst(OX + at[0] * TILE, OY + at[1] * TILE);
-        this.fx.starBurst(OX + at[0] * TILE, OY + at[1] * TILE, 4);
-      }
-    }
-  }
-
   update(dtMs: number) {
     const g = this.game;
-    this.updateFinale(dtMs);
+    this.finale.update(dtMs);
     const chop = new Map<number, 'chop' | 'stretch'>();
     for (const gp of g.players.values()) {
       const info = this.players().get(gp.id);
@@ -351,9 +292,7 @@ export class World {
     this.events?.destroy();
     this.magnet?.destroy();
     this.ratSignal?.destroy();
-    for (const f of this.flags) f.destroy();
-    this.flags = [];
-    this.dims = [];
+    this.finale.destroy();
     this.bg.destroy();
     this.scene.tweens.killAll();
     this.scene.children.removeAll(true);

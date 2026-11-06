@@ -13,44 +13,13 @@ import { RECIPE_DEFS } from '../../../sim/recipes/defs';
 import { Bar, place } from '../stations';
 import { makeText } from '@pichi/screen-kit/art/fx';
 import { VS_PLATE, vipCardAt } from './layout';
+import { D, buildPlate, drawChips, type Plate } from './versus-plate';
+import { buildTab, drawTab, type SabTab } from './versus-sab-tab';
 
-const D = 2000;
-const chipLeft = (x0: number, mirror: boolean) => (mirror ? x0 + VS_PLATE.w - 16 - 128 : x0 + 16); // the streak and golden-order chips sit on the outer side of the plate
-const rrect = (g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, r: number) => g.fillRoundedRect(x, y, w, h, r);
-
-interface Plate {
-  g: Phaser.GameObjects.Graphics; // the plate itself (static)
-  chips: Phaser.GameObjects.Graphics; // streak and golden-order chips (redrawn when they change)
-  name: Phaser.GameObjects.Text;
-  score: Phaser.GameObjects.Text;
-  k: Phaser.GameObjects.Text;
-  streak: Phaser.GameObjects.Text;
-  flame: Phaser.GameObjects.Image;
-  vips: Phaser.GameObjects.Text;
-  crown: Phaser.GameObjects.Text;
-  glow: Phaser.GameObjects.Graphics;
-  shown: number;
-  last: number;
-  chipKey: string;
-  x0: number;
-  mirror: boolean;
-}
 interface Notice {
   text: Phaser.GameObjects.Text;
   ms: number;
 }
-// Sabotage: a tab under each team's plate with the bags waiting at its bin (bag icon and number), the desechos towards the next bag (3 pips) and "basura 2/3".
-interface SabTab {
-  g: Phaser.GameObjects.Graphics;
-  bag: Phaser.GameObjects.Image;
-  n: Phaser.GameObjects.Text;
-  label: Phaser.GameObjects.Text;
-  x: number;
-  key: string;
-  last: number;
-}
-export const SAB_TAB = { w: 244, h: 30, dy: 90 } as const; // hangs from the bottom edge of the plate
-
 export class VersusHud {
   private plates: Plate[] = [];
   private card: Phaser.GameObjects.Container;
@@ -71,8 +40,8 @@ export class VersusHud {
     private game: Game,
     private view: { teams: readonly TeamInfo[] | null; hiddenScore: boolean },
   ) {
-    for (const t of game.teams) this.plates.push(this.buildPlate(t.id));
-    if (game.sab) for (const t of game.teams) this.tabs.push(this.buildTab(t.id));
+    for (const t of game.teams) this.plates.push(buildPlate(this.scene, this.view, t.id));
+    if (game.sab) for (const t of game.teams) this.tabs.push(buildTab(this.scene, t.id));
     const k = game.kitchens;
     const centres = k
       ? k.regions.map((r) => {
@@ -117,133 +86,15 @@ export class VersusHud {
       .setScale(0);
   }
 
-  private buildPlate(id: number): Plate {
-    const s = this.scene,
-      info = this.view.teams?.[id];
-    const { w, h, y, x } = VS_PLATE;
-    const x0 = x[id] ?? x[0],
-      mirror = id === 1;
-    const col = hexNum(info?.color ?? '#888888');
-    const g = s.add.graphics().setDepth(D);
-    g.fillStyle(0x2b1b17, 0.3);
-    rrect(g, x0 - 2, y + 6, w, h, 20);
-    g.fillStyle(col, 1);
-    rrect(g, x0, y, w, h, 20);
-    g.fillStyle(0x000000, 0.18);
-    rrect(g, x0, y + h * 0.62, w, h * 0.38, 20);
-    g.fillStyle(col, 1);
-    g.fillRect(x0 + 4, y + h * 0.62, w - 8, 10);
-    g.lineStyle(5, hexNum(C.ink), 1).strokeRoundedRect(x0, y, w, h, 20);
-    g.fillStyle(0xffffff, 0.26);
-    rrect(g, x0 + 14, y + 5, w - 28, 7, 3);
-    // name and chips hug the outer edge, the score and the handicap face the clock: "▲ Picantes 340 | 2:15 | 410 Frescos ●"
-    const outer = mirror ? x0 + w - 16 : x0 + 16,
-      inner = mirror ? x0 + 16 : x0 + w - 16;
-    const oo = mirror ? 1 : 0,
-      io = mirror ? 0 : 1;
-    const icon = `${info?.icon ?? ''}`;
-    const name = makeText(s, outer, y + 25, `${icon} ${info?.name ?? `Equipo ${id + 1}`}`, {
-      size: 26,
-      color: C.cream,
-      stroke: 5,
-      depth: D + 2,
-    }).setOrigin(oo, 0.5);
-    const score = makeText(s, inner, y + 62, '0', { size: 48, color: C.cream, stroke: 7, depth: D + 2 }).setOrigin(io, 0.5);
-    const k = makeText(s, inner, y + 25, '', { size: 24, color: C.cheese, stroke: 5, depth: D + 2 }).setOrigin(io, 0.5);
-    const chipX = chipLeft(x0, mirror);
-    const chips = s.add.graphics().setDepth(D + 1);
-    const flame = place(s, 'flame_1', chipX + 14, y + 74, 1)
-      .setScale(0.3 / R)
-      .setDepth(D + 2)
-      .setVisible(false);
-    const streak = makeText(s, chipX + 46, y + 61, '', { size: 24, color: C.cream, stroke: 4, depth: D + 2 });
-    const vips = makeText(s, chipX + 106, y + 61, '', { size: 24, color: C.cheese, stroke: 4, depth: D + 2 });
-    const crown = makeText(s, mirror ? x0 + w + 4 : x0 - 4, y + 14, '👑', { size: 40, depth: D + 4 })
-      .setVisible(false)
-      .setAngle(mirror ? 16 : -16); // on the outer top corner of the plate
-    const glow = s.add
-      .graphics()
-      .setDepth(D - 1)
-      .setVisible(false);
-    return { g, chips, name, score, k, streak, flame, vips, crown, glow, shown: 0, last: 0, chipKey: '', x0, mirror };
-  }
-
-  private buildTab(id: number): SabTab {
-    const s = this.scene,
-      { w, x } = VS_PLATE;
-    const x0 = (x[id] ?? x[0]) + (w - SAB_TAB.w) / 2;
-    const g = s.add.graphics().setDepth(D - 1);
-    const bag = place(s, foodKey('bag'), x0 + 24, VS_PLATE.y + SAB_TAB.dy + 22, 1)
-      .setScale(0.4 / R)
-      .setDepth(D + 2);
-    const n = makeText(s, x0 + 44, VS_PLATE.y + SAB_TAB.dy + 15, '', { size: 22, color: C.cream, stroke: 4, depth: D + 2 }).setOrigin(
-      0,
-      0.5,
-    );
-    const label = makeText(s, x0 + SAB_TAB.w - 12, VS_PLATE.y + SAB_TAB.dy + 16, '', {
-      size: 19,
-      color: C.cream,
-      stroke: 4,
-      depth: D + 2,
-    }).setOrigin(1, 0.5);
-    return { g, bag, n, label, x: x0, key: '', last: 0 };
-  }
-  private drawTab(i: number) {
-    const sab = this.game.sab!,
-      st = sab.teams[i]!,
-      tab = this.tabs[i]!;
-    const info = this.view.teams?.[i];
-    const whole = Math.min(2, Math.floor(st.desechos + 1e-9)),
-      part = st.desechos - whole;
-    const key = `${st.bags}|${whole}|${Math.round(part * 4)}|${st.aim ? 1 : 0}|${this.game.time < st.cooldownUntil ? 1 : 0}`;
-    if (key === tab.key) return;
-    tab.key = key;
-    const { w, h, dy } = SAB_TAB,
-      y = VS_PLATE.y + dy,
-      col = hexNum(info?.color ?? '#888888');
-    const g = tab.g;
-    g.clear();
-    g.fillStyle(0x2b1b17, 0.3);
-    rrect(g, tab.x - 2, y + 4, w, h, 12);
-    g.fillStyle(col, 1);
-    rrect(g, tab.x, y, w, h, 12);
-    g.fillStyle(0x000000, 0.22);
-    rrect(g, tab.x, y + h * 0.55, w, h * 0.45, 12);
-    g.lineStyle(4, hexNum(C.ink), 1).strokeRoundedRect(tab.x, y, w, h, 12);
-    for (let k = 0; k < 3; k++) {
-      // the three pips towards the next bag
-      const px = tab.x + 86 + k * 24;
-      g.fillStyle(0x000000, 0.35);
-      rrect(g, px, y + 9, 20, 12, 4);
-      const fill = k < whole ? 1 : k === whole ? part : 0;
-      if (fill > 0.01) {
-        g.fillStyle(hexNum(C.cheese), 1);
-        rrect(g, px, y + 9, Math.max(6, 20 * fill), 12, 4);
-      }
-      g.lineStyle(2, hexNum(C.ink), 0.9).strokeRoundedRect(px, y + 9, 20, 12, 4);
-    }
-    tab.n.setText(`×${st.bags}`).setAlpha(st.bags > 0 ? 1 : 0.55);
-    tab.bag.setAlpha(st.bags > 0 ? 1 : 0.45);
-    tab.label.setText(`basura ${whole}/3`);
-    if (st.bags > tab.last) {
-      const k = tab.bag.scaleX;
-      this.scene.tweens.add({
-        targets: tab.bag,
-        scaleX: { from: k * 1.7, to: k },
-        scaleY: { from: k * 1.7, to: k },
-        duration: 320,
-        ease: 'back.out',
-      });
-      this.scene.tweens.add({ targets: tab.n, scale: { from: 1.7, to: 1 }, duration: 320, ease: 'back.out' });
-      this.notice(`${info?.name ?? `Equipo ${i + 1}`}: ¡bolsa de basura lista!`, info ? this.light(info.color) : C.cream);
-    }
-    tab.last = st.bags;
-  }
-
   update(dtMs: number, leftMs: number, running: boolean) {
     this.t += dtMs;
     const g = this.game;
-    if (g.sab) this.tabs.forEach((_t, i) => this.drawTab(i));
+    if (g.sab)
+      this.tabs.forEach((tab, i) =>
+        drawTab(this.scene, g, this.view, tab, i, (n, info) =>
+          this.notice(`${info?.name ?? `Equipo ${n + 1}`}: ¡bolsa de basura lista!`, info ? this.light(info.color) : C.cream),
+        ),
+      );
     const hide = !this.revealed && !g.over && scoreHidden(this.view.hiddenScore, running, leftMs);
     g.teams.forEach((t, i) => {
       const p = this.plates[i]!;
@@ -256,7 +107,7 @@ export class VersusHud {
       if (Math.abs(t.score - p.shown) < 0.5) p.shown = t.score;
       p.score.setText(hide ? '???' : String(Math.round(p.shown)));
       p.k.setText(kText(t.k));
-      this.drawChips(p, t.streak, tipMultiplier(t.streak, g.params.tune), t.vips);
+      drawChips(this.scene, p, t.streak, tipMultiplier(t.streak, g.params.tune), t.vips);
     });
     this.updateCard();
     this.updateGlow();
@@ -267,46 +118,6 @@ export class VersusHud {
     for (const n of this.notices.filter((x) => x.ms <= 0)) n.text.destroy();
     this.notices = this.notices.filter((x) => x.ms > 0);
     this.notices.forEach((n, i) => n.text.setY(150 + i * 40));
-  }
-
-  // The streak chip shows the tip multiplier the next delivery earns (dim at x1: nothing running) and the golden orders won are stars.
-  private drawChips(p: Plate, streak: number, mult: number, vips: number) {
-    const key = `${streak}|${mult}|${vips}`;
-    if (key === p.chipKey) return;
-    p.chipKey = key;
-    const { y, h } = VS_PLATE;
-    const chipX = chipLeft(p.x0, p.mirror);
-    const g = p.chips;
-    g.clear();
-    const hot = mult >= 2;
-    const col = mult >= 4 ? C.tomato : mult === 3 ? C.fire : C.cheese2;
-    g.fillStyle(0x000000, hot ? 0.0 : 0.22);
-    rrect(g, chipX, y + h - 36, 64, 28, 14);
-    if (hot) {
-      g.fillStyle(hexNum(col), 1);
-      rrect(g, chipX, y + h - 36, 64, 28, 14);
-      g.lineStyle(3, hexNum(C.ink), 1).strokeRoundedRect(chipX, y + h - 36, 64, 28, 14);
-    }
-    g.fillStyle(0x000000, vips ? 0 : 0.22);
-    rrect(g, chipX + 72, y + h - 36, 56, 28, 14);
-    if (vips) {
-      g.fillStyle(hexNum(C.cheese2), 1);
-      rrect(g, chipX + 72, y + h - 36, 56, 28, 14);
-      g.lineStyle(3, hexNum(C.ink), 1).strokeRoundedRect(chipX + 72, y + h - 36, 56, 28, 14);
-    }
-    p.flame.setVisible(hot).setAlpha(1);
-    p.streak
-      .setText(`x${mult}`)
-      .setAlpha(hot ? 1 : 0.55)
-      .setColor(C.cream)
-      .setX(chipX + (hot ? 40 : 32));
-    p.vips
-      .setText(vips ? `★${vips}` : '★')
-      .setAlpha(vips ? 1 : 0.5)
-      .setColor(vips ? C.ink : C.cream)
-      .setX(chipX + 100);
-    if (hot) this.scene.tweens.add({ targets: p.streak, scale: { from: 1.4, to: 1 }, duration: 240, ease: 'back.out' });
-    if (vips) this.scene.tweens.add({ targets: p.vips, scale: { from: 1.4, to: 1 }, duration: 240, ease: 'back.out' });
   }
 
   private updateCard() {
