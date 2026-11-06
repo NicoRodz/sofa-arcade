@@ -1,6 +1,7 @@
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { sleep } from '../config';
 import type { Ctx } from '../session';
+import { pickMap } from './play';
 
 export async function runEvents({ cdp, bots, open, join, click, snap, waitFor }: Ctx) {
   // The mid-round events on map 13 (it has plates to wash, so the inspector can come), Normal, 6 chefs (the map asks for 5 or more): the lobby option, and for each event the banner (3 s before), the start and
@@ -97,7 +98,8 @@ export async function runEvents({ cdp, bots, open, join, click, snap, waitFor }:
   bots.splice(0).forEach((b) => b.close());
 }
 
-export async function runMagnet({ cdp, bots, open, join, click, snap, waitFor }: Ctx) {
+export async function runMagnet(c: Ctx) {
+  const { cdp, bots, open, join, click, snap, waitFor } = c;
   // Magnetism and the gentle rat on map 1 (Normal, 2 chefs: the lobby rules switch the magnet on): the bracket on the station each chef's Tomar will use (a chef at 45 degrees to a crate,
   // two chefs on one crate), then the rat: the arrow over it, the dashed line to the counter it goes for, the alarm when it is about to arrive. Driven by hand (window.__pg).
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
@@ -105,7 +107,7 @@ export async function runMagnet({ cdp, bots, open, join, click, snap, waitFor }:
   await open('MAGN');
   await join('MAGN', 2, rows);
   await click('[data-diff="normal"]');
-  await click('[data-map="1"]');
+  await pickMap(c, '1');
   await sleep(400);
   await click('#start');
   await sleep(1500);

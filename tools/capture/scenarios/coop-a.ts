@@ -134,7 +134,8 @@ export async function runSabotage({ cdp, bots, open, join, click, snap, waitFor 
   bots.splice(0).forEach((b) => b.close());
 }
 
-export async function runBurn({ cdp, bots, open, join, click, snap, waitFor }: Ctx) {
+export async function runBurn(c: Ctx) {
+  const { cdp, bots, open, join, click, snap, waitFor } = c;
   // The oven that burns: map 1 (open kitchen, ovens with counters beside them), Normal, 2 chefs. The sim is driven by hand (window.__pg.kit) to frame each stage:
   // a ready pizza with its grace ring, the warning, the burnt pizza smoking, the fire, the fire jumping, a chef putting it out with the extinguisher, and the results.
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
@@ -142,7 +143,7 @@ export async function runBurn({ cdp, bots, open, join, click, snap, waitFor }: C
   await open('BURN');
   await join('BURN', 2, rows);
   await click('[data-diff="normal"]');
-  await click('[data-map="1"]');
+  await pickMap(c, '1');
   await sleep(400);
   await click('#start');
   await sleep(1500);
