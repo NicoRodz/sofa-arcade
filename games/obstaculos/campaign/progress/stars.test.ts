@@ -3,7 +3,14 @@ import { NO_ASSISTS, emptyProgress, fullMask, mergeProgress, starsOf, type Assis
 import type { CatalogLevel } from '../index';
 
 const level = (collectibles: number): CatalogLevel => ({ collectibles }) as CatalogLevel;
-const run = (o: Partial<LevelOutcome> = {}): LevelOutcome => ({ levelId: '1-1', cleared: true, timeMs: 1, collectiblesMask: 0, deaths: 5, ...o });
+const run = (o: Partial<LevelOutcome> = {}): LevelOutcome => ({
+  levelId: '1-1',
+  cleared: true,
+  timeMs: 1,
+  collectiblesMask: 0,
+  deaths: 5,
+  ...o,
+});
 const withHearts: Assists = { ...NO_ASSISTS, infiniteHearts: true };
 const prog = (stars: [boolean, boolean, boolean], o: Partial<LevelProgress> = {}): LevelProgress => ({ ...emptyProgress(), stars, ...o });
 
@@ -20,7 +27,11 @@ describe('starsOf: the three-star rule', () => {
   });
   it('star 1 is the clear; a failed run gives no star even with zero deaths and every collectible', () => {
     expect(starsOf(run(), level(3), NO_ASSISTS, 0)[0]).toBe(true);
-    expect(starsOf(run({ cleared: false, deaths: 0, collectiblesMask: fullMask(3) }), level(3), NO_ASSISTS, fullMask(3))).toEqual([false, false, false]);
+    expect(starsOf(run({ cleared: false, deaths: 0, collectiblesMask: fullMask(3) }), level(3), NO_ASSISTS, fullMask(3))).toEqual([
+      false,
+      false,
+      false,
+    ]);
   });
   it('star 2 needs every collectible, counting the mask of earlier runs', () => {
     expect(starsOf(run({ collectiblesMask: 0b111 }), level(3), NO_ASSISTS, 0)[1]).toBe(true);
