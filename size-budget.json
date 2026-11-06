@@ -6,7 +6,6 @@
   "apps/server/test/relay.test.ts": { "max": 750, "until": "2027-03-31" },
   "games/obstaculos/screen/campaign/screen.ts": { "max": 347, "until": "2027-03-31" },
   "games/obstaculos/screen/harness/capture.ts": { "max": 459, "until": "2027-03-31" },
-  "games/obstaculos/test/obst.dynamics.scenarios.ts": { "max": 441, "until": "2027-03-31" },
   "games/pizzas/screen/art/hud/hud.ts": { "max": 351, "until": "2027-03-31" },
   "games/pizzas/screen/art/hud/versus-hud.ts": { "max": 450, "until": "2027-03-31" },
   "games/pizzas/screen/art/sabotage/sabotage.ts": { "max": 389, "until": "2027-03-31" },
