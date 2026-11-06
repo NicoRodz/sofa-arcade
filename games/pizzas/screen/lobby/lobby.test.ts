@@ -14,7 +14,8 @@ vi.mock('@pichi/screen-kit/net', () => ({ sendMsg: () => {} }));
 
 const seat = (n: number) => {
   app.players.clear();
-  for (let i = 0; i < n; i++) app.players.set(i + 1, { info: { id: i + 1, slot: i, name: `P${i + 1}`, connected: true } as PublicPlayer } as never);
+  for (let i = 0; i < n; i++)
+    app.players.set(i + 1, { info: { id: i + 1, slot: i, name: `P${i + 1}`, connected: true } as PublicPlayer } as never);
 };
 const versus = (sabotage: string) => {
   seat(4);

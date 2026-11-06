@@ -17,7 +17,10 @@ const started: unknown[][] = [];
 const scenes: string[] = [];
 vi.mock('phaser', () => ({ default: {} }));
 vi.mock('@pichi/screen-kit/net', () => ({ sendMsg: (m: { t: string }) => sent.push(m) }));
-vi.mock('@pichi/screen-kit/shell', async (orig) => ({ ...(await orig<typeof import('@pichi/screen-kit/shell')>()), showScene: (id: string) => scenes.push(id) }));
+vi.mock('@pichi/screen-kit/shell', async (orig) => ({
+  ...(await orig<typeof import('@pichi/screen-kit/shell')>()),
+  showScene: (id: string) => scenes.push(id),
+}));
 vi.mock('./loop', () => ({ scene: () => ({ startRound: (...a: unknown[]) => started.push(a) }) }));
 
 const seat = (n: number, over: (i: number) => Partial<PublicPlayer> = () => ({})) => {
@@ -41,7 +44,15 @@ beforeEach(() => {
   bindServices({ ui: () => {}, render: () => {} });
   app.phase = 'lobby';
   pz.played.clear();
-  Object.assign(pz, { roundNo: 0, autoLast: undefined, overAt: 5, puestoMsg: undefined, puestoStamp: 0, lockBeforeStart: false, lead: { dummy: 1 } as never });
+  Object.assign(pz, {
+    roundNo: 0,
+    autoLast: undefined,
+    overAt: 5,
+    puestoMsg: undefined,
+    puestoStamp: 0,
+    lockBeforeStart: false,
+    lead: { dummy: 1 } as never,
+  });
   puestoOf.clear();
 });
 

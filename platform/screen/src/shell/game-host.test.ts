@@ -8,7 +8,8 @@ const ph = vi.hoisted(() => {
   type Fn = (...a: unknown[]) => void;
   class Emitter {
     on(ev: string, fn: Fn) {
-      (this.map[ev] ??= []).push(fn);
+      this.map[ev] = this.map[ev] ?? [];
+      this.map[ev].push(fn);
     }
     off(ev: string, fn: Fn) {
       this.map[ev] = (this.map[ev] ?? []).filter((f) => f !== fn);
@@ -21,7 +22,9 @@ const ph = vi.hoisted(() => {
   }
   class Text {
     style = { resolution: 1 };
-    setResolution = vi.fn((r: number) => void (this.style.resolution = r));
+    setResolution = vi.fn((r: number) => {
+      this.style.resolution = r;
+    });
   }
   class Game {
     static last: Game;
@@ -68,21 +71,42 @@ const runFrame = vi.hoisted(() => vi.fn());
 const probe = vi.hoisted(() => ({ mark: vi.fn(), start: vi.fn() }));
 vi.mock('../net/latency', () => ({ flushLag }));
 vi.mock('./frame', () => ({ runFrame }));
-vi.mock('./fps-probe', () => ({ fpsEnabled: () => (globalThis as { location: { search: string } }).location.search.includes('fps=1'), startFpsProbe: (f: () => string) => (probe.start(f()), probe) }));
+vi.mock('./fps-probe', () => ({
+  fpsEnabled: () => (globalThis as { location: { search: string } }).location.search.includes('fps=1'),
+  startFpsProbe: (f: () => string) => {
+    probe.start(f());
+    return probe;
+  },
+}));
 
 const list = vi.hoisted(() => ({ games: [] as ScreenGame[] }));
 vi.mock('./game', () => ({
   games: () => ({ list: () => list.games, get: (id: string) => list.games.find((g) => g.manifest.id === id) }),
 }));
 
-const cam = () => ({ zoom: 1, originX: 5, setOrigin: vi.fn(function (this: any) { this.originX = 0; return this; }), setZoom: vi.fn(function (this: any, z: number) { this.zoom = z; return this; }) });
-const spec = (key: string, extra: Partial<SceneSpec> = {}): SceneSpec & { camera: ReturnType<typeof cam>; texts: InstanceType<typeof ph.Text>[] } => {
+const cam = () => ({
+  zoom: 1,
+  originX: 5,
+  setOrigin: vi.fn(function (this: any) {
+    this.originX = 0;
+    return this;
+  }),
+  setZoom: vi.fn(function (this: any, z: number) {
+    this.zoom = z;
+    return this;
+  }),
+});
+const spec = (
+  key: string,
+  extra: Partial<SceneSpec> = {},
+): SceneSpec & { camera: ReturnType<typeof cam>; texts: InstanceType<typeof ph.Text>[] } => {
   const camera = cam();
   const texts = [new ph.Text(), new ph.Text()];
   const scene = { sys: { isActive: () => true }, cameras: { main: camera }, children: { list: [...texts, { not: 'text' }] } };
   return { key, scene: scene as never, camera, texts, ...extra };
 };
-const game = (id: string, scenes?: SceneSpec[], renderScale?: 1 | 2): ScreenGame => ({ manifest: { id } as never, scenes: scenes ? () => scenes : undefined, renderScale }) as unknown as ScreenGame;
+const game = (id: string, scenes?: SceneSpec[], renderScale?: 1 | 2): ScreenGame =>
+  ({ manifest: { id } as never, scenes: scenes ? () => scenes : undefined, renderScale }) as unknown as ScreenGame;
 
 let host: typeof import('./game-host');
 let setScale: typeof import('./render-scale');
@@ -103,7 +127,9 @@ beforeEach(async () => {
 
 describe('createPhaser', () => {
   it('boots one Game with the scenes of every registered game, in order, parented on #game at 1920x1080', () => {
-    const a = spec('a1'), b = spec('b1'), b2 = spec('b2');
+    const a = spec('a1'),
+      b = spec('b1'),
+      b2 = spec('b2');
     list.games = [game('a', [a]), game('b', [b, b2]), game('c')];
     expect(host.createPhaser()).toBe(G());
     expect(host.phaserGame()).toBe(G());
@@ -136,12 +162,14 @@ describe('createPhaser', () => {
 
 describe('showScene: the switch between games', () => {
   const two = () => {
-    const a = spec('a1', { leave: vi.fn() }), b = spec('b1', { leave: vi.fn() }), b2 = spec('b2');
+    const a = spec('a1', { leave: vi.fn() }),
+      b = spec('b1', { leave: vi.fn() }),
+      b2 = spec('b2');
     list.games = [game('a', [a]), game('b', [b, b2])];
     host.createPhaser();
     return { a, b, b2 };
   };
-  it('the other games\' running scenes are told to leave and put to sleep; the new game\'s scenes start', () => {
+  it("the other games' running scenes are told to leave and put to sleep; the new game's scenes start", () => {
     const { a, b } = two();
     G().active.add('a1');
     host.showScene('b');
@@ -228,7 +256,8 @@ describe('the render scale', () => {
   });
   it('switching to a game that did not ask returns to 1, unhooks the frame fit and resets the camera once', () => {
     display(3840, 1);
-    const m = spec('m1'), p = spec('p1');
+    const m = spec('m1'),
+      p = spec('p1');
     list.games = [game('m', [m], 2), game('p', [p])];
     host.createPhaser();
     host.showScene('m');

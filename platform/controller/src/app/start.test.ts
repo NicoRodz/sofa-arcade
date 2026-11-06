@@ -24,7 +24,16 @@ vi.mock('./captain', () => ({
   },
 }));
 vi.mock('./connect', () => ({
-  createClock: (s: unknown) => ({ ping: ((log.session = s), log.ping), rtt: () => log.rtt, silent: () => log.silent, pong: () => {}, stamp: () => {} }),
+  createClock: (s: unknown) => ({
+    ping: (() => {
+      log.session = s;
+      return log.ping;
+    })(),
+    rtt: () => log.rtt,
+    silent: () => log.silent,
+    pong: () => {},
+    stamp: () => {},
+  }),
   createConnection: () => log.connect,
 }));
 vi.mock('./controls', () => ({ createControls: () => ({}) }));
@@ -78,11 +87,26 @@ beforeEach(() => {
   log.rtt = undefined;
   log.silent = false;
   win = {};
-  doc = { hidden: false, addEventListener: (e, f) => void (docHandlers[e] = f) };
-  vi.stubGlobal('window', { ...win, addEventListener: (e: string, f: Handler) => void (winHandlers[e] = f) });
+  doc = {
+    hidden: false,
+    addEventListener: (e, f) => {
+      docHandlers[e] = f;
+    },
+  };
+  vi.stubGlobal('window', {
+    ...win,
+    addEventListener: (e: string, f: Handler) => {
+      winHandlers[e] = f;
+    },
+  });
   vi.stubGlobal('document', doc);
   vi.stubGlobal('location', { search: '', host: 'tv.local' });
-  vi.stubGlobal('localStorage', { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => void (store[k] = v) });
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => store[k] ?? null,
+    setItem: (k: string, v: string) => {
+      store[k] = v;
+    },
+  });
   sock = { readyState: 1, close: vi.fn() };
   vi.stubGlobal('WebSocket', { OPEN: 1 });
 });
@@ -237,7 +261,14 @@ describe('games', () => {
   it('a game with a school gets the token, a sender and the Captain test; its ui goes to the Captain', () => {
     const ui = { id: 'ui' };
     let seen: { token: string; isCaptain: () => boolean } | undefined;
-    const g = { id: 'g1', school: (o: typeof seen) => ((seen = o), ui), init: log.init } as unknown as ControllerGame;
+    const g = {
+      id: 'g1',
+      school: (o: typeof seen) => {
+        seen = o;
+        return ui;
+      },
+      init: log.init,
+    } as unknown as ControllerGame;
     boot([g, { id: 'g2' } as unknown as ControllerGame]);
     expect(seen!.token).toBe(store['pg.token']);
     expect(seen!.isCaptain()).toBe(false); // not joined: nobody wears the crown

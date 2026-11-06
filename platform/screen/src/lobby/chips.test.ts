@@ -40,10 +40,17 @@ class FakeEl {
   querySelector = () => this.av;
 }
 const toggles: Record<string, boolean> = {};
-const hosts: Record<string, { appendChild?: (e: FakeEl) => void; replaceChildren?: (...e: FakeEl[]) => void; classList: { toggle: (c: string, on: boolean) => void } }> = {};
+const hosts: Record<
+  string,
+  { appendChild?: (e: FakeEl) => void; replaceChildren?: (...e: FakeEl[]) => void; classList: { toggle: (c: string, on: boolean) => void } }
+> = {};
 const host = (id: string) =>
   (hosts[id] ??= {
-    classList: { toggle: (c, on) => void (toggles[`${id}.${c}`] = on) },
+    classList: {
+      toggle: (c, on) => {
+        toggles[`${id}.${c}`] = on;
+      },
+    },
     appendChild: vi.fn(),
     replaceChildren: vi.fn(),
   });
@@ -163,7 +170,7 @@ describe('renderChips', () => {
     expect(last(0).badge).toMatchObject({ kind: 'badge', className: 'hbadge' });
     mod.renderChips();
     expect(calls.badges).toBe(1);
-    info.assist = false;
+    delete info.assist;
     mod.renderChips();
     expect(mod.chips[0]!.badge).toBeNull();
     expect(last(0).badge).toBeNull();
