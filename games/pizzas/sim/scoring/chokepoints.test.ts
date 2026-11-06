@@ -43,4 +43,21 @@ describe('chokepoints', () => {
     expect(sorted(chokepoints(g))).toEqual(['3,2', '4,2', '5,2']);
     expect(sorted(bruteForce(g))).toEqual(['3,2', '4,2', '5,2']);
   });
+
+  it('edges: a root that is itself the cut, a one-component map with no cut, a floor-less map and a map that is a single tile', () => {
+    const grid = (rows: string[]) => parseMap(Array.from({ length: 9 }, (_, y) => (rows[y] ?? '').padEnd(16, '#')));
+    const cases: Record<string, string[]> = {
+      // the first floor tile in scan order (1,1) has two children: only removing it splits the L
+      rootIsCut: ['########', '#..#####', '#.######'],
+      open: ['########', '#......#', '#......#', '#......#'],
+      noFloor: ['########', '########'],
+      single: ['########', '#.######'],
+    };
+    for (const [name, rows] of Object.entries(cases)) {
+      const g = grid(rows);
+      expect(sorted(chokepoints(g)), name).toEqual(sorted(bruteForce(g)));
+    }
+    expect(sorted(chokepoints(grid(cases.rootIsCut!)))).toEqual(['1,1']);
+    expect(chokepoints(grid(cases.open!)).size).toBe(0);
+  });
 });
