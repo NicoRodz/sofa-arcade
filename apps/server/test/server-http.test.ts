@@ -96,6 +96,26 @@ describe('the campaign progress on disk', () => {
   });
 });
 
+describe('the store is one per server', () => {
+  const post = (s: Srv, p: string, body: unknown) =>
+    fetch(url(s, p), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  it('a room that claimed an expedition keeps it against another room (the claim lives in one store, across requests)', async () => {
+    const s = await boot({ dataDir: dir });
+    const { id } = (await (await post(s, '/api/expeditions', { name: 'A' })).json()) as { id: string };
+    expect((await post(s, `/api/expeditions/${id}/claim`, { room: 'sala-1' })).status).toBe(200);
+    const other = await post(s, `/api/expeditions/${id}/claim`, { room: 'sala-2' });
+    expect(other.status).toBe(409);
+    expect(await other.json()).toEqual({ ok: false, room: 'sala-1' });
+    await post(s, `/api/expeditions/${id}/release`, { room: 'sala-1' });
+    expect((await post(s, `/api/expeditions/${id}/claim`, { room: 'sala-2' })).status).toBe(200);
+  });
+  it('a bad id is a 400 and a missing expedition a 404, not a 500', async () => {
+    const s = await boot({ dataDir: dir });
+    expect((await fetch(url(s, '/api/expeditions/..%2Fx'))).status).toBe(400);
+    expect((await fetch(url(s, '/api/expeditions/abcdef123456'))).status).toBe(404);
+  });
+});
+
 describe('static mode and close', () => {
   it('static mode without a build answers 404 for the apps instead of falling over', async () => {
     const s = await boot({ mode: 'static', dataDir: dir });
