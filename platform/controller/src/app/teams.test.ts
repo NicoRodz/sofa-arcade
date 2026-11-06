@@ -1,6 +1,6 @@
 // The team strip and the swap button of a versus phone (teams.ts): the strip follows `you`, the name falls back to "Equipo N", the button asks the relay for the
 // next team, and a team list that no longer holds this phone clears the strip. Fake DOM, no browser.
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClientMsg, TeamInfo } from '@pichi/core';
 import { createTeams, type YouMsg } from './teams';
 import type { Session } from './store';
@@ -47,6 +47,8 @@ beforeEach(() => {
   vi.stubGlobal('WebSocket', { OPEN: 1 });
   vi.stubGlobal('document', { documentElement: { style: { setProperty: (k: string, v: string) => (props[k] = v) } } });
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('show', () => {
   it('paints the strip in both views with the team colour, icon, name and kitchen side', () => {

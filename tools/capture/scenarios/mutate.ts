@@ -1,16 +1,18 @@
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { sleep } from '../config';
 import type { Ctx } from '../session';
+import { pickMap } from './play';
 
 // The kitchens that mutate (Normal turns the option on by itself): map 1 warning and after (ice); MUT_MAP=2 or 4 for the belts. The clock jumps to 1:26 of the match.
-export async function runMutate({ cdp, open, join, click, waitFor }: Ctx) {
+export async function runMutate(c: Ctx) {
+  const { cdp, open, join, click, waitFor } = c;
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
   for (const map of [process.env.MUT_MAP ?? '1']) {
     const room = `MUT${map}`;
     await open(room);
     await join(room, 2, fixedMap(map)!.rows);
     await click('[data-diff="normal"]');
-    await click(`[data-map="${map}"]`);
+    await pickMap(c, map);
     await sleep(400);
     if (map === '1' || process.env.MUT_LOBBY) await cdp.shot('mut-0-lobby');
     if (process.env.MUT_LOBBY) return;

@@ -1,14 +1,16 @@
 import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { sleep } from '../config';
 import type { Ctx } from '../session';
+import { pickMap } from './play';
 
 // The frost event on map 1, Normal, 2 chefs: the banner, then the whole kitchen frozen (window.__pg.kit.event forces the kind and the instant).
-export async function runFrost({ cdp, open, join, click, snap, waitFor }: Ctx) {
+export async function runFrost(c: Ctx) {
+  const { cdp, open, join, click, snap, waitFor } = c;
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
   await open('FROS');
   await join('FROS', 2, fixedMap('1')!.rows);
   await click('[data-diff="normal"]');
-  await click('[data-map="1"]');
+  await pickMap(c, '1');
   await click('#evs [data-ev="true"]');
   await sleep(300);
   await click('#start');

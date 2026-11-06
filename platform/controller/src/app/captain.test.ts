@@ -1,6 +1,6 @@
 // The Captain's remote (captain.ts): who counts as Captain, when the D-pad shows (never in the round, never on a dead socket), the crown on the name,
 // the waiting text, and the nav key that goes to the relay with no id. The touch menu and the D-pad binding are mocked: they have their own tests.
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ClientMsg } from '@pichi/core';
 import type { Session } from './store';
 import { createCaptain } from './captain';
@@ -35,6 +35,8 @@ beforeEach(() => {
   menu.refresh.mockClear();
   vi.stubGlobal('WebSocket', { OPEN: 1 });
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('isCaptain', () => {
   it('needs the socket joined and the crown to be this phone', () => {
