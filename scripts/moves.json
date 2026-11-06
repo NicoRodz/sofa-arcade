@@ -788,6 +788,7 @@
  },
  "testMoves": {
   "apps/controller/test/layout.slow.test.ts": ["apps/controller/test/layout.slow.test.ts", "apps/controller/test/layout-pad.slow.test.ts", "apps/controller/test/layout-captain.slow.test.ts"],
+  "games/pizzas/sim/rules/assist.test.ts": ["games/pizzas/sim/rules/assist.test.ts", "games/pizzas/sim/rules/assist-reach.test.ts", "games/pizzas/sim/rules/assist-handicap.test.ts"],
   "games/pizzas/sim/overcooked.test.ts": ["games/pizzas/sim/overcooked.test.ts", "games/pizzas/sim/overcooked-cheese.test.ts", "games/pizzas/sim/overcooked-plates.test.ts"],
   "apps/server/test/relay.test.ts": ["apps/server/test/relay.test.ts", "apps/server/test/relay-lobby.test.ts", "apps/server/test/relay-teams.test.ts", "apps/server/test/relay-slots.test.ts"],
   "games/obstaculos/campaign/learning.slow.test.ts": "games/obstaculos/campaign/progress/learning.slow.test.ts",
