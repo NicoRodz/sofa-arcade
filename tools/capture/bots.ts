@@ -99,7 +99,6 @@ export class Bot {
       return;
     }
     const st = snap.stations;
-    const cutType = (it: string | null) => (it === 'cut0' ? 0 : it === 'cut1' ? 1 : -1);
     let target: (typeof st)[number] | undefined;
     const goalsOf = (t: (typeof st)[number]) => {
       const g = new Set<string>();

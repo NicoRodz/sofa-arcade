@@ -14,7 +14,7 @@ await build({ entryPoints: [join(here, 'measure.ts')], bundle: true, format: 'ii
 const PORT = 3540;
 const chrome = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const result = new Promise((resolve) => {
-  const srv = createServer((req, res) => {
+  createServer((req, res) => {
     if (req.method === 'POST') {
       let b = '';
       req.on('data', (c) => (b += c));
@@ -30,11 +30,9 @@ const result = new Promise((resolve) => {
     );
   }).listen(PORT);
 });
-const proc = spawn(
-  chrome,
-  ['--headless=new', '--disable-gpu', '--no-sandbox', `--user-data-dir=${join(dir, 'profile')}`, `http://localhost:${PORT}/`],
-  { stdio: 'ignore' },
-);
+spawn(chrome, ['--headless=new', '--disable-gpu', '--no-sandbox', `--user-data-dir=${join(dir, 'profile')}`, `http://localhost:${PORT}/`], {
+  stdio: 'ignore',
+});
 const timer = setTimeout(() => {
   console.error('timeout');
   cleanup(1);

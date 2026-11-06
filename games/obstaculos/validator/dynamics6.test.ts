@@ -7,7 +7,6 @@ import { flatCap, toLevel } from '../generate/assemble';
 import type { EntityParam, LevelDef } from '../types';
 import { lint, validateState } from './validate';
 
-const only = (...m: Mechanic[]) => new Set<Mechanic>(m);
 // 18 rows: floor on 15..17 (standing row 14), S at column 2 and G three columns from the right.
 function flat(w: number): string[] {
   const rows = Array.from({ length: 18 }, (_, y) => (y >= 15 ? '#'.repeat(w) : '.'.repeat(w)));

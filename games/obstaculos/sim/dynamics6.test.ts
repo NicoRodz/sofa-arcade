@@ -1,7 +1,7 @@
 // Campaign dynamics 10-12 (plan §4, phase A6) in the real sim: lantern and crystals, elastic ring, sinkers and geyser. Each one has its quick-match twin that must NOT show it
 // (the layer is opt-in) and the numbers that params(2) freezes (campaign.test.ts).
 import { describe, expect, it } from 'vitest';
-import { DT, JUMP_V0, PLAYER_H, ROPE_LEN, TILE } from '../constants';
+import { JUMP_V0, PLAYER_H, ROPE_LEN, TILE } from '../constants';
 import { T } from '../legend';
 import { draw, hall, inp, level, names, obj, of, pl, run, teleport, tile, vline, world } from './testkit/testkit';
 import { previewB, snapshot } from './world';
@@ -9,7 +9,6 @@ import { previewB, snapshot } from './world';
 const camp = (n?: number) => ({ campaign: { world: 'mine' as const, n } });
 const B = (s: number) => (slot: number) => (slot === s ? inp({ grab: true }) : undefined);
 const FLOOR = 13; // standing row of hall(40, 16)
-const steps = (sec: number) => Math.round(sec / DT);
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------
 describe('dynamic 10: lantern and crystals (a crystal is solid only while the lantern lights it)', () => {
