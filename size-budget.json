@@ -3,7 +3,6 @@
  "exemptPaths": ["games/obstaculos/levels/","games/pizzas/test/golden/fixtures/"],
  "files": {
   "apps/controller/index.html": { "max": 234, "until": "2027-03-31" },
-  "games/pizzas/sim/rules/midround.test.ts": { "max": 508, "until": "2027-03-31" },
   "games/pizzas/sim/versus/versus.slow.test.ts": { "max": 835, "until": "2027-03-31" },
   "platform/core/src/lobby/vote.test.ts": { "max": 670, "until": "2027-03-31" }
  },
