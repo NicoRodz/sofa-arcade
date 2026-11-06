@@ -1,11 +1,12 @@
 // The campaign on the Mac's screen: owns the state of the hub, the map and the result panel, turns keys (the keyboard's and the Captain's D-pad,
 // which main.ts already unifies) into the model's effects and runs them against the flow. main.ts only lends it the things it owns
 // (the phase, the players, the iris, the sounds) through ScreenDeps and asks it to draw.
-import { nextLevel, type Catalog, type CatalogLevel } from '../../campaign/index';
+import type { Catalog } from '../../campaign/index';
 import type { Difficulty } from '@pichi/core';
-import { campKey, hubItems, initialState, startNode, worldNodes, type CampState, type Effect, type KeyCtx } from './model';
-import { renderHub, renderMap, renderPick, renderPractice, renderResult, type ViewCtx } from './view';
+import { campKey, initialState, startNode, type CampState, type Effect, type KeyCtx } from './model';
+import { renderResult, type ViewCtx } from './view';
 import { CampaignFlow, type FlowDeps, type Hub, type LevelEnd } from './flow';
+import { campaignHtml, clickIntent, landOnMap } from './screen-intent';
 
 export type Sfx = 'move' | 'pick' | 'back' | 'refuse';
 export interface ScreenDeps extends FlowDeps {
@@ -87,16 +88,7 @@ export class CampaignScreen {
   render(): void {
     if (!this.on) return;
     const c = this.viewCtx();
-    const s = this.state;
-    this.deps.host.set(
-      s.view === 'pick'
-        ? renderPick(s, c)
-        : s.view === 'practice'
-          ? renderPractice(s, c)
-          : s.view === 'map' && c.exp
-            ? renderMap(s, c)
-            : renderHub(s.view === 'hub' ? s : { ...s, view: 'hub' }, c),
-    );
+    this.deps.host.set(campaignHtml(this.state, c));
   }
   renderResults(): void {
     const o = this.flow.outcome;
@@ -138,55 +130,25 @@ export class CampaignScreen {
   // Mouse: a click is the same as moving there and pressing Enter.
   click(el: HTMLElement | null): void {
     if (!el || this.busy) return;
-    const hit = (sel: string) => el.closest<HTMLElement>(sel);
-    const diff = hit('[data-diff]')?.dataset.diff;
-    if (diff) {
-      const d = this.deps.difficulty().all.find((x) => x === diff);
-      if (d) {
-        this.deps.difficulty().set(d);
-      }
-      return;
-    }
-    const set = (patch: Partial<CampState>, press = true) => {
-      this.state = { ...this.state, ...patch, resetArmedAt: null };
-      if (press) this.key('Enter', false);
+    const it = clickIntent(el, {
+      state: this.state,
+      hub: this.hub,
+      catalog: this.catalog,
+      exp: this.flow.exp,
+      n: this.deps.count(),
+      difficulties: () => this.deps.difficulty().all,
+    });
+    if (!it) return;
+    if (it.t === 'difficulty') this.deps.difficulty().set(it.d);
+    else if (it.t === 'result') {
+      if (this.flow.outcome) void this.run({ t: 'result', button: it.button });
+    } else {
+      this.state = { ...this.state, ...it.patch, resetArmedAt: null };
+      if (it.t === 'press') this.key('Enter', false);
       else {
         this.render();
         this.deps.refresh();
       }
-    };
-    const h = hit('[data-hub]')?.dataset.hub;
-    if (h && this.state.view === 'hub') {
-      const idx = hubItems(this.hub, this.catalog, this.deps.count()).findIndex((x) => x.id === h);
-      if (idx >= 0) set({ hubSel: idx });
-      return;
-    }
-    const st = hit('[data-station]')?.dataset.station;
-    if (st && this.state.view === 'practice') {
-      const idx = this.catalog.practice.findIndex((x) => x.id === st);
-      if (idx >= 0) set({ pracSel: idx });
-      return;
-    }
-    const p = hit('[data-pick]')?.dataset.pick;
-    if (p) {
-      const idx = this.hub.list.findIndex((x) => x.id === p);
-      if (idx >= 0) set({ pickSel: idx });
-      return;
-    }
-    const nd = hit('[data-node]')?.dataset.node;
-    if (nd !== undefined) {
-      set({ node: Number(nd) });
-      return;
-    }
-    const w = hit('[data-world]')?.dataset.world;
-    if (w && this.flow.exp) {
-      set({ world: w, node: startNode(this.flow.exp, this.catalog, w, this.deps.count()) }, false);
-      return;
-    }
-    const r = hit('[data-res]')?.dataset.res;
-    if (r) {
-      const o = this.flow.outcome;
-      if (o) void this.run({ t: 'result', button: r as 'next' | 'retry' | 'skip' | 'map' });
     }
   }
 
@@ -316,30 +278,12 @@ export class CampaignScreen {
         }
         // Mapa (and Saltar, which lands there with the next level open)
         d.sfx('back');
-        // the cursor lands on the next open level after a clear or a skip, on the same level after a failure
-        const forward = (e.button === 'skip' || o.cleared) && this.flow.exp ? nextLevel(this.flow.exp, this.catalog, o.levelId) : null;
-        const at = forward ?? this.catalogLevel(o.levelId);
         this.resultOn = false;
-        const world = at?.world ?? this.state.world;
-        this.state = {
-          ...this.state,
-          view: 'map',
-          world,
-          node: this.flow.exp
-            ? Math.max(
-                0,
-                worldNodes(this.flow.exp, this.catalog, world, d.count()).findIndex((x) => x.levelId === (at?.id ?? o.levelId)),
-              )
-            : 0,
-          notice: '',
-        };
+        this.state = landOnMap(this.state, o, e.button, this.flow.exp, this.catalog, d.count());
         d.toLobby();
         return;
       }
     }
-  }
-  private catalogLevel(id: string): CatalogLevel | undefined {
-    return this.catalog.levels.find((l) => l.id === id);
   }
   private async reloadHubQuiet(): Promise<void> {
     this.hub = await this.flow.hub();
