@@ -129,7 +129,10 @@ describe('monotone merge', () => {
   });
   it('never lowers anything: stars, medal, mask, done and the unlocked list only grow, the best time only shrinks', () => {
     let seed = 7;
-    const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
+    const rnd = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 2 ** 32;
+    };
     let e = fresh();
     for (let i = 0; i < 300; i++) {
       const lvl = `${1 + Math.floor(rnd() * 5)}-${1 + Math.floor(rnd() * 7)}`;

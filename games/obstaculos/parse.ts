@@ -64,7 +64,12 @@ export function parseLevel(def: LevelDef): ParsedLevel {
         continue;
       }
       tiles[y * w + x] = T.Object; // a-f / A-F
-      (objects[c] ??= { char: c, cells: [], bounds: { x, y, w: 1, h: 1 } }).cells.push({ x, y });
+      let obj = objects[c];
+      if (!obj) {
+        obj = { char: c, cells: [], bounds: { x, y, w: 1, h: 1 } };
+        objects[c] = obj;
+      }
+      obj.cells.push({ x, y });
     }
   });
 

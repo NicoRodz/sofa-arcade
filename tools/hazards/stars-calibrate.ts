@@ -41,7 +41,10 @@ const wipe = (t: { n: number }) => (g: Game) => {
 /** 90% bootstrap interval of the median of `a` (deterministic: a fixed LCG). */
 function boot(a: number[]): [number, number] {
   let s = 12345;
-  const rnd = () => (s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 2 ** 32;
+  const rnd = () => {
+    s = (Math.imul(s, 1103515245) + 12345) >>> 0;
+    return s / 2 ** 32;
+  };
   const m = Array.from({ length: 400 }, () => med(a.map(() => a[Math.floor(rnd() * a.length)]!)));
   return [r0(q(m, 0.05)), r0(q(m, 0.95))];
 }

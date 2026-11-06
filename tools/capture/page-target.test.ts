@@ -13,7 +13,9 @@ function harness(answer: (call: number) => unknown) {
     },
     opts: {
       now: () => t,
-      sleepFn: async (ms: number) => void (t += ms),
+      sleepFn: async (ms: number) => {
+        t += ms;
+      },
       fetchFn: async () => {
         const r = answer(calls++);
         if (r instanceof Error) throw r;
