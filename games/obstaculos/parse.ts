@@ -109,8 +109,7 @@ export function parseLevel(def: LevelDef): ParsedLevel {
       errors.push(`'${ch}' opens '${p.opens}': must be an objective letter A-F`);
     if (p.kind === 'balance') {
       const q = params[p.partner];
-      if (q?.kind !== 'balance' || q.partner !== ch)
-        errors.push(`'${ch}' balance partner '${p.partner}' is not a balance pointing back`);
+      if (q?.kind !== 'balance' || q.partner !== ch) errors.push(`'${ch}' balance partner '${p.partner}' is not a balance pointing back`);
     }
     if (p.kind === 'sinker' && !(p.travel > 0)) errors.push(`'${ch}' sinker travel must be > 0`);
     if (p.kind === 'geyser' && !(p.periodSec > (p.activeSec ?? 0.5) + 1 && (p.activeSec ?? 0.5) > 0))
