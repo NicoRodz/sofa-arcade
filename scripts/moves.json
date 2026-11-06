@@ -798,6 +798,7 @@
   "games/obstaculos/sim/input.test.ts": "games/obstaculos/sim/world/input.test.ts",
   "games/obstaculos/sim/player.test.ts": "games/obstaculos/sim/player/player.test.ts",
   "games/obstaculos/sim/rope.test.ts": "games/obstaculos/sim/player/rope.test.ts",
+  "games/obstaculos/sim/rules/campaign.test.ts": ["games/obstaculos/sim/rules/campaign.test.ts", "games/obstaculos/sim/rules/campaign-anchor-edge.test.ts", "games/obstaculos/sim/rules/campaign-hearts-signals.test.ts"],
   "games/obstaculos/sim/tiles.test.ts": "games/obstaculos/sim/world/tiles.test.ts",
   "games/pizzas/sim/assist.test.ts": "games/pizzas/sim/rules/assist.test.ts",
   "games/pizzas/sim/burn.assist.test.ts": "games/pizzas/sim/rules/burn.assist.test.ts",
