@@ -73,7 +73,7 @@ module.exports = {
       comment: 'Production code must not import a test file or the test harness.',
       severity: 'error',
       from: { path: '^(platform|games|apps)/', pathNot: [TESTS, '^games/obstaculos/screen/harness/'] },
-      to: { path: ['\\.test\\.ts$', '\\.kit\\.ts$', '^(games/[^/]+|apps/[^/]+)/test/'] },
+      to: { path: ['\\.test\\.ts$', '\\.kit\\.ts$', '(^|/)test/'] },
     },
   ],
   options: {
