@@ -88,7 +88,7 @@ export class ObstBot {
 
   decide(v: BotView): BotOut {
     const me = v.players.find((p) => p.slot === this.slot);
-    if (!me || !me.connected || me.mode !== 'active' || !v.goal) return IDLE;
+    if (!me?.connected || me.mode !== 'active' || !v.goal) return IDLE;
     const g = v.grid;
     const cx = me.x + HALF_W,
       feetY = me.y + PLAYER_H;

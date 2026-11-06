@@ -62,7 +62,7 @@ export async function runManchazoSabotageTv(ctx: Ctx) {
   await cdp.shot('manchazo-sab-active'); // roller bar, footprints, gust, marked pinatas
   const heard = bots.map((b) => b.hints.slice(-1)[0]);
   console.log('last hint per phone', JSON.stringify(heard.map((h) => h && { a: h.a, b: h.b, bOff: h.bOff })));
-  console.log('phones that heard a hint with a card name', heard.filter((h) => h && h.b).length);
+  console.log('phones that heard a hint with a card name', heard.filter((h) => h?.b).length);
 }
 
 export async function runManchazoSabotagePhone({ cdp }: Ctx) {

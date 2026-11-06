@@ -30,7 +30,6 @@ export async function runEvents({ cdp, bots, open, join, click, snap, waitFor }:
   const stations = (await snap()).stations;
   const sinkIdx = stations.findIndex((s) => s.kind === 'sink'),
     dirtyIdx = stations.findIndex((s) => s.kind === 'dirty');
-  const ids = (await snap()).players.map((p) => p.id);
   const phaseOf = async () => ((await snap()) as any).mid?.phase as string;
   const untilDone = async (ms: number) => {
     const end = Date.now() + ms;

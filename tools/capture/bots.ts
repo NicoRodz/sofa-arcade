@@ -99,7 +99,6 @@ export class Bot {
       return;
     }
     const st = snap.stations;
-    const cutType = (it: string | null) => (it === 'cut0' ? 0 : it === 'cut1' ? 1 : -1);
     let target: (typeof st)[number] | undefined;
     const goalsOf = (t: (typeof st)[number]) => {
       const g = new Set<string>();
@@ -183,7 +182,7 @@ export class Bot {
     }
     if (p.length > 1 || Math.hypot(me.x - (cell[0] + 0.5), me.y - (cell[1] + 0.5)) > 0.18) {
       const [wx, wy] = p.length > 1 ? p[1]! : cell;
-      const tx = p.length > 1 && Math.hypot(me.x - (cell[0] + 0.5), me.y - (cell[1] + 0.5)) > 0.35 && false ? cell[0] + 0.5 : wx + 0.5,
+      const tx = wx + 0.5,
         ty = wy + 0.5;
       const dx = tx - me.x,
         dy = ty - me.y,
