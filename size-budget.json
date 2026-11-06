@@ -19,7 +19,6 @@
   "games/pizzas/sim/versus/lobby.ts": { "max": 321, "until": "2027-03-31" },
   "games/pizzas/sim/versus/versus.slow.test.ts": { "max": 835, "until": "2027-03-31" },
   "platform/core/src/lobby/vote.test.ts": { "max": 670, "until": "2027-03-31" },
-  "scripts/move.ts": { "max": 328, "until": "2027-03-31" },
   "tools/camp/camp-e2e.ts": { "max": 430, "until": "2027-03-31" },
   "tools/camp/camp-w23.ts": { "max": 386, "until": "2027-03-31" },
   "tools/school-shots.ts": { "max": 438, "until": "2027-03-31" }

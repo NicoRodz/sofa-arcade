@@ -11,35 +11,12 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmdirSync, writeFileSync } from 'node:fs';
 import { posix } from 'node:path';
 import { Node, Project, SyntaxKind, type SourceFile } from 'ts-morph';
+import { generateWorkspace } from './move-generate.ts';
+import type { Cfg } from './move-types.ts';
 
 const ROOT = posix.resolve(import.meta.dirname, '..');
 const DRY = process.argv.includes('--dry-run');
 
-type Tsconfig = { dir: string; lib?: string[]; types: string[]; include: string[]; exclude?: string[] };
-type Pkg = {
-  name: string;
-  relativeOnly?: boolean; // apps are not libraries: other code reaches them by relative path
-  main?: string;
-  src?: string;
-  tsconfigs: Tsconfig[];
-  scripts?: Record<string, string>;
-  deps?: Record<string, string>;
-  devDeps?: Record<string, string>;
-};
-type Cfg = {
-  files: Record<string, string>;
-  dirs: { from: string; to: string }[];
-  roots: string[];
-  barrels: Record<string, string>;
-  create: Record<string, string>;
-  packages: Record<string, Pkg>;
-  external: Record<string, string>;
-  rootPackage: { workspaces: string[]; scripts: Record<string, string> };
-  vitest: { name: string; dirs: string[] }[];
-  vitestSlowOnly: string[];
-  overlay: Record<string, string>;
-  patches: { file: string; find: string; replace: string }[];
-};
 const cfg: Cfg = JSON.parse(readFileSync(posix.join(ROOT, 'scripts/moves.json'), 'utf8'));
 
 const sh = (cmd: string, args: string[]) => execFileSync(cmd, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
@@ -229,85 +206,7 @@ for (const f of sh('git', ['ls-files']).trim().split('\n')) {
 }
 
 // ---- (4) new files, packages, root package.json, vitest.config.ts
-for (const [p, text] of Object.entries(cfg.create)) write(p, text);
-const json = (o: unknown) => JSON.stringify(o, null, 2) + '\n';
-const allFiles = sh('git', ['ls-files', '--cached', '--others', '--exclude-standard']).trim().split('\n');
-for (const [root, pkg] of Object.entries(cfg.packages)) {
-  const src = pkg.src ?? '.';
-  const base = src === '.' ? '.' : src;
-  const exp: Record<string, string> = {};
-  if (pkg.main) exp['.'] = `./${pkg.main}`;
-  for (const f of allFiles.filter((x) => x.startsWith(root + '/') && /(^|\/)index\.ts$/.test(x))) {
-    const rel = f.slice(root.length + 1);
-    if (rel === pkg.main) continue;
-    const dir = posix.relative(base, posix.dirname(rel));
-    if (dir && !dir.startsWith('..')) exp['./' + dir] = './' + rel;
-  }
-  exp['./*'] = src === '.' ? './*.ts' : `./${src}/*.ts`;
-  // dependencies: other @pichi packages and external libraries actually imported by the package's files
-  const deps: Record<string, string> = { ...(pkg.deps ?? {}) };
-  for (const f of allFiles.filter((x) => x.startsWith(root + '/') && x.endsWith('.ts'))) {
-    const text = readFileSync(posix.join(ROOT, f), 'utf8');
-    for (const m of text.matchAll(/(?:from|import\()\s*['"]([^'"./][^'"]*)['"]/g)) {
-      const spec = m[1]!;
-      const name = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]!;
-      if (name.startsWith('node:') || name === pkg.name) continue;
-      if (name.startsWith('@pichi/')) deps[name] = '*';
-      else if (cfg.external[name] && name !== 'vite' && name !== 'vitest') deps[name] = cfg.external[name]!;
-    }
-  }
-  const sorted = (o: Record<string, string>) => Object.fromEntries(Object.entries(o).sort(([a], [b]) => a.localeCompare(b)));
-  const scripts: Record<string, string> = { ...(pkg.scripts ?? {}) };
-  scripts.typecheck = pkg.tsconfigs.map((t) => `tsc -p ${t.dir}`).join(' && ');
-  const out: Record<string, unknown> = { name: pkg.name, private: true, type: 'module' };
-  if (!pkg.relativeOnly) out.exports = exp;
-  out.scripts = scripts;
-  if (Object.keys(deps).length) out.dependencies = sorted(deps);
-  if (pkg.devDeps) out.devDependencies = pkg.devDeps;
-  write(`${root}/package.json`, json(out));
-  for (const t of pkg.tsconfigs) {
-    const up = posix.relative(posix.join(root, t.dir), '.');
-    const co: Record<string, unknown> = {};
-    if (t.lib) co.lib = t.lib;
-    co.types = t.types;
-    const tc: Record<string, unknown> = { extends: `${up}/tsconfig.base.json`, compilerOptions: co, include: t.include };
-    if (t.exclude) tc.exclude = t.exclude;
-    write(posix.join(root, t.dir, 'tsconfig.json'), json(tc));
-  }
-}
-const rootPkgPath = posix.join(ROOT, 'package.json');
-const rootPkg = JSON.parse(readFileSync(rootPkgPath, 'utf8'));
-rootPkg.workspaces = cfg.rootPackage.workspaces;
-Object.assign(rootPkg.scripts, cfg.rootPackage.scripts);
-writeFileSync(rootPkgPath, json(rootPkg));
-for (const [dest, src] of Object.entries(cfg.overlay)) {
-  write(dest, readFileSync(posix.join(ROOT, src), 'utf8'));
-  touched.add(dest);
-}
-const projects = cfg.vitest.map((p) => `  ${JSON.stringify(p.name)}: ${JSON.stringify(p.dirs)},`).join('\n');
-write(
-  'vitest.config.ts',
-  `import { defineConfig } from 'vitest/config';
-import { packageProject, slowProject } from './vitest.shared.ts';
-
-// Packages and where their tests live. \`npm test\` runs everything; \`test:fast\` skips \`slow\`. Generated by scripts/move.ts from scripts/moves.json.
-const packages: Record<string, string[]> = {
-${projects}
-};
-// Directories with slow tests only (a fast project of theirs would run 0 tests).
-const slowOnly: string[] = ${JSON.stringify(cfg.vitestSlowOnly)};
-
-export default defineConfig({
-  test: {
-    projects: [
-      ...Object.entries(packages).map(([name, dirs]) => packageProject(name, dirs)),
-      slowProject([...Object.values(packages).flat(), ...slowOnly]),
-    ],
-  },
-});
-`,
-);
-
+generateWorkspace({ ROOT, cfg, write, sh, touched });
 // ---- (5) text patches (idempotent: skipped when the replacement is already there)
 for (const p of cfg.patches) {
   const abs = posix.join(ROOT, p.file);
