@@ -3,7 +3,8 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
-import { CDP, CHROME, outDir, sleep } from './config';
+import { CDP, CHROME, outDir } from './config';
+import { waitForPageTarget } from './page-target';
 
 export class Cdp {
   /** Uncaught page exceptions and unhandled rejections seen so far (the boot smoke fails on any). */
@@ -79,18 +80,10 @@ export function launchChrome(): ChildProcess {
   );
 }
 
-// waits for the first page target and returns a ready 1920x1080 session
+// waits (up to 30 s) for the first page target and returns a ready 1920x1080 session
 export async function connectCdp(): Promise<Cdp> {
-  let targets: any[] = [];
-  for (let i = 0; i < 50 && !targets.length; i++) {
-    await sleep(200);
-    try {
-      targets = (await (await fetch(`http://127.0.0.1:${CDP}/json/list`)).json()).filter((t: any) => t.type === 'page');
-    } catch {
-      /* not up yet */
-    }
-  }
-  const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
+  const target = await waitForPageTarget(CDP);
+  const ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((r) => ws.once('open', r));
   const cdp = new Cdp(ws);
   await cdp.send('Page.enable');

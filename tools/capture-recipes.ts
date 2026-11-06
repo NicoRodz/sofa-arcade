@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
 import { startServer } from '../apps/server/src/server';
+import { waitForPageTarget } from './capture/page-target';
 import { killTree } from './proc/kill-tree';
 
 const PORT = Number(process.env.PG_PORT ?? 5000),
@@ -146,22 +147,27 @@ async function main() {
   chromeRef = chrome;
   const phones: Phone[] = [];
   try {
-    let targets: any[] = [];
-    for (let i = 0; i < 50 && !targets.length; i++) {
-      await sleep(200);
-      try {
-        targets = (await (await fetch(`http://127.0.0.1:${CDP}/json/list`)).json()).filter((t: any) => t.type === 'page');
-      } catch {
-        /* not up yet */
-      }
-    }
-    const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
+    const target = await waitForPageTarget(CDP);
+    const ws = new WebSocket(target.webSocketDebuggerUrl);
     await new Promise((r) => ws.once('open', r));
     const cdp = new Cdp(ws);
     await cdp.send('Page.enable');
     await cdp.send('Runtime.enable');
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
     const click = (sel: string) => cdp.eval(`document.querySelector(${JSON.stringify(sel)}).click()`);
+    // Since menuV2 the coop grid is paged: map 2 (and 1, 4, 6, 7, 8) lives on "Sin dinámica", 20-28 on "Carta larga", 29-36 on "Taller". Open pages until the card shows.
+    const pickMap = async (map: string) => {
+      const card = `[data-map="${map}"]:not([data-to])`;
+      const there = () => cdp.eval<boolean>(`!!document.querySelector(${JSON.stringify(card)})`);
+      if (await there()) return click(card);
+      for (const page of ['series', 'taller', 'plain']) {
+        await cdp.eval(`document.querySelector('[data-map="group"][data-to="classic"]')?.click()`); // back to the first page, where the group cards are
+        await click(`[data-map="group"][data-to="${page}"]`);
+        await sleep(150);
+        if (await there()) return click(card);
+      }
+      throw new Error(`map ${map} is on no page of the lobby grid`);
+    };
     const snap = () => cdp.eval<Snap>('JSON.parse(JSON.stringify(window.__pg.snapshot()))');
     const kit = (expr: string) => cdp.eval<any>(`window.__pg.kit.${expr}`);
     const waitFor = async (pred: (s: Snap) => boolean, ms: number) => {
@@ -185,7 +191,7 @@ async function main() {
       await sleep(700);
       await cdp.eval('window.__pg.forceLobby()');
       await click('[data-diff="normal"]');
-      await click(`[data-map="${map}"]`);
+      await pickMap(map);
       await sleep(300);
       await click('#start');
       await sleep(1500);
