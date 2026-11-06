@@ -1,0 +1,1 @@
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "types": ["node"], "allowImportingTsExtensions": true }, "include": ["*.ts", "../capture/page-target.ts", "../proc/kill-tree.ts", "../../apps/server/src/server.ts"] }

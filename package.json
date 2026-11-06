@@ -15,7 +15,7 @@
     "dev": "tsx apps/server/src/main.ts dev",
     "start": "tsx apps/server/src/main.ts static",
     "build": "npm run build -w @pichi/app-screen -w @pichi/app-controller",
-    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p tools/meta && tsc -p scripts",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p tools/meta && tsc -p tools/visual && tsc -p scripts",
     "move": "tsx scripts/move.ts",
     "test": "vitest run",
     "test:fast": "vitest run --project '!slow'",
