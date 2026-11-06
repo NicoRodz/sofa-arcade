@@ -7,7 +7,13 @@ import type { Session } from './store';
 type Handler = (e: any) => void;
 const stickHandlers: Record<string, Handler> = {};
 vi.mock('nipplejs', () => ({
-  default: { create: () => ({ on: (ev: string, fn: Handler) => void (stickHandlers[ev] = fn) }) },
+  default: {
+    create: () => ({
+      on: (ev: string, fn: Handler) => {
+        stickHandlers[ev] = fn;
+      },
+    }),
+  },
 }));
 
 class FakeEl {
@@ -16,7 +22,9 @@ class FakeEl {
   captured: number[] = [];
   dataset: Record<string, string> = {};
   classList = { add: (c: string) => this.cls.add(c), remove: (c: string) => this.cls.delete(c) };
-  addEventListener = (ev: string, fn: Handler) => void (this.handlers[ev] = fn);
+  addEventListener = (ev: string, fn: Handler) => {
+    this.handlers[ev] = fn;
+  };
   setPointerCapture = (id: number) => void this.captured.push(id);
   fire(ev: string, pointerId = 1) {
     this.handlers[ev]!({ pointerId, preventDefault: () => {} });
