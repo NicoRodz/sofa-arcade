@@ -4,7 +4,6 @@
  "files": {
   "apps/controller/index.html": { "max": 234, "until": "2027-03-31" },
   "apps/server/test/relay.test.ts": { "max": 750, "until": "2027-03-31" },
-  "games/pizzas/screen/art/hud/versus-hud.ts": { "max": 450, "until": "2027-03-31" },
   "games/pizzas/screen/art/sabotage/sabotage.ts": { "max": 389, "until": "2027-03-31" },
   "games/pizzas/sim/overcooked.test.ts": { "max": 725, "until": "2027-03-31" },
   "games/pizzas/sim/rules/assist.test.ts": { "max": 556, "until": "2027-03-31" },
