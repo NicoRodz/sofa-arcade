@@ -68,7 +68,7 @@ describe('setMode', () => {
     versusLobby();
     setMode('coop');
     expect(cfg()).toMatchObject({ modeId: 'coop', teams: null, modeOptions: {} });
-    expect(isNaN(Number(cfg().map))).toBe(false);
+    expect(Number.isNaN(Number(cfg().map))).toBe(false);
   });
   it('outside the lobby, or to the mode already set, it does nothing', () => {
     app.phase = 'playing';
