@@ -25,7 +25,17 @@ class FakeSocket {
 
 const hud = { textContent: '' };
 const session = (over: Partial<Session> = {}) =>
-  ({ $: () => hud, ws: null, joined: false, halted: false, room: 'r', token: 'tok', name: 'Ana', label: '', ...over }) as unknown as Session;
+  ({
+    $: () => hud,
+    ws: null,
+    joined: false,
+    halted: false,
+    room: 'r',
+    token: 'tok',
+    name: 'Ana',
+    label: '',
+    ...over,
+  }) as unknown as Session;
 const sentOf = (sock: FakeSocket) => sock.sent.map((x) => JSON.parse(x) as Record<string, unknown>);
 
 beforeEach(() => {

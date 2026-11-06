@@ -66,7 +66,11 @@ describe('every message', () => {
     const s = session();
     const eat = vi.fn(() => true);
     const pass = vi.fn(() => false);
-    s.games = [{ id: 'a', onMessage: pass }, { id: 'b', onMessage: eat }, { id: 'c', onMessage: vi.fn() }] as never;
+    s.games = [
+      { id: 'a', onMessage: pass },
+      { id: 'b', onMessage: eat },
+      { id: 'c', onMessage: vi.fn() },
+    ] as never;
     run(s, d, { t: 'error', reason: 'x' });
     expect(pass).toHaveBeenCalledWith(expect.anything(), s.host);
     expect(eat).toHaveBeenCalled();

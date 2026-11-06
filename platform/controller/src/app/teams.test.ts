@@ -5,15 +5,27 @@ import type { ClientMsg, TeamInfo } from '@pichi/core';
 import { createTeams, type YouMsg } from './teams';
 import type { Session } from './store';
 
-type El = { textContent: string; disabled?: boolean; handler?: (e: { preventDefault(): void }) => void; addEventListener(t: string, h: El['handler']): void };
+type El = {
+  textContent: string;
+  disabled?: boolean;
+  handler?: (e: { preventDefault(): void }) => void;
+  addEventListener(t: string, h: El['handler']): void;
+};
 const els = new Map<string, El>();
 const el = (id: string): El => {
-  if (!els.has(id)) els.set(id, { textContent: '', addEventListener(_t, h) { this.handler = h; } });
+  if (!els.has(id))
+    els.set(id, {
+      textContent: '',
+      addEventListener(_t, h) {
+        this.handler = h;
+      },
+    });
   return els.get(id)!;
 };
 const props: Record<string, string> = {};
 const sent: ClientMsg[] = [];
-const team = (id: number, ids: number[], name = `Rojo${id}`): TeamInfo => ({ id, name, color: '#f00', icon: 'R', playerIds: ids }) as unknown as TeamInfo;
+const team = (id: number, ids: number[], name = `Rojo${id}`): TeamInfo =>
+  ({ id, name, color: '#f00', icon: 'R', playerIds: ids }) as unknown as TeamInfo;
 const you = (over: Partial<YouMsg> = {}): YouMsg => ({ teamId: 1, color: '#0af', icon: 'B', sideLabel: 'izquierda', ...over });
 const session = (over: Partial<Session> = {}) =>
   ({
