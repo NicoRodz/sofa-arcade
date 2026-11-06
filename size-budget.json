@@ -7,7 +7,6 @@
   "games/pizzas/screen/art/hud/hud.ts": { "max": 351, "until": "2027-03-31" },
   "games/pizzas/screen/art/hud/versus-hud.ts": { "max": 450, "until": "2027-03-31" },
   "games/pizzas/screen/art/sabotage/sabotage.ts": { "max": 389, "until": "2027-03-31" },
-  "games/pizzas/screen/art/world.ts": { "max": 361, "until": "2027-03-31" },
   "games/pizzas/sim/overcooked.test.ts": { "max": 725, "until": "2027-03-31" },
   "games/pizzas/sim/rules/assist.test.ts": { "max": 556, "until": "2027-03-31" },
   "games/pizzas/sim/rules/midround.test.ts": { "max": 508, "until": "2027-03-31" },
