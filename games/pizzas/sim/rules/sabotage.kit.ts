@@ -3,7 +3,7 @@ import { DIRS, isFloor } from '../maps';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game, type Station } from '../overcooked';
 import type { SabotageMode } from '../sabotage-config';
 import { versusMap } from '../versus/maps';
-import type { Difficulty } from '@pichi/core/difficulty';
+import type { Difficulty } from '@pichi/core';
 
 // Sabotage S2: the rules of the bags, the catapult, the reticle, the landing, the limits and the cleaning, on the real versus maps V1 and V3.
 // Pure logic: chefs are put next to the stations by hand and the ticks are run directly.
