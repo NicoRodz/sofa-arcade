@@ -182,7 +182,7 @@ export class Bot {
     }
     if (p.length > 1 || Math.hypot(me.x - (cell[0] + 0.5), me.y - (cell[1] + 0.5)) > 0.18) {
       const [wx, wy] = p.length > 1 ? p[1]! : cell;
-      const tx = p.length > 1 && Math.hypot(me.x - (cell[0] + 0.5), me.y - (cell[1] + 0.5)) > 0.35 && false ? cell[0] + 0.5 : wx + 0.5,
+      const tx = wx + 0.5,
         ty = wy + 0.5;
       const dx = tx - me.x,
         dy = ty - me.y,
