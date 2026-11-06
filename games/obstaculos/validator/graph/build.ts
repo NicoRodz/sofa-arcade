@@ -99,7 +99,7 @@ export function buildGraph(p: ParsedLevel, env: Env, S: OpenState, doors: Cell[]
       }
       if (catches && plan.trigger !== 'walk' && plan.trigger !== 'drop') {
         const h = simPlan(grid, params, plan, catches);
-        if (h && h.viaHand) {
+        if (h?.viaHand) {
           const e = toEdge(s, h, 'hand', plan, true);
           if (e) addEdge(e);
         }
