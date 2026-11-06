@@ -160,6 +160,28 @@ describe('howTo preview and Esc', () => {
   });
 });
 
+describe('guards while the iris or the card is up', () => {
+  it('the menu does not see a key tapped during the iris', () => {
+    shell.app.phase = 'menu';
+    shell.app.starting = true;
+    vote.onKey('ArrowDown', false);
+    expect(menuActs).toEqual([]);
+  });
+
+  it('goBack does nothing during the iris, with the card open, or outside the lobby', () => {
+    shell.app.starting = true;
+    flow.goBack();
+    shell.app.starting = false;
+    shell.app.howTo = { mode: 'preview', startedAt: 0 };
+    flow.goBack();
+    shell.app.howTo = null;
+    shell.app.phase = 'results';
+    flow.goBack();
+    expect(shell.app.phase).toBe('results');
+    expect(phases()).toEqual([]);
+  });
+});
+
 describe('other phases', () => {
   it('in the menu the keys go to the menu, not to the round', () => {
     shell.app.phase = 'menu';
