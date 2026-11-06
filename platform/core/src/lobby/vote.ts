@@ -25,14 +25,28 @@
 //  - "Ya!" needs >=1 counted vote (else ignored) and cfg.captainMinMs (4 s) since the vote opened.
 //  - with E=0 the clock freezes (it does not reset) and any closing is cancelled; if the only voter withdraws, the clock resets.
 //  - deadline with no counted vote: winner = cfg.current ?? null, via 'empty'.
-import type { IconId } from '../icons';
 import type { Rng } from '../rng';
+import { AFK_MISSED_VOTES, eligible, majorityOf, patch, type PlayerId, type Roster } from './vote-roster';
 
-export type PlayerId = number;
+export {
+  AFK_IDLE_MS,
+  AFK_MISSED_VOTES,
+  addPlayer,
+  eligible,
+  majorityOf,
+  makeRoster,
+  removePlayer,
+  setCaptain,
+  setConnected,
+  tickAfk,
+  touch,
+} from './vote-roster';
+export type { PlayerId, Presence, Roster } from './vote-roster';
+export { dependentKeys } from './vote-options';
+export type { OptionSpec, OptionValue } from './vote-options';
+
 export type OptionId = string;
 
-export const AFK_IDLE_MS = 90_000;
-export const AFK_MISSED_VOTES = 2;
 export const GAME_WINDOW_MS = 15_000;
 export const RESULTS_WINDOW_MS = 12_000;
 export const PAUSE_WINDOW_MS = 15_000;
@@ -40,91 +54,6 @@ export const GRACE_MS = 1_500;
 export const ROULETTE_MS = 1_500;
 export const CAPTAIN_MIN_MS = 4_000;
 export const CAST_COOLDOWN_MS = 250;
-
-// ---- registry schema (per-game votable options) ----------------------------------------------------------------------------------
-export interface OptionValue {
-  id: string;
-  label: string;
-  icon?: IconId;
-}
-export interface OptionSpec {
-  key: string;
-  label: string;
-  type: 'enum' | 'seed'; // seed is voted as "Aleatorio / Repetir / 3 sugeridas": the screen fills `values`
-  values: readonly OptionValue[];
-  default: string; // value id
-  votable: boolean;
-  parent?: string; // key of the option this one depends on: changing the parent resets this one's votes
-  visibleIf?: (current: Readonly<Record<string, string>>) => boolean; // e.g. teams only if mode is versus; evaluated on the screen
-  availableFor?: (nPlayers: number) => boolean; // evaluated on the screen
-}
-/** Keys that depend (transitively) on `key`: their votes must be cleared when `key` changes. */
-export function dependentKeys(specs: readonly OptionSpec[], key: string): string[] {
-  const out: string[] = [];
-  const walk = (k: string) => {
-    for (const s of specs)
-      if (s.parent === k && !out.includes(s.key)) {
-        out.push(s.key);
-        walk(s.key);
-      }
-  };
-  walk(key);
-  return out;
-}
-
-// ---- roster -----------------------------------------------------------------------------------------------------------------------
-export interface Presence {
-  readonly connected: boolean;
-  readonly afk: boolean;
-  readonly lastInputAt: number;
-  readonly missed: number;
-}
-export interface Roster {
-  readonly players: Readonly<Record<PlayerId, Presence>>;
-  readonly captainId: PlayerId | null;
-}
-
-const freshPresence = (now: number): Presence => ({ connected: true, afk: false, lastInputAt: now, missed: 0 });
-const patch = (r: Roster, id: PlayerId, p: Partial<Presence>): Roster => {
-  const cur = r.players[id];
-  return cur ? { ...r, players: { ...r.players, [id]: { ...cur, ...p } } } : r;
-};
-
-export function makeRoster(ids: readonly PlayerId[], now: number, captainId: PlayerId | null = ids[0] ?? null): Roster {
-  return { players: Object.fromEntries(ids.map((id) => [id, freshPresence(now)])), captainId };
-}
-/** A player sitting down (also mid-vote: it counts in E at once). */
-export const addPlayer = (r: Roster, id: PlayerId, now: number): Roster =>
-  r.players[id] ? setConnected(r, id, true, now) : { ...r, players: { ...r.players, [id]: freshPresence(now) } };
-export function removePlayer(r: Roster, id: PlayerId): Roster {
-  const { [id]: _gone, ...rest } = r.players;
-  return { players: rest, captainId: r.captainId === id ? null : r.captainId };
-}
-/** Disconnect leaves E at once; reconnecting is an input (reactivates). Their vote stays suspended in the vote state. */
-export const setConnected = (r: Roster, id: PlayerId, connected: boolean, now: number): Roster =>
-  connected ? patch(r, id, { connected: true, afk: false, lastInputAt: now }) : patch(r, id, { connected: false });
-/** Any input from the phone: reactivates an AFK player. */
-export function touch(r: Roster, id: PlayerId, now: number): Roster {
-  const p = r.players[id];
-  if (!p) return r;
-  return patch(r, id, { lastInputAt: now, afk: false, missed: p.afk ? 0 : p.missed });
-}
-export function tickAfk(r: Roster, now: number): Roster {
-  let out = r;
-  for (const [k, p] of Object.entries(r.players))
-    if (p.connected && !p.afk && now - p.lastInputAt >= AFK_IDLE_MS) out = patch(out, Number(k), { afk: true });
-  return out;
-}
-export const setCaptain = (r: Roster, id: PlayerId | null): Roster => ({ ...r, captainId: id });
-export const eligible = (r: Roster): PlayerId[] =>
-  Object.keys(r.players)
-    .map(Number)
-    .filter((id) => {
-      const p = r.players[id]!;
-      return p.connected && !p.afk;
-    })
-    .sort((a, b) => a - b);
-export const majorityOf = (e: number): number => Math.floor(e / 2) + 1;
 
 /** After a pick/destructive vote closed: eligible players who did not vote miss one; two in a row make them AFK. Voters reset. */
 export function recordParticipation(r: Roster, v: VoteState): Roster {
