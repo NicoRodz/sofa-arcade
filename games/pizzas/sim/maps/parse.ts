@@ -91,10 +91,13 @@ export const posKey = (x: number, y: number) => `${x},${y}`;
 
 export function floorComponents(g: Grid, skip?: string): { comp: number[][]; count: number } {
   const comp = g.map((row) => row.map(() => -1));
+  // `skip` is a posKey: read it once as numbers instead of building a string per tile (chokepoints calls this once per floor tile).
+  const [skipX, skipY] = skip === undefined ? [NaN, NaN] : skip.split(',').map(Number);
+  const skipped = (x: number, y: number) => x === skipX && y === skipY;
   let count = 0;
   g.forEach((row, y) =>
     row.forEach((_t, x) => {
-      if (!isFloor(g, x, y) || comp[y]![x]! >= 0 || posKey(x, y) === skip) return;
+      if (!isFloor(g, x, y) || comp[y]![x]! >= 0 || skipped(x, y)) return;
       const stack: Pos[] = [[x, y]];
       comp[y]![x] = count;
       while (stack.length) {
@@ -102,7 +105,7 @@ export function floorComponents(g: Grid, skip?: string): { comp: number[][]; cou
         for (const [dx, dy] of DIRS) {
           const nx = cx + dx,
             ny = cy + dy;
-          if (isFloor(g, nx, ny) && comp[ny]![nx]! < 0 && posKey(nx, ny) !== skip) {
+          if (isFloor(g, nx, ny) && comp[ny]![nx]! < 0 && !skipped(nx, ny)) {
             comp[ny]![nx] = count;
             stack.push([nx, ny]);
           }

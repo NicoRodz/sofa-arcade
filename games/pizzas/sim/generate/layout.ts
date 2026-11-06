@@ -153,9 +153,7 @@ export function placeStations(l: Layout, n: number, diff: Difficulty, rng: Rng, 
       row.forEach((cell, x) => {
         if (cell !== 'C' || passes.has(posKey(x, y))) return;
         now ??= parseMap(rowsOf(cells));
-        const acc = accessTiles(now, x, y).find(
-          ([ax, ay]) => !claimed.has(posKey(ax, ay)) && (!zoneAt || zoneAt(ax) === zone),
-        );
+        const acc = accessTiles(now, x, y).find(([ax, ay]) => !claimed.has(posKey(ax, ay)) && (!zoneAt || zoneAt(ax) === zone));
         if (acc) slots.push({ at: [x, y], acc });
       }),
     );
