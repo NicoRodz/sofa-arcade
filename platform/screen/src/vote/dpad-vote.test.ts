@@ -14,7 +14,11 @@ vi.mock('../ui/dom', () => ({
   $: (id: string) => {
     if (!els.has(id)) {
       const cls = new Set<string>();
-      els.set(id, { cls, classList: { add: (c: string) => cls.add(c), remove: (c: string) => cls.delete(c) }, addEventListener: () => {} } as never);
+      els.set(id, {
+        cls,
+        classList: { add: (c: string) => cls.add(c), remove: (c: string) => cls.delete(c) },
+        addEventListener: () => {},
+      } as never);
     }
     return els.get(id);
   },

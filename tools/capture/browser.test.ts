@@ -85,7 +85,10 @@ describe('Cdp', () => {
   it('records uncaught page exceptions so the boot smoke can fail on them', () => {
     const spy = quiet();
     const { ws, cdp } = make();
-    ws.push({ method: 'Runtime.exceptionThrown', params: { exceptionDetails: { exception: { description: 'TypeError: x is undefined' } } } });
+    ws.push({
+      method: 'Runtime.exceptionThrown',
+      params: { exceptionDetails: { exception: { description: 'TypeError: x is undefined' } } },
+    });
     ws.push({ method: 'Runtime.exceptionThrown', params: { exceptionDetails: { text: 'Uncaught (in promise)' } } });
     expect(cdp.pageErrors).toEqual(['"TypeError: x is undefined"', '"Uncaught (in promise)"']);
     spy.mockRestore();

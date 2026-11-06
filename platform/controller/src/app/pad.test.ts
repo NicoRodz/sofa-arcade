@@ -44,7 +44,13 @@ beforeEach(() => {
   vi.stubGlobal('WebSocket', { OPEN: 1 });
   els = {};
   signals = [];
-  sock = { readyState: 1, sent: [], send(s) { this.sent.push(JSON.parse(s)); } };
+  sock = {
+    readyState: 1,
+    sent: [],
+    send(s) {
+      this.sent.push(JSON.parse(s));
+    },
+  };
   for (const k of Object.keys(stickHandlers)) delete stickHandlers[k];
 });
 afterEach(() => {
@@ -58,16 +64,22 @@ describe('sendInput', () => {
     expect(sock.sent).toEqual([]);
   });
 
-  it.each(['menu', 'lobby', 'results'] as const)('is silent in the %s phase (no stray input into a screen that is not playing)', (phase) => {
-    sendInput(session({ phase }));
-    expect(sock.sent).toEqual([]);
-  });
+  it.each(['menu', 'lobby', 'results'] as const)(
+    'is silent in the %s phase (no stray input into a screen that is not playing)',
+    (phase) => {
+      sendInput(session({ phase }));
+      expect(sock.sent).toEqual([]);
+    },
+  );
 
   it.each(['playing', 'school'] as const)('sends in the %s phase, with an increasing seq', (phase) => {
     const s = session({ phase });
     sendInput(s);
     sendInput(s);
-    expect(sock.sent.map((m) => [m.t, m.seq])).toEqual([['input', 0], ['input', 1]]);
+    expect(sock.sent.map((m) => [m.t, m.seq])).toEqual([
+      ['input', 0],
+      ['input', 1],
+    ]);
   });
 
   it('carries stick, button bitmask and press counters as they are', () => {
@@ -209,7 +221,11 @@ describe('startPad: signal pad', () => {
 
   it('keeps working on a device without navigator.vibrate that throws (iOS)', () => {
     const go = sig('go');
-    vi.stubGlobal('navigator', { vibrate: () => { throw new Error('nope'); } });
+    vi.stubGlobal('navigator', {
+      vibrate: () => {
+        throw new Error('nope');
+      },
+    });
     const s = session({ signalsOn: true });
     startPad(s);
     expect(() => go.fire('pointerdown')).not.toThrow();

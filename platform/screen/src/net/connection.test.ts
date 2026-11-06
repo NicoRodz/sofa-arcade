@@ -20,7 +20,10 @@ vi.mock('./socket', () => {
   };
 });
 vi.mock('../vote/dpad-vote', () => ({ onKey: (k: string) => keys.push(k) }));
-vi.mock('../lobby/menu-bridge', () => ({ onMenuAct: () => menu.push('act'), scheduleMenu: (now: boolean) => menu.push(`schedule:${now}`) }));
+vi.mock('../lobby/menu-bridge', () => ({
+  onMenuAct: () => menu.push('act'),
+  scheduleMenu: (now: boolean) => menu.push(`schedule:${now}`),
+}));
 vi.stubGlobal('location', { search: '', host: 'tv.local:3200' });
 
 const manifest: GameManifest = { ...pizzasManifest, id: 'fake', name: 'fake' };
