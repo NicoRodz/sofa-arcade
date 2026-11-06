@@ -788,6 +788,7 @@
  },
  "testMoves": {
   "apps/controller/test/layout.slow.test.ts": ["apps/controller/test/layout.slow.test.ts", "apps/controller/test/layout-pad.slow.test.ts", "apps/controller/test/layout-captain.slow.test.ts"],
+  "apps/server/test/relay.test.ts": ["apps/server/test/relay.test.ts", "apps/server/test/relay-lobby.test.ts", "apps/server/test/relay-teams.test.ts", "apps/server/test/relay-slots.test.ts"],
   "games/obstaculos/campaign/learning.slow.test.ts": "games/obstaculos/campaign/progress/learning.slow.test.ts",
   "games/obstaculos/campaign/practice.test.ts": "games/obstaculos/campaign/progress/practice.test.ts",
   "games/obstaculos/campaign/progress.test.ts": "games/obstaculos/campaign/progress/progress.test.ts",
