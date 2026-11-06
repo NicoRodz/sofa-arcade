@@ -4,9 +4,12 @@ import type { Controls, Game, Player, Station } from '../round/state';
 import { MECH_MODULES } from './registry';
 import type { FirePhase, MechModule } from './types';
 
-function* active(g: Game): Generator<MechModule> {
+// The modules whose flag is on, in registry order. A plain array: the generator this replaces was the hottest function of the sim (every hook of every tick walks it).
+function active(g: Game): MechModule[] {
   const f = g.flags!.mech;
-  for (const m of MECH_MODULES) if (f[m.id]) yield m;
+  const on: MechModule[] = [];
+  for (const m of MECH_MODULES) if (f[m.id]) on.push(m);
+  return on;
 }
 
 export function mechStart(g: Game) {

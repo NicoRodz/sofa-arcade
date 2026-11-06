@@ -239,7 +239,7 @@
  "docs/screens/versus-v3/vsv3-V1-3-rats-seek.png": "40cf07cebc4df5f6ab06d458b8541075b82abe1640e40177fab473e12648e905",
  "docs/screens/versus-v3/vsv3-V3-1-ice.png": "a599fbddc45bab250875d1d47c6190b1758d1b413b65b8e7e0100e77e1113a41",
  "docs/screens/versus-v3/vsv3-V3-3-rats-seek.png": "99cfe35a12963f6a4746f519083bd78e0218416c6ccf1998b8fe748b1986ac5a",
- "games/pizzas/test/golden/bot.ts": "b350de33bf599eb2a417b9e90e81bfae57c16e1b9813e8527fd97ee6c8f02585",
+ "games/pizzas/test/golden/bot.ts": "9b1bf817b6dddca58bef07e04dc96be6858b0bb3bdc0bcf14fa1310f52b39beb",
  "games/pizzas/test/golden/burn.golden.slow.test.ts": "f58c1a0739398e4d350852a6ec15827162b47dd54a53d344f7e9e5bec499abc4",
  "games/pizzas/test/golden/coop.golden.slow.test.ts": "06bed5c39f74097dd691322f662139586ad5e478f879450da056b87ccd89eeaf",
  "games/pizzas/test/golden/fixtures/coop-n2-map2-normal-magnet.json": "be0e8d402375977c5dd817cc8cdfa3334048ef682fac712eabd49abdb40c1ce7",
