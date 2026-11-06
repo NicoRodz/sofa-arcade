@@ -1,7 +1,7 @@
 // Kitchen layouts: the archetypes, the difficulty bands, the shell with obstacles and the station slots (shared by coop and versus halves).
 import { teamSize, type Difficulty, pick, randInt, type Rng } from '@pichi/core';
 import type { Features } from '../phone/puestos';
-import { MAP_H, MAP_W, parseMap, posKey, type Pos } from '../maps';
+import { MAP_H, MAP_W, parseMap, posKey, type Grid, type Pos } from '../maps';
 import { accessTiles, analyze } from '../validate';
 
 export const ARCHETYPES = ['open', 'island', 'lanes', 'river', 'corridor'] as const;
@@ -113,8 +113,9 @@ export interface Bounds {
 const WHOLE_MAP: Bounds = { x0: 2, x1: MAP_W - 3, y0: 2, y1: MAP_H - 3 };
 
 export function scatterObstacles(cells: Cells, count: number, rng: Rng, within: Bounds = WHOLE_MAP) {
+  // `shape` never changes across the loop: an obstacle is kept only when the shape stays the same, and a rejected one is taken back.
+  const before = shape(cells);
   for (let i = 0; i < count; i++) {
-    const before = shape(cells);
     for (let tries = 0; tries < 10; tries++) {
       const x = randInt(rng, within.x0, within.x1),
         y = randInt(rng, within.y0, within.y1);
@@ -147,12 +148,12 @@ export function placeStations(l: Layout, n: number, diff: Difficulty, rng: Rng, 
   ];
   for (const [ch, zone] of order) {
     const slots: { at: Pos; acc: Pos }[] = [];
+    let now: Grid | null = null; // the cells do not change while the slots are collected: one parse per station, on first use
     cells.forEach((row, y) =>
       row.forEach((cell, x) => {
         if (cell !== 'C' || passes.has(posKey(x, y))) return;
-        const acc = accessTiles(parseMap(rowsOf(cells)), x, y).find(
-          ([ax, ay]) => !claimed.has(posKey(ax, ay)) && (!zoneAt || zoneAt(ax) === zone),
-        );
+        now ??= parseMap(rowsOf(cells));
+        const acc = accessTiles(now, x, y).find(([ax, ay]) => !claimed.has(posKey(ax, ay)) && (!zoneAt || zoneAt(ax) === zone));
         if (acc) slots.push({ at: [x, y], acc });
       }),
     );

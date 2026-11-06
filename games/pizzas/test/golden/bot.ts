@@ -1,7 +1,8 @@
 // Deterministic coop "golden" driver: scripted chefs that play the real engine through its public controls (tick), so a full
 // round is reproducible from (map, difficulty, n, seed) alone. F2 (teams in the sim) must reproduce these runs exactly.
 // Test support only: nothing in the game imports this.
-import { fixedMap, isFloor, DIRS } from '../../sim/maps';
+import { fixedMap, DIRS } from '../../sim/maps';
+import { firstStep } from './bfs-route';
 import { GameEvents, Emitter } from '../../sim/round/events';
 import { COUNTDOWN_MS, TICK_MS, addPlayer, createGame, targetStation, tick, type Controls, type Game, type Player, type Station } from '../../sim/overcooked';
 import type { Difficulty } from '@pichi/core/difficulty';
@@ -97,22 +98,7 @@ export function route(g: Game, p: Player, s: Station): { arrived: boolean; next:
   const sx = Math.floor(p.x), sy = Math.floor(p.y);
   const touches = (x: number, y: number) => DIRS.some(([dx, dy]) => x + dx === s.tx && y + dy === s.ty);
   if (touches(sx, sy)) return { arrived: true, next: null };
-  const prev = new Map<string, string | null>([[`${sx},${sy}`, null]]);
-  const queue: [number, number][] = [[sx, sy]];
-  for (let i = 0; i < queue.length; i++) {
-    const [x, y] = queue[i]!;
-    if (touches(x, y)) {
-      let k = `${x},${y}`;
-      while (prev.get(k) && prev.get(prev.get(k)!) !== null) k = prev.get(k)!;
-      const [nx, ny] = k.split(',').map(Number) as [number, number];
-      return { arrived: false, next: [nx, ny] };
-    }
-    for (const [dx, dy] of DIRS) {
-      const nx = x + dx, ny = y + dy, k = `${nx},${ny}`;
-      if (isFloor(g.grid, nx, ny) && !prev.has(k)) { prev.set(k, `${x},${y}`); queue.push([nx, ny]); }
-    }
-  }
-  return { arrived: false, next: null };
+  return { arrived: false, next: firstStep(g.grid, sx, sy, touches) };
 }
 
 export interface Mem { step: number; since: number; lastPress: number; bin: boolean }

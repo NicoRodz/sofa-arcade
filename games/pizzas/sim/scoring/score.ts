@@ -1,5 +1,6 @@
 // Difficulty metric D = (L + 14 T + 6 C) * (1 + 0.25 max(0, N / boards - 1)).
-import { DIRS, floorComponents, isFloor, posKey, type Grid, type Pos } from '../maps';
+import { DIRS, isFloor, posKey, type Grid, type Pos } from '../maps';
+import { chokepoints } from './chokepoints';
 import { RECIPE_LEGS, accessTiles, analyze, stationsOf } from '../validate';
 
 export interface Metric {
@@ -10,20 +11,10 @@ export interface Metric {
   D: number;
 }
 
-const chokepoints = (g: Grid, count: number): Set<string> => {
-  const out = new Set<string>();
-  g.forEach((row, y) =>
-    row.forEach((_t, x) => {
-      if (isFloor(g, x, y) && floorComponents(g, posKey(x, y)).count > count) out.add(posKey(x, y));
-    }),
-  );
-  return out;
-};
-
 export function metric(g: Grid, n: number): Metric {
   const a = analyze(g);
   const passKeys = new Set(a.passes.map((p) => posKey(...p.pos)));
-  const choke = chokepoints(g, a.count);
+  const choke = chokepoints(g);
   const walk = (x: number, y: number) => isFloor(g, x, y) || passKeys.has(posKey(x, y));
   const starts = (key: Parameters<typeof stationsOf>[1]) => stationsOf(g, key).flatMap(([x, y]) => accessTiles(g, x, y));
 

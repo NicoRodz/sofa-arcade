@@ -1,7 +1,8 @@
 // A scripted team for the T1e test maps (kneader and woodOven): the same recipe as the golden bot (dough, tomato, plate, window) but the dough goes through M when the kneader is on,
 // and a chef feeds the fire of W when the woodOven is on. Pairing is a reserved job: the chef that put the ball on M works one handle, the lowest-id chef with free hands takes the other
 // (it expires after 600 ticks). Reports what the design asks of the bot: stars, `pairWaitTicks` (a chef alone on a handle) and `stuckTicks` (the longest stretch with no step done by anybody).
-import { DIRS, isFloor } from '../../../sim/maps';
+import { DIRS } from '../../../sim/maps';
+import { firstStep } from '../../golden/bfs-route';
 import {
   COUNTDOWN_MS,
   TICK_MS,
@@ -82,26 +83,7 @@ function route(g: Game, p: Player, goal: (x: number, y: number) => boolean) {
   const sx = Math.floor(p.x),
     sy = Math.floor(p.y);
   if (goal(sx, sy)) return { arrived: true, next: null as [number, number] | null };
-  const prev = new Map<string, string | null>([[`${sx},${sy}`, null]]);
-  const q: [number, number][] = [[sx, sy]];
-  for (let i = 0; i < q.length; i++) {
-    const [x, y] = q[i]!;
-    if (goal(x, y)) {
-      let k = `${x},${y}`;
-      while (prev.get(k) && prev.get(prev.get(k)!) !== null) k = prev.get(k)!;
-      return { arrived: false, next: k.split(',').map(Number) as [number, number] };
-    }
-    for (const [dx, dy] of DIRS) {
-      const nx = x + dx,
-        ny = y + dy,
-        k = `${nx},${ny}`;
-      if (isFloor(g.grid, nx, ny) && !prev.has(k)) {
-        prev.set(k, `${x},${y}`);
-        q.push([nx, ny]);
-      }
-    }
-  }
-  return { arrived: false, next: null };
+  return { arrived: false, next: firstStep(g.grid, sx, sy, goal) };
 }
 
 function stepTo(m: Mem, p: Player, next: [number, number], tickNo: number, rank: number): Controls {
