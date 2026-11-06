@@ -2,8 +2,10 @@ import { fixedMap } from '@pichi/game-pizzas/sim/maps';
 import { versusMap } from '@pichi/game-pizzas/sim/versus/maps';
 import { sleep } from '../config';
 import type { Ctx } from '../session';
+import { pickMap } from './play';
 
-export async function runAssist({ cdp, bots, timers, open, join, click, snap, waitFor }: Ctx) {
+export async function runAssist(c: Ctx) {
+  const { cdp, bots, timers, open, join, click, snap, waitFor } = c;
   // Ayudante on the REAL screen and relay: 4 bot phones, two of them switch it on from their lobby. The lobby lists them (badge + "Ayudante"), versus shows the k it
   // costs, the round gives them the propeller, the sim flags exactly those chefs, and every phone hears its contextual buttons (labels + glyphs) through the relay.
   const key = (k: string) => cdp.eval(`window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)} }))`);
@@ -28,7 +30,7 @@ export async function runAssist({ cdp, bots, timers, open, join, click, snap, wa
   await sleep(400);
   await click('[data-mode="coop"]');
   await sleep(500);
-  await click('[data-map="6"]');
+  await pickMap(c, '6');
   await click('[data-diff="easy"]');
   await sleep(300);
   await click('#start');

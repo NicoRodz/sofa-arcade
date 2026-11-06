@@ -15,13 +15,17 @@ export async function runLobby({ cdp, bots, open, join }: Ctx) {
   bots.splice(0).forEach((b) => b.close());
 }
 
-// A map outside the draw (as 1) lives on its group's page of the lobby grid, not on the first one: go through the group cards until its card shows up.
-const pickMap = async ({ click, cdp }: Ctx, id: string) => {
+// A map outside the draw (as 1) lives on its group's page of the lobby grid, not on the first one: go through the group cards until its card shows up, unfolding "Otros mapas" when the map cannot be picked for the group's size.
+export const pickMap = async ({ click, cdp }: Ctx, id: string) => {
   const has = (sel: string) => cdp.eval<boolean>(`!!document.querySelector(${JSON.stringify(sel)})`);
   for (const to of [null, 'plain', 'taller', 'series']) {
     if (to && !(await has(`[data-map="group"][data-to="${to}"]`))) continue;
     if (to) {
       await click(`[data-map="group"][data-to="${to}"]`);
+      await sleep(300);
+    }
+    if (!(await has(`[data-map="${id}"]`)) && (await has('[data-map="group"][data-to="others"]'))) {
+      await click('[data-map="group"][data-to="others"]');
       await sleep(300);
     }
     if (await has(`[data-map="${id}"]`)) return click(`[data-map="${id}"]`);
