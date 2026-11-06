@@ -108,7 +108,7 @@ const targetOf = (g: Game, team: number) => (team + 1) % g.teams.length;
 const pendingAt = (g: Game, target: number) => g.sab!.teams.reduce((n, t) => n + t.flights.filter((f) => f.target === target).length, 0);
 const isValidLanding = (g: Game, target: number, [x, y]: Pos, ignore?: Flight): boolean => {
   const t = g.grid[y]?.[x];
-  if (!t || t.kind !== 'floor' || t.spawn || g.kitchens!.comp[y]![x] !== g.kitchens!.regions[target]) return false;
+  if (t?.kind !== 'floor' || t.spawn || g.kitchens!.comp[y]![x] !== g.kitchens!.regions[target]) return false;
   if (g.floor.some((f) => f.kind === 'trash' && f.tx === x && f.ty === y)) return false;
   return !g.sab!.teams.some((s) => s.flights.some((f) => f !== ignore && f.target === target && f.to[0] === x && f.to[1] === y));
 };

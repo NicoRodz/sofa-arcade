@@ -15,7 +15,7 @@ export function tileLabel(scene: Phaser.Scene, key: string, text: string, x: num
     pool.set(scene, m);
   }
   let t = m.get(key);
-  if (!t || !t.scene) {
+  if (!t?.scene) {
     t = scene.add
       .text(x, y, text, {
         fontFamily: FONT,

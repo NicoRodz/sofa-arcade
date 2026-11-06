@@ -54,7 +54,7 @@ export function unlockAudio() {
   }
 }
 export function playTones(tones: readonly Tone[]) {
-  if (!ctx || ctx.state !== 'running') return;
+  if (ctx?.state !== 'running') return;
   let t = ctx.currentTime;
   for (const [f, ms, wave = 'triangle'] of tones) {
     const o = ctx.createOscillator();

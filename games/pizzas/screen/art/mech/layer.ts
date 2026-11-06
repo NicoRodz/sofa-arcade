@@ -9,7 +9,7 @@ export function layer(scene: Phaser.Scene, name: string, depth = 1.55): Phaser.G
     layers.set(scene, m);
   }
   let l = m.get(name);
-  if (!l || !l.scene) {
+  if (!l?.scene) {
     l = scene.add.graphics().setDepth(depth);
     m.set(name, l);
   }

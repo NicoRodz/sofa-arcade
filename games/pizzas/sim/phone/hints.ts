@@ -146,7 +146,7 @@ export function createHintSync(send: (m: HintMsg) => void, minMs = HINT_MIN_MS) 
   return {
     sync(g: Game | null, now: number) {
       for (const id of [...sent.keys()])
-        if (!g || !g.players.has(id)) {
+        if (!g?.players.has(id)) {
           send({ t: 'hint', playerId: id, a: null, b: null });
           sent.delete(id);
         }
