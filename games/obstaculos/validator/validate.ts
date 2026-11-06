@@ -5,13 +5,15 @@
 //     (a catch zone under every ledge the pioneer reached). Towers and throws are one-way trips, so they are not available here.
 // Plates: OR semantics (any activator held opens its objective). A held (non-latching) activator costs its weight in holders,
 // who can only follow if a second activator of the same objective sits on the far side (handoff) - or if it latches.
-import { MAX_PLAYERS_OBST, MIN_PLAYERS, RUN_SPEED, TILE } from '../constants';
-import { MARKER_CHARS, T, isActivator } from '../legend';
-import { parseLevel, type ParsedLevel } from '../parse';
+import { MAX_PLAYERS_OBST, MIN_PLAYERS } from '../constants';
+import { MARKER_CHARS } from '../legend';
+import { parseLevel } from '../parse';
 import type { Difficulty } from '@pichi/core';
 import type { Cell, GameMode, LevelDef, Weight } from '../types';
 import type { ModeledMechanic } from '../mechanics';
-import { campaignParams } from '../sim/rules/campaign';
+import { lint } from './lint';
+import { activatorsOf, goalTest, startSegOf, touches } from './segments';
+import { hazardCheck, mechanicOf, pathSeconds, usesOf, type Uses } from './path-checks';
 import {
   buildGraph,
   can,
@@ -24,7 +26,6 @@ import {
   type Env,
   type Graph,
   type OpenState,
-  type Seg,
 } from './graph';
 
 export const resolveWeight = (w: Weight, n: number): number =>
@@ -40,12 +41,6 @@ export const resolveWeight = (w: Weight, n: number): number =>
 
 export const modesOf = (def: LevelDef): GameMode[] =>
   def.tether === 'chainOnly' ? ['chain'] : def.tether === 'freeOnly' ? ['free'] : ['chain', 'free'];
-
-// A segment "touches" a cell if a body standing on it reaches the cell with its box, jumping up to `up` tiles.
-export function touches(seg: Seg, c: Cell, up: number): boolean {
-  if (c.y > seg.row || c.y < seg.row - up) return false;
-  return c.x >= seg.x0 - 1 && c.x <= seg.x1 + 1;
-}
 
 export interface ValidationReport {
   ok: boolean;
@@ -66,7 +61,8 @@ export interface ValidationReport {
   checkpoints: { found: number; total: number }; // P markers a follower can stand at (every checkpoint must be reachable)
   uses: Uses; // what the route (pioneer, followers, and the gadgets the pioneer had to reach) actually did, by mechanic: the learning test's record
 }
-export type Uses = Partial<Record<ModeledMechanic, number>>;
+export type { Uses };
+export { lint, mechanicOf, startSegOf, touches };
 
 const failed = (env: Env, errors: string[]): ValidationReport => ({
   ok: false,
@@ -86,96 +82,6 @@ const failed = (env: Env, errors: string[]): ValidationReport => ({
   checkpoints: { found: 0, total: 0 },
   uses: {},
 });
-
-export function lint(p: ParsedLevel): string[] {
-  const errors = [...p.errors];
-  const d = p.def;
-  const wPx = p.w,
-    hPx = p.h;
-  for (const [i, z] of (d.cameraZones ?? []).entries())
-    if (z.w > 66 || z.h > 37) errors.push(`cameraZones[${i}] ${z.w}x${z.h} does not fit at zoom 0.6 (1920x1080 view = 66x37 tiles)`);
-  if (d.cordadaMax !== undefined && ![2, 3, 4].includes(d.cordadaMax)) errors.push('cordadaMax must be 2, 3 or 4');
-  if (!(d.stars >= 1 && d.stars <= 5)) errors.push('stars must be 1..5');
-  if (d.hazard && !(d.hazard.speed > 0)) errors.push('hazard speed must be > 0');
-  const doors = doorGroupsOf(p);
-  if (doors.length > p.markers.key.length) errors.push(`${doors.length} door groups but ${p.markers.key.length} keys`);
-  for (const o of Object.values(p.objects)) {
-    const q = o.param;
-    if (!q) continue;
-    const shifts: [number, number][] =
-      q.kind === 'mover'
-        ? [[Math.round(q.dx), Math.round(q.dy)]]
-        : q.kind === 'sinker'
-          ? [[0, Math.round(q.travel)]]
-          : q.kind === 'balance'
-            ? [
-                [0, Math.round(q.travel)],
-                [0, -Math.round(q.travel)],
-              ]
-            : [];
-    for (const [sx, sy] of shifts)
-      for (const c of o.cells) {
-        const x = c.x + sx,
-          y = c.y + sy;
-        if (x < 0 || y < 0 || x >= wPx || y >= hPx) errors.push(`'${o.char}' ${q.kind} leaves the grid at (${x},${y})`);
-        else if (p.tiles[y * wPx + x] === T.Solid) errors.push(`'${o.char}' ${q.kind} runs into a solid at (${x},${y})`);
-      }
-    if ((q.kind === 'plate' || q.kind === 'lever' || q.kind === 'target') && !isActivator(o.char))
-      errors.push(`'${o.char}' must be an activator letter`);
-  }
-  // A6 (dynamics 10-12)
-  const crystals = p.tiles.reduce((n, k) => n + (k === T.Crystal ? 1 : 0), 0);
-  if (crystals > 0 && p.markers.lantern.length === 0)
-    errors.push(`${crystals} crystals ('Y') but no lantern ('l'): nothing ever lights them`);
-  for (const o of Object.values(p.objects))
-    if (o.param?.kind === 'geyser')
-      for (const c of o.cells)
-        if (!(p.tiles[(c.y + 1) * wPx + c.x] === T.Solid || p.tiles[(c.y + 1) * wPx + c.x] === T.FreeSolid))
-          errors.push(`geyser '${o.char}' vent at (${c.x},${c.y}) has no solid floor under it`);
-  const hasAct = (ch: string) =>
-    Object.values(d.params ?? {}).some((q) => (q.kind === 'plate' || q.kind === 'lever' || q.kind === 'target') && q.opens === ch);
-  // a target's gate closes after targetSec: the run from the target to the gate must fit (straight-line tiles at the run speed, with a quarter of the time in hand)
-  const maxTargetTiles = Math.floor((0.75 * campaignParams(2).targetSec * RUN_SPEED) / TILE);
-  for (const o of Object.values(p.objects)) {
-    const q = o.param;
-    if (q?.kind !== 'target') continue;
-    const gate = p.objects[q.opens];
-    if (!gate) continue;
-    const cx = o.bounds.x + o.bounds.w / 2,
-      cy = o.bounds.y + o.bounds.h / 2;
-    const d2 = Math.min(...gate.cells.map((c) => Math.abs(c.x + 0.5 - cx) + Math.abs(c.y + 0.5 - cy)));
-    if (d2 > maxTargetTiles)
-      errors.push(
-        `target '${o.char}' is ${d2.toFixed(0)} tiles from its gate '${q.opens}': at most ${maxTargetTiles} (the gate stays open ${campaignParams(2).targetSec} s)`,
-      );
-  }
-  for (const o of Object.values(p.objects))
-    if (o.param?.kind === 'gate' && !hasAct(o.char)) errors.push(`gate '${o.char}' has no activator: it never opens`);
-  if (d.tether === 'freeOnly' && ringsOf(p).length) errors.push('rings only work tied (tether freeOnly has rings)');
-  return errors;
-}
-
-export function startSegOf(p: ParsedLevel, g: Graph): number {
-  const s = p.markers.spawn[0];
-  if (!s) return -1;
-  for (let y = s.y; y < g.grid.h; y++) {
-    const id = g.cellSeg[y * g.grid.w + s.x] ?? -1;
-    if (id >= 0) return id;
-    const k = g.grid.cells[y * g.grid.w + s.x]!;
-    if (k === T.Solid || k === T.Spikes || k === T.Liquid) return -1;
-  }
-  return -1;
-}
-const goalTest = (p: ParsedLevel, g: Graph) => {
-  const c = p.markers.goal[0];
-  return (id: number) => (c ? touches(g.segs[id]!, c, 3) : false);
-};
-
-function activatorsOf(p: ParsedLevel) {
-  return Object.values(p.objects).filter(
-    (o) => o.param && (o.param.kind === 'plate' || o.param.kind === 'lever' || o.param.kind === 'target'),
-  );
-}
 
 export function validateState(def: LevelDef, env: Env): ValidationReport {
   const p = parseLevel(def);
@@ -356,93 +262,6 @@ export function validateState(def: LevelDef, env: Env): ValidationReport {
     checkpoints: { found: cpFound, total: p.markers.checkpoint.length },
     uses,
   };
-}
-
-// Which mechanic an edge is. A plain walk-off or fall is not a mechanic; a jump from or onto a boya is a spring.
-export function mechanicOf(g: Graph, e: Edge, p?: ParsedLevel): ModeledMechanic | null {
-  switch (e.kind) {
-    case 'jump':
-      return g.segs[e.from]?.tramp || g.segs[e.to]?.tramp ? 'spring' : e.plan && e.plan.trigger !== 'walk' ? 'jump' : null;
-    case 'tower':
-    case 'hand':
-    case 'throw':
-    case 'swing':
-    case 'ladder':
-      return e.kind;
-    case 'climb':
-      return 'pickaxe';
-    case 'superjump':
-      return 'superjump';
-    case 'ride':
-      return e.obj && p?.objects[e.obj]?.param?.kind === 'balance' ? 'balance' : 'mover';
-  }
-}
-function usesOf(
-  p: ParsedLevel,
-  g: Graph,
-  g2: Graph,
-  path: Edge[],
-  followPath: Edge[],
-  extra: { graph: Graph; edges: Edge[] }[],
-  gadgets: Uses,
-): Uses {
-  const seen = new Set<string>();
-  const uses: Uses = { ...gadgets };
-  const add = (gr: Graph, e: Edge) => {
-    const key = `${e.kind}:${e.takeoffX}:${e.landCell.x},${e.landCell.y}:${e.rise}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    const m = mechanicOf(gr, e, p);
-    if (m) uses[m] = (uses[m] ?? 0) + 1;
-  };
-  for (const e of path) add(g, e);
-  for (const e of followPath) add(g2, e);
-  for (const x of extra) for (const e of x.edges) add(x.graph, e);
-  return uses;
-}
-interface Timeline {
-  total: number;
-  at: { edge: Edge; t: number }[];
-}
-function pathSeconds(p: ParsedLevel, path: Edge[], gadgets: number): Timeline {
-  let t = 0;
-  let x = (p.markers.spawn[0]?.x ?? 0) * TILE;
-  const at: { edge: Edge; t: number }[] = [];
-  for (const e of path) {
-    t += Math.abs(e.takeoffX - x) / RUN_SPEED + e.steps / 60 + (e.coop ? 4 : 0);
-    at.push({ edge: e, t });
-    x = e.landX;
-  }
-  const goal = p.markers.goal[0];
-  if (goal) t += Math.abs(goal.x * TILE - x) / RUN_SPEED;
-  return { total: t + gadgets * 6, at };
-}
-
-// Moving hazards (plan §9): the path, with a 1.5x human slowdown, must stay ahead of the avalanche front / above the lava.
-function hazardCheck(p: ParsedLevel, g: Graph, path: Edge[], tl: Timeline, errors: string[]): void {
-  const hz = p.def.hazard;
-  if (!hz || hz.kind === 'tide') return;
-  const mult = g.dp.hazardSpeed; // the legacy table (0.7 / 1 / 1.25) or the campaign world's
-  const v = hz.speed * mult; // tiles per second
-  const frozen = 3 * p.markers.checkpoint.length; // each checkpoint freezes the lava 3 s (plan §10, level 14); credited to both
-  const goal = p.markers.goal[0];
-  const stops = tl.at.map(({ edge, t }) => ({ cell: edge.landCell, t }));
-  if (goal) stops.push({ cell: goal, t: tl.total });
-  for (const { cell, t } of stops) {
-    const slow = t * 1.5;
-    if (hz.kind === 'risingLava') {
-      const surface = p.h - v * Math.max(0, slow - frozen);
-      if (cell.y + 1 >= surface - 1) {
-        errors.push(
-          `risingLava catches the path at (${cell.x},${cell.y}) t=${slow.toFixed(1)}s: lava surface at row ${surface.toFixed(1)}`,
-        );
-        return;
-      }
-    } else if (cell.x < v * slow - 5) {
-      errors.push(`avalanche catches the path at (${cell.x},${cell.y}) t=${slow.toFixed(1)}s: front at col ${(v * slow - 5).toFixed(1)}`);
-      return;
-    }
-  }
 }
 
 export interface LevelVerdict {
