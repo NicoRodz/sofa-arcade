@@ -1,0 +1,95 @@
+:root {
+  --ink: #2B1B17; --cream: #FFF4E0; --cocoa: #3A2A24; --tomato: #E63B2E; --tomato2: #B5281F; --basil: #3FA34D; --basil2: #2A7A36;
+  --cheese: #FFD23F; --cheese2: #E8A317; --muted: #8A7461; --c: #E63B2E;
+  --font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+  /* Notch, rounded corners, home indicator: nothing you read or press goes under them. */
+  --sl: env(safe-area-inset-left, 0px); --sr: env(safe-area-inset-right, 0px); --st: env(safe-area-inset-top, 0px); --sb: env(safe-area-inset-bottom, 0px);
+  /* The pad (landscape). Sizes follow the short side (vmin) so the same layout holds from 568x320 to 932x430. */
+  --bsz: 34vmin; /* diameter of an action button */
+  --ring: 32vmin; /* diameter of the stick hint */
+  --lbl: max(12px, 4.2vmin); --hold: max(10px, 2.8vmin); /* label sizes (labels live OUTSIDE the touch circles, in a plate underneath) */
+  --plate: calc(1.1 * var(--lbl) + 1.1 * var(--hold) + 6px + 1.5vmin); /* height reserved under a control for its plate */
+  --gutter: max(10px, var(--sl) + 10px);
+  --ar: max(4%, calc(var(--sr) + 10px)); /* right offset of button A */
+  --topA: min(52%, calc(100% - var(--sb) - var(--bsz) - var(--plate) - 1vmin)); /* lifts A only when the home indicator needs the room */
+  --topB: 9%;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--cocoa); color: var(--cream); font: 800 18px var(--font); overscroll-behavior: none; }
+body::before { content: ""; position: fixed; inset: 0; background: repeating-conic-gradient(rgba(255,255,255,.15) 0 25%, transparent 0 50%) 0 0 / 80px 80px; opacity: .1; pointer-events: none; }
+#join { position: fixed; inset: 0; display: flex; flex-direction: column; gap: clamp(8px, 3vmin, 16px); align-items: center; justify-content: center; padding: max(12px, var(--st)) max(12px, var(--sr)) max(12px, var(--sb)) max(12px, var(--sl)); }
+#join input { font: 800 20px var(--font); /* keep >= 16px: iOS zooms into smaller inputs on focus */ min-height: 48px; padding: 8px 16px; width: 70%; max-width: 320px; border-radius: 14px; border: 4px solid var(--ink); background: var(--cream); color: var(--ink); text-align: center; -webkit-user-select: text; user-select: text; }
+button { font: 800 22px var(--font); color: var(--cream); min-height: 48px; padding: 8px 28px; border-radius: 16px; border: 4px solid var(--ink); background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); box-shadow: 0 6px 0 rgba(43,27,23,.4); text-shadow: 0 2px 0 rgba(43,27,23,.4); }
+button:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(43,27,23,.4); }
+#pad { position: fixed; inset: 0; visibility: hidden; }
+body[data-view=playing] #pad { visibility: visible; }
+body[data-view] #join { display: none; }
+.overlay { position: fixed; inset: 0; display: none; flex-direction: column; gap: clamp(4px, 1.6vmin, 10px); align-items: center; justify-content: center; text-align: center; font-size: clamp(16px, 5.6vmin, 22px); padding: max(12px, var(--st)) max(16px, var(--sr)) max(12px, var(--sb)) max(16px, var(--sl)); overflow-wrap: anywhere; }
+body[data-view=lobby] #wait, body[data-view=results] #results, body[data-view=menu] #choosing { display: flex; }
+#rotate { z-index: 10; }
+@media (orientation: portrait) { body[data-view=playing] #rotate { display: flex; } } /* only the round needs the wide pad: portrait.css lays out the other screens upright */
+.big { font-size: clamp(36px, 14vmin, 56px); font-weight: 800; line-height: 1.1; }
+
+/* ---- stick: the whole left half is the touch zone; the dashed ring is only a hint of where the thumb goes */
+#zone { position: absolute; left: 0; top: 0; width: 50%; height: 100%; }
+#stickhint { position: absolute; left: max(11%, calc(var(--sl) + 4vmin)); top: 46%; width: var(--ring); height: var(--ring); margin-top: calc(var(--ring) / -2); border-radius: 50%; border: 4px dashed rgba(255,244,224,.35); color: rgba(255,244,224,.6); display: flex; align-items: center; justify-content: center; pointer-events: none; transition: opacity .15s; }
+#stickhint .ico { width: 42%; height: 42%; }
+#stickLbl { left: max(11%, calc(var(--sl) + 4vmin)); top: calc(46% + var(--ring) / 2 + 1.5vmin); width: var(--ring); transition: opacity .15s; }
+#stickLbl .pl { background: rgba(43,27,23,.55); color: rgba(255,244,224,.85); }
+#stickhint.active, #stickhint.active + #stickLbl { opacity: 0; }
+
+/* ---- action buttons: the circle is the touch area and carries only the icon; the label sits in a plate underneath */
+.act { position: absolute; width: var(--bsz); height: var(--bsz); border-radius: 50%; border: 5px solid var(--ink); background: linear-gradient(var(--btn, var(--tomato)) 0 50%, var(--btn2, var(--tomato2)) 50% 100%); color: var(--cream); display: flex; align-items: center; justify-content: center; padding: 0; min-height: 0; box-shadow: 0 1.8vmin 0 rgba(43,27,23,.4); text-shadow: 0 2px 0 rgba(43,27,23,.45); }
+.act .ico { width: 52%; height: 52%; filter: drop-shadow(0 2px 0 rgba(43,27,23,.45)); }
+.plq { position: absolute; display: flex; justify-content: center; pointer-events: none; } /* same left/width as its circle; the plate may be a little wider than it */
+.plq .pl { max-width: calc(100% + 10px); display: flex; flex-direction: column; align-items: center; padding: 3px 8px; border-radius: 10px; background: rgba(43,27,23,.72); color: var(--cream); text-align: center; line-height: 1.1; }
+.plq .lbl { font-size: var(--lbl); white-space: nowrap; }
+.plq .hold { font-size: var(--hold); font-weight: 700; opacity: .85; white-space: nowrap; }
+#btnA { right: var(--ar); top: var(--topA); }
+#lblA { right: var(--ar); top: calc(var(--topA) + var(--bsz) + 1.5vmin); width: var(--bsz); }
+#btnB { right: 27%; top: var(--topB); --btn: var(--cheese); --btn2: var(--cheese2); color: var(--ink); text-shadow: 0 2px 0 rgba(255,255,255,.35); }
+#btnB .ico { filter: none; }
+#lblB { right: 27%; top: calc(var(--topB) + var(--bsz) + 1.5vmin); width: var(--bsz); }
+body[data-view=playing]::before { content: ''; position: fixed; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 0 1.1vmin var(--c); } /* R25: the phone wears the chef's colour */
+#slip { position: fixed; left: 0; right: 0; top: 30%; z-index: 4; text-align: center; pointer-events: none; font: 800 clamp(28px, 11vmin, 52px) var(--font); color: var(--cheese); -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; opacity: 0; transform: scale(.6) rotate(-6deg); transition: opacity .12s, transform .25s cubic-bezier(.2,1.6,.4,1); }
+#slip.on { opacity: 1; transform: scale(1) rotate(-3deg); }
+body.flash::after { content: ''; position: fixed; inset: 0; z-index: 3; pointer-events: none; background: var(--c); opacity: .4; }
+/* contextual buttons: nothing to do with what is in front now. Both buttons go to the SAME flat grey (a red and a yellow one greyed by a filter would read as two different things), glyph and
+   plate dimmed; still pressable: it is only a hint, and the sim buffers an early press for a station that shows up. */
+.act { transition: opacity .12s; }
+#btnA.off, #btnB.off { --btn: #8A857F; --btn2: #6B6661; color: #E9E1D5; text-shadow: 0 2px 0 rgba(43,27,23,.35); opacity: .8; }
+#btnA.off .ico, #btnB.off .ico { filter: none; }
+.plq.off .pl { background: rgba(43,27,23,.5); color: rgba(255,244,224,.6); }
+.act.down { transform: translateY(1.2vmin); box-shadow: 0 .5vmin 0 rgba(43,27,23,.4); filter: brightness(1.12); }
+
+.brand { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font: 800 clamp(26px, 10vmin, 40px) var(--font); letter-spacing: 0; margin: 0; color: var(--c); -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; text-shadow: 0 4px 0 rgba(43,27,23,.35); } .brand::before { content: ''; flex: none; width: 1.05em; height: .9em; background: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20136%20116%22%3E%3Cg%20stroke=%22%231E1220%22%20stroke-width=%228%22%20stroke-linejoin=%22round%22%20stroke-linecap=%22round%22%3E%3Cpath%20d=%22M26%20100v10M110%20100v10%22%20fill=%22none%22/%3E%3Crect%20x=%2218%22%20y=%2214%22%20width=%22100%22%20height=%2256%22%20rx=%2218%22%20fill=%22%23FF6B57%22/%3E%3Crect%20x=%2224%22%20y=%2258%22%20width=%2288%22%20height=%2240%22%20rx=%2212%22%20fill=%22%23FF8A78%22/%3E%3Crect%20x=%225%22%20y=%2246%22%20width=%2230%22%20height=%2258%22%20rx=%2213%22%20fill=%22%23FF6B57%22/%3E%3Crect%20x=%22101%22%20y=%2246%22%20width=%2230%22%20height=%2258%22%20rx=%2213%22%20fill=%22%23FF6B57%22/%3E%3Ccircle%20cx=%2252%22%20cy=%2266%22%20r=%2214%22%20fill=%22%232EC4B6%22/%3E%3Ccircle%20cx=%2284%22%20cy=%2266%22%20r=%2214%22%20fill=%22%23FFC83D%22/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat; }
+#rank { color: var(--cheese); text-shadow: 0 3px 0 rgba(43,27,23,.4); }
+/* versus: how the round ended for this phone's team (the screen sends the verdict with the results), inside a frame in the team's colour */
+#verdict { display: none; font-size: clamp(30px, 11vmin, 46px); }
+body[data-outcome=won] #verdict, body[data-outcome=lost] #verdict, body[data-outcome=draw] #verdict, body[data-outcome=none] #verdict { display: block; }
+body[data-outcome=won] #verdict { color: var(--cheese); text-shadow: 0 3px 0 rgba(43,27,23,.4); }
+body[data-outcome=lost] #verdict { color: #C9BBA7; }
+body[data-outcome=none] #verdict { font-size: clamp(22px, 7.5vmin, 30px); opacity: .85; }
+body[data-team=on][data-view=results] #results { box-shadow: inset 0 0 0 clamp(6px, 2vmin, 10px) var(--tc, transparent); }
+#choosing .big { font-size: clamp(28px, 10vmin, 40px); }
+#game { font-size: clamp(18px, 6vmin, 24px); color: var(--cheese); }
+
+/* ---- "Cómo se juega": header / tiles / footer (note + close). The footer row keeps the close button >= 44px high without eating the tiles' room */
+#howto { z-index: 5; background: var(--cocoa); display: none; padding: max(8px, var(--st)) max(14px, var(--sr)) max(8px, var(--sb)) max(14px, var(--sl)); }
+body[data-view][data-howto=open] #howto { display: grid; grid-template: "head head" auto "steps steps" minmax(0, 1fr) "note btn" auto / minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; justify-items: center; }
+#howto .hhead { grid-area: head; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; column-gap: 12px; row-gap: 3px; }
+#howto h2 { margin: 0; font: 800 clamp(20px, 7.4vmin, 28px)/1.1 var(--font); color: var(--c); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; }
+#howto .gname { font-size: clamp(11px, 3.4vmin, 13px); letter-spacing: 2px; text-transform: uppercase; color: rgba(255,244,224,.6); }
+#howto .steps { grid-area: steps; list-style: none; margin: 4px 0 0; padding: 0; width: 100%; height: 100%; max-width: 760px; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(0, 1fr); gap: 10px 14px; min-height: 0; }
+#howto .steps li { display: flex; align-items: center; gap: 10px; padding: 4px 10px 4px 14px; border: 3px solid var(--ink); border-radius: 14px; background: var(--cream); color: var(--ink); position: relative; text-align: left; min-height: 0; }
+#howto .steps .n { position: absolute; left: -8px; top: -8px; width: 26px; height: 26px; border-radius: 50%; background: var(--tomato); border: 3px solid var(--ink); color: var(--cream); font: 800 15px/20px var(--font); text-align: center; }
+#howto .steps .ic { flex: none; width: clamp(34px, 12vmin, 46px); height: clamp(34px, 12vmin, 46px); border-radius: 50%; border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; color: var(--tomato2); background: #F6E8CB; }
+#howto .steps .ico { width: 65%; height: 65%; }
+#howto .steps .tx { min-width: 0; font: 800 clamp(12.5px, 4.1vmin, 19px)/1.15 var(--font); }
+#howto .note { grid-area: note; justify-self: start; display: flex; align-items: center; gap: 8px; font-size: clamp(13px, 4vmin, 16px); line-height: 1.15; color: var(--cheese); text-align: left; }
+#howto .note .ic { flex: none; width: 22px; height: 22px; }
+#howto .note .ico { width: 100%; height: 100%; fill: var(--cheese); }
+#howtoclose { grid-area: btn; font-size: 18px; padding: 6px 24px; }
+#howto:not(:has(.note)) #howtoclose { grid-column: 1 / -1; }
+#howtoopen { margin-top: 6px; font-size: 16px; padding: 6px 18px; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }

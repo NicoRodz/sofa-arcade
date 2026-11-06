@@ -1,0 +1,84 @@
+/* Ayudante (assist.ts): a per-player switch in the lobby, next to "Cómo se juega"; pizzas only (the other game has no use for it) */
+#lobbybtns { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 12px; margin-top: 6px; }
+#lobbybtns #howtoopen { margin-top: 0; }
+#assist { display: none; align-items: center; gap: 8px; font-size: 16px; padding: 6px 16px; min-height: 44px; background: linear-gradient(#6B5A50 0 50%, #54463E 50% 100%); }
+#assist svg { width: 22px; height: 22px; fill: none; stroke: var(--cream); stroke-width: 3.4; stroke-linecap: round; }
+#assist.on { background: linear-gradient(#35D0FF 0 50%, #1AA8DC 50% 100%); color: var(--ink); text-shadow: 0 2px 0 rgba(255,255,255,.35); }
+#assist.on svg { stroke: var(--ink); fill: #FFE14A; }
+body[data-game=pizzas] #assist { display: inline-flex; }
+/* the versus lobby is the tallest screen (team card + swap + the switch): on a short phone the logo and the game name give way, the room is better spent on what can be pressed */
+@media (max-height: 440px) { body[data-team=on][data-view=lobby] #wait .brand, body[data-team=on][data-view=lobby] #wait #game { display: none; } #lobbybtns { flex-wrap: nowrap; gap: 8px; } #lobbybtns button { font-size: 15px; padding: 4px 12px; } #assist { gap: 6px; } #assist svg { width: 20px; height: 20px; } }
+
+/* zoom banner: on the pad it sits top-left under the HUD (nothing else lives there); on the other screens, bottom centre */
+#zoomfix { display: none; position: fixed; left: 50%; bottom: max(10px, var(--sb)); transform: translateX(-50%); z-index: 30; font-size: 15px; line-height: 1.15; padding: 6px 14px; width: max-content; max-width: calc(100% - 2 * var(--gutter)); background: var(--cream); color: var(--ink); text-shadow: none; }
+body.zoomed #zoomfix { display: block; }
+body[data-view=playing] #zoomfix { left: var(--gutter); bottom: auto; top: calc(max(6px, var(--st) + 6px) + 22px); transform: none; max-width: calc(73% - var(--bsz) - var(--gutter) - 10px); text-align: left; }
+
+/* station card: sits in the free strip between the left edge and button A, above the home indicator */
+#puesto { position: absolute; left: var(--gutter); right: calc(var(--ar) + var(--bsz) + 12px); bottom: max(8px, var(--sb)); margin-inline: auto; width: min(440px, calc(100% - var(--gutter) - var(--ar) - var(--bsz) - 12px)); display: none; align-items: center; gap: 8px; padding: 6px 8px; border: 3px solid var(--ink); border-radius: 16px; background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 rgba(43,27,23,.35); }
+body[data-puesto=on] #puesto { display: flex; }
+#puesto .pi { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--c); background: #F6E8CB; display: flex; align-items: center; justify-content: center; color: var(--tomato2); }
+#puesto .pi .ico { width: 26px; height: 26px; }
+#puesto .pt { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+#pname { display: block; font: 800 16px/1.1 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#phint { display: block; font: 700 13px/1.15 var(--font); color: var(--muted); }
+#pswap { flex: none; min-width: 78px; min-height: 44px; font-size: 15px; padding: 6px 12px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 rgba(43,27,23,.4); }
+/* Cocina escuela (shared/tutorial): the card sits where the station card does; the button of the step pulses */
+#school { position: absolute; left: var(--gutter); right: calc(var(--ar) + var(--bsz) + 12px); bottom: max(8px, var(--sb)); margin-inline: auto; width: min(460px, calc(100% - var(--gutter) - var(--ar) - var(--bsz) - 12px)); display: none; flex-direction: column; gap: 4px; padding: 6px 10px 8px; border: 3px solid var(--ink); border-radius: 16px; background: var(--cream); color: var(--ink); box-shadow: 0 4px 0 rgba(43,27,23,.35); }
+body[data-school=on] #school { display: flex; }
+body[data-school=on] #stickLbl { display: none; } /* the card takes the strip under the stick; the ring says what it is */
+#school .sh { display: flex; align-items: center; gap: 8px; font: 800 13px/1 var(--font); letter-spacing: 1px; text-transform: uppercase; color: var(--tomato2); }
+#schooldots { display: flex; gap: 4px; margin-left: auto; }
+#schooldots i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink); background: #F6E8CB; }
+#schooldots i.on { background: var(--basil); }
+#schooltext { font: 800 clamp(15px, 5vmin, 20px)/1.15 var(--font); }
+#school .sb { display: flex; gap: 8px; }
+#school .sb button { flex: 1; min-height: 44px; font-size: 14px; padding: 4px 8px; border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 rgba(43,27,23,.4); background: linear-gradient(#85685A 0 50%, #6F5245 50% 100%); }
+#school .sb button#schoolall { background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); text-shadow: none; }
+#school .sb button:disabled { opacity: .45; }
+#school.done { background: #D9F2DC; }
+body[data-school=on] .act.hl { animation: schoolpulse .8s ease-in-out infinite alternate; z-index: 5; border-color: var(--cheese); } /* the ring never goes away: it only breathes */
+body[data-school=on] .plq.hl .pl { background: var(--cheese); color: var(--ink); }
+@keyframes schoolpulse { from { box-shadow: 0 0 0 .9vmin rgba(255,226,74,.95), 0 0 0 1.8vmin rgba(255,226,74,.35); } to { box-shadow: 0 0 0 1.5vmin rgba(255,226,74,1), 0 0 0 3.2vmin rgba(255,226,74,.45); } } /* only the ring breathes: the button keeps its size and place (the layout checks measure it) */
+/* ---- campaign signals (Obstaculos, plan §4 #1): a 3x2 pad, bottom centre, only in a campaign round (the screen says so with phase.match.modeOptions.campaign).
+   Free strip of the pad: right of the stick (ring + its plate), left of A, under B and its plate. Every button is >= 44px and follows the short side like the pad. */
+:root { --sg: max(44px, 14vmin); --sgap: 6px; }
+#signals { position: absolute; z-index: 2; left: 50%; transform: translateX(-50%); bottom: max(10px, calc(var(--sb) + 6px)); display: none; grid-template: repeat(2, var(--sg)) / repeat(3, var(--sg)); gap: var(--sgap); }
+body[data-signals=on][data-view=playing] #signals { display: grid; }
+#signals .sg { min-height: 0; width: var(--sg); height: var(--sg); padding: 0; border-radius: 14px; border-width: 3px; display: flex; align-items: center; justify-content: center; font-size: clamp(16px, 5.4vmin, 24px); line-height: 1; box-shadow: 0 4px 0 rgba(43,27,23,.4); background: linear-gradient(#7A5F52 0 50%, #614A40 50% 100%); }
+#signals .sg.down { transform: translateY(3px); box-shadow: 0 1px 0 rgba(43,27,23,.4); filter: brightness(1.25); }
+#signals .sg svg { width: 66%; height: 66%; fill: none; stroke: var(--cream); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+#signals .l { grid-area: 1 / 1; } #signals .u { grid-area: 1 / 2; } #signals .r { grid-area: 1 / 3; } #signals .d { grid-area: 2 / 2; }
+#signals .u svg { transform: rotate(0deg); } #signals .r svg { transform: rotate(90deg); } #signals .d svg { transform: rotate(180deg); } #signals .l svg { transform: rotate(270deg); }
+#signals .w { grid-area: 2 / 1; background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+#signals .go { grid-area: 2 / 3; background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); font-size: clamp(13px, 4.4vmin, 19px); }
+/* ---- Captain's remote: a D-pad on the right of every screen but the round. Touch size follows the short side (44..72px); the
+   overlays keep clear of it (padding-right) so nothing they say sits under a button. */
+:root { --dp: clamp(44px, 18vmin, 72px); --dpgap: 6px; --rr: max(10px, calc(var(--sr) + 10px)); --rw: calc(var(--rr) + 3 * var(--dp) + 2 * var(--dpgap) + 12px); }
+/* the how-to card is the tightest screen: the D-pad shrinks to a bit over the minimum and the tile text a notch, so 4 tiles still fit beside it */
+body[data-remote=on][data-howto=open] { --dp: clamp(44px, 14vmin, 56px); --dpgap: 4px; }
+body[data-remote=on][data-howto=open] #howto .steps .tx { font-size: clamp(11px, 3.6vmin, 17px); }
+@media (max-width: 620px) { body[data-remote=on][data-howto=open] #howto .steps { grid-template-columns: 1fr; gap: 8px; } } /* the smallest phones: 4 tiles in one column, 2 lines each */
+#remote { position: fixed; z-index: 6; right: var(--rr); top: 50%; transform: translateY(-50%); display: none; grid-template: repeat(3, var(--dp)) / repeat(3, var(--dp)); gap: var(--dpgap); }
+body[data-remote=on] #remote { display: grid; }
+body[data-remote=on]:not([data-view=playing]) .overlay:not(#rotate) { padding-right: var(--rw); }
+#remote .rb { width: var(--dp); height: var(--dp); min-height: 0; padding: 0; border-radius: 18px; border-width: 3px; display: flex; align-items: center; justify-content: center; font-size: clamp(13px, 4.6vmin, 18px); line-height: 1; box-shadow: 0 4px 0 rgba(43,27,23,.4); background: linear-gradient(#85685A 0 50%, #6F5245 50% 100%); }
+#remote .rb:active, #remote .rb.down { transform: translateY(3px); box-shadow: 0 1px 0 rgba(43,27,23,.4); filter: brightness(1.15); }
+#remote .rb svg { width: 56%; height: 56%; fill: none; stroke: var(--cream); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+#remote .up { grid-area: 1 / 2; } #remote .left { grid-area: 2 / 1; } #remote .right { grid-area: 2 / 3; } #remote .down { grid-area: 3 / 2; }
+#remote .up svg { transform: rotate(0deg); } #remote .right svg { transform: rotate(90deg); } #remote .down svg { transform: rotate(180deg); } #remote .left svg { transform: rotate(270deg); }
+#remote .ok { grid-area: 2 / 2; font-size: clamp(17px, 6vmin, 24px); background: linear-gradient(var(--basil) 0 50%, var(--basil2) 50% 100%); }
+#remote .back { grid-area: 1 / 3; font-size: calc(var(--dp) * .23); background: linear-gradient(var(--tomato) 0 50%, var(--tomato2) 50% 100%); }
+#remote .help { grid-area: 1 / 1; color: var(--ink); text-shadow: none; font-size: clamp(20px, 7vmin, 28px); background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); }
+#remote .crown { grid-area: 3 / 1; display: flex; align-items: center; justify-content: center; font-size: clamp(20px, 7vmin, 30px); line-height: 1; pointer-events: none; }
+/* versus: the phone knows its team. A strip on the pad (top centre, never over the buttons) and a card in the lobby; the chef colour stays the chef's */
+#teamchip { position: absolute; top: max(4px, calc(var(--st) + 4px)); left: 50%; transform: translateX(-50%); display: none; align-items: center; gap: 6px; max-width: 46%; padding: 1px 10px; border: 2px solid var(--ink); border-radius: 12px; background: var(--tc, #888); color: #fff; font: 800 14px/20px var(--font); text-shadow: 0 2px 0 rgba(43,27,23,.45); white-space: nowrap; overflow: hidden; pointer-events: none; z-index: 4; }
+#teamchip small { font: 700 12px/20px var(--font); opacity: .92; overflow: hidden; text-overflow: ellipsis; }
+body[data-team=on][data-view=playing] #teamchip { display: flex; }
+#teamcard { display: none; align-items: center; gap: 10px; padding: 6px 16px; border: 4px solid var(--ink); border-radius: 16px; background: var(--tc, #888); color: #fff; font: 800 clamp(20px, 7vmin, 28px) var(--font); text-shadow: 0 3px 0 rgba(43,27,23,.45); box-shadow: 0 5px 0 rgba(43,27,23,.4); }
+#teamcard small { font: 700 clamp(13px, 4vmin, 16px) var(--font); opacity: .95; }
+#teamswap { display: none; font-size: 16px; padding: 4px 16px; min-height: 44px; background: linear-gradient(var(--cheese) 0 50%, var(--cheese2) 50% 100%); color: var(--ink); text-shadow: none; }
+#teamswap:disabled { filter: grayscale(.8); opacity: .6; }
+body[data-team=on][data-view=lobby] #teamcard { display: flex; }
+body[data-team=on][data-view=lobby] #teamswap { display: inline-block; }
+#hud { position: absolute; top: max(6px, calc(var(--st) + 6px)); left: var(--gutter); max-width: calc(73% - var(--bsz) - var(--gutter) - 10px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; line-height: 1.2; color: var(--c); opacity: .9; pointer-events: none; }
