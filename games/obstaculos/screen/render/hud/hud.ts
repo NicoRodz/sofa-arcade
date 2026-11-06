@@ -296,5 +296,5 @@ const cy0 = (y: number, s: number) => y - s * 0.35; // the glint of a full heart
 const easeBack = (t: number) => {
   const c1 = 1.70158,
     c3 = c1 + 1;
-  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
 };

@@ -19,7 +19,10 @@ const v2 = flag('v2', 'true') !== 'false';
 const seeds = Number(flag('seeds', '40'));
 const diff = flag('difficulty', 'normal') as Difficulty;
 const merge = (a: any, b: any) => {
-  for (const k of Object.keys(b)) typeof b[k] === 'object' ? merge(a[k], b[k]) : (a[k] = b[k]);
+  for (const k of Object.keys(b)) {
+    if (typeof b[k] === 'object') merge(a[k], b[k]);
+    else a[k] = b[k];
+  }
 };
 if (flag('tune')) merge(HAZARD_V2[diff], JSON.parse(flag('tune')!));
 const pct = (n: number, d: number) => (d ? (100 * n) / d : NaN).toFixed(1);
