@@ -55,28 +55,48 @@ interface Landing {
 // and platforms. Ties go to solid ground (a body never "stands on a one-way" when a solid is at the same height).
 function findLanding(b: Body, x: number, feetOld: number, feetNew: number, ctx: StepCtx): Landing | null {
   const lo = feetOld - LAND_EPS;
-  let best: Landing | null = null;
-  const consider = (top: number, platformId: number, oneWay: boolean, kind: number) => {
-    if (!best || top < best.top || (top === best.top && best.oneWay && !oneWay)) best = { top, platformId, oneWay, kind };
-  };
+  // The best candidate lives in locals (no closure, no object per candidate): the Landing is built once, at the end.
+  let found = false,
+    bTop = 0,
+    bId = -1,
+    bOneWay = false,
+    bKind = 0;
   const x0 = tileOf(x),
     x1 = tileOf(x + PLAYER_W - EPS);
   const ty0 = Math.ceil(lo / TILE),
     ty1 = Math.floor(feetNew / TILE);
+  const oneWays = b.dropFrames === 0;
   for (let ty = ty0; ty <= ty1; ty++) {
     for (let tx = x0; tx <= x1; tx++) {
       const k = tileAt(ctx.grid, tx, ty);
-      if (isSolidKind(k)) consider(ty * TILE, -1, false, k);
-      else if (isOneWayKind(k) && b.dropFrames === 0) consider(ty * TILE, -1, true, k);
+      const solid = isSolidKind(k);
+      if (solid || (oneWays && isOneWayKind(k))) {
+        const top = ty * TILE;
+        if (!found || top < bTop || (top === bTop && bOneWay && solid)) {
+          found = true;
+          bTop = top;
+          bId = -1;
+          bOneWay = !solid;
+          bKind = k;
+        }
+      }
     }
   }
-  if (b.dropFrames === 0) {
+  if (oneWays) {
     for (const p of ctx.platforms) {
       if (p.id === b.id || !p.oneWay) continue;
-      if (x < p.x + p.w && x + PLAYER_W > p.x && p.y >= lo && p.y <= feetNew) consider(p.y, p.id, true, -1);
+      if (x < p.x + p.w && x + PLAYER_W > p.x && p.y >= lo && p.y <= feetNew) {
+        if (!found || p.y < bTop) {
+          found = true;
+          bTop = p.y;
+          bId = p.id;
+          bOneWay = true;
+          bKind = -1;
+        }
+      }
     }
   }
-  return best;
+  return found ? { top: bTop, platformId: bId, oneWay: bOneWay, kind: bKind } : null;
 }
 
 export function stepPlayer(b: Body, input: StepInput, ctx: StepCtx): StepEvents {
