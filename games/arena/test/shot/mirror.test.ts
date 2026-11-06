@@ -34,7 +34,10 @@ describe('replay: the same seed and inputs give the same hash at the same tick',
         cfg([0, 1, 0, 1, 0, 1], { events: true, phases: true, eventsPlus: true, rescue: true, living: true, mapSeed: 777 }),
       );
       const hashes: number[] = [];
-      for (let k = 0; k < 6; k++) play(s, 9, 600, false), hashes.push(hashManchazo(s));
+      for (let k = 0; k < 6; k++) {
+        play(s, 9, 600, false);
+        hashes.push(hashManchazo(s));
+      }
       return hashes;
     };
     expect(run()).toEqual(run());

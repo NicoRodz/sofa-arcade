@@ -27,7 +27,10 @@ const wall = (m: TileMap, x: number, y: number) => {
 function open(edit: (put: (x: number, y: number) => void) => void = () => {}): TileMap {
   const exits = [1, 5, 9, 13].map((y) => [1, y] as const);
   const m = emptyMap([exits, exits.map(([x, y]) => [MAP_W - 1 - x, y] as const)]);
-  edit((x, y) => (wall(m, x, y), wall(m, MAP_W - 1 - x, y)));
+  edit((x, y) => {
+    wall(m, x, y);
+    wall(m, MAP_W - 1 - x, y);
+  });
   return m;
 }
 /** A map that validates (a generated one), as a copy to damage. */
@@ -59,7 +62,11 @@ describe('validators V1-V7: each is green on a fair map and red on its own defec
 
   it('V3 exits: an exit with fewer than 2 free directions', () => {
     expect(v3Exits(fair())).toBeNull();
-    const m = open((put) => (put(1, 4), put(0, 5), put(2, 5)));
+    const m = open((put) => {
+      put(1, 4);
+      put(0, 5);
+      put(2, 5);
+    });
     expect(v3Exits(m)).toBe('team 0 exit (1,5) has 1 free direction(s)');
   });
 
@@ -86,8 +93,10 @@ describe('validators V1-V7: each is green on a fair map and red on its own defec
     const squeezed = fair();
     for (let y = 9; y < MAP_H; y++)
       for (let x = 2; x < 12; x++)
-        if (squeezed.solid[y * MAP_W + x] === 0 && y !== squeezed.spawns[0]![3]![1])
-          (squeezed.solid[y * MAP_W + x] = 1), (squeezed.solid[y * MAP_W + MAP_W - 1 - x] = 1);
+        if (squeezed.solid[y * MAP_W + x] === 0 && y !== squeezed.spawns[0]![3]![1]) {
+          squeezed.solid[y * MAP_W + x] = 1;
+          squeezed.solid[y * MAP_W + MAP_W - 1 - x] = 1;
+        }
     expect(v5EvenArea(squeezed)).toMatch(/^team 0 regions /);
   });
 
@@ -95,7 +104,10 @@ describe('validators V1-V7: each is green on a fair map and red on its own defec
     expect(v6DeadEnds(fair())).toBeNull();
     const closed = (from: number) =>
       open((put) => {
-        for (let x = from; x <= 9; x++) put(x, 5), put(x, 7);
+        for (let x = from; x <= 9; x++) {
+          put(x, 5);
+          put(x, 7);
+        }
         put(9, 6);
       });
     expect(v6DeadEnds(closed(5))).toBe('dead end of more than 3 tiles at (8,6)'); // (8,6) (7,6) (6,6) (5,6)

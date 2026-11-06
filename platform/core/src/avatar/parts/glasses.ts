@@ -21,8 +21,13 @@ export function drawGlasses(p: Painter, c: DrawCtx): void {
       rim(p, 4, INK);
     }
     p.beginPath();
-    if (side) p.moveTo(c.hx + 1, -70), p.lineTo(c.hx - 8, -69);
-    else p.moveTo(-1, -71), p.lineTo(1, -71);
+    if (side) {
+      p.moveTo(c.hx + 1, -70);
+      p.lineTo(c.hx - 8, -69);
+    } else {
+      p.moveTo(-1, -71);
+      p.lineTo(1, -71);
+    }
     rim(p, 3, INK);
   } else if (c.ap.gl === 2) {
     for (const x of xs) {

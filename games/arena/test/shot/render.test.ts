@@ -33,7 +33,10 @@ describe('feed and cues: the six moments of a shot', () => {
     const feed = new Feed();
     tick(s, press(0));
     feed.observe(s);
-    for (let k = 0; k < 60; k++) tick(s), feed.observe(s);
+    for (let k = 0; k < 60; k++) {
+      tick(s);
+      feed.observe(s);
+    }
     const ev = feed.log.filter((e) => e.type === 'shot');
     expect(ev.map((e) => e.type === 'shot' && e.what)).toEqual(['launch', 'hit']);
     expect(ev[0]).toMatchObject({ body: 0, slot: 0, team: 0, kind: 'dizzy' });
@@ -63,7 +66,10 @@ describe('feed and cues: the six moments of a shot', () => {
       [pass, press(1)],
     ] as const) {
       const feed = new Feed();
-      for (let k = 0; k < 80; k++) tick(s, k === 0 ? inputs : {}), feed.observe(s);
+      for (let k = 0; k < 80; k++) {
+        tick(s, k === 0 ? inputs : {});
+        feed.observe(s);
+      }
       feed.log.forEach((e) => e.type === 'shot' && kinds.add(e.what));
     }
     const cancel = duel('glue');
@@ -78,7 +84,10 @@ describe('feed and cues: the six moments of a shot', () => {
     const feed = new Feed();
     tick(s, press(0));
     feed.observe(s);
-    for (let k = 0; k < 60; k++) tick(s), feed.observe(s);
+    for (let k = 0; k < 60; k++) {
+      tick(s);
+      feed.observe(s);
+    }
     const got: string[] = [];
     setCueSink((c) => void got.push(c));
     playCues(feed.fresh().filter((e) => e.type === 'shot'));

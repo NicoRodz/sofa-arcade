@@ -14,7 +14,10 @@ const taken: Record<Archetype, number> = { pasillos: 0, islas: 0, plaza: 0, ocho
 for (let i = 0; ARCHETYPES.some((k) => taken[k] < PER_KIND); i++) {
   const seed = (i * 3359 + 17) % SEED_SPACE;
   const k = archetypeOf(seed);
-  if (taken[k] < PER_KIND) SEEDS.push(seed), taken[k]++;
+  if (taken[k] < PER_KIND) {
+    SEEDS.push(seed);
+    taken[k]++;
+  }
 }
 
 describe('map generator over 10000 seeds', () => {

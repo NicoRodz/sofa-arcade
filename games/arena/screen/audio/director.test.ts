@@ -80,7 +80,10 @@ describe('createArenaAudio', () => {
   it('creates nothing on its own, nothing in the menu, and wires the cue sink on the first lobby frame', () => {
     let made = 0;
     const { log, sound } = fake();
-    const a = createArenaAudio(() => (made++, sound));
+    const a = createArenaAudio(() => {
+      made++;
+      return sound;
+    });
     expect(made).toBe(0);
     a.sync({ state: null, phase: 'menu', live: true });
     expect(made).toBe(0);

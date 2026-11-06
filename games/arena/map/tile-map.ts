@@ -45,6 +45,10 @@ export function hashMap(m: TileMap): number {
   let h = 0x811c9dc5;
   const mix = (v: number) => (h = Math.imul(h ^ (v & 0xff), 0x01000193));
   for (const v of m.solid) mix(v);
-  for (const team of m.spawns) for (const [x, y] of team) mix(x), mix(y);
+  for (const team of m.spawns)
+    for (const [x, y] of team) {
+      mix(x);
+      mix(y);
+    }
   return h >>> 0;
 }
