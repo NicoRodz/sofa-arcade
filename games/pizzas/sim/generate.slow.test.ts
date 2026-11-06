@@ -48,8 +48,8 @@ describe('generate', () => {
     expect(rows.size).toBeGreaterThan(20);
   });
 
-  // Timeout 120 s: ~41 s alone, but with the machine saturated (full suite in parallel) 60 s gave false reds.
-  it('500 seeds per difficulty: all valid, at least 90% inside the band (2 players)', { timeout: 120_000 }, () => {
+  // Timeout 180 s: ~7 s alone but ~77 s inside the full test:slow run (CPU contention); 60 s was too tight and gave false reds.
+  it('500 seeds per difficulty: all valid, at least 90% inside the band (2 players)', { timeout: 180_000 }, () => {
     for (const d of DIFFICULTIES) {
       let inside = 0;
       for (let seed = 0; seed < 500; seed++) {
