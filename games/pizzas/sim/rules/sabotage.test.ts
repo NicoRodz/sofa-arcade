@@ -87,11 +87,6 @@ function load(g: Game, id: number) {
   return p;
 }
 const flights = (g: Game, team: number) => g.sab!.teams[team]!.flights;
-/** Throws the bag that is loaded (B), waits for it to land. */
-function throwAndLand(g: Game, id: number) {
-  pressB(g, id);
-  run(g, LAND_AFTER_MS + 40);
-}
 const hashOf = (g: Game) =>
   JSON.stringify([
     [...g.players.values()].map((p) => [p.x, p.y, p.item, p.slip, p.immuneUntil, p.inTrash]),
@@ -384,9 +379,6 @@ describe('the catapult: load, aim, throw', () => {
 });
 
 describe('limits: cooldown, per minute, piles', () => {
-  const nextBag = (g: Game, team: number, n = 1) => {
-    g.sab!.teams[team]!.bags = n;
-  };
   it('Suave: 12 s between two throws of a team; the catapult refuses the bag meanwhile (the chef keeps it)', () => {
     const { g, log } = mk({ mode: 'soft' });
     load(g, 1);

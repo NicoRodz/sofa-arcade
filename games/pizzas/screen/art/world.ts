@@ -45,7 +45,7 @@ export class World {
     private scene: Phaser.Scene,
     private game: Game,
     private players: () => Map<number, PublicPlayer>,
-    private puestos: () => Map<number, PuestoView>,
+    puestos: () => Map<number, PuestoView>,
     bus: Emitter<GameEvents>,
     mapId: string,
     seed: number,

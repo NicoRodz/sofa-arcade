@@ -30,7 +30,6 @@ describe('mirror on a generated map: swapping the teams swaps the result', () =>
       const teams = [0, 1, 0, 1, 0];
       const slots = teams.map((_t, i) => i);
       const a = createManchazo({ slots, teams, seed: 4, mapSeed });
-      const b = createManchazo({ slots, teams: teams.map((t) => 1 - t), seed: 4, mapSeed });
       expect(a.mapFallback).toBe(false);
       expect(a.match.paintable).toBeLessThan(MAP_W * MAP_H);
       for (const rs of [101, 202]) {

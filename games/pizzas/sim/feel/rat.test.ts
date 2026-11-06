@@ -5,7 +5,6 @@ import { RAT_SPEED } from '../rules/midround';
 import { TICK_MS, addPlayer, createGame, tick, type Controls, type Game } from '../overcooked';
 import { RAT_BONUS, RAT_GENTLE } from './rat';
 
-const idle: Controls = { x: 0, y: 0, a: 0, b: false };
 const MAP = fixedMap('1')!;
 type Log = { t: number; type: string; p: Record<string, unknown> }[];
 

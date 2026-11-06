@@ -73,7 +73,6 @@ describe('mid-round events over the relay', () => {
 
   it('a blackout: no oven makes progress while the lights are out, even with two cooks working', async () => {
     const dark: number[][] = []; // the progress of every oven, each frame of the blackout
-    let at = 0;
     const r = await playRound('ev4', {
       roles: ['cook', 'cook'],
       seconds: 40,
@@ -81,7 +80,6 @@ describe('mid-round events over the relay', () => {
       setup: (g) => forceEvent(g, 'blackout', 12_000),
       before: (g) => {
         if (g.mid!.dark) {
-          at ||= g.time;
           dark.push(g.stations.filter((s) => s.kind === 'pot' && !s.done).map((s) => s.progress));
         }
       },

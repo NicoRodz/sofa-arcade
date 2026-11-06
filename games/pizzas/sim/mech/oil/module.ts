@@ -135,8 +135,7 @@ export const oilModule: MechModule = {
   },
   tickTiles(g) {
     const e = ext(g),
-      tile = g.mech!.tile!,
-      left = g.mech!.tileT!;
+      tile = g.mech!.tile!;
     e.tick++;
     for (const [k, n] of Object.entries(e.work)) {
       const idx = Number(k);
