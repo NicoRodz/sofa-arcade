@@ -11,7 +11,8 @@ const make = (): Game => {
   addPlayer(g, 1, 0, 0);
   return g;
 };
-const face = (g: Game, x: number, y: number, fx: number, fy: number) => Object.assign(g.players.get(1)!, { x: x + 0.5, y: y + 0.5, vx: 0, vy: 0, fx, fy });
+const face = (g: Game, x: number, y: number, fx: number, fy: number) =>
+  Object.assign(g.players.get(1)!, { x: x + 0.5, y: y + 0.5, vx: 0, vy: 0, fx, fy });
 const run = (g: Game, k: number, c: Map<number, Controls> = idle) => {
   for (let i = 0; i < k; i++) tick(g, c);
 };
