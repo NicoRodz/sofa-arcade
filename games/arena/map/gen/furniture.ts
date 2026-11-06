@@ -49,7 +49,10 @@ const TOTAL_WEIGHT = PIECES.reduce((n, p) => n + p.weight, 0);
 
 export function pickPiece(rng: Rng): Piece {
   let r = rng() * TOTAL_WEIGHT;
-  for (const p of PIECES) if ((r -= p.weight) < 0) return p;
+  for (const p of PIECES) {
+    r -= p.weight;
+    if (r < 0) return p;
+  }
   return PIECES[0]!;
 }
 

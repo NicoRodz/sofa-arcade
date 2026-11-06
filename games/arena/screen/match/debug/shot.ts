@@ -15,8 +15,9 @@ function freeRun(s: ManchazoState, n: number): [number, number] | null {
   return null;
 }
 const index = (s: ManchazoState, slot: number) => s.grid.bodies.findIndex((b) => b.slot === slot);
-const put = (s: ManchazoState, i: number, tx: number, ty: number) =>
-  void ([s.grid.bodies[i]!.x, s.grid.bodies[i]!.y] = [tx * 16 + 8, ty * 16 + 8]);
+const put = (s: ManchazoState, i: number, tx: number, ty: number) => {
+  [s.grid.bodies[i]!.x, s.grid.bodies[i]!.y] = [tx * 16 + 8, ty * 16 + 8];
+};
 
 export function shotDebug(get: Get) {
   const hold = (fn: () => void) => timers.add(window.setInterval(fn, 4));
@@ -36,7 +37,10 @@ export function shotDebug(get: Get) {
       hold(() => {
         s.match.bodies[a]!.stun = 0;
         s.match.bodies[a]!.face = 0;
-        if (aim) return void (sh.prep[a] = AIM_TICKS - 5);
+        if (aim) {
+          sh.prep[a] = AIM_TICKS - 5;
+          return;
+        }
         sh.prep[a] = 0;
         sh.shots = [
           {

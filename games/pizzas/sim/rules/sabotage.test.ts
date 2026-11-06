@@ -52,7 +52,8 @@ function mk(o: { map?: string; mode?: SabotageMode; difficulty?: Difficulty; tea
     'interactInvalid',
   ] as const) {
     bus.on(k, ((p: never) => {
-      ((log[k] ??= []) as { t: number; p: unknown }[]).push({ t: g.time, p });
+      log[k] ??= [];
+      (log[k] as { t: number; p: unknown }[]).push({ t: g.time, p });
     }) as never);
   }
   teams.forEach((ids) => ids.forEach((id, rank) => addPlayer(g, id, rank, rank)));

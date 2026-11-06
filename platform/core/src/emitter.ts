@@ -2,7 +2,12 @@
 export class Emitter<M extends object> {
   private handlers: { [K in keyof M]?: Set<(p: M[K]) => void> } = {};
   on<K extends keyof M>(type: K, fn: (p: M[K]) => void): () => void {
-    (this.handlers[type] ??= new Set()).add(fn);
+    let set = this.handlers[type];
+    if (!set) {
+      set = new Set();
+      this.handlers[type] = set;
+    }
+    set.add(fn);
     return () => {
       this.handlers[type]?.delete(fn);
     };

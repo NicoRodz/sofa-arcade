@@ -25,7 +25,8 @@ export function addFloorItem(
   if (f.kind === 'trash')
     for (const p of g.players.values()) {
       if (p.ghost || Math.hypot(p.x - (f.tx + 0.5), p.y - (f.ty + 0.5)) > SLIP_TRIGGER) continue;
-      (p.inTrash ??= []).push(f.id);
+      p.inTrash ??= [];
+      p.inTrash.push(f.id);
     }
   return f;
 }

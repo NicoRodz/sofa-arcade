@@ -33,8 +33,11 @@ const DRAW: Record<Exclude<FoodKind, RecipeFoodKind>, (c: Ctx) => void> = {
 // the extra kinds are built on first use (they draw with the base pizza and tray of this file, which are all defined by then)
 let extra: Record<RecipeFoodKind, (c: Ctx) => void> | null = null;
 
-const drawerOf = (k: FoodKind): ((c: Ctx) => void) =>
-  k in DRAW ? DRAW[k as keyof typeof DRAW] : (extra ??= extraDraw({ pizzaRaw, pizzaDone, tray }))[k as RecipeFoodKind];
+const drawerOf = (k: FoodKind): ((c: Ctx) => void) => {
+  if (k in DRAW) return DRAW[k as keyof typeof DRAW];
+  extra ??= extraDraw({ pizzaRaw, pizzaDone, tray });
+  return extra[k as RecipeFoodKind];
+};
 
 export const drawFood = (c: Ctx, k: FoodKind) => drawerOf(k)(c);
 

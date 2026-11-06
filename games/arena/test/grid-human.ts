@@ -117,7 +117,10 @@ export class Human {
     const tx = Math.floor(b.x / 16),
       ty = Math.floor(b.y / 16);
     while (!this.done && CIRCUIT[this.next]![0] === tx && CIRCUIT[this.next]![1] === ty) this.next++;
-    if (this.done) return ((this.target = NONE), { sx: 0, sy: 0 });
+    if (this.done) {
+      this.target = NONE;
+      return { sx: 0, sy: 0 };
+    }
     this.target = this.decide(b, tx, ty);
     if (this.target === NONE) return { sx: 0, sy: 0 };
     if (b.dir !== NONE) this.last = b.dir;

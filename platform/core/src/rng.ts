@@ -18,6 +18,9 @@ export const pick = <T>(rng: Rng, list: readonly T[]): T => list[Math.floor(rng(
 export function pickWeighted<T extends string>(rng: Rng, weights: Record<T, number>): T {
   const entries = (Object.entries(weights) as [T, number][]).filter(([, w]) => w > 0);
   let r = rng() * entries.reduce((n, [, w]) => n + w, 0);
-  for (const [k, w] of entries) if ((r -= w) < 0) return k;
+  for (const [k, w] of entries) {
+    r -= w;
+    if (r < 0) return k;
+  }
   return entries[entries.length - 1]![0];
 }

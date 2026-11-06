@@ -18,7 +18,8 @@ function mk(assist: number[]) {
   const g = createGame({ rows: fixedMap('11')!.rows, mapId: '11', n: 2, seed: 5, bus, burn: true, fire: true, assist, hazardsV2: false });
   for (const k of ['fire:out', 'douseStart', 'douseStop'] as const)
     bus.on(k, (() => {
-      (log[k] ??= []).push({ t: g.time });
+      log[k] ??= [];
+      log[k].push({ t: g.time });
     }) as never);
   addPlayer(g, 1, 0, 0);
   return { g, log };

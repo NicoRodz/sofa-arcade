@@ -116,7 +116,10 @@ export class Feed {
       const b = s.grid.bodies[e.body]!;
       this.log.push({ type: 'wrap', tick: e.tick, body: e.body, slot: b.slot, team: b.team, what: e.kind });
     }
-    if (isHidden(s)) return void (this.hist = []); // the last 10 s are played blind: no swing may leak the score
+    if (isHidden(s)) {
+      this.hist = [];
+      return;
+    } // the last 10 s are played blind: no swing may leak the score
     const now = pct(s);
     this.hist.push(now);
     if (this.hist.length > RECENT_WINDOW + 1) this.hist.shift();

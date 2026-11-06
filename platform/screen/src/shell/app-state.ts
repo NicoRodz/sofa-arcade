@@ -57,7 +57,8 @@ export const app = {
   lastKeyAt: null as number | null, // when the Mac keyboard last pressed something: it keeps the last word over the D-pad
   phase: 'menu' as Phase, // Pichiclub start: the screen picks the game, then that game's lobby
   get config(): LobbyConfig {
-    return (config ??= { ...defaultConfig(), seed: (Math.random() * 2 ** 32) >>> 0 } as LobbyConfig);
+    config ??= { ...defaultConfig(), seed: (Math.random() * 2 ** 32) >>> 0 } as LobbyConfig;
+    return config;
   },
   set config(next: LobbyConfig) {
     config = next;

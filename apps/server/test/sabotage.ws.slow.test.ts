@@ -170,7 +170,8 @@ async function playRound(
     bus: screen.bus,
     countdownMs: COUNTDOWN_MS,
   });
-  const game = (screen.game = round.game);
+  screen.game = round.game;
+  const game = screen.game;
   game.params.roundMs = o.seconds * 1000;
   game.sab?.teams.forEach((t) => {
     t.bags = o.bags ?? 0;

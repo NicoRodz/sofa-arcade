@@ -48,7 +48,8 @@ function mk(o: { map?: string; difficulty?: Difficulty; n?: number; burn?: boole
   ] as const;
   for (const k of kinds)
     bus.on(k, ((p: never) => {
-      ((log[k] ??= []) as { t: number; p: unknown }[]).push({ t: g.time, p });
+      log[k] ??= [];
+      (log[k] as { t: number; p: unknown }[]).push({ t: g.time, p });
     }) as never);
   for (let i = 1; i <= (o.n ?? 1); i++) addPlayer(g, i, i - 1, i - 1);
   return { g, log };

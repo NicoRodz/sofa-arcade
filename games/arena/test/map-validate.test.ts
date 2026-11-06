@@ -20,7 +20,9 @@ import {
   type TileMap,
 } from '../map';
 
-const wall = (m: TileMap, x: number, y: number) => void (m.solid[y * MAP_W + x] = 1);
+const wall = (m: TileMap, x: number, y: number) => {
+  m.solid[y * MAP_W + x] = 1;
+};
 /** An open mirrored map with 4 exits per team (rows 1, 5, 9, 13); `edit` puts furniture on the left half and its mirror image. */
 function open(edit: (put: (x: number, y: number) => void) => void = () => {}): TileMap {
   const exits = [1, 5, 9, 13].map((y) => [1, y] as const);

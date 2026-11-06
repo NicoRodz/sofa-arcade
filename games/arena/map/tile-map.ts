@@ -31,8 +31,13 @@ let f0: TileMap | undefined;
 export function f0Map(): TileMap {
   if (f0) return f0;
   const m = emptyMap([SPAWNS_LEFT, SPAWNS_LEFT.map(mirrorTile)]);
-  MAP_ROWS.forEach((row, y) => [...row].forEach((c, x) => (m.solid[y * MAP_W + x] = c === '#' ? 1 : 0)));
-  return (f0 = m);
+  MAP_ROWS.forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      m.solid[y * MAP_W + x] = c === '#' ? 1 : 0;
+    }),
+  );
+  f0 = m;
+  return m;
 }
 
 /** FNV-1a over the furniture and the exits: part of the round's hash, so a replay on another map does not match. */
