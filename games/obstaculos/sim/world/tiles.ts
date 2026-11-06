@@ -45,11 +45,33 @@ export function onIce(g: TileGrid, b: { x: number; y: number }): boolean {
   for (let tx = tileOf(b.x), end = tileOf(b.x + PLAYER_W - EPS); tx <= end; tx++) if (tileAt(g, tx, row) === T.Ice) return true;
   return false;
 }
-export const boxHitsSolid = (g: TileGrid, x: number, y: number, w: number, h: number): boolean => boxTouches(g, x, y, w, h, isSolidKind);
+// The hot callers (every step of every simulated jump) ask for a fixed kind set: a lookup table per set and one loop, no callback per tile.
+const lut = (pred: (k: number) => boolean): Uint8Array => Uint8Array.from({ length: 256 }, (_, k) => (pred(k) ? 1 : 0));
+const SOLID = lut(isSolidKind);
+const HAZARD = lut(isHazardKind);
+// boxTouches with a table instead of a predicate; the same cells in the same order, with tileAt's outside rule inlined (left/right: solid, above/below: open).
+function boxTouchesIn(g: TileGrid, x: number, y: number, w: number, h: number, table: Uint8Array): boolean {
+  const x0 = tileOf(x),
+    x1 = tileOf(x + w - EPS),
+    y0 = tileOf(y),
+    y1 = tileOf(y + h - EPS);
+  const gw = g.w,
+    gh = g.h,
+    cells = g.cells;
+  for (let ty = y0; ty <= y1; ty++) {
+    const row = ty >= 0 && ty < gh ? ty * gw : -1;
+    for (let tx = x0; tx <= x1; tx++) {
+      const k = tx < 0 || tx >= gw ? T.Solid : row >= 0 ? cells[row + tx]! : T.Empty;
+      if (table[k]) return true;
+    }
+  }
+  return false;
+}
+export const boxHitsSolid = (g: TileGrid, x: number, y: number, w: number, h: number): boolean => boxTouchesIn(g, x, y, w, h, SOLID);
 
 // Hazard overlap with the box shrunk a few px so a graze does not kill.
 export const HAZARD_SHRINK = 4;
 export const boxHitsHazard = (g: TileGrid, x: number, y: number, w: number, h: number): boolean =>
-  boxTouches(g, x + HAZARD_SHRINK, y + HAZARD_SHRINK, w - 2 * HAZARD_SHRINK, h - 2 * HAZARD_SHRINK, isHazardKind);
+  boxTouchesIn(g, x + HAZARD_SHRINK, y + HAZARD_SHRINK, w - 2 * HAZARD_SHRINK, h - 2 * HAZARD_SHRINK, HAZARD);
 
 export { isOneWayKind, isSolidKind, isHazardKind };
