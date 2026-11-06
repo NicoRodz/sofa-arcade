@@ -14,7 +14,9 @@ const cells = (c: Cells, ok: (x: number, y: number) => boolean): P[] =>
 const find = (c: Cells, ch: string): P[] => c.flatMap((row, y) => row.flatMap((v, x) => (v === ch ? [[x, y] as P] : [])));
 const manhattan = (a: P, b: P) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
 const pick = <T>(rng: Rng, xs: readonly T[]): T | undefined => xs[Math.floor(rng() * xs.length)];
-const set = (c: Cells, [x, y]: P, ch: string) => void (c[y]![x] = ch);
+const set = (c: Cells, [x, y]: P, ch: string) => {
+  c[y]![x] = ch;
+};
 const farFrom = (c: Cells, p: P, chs: string, d: number) => chs.split('').every((ch) => find(c, ch).every((q) => manhattan(p, q) >= d));
 
 const kneader: Decorator = (c, rng) => {

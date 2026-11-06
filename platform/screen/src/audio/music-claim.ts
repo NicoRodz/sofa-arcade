@@ -3,7 +3,8 @@
 let claimed: Set<string> | undefined;
 
 export function claimMusic(gameId: string): void {
-  (claimed ??= new Set()).add(gameId);
+  claimed ??= new Set();
+  claimed.add(gameId);
 }
 export const musicClaimed = (gameId: string): boolean => claimed?.has(gameId) ?? false;
 

@@ -1,1 +1,1 @@
-export { type ControllerGame, type ControllerHost } from './contract';
+export type { ControllerGame, ControllerHost } from './contract';

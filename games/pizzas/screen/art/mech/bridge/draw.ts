@@ -20,7 +20,7 @@ export const drawBridges: Draw = (scene, g, t) => {
       ty = Math.floor(i / 16),
       x = OX + tx * TILE,
       y = OY + ty * TILE;
-    const vertical = g.grid[ty - 1]?.[tx]?.kind === 'water' || g.grid[ty + 1]?.[tx]?.kind === 'water' ? false : true; // planks run across the ditch, along the way a chef crosses
+    const vertical = !(g.grid[ty - 1]?.[tx]?.kind === 'water' || g.grid[ty + 1]?.[tx]?.kind === 'water'); // planks run across the ditch, along the way a chef crosses
     if (isBroken(g, tx, ty)) {
       const left = (b.brokenUntil - (g.mech!.ext!.bridge as { tick: number }).tick) / BRIDGE_MEND_TICKS; // 1 .. 0: how long until it mends
       for (let s = 0; s < 4; s++)

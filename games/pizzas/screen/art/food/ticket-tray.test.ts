@@ -17,9 +17,18 @@ const fake = (o: Partial<Fake>): Fake => {
     alpha: 1,
     visible: true,
     setScale: () => f,
-    setAlpha: (a) => ((f.alpha = a), f),
-    setVisible: (v) => ((f.visible = v), f),
-    setText: (t) => ((f.text = t), f),
+    setAlpha: (a) => {
+      f.alpha = a;
+      return f;
+    },
+    setVisible: (v) => {
+      f.visible = v;
+      return f;
+    },
+    setText: (t) => {
+      f.text = t;
+      return f;
+    },
     ...o,
   };
   made.push(f);

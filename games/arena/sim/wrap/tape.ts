@@ -27,7 +27,7 @@ export const underTape = (w: WrapState, x: number, y: number): boolean => {
 /** The wall-like cut for `blastTiles`, or undefined when no tape is down (so nothing changes in a round without tape). */
 export const tapeCut = (s: ManchazoState): ((x: number, y: number) => boolean) | undefined => {
   const w = s.match.sab?.plus?.wrap;
-  return w && w.strips.length ? (x, y) => underTape(w, x, y) : undefined;
+  return w?.strips.length ? (x, y) => underTape(w, x, y) : undefined;
 };
 
 /** Button B with the tape: the line is fixed now (where the body stands and faces), lands TAPE_WINDUP_TICKS later. */

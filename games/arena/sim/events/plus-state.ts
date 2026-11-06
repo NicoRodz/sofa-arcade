@@ -30,7 +30,7 @@ export function createPlusEvents(map: TileMap, seed: number, living: readonly Li
 export function plusEventWords(p: PlusEvents): number[] {
   return [
     ...p.moves.flatMap((m) => [m.from[0], m.from[1], m.to[0], m.to[1]]),
-    ...p.balloons.flatMap(([x, y]) => [x, y]),
+    ...p.balloons.flat(),
     p.contagion ? p.contagion.fireAt : -1,
     p.contagion?.flipped ?? -2,
     p.move ? p.move.at : -1,

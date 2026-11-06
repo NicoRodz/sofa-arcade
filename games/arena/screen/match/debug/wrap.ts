@@ -42,7 +42,12 @@ export function wrapDebug(get: Get) {
       s.match.sab!.held[a] = 'sponge';
       startSponge(s, a);
       if (what === 'soak') {
-        timers.add(window.setInterval(() => ((plus.sponge[a] = 300), (plus.wrap!.soak[a] = 40)), 4));
+        timers.add(
+          window.setInterval(() => {
+            plus.sponge[a] = 300;
+            plus.wrap!.soak[a] = 40;
+          }, 4),
+        );
         return y;
       }
       squeezeSponge(s, a); // the diamond fills with `team`'s colour; the flash is held on screen

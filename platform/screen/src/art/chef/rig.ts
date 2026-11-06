@@ -116,7 +116,8 @@ export class Chef {
     this.mouth = at('chef_mouth_smile', 0, ANCHORS.mouthY);
     this.fb = at(`chef_fb_${slot % 8}`);
     this.drop = at('chef_drop', ANCHORS.dropX, ANCHORS.dropY).setVisible(false);
-    const hat = (this.hat = at(`chef_hat_${slot % 8}`));
+    this.hat = at(`chef_hat_${slot % 8}`);
+    const hat = this.hat;
     this.prop = at(`chef_prop_${slot % 8}`).setVisible(false);
     this.blades = at('chef_blades', 0, hatTop(slot) - PROP_Y).setVisible(false);
     this.head = scene.add.container(0, 0, [
@@ -157,7 +158,8 @@ export class Chef {
     const id = `${JSON.stringify(ap)}|${role}`;
     if (id === this.lookId) return;
     this.lookId = id;
-    const k = (this.look = lookTextures(this.scene, ap, role));
+    this.look = lookTextures(this.scene, ap, role);
+    const k = this.look;
     this.torso.setTexture(k.torsoF);
     this.torsoB.setTexture(k.torsoB);
     this.headF.setTexture(k.headF);

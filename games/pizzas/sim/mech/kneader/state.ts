@@ -30,13 +30,17 @@ export function scanHandles(g: Game, s: Station): [number, number][] {
       ];
   return [];
 }
-export const setHandles = (g: Game, idx: number, h: [number, number][]) => void (ext(g).handles[idx] = h);
+export const setHandles = (g: Game, idx: number, h: [number, number][]) => {
+  ext(g).handles[idx] = h;
+};
 export const handlesOf = (g: Game, idx: number): [number, number][] => ext(g).handles[idx] ?? [];
 /** 0 or 1 when the chef stands on that handle of M, -1 otherwise. */
 export const handleOf = (g: Game, idx: number, p: Player): number =>
   handlesOf(g, idx).findIndex(([x, y]) => x === Math.floor(p.x) && y === Math.floor(p.y));
 export const aloneTicks = (g: Game, idx: number) => ext(g).alone[idx] ?? 0;
-export const setAlone = (g: Game, idx: number, v: number) => void (ext(g).alone[idx] = v);
+export const setAlone = (g: Game, idx: number, v: number) => {
+  ext(g).alone[idx] = v;
+};
 
 /** The kneader slice of a station, or undefined when the station is not an M of this round. */
 export const slot = (g: Game, s: Station | null) => (s && s.kind === 'kneader' ? g.mech?.kneader?.[g.stations.indexOf(s)] : undefined);

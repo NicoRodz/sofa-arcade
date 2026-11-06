@@ -58,7 +58,12 @@ export function versusLayout(g: Grid, sigmaName: keyof typeof SIGMAS, shared: re
   }
   // kitchens: regions joined through counters (items cross there), except declared shared tiles
   const root = Array.from({ length: count }, (_v, i) => i);
-  const find = (i: number): number => (root[i] === i ? i : (root[i] = find(root[i]!)));
+  const find = (i: number): number => {
+    if (root[i] === i) return i;
+    const r = find(root[i]!);
+    root[i] = r;
+    return r;
+  };
   const joins: { pos: Pos; comps: number[] }[] = [];
   g.forEach((row, y) =>
     row.forEach((t, x) => {

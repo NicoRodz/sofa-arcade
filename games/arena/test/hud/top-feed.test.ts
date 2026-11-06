@@ -122,7 +122,10 @@ describe('the feed reads a "tomó" off the hands', () => {
   it('a hand that fills up logs a grab; playing the card does not; the log keeps no grab', () => {
     const s = plusRound([0, 1]);
     const f = new Feed();
-    for (let k = 0; k < 3; k++) step(s, {}), f.observe(s);
+    for (let k = 0; k < 3; k++) {
+      step(s, {});
+      f.observe(s);
+    }
     give(s, 1, 'roller');
     step(s, {});
     f.observe(s);

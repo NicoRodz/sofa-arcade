@@ -352,8 +352,7 @@ export class StationViews {
     }
     v.wasDone = st.done;
     if (burnt) {
-      // a burnt pizza smokes black until somebody takes it out
-      v.smokeT -= dtMs;
+      v.smokeT -= dtMs; // a burnt pizza smokes black until somebody takes it out
       if (v.smokeT <= 0) {
         v.smokeT = 150;
         this.fx.sootPuff(v.cx + (Math.random() - 0.5) * TILE * 0.3, v.cy + TILE * 0.05);
@@ -380,7 +379,8 @@ export class StationViews {
       v.bar?.root.destroy();
       v.knife?.destroy();
       v.bell?.destroy();
-      v.arrow && (this.scene.tweens.killTweensOf(v.arrow), v.arrow.destroy()); // the window's arrow bobs forever: stop its tween with it
+      if (v.arrow) this.scene.tweens.killTweensOf(v.arrow); // the window's arrow bobs forever: stop its tween with it
+      v.arrow?.destroy();
       v.ring?.destroy();
       v.glow?.destroy();
       v.rawPizza?.destroy();

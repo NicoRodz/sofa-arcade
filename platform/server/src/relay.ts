@@ -79,19 +79,18 @@ export function attachRelay(server: Server, { catalog, parse, defaultConfig }: R
   const rooms = new Map<string, Room>();
   const room = (code: string) => {
     let r = rooms.get(code);
-    if (!r)
-      rooms.set(
-        code,
-        (r = {
-          players: new Map(),
-          screens: new Set(),
-          nextId: 1,
-          phase: { phase: 'menu' },
-          config: defaultConfig,
-          captain: null,
-          menu: null,
-        }),
-      );
+    if (!r) {
+      r = {
+        players: new Map(),
+        screens: new Set(),
+        nextId: 1,
+        phase: { phase: 'menu' },
+        config: defaultConfig,
+        captain: null,
+        menu: null,
+      };
+      rooms.set(code, r);
+    }
     return r;
   };
   const toScreens = (r: Room, m: ServerMsg) => {

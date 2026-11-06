@@ -79,7 +79,7 @@ const unlock = () => {
 if (typeof document !== 'undefined') addEventListener('pointerdown', unlock, { passive: true }); // not in a node test
 
 function play(cue: Cue) {
-  if (!ctx || ctx.state !== 'running') return;
+  if (ctx?.state !== 'running') return;
   let t = ctx.currentTime;
   for (const [f, ms] of TONES[cue]) {
     const o = ctx.createOscillator();

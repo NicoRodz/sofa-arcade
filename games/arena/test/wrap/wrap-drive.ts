@@ -11,7 +11,9 @@ export const wrapRound = (teams: readonly number[] = [0, 1], seed = 5, extra: Pa
 export const plus = (s: ManchazoState) => s.match.sab!.plus!;
 export const wrap = (s: ManchazoState) => s.match.sab!.plus!.wrap!;
 /** Heading of body i: 0 right, 1 down, 2 left, 3 up. */
-export const face = (s: ManchazoState, i: number, dir: 0 | 1 | 2 | 3) => void (s.match.bodies[i]!.face = dir);
+export const face = (s: ManchazoState, i: number, dir: 0 | 1 | 2 | 3) => {
+  s.match.bodies[i]!.face = dir;
+};
 /** Sorted "x,y" of the tiles of the strips on the floor. */
 export const taped = (s: ManchazoState): string[] =>
   wrap(s)

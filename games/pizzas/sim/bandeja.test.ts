@@ -82,7 +82,10 @@ describe('when a Bandeja comes up', () => {
     let draws = 0;
     const seq0 = g.teams[0]!.orderSeq;
     const rng = g.teams[0]!.rng;
-    g.teams[0]!.rng = () => (draws++, rng());
+    g.teams[0]!.rng = () => {
+      draws++;
+      return rng();
+    };
     for (let t = 0; t < 60 * 120; t++) {
       if (t % 300 === 0) g.teams[0]!.orders = []; // an empty queue asks for more
       tick(g, new Map());

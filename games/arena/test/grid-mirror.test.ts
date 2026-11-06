@@ -32,7 +32,11 @@ describe('grid control mirror: the same run seen in a mirror (stick x flipped) i
             const mag = rnd() < 0.12 ? 100 : 250 + Math.floor(rnd() * 750);
             cur = { sx: Math.round(Math.cos(ang) * mag), sy: Math.round(Math.sin(ang) * mag) };
           }
-          if (rnd() < 0.03) for (const b of [p, q]) (b.dir = NONE), (b.moved = false); // a pinata drop or a roll: the body is put standing
+          if (rnd() < 0.03)
+            for (const b of [p, q]) {
+              b.dir = NONE;
+              b.moved = false;
+            } // a pinata drop or a roll: the body is put standing
           stepGrid(
             a,
             new Map<number, GridInput>([

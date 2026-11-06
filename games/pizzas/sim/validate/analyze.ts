@@ -27,7 +27,12 @@ export function analyze(g: Grid): Analysis {
     }),
   );
   const zone = Array.from({ length: count }, (_, i) => i);
-  const find = (i: number): number => (zone[i] === i ? i : (zone[i] = find(zone[i]!)));
+  const find = (i: number): number => {
+    if (zone[i] === i) return i;
+    const r = find(zone[i]!);
+    zone[i] = r;
+    return r;
+  };
   for (const p of passes) for (const c of p.comps.slice(1)) zone[find(c)] = find(p.comps[0]!);
   return { comp, count, spawns, passes, zone: zone.map((_, i) => find(i)) };
 }

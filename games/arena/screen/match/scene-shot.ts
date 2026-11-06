@@ -58,7 +58,7 @@ export function drawAim(f: Frame, s: ManchazoState) {
     if (left <= 0 || !card) return;
     const m = s.match.bodies[i]!;
     const [tx, ty] = bodyTile(b, m.face);
-    const dir = m.face < 0 ? 0 : m.face;
+    const dir = Math.max(0, m.face);
     const [dx, dy] = DIRS[dir as 0 | 1 | 2 | 3]!;
     const len = aimLength(s, tx, ty, dir) * f.px;
     const [cx, cy] = tilePx(f, tx, ty);

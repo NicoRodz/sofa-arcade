@@ -4,9 +4,12 @@ import type Phaser from 'phaser';
 const layers = new WeakMap<Phaser.Scene, Map<string, Phaser.GameObjects.Graphics>>();
 export function layer(scene: Phaser.Scene, name: string, depth = 1.55): Phaser.GameObjects.Graphics {
   let m = layers.get(scene);
-  if (!m) layers.set(scene, (m = new Map()));
+  if (!m) {
+    m = new Map();
+    layers.set(scene, m);
+  }
   let l = m.get(name);
-  if (!l || !l.scene) {
+  if (!l?.scene) {
     l = scene.add.graphics().setDepth(depth);
     m.set(name, l);
   }

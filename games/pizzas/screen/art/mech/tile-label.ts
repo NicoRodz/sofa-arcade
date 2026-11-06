@@ -10,23 +10,25 @@ export function hideLabels(scene: Phaser.Scene, prefix: string) {
 }
 export function tileLabel(scene: Phaser.Scene, key: string, text: string, x: number, y: number, size: number, color: string, depth = 1910) {
   let m = pool.get(scene);
-  if (!m) pool.set(scene, (m = new Map()));
+  if (!m) {
+    m = new Map();
+    pool.set(scene, m);
+  }
   let t = m.get(key);
-  if (!t || !t.scene)
-    m.set(
-      key,
-      (t = scene.add
-        .text(x, y, text, {
-          fontFamily: FONT,
-          fontStyle: 'bold',
-          fontSize: `${size}px`,
-          color,
-          stroke: C.ink,
-          strokeThickness: 7,
-          resolution: 2,
-        })
-        .setOrigin(0.5)
-        .setDepth(depth)),
-    );
+  if (!t?.scene) {
+    t = scene.add
+      .text(x, y, text, {
+        fontFamily: FONT,
+        fontStyle: 'bold',
+        fontSize: `${size}px`,
+        color,
+        stroke: C.ink,
+        strokeThickness: 7,
+        resolution: 2,
+      })
+      .setOrigin(0.5)
+      .setDepth(depth);
+    m.set(key, t);
+  }
   t.setText(text).setPosition(x, y).setVisible(true);
 }

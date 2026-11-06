@@ -27,7 +27,8 @@ function mk(o: { difficulty?: Difficulty; hazards?: boolean; n?: number; slipDro
   for (const k of ['chef:slip', 'chef:recover', 'trash:picked', 'trash:decayed', 'dash', 'bump'] as const) {
     bus.on(k, ((p: never) => {
       const c = [...g.players.values()][0]!;
-      ((seen[k] ??= []) as unknown[]).push({ t: g.time, p, x: c.x, y: c.y });
+      seen[k] ??= [];
+      (seen[k] as unknown[]).push({ t: g.time, p, x: c.x, y: c.y });
     }) as never);
   }
   for (let i = 1; i <= (o.n ?? 1); i++) addPlayer(g, i, i - 1, i - 1);

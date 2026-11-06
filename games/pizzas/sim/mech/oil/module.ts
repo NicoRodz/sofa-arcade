@@ -123,16 +123,19 @@ export const oilModule: MechModule = {
       if (!s.done) {
         e.sauce[i] = 0;
         e.spilt[i] = false;
-      } else if (!e.spilt[i] && (e.sauce[i] = (e.sauce[i] ?? 0) + 1) >= SAUCE_WAIT) {
-        e.spilt[i] = true;
-        for (const [dx, dy] of NESW) oilOn(g, tileIdx(s.tx + dx, s.ty + dy), OIL_TICKS);
+      } else if (!e.spilt[i]) {
+        const waited = (e.sauce[i] ?? 0) + 1;
+        e.sauce[i] = waited;
+        if (waited >= SAUCE_WAIT) {
+          e.spilt[i] = true;
+          for (const [dx, dy] of NESW) oilOn(g, tileIdx(s.tx + dx, s.ty + dy), OIL_TICKS);
+        }
       }
     }
   },
   tickTiles(g) {
     const e = ext(g),
-      tile = g.mech!.tile!,
-      left = g.mech!.tileT!;
+      tile = g.mech!.tile!;
     e.tick++;
     for (const [k, n] of Object.entries(e.work)) {
       const idx = Number(k);
@@ -148,7 +151,8 @@ export const oilModule: MechModule = {
     dropOnOil(g, e);
     if (e.tick % hz3Params(g).oil.dripEvery === 0)
       for (const d of e.drops) {
-        const n = (e.drips[d] = (e.drips[d] ?? -1) + 1);
+        const n = (e.drips[d] ?? -1) + 1;
+        e.drips[d] = n;
         for (let i = 0; i < 4; i++) {
           const [dx, dy] = NESW[(n + i) % 4]!;
           const to = tileIdx((d % 16) + dx, Math.floor(d / 16) + dy);

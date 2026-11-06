@@ -37,7 +37,8 @@ describe('R1 integrator (Normal)', () => {
   ];
   it('walks the same trajectory as the instant rule: every rest point within 5% of the distance travelled', () => {
     const g = open();
-    const p = (addPlayer(g, 1, 0), g.players.get(1)!);
+    addPlayer(g, 1, 0);
+    const p = g.players.get(1)!;
     put(p, 2.5, 2.5);
     let lx = 2.5,
       ly = 2.5,
@@ -58,7 +59,8 @@ describe('R1 integrator (Normal)', () => {
   });
   it('is smooth: it needs about 3 tau to reach cruise speed, and stops within 3 tau_stop', () => {
     const g = open();
-    const p = (addPlayer(g, 1, 0), g.players.get(1)!);
+    addPlayer(g, 1, 0);
+    const p = g.players.get(1)!;
     put(p, 2.5, 2.5);
     walk(g, TICK_MS, { 1: { x: 1 } });
     expect(p.vx).toBeGreaterThan(0.1 * SPEED);
@@ -72,7 +74,8 @@ describe('R1 integrator (Normal)', () => {
     for (const d of ['easy', 'hard'] as const) {
       expect([TUNING[d].tauMs, TUNING[d].tauStopMs]).toEqual([0, 0]);
       const g = open(d);
-      const p = (addPlayer(g, 1, 0), g.players.get(1)!);
+      addPlayer(g, 1, 0);
+      const p = g.players.get(1)!;
       put(p, 2.5, 2.5);
       step(g, { 1: { x: 1 } });
       expect(p.vx).toBe(SPEED);

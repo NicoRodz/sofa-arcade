@@ -77,7 +77,7 @@ function setup(chefs: number, deadEnd = false) {
 const put = (g: Game, id: number, x: number, y: number, item: NonNullable<ReturnType<Game['players']['get']>>['item'] = null) =>
   Object.assign(g.players.get(id)!, { x, y, vx: 0, vy: 0, item });
 const run = (g: Game, ticks: number, ctl: Map<number, Controls>, until?: () => boolean) => {
-  for (let i = 0; i < ticks && !(until && until()); i++) tick(g, ctl);
+  for (let i = 0; i < ticks && !until?.(); i++) tick(g, ctl);
 };
 
 describe('rat evasion', () => {
@@ -101,7 +101,7 @@ describe('rat evasion', () => {
     expect(scared).toBe(true);
   });
   it('two chefs closing from opposite sides pin it: no burst, and the touch lands', () => {
-    const { g, rat, x, y } = setup(2);
+    const { g, x, y } = setup(2);
     put(g, 1, x - 3, y);
     put(g, 2, x + 3, y, 'raw0'); // hands full too
     let scared = false;

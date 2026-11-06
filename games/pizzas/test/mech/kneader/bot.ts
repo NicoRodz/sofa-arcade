@@ -119,7 +119,7 @@ function decide(c: Crew, p: Player, rank: number, m: Mem, tickNo: number): Contr
   const fuel = W ? (g.mech!.wood![g.stations.indexOf(W)] ?? 0) : 0;
   // helper: the second handle of a ball that is being kneaded
   if (m.role === 'help') {
-    if (!M || M.item !== 'raw0' || tickNo > m.until) {
+    if (M?.item !== 'raw0' || tickNo > m.until) {
       m.role = undefined;
       c.helper = null;
     } else return onHandle(c, p, m, M, handlesOf(g, g.stations.indexOf(M))[c.owner === p.id ? 0 : 1]!, tickNo, rank);

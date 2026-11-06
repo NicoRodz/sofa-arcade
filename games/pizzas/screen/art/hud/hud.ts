@@ -292,7 +292,7 @@ export class Hud {
     }
     this.pulse += (1 - this.pulse) * Math.min(1, dtMs / 120);
     const danger = left <= 10_000 && g.countdown <= 0;
-    const col = danger ? C.danger : timerColor(frac * 1.6 > 1 ? 1 : frac * 1.6);
+    const col = danger ? C.danger : timerColor(Math.min(1, frac * 1.6));
     this.clockTxt.setColor(danger ? C.danger : C.ink);
     this.clockImg.setScale((88 / 96 / R) * this.pulse);
     this.clockTxt.setScale(this.pulse);

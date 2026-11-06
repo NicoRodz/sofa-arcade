@@ -49,7 +49,9 @@ export function bandsOf(exits: readonly Tile[]): { band: Int8Array; cells: numbe
   for (let y = 0; y < MAP_H; y++)
     for (let x = 0; x < CENTRE; x++) {
       let best = 0;
-      exits.forEach(([, ey], k) => (Math.abs(y - ey) < Math.abs(y - exits[best]![1]) ? (best = k) : 0));
+      exits.forEach(([, ey], k) => {
+        if (Math.abs(y - ey) < Math.abs(y - exits[best]![1])) best = k;
+      });
       band[y * MAP_W + x] = best;
       cells[best]!++;
     }

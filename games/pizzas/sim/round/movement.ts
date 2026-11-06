@@ -138,7 +138,8 @@ export function walk(g: Game, p: Player, c: Controls, dt: number, dtMs: number) 
     p.vx = p.dashDx * v;
     p.vy = p.dashDy * v;
     p.dashMs = Math.max(0, p.dashMs - dtMs);
-    if (p.dashMs <= 0 && !(g.magnet && (p.dashMs = magnetHug(g, p, v, TICK_MS)) > 0)) {
+    if (p.dashMs <= 0 && g.magnet) p.dashMs = magnetHug(g, p, v, TICK_MS);
+    if (p.dashMs <= 0) {
       p.vx = p.dashDx * SPEED;
       p.vy = p.dashDy * SPEED;
     } // back to walking pace; R1 takes it from there (magnetism: a station right ahead keeps the dash going until it touches it)

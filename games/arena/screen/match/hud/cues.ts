@@ -57,7 +57,9 @@ type Sink = (cue: string, e: FeedEvent) => void;
 let sink: Sink | null = null;
 
 /** Connects the audio layer (null disconnects). */
-export const setCueSink = (fn: Sink | null): void => void (sink = fn);
+export const setCueSink = (fn: Sink | null): void => {
+  sink = fn;
+};
 
 /** Hands the events to the sink, one cue each. */
 export function playCues(events: readonly FeedEvent[]): void {
