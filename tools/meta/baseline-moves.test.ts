@@ -30,6 +30,22 @@ describe('movedWithoutEntry', () => {
   });
 });
 
+describe('a test file split in two', () => {
+  const S: MoveTable = { files: {}, testMoves: { 'a/big.test.ts': ['a/big.test.ts', 'a/big-more.test.ts'] } };
+  it('a test in either half is fine; one in a third file is reported', () => {
+    expect(
+      movedWithoutEntry(
+        [row('a/big.test.ts', 'x'), row('a/big.test.ts', 'y')],
+        [row('a/big.test.ts', 'x'), row('a/big-more.test.ts', 'y')],
+        S,
+      ),
+    ).toEqual([]);
+    expect(movedWithoutEntry([row('a/big.test.ts', 'x')], [row('a/other.test.ts', 'x')], S)).toEqual([
+      'a/big.test.ts -> now in a/other.test.ts (expected a/big.test.ts or a/big-more.test.ts)',
+    ]);
+  });
+});
+
 describe('currentPath / the real table', () => {
   it('follows files then testMoves', () => {
     expect(currentPath('old/a.test.ts', T)).toBe('newer/a.test.ts');
@@ -40,6 +56,6 @@ describe('currentPath / the real table', () => {
     const root = new URL('../..', import.meta.url).pathname;
     const t = loadMoveTable(root);
     expect(Object.keys(t.testMoves).length).toBeGreaterThan(0);
-    for (const to of Object.values(t.testMoves)) expect(existsSync(join(root, to)), to).toBe(true);
+    for (const to of Object.values(t.testMoves).flat()) expect(existsSync(join(root, to)), to).toBe(true);
   });
 });

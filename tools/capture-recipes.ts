@@ -1,12 +1,13 @@
 // Visual check of the Carta del día: serves the built app, joins idle phones to a coop round and saves screenshots of what the new recipes look like (the card under the
 // countdown, the tickets, the crate, the plates, the oven with the fold bar), driving the sim by hand through window.__pg.kit.
 // usage: npm run build && npx tsx tools/capture-recipes.ts <outDir> [maps, default 9,12,2]   (PG_PORT 5000 / PG_CDP 9790 move the ports)
-import { spawn, execSync, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WebSocket } from 'ws';
 import { startServer } from '../apps/server/src/server';
+import { killTree } from './proc/kill-tree';
 
 const PORT = Number(process.env.PG_PORT ?? 5000),
   CDP = Number(process.env.PG_CDP ?? 9790);
@@ -15,45 +16,6 @@ const outDir = path.resolve(process.argv[2] ?? 'docs/screens-recipes');
 const maps = (process.argv[3] ?? '9,12,2').split(',');
 mkdirSync(outDir, { recursive: true });
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function descendants(pid: number): number[] {
-  const rows = execSync('ps -A -o pid=,ppid=')
-    .toString()
-    .trim()
-    .split('\n')
-    .map((l) => l.trim().split(/\s+/).map(Number));
-  const out: number[] = [];
-  const walk = (p: number) => {
-    for (const [c, pp] of rows)
-      if (pp === p && c !== undefined) {
-        out.push(c);
-        walk(c);
-      }
-  };
-  walk(pid);
-  return out;
-}
-async function killTree(proc: ChildProcess) {
-  // Chrome leads its own process group: kill the tree by pid, SIGTERM first
-  if (!proc.pid) return;
-  const pids = [proc.pid, ...descendants(proc.pid)];
-  for (const p of pids) {
-    try {
-      process.kill(p, 'SIGTERM');
-    } catch {
-      /* gone */
-    }
-  }
-  await sleep(700);
-  for (const p of pids) {
-    try {
-      process.kill(p, 0);
-      process.kill(p, 'SIGKILL');
-    } catch {
-      /* gone */
-    }
-  }
-}
 
 type Clip = { x: number; y: number; width: number; height: number; scale?: number };
 class Cdp {

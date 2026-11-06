@@ -791,6 +791,7 @@
   "games/obstaculos/campaign/practice.test.ts": "games/obstaculos/campaign/progress/practice.test.ts",
   "games/obstaculos/campaign/progress.test.ts": "games/obstaculos/campaign/progress/progress.test.ts",
   "games/obstaculos/sim/actions.test.ts": "games/obstaculos/sim/player/actions.test.ts",
+  "games/obstaculos/sim/player/player.test.ts": ["games/obstaculos/sim/player/player.test.ts", "games/obstaculos/sim/player/player-landing.test.ts"],
   "games/obstaculos/sim/campaign.test.ts": "games/obstaculos/sim/rules/campaign.test.ts",
   "games/obstaculos/sim/input.test.ts": "games/obstaculos/sim/world/input.test.ts",
   "games/obstaculos/sim/player.test.ts": "games/obstaculos/sim/player/player.test.ts",

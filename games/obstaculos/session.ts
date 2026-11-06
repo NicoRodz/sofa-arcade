@@ -1,23 +1,13 @@
-// The expedition as the screen runs it (F3): the world of F2a stepped at a fixed 60 Hz from the LAST input of every phone, the three levels
-// of a run, the pauses between them and the results. Pure and deterministic (the clock is the simulation's own, never Date.now()), so the
-// bots and the tests run it in Node exactly like the screen does.
-//
-//   const s = new ObstSession({ mode, difficulty, level, seed, slots })
-//   s.receive(slot, { x, y, presses }, ...)     every packet of a phone (the tracker keeps the latest stick and counts the presses)
-//   events = s.advance(dtMs)                    once per render frame: steps the world 0..4 times, returns the obst.* events to publish
-//   s.setConnected(slot, on) / s.setOffCamera(flags)
-//   s.status: 'countdown' | 'playing' | 'between' | 'over'    s.summary() when 'over'
-import type { Difficulty } from '@pichi/core';
 import { DT, EXPEDITION_LEVELS, MAX_STEPS_PER_FRAME, STEP_MS } from './constants';
 import { generateLevel } from './generate';
 import { fixedExpedition, RANDOM_LEVEL } from './lobby';
 import { InputTracker, type Packet, type PlayerStep } from './sim/world/input';
-import { advanceRun, awardsOf, newRun, type Awards, type RunState } from './sim/rules';
+import { advanceRun, awardsOf, newRun, type RunState } from './sim/rules';
 import { SLOT_COUNT } from './sim/world/tuning';
 import type { ObstEvent, PlayerStats, World } from './sim/world/state';
 import { createWorld, setConnected, step } from './sim/world';
-import type { WorldId } from './sim/rules/campaign';
-import type { GameMode, LevelDef } from './types';
+import type { SessionOpts, LevelSummary, RunSummary, SessionStatus } from './session-types';
+import type { LevelDef } from './types';
 
 export const COUNTDOWN_MS = 3000; // 3-2-1 before the first level
 export const NEXT_COUNTDOWN_MS = 2000; // before the following ones
@@ -25,50 +15,7 @@ export const BETWEEN_MS = 4200; // "NIVEL COMPLETADO" stays this long before the
 export const OVER_HOLD_MS = 3600; // the final banner stays this long before the results
 export const IDLE_INPUT: PlayerStep = { move: 0, down: false, jump: false, up: false, grab: false };
 
-export type SessionStatus = 'countdown' | 'playing' | 'between' | 'over';
-
-export interface SessionOpts {
-  mode: GameMode;
-  difficulty: Difficulty;
-  level: number; // RANDOM_LEVEL (0) or 1..15
-  seed: number;
-  slots: readonly number[]; // connected phones at the start
-  p90LatencyMs?: number;
-  levels?: readonly LevelDef[]; // tests and tools: an explicit list of levels (skips the lobby's choice)
-  campaign?: { world: WorldId; n?: number }; // campaign layer for 2 (sim/campaign.ts); absent = quick match, unchanged
-}
-
-export interface LevelSummary {
-  id: string;
-  name: string;
-  biome: LevelDef['biome'];
-  index: number;
-  cleared: boolean; // false: the lives ran out
-  retry: boolean; // played again after running out of lives (score x0.5)
-  timeSec: number;
-  parSec: number;
-  medal: 'gold' | 'silver' | 'bronze' | null;
-  stars: number;
-  starsMax: number; // the collectible stars
-  deaths: number;
-  livesLeft: number; // Infinity when unlimited
-  checkpoints: number;
-  checkpointsMax: number;
-  score: number; // what this level added to the run
-}
-export interface RunSummary {
-  reason: 'complete' | 'failed';
-  score: number;
-  levels: LevelSummary[];
-  expedition: number; // levels in the expedition (3, or fewer when it starts near the end of the list)
-  cleared: number;
-  awards: Awards;
-  mode: GameMode;
-  difficulty: Difficulty;
-  random: boolean;
-  seed: number;
-  totals: { deaths: number; stars: number; starsMax: number; timeSec: number };
-}
+export type { LevelSummary, RunSummary, SessionOpts, SessionStatus } from './session-types';
 
 const sumStats = (a: PlayerStats, b: PlayerStats): PlayerStats => ({
   deaths: a.deaths + b.deaths,
