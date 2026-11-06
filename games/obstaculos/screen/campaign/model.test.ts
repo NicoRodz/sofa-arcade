@@ -279,7 +279,7 @@ describe('keys in the results', () => {
 describe('the Captain\'s reset: "?" arms it, 3 seconds, OK confirms', () => {
   const c = (now: number) => ctx({ now });
   it('OK before 3 s is refused, OK after 3 s resets that expedition', () => {
-    let s = press(initialState(), 'h', c(10_000)).state;
+    const s = press(initialState(), 'h', c(10_000)).state;
     expect(s.resetArmedAt).toBe(10_000);
     expect(resetReady(s, 11_000)).toBe(false);
     expect(eff(s, 'Enter', c(11_000))).toEqual({ t: 'refuse', reason: 'Espera 2 s para confirmar' });
