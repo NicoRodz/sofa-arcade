@@ -810,7 +810,11 @@
   "games/pizzas/sim/midround.test.ts": "games/pizzas/sim/rules/midround.test.ts",
   "games/pizzas/sim/puestos.test.ts": "games/pizzas/sim/phone/puestos.test.ts",
   "games/pizzas/sim/sabotage.mirror.slow.test.ts": "games/pizzas/sim/rules/sabotage.mirror.slow.test.ts",
-  "games/pizzas/sim/sabotage.test.ts": "games/pizzas/sim/rules/sabotage.test.ts",
+  "games/pizzas/sim/sabotage.test.ts": [
+      "games/pizzas/sim/rules/sabotage.test.ts",
+      "games/pizzas/sim/rules/sabotage-catapult.test.ts",
+      "games/pizzas/sim/rules/sabotage-limits.test.ts"
+    ],
   "games/pizzas/sim/score.test.ts": "games/pizzas/sim/scoring/score.test.ts"
  },
  "patches": [
