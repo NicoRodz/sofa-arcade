@@ -11,7 +11,6 @@
   "games/obstaculos/screen/render/adapter.ts": { "max": 297, "until": "2027-03-31" },
   "games/obstaculos/session.ts": { "max": 307, "until": "2027-03-31" },
   "games/obstaculos/sim/dynamics.test.ts": { "max": 664, "until": "2027-03-31" },
-  "games/obstaculos/sim/player/actions.ts": { "max": 353, "until": "2027-03-31" },
   "games/obstaculos/sim/player/player.test.ts": { "max": 510, "until": "2027-03-31" },
   "games/obstaculos/sim/player/player.ts": { "max": 340, "until": "2027-03-31" },
   "games/obstaculos/sim/rules/campaign.test.ts": { "max": 605, "until": "2027-03-31" },
