@@ -30,6 +30,8 @@
     "lint": "biome check",
     "check:new-files": "node scripts/check-new-files.mjs",
     "smoke": "tsx tools/capture/smoke.ts",
+    "visual": "tsx tools/visual/run.ts",
+    "visual:update": "UPDATE_GOLDENS=1 tsx tools/visual/run.ts",
     "deps": "depcruise --config .dependency-cruiser.cjs platform games apps tools",
     "deps:report": "tsx tools/meta/deps-report.ts",
     "report": "tsx tools/latency-report/src/index.ts"
