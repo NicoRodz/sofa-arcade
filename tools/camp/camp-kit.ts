@@ -1,13 +1,11 @@
 // Shared by tools/camp/camp-e2e.ts and camp-w23.ts: a CDP client, a bot phone on a websocket, the headless Chrome launch and the driver of the real screen.
-import { type ChildProcess, spawn } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { WebSocket } from 'ws';
 import { ObstBot, type BotView } from '@pichi/game-obstaculos';
 import { waitForPageTarget } from '../capture/page-target';
-import { killTree } from '../proc/kill-tree';
 
-export const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+export { launchHeadlessChrome as launchChrome } from '../proc/headless-chrome';
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const check = (ok: boolean, what: string) => {
@@ -113,37 +111,6 @@ export class Phone {
     if (o.jump) this.a++;
     if (o.grab) this.b++;
   }
-}
-
-/** Headless Chrome with the flags the campaign scripts share, plus a watchdog that kills its tree and exits 2. */
-export function launchChrome(
-  cdpPort: number,
-  profile: string,
-  watchdogMs: number,
-): { chrome: ChildProcess; dog: ReturnType<typeof setTimeout> } {
-  const chrome = spawn(
-    CHROME,
-    [
-      '--headless=new',
-      `--remote-debugging-port=${cdpPort}`,
-      `--user-data-dir=${profile}`,
-      '--window-size=1920,1080',
-      '--hide-scrollbars',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--ignore-gpu-blocklist',
-      '--force-color-profile=srgb',
-      '--autoplay-policy=no-user-gesture-required',
-      'about:blank',
-    ],
-    { stdio: 'ignore' },
-  );
-  const dog = setTimeout(async () => {
-    console.error('watchdog fired');
-    await killTree(chrome);
-    process.exit(2);
-  }, watchdogMs);
-  return { chrome, dog };
 }
 
 /** Attaches to the first page of the Chrome on `cdpPort` and sets the 1920x1080 TV viewport. */
